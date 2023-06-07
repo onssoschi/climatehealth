@@ -25,7 +25,7 @@ if(packageVersion("dlnm")<"2.2.0")
   stop("update dlnm package to version >= 2.2.0")
 
 # LOAD THE DATASET (INCLUDING THE 10 UK REGIONS ONLY)
-regEngWales <- read.csv("regEngWales.csv",row.names=1)
+regEngWales <- read.csv("data/regEngWales.csv",row.names=1)
 regEngWales$date <- as.Date(regEngWales$date)
 
 # ARRANGE THE DATA AS A LIST OF DATA SETS
@@ -37,7 +37,7 @@ names(dlist) <- regions
 cities <- data.frame(
   city = regions,
   cityname = c("North East","North West","Yorkshire & Humber","East Midlands",
-    "West Midlands","East","London","South East","South West","Wales")
+    "West Midlands","East","London","South East","South West", "Wales")
 )
 
 # ORDER
@@ -63,7 +63,7 @@ lagnk <- 3
 dfseas <- 8
 
 # COMPUTE PERCENTILES
-per <- t(sapply(dlist,function(x) 
+per <- t(sapply(dlist,function(x)
   quantile(x$tmean,c(2.5,10,25,50,75,90,97.5)/100,na.rm=T)))
 
 # MODEL FORMULA

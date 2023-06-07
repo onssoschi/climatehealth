@@ -1,6 +1,7 @@
-source('00.prepdata.R')
-source('01.firststage.R')
-source('02.secondstage.R')
-source('03.attr.R')
-source('04.tables.R')
-source('05.plots.R')
+source('gasparrini/00.prepdata.R')
+source('gasparrini/01.firststage.R')
+source('gasparrini/02.secondstage.R')
+source('gasparrini/03.attr.R')
+source('gasparrini/04.tables.R')
+source('gasparrini/05.plots.R')
+
