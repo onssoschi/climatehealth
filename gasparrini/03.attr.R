@@ -19,7 +19,7 @@
 ################################################################################
 
 # LOAD THE FUNCTION FOR COMPUTING THE ATTRIBUTABLE RISK MEASURES
-source("attrdl.R")
+source("gasparrini/attrdl.R")
 
 # CREATE THE VECTORS TO STORE THE TOTAL MORTALITY (ACCOUNTING FOR MISSING)
 totdeath <- rep(NA,nrow(cities))
@@ -40,20 +40,20 @@ arraysim <- array(NA,dim=c(nrow(cities),3,nsim),dimnames=list(cities$city,
 
 # RUN THE LOOP
 for(i in seq(dlist)){
-  
+
   # PRINT
   cat(i,"")
-  
+
   # EXTRACT THE DATA
   data <- dlist[[i]]
-  
+
   # DERIVE THE CROSS-BASIS
   # NB: CENTERING POINT DIFFERENT THAN ORIGINAL CHOICE OF 75TH
   argvar <- list(x=data$tmean,fun=varfun,knots=quantile(data$tmean,
     varper/100,na.rm=T),degree=vardegree)
   cb <- crossbasis(data$tmean,lag=lag,argvar=argvar,
     arglag=list(knots=logknots(lag,lagnk)))
-  
+
   # COMPUTE THE ATTRIBUTABLE DEATHS
   # NB: THE REDUCED COEFFICIENTS ARE USED HERE
   matsim[i,"glob"] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
@@ -75,7 +75,7 @@ for(i in seq(dlist)){
   arraysim[i,"heat",] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
     vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],
     range=c(mintempcity[i],100),sim=T,nsim=nsim)
-  
+
   # STORE THE DENOMINATOR OF ATTRIBUTABLE DEATHS, I.E. TOTAL OBSERVED MORTALITY
   # CORRECT DENOMINATOR TO COMPUTE THE ATTRIBUTABLE FRACTION LATER, AS IN attrdl
   totdeath[i] <- sum(data$death,na.rm=T)
