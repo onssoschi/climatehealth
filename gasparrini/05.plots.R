@@ -22,7 +22,7 @@
 
 xlab <- expression(paste("Temperature (",degree,"C)"))
 
-pdf("gasparrini/output/figure1.pdf",width=8,height=9)
+# pdf("gasparrini/output/output_all_regions_plot.pdf",width=8,height=9)
 layout(matrix(c(0,1,1,2,2,0,rep(3:8,each=2),0,9,9,10,10,0),ncol=6,byrow=T))
 par(mar=c(4,3.8,3,2.4),mgp=c(2.5,1,0),las=1)
 
@@ -57,6 +57,11 @@ for(i in seq(length(dlist))) {
   abline(v=c(per[i,c("2.5%","97.5%")]),lty=2)
 }
 
-dev.off()
 
-#
+output_df <- data.frame(regnames = rep(unique(data$regnames), length(pred$predvar)),
+                        temperature = pred$predvar,
+                        relative_risk = pred$allRRfit)
+
+# write.csv(output_df, "gasparrini/output/output_one_region_data.csv", row.names=FALSE)
+
+
