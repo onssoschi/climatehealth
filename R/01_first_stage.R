@@ -1,63 +1,86 @@
-################################################################################
-# Updated version of the code for the analysis in:
-#
-#   "Mortality risk attributable to high and low ambient temperature:
-#     a multi-country study"
-#   Antonio Gasparrini and collaborators
-#   The Lancet - 2015
-#   http://www.ag-myresearch.com/2015_gasparrini_lancet.html
-#
-# Update: 15 January 2017
-# * an updated version of this code, compatible with future versions of the
-#   software, is available at:
-#   https://github.com/gasparrini/2015_gasparrini_Lancet_Rcodedata
-################################################################################
+#' First-stage analysis
+#' Run the model in each city/region, reduce and save.
+#' Create objects to store the results.
+#'
+#' @param x A number.
+#' @param y A number.
+#' @return A number.
+#' @examples
+#' add(1, 1)
+#' add(10, 1)
+first_step <- function() {
 
-################################################################################
-# FIRST-STAGE ANALYSIS: RUN THE MODEL IN EACH CITY, REDUCE AND SAVE
-################################################################################
+  # Model formula
+  formula <- death~cb+dow+ns(date,df=dfseas*length(unique(year)))
 
-################################################################################
-# CREATE THE OBJECTS TO STORE THE RESULTS
+  # Coefficients and vcov for overall cumulative summary
+  coef <- matrix(NA,nrow(cities),length(varper)+vardegree,
+                 dimnames=list(cities$city))
+  vcov <- vector("list",nrow(cities))
+  names(vcov) <- cities$city
 
-# COEFFICIENTS AND VCOV FOR OVERALL CUMULATIVE SUMMARY
-coef <- matrix(NA,nrow(cities),length(varper)+vardegree,
-               dimnames=list(cities$city))
-vcov <- vector("list",nrow(cities))
-names(vcov) <- cities$city
+  # Loop
+  time <- proc.time()[3]
 
-################################################################################
-# RUN THE LOOP
+  if (dlist > 1) {
 
-# LOOP
-time <- proc.time()[3]
-for(i in seq(length(dlist))) {
+    for(i in seq(length(dlist))) {
 
-  # PRINT
-  cat(i,"")
+      cat(i,"")
 
-  # EXTRACT THE DATA
-  data <- dlist[[i]]
+      # Extract daa
+      data <- dlist[[i]]
 
-  # DEFINE THE CROSSBASIS
-  argvar <- list(fun=varfun,knots=quantile(data$tmean,varper/100,na.rm=T),
-                 degree=vardegree)
-  cb <- crossbasis(data$tmean,lag=lag,argvar=argvar,
-                   arglag=list(knots=logknots(lag,lagnk)))
-  #summary(cb)
+      # Define crossbasis
+      argvar <- list(fun=varfun,knots=quantile(data$tmean,varper/100,na.rm=T),
+                     degree=vardegree)
+      cb <- crossbasis(data$tmean,lag=lag,argvar=argvar,
+                       arglag=list(knots=logknots(lag,lagnk)))
 
-  # RUN THE MODEL AND OBTAIN PREDICTIONS
-  # NB: NO CENTERING NEEDED HERE, AS THIS DOES NOT AFFECT COEF-VCOV
-  model <- glm(formula,data,family=quasipoisson,na.action="na.exclude")
-  cen <- mean(data$tmean,na.rm=T)
-  pred <- crosspred(cb,model,cen=cen)
+      #summary(cb)
 
-  # REDUCTION TO OVERALL CUMULATIVE
-  red <- crossreduce(cb,model,cen=cen)
-  coef[i,] <- coef(red)
-  vcov[[i]] <- vcov(red)
+      # Run the model and obtain predictions
+      model <- glm(formula,data,family=quasipoisson,na.action="na.exclude")
+      cen <- mean(data$tmean,na.rm=T)
+      pred <- crosspred(cb,model,cen=cen)
+
+      # Reduction to overall cumulative
+      red <- crossreduce(cb,model,cen=cen)
+      coef[i,] <- coef(red)
+      vcov[[i]] <- vcov(red)
+
+    }
+
+  } else {
+
+    # Print
+    cat(1,"")
+
+    # Extract data
+    data <- dlist[[1]]
+
+    # Define crossbasis
+    argvar <- list(fun=varfun,knots=quantile(data$tmean,varper/100,na.rm=T),
+                   degree=vardegree)
+    cb <- crossbasis(data$tmean,lag=lag,argvar=argvar,
+                     arglag=list(knots=logknots(lag,lagnk)))
+
+    #summary(cb)
+
+    # Run the model and obtain predictions
+    model <- glm(formula,data,family=quasipoisson,na.action="na.exclude")
+    cen <- mean(data$tmean,na.rm=T)
+    pred <- crosspred(cb,model,cen=cen)
+
+    # Reduction to overall cumulative
+    red <- crossreduce(cb,model,cen=cen)
+    coef[1,] <- coef(red)
+    vcov[[1]] <- vcov(red)
+
+    }
+
+  proc.time()[3]-time
 
 }
-proc.time()[3]-time
 
-#
+
