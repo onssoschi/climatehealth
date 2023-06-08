@@ -7,10 +7,13 @@ library(config)
 # Load config file
 config <- config::get()
 
+# Input data
+input_csv_path <- config$input_csv_path
+
 # Specification of the exposure function
 varfun <- config$varfun
 vardegree <- config$vardegree
-varper <- config::varper
+varper <- c(10,75,90)
 
 # Specification of the lag function
 lag <- config$lag
@@ -27,10 +30,10 @@ dfseas <- config$dfseas
 #' @param y A number.
 #' @return A number.
 #' @examples
-prep_and_first_step <- function() {
+prep_and_first_step <- function(input_csv_path) {
 
   # Load dataset
-  regEngWales <- read.csv("data/regEngWales.csv",row.names=1)
+  regEngWales <- read.csv(input_csv_path,row.names=1)
   regEngWales$date <- as.Date(regEngWales$date)
 
   # Arrange the data as a list of data sets
@@ -62,42 +65,12 @@ prep_and_first_step <- function() {
   # Loop
   time <- proc.time()[3]
 
-  if (dlist > 1) {
+  for(i in seq(length(dlist))) {
 
-    for(i in seq(length(dlist))) {
-
-      cat(i,"")
-
-      # Extract daa
-      data <- dlist[[i]]
-
-      # Define crossbasis
-      argvar <- list(fun=varfun,knots=quantile(data$tmean,varper/100,na.rm=T),
-                     degree=vardegree)
-      cb <- crossbasis(data$tmean,lag=lag,argvar=argvar,
-                       arglag=list(knots=logknots(lag,lagnk)))
-
-      #summary(cb)
-
-      # Run the model and obtain predictions
-      model <- glm(formula,data,family=quasipoisson,na.action="na.exclude")
-      cen <- mean(data$tmean,na.rm=T)
-      pred <- crosspred(cb,model,cen=cen)
-
-      # Reduction to overall cumulative
-      red <- crossreduce(cb,model,cen=cen)
-      coef[i,] <- coef(red)
-      vcov[[i]] <- vcov(red)
-
-    }
-
-  } else {
-
-    # Print
-    cat(1,"")
+    cat(i,"")
 
     # Extract data
-    data <- dlist[[1]]
+    data <- dlist[[i]]
 
     # Define crossbasis
     argvar <- list(fun=varfun,knots=quantile(data$tmean,varper/100,na.rm=T),
@@ -114,14 +87,16 @@ prep_and_first_step <- function() {
 
     # Reduction to overall cumulative
     red <- crossreduce(cb,model,cen=cen)
-    coef[1,] <- coef(red)
-    vcov[[1]] <- vcov(red)
+    coef[i,] <- coef(red)
+    vcov[[i]] <- vcov(red)
 
-  }
+    }
 
   proc.time()[3]-time
 
-  return (dlist = dlist)
+  return (list(dlist = dlist, argvar = argvar,
+            regions = regions, cities = cities,
+            coef = coef, vcov = vcov))
 
 }
 
@@ -133,7 +108,7 @@ prep_and_first_step <- function() {
 #' @param y A number.
 #' @return A number.
 #' @examples
-second_stage <- function(dlist) {
+second_stage <- function(dlist, cities, argvar, coef, vcov) {
 
 # Create average temperature and range as meta-predictors
 avgtmean <- sapply(dlist,function(x) mean(x$tmean,na.rm=T))
@@ -182,6 +157,9 @@ for(i in seq(length(dlist))) {
 # Country-specific points of minimum mortality
 (minperccountry <- median(minperccity))
 
+return (list(blup = blup, argvar = argvar,
+        bvar = bvar))
+
 }
 
 #' Third-stage analysis
@@ -192,7 +170,7 @@ for(i in seq(length(dlist))) {
 #' @param y A number.
 #' @return A number.
 #' @examples
-third_stage <- function() {
+third_stage <- function(dlist, cities, varfun, dlist, argvar, bvar, blups){
 
   # Load the function for computing the attributable risk measures
   source("R/attrdl.R")
@@ -293,7 +271,8 @@ third_stage <- function() {
 #' @param y A number.
 #' @return A number.
 #' @examples
-plot_results <- function(){
+plot_results <- function(dlist, argvar,
+                         bvar, blup, cities){
 
   xlab <- expression(paste("Temperature (",degree,"C)"))
 
@@ -347,14 +326,13 @@ plot_results <- function(){
 }
 
 
-
 #' Write tables
 #'
 #' @param x A number.
 #' @param y A number.
 #' @return A number.
 #' @examples
-tables <- funcion(){
+tables <- function(){
 
   # Related part of table 1
   tmeanuk <- sapply(dlist,function(city) mean(city$tmean,na.rm=T))
@@ -388,4 +366,29 @@ tables <- funcion(){
 
 }
 
+do_analysis <- function(){
 
+  prep_and_first_step(input_csv_path)
+
+  second_stage(dlist = prep_and_first_step$dlist,
+               cities = prep_and_first_step$cities,
+               coef = prep_and_first_step$coef,
+               vcov = prep_and_first_step$vcov)
+
+  third_stage(dlist = prep_and_first_step$dlist,
+              cities = prep_and_first_step$cities,
+              regions = prep_and_first_step$regions,
+              argvar = prep_and_first_step$argvar,
+              coef = prep_and_first_step$coef,
+              vcov = prep_and_first_step$vcov,
+              bvar = second_stage$bvar,
+              blup = second_stage$blup)
+
+  plot(dlist = prep_and_first_step$dlist,
+       cities = prep_and_first_step$cities,
+       argvar = prep_and_first_step$argvar,
+       bvar = second_stage$bvar,
+       blup = second_stage$blup)
+}
+
+do_analysis()

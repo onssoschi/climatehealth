@@ -1,11 +1,14 @@
-# Specification of the exposure function
-varfun: "bs"
-vardegree:  2
-varper: c(10,75,90)
+default:
+  # Input data
+  input_csv_path: 'data/regEngWales.csv'
 
-# Specification of the lag function
-lag: 21
-lagnk: 3
+  # Specification of the exposure function
+  varfun: 'bs'
+  vardegree:  2
 
-# Degree of freedom for seasonality
-dfseas: 8
+  # Specification of the lag function
+  lag: 21
+  lagnk: 3
+
+  # Degree of freedom for seasonality
+  dfseas: 8
