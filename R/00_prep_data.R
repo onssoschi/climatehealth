@@ -66,7 +66,7 @@ dfseas <- 8
 per <- t(sapply(dlist,function(x)
   quantile(x$tmean,c(2.5,10,25,50,75,90,97.5)/100,na.rm=T)))
 
-# MODEL FORMULA
-formula <- death~cb+dow+ns(date,df=dfseas*length(unique(year)))
+# # MODEL FORMULA
+# formula <- death~cb+dow+ns(date,df=dfseas*length(unique(year)))
 
 #
