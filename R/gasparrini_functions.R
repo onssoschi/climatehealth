@@ -11,6 +11,9 @@ config <- config::get()
 # Input data
 input_csv_path <- config$input_csv_path
 
+# Output data
+output_csv_path <- config$output_csv_path
+
 # Specification of the exposure function
 varfun <- config$varfun
 vardegree <- config$vardegree
@@ -552,5 +555,5 @@ do_analysis <- function(input_csv_path, output_csv_path){
                output_csv_path = output_csv_path)
 }
 
-do_analysis(input_csv_path, output_csv_path = 'output/output_one_region_data_new.csv')
+do_analysis(input_csv_path = input_csv_path, output_csv_path = output_csv_path)
 
