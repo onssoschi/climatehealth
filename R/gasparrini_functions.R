@@ -3,6 +3,7 @@ library(mvmeta)
 library(splines)
 library(tsModel)
 library(config)
+library(zeallot)
 
 # Load config file
 config <- config::get()
@@ -94,9 +95,7 @@ prep_and_first_step <- function(input_csv_path) {
 
   proc.time()[3]-time
 
-  return (list(dlist = dlist, argvar = argvar,
-            regions = regions, cities = cities,
-            coef = coef, vcov = vcov))
+  return (list(dlist, argvar, regions, cities, coef, vcov))
 
 }
 
@@ -368,27 +367,24 @@ tables <- function(){
 
 do_analysis <- function(){
 
-  prep_and_first_step(input_csv_path)
+  c(dlist, argvar, regions, cities, coef, vcov) %<-% prep_and_first_step(input_csv_path)
 
-  second_stage(dlist = prep_and_first_step$dlist,
-               cities = prep_and_first_step$cities,
-               coef = prep_and_first_step$coef,
-               vcov = prep_and_first_step$vcov)
+  c(blup, argvar, bvar) %<-% second_stage(dlist = dlist,
+                    cities = cities,
+                    coef = coef,
+                    vcov = vcov)
 
-  third_stage(dlist = prep_and_first_step$dlist,
-              cities = prep_and_first_step$cities,
-              regions = prep_and_first_step$regions,
-              argvar = prep_and_first_step$argvar,
-              coef = prep_and_first_step$coef,
-              vcov = prep_and_first_step$vcov,
-              bvar = second_stage$bvar,
-              blup = second_stage$blup)
+  # third_stage(dlist = dlist,
+  #             cities = cities,
+  #             regions = regions,
+  #             argvar = argvar,
+  #             coef = coef,
+  #             vcov = vcov,
+  #             bvar = bvar,
+  #             blup = blup)
 
-  plot(dlist = prep_and_first_step$dlist,
-       cities = prep_and_first_step$cities,
-       argvar = prep_and_first_step$argvar,
-       bvar = second_stage$bvar,
-       blup = second_stage$blup)
+  plot(dlist = dlist, cities = cities,
+       argvar = argvar, bvar = bvar, blup = blup)
 }
 
 do_analysis()
