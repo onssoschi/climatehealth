@@ -169,7 +169,7 @@ return (list(blup = blup, argvar = argvar,
 #' @param y A number.
 #' @return A number.
 #' @examples
-third_stage <- function(dlist, cities, varfun, dlist, argvar, bvar, blups){
+third_stage <- function(dlist, cities, varfun, dlist, argvar, bvar, blup){
 
   # Load the function for computing the attributable risk measures
   source("R/attrdl.R")
@@ -370,18 +370,18 @@ do_analysis <- function(){
   c(dlist, argvar, regions, cities, coef, vcov) %<-% prep_and_first_step(input_csv_path)
 
   c(blup, argvar, bvar) %<-% second_stage(dlist = dlist,
-                    cities = cities,
-                    coef = coef,
-                    vcov = vcov)
+                                          cities = cities,
+                                          coef = coef,
+                                          vcov = vcov)
 
-  # third_stage(dlist = dlist,
-  #             cities = cities,
-  #             regions = regions,
-  #             argvar = argvar,
-  #             coef = coef,
-  #             vcov = vcov,
-  #             bvar = bvar,
-  #             blup = blup)
+  third_stage(dlist = dlist,
+              cities = cities,
+              regions = regions,
+              argvar = argvar,
+              coef = coef,
+              vcov = vcov,
+              bvar = bvar,
+              blup = blup)
 
   plot(dlist = dlist, cities = cities,
        argvar = argvar, bvar = bvar, blup = blup)
