@@ -271,7 +271,10 @@ third_stage <- function(dlist, regions, cities, coef, vcov, varfun, argvar, bvar
 #' @return A number.
 #' @examples
 plot_results <- function(dlist, argvar,
-                         bvar, blup, cities){
+                         bvar, blup, cities, mintempcity){
+
+  per <- t(sapply(dlist,function(x)
+    quantile(x$tmean,c(2.5,10,25,50,75,90,97.5)/100,na.rm=T)))
 
   xlab <- expression(paste("Temperature (",degree,"C)"))
 
@@ -385,8 +388,12 @@ do_analysis <- function(){
               varfun = varfun,
               mintempcity = mintempcity)
 
-  plot(dlist = dlist, cities = cities,
-       argvar = argvar, bvar = bvar, blup = blup)
+  plot_results(dlist = dlist,
+               cities = cities,
+               argvar = argvar,
+               bvar = bvar,
+               blup = blup,
+               mintempcity = mintempcity)
 }
 
 do_analysis()
