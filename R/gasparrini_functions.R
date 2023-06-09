@@ -32,13 +32,18 @@ dfseas <- config$dfseas
 #'
 #' @param input_csv_path A character.
 #' The file path for a csv file of the input data.
+#'
 #' @return A list of the following: \cr
 #' dlist: a list of dataframes for each region \cr
-#' argvar \cr
-#' regions \cr
-#' cities \cr
-#' coef \cr
-#' vcov \cr
+#' argvar: A list of arguments to pass to [dlnm::crossbasis()] function \cr
+#' regions: A character vector.
+#' Contains names of ten regions; the 9 English regions and Wales. \cr
+#' cities: A dataframe with two columns.
+#' Column 1 is abbreviated region names.
+#' Column 2 is full region names \cr
+#' coef: A matrix populated with estimated model coefficients from a model of
+#' ??? \cr
+#' vcov: A list. Variance-covariance matrices required for [dlnm] model. \cr
 #'
 #' @examples prep_and_first_step('data/regEngWales.csv')
 prep_and_first_step <- function(input_csv_path) {
@@ -113,10 +118,23 @@ prep_and_first_step <- function(input_csv_path) {
 #' Multivariate meta-analysis of the reduced
 #' coef and then computation of blup
 #'
-#' @param x A number.
-#' @param y A number.
-#' @return A number.
-#' @examples
+#' @param dlist a list of dataframes for each region
+#' @param cities A dataframe with two columns.
+#' Column 1 is abbreviated region names.
+#' Column 2 is full region names.
+#' @param argvar A list of arguments to pass to [dlnm::crossbasis()] function
+#' @param coef A matrix populated with estimated model coefficients from a
+#' model of ???
+#' @param vcov A list. Variance-covariance matrices required for [dlnm] model.
+#'
+#' @return A list of the following: \cr
+#' blup: A list of blup (best linear unbiased predictions) for each region.
+#' argvar:
+#' bvar: A basis matrix...
+#' mintempcity: A named vector...
+#'
+#' @examples second_stage(dlist = dlist, cities = cities, argvar = argvar,
+#' coef = coef, vcov = vcov)
 second_stage <- function(dlist, cities, argvar, coef, vcov) {
 
 # Create average temperature and range as meta-predictors
@@ -189,7 +207,7 @@ return (list(blup = blup, argvar = argvar,
 #' @param sim: If simulation samples should be returned. only for tot=true
 #' @param nsim: Number of simulation samples
 #'
-#' @return
+#' @return res
 #' @examples
 attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
                    type="af",dir="back",tot=TRUE,cen,range=NULL,sim=FALSE,nsim=5000) {
@@ -332,11 +350,23 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
 #' Compute the attributable deaths for each city,
 #' with emprical CI estimated using the re-centred bases
 #'
-#' @param x A number.
-#' @param y A number.
-#' @return A number.
-#' @examples
-third_stage <- function(dlist, regions, cities, coef, vcov, varfun, argvar, bvar, blup, mintempcity){
+#' @param dlist
+#' @param regions
+#' @param cities
+#' @param coef
+#' @param vcov
+#' @param varfun
+#' @param argvar
+#' @param bvar
+#' @param blup
+#' @param mintempcity
+#'
+#' @return
+#' @examplesthird_stage(dlist = dlist, cities = cities,regions = regions,
+#' argvar = argvar, coef = coef, vcov = vcov, bvar = bvar, blup = blup,
+#' varfun = varfun, mintempcity = mintempcity)
+third_stage <- function(dlist, regions, cities, coef, vcov,
+                        varfun, argvar, bvar, blup, mintempcity){
 
   # Create the vectors to store the total mortality (accounting for missing)
   totdeath <- rep(NA,nrow(cities))
@@ -430,8 +460,14 @@ third_stage <- function(dlist, regions, cities, coef, vcov, varfun, argvar, bvar
 #' Compute the attributable deaths for each city,
 #' with emprical CI estimated using the re-centred bases
 #'
-#' @param x A number.
-#' @param y A number.
+#' @param dlist
+#' @param argvar
+#' @param bvar
+#' @param blup
+#' @param cities
+#' @param mintempcity
+#' @param output_csv_path
+#'
 #' @return A number.
 #' @examples
 plot_results <- function(dlist, argvar,
@@ -495,9 +531,7 @@ plot_results <- function(dlist, argvar,
 
 #' Write tables
 #'
-#' @param x A number.
-#' @param y A number.
-#' @return A number.
+#' @return
 #' @examples
 tables <- function(){
 
@@ -533,6 +567,14 @@ tables <- function(){
 
 }
 
+#' Do Gasparrini analysis
+#'
+#' @param input_csv_path
+#' @param output_csv_path
+#'
+#' @return
+#'
+#' @examples
 do_analysis <- function(input_csv_path, output_csv_path){
 
   c(dlist, argvar, regions, cities, coef, vcov) %<-% prep_and_first_step(input_csv_path)
