@@ -27,10 +27,17 @@ dfseas <- config$dfseas
 #' Run the model in each city/region, reduce and save.
 #' Create objects to store the results.
 #'
-#' @param x A number.
-#' @param y A number.
-#' @return A number.
-#' @examples
+#' @param input_csv_path A character.
+#' The file path for a csv file of the input data.
+#' @return A list of the following: \cr
+#' dlist: a list of dataframes for each region \cr
+#' argvar \cr
+#' regions \cr
+#' cities \cr
+#' coef \cr
+#' vcov \cr
+#'
+#' @examples prep_and_first_step('data/regEngWales.csv')
 prep_and_first_step <- function(input_csv_path) {
 
   # Load dataset
