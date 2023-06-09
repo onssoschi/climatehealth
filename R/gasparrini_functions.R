@@ -157,7 +157,7 @@ for(i in seq(length(dlist))) {
 (minperccountry <- median(minperccity))
 
 return (list(blup = blup, argvar = argvar,
-        bvar = bvar))
+        bvar = bvar, mintempcity = mintempcity))
 
 }
 
