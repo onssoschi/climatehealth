@@ -169,7 +169,7 @@ return (list(blup = blup, argvar = argvar,
 #' @param y A number.
 #' @return A number.
 #' @examples
-third_stage <- function(dlist, cities, varfun, dlist, argvar, bvar, blup){
+third_stage <- function(dlist, cities, varfun, argvar, bvar, blup){
 
   # Load the function for computing the attributable risk measures
   source("R/attrdl.R")
