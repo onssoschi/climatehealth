@@ -35,7 +35,7 @@ dfseas <- config$dfseas
 #'
 #' @return A list of the following: \cr
 #' dlist: a list of dataframes for each region \cr
-#' argvar: A list of arguments to pass to [dlnm::crossbasis()] function \cr
+#' argvar: A list of arguments to pass to dlnm::crossbasis() function \cr
 #' regions: A character vector.
 #' Contains names of ten regions; the 9 English regions and Wales. \cr
 #' cities: A dataframe with two columns.
