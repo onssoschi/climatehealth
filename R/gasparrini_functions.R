@@ -114,40 +114,33 @@ prep_and_first_step <- function(input_csv_path) {
 
 }
 
-#' Second-stage analysis
-#' Multivariate meta-analysis of the reduced
-#' coef and then computation of blup
-#'
-#' @param dlist a list of dataframes for each region
-#' @param cities A dataframe with two columns.
-#' Column 1 is abbreviated region names.
-#' Column 2 is full region names.
-#' @param argvar A list of arguments to pass to [dlnm::crossbasis()] function
-#' @param coef A matrix populated with estimated model coefficients from a
-#' model of ???
-#' @param vcov A list. Variance-covariance matrices required for [dlnm] model.
-#'
-#' @return A list of the following: \cr
-#' blup: A list of blup (best linear unbiased predictions) for each region.
-#' argvar:
-#' bvar: A basis matrix...
-#' mintempcity: A named vector...
-#'
-#' @examples second_stage(dlist = dlist, cities = cities, argvar = argvar,
-#' coef = coef, vcov = vcov)
-second_stage <- function(dlist, cities, argvar, coef, vcov) {
 
-# Create average temperature and range as meta-predictors
-avgtmean <- sapply(dlist, function(x) mean(x$tmean, na.rm=T))
-rangetmean <- sapply(dlist,function(x) diff(range(x$tmean, na.rm=T)))
+#' Meta-analysis model
+#'
+#' @param dlist
+#' @param cities
+#' @param coef
+#' @param vcov
+#'
+#' @return an mvmeta model
+run_meta_model <- function(dlist, cities, coef, vcov) {
 
-# Meta-analysis
-# NB: country effects is not included in this example
-mv <- mvmeta(coef ~ avgtmean + rangetmean, vcov, data = cities,
-             control = list(showiter = T))
-summary(mv)
+  # Create average temperature and range as meta-predictors
+  avgtmean <- sapply(dlist, function(x) mean(x$tmean, na.rm = TRUE))
+  rangetmean <- sapply(dlist,function(x) diff(range(x$tmean, na.rm = TRUE)))
 
-# Function for computing the p-value of Wald test
+  # Meta-analysis
+  # NB: country effects is not included in this example
+  mv <- mvmeta(coef ~ avgtmean + rangetmean, vcov, data = cities,
+               control = list(showiter = T))
+}
+
+#' Wald p-value calculation function
+#'
+#' @param model
+#' @param var
+#'
+#' @return
 fwald <- function(model, var) {
   ind <- grep(var, names(coef(model)))
   coef <- coef(model)[ind]
@@ -155,41 +148,57 @@ fwald <- function(model, var) {
   waldstat <- coef %*% solve(vcov) %*% coef
   df <- length(coef)
   return(1 - pchisq(waldstat, df))
+}
+
+#' Get Wald statistic for a meta-analysis model
+#'
+#' @param mv
+#'
+#' @return
+#' @export
+#'
+#' @examples
+wald_results <- function(mv) {
+  avgtmean_wald <- fwald(mv, "avgtmean")
+  rangetmean_wald <- fwald(mv, "rangetmean")
+  return()
+}
+
+#' Title
+#'
+#' @param mv
+#' @param vcov
+#'
+#' @return
+min_mortality <-  function(mv, vcov) {
+
+  # Obtain blups
+  blup <- blup(mv, vcov = T)
+
+  # Re-centering
+  # Generate the matrix for storing results
+  minperccity <- mintempcity <- rep(NA, length(dlist))
+  names(mintempcity) <- names(minperccity) <- cities$city
+
+  # Define minimum mortality values: exclude low and very hot temperatures
+  for(i in seq(length(dlist))) {
+    data <- dlist[[i]]
+    predvar <- quantile(data$tmean, 1:99/100, na.rm = T)
+    # Redefine the function using all arguments (boundary knots included)
+    argvar <- list(x = predvar, fun = varfun,
+                   knots = quantile(data$tmean, varper/100, na.rm = TRUE),
+                   degree = vardegree,
+                   Bound = range(data$tmean, na.rm = T))
+    bvar <- do.call(onebasis, argvar)
+    minperccity[i] <- (1:99)[which.min((bvar %*% blup[[i]]$blup))]
+    mintempcity[i] <- quantile(data$tmean, minperccity[i]/100, na.rm = TRUE)
   }
 
-# Test the effects
-fwald(mv, "avgtmean")
-fwald(mv, "rangetmean")
-
-# Obtain blups
-blup <- blup(mv, vcov = T)
-
-# Re-centering
-# Generate the matrix for storing results
-minperccity <- mintempcity <- rep(NA, length(dlist))
-names(mintempcity) <- names(minperccity) <- cities$city
-
-# Define minimum mortality values: exclude low and very hot temperatures
-for(i in seq(length(dlist))) {
-  data <- dlist[[i]]
-  predvar <- quantile(data$tmean, 1:99/100, na.rm = T)
-  # Redefine the function using all arguments (boundary knots included)
-  argvar <- list(x = predvar, fun = varfun,
-                 knots = quantile(data$tmean, varper/100, na.rm = T),
-                 degree = vardegree,
-                 Bound = range(data$tmean, na.rm = T))
-  bvar <- do.call(onebasis, argvar)
-  minperccity[i] <- (1:99)[which.min((bvar %*% blup[[i]]$blup))]
-  mintempcity[i] <- quantile(data$tmean, minperccity[i]/100, na.rm = T)
-  }
-
-# Country-specific points of minimum mortality
-(minperccountry <- median(minperccity))
-
-return (list(blup = blup, argvar = argvar,
-        bvar = bvar, mintempcity = mintempcity))
+  # Country-specific points of minimum mortality
+  (minperccountry <- median(minperccity))
 
 }
+
 
 #' Attrdl
 #' Function for computing attributble measures from dlnm
