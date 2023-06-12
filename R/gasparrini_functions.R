@@ -175,7 +175,8 @@ for(i in seq(length(dlist))) {
   predvar <- quantile(data$tmean, 1:99/100, na.rm = T)
   # Redefine the function using all arguments (boundary knots included)
   argvar <- list(x = predvar, fun = varfun,
-                 knots = quantile(data$tmean, varper/100, na.rm = T), degree = vardegree,
+                 knots = quantile(data$tmean, varper/100, na.rm = T),
+                 degree = vardegree,
                  Bound = range(data$tmean, na.rm = T))
   bvar <- do.call(onebasis, argvar)
   minperccity[i] <- (1:99)[which.min((bvar %*% blup[[i]]$blup))]
