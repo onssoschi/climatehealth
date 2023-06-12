@@ -166,7 +166,7 @@ fwald <- function(model, var) {
 wald_results <- function(mv) {
   avgtmean_wald <- fwald(mv, "avgtmean")
   rangetmean_wald <- fwald(mv, "rangetmean")
-  return()
+  return(list(avgtmean_wald, rangetmean_wald))
 }
 
 #' Title
@@ -175,7 +175,7 @@ wald_results <- function(mv) {
 #' @param vcov
 #'
 #' @return
-min_mortality <-  function(mv, vcov) {
+min_mortality <-  function(dlist, cities, blup) {
 
   # Re-centering
   # Generate the matrix for storing results
@@ -198,6 +198,8 @@ min_mortality <-  function(mv, vcov) {
 
   # Country-specific points of minimum mortality
   (minperccountry <- median(minperccity))
+
+  return(list(argvar = argvar, bvar = bvar, mintempcity = mintempcity))
 
 }
 
