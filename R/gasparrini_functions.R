@@ -138,47 +138,48 @@ prep_and_first_step <- function(input_csv_path) {
 second_stage <- function(dlist, cities, argvar, coef, vcov) {
 
 # Create average temperature and range as meta-predictors
-avgtmean <- sapply(dlist,function(x) mean(x$tmean,na.rm=T))
-rangetmean <- sapply(dlist,function(x) diff(range(x$tmean,na.rm=T)))
+avgtmean <- sapply(dlist, function(x) mean(x$tmean, na.rm=T))
+rangetmean <- sapply(dlist,function(x) diff(range(x$tmean, na.rm=T)))
 
 # Meta-analysis
 # NB: country effects is not included in this example
-mv <- mvmeta(coef~avgtmean+rangetmean,vcov,data=cities,control=list(showiter=T))
+mv <- mvmeta(coef ~ avgtmean + rangetmean, vcov, data = cities,
+             control = list(showiter = T))
 summary(mv)
 
 # Function for computing the p-value of Wald test
-fwald <- function(model,var) {
-  ind <- grep(var,names(coef(model)))
+fwald <- function(model, var) {
+  ind <- grep(var, names(coef(model)))
   coef <- coef(model)[ind]
-  vcov <- vcov(model)[ind,ind]
-  waldstat <- coef%*%solve(vcov)%*%coef
+  vcov <- vcov(model)[ind, ind]
+  waldstat <- coef %*% solve(vcov) %*% coef
   df <- length(coef)
-  return(1-pchisq(waldstat,df))
+  return(1 - pchisq(waldstat, df))
   }
 
 # Test the effects
-fwald(mv,"avgtmean")
-fwald(mv,"rangetmean")
+fwald(mv, "avgtmean")
+fwald(mv, "rangetmean")
 
 # Obtain blups
-blup <- blup(mv,vcov=T)
+blup <- blup(mv, vcov = T)
 
 # Re-centering
 # Generate the matrix for storing results
-minperccity <- mintempcity <- rep(NA,length(dlist))
+minperccity <- mintempcity <- rep(NA, length(dlist))
 names(mintempcity) <- names(minperccity) <- cities$city
 
 # Define minimum mortality values: exclude low and very hot temperatures
 for(i in seq(length(dlist))) {
   data <- dlist[[i]]
-  predvar <- quantile(data$tmean,1:99/100,na.rm=T)
+  predvar <- quantile(data$tmean, 1:99/100, na.rm = T)
   # Redefine the function using all arguments (boundary knots included)
-  argvar <- list(x=predvar,fun=varfun,
-                 knots=quantile(data$tmean,varper/100,na.rm=T),degree=vardegree,
-                 Bound=range(data$tmean,na.rm=T))
-  bvar <- do.call(onebasis,argvar)
-  minperccity[i] <- (1:99)[which.min((bvar%*%blup[[i]]$blup))]
-  mintempcity[i] <- quantile(data$tmean,minperccity[i]/100,na.rm=T)
+  argvar <- list(x = predvar, fun = varfun,
+                 knots = quantile(data$tmean, varper/100, na.rm = T), degree = vardegree,
+                 Bound = range(data$tmean, na.rm = T))
+  bvar <- do.call(onebasis, argvar)
+  minperccity[i] <- (1:99)[which.min((bvar %*% blup[[i]]$blup))]
+  mintempcity[i] <- quantile(data$tmean, minperccity[i]/100, na.rm = T)
   }
 
 # Country-specific points of minimum mortality
