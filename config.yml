@@ -1,0 +1,17 @@
+default:
+  # Input data
+  input_csv_path: 'data/regEngWales.csv'
+
+  #Output data
+  output_csv_path: 'output/output_one_region_data_new.csv'
+
+  # Specification of the exposure function
+  varfun: 'bs'
+  vardegree:  2
+
+  # Specification of the lag function
+  lag: 21
+  lagnk: 3
+
+  # Degree of freedom for seasonality
+  dfseas: 8
