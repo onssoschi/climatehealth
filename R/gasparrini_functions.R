@@ -133,6 +133,11 @@ run_meta_model <- function(dlist, cities, coef, vcov) {
   # NB: country effects is not included in this example
   mv <- mvmeta(coef ~ avgtmean + rangetmean, vcov, data = cities,
                control = list(showiter = T))
+
+  # Obtain blups
+  blup <- blup(mv, vcov = T)
+
+  return(list(mv, blup))
 }
 
 #' Wald p-value calculation function
@@ -171,9 +176,6 @@ wald_results <- function(mv) {
 #'
 #' @return
 min_mortality <-  function(mv, vcov) {
-
-  # Obtain blups
-  blup <- blup(mv, vcov = T)
 
   # Re-centering
   # Generate the matrix for storing results
