@@ -117,12 +117,19 @@ prep_and_first_step <- function(input_csv_path) {
 
 #' Meta-analysis model
 #'
-#' @param dlist
-#' @param cities
-#' @param coef
-#' @param vcov
+#' Runs meta-analysis model and estimates best linear unbiased predictions
+#' (BLUPs) from this model.
+#'
+#' @param dlist a list of dataframes for each region
+#' @param cities A dataframe with two columns. Column 1 is abbreviated region
+#' names. Column 2 is full region names.
+#' @param coef A matrix populated with estimated model coefficients from a model of
+#' ???
+#' @param vcov A list. Variance-covariance matrices required for dlnm model.
 #'
 #' @return an mvmeta model
+#' @return BLUP estimates for an mvmeta model
+#' @import mvmeta
 run_meta_model <- function(dlist, cities, coef, vcov) {
 
   # Create average temperature and range as meta-predictors
@@ -132,7 +139,7 @@ run_meta_model <- function(dlist, cities, coef, vcov) {
   # Meta-analysis
   # NB: country effects is not included in this example
   mv <- mvmeta(coef ~ avgtmean + rangetmean, vcov, data = cities,
-               control = list(showiter = T))
+               control = list(showiter = TRUE))
 
   # Obtain blups
   blup <- blup(mv, vcov = T)
@@ -140,12 +147,15 @@ run_meta_model <- function(dlist, cities, coef, vcov) {
   return(list(mv, blup))
 }
 
-#' Wald p-value calculation function
+#' Calculate p-values for Wald test
 #'
-#' @param model
-#' @param var
+#' A function to calculate p-values for an explanatory variable.
 #'
-#' @return
+#' @param model A model object
+#' @param var A character. The name of the variable in the model to calculate
+#' p-values for.
+#'
+#' @return A number. The p-value of the explanatory variable.
 fwald <- function(model, var) {
   ind <- grep(var, names(coef(model)))
   coef <- coef(model)[ind]
@@ -157,24 +167,30 @@ fwald <- function(model, var) {
 
 #' Get Wald statistic for a meta-analysis model
 #'
-#' @param mv
+#' @param mv A model object
 #'
-#' @return
-#' @export
-#'
-#' @examples
+#' @return P-values for avgtmean and rangetmean
 wald_results <- function(mv) {
   avgtmean_wald <- fwald(mv, "avgtmean")
   rangetmean_wald <- fwald(mv, "rangetmean")
   return(list(avgtmean_wald, rangetmean_wald))
 }
 
-#' Title
+#' Calculate minimum mortality values
 #'
-#' @param mv
-#' @param vcov
+#' ???
 #'
-#' @return
+#' @param dlist A list of dataframes for each region
+#' @param cities A dataframe with two columns.
+#' Column 1 is abbreviated region names.
+#' Column 2 is full region names.
+#' @param blup BLUP estimates for an mvmeta model.
+#'
+#' @return A list. \cr
+#' argvar: A list of redefined arguments\cr
+#' bvar: ??? \cr
+#' mintempcity: ??? \cr
+#' minperccountry: ??? \cr
 min_mortality <-  function(dlist, cities, blup) {
 
   # Re-centering
@@ -199,7 +215,8 @@ min_mortality <-  function(dlist, cities, blup) {
   # Country-specific points of minimum mortality
   (minperccountry <- median(minperccity))
 
-  return(list(argvar = argvar, bvar = bvar, mintempcity = mintempcity))
+  return(list(argvar = argvar, bvar = bvar, mintempcity = mintempcity,
+              minperccountry = minperccountry))
 
 }
 
