@@ -189,166 +189,6 @@
 #'
 #' }
 
-#' Attrdl
-#' Function for computing attributble measures from dlnm
-#  requires dlnm v.2.2.0 >
-#'
-#' @param x An exposure vector or (only for dir="back") a matrix of lagged exposures
-#' @param basis: The cross-basis computed from x
-#' @param cases: The cases vector or (only for dir="forw") the matrix of future cases
-#' @param model: The fitted model
-#' @param coef, vcov: coef and vcov for basis if model is not provided
-#' @param model.link: Link function if model is not provided
-#' @param type: Either "an" or "af" for attributable number or fraction
-#' @param dir: Either "back" or "forw" for backward or forward perspectives
-#' @param tot: If true, the total attributable risk is computed
-#' @param cen: The reference value used as counterfactual scenario
-#' @param range: The range of exposure. if null, the whole range is used
-#' @param sim: If simulation samples should be returned. only for tot=true
-#' @param nsim: Number of simulation samples
-#'
-#' @return res
-#' @examples
-# attrdl <- function(x, basis, cases, model=NULL, coef=NULL, vcov=NULL, model.link=NULL,
-#                    type="af", dir="back", tot=TRUE, cen, range=NULL, sim=FALSE, nsim=5000) {
-#
-#   # Extract name and check type and dir
-#   name <- deparse(substitute(basis))
-#   type <- match.arg(type,c("an","af"))
-#   dir <- match.arg(dir,c("back","forw"))
-#
-#   # Define centering
-#   if(missing(cen) && is.null(cen <- attr(basis,"argvar")$cen))
-#
-#     stop("'cen' must be provided")
-#
-#   if(!is.numeric(cen) && length(cen)>1L)
-#
-#     stop("'cen' must be a numeric scalar")
-#
-#   attributes(basis)$argvar$cen <- NULL
-#
-#   # Select range (force to centering value otherwise, meaning null risk)
-#   if(!is.null(range)) x[x<range[1]|x>range[2]] <- cen
-#
-#   # Compute the matrix of
-#   #   - Lagged exposures if dir="back"
-#   #   - Constant exposures along lags if dir="forw"
-#   lag <- attr(basis,"lag")
-#
-#   if(NCOL(x)==1L) {
-#
-#     at <- if(dir=="back") tsModel:::Lag(x,seq(lag[1],lag[2])) else
-#       matrix(rep(x,diff(lag)+1),length(x))
-#
-#   } else {
-#
-#     if(dir=="forw") stop("'x' must be a vector when dir='forw'")
-#
-#     if(ncol(at <- x)!=diff(lag)+1)
-#
-#       stop("dimension of 'x' not compatible with 'basis'")
-#   }
-#
-#   # Number used for the contribution at each time in forward type
-#   #   - If cases provided as a matrix, take the row average
-#   #   - If provided as a time series, compute the forward moving average
-#   #   - This excludes missing accordingly
-#   # Also compute the denominator to be used below
-#   if(NROW(cases)!=NROW(at)) stop("'x' and 'cases' not consistent")
-#   if(NCOL(cases)>1L) {
-#     if(dir=="back") stop("'cases' must be a vector if dir='back'")
-#     if(ncol(cases)!=diff(lag)+1) stop("dimension of 'cases' not compatible")
-#     den <- sum(rowMeans(cases,na.rm=TRUE),na.rm=TRUE)
-#     cases <- rowMeans(cases)
-#   } else {
-#     den <- sum(cases,na.rm=TRUE)
-#     if(dir=="forw")
-#       cases <- rowMeans(as.matrix(tsModel:::Lag(cases,-seq(lag[1],lag[2]))))
-#   }
-#
-#   # Extract coef and vcov if model is provided
-#   if(!is.null(model)) {
-#     cond <- paste0(name,"[[:print:]]*v[0-9]{1,2}\\.l[0-9]{1,2}")
-#     if(ncol(basis)==1L) cond <- name
-#     model.class <- class(model)
-#     coef <- dlnm:::getcoef(model,model.class)
-#     ind <- grep(cond,names(coef))
-#     coef <- coef[ind]
-#     vcov <- dlnm:::getvcov(model,model.class)[ind,ind,drop=FALSE]
-#     model.link <- dlnm:::getlink(model,model.class)
-#     if(!model.link %in% c("log","logit"))
-#       stop("'model' must have a log or logit link function")
-#   }
-#
-#   # If reduced estimates are provided
-#   typebasis <- ifelse(length(coef)!=ncol(basis),"one","cb")
-#
-#   # Prepare the arguments for th basis transformation
-#   predvar <- if(typebasis=="one") x else seq(NROW(at))
-#   predlag <- if(typebasis=="one") 0 else dlnm:::seqlag(lag)
-#
-#   # Create the matrix of transformed centred variables (dependent on typebasis)
-#   if(typebasis=="cb") {
-#     Xpred <- dlnm:::mkXpred(typebasis,basis,at,predvar,predlag,cen)
-#     Xpredall <- 0
-#     for (i in seq(length(predlag))) {
-#       ind <- seq(length(predvar))+length(predvar)*(i-1)
-#       Xpredall <- Xpredall + Xpred[ind,,drop=FALSE]
-#     }
-#   } else {
-#     basis <- do.call(onebasis,c(list(x=x),attr(basis,"argvar")))
-#     Xpredall <- dlnm:::mkXpred(typebasis,basis,x,predvar,predlag,cen)
-#   }
-#
-#   # Check dimensions
-#   if(length(coef)!=ncol(Xpredall))
-#     stop("arguments 'basis' do not match 'model' or 'coef'-'vcov'")
-#   if(any(dim(vcov)!=c(length(coef),length(coef))))
-#     stop("arguments 'coef' and 'vcov' do no match")
-#   if(typebasis=="one" && dir=="back")
-#     stop("only dir='forw' allowed for reduced estimates")
-#
-#   # Compute af and an
-#   af <- 1-exp(-drop(as.matrix(Xpredall%*%coef)))
-#   an <- af*cases
-#
-#   # Total
-#   #   - Select non-missing obs contributing to computation
-#   #   - Derive total af
-#   #   - Compute total an with adjusted denominator (observed total number)
-#   if(tot) {
-#     isna <- is.na(an)
-#     af <- sum(an[!isna])/sum(cases[!isna])
-#     an <- af*den
-#   }
-#
-#   # Empirical confidence intervals
-#   if(!tot && sim) {
-#     sim <- FALSE
-#     warning("simulation samples only returned for tot=T")
-#   }
-#   if(sim) {
-#     # Sample coef
-#     k <- length(coef)
-#     eigen <- eigen(vcov)
-#     X <- matrix(rnorm(length(coef)*nsim),nsim)
-#     coefsim <- coef + eigen$vectors %*% diag(sqrt(eigen$values),k) %*% t(X)
-#
-#     afsim <- apply(coefsim,2, function(coefi) {
-#       ani <- (1-exp(-drop(Xpredall%*%coefi)))*cases
-#       sum(ani[!is.na(ani)])/sum(cases[!is.na(ani)])
-#     })
-#     ansim <- afsim*den
-#   }
-#
-#   res <- if(sim) {
-#     if(type=="an") ansim else afsim
-#   } else {
-#     if(type=="an") an else af
-#   }
-#
-# }
 
 #' Compute attributable deaths
 #' Compute the attributable deaths for each city,
@@ -405,23 +245,23 @@ compute_attributable_deaths <- function(dlist, cities, coef, vcov,
 
     # Compute the attributable deaths
     # NB: The reduced coefficients are used here
-    matsim[i,"glob"] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
+    matsim[i,"glob"] <- dlnm::attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
                                vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i])
-    matsim[i,"cold"] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
+    matsim[i,"cold"] <- dlnm::attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
                                vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],
                                range=c(-100,mintempcity[i]))
-    matsim[i,"heat"] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
+    matsim[i,"heat"] <- dlnm::attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
                                vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],
                                range=c(mintempcity[i],100))
 
     # Compute empirical occurences of the attributable deaths
     # Uused to derive confidence intervals
-    arraysim[i,"glob",] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
+    arraysim[i,"glob",] <- dlnm::attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
                                   vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],sim=T,nsim=nsim)
-    arraysim[i,"cold",] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
+    arraysim[i,"cold",] <- dlnm::attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
                                   vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],
                                   range=c(-100,mintempcity[i]),sim=T,nsim=nsim)
-    arraysim[i,"heat",] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
+    arraysim[i,"heat",] <- dlnm::attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
                                   vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],
                                   range=c(mintempcity[i],100),sim=T,nsim=nsim)
 
