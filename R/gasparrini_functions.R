@@ -209,256 +209,295 @@
 #'
 #' @return res
 #' @examples
-attrdl <- function(x, basis, cases, model=NULL, coef=NULL, vcov=NULL, model.link=NULL,
-                   type="af", dir="back", tot=TRUE, cen, range=NULL, sim=FALSE, nsim=5000) {
+# attrdl <- function(x, basis, cases, model=NULL, coef=NULL, vcov=NULL, model.link=NULL,
+#                    type="af", dir="back", tot=TRUE, cen, range=NULL, sim=FALSE, nsim=5000) {
+#
+#   # Extract name and check type and dir
+#   name <- deparse(substitute(basis))
+#   type <- match.arg(type,c("an","af"))
+#   dir <- match.arg(dir,c("back","forw"))
+#
+#   # Define centering
+#   if(missing(cen) && is.null(cen <- attr(basis,"argvar")$cen))
+#
+#     stop("'cen' must be provided")
+#
+#   if(!is.numeric(cen) && length(cen)>1L)
+#
+#     stop("'cen' must be a numeric scalar")
+#
+#   attributes(basis)$argvar$cen <- NULL
+#
+#   # Select range (force to centering value otherwise, meaning null risk)
+#   if(!is.null(range)) x[x<range[1]|x>range[2]] <- cen
+#
+#   # Compute the matrix of
+#   #   - Lagged exposures if dir="back"
+#   #   - Constant exposures along lags if dir="forw"
+#   lag <- attr(basis,"lag")
+#
+#   if(NCOL(x)==1L) {
+#
+#     at <- if(dir=="back") tsModel:::Lag(x,seq(lag[1],lag[2])) else
+#       matrix(rep(x,diff(lag)+1),length(x))
+#
+#   } else {
+#
+#     if(dir=="forw") stop("'x' must be a vector when dir='forw'")
+#
+#     if(ncol(at <- x)!=diff(lag)+1)
+#
+#       stop("dimension of 'x' not compatible with 'basis'")
+#   }
+#
+#   # Number used for the contribution at each time in forward type
+#   #   - If cases provided as a matrix, take the row average
+#   #   - If provided as a time series, compute the forward moving average
+#   #   - This excludes missing accordingly
+#   # Also compute the denominator to be used below
+#   if(NROW(cases)!=NROW(at)) stop("'x' and 'cases' not consistent")
+#   if(NCOL(cases)>1L) {
+#     if(dir=="back") stop("'cases' must be a vector if dir='back'")
+#     if(ncol(cases)!=diff(lag)+1) stop("dimension of 'cases' not compatible")
+#     den <- sum(rowMeans(cases,na.rm=TRUE),na.rm=TRUE)
+#     cases <- rowMeans(cases)
+#   } else {
+#     den <- sum(cases,na.rm=TRUE)
+#     if(dir=="forw")
+#       cases <- rowMeans(as.matrix(tsModel:::Lag(cases,-seq(lag[1],lag[2]))))
+#   }
+#
+#   # Extract coef and vcov if model is provided
+#   if(!is.null(model)) {
+#     cond <- paste0(name,"[[:print:]]*v[0-9]{1,2}\\.l[0-9]{1,2}")
+#     if(ncol(basis)==1L) cond <- name
+#     model.class <- class(model)
+#     coef <- dlnm:::getcoef(model,model.class)
+#     ind <- grep(cond,names(coef))
+#     coef <- coef[ind]
+#     vcov <- dlnm:::getvcov(model,model.class)[ind,ind,drop=FALSE]
+#     model.link <- dlnm:::getlink(model,model.class)
+#     if(!model.link %in% c("log","logit"))
+#       stop("'model' must have a log or logit link function")
+#   }
+#
+#   # If reduced estimates are provided
+#   typebasis <- ifelse(length(coef)!=ncol(basis),"one","cb")
+#
+#   # Prepare the arguments for th basis transformation
+#   predvar <- if(typebasis=="one") x else seq(NROW(at))
+#   predlag <- if(typebasis=="one") 0 else dlnm:::seqlag(lag)
+#
+#   # Create the matrix of transformed centred variables (dependent on typebasis)
+#   if(typebasis=="cb") {
+#     Xpred <- dlnm:::mkXpred(typebasis,basis,at,predvar,predlag,cen)
+#     Xpredall <- 0
+#     for (i in seq(length(predlag))) {
+#       ind <- seq(length(predvar))+length(predvar)*(i-1)
+#       Xpredall <- Xpredall + Xpred[ind,,drop=FALSE]
+#     }
+#   } else {
+#     basis <- do.call(onebasis,c(list(x=x),attr(basis,"argvar")))
+#     Xpredall <- dlnm:::mkXpred(typebasis,basis,x,predvar,predlag,cen)
+#   }
+#
+#   # Check dimensions
+#   if(length(coef)!=ncol(Xpredall))
+#     stop("arguments 'basis' do not match 'model' or 'coef'-'vcov'")
+#   if(any(dim(vcov)!=c(length(coef),length(coef))))
+#     stop("arguments 'coef' and 'vcov' do no match")
+#   if(typebasis=="one" && dir=="back")
+#     stop("only dir='forw' allowed for reduced estimates")
+#
+#   # Compute af and an
+#   af <- 1-exp(-drop(as.matrix(Xpredall%*%coef)))
+#   an <- af*cases
+#
+#   # Total
+#   #   - Select non-missing obs contributing to computation
+#   #   - Derive total af
+#   #   - Compute total an with adjusted denominator (observed total number)
+#   if(tot) {
+#     isna <- is.na(an)
+#     af <- sum(an[!isna])/sum(cases[!isna])
+#     an <- af*den
+#   }
+#
+#   # Empirical confidence intervals
+#   if(!tot && sim) {
+#     sim <- FALSE
+#     warning("simulation samples only returned for tot=T")
+#   }
+#   if(sim) {
+#     # Sample coef
+#     k <- length(coef)
+#     eigen <- eigen(vcov)
+#     X <- matrix(rnorm(length(coef)*nsim),nsim)
+#     coefsim <- coef + eigen$vectors %*% diag(sqrt(eigen$values),k) %*% t(X)
+#
+#     afsim <- apply(coefsim,2, function(coefi) {
+#       ani <- (1-exp(-drop(Xpredall%*%coefi)))*cases
+#       sum(ani[!is.na(ani)])/sum(cases[!is.na(ani)])
+#     })
+#     ansim <- afsim*den
+#   }
+#
+#   res <- if(sim) {
+#     if(type=="an") ansim else afsim
+#   } else {
+#     if(type=="an") an else af
+#   }
+#
+# }
 
-  # Extract name and check type and dir
-  name <- deparse(substitute(basis))
-  type <- match.arg(type,c("an","af"))
-  dir <- match.arg(dir,c("back","forw"))
+#' Compute attributable deaths
+#' Compute the attributable deaths for each city,
+#' with empirical CI estimated using the re-centred bases
+#' @param dlist
+#' @param regions
+#' @param cities
+#' @param coef
+#' @param vcov
+#' @param varfun
+#' @param argvar
+#' @param bvar
+#' @param blup
+#' @param mintempcity
+#'
+#' @return
+#' @examplesthird_stage (dlist = dlist, cities = cities,regions = regions,
+#' argvar = argvar, coef = coef, vcov = vcov, bvar = bvar, blup = blup,
+#' varfun = varfun, mintempcity = mintempcity)
+compute_attributable_deaths <- function(dlist, cities, coef, vcov,
+                                        varfun, argvar, bvar, blup,
+                                        mintempcity) {
 
-  # Define centering
-  if(missing(cen) && is.null(cen <- attr(basis,"argvar")$cen))
+  # Create the vectors to store the total mortality (accounting for missing)
+  totdeath <- rep(NA,nrow(cities))
+  names(totdeath) <- cities$city
 
-    stop("'cen' must be provided")
+  # Create the matrix to store the attributanle deaths
+  matsim <- matrix(NA,nrow(cities),3,dimnames=list(cities$city,
+                                                   c("glob","cold","heat")))
 
-  if(!is.numeric(cen) && length(cen)>1L)
+  # Number of simulation runs for computing empirical CI
+  nsim <- 1000
 
-    stop("'cen' must be a numeric scalar")
+  # Create the array to store the CI of attributable deaths
+  arraysim <- array(NA,dim=c(nrow(cities),3,nsim),dimnames=list(cities$city,
+                                                                c("glob","cold","heat")))
 
-  attributes(basis)$argvar$cen <- NULL
+  # Run the loop
+  for(i in seq(dlist)){
 
-  # Select range (force to centering value otherwise, meaning null risk)
-  if(!is.null(range)) x[x<range[1]|x>range[2]] <- cen
+    # Print
+    cat(i,"")
 
-  # Compute the matrix of
-  #   - Lagged exposures if dir="back"
-  #   - Constant exposures along lags if dir="forw"
-  lag <- attr(basis,"lag")
+    # Extract the data
+    data <- dlist[[i]]
 
-  if(NCOL(x)==1L) {
+    # Derive the cross-basis
+    # NB: Centering point different than original choice of 75th
+    argvar <- list(x=data$tmean,fun=varfun,knots=quantile(data$tmean,
+                                                          varper/100,na.rm=T),degree=vardegree)
+    cb <- crossbasis(data$tmean,lag=lag,argvar=argvar,
+                     arglag=list(knots=logknots(lag,lagnk)))
 
-    at <- if(dir=="back") tsModel:::Lag(x,seq(lag[1],lag[2])) else
-      matrix(rep(x,diff(lag)+1),length(x))
+    # Compute the attributable deaths
+    # NB: The reduced coefficients are used here
+    matsim[i,"glob"] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
+                               vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i])
+    matsim[i,"cold"] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
+                               vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],
+                               range=c(-100,mintempcity[i]))
+    matsim[i,"heat"] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
+                               vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],
+                               range=c(mintempcity[i],100))
 
-  } else {
+    # Compute empirical occurences of the attributable deaths
+    # Uused to derive confidence intervals
+    arraysim[i,"glob",] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
+                                  vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],sim=T,nsim=nsim)
+    arraysim[i,"cold",] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
+                                  vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],
+                                  range=c(-100,mintempcity[i]),sim=T,nsim=nsim)
+    arraysim[i,"heat",] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
+                                  vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],
+                                  range=c(mintempcity[i],100),sim=T,nsim=nsim)
 
-    if(dir=="forw") stop("'x' must be a vector when dir='forw'")
+    # Store the denominator of attributable deaths, i.e. total observed mortality
+    # Correct denominator to compute the attributable fraction later, as in attrdl
+    totdeath[i] <- sum(data$death,na.rm=T)
 
-    if(ncol(at <- x)!=diff(lag)+1)
-
-      stop("dimension of 'x' not compatible with 'basis'")
   }
 
-  # Number used for the contribution at each time in forward type
-  #   - If cases provided as a matrix, take the row average
-  #   - If provided as a time series, compute the forward moving average
-  #   - This excludes missing accordingly
-  # Also compute the denominator to be used below
-  if(NROW(cases)!=NROW(at)) stop("'x' and 'cases' not consistent")
-  if(NCOL(cases)>1L) {
-    if(dir=="back") stop("'cases' must be a vector if dir='back'")
-    if(ncol(cases)!=diff(lag)+1) stop("dimension of 'cases' not compatible")
-    den <- sum(rowMeans(cases,na.rm=TRUE),na.rm=TRUE)
-    cases <- rowMeans(cases)
-  } else {
-    den <- sum(cases,na.rm=TRUE)
-    if(dir=="forw")
-      cases <- rowMeans(as.matrix(tsModel:::Lag(cases,-seq(lag[1],lag[2]))))
-  }
-
-  # Extract coef and vcov if model is provided
-  if(!is.null(model)) {
-    cond <- paste0(name,"[[:print:]]*v[0-9]{1,2}\\.l[0-9]{1,2}")
-    if(ncol(basis)==1L) cond <- name
-    model.class <- class(model)
-    coef <- dlnm:::getcoef(model,model.class)
-    ind <- grep(cond,names(coef))
-    coef <- coef[ind]
-    vcov <- dlnm:::getvcov(model,model.class)[ind,ind,drop=FALSE]
-    model.link <- dlnm:::getlink(model,model.class)
-    if(!model.link %in% c("log","logit"))
-      stop("'model' must have a log or logit link function")
-  }
-
-  # If reduced estimates are provided
-  typebasis <- ifelse(length(coef)!=ncol(basis),"one","cb")
-
-  # Prepare the arguments for th basis transformation
-  predvar <- if(typebasis=="one") x else seq(NROW(at))
-  predlag <- if(typebasis=="one") 0 else dlnm:::seqlag(lag)
-
-  # Create the matrix of transformed centred variables (dependent on typebasis)
-  if(typebasis=="cb") {
-    Xpred <- dlnm:::mkXpred(typebasis,basis,at,predvar,predlag,cen)
-    Xpredall <- 0
-    for (i in seq(length(predlag))) {
-      ind <- seq(length(predvar))+length(predvar)*(i-1)
-      Xpredall <- Xpredall + Xpred[ind,,drop=FALSE]
-    }
-  } else {
-    basis <- do.call(onebasis,c(list(x=x),attr(basis,"argvar")))
-    Xpredall <- dlnm:::mkXpred(typebasis,basis,x,predvar,predlag,cen)
-  }
-
-  # Check dimensions
-  if(length(coef)!=ncol(Xpredall))
-    stop("arguments 'basis' do not match 'model' or 'coef'-'vcov'")
-  if(any(dim(vcov)!=c(length(coef),length(coef))))
-    stop("arguments 'coef' and 'vcov' do no match")
-  if(typebasis=="one" && dir=="back")
-    stop("only dir='forw' allowed for reduced estimates")
-
-  # Compute af and an
-  af <- 1-exp(-drop(as.matrix(Xpredall%*%coef)))
-  an <- af*cases
-
-  # Total
-  #   - Select non-missing obs contributing to computation
-  #   - Derive total af
-  #   - Compute total an with adjusted denominator (observed total number)
-  if(tot) {
-    isna <- is.na(an)
-    af <- sum(an[!isna])/sum(cases[!isna])
-    an <- af*den
-  }
-
-  # Empirical confidence intervals
-  if(!tot && sim) {
-    sim <- FALSE
-    warning("simulation samples only returned for tot=T")
-  }
-  if(sim) {
-    # Sample coef
-    k <- length(coef)
-    eigen <- eigen(vcov)
-    X <- matrix(rnorm(length(coef)*nsim),nsim)
-    coefsim <- coef + eigen$vectors %*% diag(sqrt(eigen$values),k) %*% t(X)
-
-    afsim <- apply(coefsim,2, function(coefi) {
-      ani <- (1-exp(-drop(Xpredall%*%coefi)))*cases
-      sum(ani[!is.na(ani)])/sum(cases[!is.na(ani)])
-    })
-    ansim <- afsim*den
-  }
-
-  res <- if(sim) {
-    if(type=="an") ansim else afsim
-  } else {
-    if(type=="an") an else af
-  }
+  return(totdeath, arraysim, matsim)
 
 }
 
-#' #' Third-stage analysis
-#' #' Compute the attributable deaths for each city,
-#' #' with emprical CI estimated using the re-centred bases
-#' #'
-#' #' @param dlist
-#' #' @param regions
-#' #' @param cities
-#' #' @param coef
-#' #' @param vcov
-#' #' @param varfun
-#' #' @param argvar
-#' #' @param bvar
-#' #' @param blup
-#' #' @param mintempcity
-#' #'
-#' #' @return
-#' #' @examplesthird_stage(dlist = dlist, cities = cities,regions = regions,
-#' #' argvar = argvar, coef = coef, vcov = vcov, bvar = bvar, blup = blup,
-#' #' varfun = varfun, mintempcity = mintempcity)
-#' third_stage <- function(dlist, regions, cities, coef, vcov,
-#'                         varfun, argvar, bvar, blup, mintempcity){
+#' Write attributable deaths
+#' Write the attributable deaths for each city,
+#' with empirical CI estimated using the re-centred bases
+
+#' @param cities
+#' @param matsim
+#' @param arraysim
+#' @param totdeath
+#' @param attr_output_folder_path
 #'
-#'   # Create the vectors to store the total mortality (accounting for missing)
-#'   totdeath <- rep(NA,nrow(cities))
-#'   names(totdeath) <- cities$city
+#' @return
+#' @examples cities, matsim, arraysim, totdeath, attr_output_folder_path = 'myfolder/output/')
 #'
-#'   # Create the matrix to store the attributanle deaths
-#'   matsim <- matrix(NA,nrow(cities),3,dimnames=list(cities$city,
-#'                                                    c("glob","cold","heat")))
-#'
-#'   # Number of simulation runs for computing empirical CI
-#'   nsim <- 1000
-#'
-#'   # Create the array to store the CI of attributable deaths
-#'   arraysim <- array(NA,dim=c(nrow(cities),3,nsim),dimnames=list(cities$city,
-#'                                                                 c("glob","cold","heat")))
-#'
-#'   # Run the loop
-#'   for(i in seq(dlist)){
-#'
-#'     # Print
-#'     cat(i,"")
-#'
-#'     # Extract the data
-#'     data <- dlist[[i]]
-#'
-#'     # Derive the cross-basis
-#'     # NB: Centering point different than original choice of 75th
-#'     argvar <- list(x=data$tmean,fun=varfun,knots=quantile(data$tmean,
-#'                                                           varper/100,na.rm=T),degree=vardegree)
-#'     cb <- crossbasis(data$tmean,lag=lag,argvar=argvar,
-#'                      arglag=list(knots=logknots(lag,lagnk)))
-#'
-#'     # Compute the attributable deaths
-#'     # NB: The reduced coefficients are used here
-#'     matsim[i,"glob"] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
-#'                                vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i])
-#'     matsim[i,"cold"] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
-#'                                vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],
-#'                                range=c(-100,mintempcity[i]))
-#'     matsim[i,"heat"] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
-#'                                vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],
-#'                                range=c(mintempcity[i],100))
-#'
-#'     # Compute empirical occurences of the attributable deaths
-#'     # Uused to derive confidence intervals
-#'     arraysim[i,"glob",] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
-#'                                   vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],sim=T,nsim=nsim)
-#'     arraysim[i,"cold",] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
-#'                                   vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],
-#'                                   range=c(-100,mintempcity[i]),sim=T,nsim=nsim)
-#'     arraysim[i,"heat",] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
-#'                                   vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],
-#'                                   range=c(mintempcity[i],100),sim=T,nsim=nsim)
-#'
-#'     # Store the denominator of attributable deaths, i.e. total observed mortality
-#'     # Correct denominator to compute the attributable fraction later, as in attrdl
-#'     totdeath[i] <- sum(data$death,na.rm=T)
-#'   }
-#'
-#'   # Attributable numbers
-#'   # City-specific
-#'   ancity <- matsim
-#'   ancitylow <- apply(arraysim,c(1,2),quantile,0.025)
-#'   ancityhigh <- apply(arraysim,c(1,2),quantile,0.975)
-#'   rownames(ancity) <- rownames(ancitylow) <- rownames(ancityhigh) <- cities$cityname
-#'
-#'   # Total
-#'   # NB: first sum through cities
-#'   antot <- colSums(matsim)
-#'   antotlow <- apply(apply(arraysim,c(2,3),sum),1,quantile,0.025)
-#'   antothigh <- apply(apply(arraysim,c(2,3),sum),1,quantile,0.975)
-#'
-#'   # Total mortality
-#'   # By country
-#'   totdeathtot <- sum(totdeath)
-#'
-#'   # Attributable fractions
-#'   # City-specific
-#'   afcity <- ancity/totdeath*100
-#'   afcitylow <- ancitylow/totdeath*100
-#'   afcityhigh <- ancityhigh/totdeath*100
-#'
-#'   # Total
-#'   aftot <- antot/totdeathtot*100
-#'   aftotlow <- antotlow/totdeathtot*100
-#'   aftothigh <- antothigh/totdeathtot*100
-#'
-#' }
+write_attributable_deaths <- function(cities, matsim, arraysim,
+                                      totdeath, attr_output_folder_path = NULL) {
+
+  # Attributable numbers
+  # City-specific
+  ancity <- matsim
+  ancitylow <- apply(arraysim,c(1,2),quantile,0.025)
+  ancityhigh <- apply(arraysim,c(1,2),quantile,0.975)
+  rownames(ancity) <- rownames(ancitylow) <- rownames(ancityhigh) <- cities$cityname
+
+  # Total
+  # NB: first sum through cities
+  antot <- colSums(matsim)
+  antotlow <- apply(apply(arraysim,c(2,3),sum),1,quantile,0.025)
+  antothigh <- apply(apply(arraysim,c(2,3),sum),1,quantile,0.975)
+
+  # Total mortality
+  # By country
+  totdeathtot <- sum(totdeath)
+
+  # Attributable fractions
+  # City-specific
+  afcity <- ancity/totdeath*100
+  afcitylow <- ancitylow/totdeath*100
+  afcityhigh <- ancityhigh/totdeath*100
+
+  # Total
+  aftot <- antot/totdeathtot*100
+  aftotlow <- antotlow/totdeathtot*100
+  aftothigh <- antothigh/totdeathtot*100
+
+  if (attr_output_folder_path) {
+
+    write.csv(ancity, paste(attr_output_folder_path, 'attributable_deaths_city'))
+    write.csv(antot, paste(attr_output_folder_path, 'attributable_deaths_total'))
+    write.csv(afcity, paste(attr_output_folder_path, 'attributable_fraction_city'))
+    write.csv(antot, paste(attr_output_folder_path, 'attributable_fraction_total'))
+
+  } else {
+
+    write.csv(ancity, paste('output/', 'attributable_deaths_city'))
+    write.csv(antot, paste('output/', 'attributable_deaths_total'))
+    write.csv(afcity, paste('output/', 'attributable_fraction_city'))
+    write.csv(antot, paste('output/', 'attributable_fraction_total'))
+  }
+
+  return(c(antot, totdeathdot, aftot, afcity))
+
+}
+
 #'
 #' #' Plot results
 #' #' Compute the attributable deaths for each city,
