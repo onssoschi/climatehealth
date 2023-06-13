@@ -132,6 +132,22 @@ prep_and_first_step <- function(input_csv_path) {
 #' @import mvmeta
 run_meta_model <- function(dlist, cities, coef, vcov) {
 
+  if(!is.list(dlist) | !is.data.frame(dlist)) {
+    stop("Argument 'dlist' must be a list of data frames")
+  }
+
+  if(!is.data.frame(cities)) {
+    stop("Argument 'cities' must be a data frame")
+  }
+
+  if(!is.matrix(coef) | !is.numeric(coef)) {
+    stop("Argument 'coef' must be a numeric matrix")
+  }
+
+  if(!is.list(vcov) !is.matrix(vcov)) {
+    stop("Argument 'vcov' must be a list of matrices")
+  }
+
   # Create average temperature and range as meta-predictors
   avgtmean <- sapply(dlist, function(x) mean(x$tmean, na.rm = TRUE))
   rangetmean <- sapply(dlist,function(x) diff(range(x$tmean, na.rm = TRUE)))
