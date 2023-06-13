@@ -323,36 +323,30 @@ attrdl <- function(x, basis, cases, model=NULL, coef=NULL, vcov=NULL, model.link
     an <- af*den
   }
 
-emp_confidence_intervals <- function(tot, sim, coef, vcov) {
+  # Empirical confidence intervals
+  if(!tot && sim) {
+    sim <- FALSE
+    warning("simulation samples only returned for tot=T")
+  }
+  if(sim) {
+    # Sample coef
+    k <- length(coef)
+    eigen <- eigen(vcov)
+    X <- matrix(rnorm(length(coef)*nsim),nsim)
+    coefsim <- coef + eigen$vectors %*% diag(sqrt(eigen$values),k) %*% t(X)
 
-    # Empirical confidence intervals
-    if(!tot && sim) {
-      sim <- FALSE
-      warning("simulation samples only returned for tot=T")
-    }
-    if(sim) {
-      # Sample coef
-      k <- length(coef)
-      eigen <- eigen(vcov)
-      X <- matrix(rnorm(length(coef)*nsim),nsim)
-      coefsim <- coef + eigen$vectors %*% diag(sqrt(eigen$values),k) %*% t(X)
+    afsim <- apply(coefsim,2, function(coefi) {
+      ani <- (1-exp(-drop(Xpredall%*%coefi)))*cases
+      sum(ani[!is.na(ani)])/sum(cases[!is.na(ani)])
+    })
+    ansim <- afsim*den
+  }
 
-      afsim <- apply(coefsim,2, function(coefi) {
-        ani <- (1-exp(-drop(Xpredall%*%coefi)))*cases
-        sum(ani[!is.na(ani)])/sum(cases[!is.na(ani)])
-      })
-      ansim <- afsim*den
-    }
-
-    res <- if(sim) {
-      if(type=="an") ansim else afsim
-    } else {
-      if(type=="an") an else af
-    }
-
-    return(res)
-
-}
+  res <- if(sim) {
+    if(type=="an") ansim else afsim
+  } else {
+    if(type=="an") an else af
+  }
 
 }
 
