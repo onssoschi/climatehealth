@@ -611,10 +611,13 @@ do_analysis <- function(input_csv_path, output_csv_path){
 
   c(dlist, argvar, regions, cities, coef, vcov) %<-% prep_and_first_step(input_csv_path)
 
-  c(blup, argvar, bvar, mintempcity) %<-% second_stage(dlist = dlist,
-                                                       cities = cities,
-                                                       coef = coef,
-                                                       vcov = vcov)
+  c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
+                                  vcov = vcov)
+
+  c(avgtmean_wald, rangetmean_wald) %<-% wald_results(mv = mv)
+
+  c(argvar, bvar, mintempcity, minperccountry) %<-%
+    min_mortality(dlist = dlist, cities = cities, blup = blup)
 
   third_stage(dlist = dlist,
               cities = cities,
