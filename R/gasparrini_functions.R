@@ -198,9 +198,7 @@ run_all()
 #' @param blup
 #' @param mintempcity
 #' @return
-#' @compute_attributable_deaths (dlist = dlist, cities = cities,regions = regions,
-#' argvar = argvar, coef = coef, vcov = vcov, bvar = bvar, blup = blup,
-#' varfun = varfun, mintempcity = mintempcity)
+#'
 compute_attributable_deaths <- function(dlist, cities, coef, vcov,
                                         varfun, argvar, bvar, blup,
                                         mintempcity) {
@@ -264,14 +262,13 @@ compute_attributable_deaths <- function(dlist, cities, coef, vcov,
 
   }
 
-  return(totdeath, arraysim, matsim)
+  return (c(totdeath, arraysim, matsim))
 
 }
 
-#' Write data
+#' Write outputs to csv
 #' Write the attributable deaths and temperature for each city,
 #' with empirical CI estimated using the re-centred bases
-
 #' @param cities
 #' @param matsim
 #' @param arraysim
@@ -279,10 +276,10 @@ compute_attributable_deaths <- function(dlist, cities, coef, vcov,
 #' @param attr_output_folder_path
 #'
 #' @return
-#' @examples cities, matsim, arraysim, totdeath, attr_output_folder_path = 'myfolder/output/')
+#' @examples attr_output_folder_path = 'myfolder/output/'
 #'
-write_data <- function(cities, matsim, arraysim,
-                                      totdeath, attr_output_folder_path = NULL) {
+write_outputs_to_csv <- function(cities, matsim, arraysim,
+                                      totdeath, output_folder_path = NULL) {
 
   # Attributable numbers
   # City-specific
@@ -426,7 +423,7 @@ plot_results <- function(dlist, argvar,
                           temperature = pred$predvar,
                           relative_risk = pred$allRRfit)
   # Output for testing
-  write.csv(output_df, output_csv_path, row.names=FALSE)
+  write.csv(output_df, paste(output_folder_path, 'output_one_region_data_new.csv'), row.names=FALSE)
 
 }
 
@@ -438,7 +435,7 @@ plot_results <- function(dlist, argvar,
 #' @return
 #'
 #' @examples
-do_analysis <- function(input_csv_path, output_csv_path){
+do_analysis <- function(input_csv_path, output_folder_path){
 
   c(dlist, argvar, regions, cities, coef, vcov) %<-% prep_and_first_step(input_csv_path)
 

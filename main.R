@@ -4,28 +4,33 @@ library(splines)
 library(tsModel)
 library(config)
 library(zeallot)
+library(indicator_functions)
 
-# 1. Load parameters from config file --------------------------------------------------
+# 1. Load data, get metadata, define model, run model
+indicator_functions::run_all()
 
-# Load config file
-config <- config::get()
+# 2. Meta-analysis
+# code
 
-# Input data
-input_csv_path <- config$input_csv_path
+# 3. Attributable deaths
+c(totdeath, arraysim, matsim) %<-%
+  indicator_functions::compute_attributable_deaths(
+  dlist, cities, coef, vcov, varfun, argvar, bvar, blup, mintempcity
+  )
 
-# Output data
-output_csv_path <- config$output_csv_path
+# 3. Plot data
+indicator_functions::plot_outputs(dlist, argvar, bvar,
+                                  blup, cities, mintempcity,
+                                  output_folder_path = config$output_folder_path
+                                  )
 
-# Specification of the exposure function
-varfun <- config$varfun
-vardegree <- config$vardegree
-varper <- c(10,75,90)
+# 3. Write data
+indicator_functions::write_outputs(cities, matsim, arraysim,
+                                   totdeath,
+                                   output_folder_path = config$output_folder_path
+                                   )
 
-# Specification of the lag function
-lag <- config$lag
-lagnk <- config$lagnk
 
-# Degree of freedom for seasonality
-dfseas <- config$dfseas
 
-# 1. Load parameters from config file --------------------------------------------------
+
+
