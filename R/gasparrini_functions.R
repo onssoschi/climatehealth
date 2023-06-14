@@ -173,6 +173,11 @@ run_meta_model <- function(dlist, cities, coef, vcov) {
 #'
 #' @return A number. The p-value of the explanatory variable.
 fwald <- function(model, var) {
+
+  if(!is.character(var)) {
+    stop("Argument 'var' must be a character")
+  }
+
   ind <- grep(var, names(coef(model)))
   coef <- coef(model)[ind]
   vcov <- vcov(model)[ind, ind]

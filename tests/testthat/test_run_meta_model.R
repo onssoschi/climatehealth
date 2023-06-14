@@ -2,7 +2,7 @@ library(testthat)
 library(indicatorfunctions)
 library(zeallot)
 
-source("R/gasparrini_functions.R")
+source("./R/gasparrini_functions.R")
 
 context("Test errors for incorrect inputs")
 test_that('Test run_meta_model() produces appropriate errors', {
@@ -82,5 +82,8 @@ test_that('Test run_meta_model() returns correct data types', {
   expect_equal(typeof(blup), "list")
   expect_equal(typeof(blup[[1]]), "list")
   expect_equal(typeof(blup[[2]]), "list")
+
+  # mv
   expect_equal(typeof(mv), "list")
+
 })
