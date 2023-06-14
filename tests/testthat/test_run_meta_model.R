@@ -4,7 +4,7 @@ library(zeallot)
 
 source("R/gasparrini_functions.R")
 
-context("Test output data types")
+context("Test errors for incorrect inputs")
 test_that('Test run_meta_model() produces appropriate errors', {
 
   # dlist not a list
@@ -67,4 +67,20 @@ test_that('Test run_meta_model() produces appropriate errors', {
     coef = as.matrix(1:10),
     vcov = list(1, 2, 3)),
     "Argument 'vcov' must be a list of matrices", fixed = TRUE)
+})
+
+context("Test output data types")
+test_that('Test run_meta_model() returns correct data types', {
+
+  # blup
+  c(dlist, argvar, regions, cities, coef, vcov) %<-%
+    prep_and_first_step(input_csv_path)
+
+  c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
+                                  vcov = vcov)
+
+  expect_equal(typeof(blup), "list")
+  expect_equal(typeof(blup[[1]]), "list")
+  expect_equal(typeof(blup[[2]]), "list")
+  expect_equal(typeof(mv), "list")
 })
