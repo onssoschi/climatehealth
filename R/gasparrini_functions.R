@@ -1,10 +1,3 @@
-library(dlnm)
-library(mvmeta)
-library(splines)
-library(tsModel)
-library(config)
-library(zeallot)
-
 # Load config file
 config <- config::get()
 
@@ -97,6 +90,7 @@ run_model <- function(dlist, formula, coef, vcov)
 
 # ??? Best practice to call these outputs something different to how they're
 # named in function???
+# Euan: I think so. Might be best to fix all the argument names once the first RAP'd version works.
 run_all <- function() {
   c(dlist, regions) %<-% load_data(config$input_csv_path)
   c(cities, dlist) %<-% get_region_metadata(regions, dlist)
@@ -188,7 +182,6 @@ run_all()
 #' Compute the attributable deaths for each city,
 #' with empirical CI estimated using the re-centred bases
 #' @param dlist
-#' @param regions
 #' @param cities
 #' @param coef
 #' @param vcov
@@ -197,8 +190,13 @@ run_all()
 #' @param bvar
 #' @param blup
 #' @param mintempcity
-#' @return
 #'
+#' @return A list of variables
+#' \itemize{
+#'   \item totdeath
+#'   \item arraysim
+#'   \item matsim
+#' }
 compute_attributable_deaths <- function(dlist, cities, coef, vcov,
                                         varfun, argvar, bvar, blup,
                                         mintempcity) {
@@ -273,11 +271,10 @@ compute_attributable_deaths <- function(dlist, cities, coef, vcov,
 #' @param matsim
 #' @param arraysim
 #' @param totdeath
-#' @param attr_output_folder_path
+#' @param output_folder_path
 #'
-#' @return
+#' @return None
 #' @examples attr_output_folder_path = 'myfolder/output/'
-#'
 write_outputs_to_csv <- function(cities, matsim, arraysim,
                                       totdeath, output_folder_path = NULL) {
 
@@ -309,6 +306,13 @@ write_outputs_to_csv <- function(cities, matsim, arraysim,
   aftotlow <- antotlow/totdeathtot*100
   aftothigh <- antothigh/totdeathtot*100
 
+  # Bind datasets
+
+  ancity_bind <- t(cbind(ancity, ancitylow, ancityhigh))
+  antot_bind <- t(cbind(antot, antotlow, antothigh))
+  afcity_bind <- t(cbind(afcity, afcitylow, afcityhigh))
+  aftot_bind <- t(cbind(aftot, aftotlow, aftothigh))
+
   # Temperature
   tmeanuk <- sapply(dlist,function(city) mean(city$tmean,na.rm=T))
   c(Country="UK",
@@ -317,48 +321,41 @@ write_outputs_to_csv <- function(cities, matsim, arraysim,
                                format="f")," (",paste(formatC(range(tmeanuk),dig=1,format="f"),
                                                       collapse="-"),")"))
 
-  #'   # Related part of table 2
-  #'   # MMP
-  #'   minperccountry
-  #'
-  #'   # Attributable fraction
-  #'   t(cbind(aftot,aftotlow,aftothigh))
-  #'
-  #'   # Related part of table S4
-  #'   # Deaths
-  #'   totdeath
-  #'
-  #'   # Minimum mortality temperature percentile and absolute temperature
-  #'   minperccity
-  #'   mintempcity
-  #'
-  #'   # attributable fraction
-  #'   afcity
-
   if (attr_output_folder_path) {
 
-    write.csv(ancity, paste(output_folder_path, 'attributable_deaths_city'))
-    write.csv(t(cbind(aftot,aftotlow,aftothigh)), paste(output_folder_path, 'attributable_deaths_total'))
-    write.csv(afcity, output_folder_path, paste(output_folder_path, 'attributable_fraction_city'))
-    write.csv(antot, output_folder_path, paste(output_folder_path, 'attributable_fraction_total'))
+    write.csv(ancity_bind, paste(output_folder_path, 'attributable_deaths_city'))
+    write.csv(antot_bind, paste(output_folder_path, 'attributable_deaths_total'))
+    write.csv(afcity_bind, output_folder_path, paste(output_folder_path, 'attributable_fraction_city'))
+    write.csv(aftot_bind, output_folder_path, paste(output_folder_path, 'attributable_fraction_total'))
+    write.csv(tmean_uk, output_folder_path, paste(output_folder_path, 'death_temp_total'))
+
 
   } else {
 
-    write.csv(ancity, 'attributable_deaths_city')
-    write.csv(antot, 'attributable_deaths_total')
-    write.csv(afcity, 'attributable_fraction_city')
-    write.csv(antot, 'attributable_fraction_total')
+    write.csv(ancity_bind, 'attributable_deaths_city')
+    write.csv(antot_bind, 'attributable_deaths_total')
+    write.csv(afcity_bind, 'attributable_fraction_city')
+    write.csv(aftot_bind, 'attributable_fraction_total')
+    write.csv(tmean_uk, output_folder_path, paste(output_folder_path, 'death_temp_total'))
+
   }
 
   return(c(antot, totdeathdot, aftot, afcity))
 
 }
 
-#' Plot results
-#' Compute the attributable deaths for each city,
-#' with emprical CI estimated using the re-centred bases
-#' @return A number.
-#' @examples
+#' Plot results of analysis
+#'
+#' @param dlist
+#' @param argvar
+#' @param bvar
+#' @param blup
+#' @param cities
+#' @param mintempcity
+#' @param output_folder_path
+#'
+#' @return a plot
+#' @examples output_folder_path = 'myfolder/output/'
 plot_results <- function(dlist, argvar,
                          bvar, blup, cities, mintempcity,
                          output_folder_path){
@@ -427,8 +424,7 @@ plot_results <- function(dlist, argvar,
 
 }
 
-#' Do Gasparrini analysis
-#'
+#' Do all of the analysis
 #' @param input_csv_path
 #' @param output_csv_path
 #'
@@ -437,14 +433,14 @@ plot_results <- function(dlist, argvar,
 #' @examples
 do_analysis <- function(input_csv_path, output_folder_path){
 
-  c(dlist, argvar, regions, cities, coef, vcov) %<-% prep_and_first_step(input_csv_path)
+  c(dlist, argvar, regions, cities, coef, vcov) %<-% run_all(input_csv_path)
 
-  c(blup, argvar, bvar, mintempcity) %<-% second_stage(dlist = dlist,
+  c(blup, argvar, bvar, mintempcity) %<-% compute_attributable_deaths(dlist = dlist,
                                                        cities = cities,
                                                        coef = coef,
                                                        vcov = vcov)
 
-  third_stage(dlist = dlist,
+  plot_results(dlist = dlist,
               cities = cities,
               regions = regions,
               argvar = argvar,
@@ -454,5 +450,7 @@ do_analysis <- function(input_csv_path, output_folder_path){
               blup = blup,
               varfun = varfun,
               mintempcity = mintempcity)
+
+  write_outputs_to_csv()
 
 }

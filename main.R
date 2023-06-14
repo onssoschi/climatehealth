@@ -29,8 +29,3 @@ indicator_functions::write_outputs(cities, matsim, arraysim,
                                    totdeath,
                                    output_folder_path = config$output_folder_path
                                    )
-
-
-
-
-
