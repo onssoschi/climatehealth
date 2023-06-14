@@ -132,7 +132,7 @@ prep_and_first_step <- function(input_csv_path) {
 #' @import mvmeta
 run_meta_model <- function(dlist, cities, coef, vcov) {
 
-  if(!is.list(dlist) | !is.data.frame(dlist)) {
+  if(!is.list(dlist) | !is.data.frame(dlist[[1]])) {
     stop("Argument 'dlist' must be a list of data frames")
   }
 
@@ -144,7 +144,7 @@ run_meta_model <- function(dlist, cities, coef, vcov) {
     stop("Argument 'coef' must be a numeric matrix")
   }
 
-  if(!is.list(vcov) !is.matrix(vcov)) {
+  if(!is.list(vcov) | !is.matrix(vcov[[1]])) {
     stop("Argument 'vcov' must be a list of matrices")
   }
 
