@@ -1,31 +1,3 @@
-#' library(dlnm)
-#' library(mvmeta)
-#' library(splines)
-#' library(tsModel)
-#' library(config)
-#' library(zeallot)
-#'
-#' # Load config file
-#' config <- config::get()
-#'
-#' # Input data
-#' input_csv_path <- config$input_csv_path
-#'
-#' # Output data
-#' output_csv_path <- config$output_csv_path
-#'
-#' # Specification of the exposure function
-#' varfun <- config$varfun
-#' vardegree <- config$vardegree
-#' varper <- c(10,75,90)
-#'
-#' # Specification of the lag function
-#' lag <- config$lag
-#' lagnk <- config$lagnk
-#'
-#' # Degree of freedom for seasonality
-#' dfseas <- config$dfseas
-#'
 #' #' First-stage analysis
 #' #' Run the model in each city/region, reduce and save.
 #' #' Create objects to store the results.
@@ -205,7 +177,7 @@
 #' @param mintempcity
 #'
 #' @return
-#' @examplesthird_stage (dlist = dlist, cities = cities,regions = regions,
+#' @compute_attributable_deaths (dlist = dlist, cities = cities,regions = regions,
 #' argvar = argvar, coef = coef, vcov = vcov, bvar = bvar, blup = blup,
 #' varfun = varfun, mintempcity = mintempcity)
 compute_attributable_deaths <- function(dlist, cities, coef, vcov,
@@ -275,8 +247,8 @@ compute_attributable_deaths <- function(dlist, cities, coef, vcov,
 
 }
 
-#' Write attributable deaths
-#' Write the attributable deaths for each city,
+#' Write data
+#' Write the attributable deaths and temperature for each city,
 #' with empirical CI estimated using the re-centred bases
 
 #' @param cities
@@ -288,7 +260,7 @@ compute_attributable_deaths <- function(dlist, cities, coef, vcov,
 #' @return
 #' @examples cities, matsim, arraysim, totdeath, attr_output_folder_path = 'myfolder/output/')
 #'
-write_attributable_deaths <- function(cities, matsim, arraysim,
+write_data <- function(cities, matsim, arraysim,
                                       totdeath, attr_output_folder_path = NULL) {
 
   # Attributable numbers
@@ -319,137 +291,133 @@ write_attributable_deaths <- function(cities, matsim, arraysim,
   aftotlow <- antotlow/totdeathtot*100
   aftothigh <- antothigh/totdeathtot*100
 
+  # Temperature
+  tmeanuk <- sapply(dlist,function(city) mean(city$tmean,na.rm=T))
+  c(Country="UK",
+    Period=paste(range(dlist[[1]]$year),collapse="-"),Deaths=totdeathtot,
+    Temperature=paste0(formatC(mean(tmeanuk),dig=1,
+                               format="f")," (",paste(formatC(range(tmeanuk),dig=1,format="f"),
+                                                      collapse="-"),")"))
+
+  #'   # Related part of table 2
+  #'   # MMP
+  #'   minperccountry
+  #'
+  #'   # Attributable fraction
+  #'   t(cbind(aftot,aftotlow,aftothigh))
+  #'
+  #'   # Related part of table S4
+  #'   # Deaths
+  #'   totdeath
+  #'
+  #'   # Minimum mortality temperature percentile and absolute temperature
+  #'   minperccity
+  #'   mintempcity
+  #'
+  #'   # attributable fraction
+  #'   afcity
+
   if (attr_output_folder_path) {
 
-    write.csv(ancity, paste(attr_output_folder_path, 'attributable_deaths_city'))
-    write.csv(antot, paste(attr_output_folder_path, 'attributable_deaths_total'))
-    write.csv(afcity, paste(attr_output_folder_path, 'attributable_fraction_city'))
-    write.csv(antot, paste(attr_output_folder_path, 'attributable_fraction_total'))
+    write.csv(ancity, paste(output_folder_path, 'attributable_deaths_city'))
+    write.csv(t(cbind(aftot,aftotlow,aftothigh)), paste(output_folder_path, 'attributable_deaths_total'))
+    write.csv(afcity, output_folder_path, paste(output_folder_path, 'attributable_fraction_city'))
+    write.csv(antot, output_folder_path, paste(output_folder_path, 'attributable_fraction_total'))
 
   } else {
 
-    write.csv(ancity, paste('output/', 'attributable_deaths_city'))
-    write.csv(antot, paste('output/', 'attributable_deaths_total'))
-    write.csv(afcity, paste('output/', 'attributable_fraction_city'))
-    write.csv(antot, paste('output/', 'attributable_fraction_total'))
+    write.csv(ancity, 'attributable_deaths_city')
+    write.csv(antot, 'attributable_deaths_total')
+    write.csv(afcity, 'attributable_fraction_city')
+    write.csv(antot, 'attributable_fraction_total')
   }
 
   return(c(antot, totdeathdot, aftot, afcity))
 
 }
 
+#' Plot results
+#' Compute the attributable deaths for each city,
+#' with emprical CI estimated using the re-centred bases
 #'
-#' #' Plot results
-#' #' Compute the attributable deaths for each city,
-#' #' with emprical CI estimated using the re-centred bases
-#' #'
-#' #' @param dlist
-#' #' @param argvar
-#' #' @param bvar
-#' #' @param blup
-#' #' @param cities
-#' #' @param mintempcity
-#' #' @param output_csv_path
-#' #'
-#' #' @return A number.
-#' #' @examples
-#' plot_results <- function(dlist, argvar,
-#'                          bvar, blup, cities, mintempcity,
-#'                          output_csv_path){
+#' @param dlist
+#' @param argvar
+#' @param bvar
+#' @param blup
+#' @param cities
+#' @param mintempcity
+#' @param output_csv_path
 #'
-#'   per <- t(sapply(dlist,function(x)
-#'     quantile(x$tmean,c(2.5,10,25,50,75,90,97.5)/100,na.rm=T)))
-#'
-#'   xlab <- expression(paste("Temperature (",degree,"C)"))
-#'
-#'   # pdf("gasparrini/output/output_all_regions_plot.pdf",width=8,height=9)
-#'   layout(matrix(c(0,1,1,2,2,0,rep(3:8,each=2),0,9,9,10,10,0),ncol=6,byrow=T))
-#'   par(mar=c(4,3.8,3,2.4),mgp=c(2.5,1,0),las=1)
-#'
-#'   for(i in seq(length(dlist))) {
-#'
-#'     data <- dlist[[i]]
-#'
-#'     # NB: Centering point different than original choice of 75th
-#'     argvar <- list(x=data$tmean,fun=varfun,degree=vardegree,
-#'                    knots=quantile(data$tmean,varper/100,na.rm=T))
-#'     bvar <- do.call(onebasis,argvar)
-#'     pred <- crosspred(bvar,coef=blup[[i]]$blup,vcov=blup[[i]]$vcov,
-#'                       model.link="log",by=0.1,cen=mintempcity[i])
-#'
-#'     plot(pred,type="n",ylim=c(0,2.5),yaxt="n",lab=c(6,5,7),xlab=xlab,ylab="RR",
-#'          main=cities$cityname[i])
-#'     ind1 <- pred$predvar<=mintempcity[i]
-#'     ind2 <- pred$predvar>=mintempcity[i]
-#'     lines(pred$predvar[ind1],pred$allRRfit[ind1],col=4,lwd=1.5)
-#'     lines(pred$predvar[ind2],pred$allRRfit[ind2],col=2,lwd=1.5)
-#'     mtext(cities$countryname[i],cex=0.7,line=0)
-#'     #axis(1,at=-8:8*5)
-#'     axis(2,at=1:5*0.5)
-#'
-#'     breaks <- c(min(data$tmean,na.rm=T)-1,seq(pred$predvar[1],
-#'                                               pred$predvar[length(pred$predvar)],length=30),max(data$tmean,na.rm=T)+1)
-#'     hist <- hist(data$tmean,breaks=breaks,plot=F)
-#'     hist$density <- hist$density/max(hist$density)*0.7
-#'     prop <- max(hist$density)/max(hist$counts)
-#'     counts <- pretty(hist$count,3)
-#'
-#'     plot(hist,ylim=c(0,max(hist$density)*3.5),axes=F,ann=F,col=grey(0.95),
-#'          breaks=breaks,freq=F,add=T)
-#'     axis(4,at=counts*prop,labels=counts,cex.axis=0.7)
-#'     #mtext("N",4,line=-0.5,at=mean(counts*prop),cex=0.5)
-#'     abline(v=mintempcity[i],lty=3)
-#'     abline(v=c(per[i,c("2.5%","97.5%")]),lty=2)
-#'
-#'     }
-#'
-#'   output_df <- data.frame(regnames = rep(unique(data$regnames), length(pred$predvar)),
-#'                           temperature = pred$predvar,
-#'                           relative_risk = pred$allRRfit)
-#'
-#'   write.csv(output_df, output_csv_path, row.names=FALSE)
-#'
-#' }
-#'
-#'
-#' #' Write tables
-#' #'
-#' #' @return
-#' #' @examples
-#' tables <- function(){
-#'
-#'   # Related part of table 1
-#'   tmeanuk <- sapply(dlist,function(city) mean(city$tmean,na.rm=T))
-#'   c(Country="UK",
-#'     Period=paste(range(dlist[[1]]$year),collapse="-"),Deaths=totdeathtot,
-#'     Temperature=paste0(formatC(mean(tmeanuk),dig=1,
-#'                                format="f")," (",paste(formatC(range(tmeanuk),dig=1,format="f"),
-#'                                                       collapse="-"),")"))
-#'
-#'   # Related part of table 2
-#'   # MMP
-#'   minperccountry
-#'
-#'   # Attributable fraction
-#'   t(cbind(aftot,aftotlow,aftothigh))
-#'
-#'   # Related part of table S4
-#'   # Deaths
-#'   totdeath
-#'
-#'   # Minimum mortality temperature percentile and absolute temperature
-#'   minperccity
-#'   mintempcity
-#'
-#'   # attributable fraction
-#'   afcity
-#'
-#'   return (c(tmeanuk = tmeanuk, minperccountry = minperccountry,
-#'           totdeath = totdeath, minperccity = minperccity,
-#'           mintempcity = mintempcity, afcity = afcity))
-#'
-#' }
-#'
+#' @return A number.
+#' @examples
+plot_results <- function(dlist, argvar,
+                         bvar, blup, cities, mintempcity,
+                         output_folder_path){
+
+  if (output_folder_path) {
+
+    pdf(paste(output_folder_path, "output_all_regions_plot.pdf"), width=8, height=9)
+
+  } else {
+
+    pdf("output_all_regions_plot.pdf", width=8, height=9)
+
+  }
+
+  per <- t(sapply(dlist,function(x)
+    quantile(x$tmean,c(2.5,10,25,50,75,90,97.5)/100,na.rm=T)))
+
+  xlab <- expression(paste("Temperature (",degree,"C)"))
+
+  layout(matrix(c(0,1,1,2,2,0,rep(3:8,each=2),0,9,9,10,10,0),ncol=6,byrow=T))
+  par(mar=c(4,3.8,3,2.4),mgp=c(2.5,1,0),las=1)
+
+  for(i in seq(length(dlist))) {
+
+    data <- dlist[[i]]
+
+    # NB: Centering point different than original choice of 75th
+    argvar <- list(x=data$tmean,fun=varfun,degree=vardegree,
+                   knots=quantile(data$tmean,varper/100,na.rm=T))
+    bvar <- do.call(onebasis,argvar)
+    pred <- crosspred(bvar,coef=blup[[i]]$blup,vcov=blup[[i]]$vcov,
+                      model.link="log",by=0.1,cen=mintempcity[i])
+
+    plot(pred,type="n",ylim=c(0,2.5),yaxt="n",lab=c(6,5,7),xlab=xlab,ylab="RR",
+         main=cities$cityname[i])
+    ind1 <- pred$predvar<=mintempcity[i]
+    ind2 <- pred$predvar>=mintempcity[i]
+    lines(pred$predvar[ind1],pred$allRRfit[ind1],col=4,lwd=1.5)
+    lines(pred$predvar[ind2],pred$allRRfit[ind2],col=2,lwd=1.5)
+    mtext(cities$countryname[i],cex=0.7,line=0)
+    #axis(1,at=-8:8*5)
+    axis(2,at=1:5*0.5)
+
+    breaks <- c(min(data$tmean,na.rm=T)-1,seq(pred$predvar[1],
+                                              pred$predvar[length(pred$predvar)],length=30),max(data$tmean,na.rm=T)+1)
+    hist <- hist(data$tmean,breaks=breaks,plot=F)
+    hist$density <- hist$density/max(hist$density)*0.7
+    prop <- max(hist$density)/max(hist$counts)
+    counts <- pretty(hist$count,3)
+
+    plot(hist,ylim=c(0,max(hist$density)*3.5),axes=F,ann=F,col=grey(0.95),
+         breaks=breaks,freq=F,add=T)
+    axis(4,at=counts*prop,labels=counts,cex.axis=0.7)
+    #mtext("N",4,line=-0.5,at=mean(counts*prop),cex=0.5)
+    abline(v=mintempcity[i],lty=3)
+    abline(v=c(per[i,c("2.5%","97.5%")]),lty=2)
+
+    }
+
+  # Output for testing
+  output_df <- data.frame(regnames = rep(unique(data$regnames), length(pred$predvar)),
+                          temperature = pred$predvar,
+                          relative_risk = pred$allRRfit)
+  # Output for testing
+  write.csv(output_df, output_csv_path, row.names=FALSE)
+
+}
+
 #' #' Do Gasparrini analysis
 #' #'
 #' #' @param input_csv_path
@@ -488,4 +456,3 @@ write_attributable_deaths <- function(cities, matsim, arraysim,
 #' }
 #'
 #' do_analysis(input_csv_path = input_csv_path, output_csv_path = output_csv_path)
-#'
