@@ -105,9 +105,11 @@ run_all <- function() {
                                                                formula,
                                                                coef,
                                                                vcov)
+
+  return(c(dlist, cities, region, formula, coef, vcov, argvar))
 }
 
-run_all()
+c(dlist, cities, region, formula, coef, vcov, argvar) %<-% run_all()
 
 #' #' Second-stage analysis
 #' #' Multivariate meta-analysis of the reduced
