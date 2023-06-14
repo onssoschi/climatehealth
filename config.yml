@@ -2,8 +2,8 @@ default:
   # Input data
   input_csv_path: 'data/regEngWales.csv'
 
-  #Output data
-  output_csv_path: 'output/output_one_region_data_new.csv'
+  #Output folder path
+  output_folder_path: 'output/'
 
   # Specification of the exposure function
   varfun: 'bs'
