@@ -9,6 +9,9 @@ test_that('Test min_mortality() produces appropriate errors', {
 
   c(dlist, argvar, regions, cities, coef, vcov) %<-% prep_and_first_step(input_csv_path)
 
+  c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
+                                  vcov = vcov)
+
   # dlist not a list
   expect_error(min_mortality(
     dlist = data.frame(x = c(1, 2, 3), y = c(1,2,3)),
@@ -31,6 +34,34 @@ test_that('Test min_mortality() produces appropriate errors', {
     cities = data.frame(x = 1, y = 1),
     blup = c(1, 2),
     "Argument 'blup' must be a list", fixed = TRUE))
+
+})
+
+context("Test output data types")
+test_that('Test min_mortality() returns correct data types', {
+
+  c(dlist, argvar, regions, cities, coef, vcov) %<-% prep_and_first_step(input_csv_path)
+
+  c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
+                                  vcov = vcov)
+
+  # argvar
+  expect_equal(typeof(argvar), "list")
+
+  # bvar
+  expect_equal(typeof(bvar), "double")
+  expect_equal(class(bvar)[1], "onebasis")
+  expect_equal(class(bvar)[2], "matrix")
+
+  # mintempcity
+  expect_equal(typeof(mintempcity), "double")
+  expect_equal(is.vector(mintempcity), TRUE)
+  expect_equal(is.numeric(mintempcity), TRUE)
+
+  # minperccountry
+  expect_equal(typeof(minperccountry), "double")
+  expect_equal(is.numeric(minperccountry), TRUE)
+  expect_equal(length(minperccountry), 1)
 
 })
 
