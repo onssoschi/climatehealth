@@ -2,8 +2,6 @@ library(testthat)
 library(indicatorfunctions)
 library(zeallot)
 
-source("../../R/gasparrini_functions.R")
-
 context("Test errors for incorrect inputs")
 test_that('Test run_meta_model() produces appropriate errors', {
 
@@ -74,7 +72,7 @@ test_that('Test run_meta_model() returns correct data types', {
 
   # blup
   c(dlist, argvar, regions, cities, coef, vcov) %<-%
-    prep_and_first_step(input_csv_path)
+    prep_and_first_step("testdata/regEngWales.csv")
 
   c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
                                   vcov = vcov)
