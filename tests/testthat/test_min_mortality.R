@@ -7,7 +7,8 @@ source("./R/gasparrini_functions.R")
 context("Test errors for incorrect inputs")
 test_that('Test min_mortality() produces appropriate errors', {
 
-  c(dlist, argvar, regions, cities, coef, vcov) %<-% prep_and_first_step(input_csv_path)
+  c(dlist, argvar, regions, cities, coef, vcov) %<-%
+    prep_and_first_step(input_csv_path)
 
   c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
                                   vcov = vcov)
@@ -40,7 +41,8 @@ test_that('Test min_mortality() produces appropriate errors', {
 context("Test output data types")
 test_that('Test min_mortality() returns correct data types', {
 
-  c(dlist, argvar, regions, cities, coef, vcov) %<-% prep_and_first_step(input_csv_path)
+  c(dlist, argvar, regions, cities, coef, vcov) %<-%
+    prep_and_first_step(input_csv_path)
 
   c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
                                   vcov = vcov)
