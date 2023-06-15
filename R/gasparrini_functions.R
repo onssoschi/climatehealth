@@ -27,9 +27,10 @@ get_region_metadata <- function(regions, dlist_unordered) {
     city = regions,
     # The following line can be deleted. It just allows the user to assign
     # the region/city names to a new string and could introduce errors
-    cityname = c("North East", "North West", "Yorkshire & Humber",
-                 "East Midlands", "West Midlands", "East", "London",
-                 "South East", "South West", "Wales")
+    # cityname = c("North East", "North West", "Yorkshire & Humber",
+    #              "East Midlands", "West Midlands", "East", "London",
+    #              "South East", "South West", "Wales")
+    cityname = regions
   )
 
   # Order regions
