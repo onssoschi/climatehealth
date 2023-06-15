@@ -14,77 +14,93 @@ load_data <- function(input_path) {
   df_eng_wales$date <- as.Date(df_eng_wales$date)
 
   regions <- as.character(unique(df_eng_wales$regnames)) # .distinct() on regnames
-  dlist <- lapply(regions,function(x) df_eng_wales[df_eng_wales$regnames==x,])
-  names(dlist) <- regions
+  dlist_unordered <- lapply(regions, function(x) df_eng_wales[df_eng_wales$regnames == x, ])
+  names(dlist_unordered) <- regions
 
-  return (list(dlist, regions))
+  return (list(dlist_unordered, regions))
 
 }
 
-get_region_metadata <- function(regions, dlist) {
+get_region_metadata <- function(regions, dlist_unordered) {
+
   cities <- data.frame(
     city = regions,
-    cityname = c("North East","North West","Yorkshire & Humber",
-                 "East Midlands","West Midlands","East","London",
-                 "South East","South West", "Wales")
+    # The following line can be deleted. It just allows the user to assign
+    # the region/city names to a new string and could introduce errors
+    cityname = c("North East", "North West", "Yorkshire & Humber",
+                 "East Midlands", "West Midlands", "East", "London",
+                 "South East", "South West", "Wales")
   )
 
   # Order regions
   ord <- order(cities$cityname)
-  dlist <- dlist[ord]
+  dlist <- dlist_unordered[ord]
   cities <- cities[ord,]
 
   return (list(cities, dlist))
 
 }
 
-define_model <- function(cities) {
+# define_model <- function(cities) {
+#
+#   varper <- c(10, 75, 90)
+#
+#   # Model formula
+#   formula <- death ~ cb + dow + ns(date,df = config$dfseas * length(unique(year)))
+#
+#   # Coefficients and vcov for overall cumulative summary
+#   coef <- matrix(NA,
+#                  nrow(cities),
+#                  length(varper) + config$vardegree,
+#                  dimnames = list(cities$city))
+#   vcov <- vector("list", nrow(cities))
+#   names(vcov) <- cities$city
+#
+#   return(list(formula, coef, vcov))
+#
+# }
+
+run_model <- function(dlist, cities) {
+
+  # Loop
+  time <- proc.time()[3]
+
+  varper <- c(10, 75, 90)
 
   # Model formula
-  formula <- death~cb+dow+ns(date,df=config$dfseas*length(unique(year)))
+  formula <- death ~ cb + dow + ns(date, df = config$dfseas * length(unique(year)))
 
   # Coefficients and vcov for overall cumulative summary
   coef <- matrix(NA,
                  nrow(cities),
-                 length(config$varper)+config$vardegree,
-                 dimnames=list(cities$city))
-  vcov <- vector("list",nrow(cities))
+                 length(varper) + config$vardegree,
+                 dimnames = list(cities$city))
+  vcov <- vector("list" ,nrow(cities))
   names(vcov) <- cities$city
-
-  return(list(formula, coef, vcov))
-
-}
-
-run_model <- function(dlist, formula, coef, vcov)
-
-  # Loop
-  time <- proc.time()[3]
 
   for(i in seq(length(dlist))) {
 
     cat(i,"")
 
     # Extract data
-    data <- dlist[[i]]
+    data <- dlist[[1]]
 
     # Define crossbasis
-    argvar <- list(fun=config$varfun,
-                   knots=quantile(data$tmean,config$varper/100,na.rm=T),
-                   degree=config$vardegree)
+    argvar <- list(fun = config$varfun,
+                   knots = quantile(data$tmean, (varper)/100, na.rm=T),
+                   degree = config$vardegree)
     cb <- crossbasis(data$tmean,
-                     lag=config$lag,
-                     argvar=argvar,
-                     arglag=list(knots=logknots(config$lag,config$lagnk)))
-
-    #summary(cb)
+                     lag = config$lag,
+                     argvar = argvar,
+                     arglag = list(knots = logknots(config$lag,config$lagnk)))
 
     # Run the model and obtain predictions
-    model <- glm(formula,data,family=quasipoisson,na.action="na.exclude")
-    cen <- mean(data$tmean,na.rm=T)
-    pred <- crosspred(cb,model,cen=cen)
+    model <- glm(formula, data, family = quasipoisson,na.action = "na.exclude")
+    cen <- mean(data$tmean, na.rm = T)
+    pred <- crosspred(cb, model, cen = cen)
 
     # Reduction to overall cumulative
-    red <- crossreduce(cb,model,cen=cen)
+    red <- crossreduce(cb ,model, cen=cen)
     coef[i,] <- coef(red)
     vcov[[i]] <- vcov(red)
 
@@ -92,24 +108,23 @@ run_model <- function(dlist, formula, coef, vcov)
 
   proc.time()[3]-time
 
-  return (list(dlist, argvar, regions, cities, coef, vcov))
+  return (list(argvar, coef, vcov))
+
+}
 
 
 # ??? Best practice to call these outputs something different to how they're
 # named in function???
 run_all <- function() {
-  c(dlist, regions) %<-% load_data(config$input_csv_path)
-  c(cities, dlist) %<-% get_region_metadata(regions, dlist)
-  c(formula, coef, vcov) %<-% define_model(cities)
-  c(dlist, argvar, regions, cities, coef, vcov) %<-% run_model(dlist,
-                                                               formula,
-                                                               coef,
-                                                               vcov)
 
-  return(c(dlist, cities, region, formula, coef, vcov, argvar))
-}
+  c(dlist_unordered, regions) %<-% load_data(config$input_csv_path)
+  c(cities, dlist) %<-% get_region_metadata(regions, dlist_unordered)
+  # c(formula, coef, vcov) %<-% define_model(cities)
+  c(argvar, coef, vcov) %<-% run_model(dlist, cities)
 
-c(dlist, cities, region, formula, coef, vcov, argvar) %<-% run_all()
+  return(c(dlist, cities, regions, formula, coef, vcov, argvar))
+  }
+
 
 #' #' Second-stage analysis
 #' #' Multivariate meta-analysis of the reduced
