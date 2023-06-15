@@ -14,8 +14,8 @@ test_that('Test wald_results() returns correct data type', {
                                   vcov = vcov)
 
   expect_equal(typeof(wald_results(mv)), "list")
-  expect_equal(typeof(wald_results(mv)[[1]), "double")
-  expect_equal(typeof(wald_results(mv)[[2]), "double")
+  expect_equal(typeof(wald_results(mv)[[1]]), "double")
+  expect_equal(typeof(wald_results(mv)[[2]]), "double")
 
 })
 
