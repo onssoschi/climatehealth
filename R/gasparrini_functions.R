@@ -214,6 +214,18 @@ wald_results <- function(mv) {
 #' minperccountry: ??? \cr
 min_mortality <-  function(dlist, cities, blup) {
 
+  if(!is.list(dlist) | !is.data.frame(dlist[[1]])) {
+    stop("Argument 'dlist' must be a list of data frames")
+  }
+
+  if(!is.data.frame(cities)) {
+    stop("Argument 'cities' must be a data frame")
+  }
+
+  if(!is.list(blup)) {
+    stop("Argument 'blup' must be a list")
+  }
+
   # Re-centering
   # Generate the matrix for storing results
   minperccity <- mintempcity <- rep(NA, length(dlist))
