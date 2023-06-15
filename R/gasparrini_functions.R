@@ -8,10 +8,22 @@ library(zeallot)
 # Load config file
 config <- config::get()
 
+#' Load data for analysis
+#'
+#' @param input_path a path to CSV
+
+#' @return dlist_unordered - a list of dataframes for each region
+#' @return regions - a list of strings of the names of each region
+#'
+#' @examples
 load_data <- function(input_path) {
 
+  if(substr(input_path, nchar(input_path) - 3, nchar(input_path)) !=  '.csv') {
+    stop("Input path must be a CSV")
+  }
+
   df_eng_wales <- read.csv(input_path, row.names=1)
-  df_eng_wales$date <- as.Date(df_eng_wales$date)
+  df_eng_wales$date <- as.Date(df_engx_wales$date)
 
   regions <- as.character(unique(df_eng_wales$regnames)) # .distinct() on regnames
   dlist_unordered <- lapply(regions, function(x) df_eng_wales[df_eng_wales$regnames == x, ])
@@ -21,7 +33,24 @@ load_data <- function(input_path) {
 
 }
 
+#' Get region metadata for analysis
+#'
+#' @param regions list of strings of region names
+#' @param dlist_unordered list of dataframes for each region
+#'
+#' @return regions - an alphabetically-ordered dataframe of region names
+#' @return dlist - an alphabetically-ordered list of dataframes for each region
+#'
+#' @examples
 get_region_metadata <- function(regions, dlist_unordered) {
+
+  if(!is.list(dlist_unordered) | !is.data.frame(dlist_unordered)) {
+    stop("Argument 'dlist_unordered' must be a list of data frames")
+  }
+
+  if(!is.list(regions) | !is.data.frame(dlist_unordered)) {
+    stop("Argument 'regions' must be a list")
+  }
 
   cities <- data.frame(
     city = regions,
@@ -63,6 +92,15 @@ get_region_metadata <- function(regions, dlist_unordered) {
 #
 # }
 
+#' Define and run regression model for each dataframe
+#'
+#' @param regions list of strings of region names
+#' @param dlist_unordered list of dataframes for each region
+#'
+#' @return red
+#' @return coev
+#' @return vcov
+#' @examples
 run_model <- function(dlist, cities) {
 
   # Loop
@@ -115,9 +153,21 @@ run_model <- function(dlist, cities) {
 
 }
 
-
 # ??? Best practice to call these outputs something different to how they're
 # named in function???
+#' Load, get metadata and run model
+#'
+#' @param
+#'
+#' @return dlist
+#' @return cities
+#' @return regions
+#' @return formula
+#' @return coef
+#' @return vcov
+#' @return argvar
+#'
+#' @examples
 run_all <- function() {
 
   c(dlist_unordered, regions) %<-% load_data(config$input_csv_path)
