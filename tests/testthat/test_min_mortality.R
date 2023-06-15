@@ -5,12 +5,6 @@ library(zeallot)
 context("Test errors for incorrect inputs")
 test_that('Test min_mortality() produces appropriate errors', {
 
-  c(dlist, argvar, regions, cities, coef, vcov) %<-%
-    prep_and_first_step("testdata/regEngWales.csv")
-
-  c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
-                                  vcov = vcov)
-
   # dlist not a list
   expect_error(min_mortality(
     dlist = data.frame(x = c(1, 2, 3), y = c(1,2,3)),
@@ -45,11 +39,18 @@ test_that('Test min_mortality() returns correct data types', {
   c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
                                   vcov = vcov)
 
+  c(avgtmean_wald, rangetmean_wald) %<-% wald_results(mv = mv)
+
+  c(argvar, bvar, mintempcity, minperccountry) %<-%
+    min_mortality(dlist = dlist, cities = cities, blup = blup)
+
   # argvar
   expect_equal(typeof(argvar), "list")
+  expect_equal(length(argvar), 5)
 
   # bvar
   expect_equal(typeof(bvar), "double")
+  expect_equal(is.numeric(bvar), TRUE)
   expect_equal(class(bvar)[1], "onebasis")
   expect_equal(class(bvar)[2], "matrix")
 

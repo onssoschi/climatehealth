@@ -5,12 +5,6 @@ library(zeallot)
 context("Test errors for incorrect inputs")
 test_that('Test that fwald() arguments are correct type', {
 
-  c(dlist, argvar, regions, cities, coef, vcov) %<-%
-    prep_and_first_step("testdata/regEngWales.csv")
-
-  c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
-                                  vcov = vcov)
-
   expect_error(fwald(mv, 1),
                "Argument 'var' must be a character", fixed = TRUE)
 
@@ -26,6 +20,7 @@ test_that('Test fwald() returns correct data type', {
                                   vcov = vcov)
 
   expect_equal(typeof(fwald(mv, "avgtmean")), "double")
+  expect_equal(is.numeric(fwald(mv, "avgtmean")), TRUE)
 
 })
 
