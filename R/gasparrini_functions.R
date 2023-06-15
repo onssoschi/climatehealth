@@ -672,5 +672,5 @@ do_analysis <- function(input_csv_path, output_csv_path){
                output_csv_path = output_csv_path)
 }
 
-do_analysis(input_csv_path = input_csv_path, output_csv_path = output_csv_path)
+#do_analysis(input_csv_path = input_csv_path, output_csv_path = output_csv_path)
 

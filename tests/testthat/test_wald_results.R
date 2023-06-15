@@ -2,13 +2,11 @@ library(testthat)
 library(indicatorfunctions)
 library(zeallot)
 
-source("./R/gasparrini_functions.R")
-
 context("Test output data types")
 test_that('Test wald_results() returns correct data type', {
 
   c(dlist, argvar, regions, cities, coef, vcov) %<-%
-    prep_and_first_step(input_csv_path)
+    prep_and_first_step("testdata/regEngWales.csv")
 
   c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
                                   vcov = vcov)
@@ -23,7 +21,7 @@ context("Test output length")
 test_that('Test wald_results() returns list of correct length', {
 
   c(dlist, argvar, regions, cities, coef, vcov) %<-%
-    prep_and_first_step(input_csv_path)
+    prep_and_first_step("testdata/regEngWales.csv")
 
   c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
                                   vcov = vcov)
@@ -35,7 +33,7 @@ context("Test output range")
 test_that('Test wald_results() returns p-values between 0 and 1', {
 
   c(dlist, argvar, regions, cities, coef, vcov) %<-%
-    prep_and_first_step(input_csv_path)
+    prep_and_first_step("testdata/regEngWales.csv")
 
   c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
                                   vcov = vcov)
