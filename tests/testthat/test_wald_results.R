@@ -14,6 +14,8 @@ test_that('Test wald_results() returns correct data type', {
   expect_equal(typeof(wald_results(mv)), "list")
   expect_equal(typeof(wald_results(mv)[[1]]), "double")
   expect_equal(typeof(wald_results(mv)[[2]]), "double")
+  expect_equal(is.numeric(wald_results(mv)[[1]]), TRUE)
+  expect_equal(is.numeric(wald_results(mv)[[2]]), TRUE)
 
 })
 
@@ -27,6 +29,9 @@ test_that('Test wald_results() returns list of correct length', {
                                   vcov = vcov)
 
   expect_equal(length(wald_results(mv)), 2)
+  expect_equal(length(wald_results(mv)[1]), 1)
+  expect_equal(length(wald_results(mv)[2]), 1)
+
 })
 
 context("Test output range")
@@ -43,5 +48,6 @@ test_that('Test wald_results() returns p-values between 0 and 1', {
 
   expect_lte(wald_results(mv)[[2]], 1)
   expect_gte(wald_results(mv)[[2]], 0)
+
 })
 
