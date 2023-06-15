@@ -41,6 +41,8 @@ get_region_metadata <- function(regions, dlist_unordered) {
 
 }
 
+# This function causes the regression to fail in run_model. Not sure why.
+# Have moved define_module into run_model and it works.
 # define_model <- function(cities) {
 #
 #   varper <- c(10, 75, 90)
