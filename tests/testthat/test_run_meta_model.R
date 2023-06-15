@@ -2,7 +2,7 @@ library(testthat)
 library(indicatorfunctions)
 library(zeallot)
 
-source("./R/gasparrini_functions.R")
+source("../../R/gasparrini_functions.R")
 
 context("Test errors for incorrect inputs")
 test_that('Test run_meta_model() produces appropriate errors', {
