@@ -324,7 +324,6 @@ write_outputs_to_csv <- function(cities, matsim, arraysim,
   aftothigh <- antothigh/totdeathtot*100
 
   # Bind datasets
-
   ancity_bind <- t(cbind(ancity, ancitylow, ancityhigh))
   antot_bind <- t(cbind(antot, antotlow, antothigh))
   afcity_bind <- t(cbind(afcity, afcitylow, afcityhigh))
@@ -339,10 +338,10 @@ write_outputs_to_csv <- function(cities, matsim, arraysim,
 
   if (!is.null(output_folder_path)) {
 
-    write.csv(ancity_bind, paste(output_folder_path, 'attributable_deaths_city.csv'))
-    write.csv(antot_bind, paste(output_folder_path, 'attributable_deaths_total.csv'))
-    write.csv(afcity_bind, output_folder_path, paste(output_folder_path, 'attributable_fraction_city.csv'))
-    write.csv(aftot_bind, output_folder_path, paste(output_folder_path, 'attributable_fraction_total.csv'))
+    write.csv(ancity_bind, paste(output_folder_path, 'attributable_deaths_city.csv',  sep = ""))
+    write.csv(antot_bind, paste(output_folder_path, 'attributable_deaths_total.csv',  sep = ""))
+    write.csv(afcity_bind, paste(output_folder_path, 'attributable_fraction_city.csv', sep = ""))
+    write.csv(aftot_bind, paste(output_folder_path, 'attributable_fraction_total.csv',  sep = ""))
     # write.csv(tmean_uk, output_folder_path, paste(output_folder_path, 'death_temp_total.csv'))
 
 
