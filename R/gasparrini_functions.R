@@ -114,80 +114,145 @@ prep_and_first_step <- function(input_csv_path) {
 
 }
 
-#' Second-stage analysis
-#' Multivariate meta-analysis of the reduced
-#' coef and then computation of blup
+
+#' Meta-analysis model
+#'
+#' Runs meta-analysis model and estimates best linear unbiased predictions
+#' (BLUPs) from this model.
 #'
 #' @param dlist a list of dataframes for each region
+#' @param cities A dataframe with two columns. Column 1 is abbreviated region
+#' names. Column 2 is full region names.
+#' @param coef A matrix populated with estimated model coefficients from a model of
+#' ???
+#' @param vcov A list. Variance-covariance matrices required for dlnm model.
+#'
+#' @return an mvmeta model
+#' @return BLUP estimates for an mvmeta model
+#' @import mvmeta
+run_meta_model <- function(dlist, cities, coef, vcov) {
+
+  if(!is.list(dlist) | !is.data.frame(dlist[[1]])) {
+    stop("Argument 'dlist' must be a list of data frames")
+  }
+
+  if(!is.data.frame(cities)) {
+    stop("Argument 'cities' must be a data frame")
+  }
+
+  if(!is.matrix(coef) | !is.numeric(coef)) {
+    stop("Argument 'coef' must be a numeric matrix")
+  }
+
+  if(!is.list(vcov) | !is.matrix(vcov[[1]])) {
+    stop("Argument 'vcov' must be a list of matrices")
+  }
+
+  # Create average temperature and range as meta-predictors
+  avgtmean <- sapply(dlist, function(x) mean(x$tmean, na.rm = TRUE))
+  rangetmean <- sapply(dlist,function(x) diff(range(x$tmean, na.rm = TRUE)))
+
+  # Meta-analysis
+  # NB: country effects is not included in this example
+  mv <- mvmeta(coef ~ avgtmean + rangetmean, vcov, data = cities,
+               control = list(showiter = TRUE))
+
+  # Obtain blups
+  blup <- blup(mv, vcov = T)
+
+  return(list(mv, blup))
+}
+
+#' Calculate p-values for Wald test
+#'
+#' A function to calculate p-values for an explanatory variable.
+#'
+#' @param model A model object
+#' @param var A character. The name of the variable in the model to calculate
+#' p-values for.
+#'
+#' @return A number. The p-value of the explanatory variable.
+fwald <- function(model, var) {
+
+  if(!is.character(var)) {
+    stop("Argument 'var' must be a character")
+  }
+
+  ind <- grep(var, names(coef(model)))
+  coef <- coef(model)[ind]
+  vcov <- vcov(model)[ind, ind]
+  waldstat <- coef %*% solve(vcov) %*% coef
+  df <- length(coef)
+  return(1 - pchisq(waldstat, df))
+}
+
+#' Get Wald statistic for a meta-analysis model
+#'
+#' @param mv A model object
+#'
+#' @return P-values for avgtmean and rangetmean
+wald_results <- function(mv) {
+  avgtmean_wald <- fwald(mv, "avgtmean")
+  rangetmean_wald <- fwald(mv, "rangetmean")
+  return(list(avgtmean_wald, rangetmean_wald))
+}
+
+#' Calculate minimum mortality values
+#'
+#' ???
+#'
+#' @param dlist A list of dataframes for each region
 #' @param cities A dataframe with two columns.
 #' Column 1 is abbreviated region names.
 #' Column 2 is full region names.
-#' @param argvar A list of arguments to pass to [dlnm::crossbasis()] function
-#' @param coef A matrix populated with estimated model coefficients from a
-#' model of ???
-#' @param vcov A list. Variance-covariance matrices required for [dlnm] model.
+#' @param blup BLUP estimates for an mvmeta model.
 #'
-#' @return A list of the following: \cr
-#' blup: A list of blup (best linear unbiased predictions) for each region.
-#' argvar:
-#' bvar: A basis matrix...
-#' mintempcity: A named vector...
-#'
-#' @examples second_stage(dlist = dlist, cities = cities, argvar = argvar,
-#' coef = coef, vcov = vcov)
-second_stage <- function(dlist, cities, argvar, coef, vcov) {
+#' @return A list. \cr
+#' argvar: A list of redefined arguments\cr
+#' bvar: ??? \cr
+#' mintempcity: ??? \cr
+#' minperccountry: ??? \cr
+min_mortality <-  function(dlist, cities, blup) {
 
-# Create average temperature and range as meta-predictors
-avgtmean <- sapply(dlist,function(x) mean(x$tmean,na.rm=T))
-rangetmean <- sapply(dlist,function(x) diff(range(x$tmean,na.rm=T)))
-
-# Meta-analysis
-# NB: country effects is not included in this example
-mv <- mvmeta(coef~avgtmean+rangetmean,vcov,data=cities,control=list(showiter=T))
-summary(mv)
-
-# Function for computing the p-value of Wald test
-fwald <- function(model,var) {
-  ind <- grep(var,names(coef(model)))
-  coef <- coef(model)[ind]
-  vcov <- vcov(model)[ind,ind]
-  waldstat <- coef%*%solve(vcov)%*%coef
-  df <- length(coef)
-  return(1-pchisq(waldstat,df))
+  if(!is.list(dlist) | !is.data.frame(dlist[[1]])) {
+    stop("Argument 'dlist' must be a list of data frames")
   }
 
-# Test the effects
-fwald(mv,"avgtmean")
-fwald(mv,"rangetmean")
-
-# Obtain blups
-blup <- blup(mv,vcov=T)
-
-# Re-centering
-# Generate the matrix for storing results
-minperccity <- mintempcity <- rep(NA,length(dlist))
-names(mintempcity) <- names(minperccity) <- cities$city
-
-# Define minimum mortality values: exclude low and very hot temperatures
-for(i in seq(length(dlist))) {
-  data <- dlist[[i]]
-  predvar <- quantile(data$tmean,1:99/100,na.rm=T)
-  # Redefine the function using all arguments (boundary knots included)
-  argvar <- list(x=predvar,fun=varfun,
-                 knots=quantile(data$tmean,varper/100,na.rm=T),degree=vardegree,
-                 Bound=range(data$tmean,na.rm=T))
-  bvar <- do.call(onebasis,argvar)
-  minperccity[i] <- (1:99)[which.min((bvar%*%blup[[i]]$blup))]
-  mintempcity[i] <- quantile(data$tmean,minperccity[i]/100,na.rm=T)
+  if(!is.data.frame(cities)) {
+    stop("Argument 'cities' must be a data frame")
   }
 
-# Country-specific points of minimum mortality
-(minperccountry <- median(minperccity))
+  if(!is.list(blup)) {
+    stop("Argument 'blup' must be a list")
+  }
 
-return (list(blup = blup, argvar = argvar,
-        bvar = bvar, mintempcity = mintempcity))
+  # Re-centering
+  # Generate the matrix for storing results
+  minperccity <- mintempcity <- rep(NA, length(dlist))
+  names(mintempcity) <- names(minperccity) <- cities$city
+
+  # Define minimum mortality values: exclude low and very hot temperatures
+  for(i in seq(length(dlist))) {
+    data <- dlist[[i]]
+    predvar <- quantile(data$tmean, 1:99/100, na.rm = T)
+    # Redefine the function using all arguments (boundary knots included)
+    argvar <- list(x = predvar, fun = varfun,
+                   knots = quantile(data$tmean, varper/100, na.rm = TRUE),
+                   degree = vardegree,
+                   Bound = range(data$tmean, na.rm = T))
+    bvar <- do.call(onebasis, argvar)
+    minperccity[i] <- (1:99)[which.min((bvar %*% blup[[i]]$blup))]
+    mintempcity[i] <- quantile(data$tmean, minperccity[i]/100, na.rm = TRUE)
+  }
+
+  # Country-specific points of minimum mortality
+  (minperccountry <- median(minperccity))
+
+  return(list(argvar = argvar, bvar = bvar, mintempcity = mintempcity,
+              minperccountry = minperccountry))
 
 }
+
 
 #' Attrdl
 #' Function for computing attributble measures from dlnm
@@ -579,10 +644,13 @@ do_analysis <- function(input_csv_path, output_csv_path){
 
   c(dlist, argvar, regions, cities, coef, vcov) %<-% prep_and_first_step(input_csv_path)
 
-  c(blup, argvar, bvar, mintempcity) %<-% second_stage(dlist = dlist,
-                                                       cities = cities,
-                                                       coef = coef,
-                                                       vcov = vcov)
+  c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
+                                  vcov = vcov)
+
+  c(avgtmean_wald, rangetmean_wald) %<-% wald_results(mv = mv)
+
+  c(argvar, bvar, mintempcity, minperccountry) %<-%
+    min_mortality(dlist = dlist, cities = cities, blup = blup)
 
   third_stage(dlist = dlist,
               cities = cities,
@@ -604,5 +672,5 @@ do_analysis <- function(input_csv_path, output_csv_path){
                output_csv_path = output_csv_path)
 }
 
-do_analysis(input_csv_path = input_csv_path, output_csv_path = output_csv_path)
+#do_analysis(input_csv_path = input_csv_path, output_csv_path = output_csv_path)
 
