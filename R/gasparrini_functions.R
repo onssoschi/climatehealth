@@ -135,59 +135,59 @@ prep_and_first_step <- function(input_csv_path) {
 #' #'
 #' #' @examples second_stage(dlist = dlist, cities = cities, argvar = argvar,
 #' #' coef = coef, vcov = vcov)
-#' second_stage <- function(dlist, cities, argvar, coef, vcov) {
-#'
-#' # Create average temperature and range as meta-predictors
-#' avgtmean <- sapply(dlist,function(x) mean(x$tmean,na.rm=T))
-#' rangetmean <- sapply(dlist,function(x) diff(range(x$tmean,na.rm=T)))
-#'
-#' # Meta-analysis
-#' # NB: country effects is not included in this example
-#' mv <- mvmeta(coef~avgtmean+rangetmean,vcov,data=cities,control=list(showiter=T))
-#' summary(mv)
-#'
-#' # Function for computing the p-value of Wald test
-#' fwald <- function(model,var) {
-#'   ind <- grep(var,names(coef(model)))
-#'   coef <- coef(model)[ind]
-#'   vcov <- vcov(model)[ind,ind]
-#'   waldstat <- coef%*%solve(vcov)%*%coef
-#'   df <- length(coef)
-#'   return(1-pchisq(waldstat,df))
-#'   }
-#'
-#' # Test the effects
-#' fwald(mv,"avgtmean")
-#' fwald(mv,"rangetmean")
-#'
-#' # Obtain blups
-#' blup <- blup(mv,vcov=T)
-#'
-#' # Re-centering
-#' # Generate the matrix for storing results
-#' minperccity <- mintempcity <- rep(NA,length(dlist))
-#' names(mintempcity) <- names(minperccity) <- cities$city
-#'
-#' # Define minimum mortality values: exclude low and very hot temperatures
-#' for(i in seq(length(dlist))) {
-#'   data <- dlist[[i]]
-#'   predvar <- quantile(data$tmean,1:99/100,na.rm=T)
-#'   # Redefine the function using all arguments (boundary knots included)
-#'   argvar <- list(x=predvar,fun=varfun,
-#'                  knots=quantile(data$tmean,varper/100,na.rm=T),degree=vardegree,
-#'                  Bound=range(data$tmean,na.rm=T))
-#'   bvar <- do.call(onebasis,argvar)
-#'   minperccity[i] <- (1:99)[which.min((bvar%*%blup[[i]]$blup))]
-#'   mintempcity[i] <- quantile(data$tmean,minperccity[i]/100,na.rm=T)
-#'   }
-#'
-#' # Country-specific points of minimum mortality
-#' (minperccountry <- median(minperccity))
-#'
-#' return (list(blup = blup, argvar = argvar,
-#'         bvar = bvar, mintempcity = mintempcity))
-#'
-#' }
+second_stage <- function(dlist, cities, argvar, coef, vcov) {
+
+    # Create average temperature and range as meta-predictors
+    avgtmean <- sapply(dlist,function(x) mean(x$tmean,na.rm=T))
+    rangetmean <- sapply(dlist,function(x) diff(range(x$tmean,na.rm=T)))
+
+    # Meta-analysis
+    # NB: country effects is not included in this example
+    mv <- mvmeta(coef~avgtmean+rangetmean,vcov,data=cities,control=list(showiter=T))
+    summary(mv)
+
+    # Function for computing the p-value of Wald test
+    fwald <- function(model,var) {
+      ind <- grep(var,names(coef(model)))
+      coef <- coef(model)[ind]
+      vcov <- vcov(model)[ind,ind]
+      waldstat <- coef%*%solve(vcov)%*%coef
+      df <- length(coef)
+      return(1-pchisq(waldstat,df))
+      }
+
+    # Test the effects
+    fwald(mv,"avgtmean")
+    fwald(mv,"rangetmean")
+
+    # Obtain blups
+    blup <- blup(mv,vcov=T)
+
+    # Re-centering
+    # Generate the matrix for storing results
+    minperccity <- mintempcity <- rep(NA,length(dlist))
+    names(mintempcity) <- names(minperccity) <- cities$city
+
+    # Define minimum mortality values: exclude low and very hot temperatures
+    for(i in seq(length(dlist))) {
+      data <- dlist[[i]]
+      predvar <- quantile(data$tmean,1:99/100,na.rm=T)
+      # Redefine the function using all arguments (boundary knots included)
+      argvar <- list(x=predvar,fun=varfun,
+                     knots=quantile(data$tmean,varper/100,na.rm=T),degree=vardegree,
+                     Bound=range(data$tmean,na.rm=T))
+      bvar <- do.call(onebasis,argvar)
+      minperccity[i] <- (1:99)[which.min((bvar%*%blup[[i]]$blup))]
+      mintempcity[i] <- quantile(data$tmean,minperccity[i]/100,na.rm=T)
+      }
+
+    # Country-specific points of minimum mortality
+    (minperccountry <- median(minperccity))
+
+    return (list(blup = blup, argvar = argvar,
+            bvar = bvar, mintempcity = mintempcity))
+
+}
 
 #' Compute attributable deaths
 #' Compute the attributable deaths for each city,
@@ -211,6 +211,12 @@ prep_and_first_step <- function(input_csv_path) {
 compute_attributable_deaths <- function(dlist, cities, coef, vcov,
                                         varfun, argvar, bvar, blup,
                                         mintempcity) {
+
+  if (file.exists('R/attrdl.R')) {
+    source('R/attrdl.R')
+  } else {
+    source('testdata/attrdl.R')
+  }
 
   # Create the vectors to store the total mortality (accounting for missing)
   totdeath <- rep(NA,nrow(cities))
@@ -245,23 +251,23 @@ compute_attributable_deaths <- function(dlist, cities, coef, vcov,
 
     # Compute the attributable deaths
     # NB: The reduced coefficients are used here
-    matsim[i,"glob"] <- dlnm::attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
+    matsim[i,"glob"] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
                                vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i])
-    matsim[i,"cold"] <- dlnm::attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
+    matsim[i,"cold"] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
                                vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],
                                range=c(-100,mintempcity[i]))
-    matsim[i,"heat"] <- dlnm::attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
+    matsim[i,"heat"] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
                                vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],
                                range=c(mintempcity[i],100))
 
     # Compute empirical occurences of the attributable deaths
     # Uused to derive confidence intervals
-    arraysim[i,"glob",] <- dlnm::attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
+    arraysim[i,"glob",] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
                                   vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],sim=T,nsim=nsim)
-    arraysim[i,"cold",] <- dlnm::attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
+    arraysim[i,"cold",] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
                                   vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],
                                   range=c(-100,mintempcity[i]),sim=T,nsim=nsim)
-    arraysim[i,"heat",] <- dlnm::attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
+    arraysim[i,"heat",] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
                                   vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempcity[i],
                                   range=c(mintempcity[i],100),sim=T,nsim=nsim)
 
@@ -271,7 +277,7 @@ compute_attributable_deaths <- function(dlist, cities, coef, vcov,
 
   }
 
-  return (c(totdeath, arraysim, matsim))
+  return (list(totdeath, arraysim, matsim))
 
 }
 
@@ -285,7 +291,7 @@ compute_attributable_deaths <- function(dlist, cities, coef, vcov,
 #' @param output_folder_path
 #'
 #' @return None
-#' @examples attr_output_folder_path = 'myfolder/output/'
+#' @examples output_folder_path = 'myfolder/output/'
 write_outputs_to_csv <- function(cities, matsim, arraysim,
                                       totdeath, output_folder_path = NULL) {
 
@@ -324,34 +330,33 @@ write_outputs_to_csv <- function(cities, matsim, arraysim,
   afcity_bind <- t(cbind(afcity, afcitylow, afcityhigh))
   aftot_bind <- t(cbind(aftot, aftotlow, aftothigh))
 
-  # Temperature
-  tmeanuk <- sapply(dlist,function(city) mean(city$tmean,na.rm=T))
-  c(Country="UK",
-    Period=paste(range(dlist[[1]]$year),collapse="-"),Deaths=totdeathtot,
-    Temperature=paste0(formatC(mean(tmeanuk),dig=1,
-                               format="f")," (",paste(formatC(range(tmeanuk),dig=1,format="f"),
-                                                      collapse="-"),")"))
+  # # Temperature
+  # tmeanuk <- sapply(dlist,function(city) mean(city$tmean,na.rm=T)), c(Country="UK",
+  #   Period=paste(range(dlist[[1]]$year),collapse="-"),Deaths=totdeathtot,
+  #   Temperature=paste0(formatC(mean(tmeanuk),dig=1,
+  #                              format="f")," (",paste(formatC(range(tmeanuk),dig=1,format="f"),
+  #                                                     collapse="-"),")"))
 
-  if (attr_output_folder_path) {
+  if (!is.null(output_folder_path)) {
 
-    write.csv(ancity_bind, paste(output_folder_path, 'attributable_deaths_city'))
-    write.csv(antot_bind, paste(output_folder_path, 'attributable_deaths_total'))
-    write.csv(afcity_bind, output_folder_path, paste(output_folder_path, 'attributable_fraction_city'))
-    write.csv(aftot_bind, output_folder_path, paste(output_folder_path, 'attributable_fraction_total'))
-    write.csv(tmean_uk, output_folder_path, paste(output_folder_path, 'death_temp_total'))
+    write.csv(ancity_bind, paste(output_folder_path, 'attributable_deaths_city.csv'))
+    write.csv(antot_bind, paste(output_folder_path, 'attributable_deaths_total.csv'))
+    write.csv(afcity_bind, output_folder_path, paste(output_folder_path, 'attributable_fraction_city.csv'))
+    write.csv(aftot_bind, output_folder_path, paste(output_folder_path, 'attributable_fraction_total.csv'))
+    # write.csv(tmean_uk, output_folder_path, paste(output_folder_path, 'death_temp_total.csv'))
 
 
   } else {
 
-    write.csv(ancity_bind, 'attributable_deaths_city')
-    write.csv(antot_bind, 'attributable_deaths_total')
-    write.csv(afcity_bind, 'attributable_fraction_city')
-    write.csv(aftot_bind, 'attributable_fraction_total')
-    write.csv(tmean_uk, output_folder_path, paste(output_folder_path, 'death_temp_total'))
+    write.csv(ancity_bind, 'attributable_deaths_city.csv')
+    write.csv(antot_bind, 'attributable_deaths_total.csv')
+    write.csv(afcity_bind, 'attributable_fraction_city.csv')
+    write.csv(aftot_bind, 'attributable_fraction_total.csv')
+    # write.csv(tmean_uk, output_folder_path, paste(output_folder_path, 'death_temp_total'))
 
   }
 
-  return(c(antot, totdeathdot, aftot, afcity))
+  return(c(antot, totdeathtot, aftot, afcity))
 
 }
 
