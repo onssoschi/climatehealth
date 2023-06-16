@@ -8,101 +8,140 @@ library(zeallot)
 # Load config file
 config <- config::get()
 
-# Input data
-input_csv_path <- config$input_csv_path
-
-# Output data
-output_csv_path <- config$output_csv_path
-
-# Specification of the exposure function
-varfun <- config$varfun
-vardegree <- config$vardegree
-varper <- c(10,75,90)
-
-# Specification of the lag function
-lag <- config$lag
-lagnk <- config$lagnk
-
-# Degree of freedom for seasonality
-dfseas <- config$dfseas
-
-#' First-stage analysis
-#' Run the model in each city/region, reduce and save.
-#' Create objects to store the results.
+#' Load data for analysis
 #'
-#' @param input_csv_path A character.
-#' The file path for a csv file of the input data.
+#' @param input_path a path to CSV
+
+#' @return dlist_unordered - a list of dataframes for each region
+#' @return regions - a list of strings of the names of each region
 #'
-#' @return A list of the following: \cr
-#' dlist: a list of dataframes for each region \cr
-#' argvar: A list of arguments to pass to [dlnm::crossbasis()] function \cr
-#' regions: A character vector.
-#' Contains names of ten regions; the 9 English regions and Wales. \cr
-#' cities: A dataframe with two columns.
-#' Column 1 is abbreviated region names.
-#' Column 2 is full region names \cr
-#' coef: A matrix populated with estimated model coefficients from a model of
-#' ??? \cr
-#' vcov: A list. Variance-covariance matrices required for [dlnm] model. \cr
+#' @examples
+load_data <- function(input_path) {
+
+  if(substr(input_path, nchar(input_path) - 3, nchar(input_path)) !=  '.csv') {
+    stop("Input path must be a CSV")
+  }
+
+  df_eng_wales <- read.csv(input_path, row.names=1)
+  df_eng_wales$date <- as.Date(df_engx_wales$date)
+
+  regions <- as.character(unique(df_eng_wales$regnames)) # .distinct() on regnames
+  dlist_unordered <- lapply(regions, function(x) df_eng_wales[df_eng_wales$regnames == x, ])
+  names(dlist_unordered) <- regions
+
+  return (list(dlist_unordered, regions))
+
+}
+
+#' Get region metadata for analysis
 #'
-#' @examples prep_and_first_step('data/regEngWales.csv')
-prep_and_first_step <- function(input_csv_path) {
+#' @param regions list of strings of region names
+#' @param dlist_unordered list of dataframes for each region
+#'
+#' @return regions - an alphabetically-ordered dataframe of region names
+#' @return dlist - an alphabetically-ordered list of dataframes for each region
+#'
+#' @examples
+get_region_metadata <- function(regions, dlist_unordered) {
 
-  # Load dataset
-  regEngWales <- read.csv(input_csv_path,row.names=1)
-  regEngWales$date <- as.Date(regEngWales$date)
+  if(!is.list(dlist_unordered) | !is.data.frame(dlist_unordered)) {
+    stop("Argument 'dlist_unordered' must be a list of data frames")
+  }
 
-  # Arrange the data as a list of data sets
-  regions <- as.character(unique(regEngWales$regnames))
-  dlist <- lapply(regions,function(x) regEngWales[regEngWales$regnames==x,])
-  names(dlist) <- regions
+  if(!is.list(regions) | !is.data.frame(dlist_unordered)) {
+    stop("Argument 'regions' must be a list")
+  }
 
-  # Metadata for locations
   cities <- data.frame(
     city = regions,
-    cityname = c("North East","North West","Yorkshire & Humber","East Midlands",
-                 "West Midlands","East","London","South East","South West", "Wales")
+    # The following line can be deleted. It just allows the user to assign
+    # the region/city names to a new string and could introduce errors
+    # cityname = c("North East", "North West", "Yorkshire & Humber",
+    #              "East Midlands", "West Midlands", "East", "London",
+    #              "South East", "South West", "Wales")
+    cityname = regions
   )
 
   # Order
   ord <- order(cities$cityname)
-  dlist <- dlist[ord]
+  dlist <- dlist_unordered[ord]
   cities <- cities[ord,]
 
-  # Model formula
-  formula <- death~cb+dow+ns(date,df=dfseas*length(unique(year)))
+  return (list(cities, dlist))
 
-  # Coefficients and vcov for overall cumulative summary
-  coef <- matrix(NA,nrow(cities),length(varper)+vardegree,
-                 dimnames=list(cities$city))
-  vcov <- vector("list",nrow(cities))
-  names(vcov) <- cities$city
+}
+
+# This function causes the regression to fail in run_model. Not sure why.
+# Have moved define_module into run_model and it works.
+# define_model <- function(cities) {
+#
+#   varper <- c(10, 75, 90)
+#
+#   # Model formula
+#   formula <- death ~ cb + dow + ns(date,df = config$dfseas * length(unique(year)))
+#
+#   # Coefficients and vcov for overall cumulative summary
+#   coef <- matrix(NA,
+#                  nrow(cities),
+#                  length(varper) + config$vardegree,
+#                  dimnames = list(cities$city))
+#   vcov <- vector("list", nrow(cities))
+#   names(vcov) <- cities$city
+#
+#   return(list(formula, coef, vcov))
+#
+# }
+
+#' Define and run regression model for each dataframe
+#'
+#' @param regions list of strings of region names
+#' @param dlist_unordered list of dataframes for each region
+#'
+#' @return red
+#' @return coev
+#' @return vcov
+#' @examples
+run_model <- function(dlist, cities) {
 
   # Loop
   time <- proc.time()[3]
+
+  varper <- c(10, 75, 90)
+
+  # Model formula
+  formula <- death ~ cb + dow + ns(date, df = config$dfseas * length(unique(year)))
+
+  # Coefficients and vcov for overall cumulative summary
+  coef <- matrix(NA,
+                 nrow(cities),
+                 length(varper) + config$vardegree,
+                 dimnames = list(cities$city))
+  vcov <- vector("list" ,nrow(cities))
+  names(vcov) <- cities$city
 
   for(i in seq(length(dlist))) {
 
     cat(i,"")
 
     # Extract data
-    data <- dlist[[i]]
+    data <- dlist[[1]]
 
     # Define crossbasis
-    argvar <- list(fun=varfun,knots=quantile(data$tmean,varper/100,na.rm=T),
-                   degree=vardegree)
-    cb <- crossbasis(data$tmean,lag=lag,argvar=argvar,
-                     arglag=list(knots=logknots(lag,lagnk)))
-
-    #summary(cb)
+    argvar <- list(fun = config$varfun,
+                   knots = quantile(data$tmean, (varper)/100, na.rm=T),
+                   degree = config$vardegree)
+    cb <- crossbasis(data$tmean,
+                     lag = config$lag,
+                     argvar = argvar,
+                     arglag = list(knots = logknots(config$lag,config$lagnk)))
 
     # Run the model and obtain predictions
-    model <- glm(formula,data,family=quasipoisson,na.action="na.exclude")
-    cen <- mean(data$tmean,na.rm=T)
-    pred <- crosspred(cb,model,cen=cen)
+    model <- glm(formula, data, family = quasipoisson,na.action = "na.exclude")
+    cen <- mean(data$tmean, na.rm = T)
+    pred <- crosspred(cb, model, cen = cen)
 
     # Reduction to overall cumulative
-    red <- crossreduce(cb,model,cen=cen)
+    red <- crossreduce(cb ,model, cen=cen)
     coef[i,] <- coef(red)
     vcov[[i]] <- vcov(red)
 
@@ -110,7 +149,7 @@ prep_and_first_step <- function(input_csv_path) {
 
   proc.time()[3]-time
 
-  return (list(dlist, argvar, regions, cities, coef, vcov))
+  return (list(argvar, coef, vcov))
 
 }
 
