@@ -3,7 +3,15 @@ library(indicatorfunctions)
 
 test_that('Test new output matches original output', {
 
-  do_analysis('testdata/regEngWales.csv', output_csv_path = 'testdata/output_one_region_data_new.csv')
+  c(dlist, argvar, regions, cities, coef, vcov) %<-%
+    prep_and_first_step('testdata/regEngWales.csv')
+
+  c(totdeath, arraysim, matsim) %<-%
+    compute_attributable_deaths(dlist, cities,
+                                coef, vcov,
+                                varfun, argvar,
+                                bvar, blup,
+                                mintempcity)
 
   expected_output <- read.csv('testdata/output_one_region_data_original.csv')
 

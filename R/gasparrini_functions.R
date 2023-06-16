@@ -1,54 +1,82 @@
+library(dlnm)
+library(mvmeta)
+library(splines)
+library(tsModel)
+library(config)
+library(zeallot)
+
 # Load config file
 config <- config::get()
 
-load_data <- function(input_path) {
+# Input data
+input_csv_path <- config$input_csv_path
 
-  df_eng_wales <- read.csv(input_path, row.names=1)
-  df_eng_wales$date <- as.Date(df_eng_wales$date)
+# Output data
+output_csv_path <- config$output_csv_path
 
-  regions <- as.character(unique(df_eng_wales$regnames)) # .distinct() on regnames
-  dlist <- lapply(regions,function(x) df_eng_wales[df_eng_wales$regnames==x,])
+# Specification of the exposure function
+varfun <- config$varfun
+vardegree <- config$vardegree
+varper <- c(10,75,90)
+
+# Specification of the lag function
+lag <- config$lag
+lagnk <- config$lagnk
+
+# Degree of freedom for seasonality
+dfseas <- config$dfseas
+
+#' First-stage analysis
+#' Run the model in each city/region, reduce and save.
+#' Create objects to store the results.
+#'
+#' @param input_csv_path A character.
+#' The file path for a csv file of the input data.
+#'
+#' @return A list of the following: \cr
+#' dlist: a list of dataframes for each region \cr
+#' argvar: A list of arguments to pass to [dlnm::crossbasis()] function \cr
+#' regions: A character vector.
+#' Contains names of ten regions; the 9 English regions and Wales. \cr
+#' cities: A dataframe with two columns.
+#' Column 1 is abbreviated region names.
+#' Column 2 is full region names \cr
+#' coef: A matrix populated with estimated model coefficients from a model of
+#' ??? \cr
+#' vcov: A list. Variance-covariance matrices required for [dlnm] model. \cr
+#'
+#' @examples prep_and_first_step('data/regEngWales.csv')
+prep_and_first_step <- function(input_csv_path) {
+
+  # Load dataset
+  regEngWales <- read.csv(input_csv_path,row.names=1)
+  regEngWales$date <- as.Date(regEngWales$date)
+
+  # Arrange the data as a list of data sets
+  regions <- as.character(unique(regEngWales$regnames))
+  dlist <- lapply(regions,function(x) regEngWales[regEngWales$regnames==x,])
   names(dlist) <- regions
 
-  return (list(dlist, regions))
-
-}
-
-get_region_metadata <- function(regions, dlist) {
+  # Metadata for locations
   cities <- data.frame(
     city = regions,
-    cityname = c("North East","North West","Yorkshire & Humber",
-                 "East Midlands","West Midlands","East","London",
-                 "South East","South West", "Wales")
+    cityname = c("North East","North West","Yorkshire & Humber","East Midlands",
+                 "West Midlands","East","London","South East","South West", "Wales")
   )
 
-  # Order regions
+  # Order
   ord <- order(cities$cityname)
   dlist <- dlist[ord]
   cities <- cities[ord,]
 
-  return (list(cities, dlist))
-
-}
-
-define_model <- function(cities) {
-
   # Model formula
-  formula <- death~cb+dow+ns(date,df=config$dfseas*length(unique(year)))
+  formula <- death~cb+dow+ns(date,df=dfseas*length(unique(year)))
 
   # Coefficients and vcov for overall cumulative summary
-  coef <- matrix(NA,
-                 nrow(cities),
-                 length(config$varper)+config$vardegree,
+  coef <- matrix(NA,nrow(cities),length(varper)+vardegree,
                  dimnames=list(cities$city))
   vcov <- vector("list",nrow(cities))
   names(vcov) <- cities$city
-
-  return(list(formula, coef, vcov))
-
-}
-
-run_model <- function(dlist, formula, coef, vcov)
 
   # Loop
   time <- proc.time()[3]
@@ -61,13 +89,10 @@ run_model <- function(dlist, formula, coef, vcov)
     data <- dlist[[i]]
 
     # Define crossbasis
-    argvar <- list(fun=config$varfun,
-                   knots=quantile(data$tmean,config$varper/100,na.rm=T),
-                   degree=config$vardegree)
-    cb <- crossbasis(data$tmean,
-                     lag=config$lag,
-                     argvar=argvar,
-                     arglag=list(knots=logknots(config$lag,config$lagnk)))
+    argvar <- list(fun=varfun,knots=quantile(data$tmean,varper/100,na.rm=T),
+                   degree=vardegree)
+    cb <- crossbasis(data$tmean,lag=lag,argvar=argvar,
+                     arglag=list(knots=logknots(lag,lagnk)))
 
     #summary(cb)
 
@@ -81,27 +106,13 @@ run_model <- function(dlist, formula, coef, vcov)
     coef[i,] <- coef(red)
     vcov[[i]] <- vcov(red)
 
-    }
+  }
 
   proc.time()[3]-time
 
   return (list(dlist, argvar, regions, cities, coef, vcov))
 
-
-# ??? Best practice to call these outputs something different to how they're
-# named in function???
-# Euan: I think so. Might be best to fix all the argument names once the first RAP'd version works.
-run_all <- function() {
-  c(dlist, regions) %<-% load_data(config$input_csv_path)
-  c(cities, dlist) %<-% get_region_metadata(regions, dlist)
-  c(formula, coef, vcov) %<-% define_model(cities)
-  c(dlist, argvar, regions, cities, coef, vcov) %<-% run_model(dlist,
-                                                               formula,
-                                                               coef,
-                                                               vcov)
 }
-
-run_all()
 
 #' #' Second-stage analysis
 #' #' Multivariate meta-analysis of the reduced
@@ -205,7 +216,7 @@ compute_attributable_deaths <- function(dlist, cities, coef, vcov,
   totdeath <- rep(NA,nrow(cities))
   names(totdeath) <- cities$city
 
-  # Create the matrix to store the attributanle deaths
+  # Create the matrix to store the attributable deaths
   matsim <- matrix(NA,nrow(cities),3,dimnames=list(cities$city,
                                                    c("glob","cold","heat")))
 
@@ -424,23 +435,27 @@ plot_results <- function(dlist, argvar,
 
 }
 
-#' Do all of the analysis
+#' Do Gasparrini analysis
+#'
 #' @param input_csv_path
 #' @param output_csv_path
 #'
 #' @return
 #'
 #' @examples
-do_analysis <- function(input_csv_path, output_folder_path){
+do_analysis <- function(input_csv_path, output_csv_path){
 
-  c(dlist, argvar, regions, cities, coef, vcov) %<-% run_all(input_csv_path)
+  c(dlist, argvar, regions, cities, coef, vcov) %<-% prep_and_first_step(input_csv_path)
 
-  c(blup, argvar, bvar, mintempcity) %<-% compute_attributable_deaths(dlist = dlist,
-                                                       cities = cities,
-                                                       coef = coef,
-                                                       vcov = vcov)
+  c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
+                                  vcov = vcov)
 
-  plot_results(dlist = dlist,
+  c(avgtmean_wald, rangetmean_wald) %<-% wald_results(mv = mv)
+
+  c(argvar, bvar, mintempcity, minperccountry) %<-%
+    min_mortality(dlist = dlist, cities = cities, blup = blup)
+
+  third_stage(dlist = dlist,
               cities = cities,
               regions = regions,
               argvar = argvar,
@@ -451,6 +466,12 @@ do_analysis <- function(input_csv_path, output_folder_path){
               varfun = varfun,
               mintempcity = mintempcity)
 
-  write_outputs_to_csv()
-
+  plot_results(dlist = dlist,
+               cities = cities,
+               argvar = argvar,
+               bvar = bvar,
+               blup = blup,
+               mintempcity = mintempcity,
+               output_csv_path = output_csv_path)
 }
+
