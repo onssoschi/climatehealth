@@ -8,7 +8,7 @@ default:
   # Specification of the exposure function
   varfun: 'bs'
   vardegree:  2
-  varper:  c(10,75,90)
+  # varper: c(10,75,90)
 
   # Specification of the lag function
   lag: 21
