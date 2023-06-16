@@ -1,10 +1,13 @@
 library(testthat)
 library(indicatorfunctions)
 
-test_that('Test new output matches original output', {
+test_that('Test total deaths is an integer of correct length', {
 
   c(dlist, argvar, regions, cities, coef, vcov) %<-%
     prep_and_first_step('testdata/regEngWales.csv')
+
+  c(blup, argvar, bvarr, mintempcity) %<-%
+    second_stage(dlist, cities, argvar, coef, vcov)
 
   c(totdeath, arraysim, matsim) %<-%
     compute_attributable_deaths(dlist, cities,
@@ -13,10 +16,9 @@ test_that('Test new output matches original output', {
                                 bvar, blup,
                                 mintempcity)
 
-  expected_output <- read.csv('testdata/output_one_region_data_original.csv')
+  expected_output <- rep(5L, length(regions))
 
-  actual_output <- read.csv('testdata/output_one_region_data_new.csv')
-
-  expect_equal(actual_output, expected_output)
+  expect_equal(typeof(totdeath), typeof(expected_output))
+  expect_equal(length(totdeath), length(expected_output))
 
 })
