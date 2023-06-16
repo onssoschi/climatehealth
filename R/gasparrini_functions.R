@@ -114,78 +114,258 @@ prep_and_first_step <- function(input_csv_path) {
 
 }
 
-#' #' Second-stage analysis
-#' #' Multivariate meta-analysis of the reduced
-#' #' coef and then computation of blup
-#' #'
-#' #' @param dlist a list of dataframes for each region
-#' #' @param cities A dataframe with two columns.
-#' #' Column 1 is abbreviated region names.
-#' #' Column 2 is full region names.
-#' #' @param argvar A list of arguments to pass to [dlnm::crossbasis()] function
-#' #' @param coef A matrix populated with estimated model coefficients from a
-#' #' model of ???
-#' #' @param vcov A list. Variance-covariance matrices required for [dlnm] model.
-#' #'
-#' #' @return A list of the following: \cr
-#' #' blup: A list of blup (best linear unbiased predictions) for each region.
-#' #' argvar:
-#' #' bvar: A basis matrix...
-#' #' mintempcity: A named vector...
-#' #'
-#' #' @examples second_stage(dlist = dlist, cities = cities, argvar = argvar,
-#' #' coef = coef, vcov = vcov)
-second_stage <- function(dlist, cities, argvar, coef, vcov) {
 
-    # Create average temperature and range as meta-predictors
-    avgtmean <- sapply(dlist,function(x) mean(x$tmean,na.rm=T))
-    rangetmean <- sapply(dlist,function(x) diff(range(x$tmean,na.rm=T)))
+#' Meta-analysis model
+#'
+#' Runs meta-analysis model and estimates best linear unbiased predictions
+#' (BLUPs) from this model.
+#'
+#' @param dlist a list of dataframes for each region
+#' @param cities A dataframe with two columns. Column 1 is abbreviated region
+#' names. Column 2 is full region names.
+#' @param coef A matrix populated with estimated model coefficients from a model of
+#' ???
+#' @param vcov A list. Variance-covariance matrices required for dlnm model.
+#'
+#' @return an mvmeta model
+#' @return BLUP estimates for an mvmeta model
+#' @import mvmeta
+run_meta_model <- function(dlist, cities, coef, vcov) {
 
-    # Meta-analysis
-    # NB: country effects is not included in this example
-    mv <- mvmeta(coef~avgtmean+rangetmean,vcov,data=cities,control=list(showiter=T))
-    summary(mv)
+  if(!is.list(dlist) | !is.data.frame(dlist[[1]])) {
+    stop("Argument 'dlist' must be a list of data frames")
+  }
 
-    # Function for computing the p-value of Wald test
-    fwald <- function(model,var) {
-      ind <- grep(var,names(coef(model)))
-      coef <- coef(model)[ind]
-      vcov <- vcov(model)[ind,ind]
-      waldstat <- coef%*%solve(vcov)%*%coef
-      df <- length(coef)
-      return(1-pchisq(waldstat,df))
-      }
+  if(!is.data.frame(cities)) {
+    stop("Argument 'cities' must be a data frame")
+  }
 
-    # Test the effects
-    fwald(mv,"avgtmean")
-    fwald(mv,"rangetmean")
+  if(!is.matrix(coef) | !is.numeric(coef)) {
+    stop("Argument 'coef' must be a numeric matrix")
+  }
 
-    # Obtain blups
-    blup <- blup(mv,vcov=T)
+  if(!is.list(vcov) | !is.matrix(vcov[[1]])) {
+    stop("Argument 'vcov' must be a list of matrices")
+  }
 
-    # Re-centering
-    # Generate the matrix for storing results
-    minperccity <- mintempcity <- rep(NA,length(dlist))
-    names(mintempcity) <- names(minperccity) <- cities$city
+  # Create average temperature and range as meta-predictors
+  avgtmean <- sapply(dlist, function(x) mean(x$tmean, na.rm = TRUE))
+  rangetmean <- sapply(dlist,function(x) diff(range(x$tmean, na.rm = TRUE)))
 
-    # Define minimum mortality values: exclude low and very hot temperatures
-    for(i in seq(length(dlist))) {
-      data <- dlist[[i]]
-      predvar <- quantile(data$tmean,1:99/100,na.rm=T)
-      # Redefine the function using all arguments (boundary knots included)
-      argvar <- list(x=predvar,fun=varfun,
-                     knots=quantile(data$tmean,varper/100,na.rm=T),degree=vardegree,
-                     Bound=range(data$tmean,na.rm=T))
-      bvar <- do.call(onebasis,argvar)
-      minperccity[i] <- (1:99)[which.min((bvar%*%blup[[i]]$blup))]
-      mintempcity[i] <- quantile(data$tmean,minperccity[i]/100,na.rm=T)
-      }
+  # Meta-analysis
+  # NB: country effects is not included in this example
+  mv <- mvmeta(coef ~ avgtmean + rangetmean, vcov, data = cities,
+               control = list(showiter = TRUE))
 
-    # Country-specific points of minimum mortality
-    (minperccountry <- median(minperccity))
+  # Obtain blups
+  blup <- blup(mv, vcov = T)
 
-    return (list(blup = blup, argvar = argvar,
-            bvar = bvar, mintempcity = mintempcity))
+  return(list(mv, blup))
+}
+
+#' Calculate p-values for Wald test
+#'
+#' A function to calculate p-values for an explanatory variable.
+#'
+#' @param model A model object
+#' @param var A character. The name of the variable in the model to calculate
+#' p-values for.
+#'
+#' @return A number. The p-value of the explanatory variable.
+fwald <- function(model, var) {
+
+  if(!is.character(var)) {
+    stop("Argument 'var' must be a character")
+  }
+
+  ind <- grep(var, names(coef(model)))
+  coef <- coef(model)[ind]
+  vcov <- vcov(model)[ind, ind]
+  waldstat <- coef %*% solve(vcov) %*% coef
+  df <- length(coef)
+  return(1 - pchisq(waldstat, df))
+}
+
+#' Get Wald statistic for a meta-analysis model
+#'
+#' @param mv A model object
+#'
+#' @return P-values for avgtmean and rangetmean
+wald_results <- function(mv) {
+  avgtmean_wald <- fwald(mv, "avgtmean")
+  rangetmean_wald <- fwald(mv, "rangetmean")
+  return(list(avgtmean_wald, rangetmean_wald))
+}
+
+#' Calculate minimum mortality values
+#'
+#' ???
+#'
+#' @param dlist A list of dataframes for each region
+#' @param cities A dataframe with two columns.
+#' Column 1 is abbreviated region names.
+#' Column 2 is full region names.
+#' @param blup BLUP estimates for an mvmeta model.
+#'
+#' @return A list. \cr
+#' argvar: A list of redefined arguments\cr
+#' bvar: ??? \cr
+#' mintempcity: ??? \cr
+#' minperccountry: ??? \cr
+min_mortality <-  function(dlist, cities, blup) {
+
+  if(!is.list(dlist) | !is.data.frame(dlist[[1]])) {
+    stop("Argument 'dlist' must be a list of data frames")
+  }
+
+  if(!is.data.frame(cities)) {
+    stop("Argument 'cities' must be a data frame")
+  }
+
+  if(!is.list(blup)) {
+    stop("Argument 'blup' must be a list")
+  }
+
+  # Re-centering
+  # Generate the matrix for storing results
+  minperccity <- mintempcity <- rep(NA, length(dlist))
+  names(mintempcity) <- names(minperccity) <- cities$city
+
+  # Define minimum mortality values: exclude low and very hot temperatures
+  for(i in seq(length(dlist))) {
+    data <- dlist[[i]]
+    predvar <- quantile(data$tmean, 1:99/100, na.rm = T)
+    # Redefine the function using all arguments (boundary knots included)
+    argvar <- list(x = predvar, fun = varfun,
+                   knots = quantile(data$tmean, varper/100, na.rm = TRUE),
+                   degree = vardegree,
+                   Bound = range(data$tmean, na.rm = T))
+    bvar <- do.call(onebasis, argvar)
+    minperccity[i] <- (1:99)[which.min((bvar %*% blup[[i]]$blup))]
+    mintempcity[i] <- quantile(data$tmean, minperccity[i]/100, na.rm = TRUE)
+  }
+
+  # Country-specific points of minimum mortality
+  (minperccountry <- median(minperccity))
+
+  return(list(argvar = argvar, bvar = bvar, mintempcity = mintempcity,
+              minperccountry = minperccountry))
+
+}
+
+
+#' Attrdl
+#' Function for computing attributble measures from dlnm
+#  requires dlnm v.2.2.0 >
+#'
+#' @param x An exposure vector or (only for dir="back") a matrix of lagged exposures
+#' @param basis: The cross-basis computed from x
+#' @param cases: The cases vector or (only for dir="forw") the matrix of future cases
+#' @param model: The fitted model
+#' @param coef, vcov: coef and vcov for basis if model is not provided
+#' @param model.link: Link function if model is not provided
+#' @param type: Either "an" or "af" for attributable number or fraction
+#' @param dir: Either "back" or "forw" for backward or forward perspectives
+#' @param tot: If true, the total attributable risk is computed
+#' @param cen: The reference value used as counterfactual scenario
+#' @param range: The range of exposure. if null, the whole range is used
+#' @param sim: If simulation samples should be returned. only for tot=true
+#' @param nsim: Number of simulation samples
+#'
+#' @return res
+#' @examples
+attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
+                   type="af",dir="back",tot=TRUE,cen,range=NULL,sim=FALSE,nsim=5000) {
+
+  # Check version of the dlnm package
+  if(packageVersion("dlnm")<"2.2.0")
+    stop("update dlnm package to version >= 2.2.0")
+
+  # Extract name and check type and dir
+  name <- deparse(substitute(basis))
+  type <- match.arg(type,c("an","af"))
+  dir <- match.arg(dir,c("back","forw"))
+
+  # Define centering
+  if(missing(cen) && is.null(cen <- attr(basis,"argvar")$cen))
+    stop("'cen' must be provided")
+  if(!is.numeric(cen) && length(cen)>1L) stop("'cen' must be a numeric scalar")
+  attributes(basis)$argvar$cen <- NULL
+
+  # Select range (force to centering value otherwise, meaning null risk)
+  if(!is.null(range)) x[x<range[1]|x>range[2]] <- cen
+
+  # Compute the matrix of
+  #   - Lagged exposures if dir="back"
+  #   - Constant exposures along lags if dir="forw"
+  lag <- attr(basis,"lag")
+  if(NCOL(x)==1L) {
+    at <- if(dir=="back") tsModel:::Lag(x,seq(lag[1],lag[2])) else
+      matrix(rep(x,diff(lag)+1),length(x))
+  } else {
+    if(dir=="forw") stop("'x' must be a vector when dir='forw'")
+    if(ncol(at <- x)!=diff(lag)+1)
+      stop("dimension of 'x' not compatible with 'basis'")
+  }
+
+  # Number used for the contribution at each time in forward type
+  #   - If cases provided as a matrix, take the row average
+  #   - If provided as a time series, compute the forward moving average
+  #   - This excludes missing accordingly
+  # Also compute the denominator to be used below
+  if(NROW(cases)!=NROW(at)) stop("'x' and 'cases' not consistent")
+  if(NCOL(cases)>1L) {
+    if(dir=="back") stop("'cases' must be a vector if dir='back'")
+    if(ncol(cases)!=diff(lag)+1) stop("dimension of 'cases' not compatible")
+    den <- sum(rowMeans(cases,na.rm=TRUE),na.rm=TRUE)
+    cases <- rowMeans(cases)
+  } else {
+    den <- sum(cases,na.rm=TRUE)
+    if(dir=="forw")
+      cases <- rowMeans(as.matrix(tsModel:::Lag(cases,-seq(lag[1],lag[2]))))
+  }
+
+  # Extract coef and vcov if model is provided
+  if(!is.null(model)) {
+    cond <- paste0(name,"[[:print:]]*v[0-9]{1,2}\\.l[0-9]{1,2}")
+    if(ncol(basis)==1L) cond <- name
+    model.class <- class(model)
+    coef <- dlnm:::getcoef(model,model.class)
+    ind <- grep(cond,names(coef))
+    coef <- coef[ind]
+    vcov <- dlnm:::getvcov(model,model.class)[ind,ind,drop=FALSE]
+    model.link <- dlnm:::getlink(model,model.class)
+    if(!model.link %in% c("log","logit"))
+      stop("'model' must have a log or logit link function")
+  }
+
+  # If reduced estimates are provided
+  typebasis <- ifelse(length(coef)!=ncol(basis),"one","cb")
+
+  # Prepare the arguments for th basis transformation
+  predvar <- if(typebasis=="one") x else seq(NROW(at))
+  predlag <- if(typebasis=="one") 0 else dlnm:::seqlag(lag)
+
+  # Create the matrix of transformed centred variables (dependent on typebasis)
+  if(typebasis=="cb") {
+    Xpred <- dlnm:::mkXpred(typebasis,basis,at,predvar,predlag,cen)
+    Xpredall <- 0
+    for (i in seq(length(predlag))) {
+      ind <- seq(length(predvar))+length(predvar)*(i-1)
+      Xpredall <- Xpredall + Xpred[ind,,drop=FALSE]
+    }
+  } else {
+    basis <- do.call(onebasis,c(list(x=x),attr(basis,"argvar")))
+    Xpredall <- dlnm:::mkXpred(typebasis,basis,x,predvar,predlag,cen)
+  }
+
+  # Check dimensions
+  if(length(coef)!=ncol(Xpredall))
+    stop("arguments 'basis' do not match 'model' or 'coef'-'vcov'")
+  if(any(dim(vcov)!=c(length(coef),length(coef))))
+    stop("arguments 'coef' and 'vcov' do no match")
+  if(typebasis=="one" && dir=="back")
+    stop("only dir='forw' allowed for reduced estimates")
 
 }
 
@@ -478,4 +658,6 @@ do_analysis <- function(input_csv_path, output_csv_path){
                mintempcity = mintempcity,
                output_csv_path = output_csv_path)
 }
+
+#do_analysis(input_csv_path = input_csv_path, output_csv_path = output_csv_path)
 
