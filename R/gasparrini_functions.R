@@ -106,7 +106,7 @@ prep_and_first_step <- function(input_csv_path) {
     coef[i,] <- coef(red)
     vcov[[i]] <- vcov(red)
 
-    }
+  }
 
   proc.time()[3]-time
 
@@ -367,56 +367,12 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
   if(typebasis=="one" && dir=="back")
     stop("only dir='forw' allowed for reduced estimates")
 
-  # Compute af and an
-  af <- 1-exp(-drop(as.matrix(Xpredall%*%coef)))
-  an <- af*cases
-
-  # Total
-  #   - Select non-missing obs contributing to computation
-  #   - Derive total af
-  #   - Compute total an with adjusted denominator (observed total number)
-  if(tot) {
-    isna <- is.na(an)
-    af <- sum(an[!isna])/sum(cases[!isna])
-    an <- af*den
-  }
-
-  # Empirical confidence intervals
-  if(!tot && sim) {
-    sim <- FALSE
-    warning("simulation samples only returned for tot=T")
-  }
-  if(sim) {
-    # Sample coef
-    k <- length(coef)
-    eigen <- eigen(vcov)
-    X <- matrix(rnorm(length(coef)*nsim),nsim)
-    coefsim <- coef + eigen$vectors %*% diag(sqrt(eigen$values),k) %*% t(X)
-    # Run the loop
-    # pre_afsim <- (1 - exp(- Xpredall %*% coefsim)) * cases # a matrix
-    # afsim <- colSums(pre_afsim,na.rm=TRUE) / sum(cases[!isna],na.rm=TRUE)
-    afsim <- apply(coefsim,2, function(coefi) {
-      ani <- (1-exp(-drop(Xpredall%*%coefi)))*cases
-      sum(ani[!is.na(ani)])/sum(cases[!is.na(ani)])
-    })
-    ansim <- afsim*den
-  }
-
-  res <- if(sim) {
-    if(type=="an") ansim else afsim
-  } else {
-    if(type=="an") an else af
-  }
-
-  return(res)
 }
 
-#' Third-stage analysis
+#' Compute attributable deaths
 #' Compute the attributable deaths for each city,
-#' with emprical CI estimated using the re-centred bases
-#'
+#' with empirical CI estimated using the re-centred bases
 #' @param dlist
-#' @param regions
 #' @param cities
 #' @param coef
 #' @param vcov
@@ -426,18 +382,27 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
 #' @param blup
 #' @param mintempcity
 #'
-#' @return
-#' @examplesthird_stage(dlist = dlist, cities = cities,regions = regions,
-#' argvar = argvar, coef = coef, vcov = vcov, bvar = bvar, blup = blup,
-#' varfun = varfun, mintempcity = mintempcity)
-third_stage <- function(dlist, regions, cities, coef, vcov,
-                        varfun, argvar, bvar, blup, mintempcity){
+#' @return A list of variables
+#' \itemize{
+#'   \item totdeath
+#'   \item arraysim
+#'   \item matsim
+#' }
+compute_attributable_deaths <- function(dlist, cities, coef, vcov,
+                                        varfun, argvar, bvar, blup,
+                                        mintempcity) {
+
+  if (file.exists('R/attrdl.R')) {
+    source('R/attrdl.R')
+  } else {
+    source('testdata/attrdl.R')
+  }
 
   # Create the vectors to store the total mortality (accounting for missing)
   totdeath <- rep(NA,nrow(cities))
   names(totdeath) <- cities$city
 
-  # Create the matrix to store the attributanle deaths
+  # Create the matrix to store the attributable deaths
   matsim <- matrix(NA,nrow(cities),3,dimnames=list(cities$city,
                                                    c("glob","cold","heat")))
 
@@ -489,7 +454,26 @@ third_stage <- function(dlist, regions, cities, coef, vcov,
     # Store the denominator of attributable deaths, i.e. total observed mortality
     # Correct denominator to compute the attributable fraction later, as in attrdl
     totdeath[i] <- sum(data$death,na.rm=T)
+
   }
+
+  return (list(totdeath, arraysim, matsim))
+
+}
+
+#' Write outputs to csv
+#' Write the attributable deaths and temperature for each city,
+#' with empirical CI estimated using the re-centred bases
+#' @param cities
+#' @param matsim
+#' @param arraysim
+#' @param totdeath
+#' @param output_folder_path
+#'
+#' @return None
+#' @examples output_folder_path = 'myfolder/output/'
+write_outputs_to_csv <- function(cities, matsim, arraysim,
+                                      totdeath, output_folder_path = NULL) {
 
   # Attributable numbers
   # City-specific
@@ -519,11 +503,43 @@ third_stage <- function(dlist, regions, cities, coef, vcov,
   aftotlow <- antotlow/totdeathtot*100
   aftothigh <- antothigh/totdeathtot*100
 
+  # Bind datasets
+  ancity_bind <- t(cbind(ancity, ancitylow, ancityhigh))
+  antot_bind <- t(cbind(antot, antotlow, antothigh))
+  afcity_bind <- t(cbind(afcity, afcitylow, afcityhigh))
+  aftot_bind <- t(cbind(aftot, aftotlow, aftothigh))
+
+  # # Temperature
+  # tmeanuk <- sapply(dlist,function(city) mean(city$tmean,na.rm=T)), c(Country="UK",
+  #   Period=paste(range(dlist[[1]]$year),collapse="-"),Deaths=totdeathtot,
+  #   Temperature=paste0(formatC(mean(tmeanuk),dig=1,
+  #                              format="f")," (",paste(formatC(range(tmeanuk),dig=1,format="f"),
+  #                                                     collapse="-"),")"))
+
+  if (!is.null(output_folder_path)) {
+
+    write.csv(ancity_bind, paste(output_folder_path, 'attributable_deaths_city.csv',  sep = ""))
+    write.csv(antot_bind, paste(output_folder_path, 'attributable_deaths_total.csv',  sep = ""))
+    write.csv(afcity_bind, paste(output_folder_path, 'attributable_fraction_city.csv', sep = ""))
+    write.csv(aftot_bind, paste(output_folder_path, 'attributable_fraction_total.csv',  sep = ""))
+    # write.csv(tmean_uk, output_folder_path, paste(output_folder_path, 'death_temp_total.csv'))
+
+
+  } else {
+
+    write.csv(ancity_bind, 'attributable_deaths_city.csv')
+    write.csv(antot_bind, 'attributable_deaths_total.csv')
+    write.csv(afcity_bind, 'attributable_fraction_city.csv')
+    write.csv(aftot_bind, 'attributable_fraction_total.csv')
+    # write.csv(tmean_uk, output_folder_path, paste(output_folder_path, 'death_temp_total'))
+
+  }
+
+  return(c(antot, totdeathtot, aftot, afcity))
+
 }
 
-#' Plot results
-#' Compute the attributable deaths for each city,
-#' with emprical CI estimated using the re-centred bases
+#' Plot results of analysis
 #'
 #' @param dlist
 #' @param argvar
@@ -531,20 +547,29 @@ third_stage <- function(dlist, regions, cities, coef, vcov,
 #' @param blup
 #' @param cities
 #' @param mintempcity
-#' @param output_csv_path
+#' @param output_folder_path
 #'
-#' @return A number.
-#' @examples
+#' @return a plot
+#' @examples output_folder_path = 'myfolder/output/'
 plot_results <- function(dlist, argvar,
                          bvar, blup, cities, mintempcity,
-                         output_csv_path){
+                         output_folder_path){
+
+  if (output_folder_path) {
+
+    pdf(paste(output_folder_path, "output_all_regions_plot.pdf"), width=8, height=9)
+
+  } else {
+
+    pdf("output_all_regions_plot.pdf", width=8, height=9)
+
+  }
 
   per <- t(sapply(dlist,function(x)
     quantile(x$tmean,c(2.5,10,25,50,75,90,97.5)/100,na.rm=T)))
 
   xlab <- expression(paste("Temperature (",degree,"C)"))
 
-  # pdf("gasparrini/output/output_all_regions_plot.pdf",width=8,height=9)
   layout(matrix(c(0,1,1,2,2,0,rep(3:8,each=2),0,9,9,10,10,0),ncol=6,byrow=T))
   par(mar=c(4,3.8,3,2.4),mgp=c(2.5,1,0),las=1)
 
@@ -585,50 +610,12 @@ plot_results <- function(dlist, argvar,
 
     }
 
+  # Output for testing
   output_df <- data.frame(regnames = rep(unique(data$regnames), length(pred$predvar)),
                           temperature = pred$predvar,
                           relative_risk = pred$allRRfit)
-
-  write.csv(output_df, output_csv_path, row.names=FALSE)
-
-}
-
-
-#' Write tables
-#'
-#' @return
-#' @examples
-tables <- function(){
-
-  # Related part of table 1
-  tmeanuk <- sapply(dlist,function(city) mean(city$tmean,na.rm=T))
-  c(Country="UK",
-    Period=paste(range(dlist[[1]]$year),collapse="-"),Deaths=totdeathtot,
-    Temperature=paste0(formatC(mean(tmeanuk),dig=1,
-                               format="f")," (",paste(formatC(range(tmeanuk),dig=1,format="f"),
-                                                      collapse="-"),")"))
-
-  # Related part of table 2
-  # MMP
-  minperccountry
-
-  # Attributable fraction
-  t(cbind(aftot,aftotlow,aftothigh))
-
-  # Related part of table S4
-  # Deaths
-  totdeath
-
-  # Minimum mortality temperature percentile and absolute temperature
-  minperccity
-  mintempcity
-
-  # attributable fraction
-  afcity
-
-  return (c(tmeanuk = tmeanuk, minperccountry = minperccountry,
-          totdeath = totdeath, minperccity = minperccity,
-          mintempcity = mintempcity, afcity = afcity))
+  # Output for testing
+  write.csv(output_df, paste(output_folder_path, 'output_one_region_data_new.csv'), row.names=FALSE)
 
 }
 

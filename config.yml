@@ -2,12 +2,13 @@ default:
   # Input data
   input_csv_path: 'data/regEngWales.csv'
 
-  #Output data
-  output_csv_path: 'output/output_one_region_data_new.csv'
+  #Output folder path
+  output_folder_path: 'output/'
 
   # Specification of the exposure function
   varfun: 'bs'
   vardegree:  2
+  varper:  c(10,75,90)
 
   # Specification of the lag function
   lag: 21
