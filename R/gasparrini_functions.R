@@ -22,11 +22,11 @@ load_data <- function(input_path) {
     stop("Input path must be a CSV")
   }
 
-  df_eng_wales <- read.csv(input_path, row.names=1)
-  df_eng_wales$date <- as.Date(df_eng_wales$date)
+  df <- read.csv(input_path, row.names=1)
+  df$date <- as.Date(df$date)
 
-  regions <- as.character(unique(df_eng_wales$regnames)) # .distinct() on regnames
-  dlist_unordered <- lapply(regions, function(x) df_eng_wales[df_eng_wales$regnames == x, ])
+  regions <- as.character(unique(df$regnames)) # .distinct() on regnames
+  dlist_unordered <- lapply(regions, function(x) df[df$regnames == x, ])
   names(dlist_unordered) <- regions
 
   return (list(dlist_unordered, regions))
