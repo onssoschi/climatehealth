@@ -668,7 +668,12 @@ plot_results <- function(dlist, argvar,
 #' @examples
 do_analysis <- function(input_csv_path, output_csv_path){
 
-  c(dlist, argvar, regions, cities, coef, vcov) %<-% prep_and_first_step(input_csv_path)
+  c(dlist_unordered, regions) %<-% load_data(input_path = input_csv_path)
+
+  c(cities, dlist) %<-% get_region_metadata(regions = regions,
+                                            dlist_unordered = dlist_unordered)
+
+  c(argvar, coef, vcov) %<-% run_model(dlist = dlist, cities = cities)
 
   c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
                                   vcov = vcov)
@@ -678,16 +683,16 @@ do_analysis <- function(input_csv_path, output_csv_path){
   c(argvar, bvar, mintempcity, minperccountry) %<-%
     min_mortality(dlist = dlist, cities = cities, blup = blup)
 
-  third_stage(dlist = dlist,
-              cities = cities,
-              regions = regions,
-              argvar = argvar,
-              coef = coef,
-              vcov = vcov,
-              bvar = bvar,
-              blup = blup,
-              varfun = varfun,
-              mintempcity = mintempcity)
+  c(totdeath, arraysim, matsim) %<-%
+    compute_attributable_deaths(dlist = dlist, cities = cities, coef = coef,
+                                vcov = vcov, varfun = varfun, argvar = argvar,
+                                bvar = bvar, blup = blup,
+                                mintempcity = mintempcity)
+
+  c(antot, totdeathtot, aftot, afcity) %<-%
+    write_outputs_to_csv(cities = cities, matsim = matsim, arraysim = arraysim,
+                         totdeath = totdeath,
+                         output_folder_path = output_csv_path)
 
   plot_results(dlist = dlist,
                cities = cities,
@@ -695,8 +700,8 @@ do_analysis <- function(input_csv_path, output_csv_path){
                bvar = bvar,
                blup = blup,
                mintempcity = mintempcity,
-               output_csv_path = output_csv_path)
+               output_folder_path = output_csv_path)
 }
 
-#do_analysis(input_csv_path = input_csv_path, output_csv_path = output_csv_path)
+do_analysis(input_csv_path = input_csv_path, output_csv_path = output_csv_path)
 
