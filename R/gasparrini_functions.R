@@ -23,7 +23,7 @@ load_data <- function(input_path) {
   }
 
   df_eng_wales <- read.csv(input_path, row.names=1)
-  df_eng_wales$date <- as.Date(df_engx_wales$date)
+  df_eng_wales$date <- as.Date(df_eng_wales$date)
 
   regions <- as.character(unique(df_eng_wales$regnames)) # .distinct() on regnames
   dlist_unordered <- lapply(regions, function(x) df_eng_wales[df_eng_wales$regnames == x, ])
@@ -44,13 +44,13 @@ load_data <- function(input_path) {
 #' @examples
 get_region_metadata <- function(regions, dlist_unordered) {
 
-  if(!is.list(dlist_unordered) | !is.data.frame(dlist_unordered)) {
-    stop("Argument 'dlist_unordered' must be a list of data frames")
-  }
+  # if(!is.list(dlist_unordered) | !is.data.frame(dlist_unordered)) {
+  #   stop("Argument 'dlist_unordered' must be a list of data frames")
+  # }
 
-  if(!is.list(regions) | !is.data.frame(dlist_unordered)) {
-    stop("Argument 'regions' must be a list")
-  }
+  # if(!is.list(regions) | !is.data.frame(dlist_unordered)) {
+  #   stop("Argument 'regions' must be a list")
+  # }
 
   cities <- data.frame(
     city = regions,
@@ -118,6 +118,8 @@ run_model <- function(dlist, cities) {
                  dimnames = list(cities$city))
   vcov <- vector("list" ,nrow(cities))
   names(vcov) <- cities$city
+
+  varper <- c(10, 75, 90)
 
   for(i in seq(length(dlist))) {
 
@@ -270,14 +272,16 @@ min_mortality <-  function(dlist, cities, blup) {
   minperccity <- mintempcity <- rep(NA, length(dlist))
   names(mintempcity) <- names(minperccity) <- cities$city
 
+  varper <- c(10, 75, 90)
+
   # Define minimum mortality values: exclude low and very hot temperatures
   for(i in seq(length(dlist))) {
     data <- dlist[[i]]
     predvar <- quantile(data$tmean, 1:99/100, na.rm = T)
     # Redefine the function using all arguments (boundary knots included)
-    argvar <- list(x = predvar, fun = varfun,
+    argvar <- list(x = predvar, fun = config$varfun,
                    knots = quantile(data$tmean, varper/100, na.rm = TRUE),
-                   degree = vardegree,
+                   degree = config$vardegree,
                    Bound = range(data$tmean, na.rm = T))
     bvar <- do.call(onebasis, argvar)
     minperccity[i] <- (1:99)[which.min((bvar %*% blup[[i]]$blup))]
@@ -452,6 +456,8 @@ compute_attributable_deaths <- function(dlist, cities, coef, vcov,
   arraysim <- array(NA,dim=c(nrow(cities),3,nsim),dimnames=list(cities$city,
                                                                 c("glob","cold","heat")))
 
+  varper <- c(10, 75, 90)
+
   # Run the loop
   for(i in seq(dlist)){
 
@@ -463,8 +469,8 @@ compute_attributable_deaths <- function(dlist, cities, coef, vcov,
 
     # Derive the cross-basis
     # NB: Centering point different than original choice of 75th
-    argvar <- list(x=data$tmean,fun=varfun,knots=quantile(data$tmean,
-                                                          varper/100,na.rm=T),degree=vardegree)
+    argvar <- list(x=data$tmean,fun=config$varfun,knots=quantile(data$tmean,
+                                                          varper/100,na.rm=T),degree=config$vardegree)
     cb <- crossbasis(data$tmean,lag=lag,argvar=argvar,
                      arglag=list(knots=logknots(lag,lagnk)))
 
@@ -594,15 +600,15 @@ plot_results <- function(dlist, argvar,
                          bvar, blup, cities, mintempcity,
                          output_folder_path){
 
-  if (output_folder_path) {
-
-    pdf(paste(output_folder_path, "output_all_regions_plot.pdf"), width=8, height=9)
-
-  } else {
-
-    pdf("output_all_regions_plot.pdf", width=8, height=9)
-
-  }
+  # if (output_folder_path) {
+  #
+  #   pdf(paste(output_folder_path, "output_all_regions_plot.pdf"), width=8, height=9)
+  #
+  # } else {
+  #
+  #   pdf("output_all_regions_plot.pdf", width=8, height=9)
+  #
+  # }
 
   per <- t(sapply(dlist,function(x)
     quantile(x$tmean,c(2.5,10,25,50,75,90,97.5)/100,na.rm=T)))
@@ -612,12 +618,14 @@ plot_results <- function(dlist, argvar,
   layout(matrix(c(0,1,1,2,2,0,rep(3:8,each=2),0,9,9,10,10,0),ncol=6,byrow=T))
   par(mar=c(4,3.8,3,2.4),mgp=c(2.5,1,0),las=1)
 
+  varper <- c(10, 75, 90)
+
   for(i in seq(length(dlist))) {
 
     data <- dlist[[i]]
 
     # NB: Centering point different than original choice of 75th
-    argvar <- list(x=data$tmean,fun=varfun,degree=vardegree,
+    argvar <- list(x=data$tmean,fun=config$varfun,degree=config$vardegree,
                    knots=quantile(data$tmean,varper/100,na.rm=T))
     bvar <- do.call(onebasis,argvar)
     pred <- crosspred(bvar,coef=blup[[i]]$blup,vcov=blup[[i]]$vcov,
@@ -683,16 +691,16 @@ do_analysis <- function(input_csv_path, output_csv_path){
   c(argvar, bvar, mintempcity, minperccountry) %<-%
     min_mortality(dlist = dlist, cities = cities, blup = blup)
 
-  c(totdeath, arraysim, matsim) %<-%
-    compute_attributable_deaths(dlist = dlist, cities = cities, coef = coef,
-                                vcov = vcov, varfun = varfun, argvar = argvar,
-                                bvar = bvar, blup = blup,
-                                mintempcity = mintempcity)
-
-  c(antot, totdeathtot, aftot, afcity) %<-%
-    write_outputs_to_csv(cities = cities, matsim = matsim, arraysim = arraysim,
-                         totdeath = totdeath,
-                         output_folder_path = output_csv_path)
+  # c(totdeath, arraysim, matsim) %<-%
+  #   compute_attributable_deaths(dlist = dlist, cities = cities, coef = coef,
+  #                               vcov = vcov, varfun = config$varfun, argvar = argvar,
+  #                               bvar = bvar, blup = blup,
+  #                               mintempcity = mintempcity)
+  #
+  # c(antot, totdeathtot, aftot, afcity) %<-%
+  #   write_outputs_to_csv(cities = cities, matsim = matsim, arraysim = arraysim,
+  #                        totdeath = totdeath,
+  #                        output_folder_path = output_csv_path)
 
   plot_results(dlist = dlist,
                cities = cities,
@@ -703,5 +711,5 @@ do_analysis <- function(input_csv_path, output_csv_path){
                output_folder_path = output_csv_path)
 }
 
-do_analysis(input_csv_path = input_csv_path, output_csv_path = output_csv_path)
+do_analysis(input_csv_path = config$input_csv_path, output_csv_path = config$output_csv_path)
 
