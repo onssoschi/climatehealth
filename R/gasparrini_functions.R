@@ -44,13 +44,13 @@ load_data <- function(input_path) {
 #' @examples
 get_region_metadata <- function(regions, dlist_unordered) {
 
-  if(!is.list(dlist_unordered) | !is.data.frame(dlist_unordered[[1]])) {
-    stop("Argument 'dlist_unordered' must be a list of data frames")
-    }
-
-  if(!is.list(regions) | !is.data.frame(dlist_unordered[[1]])) {
-    stop("Argument 'regions' must be a list")
-    }
+  # if(!is.list(dlist_unordered) | !is.data.frame(dlist_unordered[[1]])) {
+  #   stop("Argument 'dlist_unordered' must be a list of data frames")
+  #   }
+  #
+  # if(!is.list(regions) | !is.data.frame(dlist_unordered[[1]])) {
+  #   stop("Argument 'regions' must be a list")
+  #   }
 
   cities <- data.frame(
     city = regions,
@@ -296,122 +296,6 @@ min_mortality <-  function(dlist, cities, blup) {
 
 }
 
-
-#' Attrdl
-#' Function for computing attributble measures from dlnm
-#  requires dlnm v.2.2.0 >
-#'
-#' @param x An exposure vector or (only for dir="back") a matrix of lagged exposures
-#' @param basis: The cross-basis computed from x
-#' @param cases: The cases vector or (only for dir="forw") the matrix of future cases
-#' @param model: The fitted model
-#' @param coef, vcov: coef and vcov for basis if model is not provided
-#' @param model.link: Link function if model is not provided
-#' @param type: Either "an" or "af" for attributable number or fraction
-#' @param dir: Either "back" or "forw" for backward or forward perspectives
-#' @param tot: If true, the total attributable risk is computed
-#' @param cen: The reference value used as counterfactual scenario
-#' @param range: The range of exposure. if null, the whole range is used
-#' @param sim: If simulation samples should be returned. only for tot=true
-#' @param nsim: Number of simulation samples
-#'
-#' @return res
-#' @examples
-attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
-                   type="af",dir="back",tot=TRUE,cen,range=NULL,sim=FALSE,nsim=5000) {
-
-  # Check version of the dlnm package
-  if(packageVersion("dlnm")<"2.2.0")
-    stop("update dlnm package to version >= 2.2.0")
-
-  # Extract name and check type and dir
-  name <- deparse(substitute(basis))
-  type <- match.arg(type,c("an","af"))
-  dir <- match.arg(dir,c("back","forw"))
-
-  # Define centering
-  if(missing(cen) && is.null(cen <- attr(basis,"argvar")$cen))
-    stop("'cen' must be provided")
-  if(!is.numeric(cen) && length(cen)>1L) stop("'cen' must be a numeric scalar")
-  attributes(basis)$argvar$cen <- NULL
-
-  # Select range (force to centering value otherwise, meaning null risk)
-  if(!is.null(range)) x[x<range[1]|x>range[2]] <- cen
-
-  # Compute the matrix of
-  #   - Lagged exposures if dir="back"
-  #   - Constant exposures along lags if dir="forw"
-  lag <- attr(basis,"lag")
-  if(NCOL(x)==1L) {
-    at <- if(dir=="back") tsModel:::Lag(x,seq(lag[1],lag[2])) else
-      matrix(rep(x,diff(lag)+1),length(x))
-  } else {
-    if(dir=="forw") stop("'x' must be a vector when dir='forw'")
-    if(ncol(at <- x)!=diff(lag)+1)
-      stop("dimension of 'x' not compatible with 'basis'")
-  }
-
-  # Number used for the contribution at each time in forward type
-  #   - If cases provided as a matrix, take the row average
-  #   - If provided as a time series, compute the forward moving average
-  #   - This excludes missing accordingly
-  # Also compute the denominator to be used below
-  if(NROW(cases)!=NROW(at)) stop("'x' and 'cases' not consistent")
-  if(NCOL(cases)>1L) {
-    if(dir=="back") stop("'cases' must be a vector if dir='back'")
-    if(ncol(cases)!=diff(lag)+1) stop("dimension of 'cases' not compatible")
-    den <- sum(rowMeans(cases,na.rm=TRUE),na.rm=TRUE)
-    cases <- rowMeans(cases)
-  } else {
-    den <- sum(cases,na.rm=TRUE)
-    if(dir=="forw")
-      cases <- rowMeans(as.matrix(tsModel:::Lag(cases,-seq(lag[1],lag[2]))))
-  }
-
-  # Extract coef and vcov if model is provided
-  if(!is.null(model)) {
-    cond <- paste0(name,"[[:print:]]*v[0-9]{1,2}\\.l[0-9]{1,2}")
-    if(ncol(basis)==1L) cond <- name
-    model.class <- class(model)
-    coef <- dlnm:::getcoef(model,model.class)
-    ind <- grep(cond,names(coef))
-    coef <- coef[ind]
-    vcov <- dlnm:::getvcov(model,model.class)[ind,ind,drop=FALSE]
-    model.link <- dlnm:::getlink(model,model.class)
-    if(!model.link %in% c("log","logit"))
-      stop("'model' must have a log or logit link function")
-  }
-
-  # If reduced estimates are provided
-  typebasis <- ifelse(length(coef)!=ncol(basis),"one","cb")
-
-  # Prepare the arguments for th basis transformation
-  predvar <- if(typebasis=="one") x else seq(NROW(at))
-  predlag <- if(typebasis=="one") 0 else dlnm:::seqlag(lag)
-
-  # Create the matrix of transformed centred variables (dependent on typebasis)
-  if(typebasis=="cb") {
-    Xpred <- dlnm:::mkXpred(typebasis,basis,at,predvar,predlag,cen)
-    Xpredall <- 0
-    for (i in seq(length(predlag))) {
-      ind <- seq(length(predvar))+length(predvar)*(i-1)
-      Xpredall <- Xpredall + Xpred[ind,,drop=FALSE]
-    }
-  } else {
-    basis <- do.call(onebasis,c(list(x=x),attr(basis,"argvar")))
-    Xpredall <- dlnm:::mkXpred(typebasis,basis,x,predvar,predlag,cen)
-  }
-
-  # Check dimensions
-  if(length(coef)!=ncol(Xpredall))
-    stop("arguments 'basis' do not match 'model' or 'coef'-'vcov'")
-  if(any(dim(vcov)!=c(length(coef),length(coef))))
-    stop("arguments 'coef' and 'vcov' do no match")
-  if(typebasis=="one" && dir=="back")
-    stop("only dir='forw' allowed for reduced estimates")
-
-}
-
 #' Compute attributable deaths
 #' Compute the attributable deaths for each city,
 #' with empirical CI estimated using the re-centred bases
@@ -419,7 +303,6 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
 #' @param cities
 #' @param coef
 #' @param vcov
-#' @param varfun
 #' @param argvar
 #' @param bvar
 #' @param blup
@@ -432,7 +315,7 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
 #'   \item matsim
 #' }
 compute_attributable_deaths <- function(dlist, cities, coef, vcov,
-                                        varfun, argvar, bvar, blup,
+                                        argvar, bvar, blup,
                                         mintempcity) {
 
   if (file.exists('R/attrdl.R')) {
@@ -471,8 +354,8 @@ compute_attributable_deaths <- function(dlist, cities, coef, vcov,
     # NB: Centering point different than original choice of 75th
     argvar <- list(x=data$tmean,fun=config$varfun,knots=quantile(data$tmean,
                                                           varper/100,na.rm=T),degree=config$vardegree)
-    cb <- crossbasis(data$tmean,lag=lag,argvar=argvar,
-                     arglag=list(knots=logknots(lag,lagnk)))
+    cb <- crossbasis(data$tmean,lag=config$lag,argvar=argvar,
+                     arglag=list(knots=logknots(config$lag, config$lagnk)))
 
     # Compute the attributable deaths
     # NB: The reduced coefficients are used here
@@ -691,16 +574,16 @@ do_analysis <- function(input_csv_path, output_csv_path){
   c(argvar, bvar, mintempcity, minperccountry) %<-%
     min_mortality(dlist = dlist, cities = cities, blup = blup)
 
-  # c(totdeath, arraysim, matsim) %<-%
-  #   compute_attributable_deaths(dlist = dlist, cities = cities, coef = coef,
-  #                               vcov = vcov, varfun = config$varfun, argvar = argvar,
-  #                               bvar = bvar, blup = blup,
-  #                               mintempcity = mintempcity)
-  #
-  # c(antot, totdeathtot, aftot, afcity) %<-%
-  #   write_outputs_to_csv(cities = cities, matsim = matsim, arraysim = arraysim,
-  #                        totdeath = totdeath,
-  #                        output_folder_path = output_csv_path)
+  c(totdeath, arraysim, matsim) %<-%
+    compute_attributable_deaths(dlist = dlist, cities = cities, coef = coef,
+                                vcov = vcov, argvar = argvar,
+                                bvar = bvar, blup = blup,
+                                mintempcity = mintempcity)
+#
+#   c(antot, totdeathtot, aftot, afcity) %<-%
+#     write_outputs_to_csv(cities = cities, matsim = matsim, arraysim = arraysim,
+#                          totdeath = totdeath,
+#                          output_folder_path = output_csv_path)
 
   plot_results(dlist = dlist,
                cities = cities,
@@ -711,5 +594,5 @@ do_analysis <- function(input_csv_path, output_csv_path){
                output_folder_path = output_csv_path)
 }
 
-#do_analysis(input_csv_path = config$input_csv_path, output_csv_path = config$output_csv_path)
+do_analysis(input_csv_path = config$input_csv_path, output_csv_path = config$output_csv_path)
 
