@@ -463,7 +463,7 @@ write_outputs_to_csv <- function(cities, matsim, arraysim,
 
   }
 
-  return(c(antot, totdeathtot, aftot, afcity))
+  return(list(antot, totdeathtot, aftot, afcity))
 
 }
 
@@ -579,20 +579,15 @@ do_analysis <- function(input_csv_path, output_csv_path){
                                 vcov = vcov, argvar = argvar,
                                 bvar = bvar, blup = blup,
                                 mintempcity = mintempcity)
-#
-#   c(antot, totdeathtot, aftot, afcity) %<-%
-#     write_outputs_to_csv(cities = cities, matsim = matsim, arraysim = arraysim,
-#                          totdeath = totdeath,
-#                          output_folder_path = output_csv_path)
 
-  plot_results(dlist = dlist,
-               cities = cities,
-               argvar = argvar,
-               bvar = bvar,
-               blup = blup,
+c(antot, totdeathtot, aftot, afcity) %<-%
+  write_outputs_to_csv(cities = cities, matsim = matsim, arraysim = arraysim,
+                       totdeath = totdeath,
+                       output_folder_path = output_csv_path)
+
+  plot_results(dlist = dlist, argvar = argvar,
+               bvar = bvar, blup = blup, cities = cities,
                mintempcity = mintempcity,
                output_folder_path = output_csv_path)
 }
-
-do_analysis(input_csv_path = config$input_csv_path, output_csv_path = config$output_csv_path)
 
