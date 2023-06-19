@@ -44,13 +44,13 @@ load_data <- function(input_path) {
 #' @examples
 get_region_metadata <- function(regions, dlist_unordered) {
 
-  # if(!is.list(dlist_unordered) | !is.data.frame(dlist_unordered)) {
-  #   stop("Argument 'dlist_unordered' must be a list of data frames")
-  # }
+   if(!is.list(dlist_unordered) | !is.data.frame(dlist_unordered)) {
+     stop("Argument 'dlist_unordered' must be a list of data frames")
+   }
 
-  # if(!is.list(regions) | !is.data.frame(dlist_unordered)) {
-  #   stop("Argument 'regions' must be a list")
-  # }
+  if(!is.list(regions) | !is.data.frame(regions)) {
+     stop("Argument 'regions' must be a list")
+  }
 
   cities <- data.frame(
     city = regions,
