@@ -13,10 +13,14 @@ test_that('Test that fwald() arguments are correct type', {
 context("Test output data types")
 test_that('Test fwald() returns correct data type', {
 
-  c(dlist, argvar, regions, cities, coef, vcov) %<-%
-    prep_and_first_step("testdata/regEngWales.csv")
+  c(df_list_unordered, regions) %<-% load_data(input_path = 'testdata/regEngWales.csv')
 
-  c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
+  c(regions_df, df_list) %<-% get_region_metadata(regions = regions,
+                                                  df_list_unordered = df_list_unordered)
+
+  c(argvar, coef, vcov) %<-% run_model(df_list = df_list, regions_df = regions_df)
+
+  c(mv, blup) %<-% run_meta_model(df_list = df_list, regions_df = regions_df, coef = coef,
                                   vcov = vcov)
 
   expect_equal(typeof(fwald(mv, "avgtmean")), "double")
@@ -27,10 +31,14 @@ test_that('Test fwald() returns correct data type', {
 context("Test output within expected range")
 test_that('Test fwald() returns p-value between 0 and 1', {
 
-  c(dlist, argvar, regions, cities, coef, vcov) %<-%
-    prep_and_first_step("testdata/regEngWales.csv")
+  c(df_list_unordered, regions) %<-% load_data(input_path = 'testdata/regEngWales.csv')
 
-  c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
+  c(regions_df, df_list) %<-% get_region_metadata(regions = regions,
+                                                  df_list_unordered = df_list_unordered)
+
+  c(argvar, coef, vcov) %<-% run_model(df_list = df_list, regions_df = regions_df)
+
+  c(mv, blup) %<-% run_meta_model(df_list = df_list, regions_df = regions_df, coef = coef,
                                   vcov = vcov)
 
   expect_lte(fwald(mv, "avgtmean"), 1)
