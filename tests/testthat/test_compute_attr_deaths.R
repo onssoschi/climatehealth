@@ -13,7 +13,7 @@ test_that('Test total deaths is an integer of correct length', {
   c(mv, blup) %<-% run_meta_model(df_list = df_list, regions_df = regions_df, coef = coef,
                                   vcov = vcov)
 
-  c(argvar, bvar, mintempregions, minperccountry) %<-%
+  c(argvar, bvar, mintempregions) %<-%
     min_mortality(df_list = df_list, regions_df = regions_df, blup = blup)
 
   c(totdeath, arraysim, matsim) %<-%
