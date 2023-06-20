@@ -1,6 +1,7 @@
 default:
   # Input data
   input_csv_path: 'data/regEngWales.csv'
+  # input_csv_path: 'C:/Users/soutte/Office for National Statistics/Climate and Health - Dummy Run/complete_input_data_20230620.csv'
 
   #Output folder path
   output_folder_path: 'output/'
