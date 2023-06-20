@@ -15,7 +15,7 @@ test_that('Test output CSVs are written and of correct length', {
 
   c(avgtmean_wald, rangetmean_wald) %<-% wald_results(mv = mv)
 
-  c(argvar, bvar, mintempregions, minperccountry) %<-%
+  c(argvar, bvar, mintempregions) %<-%
     min_mortality(df_list = df_list, regions_df = regions_df, blup = blup)
 
   c(totdeath, arraysim, matsim) %<-%

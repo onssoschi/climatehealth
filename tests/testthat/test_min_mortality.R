@@ -44,7 +44,7 @@ test_that('Test min_mortality() returns correct data types', {
   c(mv, blup) %<-% run_meta_model(df_list = df_list, regions_df = regions_df, coef = coef,
                                   vcov = vcov)
 
-  c(argvar, bvar, mintempregions, minperccountry) %<-%
+  c(argvar, bvar, mintempregions) %<-%
     min_mortality(df_list = df_list, regions_df = regions_df, blup = blup)
 
   # argvar
