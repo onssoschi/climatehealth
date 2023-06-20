@@ -426,10 +426,10 @@ write_outputs_to_csv <- function(regions_df, matsim, arraysim,
 
   if (!is.null(output_folder_path)) {
 
-    write.csv(anregions_bind, paste(output_folder_path, 'attributable_deaths_regions.csv',  sep = ""))
-    write.csv(antot_bind, paste(output_folder_path, 'attributable_deaths_total.csv',  sep = ""))
-    write.csv(afregions_bind, paste(output_folder_path, 'attributable_fraction_regions.csv', sep = ""))
-    write.csv(aftot_bind, paste(output_folder_path, 'attributable_fraction_total.csv',  sep = ""))
+    write.csv(anregions_bind, file = paste(output_folder_path, 'attributable_deaths_regions.csv',  sep = ""))
+    write.csv(antot_bind, file = paste(output_folder_path, 'attributable_deaths_total.csv',  sep = ""))
+    write.csv(afregions_bind, file = paste(output_folder_path, 'attributable_fraction_regions.csv', sep = ""))
+    write.csv(aftot_bind, file = paste(output_folder_path, 'attributable_fraction_total.csv',  sep = ""))
     # write.csv(tmean_uk, output_folder_path, paste(output_folder_path, 'death_temp_total.csv'))
 
 
