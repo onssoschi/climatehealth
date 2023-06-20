@@ -29,7 +29,7 @@ test_that('Test output CSVs are written and of correct length', {
                          totdeath = totdeath,
                          output_folder_path = 'testdata/')
 
-  actual_output <- read.csv('testdata/attributable_deaths_city.csv')
+  actual_output <- read.csv('testdata/attributable_deaths_regions.csv')
 
   expected_output <- data.frame(matrix(NA, nrow = 1, ncol = length(regions) + 1))
 
