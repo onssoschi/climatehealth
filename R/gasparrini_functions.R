@@ -127,8 +127,11 @@ run_model <- function(df_list, regions_df) {
     # Run the model and obtain predictions
     model <- glm(formula,
                  data,
-                 family = quasipoisson,na.action = "na.exclude")
+                 family = quasipoisson,
+                 na.action = "na.exclude")
+
     cen <- mean(data$tmean, na.rm = T)
+
     pred <- crosspred(cb, model, cen = cen)
 
     # Reduction to overall cumulative
