@@ -7,24 +7,24 @@ test_that('Test min_mortality() produces appropriate errors', {
 
   # dlist not a list
   expect_error(min_mortality(
-    dlist = data.frame(x = c(1, 2, 3), y = c(1,2,3)),
-    cities = data.frame(x = 1, y = 1),
+    df_list = data.frame(x = c(1, 2, 3), y = c(1,2,3)),
+    regions_df = data.frame(x = 1, y = 1),
     blup = list(1, 2),
     "Argument 'dlist' must be a list of data frames", fixed = TRUE))
 
   # cities not a data frame
   expect_error(min_mortality(
-    dlist = list(a <- data.frame(x = c(1, 2, 3), y = c(1, 2, 3)),
+    df_list = list(a <- data.frame(x = c(1, 2, 3), y = c(1, 2, 3)),
                  b <- data.frame(x = c(4, 5, 6), y = c(4, 5, 6))),
-    cities = c(1:10),
+    regions_df = c(1:10),
     blup = list(1, 2),
     "Argument 'cities' must be a data frame", fixed = TRUE))
 
   # blup not a list
   expect_error(min_mortality(
-    dlist = list(a <- data.frame(x = c(1, 2, 3), y = c(1, 2, 3)),
+    df_list = list(a <- data.frame(x = c(1, 2, 3), y = c(1, 2, 3)),
                  b <- data.frame(x = c(4, 5, 6), y = c(4, 5, 6))),
-    cities = data.frame(x = 1, y = 1),
+    regions_df = data.frame(x = 1, y = 1),
     blup = c(1, 2),
     "Argument 'blup' must be a list", fixed = TRUE))
 
@@ -33,16 +33,19 @@ test_that('Test min_mortality() produces appropriate errors', {
 context("Test output data types")
 test_that('Test min_mortality() returns correct data types', {
 
-  c(dlist, argvar, regions, cities, coef, vcov) %<-%
-    prep_and_first_step("testdata/regEngWales.csv")
 
-  c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
+  c(df_list_unordered, regions) %<-% load_data(input_path = 'testdata/regEngWales.csv')
+
+  c(regions_df, df_list) %<-% get_region_metadata(regions = regions,
+                                                  df_list_unordered = df_list_unordered)
+
+  c(argvar, coef, vcov) %<-% run_model(df_list = df_list, regions_df = regions_df)
+
+  c(mv, blup) %<-% run_meta_model(df_list = df_list, regions_df = regions_df, coef = coef,
                                   vcov = vcov)
 
-  c(avgtmean_wald, rangetmean_wald) %<-% wald_results(mv = mv)
-
-  c(argvar, bvar, mintempcity, minperccountry) %<-%
-    min_mortality(dlist = dlist, cities = cities, blup = blup)
+  c(argvar, bvar, mintempregions, minperccountry) %<-%
+    min_mortality(df_list = df_list, regions_df = regions_df, blup = blup)
 
   # argvar
   expect_equal(typeof(argvar), "list")
@@ -55,9 +58,9 @@ test_that('Test min_mortality() returns correct data types', {
   expect_equal(class(bvar)[2], "matrix")
 
   # mintempcity
-  expect_equal(typeof(mintempcity), "double")
-  expect_equal(is.vector(mintempcity), TRUE)
-  expect_equal(is.numeric(mintempcity), TRUE)
+  expect_equal(typeof(mintempregions), "double")
+  expect_equal(is.vector(mintempregions), TRUE)
+  expect_equal(is.numeric(mintempregions), TRUE)
 
   # minperccountry
   expect_equal(typeof(minperccountry), "double")

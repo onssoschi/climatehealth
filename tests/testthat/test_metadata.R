@@ -5,12 +5,12 @@ test_that('Test metadata sorted correctly', {
 
   regions_test <- c('z', 'a')
 
-  dlist_test <- list()
-  dlist_test[[1]] <- data.frame(regnames = 'z')
-  dlist_test[[2]] <- data.frame(regnames = 'a')
+  df_list_test <- list()
+  df_list_test[[1]] <- data.frame(regnames = 'z')
+  df_list_test[[2]] <- data.frame(regnames = 'a')
 
-  c(cities, dlist) %<-% get_region_metadata(regions_test, dlist_test)
+  c(regions_df, df_list) %<-% get_region_metadata(regions_test, df_list_test)
 
-  expect_equal(c(cities$city), c('a', 'z'))
+  expect_equal(c(regions_df$regions), c('a', 'z'))
 
 })
