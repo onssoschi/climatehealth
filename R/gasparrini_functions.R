@@ -49,24 +49,17 @@ load_data <- function(input_path) {
 #' @examples
 get_region_metadata <- function(regions, df_list_unordered, region_names = NULL) {
 
-  # if(!is.list(df_list_unordered) | !is.data.frame(df_list_unordered[[1]])) {
-  #   stop("Argument 'df_list_unordered' must be a list of data frames")
-  #   }
-  #
-  # if(!is.list(regions) | !is.data.frame(regions[[1]])) {
-  #   stop("Argument 'regions' must be a list")
-  #   }
-
   if (!is.null(region_names)) {
     region_names = region_names
+
   } else {
+
     region_names = regions
   }
 
   regions_df <- data.frame(
     regions = regions,
-    region_names = region_names
-  )
+    region_names = region_names)
 
   # Order
   ord <- order(regions_df$region_names)
