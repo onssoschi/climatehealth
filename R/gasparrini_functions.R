@@ -12,9 +12,10 @@ config <- config::get()
 #'
 #' @param input_path a path to CSV
 
-#' @return df_list_unordered - a list of dataframes for each region
-#' @return regions - a list of strings of the names of each region
-#'
+#' @return
+#' \itemize{
+#'   \item df_list_unordered - a list of dataframes for each region
+#'   \item regions - a list of strings of the names of each region
 #' @examples
 load_data <- function(input_path) {
 
@@ -26,7 +27,9 @@ load_data <- function(input_path) {
   df$date <- as.Date(df$date)
 
   regions <- as.character(unique(df$regnames)) # .distinct() on regnames
-  df_list_unordered <- lapply(regions, function(x) df[df$regnames == x, ])
+
+  df_list_unordered <- lapply(regions,
+                              function(x) df[df$regnames == x, ])
   names(df_list_unordered) <- regions
 
   return (list(df_list_unordered, regions))
@@ -38,9 +41,11 @@ load_data <- function(input_path) {
 #' @param regions list of strings of region names
 #' @param df_list_unordered list of dataframes for each region
 #'
-#' @return regions - an alphabetically-ordered dataframe of region names
-#' @return df_list - an alphabetically-ordered list of dataframes for each region
-#'
+#' @return
+#' \itemize{
+#'   \item regions - A dataframe with two columns. Column 1 is abbreviated
+#'   region names. Column 2 is full region names.
+#'   \item df_list - list of dataframes for each region
 #' @examples
 get_region_metadata <- function(regions, df_list_unordered, region_names = NULL) {
 
@@ -59,10 +64,8 @@ get_region_metadata <- function(regions, df_list_unordered, region_names = NULL)
   }
 
   regions_df <- data.frame(
-
     regions = regions,
     region_names = region_names
-
   )
 
   # Order
@@ -76,13 +79,14 @@ get_region_metadata <- function(regions, df_list_unordered, region_names = NULL)
 
 #' Define and run regression model for each dataframe
 #'
-#' @param regions list of strings of region names
+#' @param regions_df A dataframe with two columns. Column 1 is abbreviated
+#' region names. Column 2 is full region names.
 #' @param df_list_unordered list of dataframes for each region
-#'
-#' @return red
-#' @return coev
-#' @return vcov
-#' @examples
+#' @return
+#' \itemize{
+#'   \item argvar arguments ($fun, $knots, $degree) for cross-basis function
+#'   \item coef matrix of coefficients for reduced model
+#'   \item vcov co-variance matrix for reduced model
 run_model <- function(df_list, regions_df) {
 
   # Loop
@@ -98,7 +102,9 @@ run_model <- function(df_list, regions_df) {
                  nrow(regions_df),
                  length(varper) + config$vardegree,
                  dimnames = list(regions_df$regions))
+
   vcov <- vector("list" ,nrow(regions_df))
+
   names(vcov) <- regions_df$regions
 
   for(i in seq(length(df_list))) {
@@ -112,18 +118,22 @@ run_model <- function(df_list, regions_df) {
     argvar <- list(fun = config$varfun,
                    knots = quantile(data$tmean, (varper)/100, na.rm=T),
                    degree = config$vardegree)
+
     cb <- crossbasis(data$tmean,
                      lag = config$lag,
                      argvar = argvar,
                      arglag = list(knots = logknots(config$lag,config$lagnk)))
 
     # Run the model and obtain predictions
-    model <- glm(formula, data, family = quasipoisson,na.action = "na.exclude")
+    model <- glm(formula,
+                 data,
+                 family = quasipoisson,na.action = "na.exclude")
     cen <- mean(data$tmean, na.rm = T)
     pred <- crosspred(cb, model, cen = cen)
 
     # Reduction to overall cumulative
-    red <- crossreduce(cb ,model, cen=cen)
+    red <- crossreduce(cb, model, cen=cen)
+
     coef[i,] <- coef(red)
     vcov[[i]] <- vcov(red)
 
@@ -132,7 +142,6 @@ run_model <- function(df_list, regions_df) {
   proc.time()[3]-time
 
   return (list(argvar, coef, vcov))
-
 }
 
 
@@ -141,15 +150,16 @@ run_model <- function(df_list, regions_df) {
 #' Runs meta-analysis model and estimates best linear unbiased predictions
 #' (BLUPs) from this model.
 #'
-#' @param df_list a list of dataframes for each region
-#' @param regions_df A dataframe with two columns. Column 1 is abbreviated region
-#' names. Column 2 is full region names.
-#' @param coef A matrix populated with estimated model coefficients from a model of
-#' ???
-#' @param vcov A list. Variance-covariance matrices required for dlnm model.
+#' @param df_list A list of dataframes for each region
+#' @param regions_df A dataframe with two columns. Column 1 is abbreviated
+#' region names. Column 2 is full region names.
+#' @param coef Matrix of coefficients for reduced model
+#' @param vcov A list. Co-variance matrix for reduced model.
 #'
-#' @return an mvmeta model
-#' @return BLUP estimates for an mvmeta model
+#' @return
+#' \itemize{
+#'   \item mvmeta model (multivariante meta-analysis)
+#'   \item blup BLUP (best linear unbiased predictions) for an mvmeta model
 #' @import mvmeta
 run_meta_model <- function(df_list, regions_df, coef, vcov) {
 
@@ -170,12 +180,16 @@ run_meta_model <- function(df_list, regions_df, coef, vcov) {
   }
 
   # Create average temperature and range as meta-predictors
-  avgtmean <- sapply(df_list, function(x) mean(x$tmean, na.rm = TRUE))
-  rangetmean <- sapply(df_list,function(x) diff(range(x$tmean, na.rm = TRUE)))
+  avgtmean <- sapply(df_list,
+                     function(x) mean(x$tmean, na.rm = TRUE))
+  rangetmean <- sapply(df_list,
+                       function(x) diff(range(x$tmean, na.rm = TRUE)))
 
   # Meta-analysis
   # NB: country effects is not included in this example
-  mv <- mvmeta(coef ~ avgtmean + rangetmean, vcov, data = regions_df,
+  mv <- mvmeta(coef ~ avgtmean + rangetmean,
+               vcov,
+               data = regions_df,
                control = list(showiter = TRUE))
 
   # Obtain blups
@@ -204,6 +218,7 @@ fwald <- function(model, var) {
   vcov <- vcov(model)[ind, ind]
   waldstat <- coef %*% solve(vcov) %*% coef
   df <- length(coef)
+
   return(1 - pchisq(waldstat, df))
 }
 
@@ -213,9 +228,12 @@ fwald <- function(model, var) {
 #'
 #' @return P-values for avgtmean and rangetmean
 wald_results <- function(mv) {
+
   avgtmean_wald <- fwald(mv, "avgtmean")
   rangetmean_wald <- fwald(mv, "rangetmean")
+
   return(list(avgtmean_wald, rangetmean_wald))
+
 }
 
 #' Calculate minimum mortality values
@@ -226,13 +244,14 @@ wald_results <- function(mv) {
 #' @param regions_df A dataframe with two columns.
 #' Column 1 is abbreviated region names.
 #' Column 2 is full region names.
-#' @param blup BLUP estimates for an mvmeta model.
+#' @param blup BLUP (best linear unbiased predictions) for an mvmeta model.
 #'
-#' @return A list. \cr
-#' argvar: A list of redefined arguments\cr
-#' bvar: ??? \cr
-#' mintempregions: ??? \cr
-#' minperccountry: ??? \cr
+#' @return
+#' \itemize{
+#'   \item argvar: arguments ($fun, $knots, $degree) for cross-basis function
+#'   \item bvar:
+#'   \item mintempregions: optimum temperature per region
+#' }
 min_mortality <-  function(df_list, regions_df, blup) {
 
   if(!is.list(df_list) | !is.data.frame(df_list[[1]])) {
@@ -256,23 +275,28 @@ min_mortality <-  function(df_list, regions_df, blup) {
 
   # Define minimum mortality values: exclude low and very hot temperatures
   for(i in seq(length(df_list))) {
+
     data <- df_list[[i]]
     predvar <- quantile(data$tmean, 1:99/100, na.rm = T)
+
     # Redefine the function using all arguments (boundary knots included)
     argvar <- list(x = predvar, fun = config$varfun,
                    knots = quantile(data$tmean, varper/100, na.rm = TRUE),
                    degree = config$vardegree,
                    Bound = range(data$tmean, na.rm = T))
+
     bvar <- do.call(onebasis, argvar)
+
     minpercregions[i] <- (1:99)[which.min((bvar %*% blup[[i]]$blup))]
-    mintempregions[i] <- quantile(data$tmean, minpercregions[i]/100, na.rm = TRUE)
+    mintempregions[i] <- quantile(data$tmean, minpercregions[i]/100,
+                                  na.rm = TRUE)
   }
 
   # Country-specific points of minimum mortality
   (minperccountry <- median(minpercregions))
 
-  return(list(argvar = argvar, bvar = bvar, mintempregions = mintempregions,
-              minperccountry = minperccountry))
+  return(list(argvar = argvar, bvar = bvar,
+              mintempregions = mintempregions))
 
 }
 
@@ -305,19 +329,21 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
   }
 
   # Create the vectors to store the total mortality (accounting for missing)
-  totdeath <- rep(NA,nrow(regions_df))
+  totdeath <- rep(NA, nrow(regions_df))
   names(totdeath) <- regions_df$regions
 
   # Create the matrix to store the attributable deaths
-  matsim <- matrix(NA,nrow(regions_df),3,dimnames=list(regions_df$regions,
-                                                   c("glob","cold","heat")))
+  matsim <- matrix(NA, nrow(regions_df), 3,
+                   dimnames = list(regions_df$regions,
+                                   c("glob","cold","heat")))
 
   # Number of simulation runs for computing empirical CI
   nsim <- 1000
 
   # Create the array to store the CI of attributable deaths
-  arraysim <- array(NA,dim=c(nrow(regions_df),3,nsim),dimnames=list(regions_df$regions,
-                                                                c("glob","cold","heat")))
+  arraysim <- array(NA, dim = c(nrow(regions_df),3,nsim),
+                    dimnames = list(regions_df$regions,
+                                    c("glob","cold","heat")))
 
   varper <- c(10, 75, 90)
 
@@ -332,32 +358,68 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
 
     # Derive the cross-basis
     # NB: Centering point different than original choice of 75th
-    argvar <- list(x=data$tmean,fun=config$varfun,knots=quantile(data$tmean,
-                                                          varper/100,na.rm=T),degree=config$vardegree)
-    cb <- crossbasis(data$tmean,lag=config$lag,argvar=argvar,
-                     arglag=list(knots=logknots(config$lag, config$lagnk)))
+    argvar <- list(x=data$tmean,
+                   fun = config$varfun,
+                   knots = quantile(data$tmean, varper/100,na.rm=T),
+                   degree = config$vardegree)
+
+    cb <- crossbasis(data$tmean,
+                     lag = config$lag,
+                     argvar = argvar,
+                     arglag = list(knots = logknots(config$lag, config$lagnk)))
 
     # Compute the attributable deaths
     # NB: The reduced coefficients are used here
-    matsim[i,"glob"] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
-                               vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempregions[i])
-    matsim[i,"cold"] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
-                               vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempregions[i],
-                               range=c(-100,mintempregions[i]))
-    matsim[i,"heat"] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
-                               vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempregions[i],
-                               range=c(mintempregions[i],100))
+    matsim[i,"glob"] <- attrdl(data$tmean, cb, data$death,
+                               coef=blup[[i]]$blup,
+                               vcov = blup[[i]]$vcov,
+                               type="an",
+                               dir = "forw",
+                               cen = mintempregions[i])
+
+    matsim[i,"cold"] <- attrdl(data$tmean, cb, data$death,
+                               coef = blup[[i]]$blup,
+                               vcov = blup[[i]]$vcov,
+                               type = "an",
+                               dir = "forw",
+                               cen = mintempregions[i],
+                               range = c(-100,mintempregions[i]))
+
+    matsim[i,"heat"] <- attrdl(data$tmean, cb, data$death,
+                               coef = blup[[i]]$blup,
+                               vcov = blup[[i]]$vcov,
+                               type="an",
+                               dir = "forw",
+                               cen = mintempregions[i],
+                               range = c(mintempregions[i],100))
 
     # Compute empirical occurences of the attributable deaths
     # Uused to derive confidence intervals
-    arraysim[i,"glob",] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
-                                  vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempregions[i],sim=T,nsim=nsim)
-    arraysim[i,"cold",] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
-                                  vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempregions[i],
-                                  range=c(-100,mintempregions[i]),sim=T,nsim=nsim)
-    arraysim[i,"heat",] <- attrdl(data$tmean,cb,data$death,coef=blup[[i]]$blup,
-                                  vcov=blup[[i]]$vcov,type="an",dir="forw",cen=mintempregions[i],
-                                  range=c(mintempregions[i],100),sim=T,nsim=nsim)
+    arraysim[i,"glob",] <- attrdl(data$tmean, cb, data$death,
+                                  coef = blup[[i]]$blup,
+                                  vcov = blup[[i]]$vcov,
+                                  type = "an",
+                                  dir = "forw",
+                                  cen = mintempregions[i],
+                                  sim = T, nsim = nsim)
+
+    arraysim[i,"cold",] <- attrdl(data$tmean, cb, data$death,
+                                  coef=blup[[i]]$blup,
+                                  vcov = blup[[i]]$vcov,
+                                  type = "an",
+                                  dir = "forw",
+                                  cen = mintempregions[i],
+                                  range = c(-100,mintempregions[i]),
+                                  sim = T ,nsim = nsim)
+
+    arraysim[i,"heat",] <- attrdl(data$tmean, cb, data$death,
+                                  coef=blup[[i]]$blup,
+                                  vcov = blup[[i]]$vcov,
+                                  type = "an",
+                                  dir= "forw",
+                                  cen = mintempregions[i],
+                                  range = c(mintempregions[i],100),
+                                  sim = T, nsim = nsim)
 
     # Store the denominator of attributable deaths, i.e. total observed mortality
     # Correct denominator to compute the attributable fraction later, as in attrdl
@@ -402,14 +464,14 @@ write_outputs_to_csv <- function(regions_df, matsim, arraysim,
 
   # Attributable fractions
   # regions-specific
-  afregions <- anregions/totdeath*100
-  afregionslow <- anregionslow/totdeath*100
-  afregionshigh <- anregionshigh/totdeath*100
+  afregions <- anregions/totdeath * 100
+  afregionslow <- anregionslow/totdeath * 100
+  afregionshigh <- anregionshigh/totdeath * 100
 
   # Total
-  aftot <- antot/totdeathtot*100
-  aftotlow <- antotlow/totdeathtot*100
-  aftothigh <- antothigh/totdeathtot*100
+  aftot <- antot/totdeathtot * 100
+  aftotlow <- antotlow/totdeathtot * 100
+  aftothigh <- antothigh/totdeathtot * 100
 
   # Bind datasets
   anregions_bind <- t(cbind(anregions, anregionslow, anregionshigh))
@@ -463,23 +525,25 @@ plot_results <- function(df_list, argvar,
                          bvar, blup, regions_df, mintempregions,
                          output_folder_path){
 
-  # if (output_folder_path) {
-  #
-  #   pdf(paste(output_folder_path, "output_all_regions_plot.pdf"), width=8, height=9)
-  #
-  # } else {
-  #
-  #   pdf("output_all_regions_plot.pdf", width=8, height=9)
-  #
-  # }
+  if (!is.null(output_folder_path)) {
+
+    pdf(paste(output_folder_path, "output_all_regions_plot.pdf"), width=8, height=9)
+
+  } else {
+
+    pdf("output_all_regions_plot.pdf", width=8, height=9)
+
+  }
 
   per <- t(sapply(df_list,function(x)
-    quantile(x$tmean,c(2.5,10,25,50,75,90,97.5)/100,na.rm=T)))
+    quantile(x$tmean, c(2.5,10,25,50,75,90,97.5)/100, na.rm=T)))
 
   xlab <- expression(paste("Temperature (",degree,"C)"))
 
-  layout(matrix(c(0,1,1,2,2,0,rep(3:8,each=2),0,9,9,10,10,0),ncol=6,byrow=T))
-  par(mar=c(4,3.8,3,2.4),mgp=c(2.5,1,0),las=1)
+  layout(matrix(c(0,1,1,2,2,0, rep(3:8, each = 2),0,9,9,10,10,0),
+                ncol = 6, byrow = T))
+
+  par(mar = c(4,3.8,3,2.4), mgp = c(2.5,1,0),las=1)
 
   varper <- c(10, 75, 90)
 
@@ -488,44 +552,66 @@ plot_results <- function(df_list, argvar,
     data <- df_list[[i]]
 
     # NB: Centering point different than original choice of 75th
-    argvar <- list(x=data$tmean,fun=config$varfun,degree=config$vardegree,
-                   knots=quantile(data$tmean,varper/100,na.rm=T))
-    bvar <- do.call(onebasis,argvar)
-    pred <- crosspred(bvar,coef=blup[[i]]$blup,vcov=blup[[i]]$vcov,
-                      model.link="log",by=0.1,cen=mintempregions[i])
+    argvar <- list(x = data$tmean,
+                   fun = config$varfun,
+                   degree = config$vardegree,
+                   knots=quantile(data$tmean, varper/100, na.rm=T))
 
-    plot(pred,type="n",ylim=c(0,2.5),yaxt="n",lab=c(6,5,7),xlab=xlab,ylab="RR",
-         main=regions_df$region_names[i])
-    ind1 <- pred$predvar<=mintempregions[i]
-    ind2 <- pred$predvar>=mintempregions[i]
-    lines(pred$predvar[ind1],pred$allRRfit[ind1],col=4,lwd=1.5)
-    lines(pred$predvar[ind2],pred$allRRfit[ind2],col=2,lwd=1.5)
-    mtext(regions_df$countryname[i],cex=0.7,line=0)
-    #axis(1,at=-8:8*5)
-    axis(2,at=1:5*0.5)
+    bvar <- do.call(onebasis, argvar)
 
-    breaks <- c(min(data$tmean,na.rm=T)-1,seq(pred$predvar[1],
-                                              pred$predvar[length(pred$predvar)],length=30),max(data$tmean,na.rm=T)+1)
-    hist <- hist(data$tmean,breaks=breaks,plot=F)
-    hist$density <- hist$density/max(hist$density)*0.7
-    prop <- max(hist$density)/max(hist$counts)
-    counts <- pretty(hist$count,3)
+    pred <- crosspred(bvar,
+                      coef = blup[[i]]$blup,
+                      vcov=blup[[i]]$vcov,
+                      model.link="log",
+                      by=0.1,
+                      cen=mintempregions[i])
 
-    plot(hist,ylim=c(0,max(hist$density)*3.5),axes=F,ann=F,col=grey(0.95),
-         breaks=breaks,freq=F,add=T)
-    axis(4,at=counts*prop,labels=counts,cex.axis=0.7)
+    plot(pred, type = "n",
+         ylim = c(0,2.5), yaxt = "n",
+         lab = c(6,5,7), xlab = xlab,
+         ylab = "RR",
+         main = regions_df$region_names[i])
+
+    ind1 <- pred$predvar <= mintempregions[i]
+    ind2 <- pred$predvar >= mintempregions[i]
+
+    lines(pred$predvar[ind1], pred$allRRfit[ind1], col=4, lwd=1.5)
+    lines(pred$predvar[ind2], pred$allRRfit[ind2], col=2, lwd=1.5)
+    mtext(regions_df$countryname[i], cex=0.7, line=0)
+
+    axis(2,at = 1:5*0.5)
+
+    breaks <- c(min(data$tmean, na.rm = T) - 1,
+                seq(pred$predvar[1],
+                    pred$predvar[length(pred$predvar)], length = 30),
+                max(data$tmean, na.rm = T) + 1)
+
+    hist <- hist(data$tmean, breaks = breaks, plot = F)
+    hist$density <- hist$density / max(hist$density) * 0.7
+    prop <- max(hist$density) / max(hist$counts)
+    counts <- pretty(hist$count, 3)
+
+    plot(hist,
+         ylim = c(0,max(hist$density)*3.5),
+         axes = F, ann = F, col = grey(0.95),
+         breaks = breaks, freq = F, add = T)
+
+    axis(4, at = counts*prop, labels = counts, cex.axis = 0.7)
     #mtext("N",4,line=-0.5,at=mean(counts*prop),cex=0.5)
-    abline(v=mintempregions[i],lty=3)
-    abline(v=c(per[i,c("2.5%","97.5%")]),lty=2)
 
+    abline(v = mintempregions[i], lty = 3)
+    abline(v = c(per[i,c("2.5%","97.5%")]), lty = 2)
     }
 
   # Output for testing
-  output_df <- data.frame(regnames = rep(unique(data$regnames), length(pred$predvar)),
+  output_df <- data.frame(regnames = rep(unique(data$regnames),
+                                         length(pred$predvar)),
                           temperature = pred$predvar,
                           relative_risk = pred$allRRfit)
   # Output for testing
-  write.csv(output_df, paste(output_folder_path, 'output_one_region_data_new.csv'), row.names=FALSE)
+  write.csv(output_df,
+            paste(output_folder_path, 'output_one_region_data_new.csv'),
+            row.names=FALSE)
 
 }
 
@@ -539,34 +625,51 @@ plot_results <- function(df_list, argvar,
 #' @examples
 do_analysis <- function(input_csv_path, output_csv_path){
 
-  c(df_list_unordered, regions) %<-% load_data(input_path = input_csv_path)
+  c(df_list_unordered, regions) %<-%
+    load_data(input_path = input_csv_path)
 
-  c(regions_df, df_list) %<-% get_region_metadata(regions = regions,
-                                            df_list_unordered = df_list_unordered)
+  c(regions_df, df_list) %<-%
+    get_region_metadata(regions = regions,
+                        df_list_unordered = df_list_unordered)
 
-  c(argvar, coef, vcov) %<-% run_model(df_list = df_list, regions_df = regions_df)
+  c(argvar, coef, vcov) %<-%
+    run_model(df_list = df_list,
+              regions_df = regions_df)
 
-  c(mv, blup) %<-% run_meta_model(df_list = df_list, regions_df = regions_df, coef = coef,
-                                  vcov = vcov)
+  c(mv, blup) %<-%
+    run_meta_model(df_list = df_list,
+                   regions_df = regions_df,
+                   coef = coef,
+                   vcov = vcov)
 
-  c(avgtmean_wald, rangetmean_wald) %<-% wald_results(mv = mv)
+  c(avgtmean_wald, rangetmean_wald) %<-%
+    wald_results(mv = mv)
 
-  c(argvar, bvar, mintempregions, minperccountry) %<-%
-    min_mortality(df_list = df_list, regions_df = regions_df, blup = blup)
+  c(argvar, bvar, mintempregions) %<-%
+    min_mortality(df_list = df_list,
+                  regions_df = regions_df,
+                  blup = blup)
 
   c(totdeath, arraysim, matsim) %<-%
-    compute_attributable_deaths(df_list = df_list, regions_df = regions_df, coef = coef,
+    compute_attributable_deaths(df_list = df_list,
+                                regions_df = regions_df,
+                                coef = coef,
                                 vcov = vcov, argvar = argvar,
                                 bvar = bvar, blup = blup,
                                 mintempregions = mintempregions)
 
-c(antot, totdeathtot, aftot, afregions) %<-%
-  write_outputs_to_csv(regions_df = regions_df, matsim = matsim, arraysim = arraysim,
-                       totdeath = totdeath,
-                       output_folder_path = output_csv_path)
+  c(antot, totdeathtot, aftot, afregions) %<-%
+    write_outputs_to_csv(regions_df = regions_df,
+                         matsim = matsim,
+                         arraysim = arraysim,
+                         totdeath = totdeath,
+                         output_folder_path = output_csv_path)
 
-  plot_results(df_list = df_list, argvar = argvar,
-               bvar = bvar, blup = blup, regions_df = regions_df,
+  plot_results(df_list = df_list,
+               argvar = argvar,
+               bvar = bvar,
+               blup = blup,
+               regions_df = regions_df,
                mintempregions = mintempregions,
                output_folder_path = output_csv_path)
 }
