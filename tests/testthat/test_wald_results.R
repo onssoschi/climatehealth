@@ -5,10 +5,14 @@ library(zeallot)
 context("Test output data types")
 test_that('Test wald_results() returns correct data type', {
 
-  c(dlist, argvar, regions, cities, coef, vcov) %<-%
-    prep_and_first_step("testdata/regEngWales.csv")
+  c(df_list_unordered, regions) %<-% load_data(input_path = 'testdata/regEngWales.csv')
 
-  c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
+  c(regions_df, df_list) %<-% get_region_metadata(regions = regions,
+                                                  df_list_unordered = df_list_unordered)
+
+  c(argvar, coef, vcov) %<-% run_model(df_list = df_list, regions_df = regions_df)
+
+  c(mv, blup) %<-% run_meta_model(df_list = df_list, regions_df = regions_df, coef = coef,
                                   vcov = vcov)
 
   expect_equal(typeof(wald_results(mv)), "list")
@@ -22,10 +26,14 @@ test_that('Test wald_results() returns correct data type', {
 context("Test output length")
 test_that('Test wald_results() returns list of correct length', {
 
-  c(dlist, argvar, regions, cities, coef, vcov) %<-%
-    prep_and_first_step("testdata/regEngWales.csv")
+  c(df_list_unordered, regions) %<-% load_data(input_path = 'testdata/regEngWales.csv')
 
-  c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
+  c(regions_df, df_list) %<-% get_region_metadata(regions = regions,
+                                                  df_list_unordered = df_list_unordered)
+
+  c(argvar, coef, vcov) %<-% run_model(df_list = df_list, regions_df = regions_df)
+
+  c(mv, blup) %<-% run_meta_model(df_list = df_list, regions_df = regions_df, coef = coef,
                                   vcov = vcov)
 
   expect_equal(length(wald_results(mv)), 2)
@@ -37,11 +45,16 @@ test_that('Test wald_results() returns list of correct length', {
 context("Test output range")
 test_that('Test wald_results() returns p-values between 0 and 1', {
 
-  c(dlist, argvar, regions, cities, coef, vcov) %<-%
-    prep_and_first_step("testdata/regEngWales.csv")
+  c(df_list_unordered, regions) %<-% load_data(input_path = 'testdata/regEngWales.csv')
 
-  c(mv, blup) %<-% run_meta_model(dlist = dlist, cities = cities, coef = coef,
+  c(regions_df, df_list) %<-% get_region_metadata(regions = regions,
+                                                  df_list_unordered = df_list_unordered)
+
+  c(argvar, coef, vcov) %<-% run_model(df_list = df_list, regions_df = regions_df)
+
+  c(mv, blup) %<-% run_meta_model(df_list = df_list, regions_df = regions_df, coef = coef,
                                   vcov = vcov)
+
 
   expect_lte(wald_results(mv)[[1]], 1)
   expect_gte(wald_results(mv)[[1]], 0)
