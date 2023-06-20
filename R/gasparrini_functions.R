@@ -529,7 +529,7 @@ plot_results <- function(df_list, argvar,
 
 }
 
-#' Do Gasparrini analysis
+#' Do full Gasparrini analysis
 #'
 #' @param input_csv_path
 #' @param output_csv_path
