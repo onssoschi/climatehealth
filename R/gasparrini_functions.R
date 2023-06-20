@@ -613,7 +613,8 @@ plot_results <- function(df_list, argvar,
                           relative_risk = pred$allRRfit)
   # Output for testing
   write.csv(output_df,
-            paste(output_folder_path, 'output_one_region_data_new.csv'),
+            paste(output_folder_path, 'output_one_region_data_new.csv',
+                  sep = ''),
             row.names=FALSE)
 
 }
