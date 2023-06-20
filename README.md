@@ -1,93 +1,49 @@
-# Data Explorer: An R Shiny Prototype of the Climate and Health Data Platform 
+# indicatorfunctions
 
 ---
 
 ## Description
 
-A code repository and R Shiny app for prototyping the ONS-Wellcome Trust climate and health data platform.
+A package for calculating climate-health indicators [beta].
 
-The R Shiny prototype is linked to a SQLite database. [The code for the creation of the SQLite database can be found in this GitLab repository](https://gitlab-app-l-01/hapi/climate-and-health-team/sql_test).
+First indicator is modified from Gasparrini et al. (2015).
 
-The code for the app is modular (making it easier for developers to work on specific parts of the app). We are developing the app as an R package.
-
-The app contains prototypes for key features of the platform. These features are arranged in tabs:
-
-* **Register**: User registration (writes to `uploader` table in database).
-* **Login**: User login (reads from `uploader` table in database).
-* **Upload**: Allows user to upload data to the platform (writes to `uploaded_dataset` table in database). 
-* **Approval [admin only]**: Allows admins to log in and approve uploaded datasets (connects to `approver`, `uploaded_dataset`, `upload_metadata` and `uploader` tables in database).
-* **Time series**: Displays time series plot and map visualisations and results of statistical tests. User can adjust date range and number of days in moving average calculation. User can also download data and plot. Reads from `uploaded_dataset`. 
-* **Chloropleth**: Displays a chloropleth map (reads from `uploaded_dataset`).
-* **Indicator**: Allows user to upload data to the platform (in a similar way to the Upload tab). Calculates indicator value for relative risk of heat-related mortality (using Antonio Gasparrini's code) and displays plot of the model. User can download data and plot. Reads from and writes to `uploaded_dataset` table in the database.
+Gasparrini A, Guo Y, Hashizume M, Lavigne E, Zanobetti A, Schwartz J, Tobias A, Tong S, Rocklöv J, Forsberg B, Leone M, De Sario M, Bell ML, Guo YLL, Wu CF, Kan H, Yi SM, de Sousa Zanotti Stagliorio Coelho M, Saldiva PH, Honda Y, Kim H, Armstrong B. Mortality risk attributable to high and low ambient temperature: a multicountry observational study. The Lancet. 2015;386(9991):369-375
 
 ### Folder description
 
-- `.idea`:           PyCharm project files
-- `R`:               Contains packaged R code for each of the platform modules
-- `data`:            Contains data and shapefiles including randomised heat-related mortality data and inputs for dummy data generation code (dummy_data_generator.py)
-- `gasparrini`:      Contains code for modelling heat-related mortality risk
+- `gasparrini_main.R`: Runs distributed lag non-linear model (dlnm) to estimate the excess risk attributable to non-optimal outdoor temperature (modified from Gasparrini et al. 2015)
+- `R`:               Contains packaged R code for each the indicators
+- `data`:            Contains data for calculating indicators
+- `archive`:         Archived scripts
 - `man`:             Automatically generated package documentation from roxygen2 comments (do not edit manually)
-- `matt_lay_heat_indicator`: Folder for heat indicator team (Layli and Matt) to work in.
-- `output`:          Outputs from dummy data generation code (dummy_data_generator.py)
-- `scripts`:         Various scripts that are not part of the R package for the app.
-- `tests/testthat`:  Unit tests
+- `output`:          Outputs from scripts
+- `tests`:  Unit tests
 
 ---
 
 ## Usage
 
-### R Shiny app
+Steps to calculate indicator:
 
-Steps to run app:
+1. Change `input_csv_path` field in `config.yaml` to your input dataset (daily mortality and temperature measurements per region).
 
-1. Change `db_user` field in `config.yaml` to your ONS username. This will allow you to access the SQLite database connected to the app.
+2. Change `output_folder_path` field in `config.yaml` to the folder you want to store outputs.
 
-2. Load `dataexplorer` package from console:  
+3. Run `gasparrini_main.R`
 
-     * `devtools::load_all()`  
-  
-     * `dataexplorer_app()`
+## Data
 
-3. Login details for testing (Login tab):  
+#### Heat-related mortality data
 
-     * email_address: `a` 
-
-     * password: `a`
-  
-4. Upload data for testing (Upload tab):  
-
-     * Browse for file in `Upload CSV File`
-
-     * Select either `data/engwales_input_data_randomised_2020_2022.csv` (recommended for testing) OR `data/            engwales_input_data_randomised.csv` (full dataset - slower to load)
-     
-     * Select indicator, time, and sub-geography columns
-     * Indicator column: `death`
-     * Time column: `date`
-     * Sub-geography column: `regnames`
-  
-### Data
-
-#### Real heat-related mortality data
-
-We are currently testing the app using real heat-related mortality data for England and Wales (`data/engwales_input_data_randomised_2020_2022.csv`), desensitised by adding random noise to the number of deaths column. This data is produced by `scripts/noise.py`. The raw data is being used by our team to develop an indicator of heat-related mortality.
+We are currently testing the indicator using real heat-related mortality data for England and Wales (`data/regEngWales.csv`). The raw data is being used by our team to develop an indicator of heat-related mortality.
 
 This dataset contains daily number of deaths and minimum, maximum, and mean temperature, disaggregated by region (nine English regions).
 
-#### Dummy data 
-
-Prior to using real heat-related mortality data for England and Wales, we used dummy data generated by `scripts/dummy_data_generator.py`.
-
-The dummy data contains relative risk of heat-related mortality for each Local Authority in England from 2010 until 2023. The data is disaggregated by sex and age, and includes Inequality Indices.
-
-* To generate the dummy data, run `scripts/dummy_data_generator.py`
-    * Inputs for this file are stored in `data/` directory
-    * Output shapefiles and csv is stored in `output/` directory
-
----
 
 ## Project status
 
-* Refining indicator calculation and SQL database integration with app  
+* Refining indicator calculation and usability
 
 ---
 
@@ -96,3 +52,5 @@ The dummy data contains relative risk of heat-related mortality for each Local A
 Climate and Health, Epidemiology and Global Health Analysis, Office for National Statistics  
 
 [Euan Soutter, Antony Brown, Cerys Hopkins, Paul Slocombe, Vijendra Ingole]
+
+
