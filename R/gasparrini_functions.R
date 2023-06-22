@@ -16,6 +16,7 @@ config <- config::get()
 #' \itemize{
 #'   \item df_list_unordered - a list of dataframes for each region
 #'   \item regions - a list of strings of the names of each region
+#' @export
 #' @examples
 load_data <- function(input_path) {
 
@@ -30,6 +31,7 @@ load_data <- function(input_path) {
 
   df_list_unordered <- lapply(regions,
                               function(x) df[df$regnames == x, ])
+
   names(df_list_unordered) <- regions
 
   return (list(df_list_unordered, regions))
@@ -46,27 +48,22 @@ load_data <- function(input_path) {
 #'   \item regions - A dataframe with two columns. Column 1 is abbreviated
 #'   region names. Column 2 is full region names.
 #'   \item df_list - list of dataframes for each region
+#' @export
 #' @examples
 get_region_metadata <- function(regions, df_list_unordered, region_names = NULL) {
 
-  # if(!is.list(df_list_unordered) | !is.data.frame(df_list_unordered[[1]])) {
-  #   stop("Argument 'df_list_unordered' must be a list of data frames")
-  #   }
-  #
-  # if(!is.list(regions) | !is.data.frame(regions[[1]])) {
-  #   stop("Argument 'regions' must be a list")
-  #   }
-
   if (!is.null(region_names)) {
+
     region_names = region_names
+
   } else {
+
     region_names = regions
   }
 
   regions_df <- data.frame(
     regions = regions,
-    region_names = region_names
-  )
+    region_names = region_names)
 
   # Order
   ord <- order(regions_df$region_names)
@@ -87,6 +84,7 @@ get_region_metadata <- function(regions, df_list_unordered, region_names = NULL)
 #'   \item argvar arguments ($fun, $knots, $degree) for cross-basis function
 #'   \item coef matrix of coefficients for reduced model
 #'   \item vcov co-variance matrix for reduced model
+#' @export
 run_model <- function(df_list, regions_df) {
 
   # Loop
@@ -112,11 +110,11 @@ run_model <- function(df_list, regions_df) {
     cat(i,"")
 
     # Extract data
-    data <- df_list[[1]]
+    data <- df_list[[i]]
 
     # Define crossbasis
     argvar <- list(fun = config$varfun,
-                   knots = quantile(data$tmean, (varper)/100, na.rm=T),
+                   knots = quantile(data$tmean, varper/100, na.rm=T),
                    degree = config$vardegree)
 
     cb <- crossbasis(data$tmean,
@@ -135,7 +133,7 @@ run_model <- function(df_list, regions_df) {
     pred <- crosspred(cb, model, cen = cen)
 
     # Reduction to overall cumulative
-    red <- crossreduce(cb, model, cen=cen)
+    red <- crossreduce(cb, model, cen = cen)
 
     coef[i,] <- coef(red)
     vcov[[i]] <- vcov(red)
@@ -163,6 +161,8 @@ run_model <- function(df_list, regions_df) {
 #' \itemize{
 #'   \item mvmeta model (multivariante meta-analysis)
 #'   \item blup BLUP (best linear unbiased predictions) for an mvmeta model
+#'
+#' @export
 #' @import mvmeta
 run_meta_model <- function(df_list, regions_df, coef, vcov) {
 
@@ -209,6 +209,7 @@ run_meta_model <- function(df_list, regions_df, coef, vcov) {
 #' @param var A character. The name of the variable in the model to calculate
 #' p-values for.
 #'
+#' @export
 #' @return A number. The p-value of the explanatory variable.
 fwald <- function(model, var) {
 
@@ -255,6 +256,8 @@ wald_results <- function(mv) {
 #'   \item bvar:
 #'   \item mintempregions: optimum temperature per region
 #' }
+#'
+#' @export
 min_mortality <-  function(df_list, regions_df, blup) {
 
   if(!is.list(df_list) | !is.data.frame(df_list[[1]])) {
@@ -321,6 +324,7 @@ min_mortality <-  function(df_list, regions_df, blup) {
 #'   \item arraysim
 #'   \item matsim
 #' }
+#' @export
 compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
                                         argvar, bvar, blup,
                                         mintempregions) {
@@ -443,6 +447,8 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
 #' @param totdeath
 #' @param output_folder_path
 #'
+#' @export
+#'
 #' @return None
 #' @examples output_folder_path = 'myfolder/output/'
 write_outputs_to_csv <- function(regions_df, matsim, arraysim,
@@ -522,6 +528,8 @@ write_outputs_to_csv <- function(regions_df, matsim, arraysim,
 #' @param mintempregions
 #' @param output_folder_path
 #'
+#' @export
+#'
 #' @return a plot
 #' @examples output_folder_path = 'myfolder/output/'
 plot_results <- function(df_list, argvar,
@@ -530,23 +538,22 @@ plot_results <- function(df_list, argvar,
 
   if (!is.null(output_folder_path)) {
 
-    pdf(paste(output_folder_path, "output_all_regions_plot.pdf"), width=8, height=9)
+    pdf(paste(output_folder_path, "output_all_regions_plot.pdf", sep = ''), width = 8, height = 9)
 
   } else {
 
-    pdf("output_all_regions_plot.pdf", width=8, height=9)
+    pdf("output_all_regions_plot.pdf", width = 8, height = 9)
 
   }
+
+  layout(matrix(c(0,1,1,2,2,0, rep(3:8, each = 2),0,9,9,10,10,0),
+                ncol = 6, byrow = T))
+  par(mar = c(4,3.8,3,2.4), mgp = c(2.5,1,0),las=1)
 
   per <- t(sapply(df_list,function(x)
     quantile(x$tmean, c(2.5,10,25,50,75,90,97.5)/100, na.rm=T)))
 
   xlab <- expression(paste("Temperature (",degree,"C)"))
-
-  layout(matrix(c(0,1,1,2,2,0, rep(3:8, each = 2),0,9,9,10,10,0),
-                ncol = 6, byrow = T))
-
-  par(mar = c(4,3.8,3,2.4), mgp = c(2.5,1,0),las=1)
 
   varper <- c(10, 75, 90)
 
@@ -580,7 +587,7 @@ plot_results <- function(df_list, argvar,
 
     lines(pred$predvar[ind1], pred$allRRfit[ind1], col=4, lwd=1.5)
     lines(pred$predvar[ind2], pred$allRRfit[ind2], col=2, lwd=1.5)
-    mtext(regions_df$countryname[i], cex=0.7, line=0)
+    mtext(regions_df$region_names[i], cex=0.7, line=0)
 
     axis(2,at = 1:5*0.5)
 
@@ -606,6 +613,8 @@ plot_results <- function(df_list, argvar,
     abline(v = c(per[i,c("2.5%","97.5%")]), lty = 2)
     }
 
+  dev.off()
+
   # Output for testing
   output_df <- data.frame(regnames = rep(unique(data$regnames),
                                          length(pred$predvar)),
@@ -613,8 +622,8 @@ plot_results <- function(df_list, argvar,
                           relative_risk = pred$allRRfit)
   # Output for testing
   write.csv(output_df,
-            paste(output_folder_path, 'output_one_region_data_new.csv',
-                  sep = ''),
+            paste(output_folder_path,
+                  'output_one_region_data_new.csv', sep = ''),
             row.names=FALSE)
 
 }
@@ -626,6 +635,8 @@ plot_results <- function(df_list, argvar,
 #'
 #' @return
 #'
+#' @export
+#'
 #' @examples
 do_analysis <- function(input_csv_path, output_csv_path){
 
@@ -634,7 +645,12 @@ do_analysis <- function(input_csv_path, output_csv_path){
 
   c(regions_df, df_list) %<-%
     get_region_metadata(regions = regions,
-                        df_list_unordered = df_list_unordered)
+                        df_list_unordered = df_list_unordered,
+                        region_names = c("North East","North West",
+                                         "Yorkshire & Humber","East Midlands",
+                                         "West Midlands","East","London",
+                                         "South East","South West", "Wales")
+                        )
 
   c(argvar, coef, vcov) %<-%
     run_model(df_list = df_list,
