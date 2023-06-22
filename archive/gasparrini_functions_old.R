@@ -479,7 +479,7 @@ plot_results <- function(dlist, argvar,
 
   xlab <- expression(paste("Temperature (",degree,"C)"))
 
-  # pdf("gasparrini/output/output_all_regions_plot.pdf",width=8,height=9)
+  pdf("archive/archive_output/output_all_regions_plot_original.pdf",width=8,height=9)
   layout(matrix(c(0,1,1,2,2,0,rep(3:8,each=2),0,9,9,10,10,0),ncol=6,byrow=T))
   par(mar=c(4,3.8,3,2.4),mgp=c(2.5,1,0),las=1)
 
@@ -525,6 +525,8 @@ plot_results <- function(dlist, argvar,
                           relative_risk = pred$allRRfit)
 
   write.csv(output_df, output_csv_path, row.names=FALSE)
+
+  dev.off()
 
 }
 
@@ -604,5 +606,6 @@ do_analysis <- function(input_csv_path, output_csv_path){
                output_csv_path = output_csv_path)
 }
 
-do_analysis(input_csv_path = input_csv_path, output_csv_path = output_csv_path)
+do_analysis(input_csv_path = 'data/regEngWales.csv',
+            output_csv_path = 'archive/archive_output/output_one_region_data_original.csv')
 
