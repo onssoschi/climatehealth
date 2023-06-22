@@ -78,6 +78,10 @@ test_that('Test run_meta_model() returns correct data types', {
     get_region_metadata(regions = regions,
                         df_list_unordered = df_list_unordered)
 
+  c(argvar, coef, vcov) %<-%
+    run_model(df_list = df_list,
+              regions_df = regions_df)
+
   c(mv, blup) %<-%
     run_meta_model(df_list = df_list,
                    regions_df = regions_df,

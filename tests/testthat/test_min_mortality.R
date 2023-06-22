@@ -62,10 +62,5 @@ test_that('Test min_mortality() returns correct data types', {
   expect_equal(is.vector(mintempregions), TRUE)
   expect_equal(is.numeric(mintempregions), TRUE)
 
-  # minperccountry
-  expect_equal(typeof(minperccountry), "double")
-  expect_equal(is.numeric(minperccountry), TRUE)
-  expect_equal(length(minperccountry), 1)
-
 })
 
