@@ -2,22 +2,27 @@
 % Please edit documentation in R/gasparrini_functions.R
 \name{plot_results}
 \alias{plot_results}
-\title{Plot results
-Compute the attributable deaths for each city,
-with emprical CI estimated using the re-centred bases}
+\title{Plot results of analysis}
 \usage{
-plot_results(dlist, argvar, bvar, blup, cities, mintempcity, output_csv_path)
+plot_results(
+  df_list,
+  argvar,
+  bvar,
+  blup,
+  regions_df,
+  mintempregions,
+  output_folder_path
+)
 }
 \arguments{
-\item{x}{A number.}
-
-\item{y}{A number.}
+\item{output_folder_path}{}
 }
 \value{
-A number.
+a plot
 }
 \description{
-Plot results
-Compute the attributable deaths for each city,
-with emprical CI estimated using the re-centred bases
+Plot results of analysis
+}
+\examples{
+output_folder_path = 'myfolder/output/'
 }

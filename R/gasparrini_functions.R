@@ -16,6 +16,7 @@ config <- config::get()
 #' \itemize{
 #'   \item df_list_unordered - a list of dataframes for each region
 #'   \item regions - a list of strings of the names of each region
+#' @export
 #' @examples
 load_data <- function(input_path) {
 
@@ -46,6 +47,7 @@ load_data <- function(input_path) {
 #'   \item regions - A dataframe with two columns. Column 1 is abbreviated
 #'   region names. Column 2 is full region names.
 #'   \item df_list - list of dataframes for each region
+#' @export
 #' @examples
 get_region_metadata <- function(regions, df_list_unordered, region_names = NULL) {
 
@@ -80,6 +82,7 @@ get_region_metadata <- function(regions, df_list_unordered, region_names = NULL)
 #'   \item argvar arguments ($fun, $knots, $degree) for cross-basis function
 #'   \item coef matrix of coefficients for reduced model
 #'   \item vcov co-variance matrix for reduced model
+#' @export
 run_model <- function(df_list, regions_df) {
 
   # Loop
@@ -156,6 +159,8 @@ run_model <- function(df_list, regions_df) {
 #' \itemize{
 #'   \item mvmeta model (multivariante meta-analysis)
 #'   \item blup BLUP (best linear unbiased predictions) for an mvmeta model
+#'
+#' @export
 #' @import mvmeta
 run_meta_model <- function(df_list, regions_df, coef, vcov) {
 
@@ -202,6 +207,7 @@ run_meta_model <- function(df_list, regions_df, coef, vcov) {
 #' @param var A character. The name of the variable in the model to calculate
 #' p-values for.
 #'
+#' @export
 #' @return A number. The p-value of the explanatory variable.
 fwald <- function(model, var) {
 
@@ -248,6 +254,8 @@ wald_results <- function(mv) {
 #'   \item bvar:
 #'   \item mintempregions: optimum temperature per region
 #' }
+#'
+#' @export
 min_mortality <-  function(df_list, regions_df, blup) {
 
   if(!is.list(df_list) | !is.data.frame(df_list[[1]])) {
@@ -314,6 +322,7 @@ min_mortality <-  function(df_list, regions_df, blup) {
 #'   \item arraysim
 #'   \item matsim
 #' }
+#' @export
 compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
                                         argvar, bvar, blup,
                                         mintempregions) {
@@ -436,6 +445,8 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
 #' @param totdeath
 #' @param output_folder_path
 #'
+#' @export
+#'
 #' @return None
 #' @examples output_folder_path = 'myfolder/output/'
 write_outputs_to_csv <- function(regions_df, matsim, arraysim,
@@ -514,6 +525,8 @@ write_outputs_to_csv <- function(regions_df, matsim, arraysim,
 #' @param regions_df
 #' @param mintempregions
 #' @param output_folder_path
+#'
+#' @export
 #'
 #' @return a plot
 #' @examples output_folder_path = 'myfolder/output/'
@@ -618,6 +631,8 @@ plot_results <- function(df_list, argvar,
 #' @param output_csv_path
 #'
 #' @return
+#'
+#' @export
 #'
 #' @examples
 do_analysis <- function(input_csv_path, output_csv_path){
