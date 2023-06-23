@@ -16,7 +16,7 @@ test_that('Test output CSVs are written and of correct length', {
   c(avgtmean_wald, rangetmean_wald) %<-% wald_results(mv = mv)
 
   c(argvar, bvar, mintempregions) %<-%
-    min_mortality(df_list = df_list, regions_df = regions_df, blup = blup)
+    calculate_min_mortality_temp(df_list = df_list, regions_df = regions_df, blup = blup)
 
   c(totdeath, arraysim, matsim) %<-%
     compute_attributable_deaths(df_list = df_list, regions_df = regions_df, coef = coef,
@@ -25,7 +25,7 @@ test_that('Test output CSVs are written and of correct length', {
                                 mintempregions = mintempregions)
 
   c(antot, totdeathtot, aftot, afregions) %<-%
-    write_outputs_to_csv(regions_df = regions_df, matsim = matsim, arraysim = arraysim,
+    write_attributable_deaths(regions_df = regions_df, matsim = matsim, arraysim = arraysim,
                          totdeath = totdeath,
                          output_folder_path = 'testdata/')
 

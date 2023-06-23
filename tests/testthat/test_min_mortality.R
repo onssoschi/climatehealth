@@ -45,7 +45,7 @@ test_that('Test min_mortality() returns correct data types', {
                                   vcov = vcov)
 
   c(argvar, bvar, mintempregions) %<-%
-    min_mortality(df_list = df_list, regions_df = regions_df, blup = blup)
+    calculate_min_mortality_temp(df_list = df_list, regions_df = regions_df, blup = blup)
 
   # argvar
   expect_equal(typeof(argvar), "list")
