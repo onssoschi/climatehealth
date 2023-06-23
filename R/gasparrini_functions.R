@@ -638,16 +638,16 @@ plot_and_write_relative_risk <- function(df_list, argvar,
                   'output_all_regions_data.csv', sep = ''),
             row.names=FALSE)
 
-  # # Output for testing
-  # output_df_test <- data.frame(regnames = rep(unique(data$regnames),
-  #                                        length(pred$predvar)),
-  #                         temperature = pred$predvar,
-  #                         relative_risk = pred$allRRfit)
-  # # Output for testing
-  # write.csv(output_df_test,
-  #           paste(output_folder_path,
-  #                 'output_one_region_data_new.csv', sep = ''),
-  #           row.names=FALSE)
+  # Output for testing
+  output_df_test <- data.frame(regnames = rep(unique(data$regnames),
+                                         length(pred$predvar)),
+                          temperature = pred$predvar,
+                          relative_risk = pred$allRRfit)
+  # Output for testing
+  write.csv(output_df_test,
+            paste(output_folder_path,
+                  'output_one_region_data_new.csv', sep = ''),
+            row.names=FALSE)
 
 }
 
