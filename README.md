@@ -30,7 +30,9 @@ Steps to calculate indicator:
 
 2. Change `output_folder_path` field in `config.yaml` to the folder you want to store outputs.
 
-3. Run `gasparrini_main.R`
+3. Run `devtools:load_all()` to load indicatorfunctions package
+
+3. Run `gasparrini_main.R` to run full analysis
 
 ## Data
 
