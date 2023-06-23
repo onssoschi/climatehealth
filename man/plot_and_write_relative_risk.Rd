@@ -18,7 +18,8 @@ plot_and_write_relative_risk(
 \item{output_folder_path}{}
 }
 \value{
-a plot
+a plot of temperature versus relative risk and
+a CSV of the data used to make the plot
 }
 \description{
 Plot results of analysis
