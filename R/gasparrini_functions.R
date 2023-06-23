@@ -258,7 +258,7 @@ wald_results <- function(mv) {
 #' }
 #'
 #' @export
-min_mortality <-  function(df_list, regions_df, blup) {
+calculate_min_mortality_temp <-  function(df_list, regions_df, blup) {
 
   if(!is.list(df_list) | !is.data.frame(df_list[[1]])) {
     stop("Argument 'df_list' must be a list of data frames")
@@ -441,6 +441,7 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
 #' Write outputs to csv
 #' Write the attributable deaths and temperature for each regions,
 #' with empirical CI estimated using the re-centred bases
+#' @param df_list
 #' @param regions_df
 #' @param matsim
 #' @param arraysim
@@ -451,7 +452,7 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
 #'
 #' @return None
 #' @examples output_folder_path = 'myfolder/output/'
-write_outputs_to_csv <- function(regions_df, matsim, arraysim,
+write_attributable_deaths <- function(df_list, regions_df, matsim, arraysim,
                                       totdeath, output_folder_path = NULL) {
 
   # Attributable numbers
@@ -489,11 +490,15 @@ write_outputs_to_csv <- function(regions_df, matsim, arraysim,
   aftot_bind <- t(cbind(aftot, aftotlow, aftothigh))
 
   # # Temperature
-  # tmeanuk <- sapply(df_list,function(regions) mean(regions$tmean,na.rm=T)), c(Country="UK",
-  #   Period=paste(range(df_list[[1]]$year),collapse="-"),Deaths=totdeathtot,
-  #   Temperature=paste0(formatC(mean(tmeanuk),dig=1,
-  #                              format="f")," (",paste(formatC(range(tmeanuk),dig=1,format="f"),
-  #                                                     collapse="-"),")"))
+  # tmean_uk <- sapply(df_list, function(region) mean(region$tmean, na.rm = T))
+  #
+  # total <- c(Country = "UK",
+  #   Period = paste(range(df_list[[1]]$year), collapse = "-"),
+  #   Deaths = totdeathtot,
+  #   Temperature = paste0(formatC(mean(tmean_uk), dig = 1,
+  #                              format = "f")," (",
+  #                      paste(formatC(range(tmean_uk), dig = 1, format="f"),
+  #                                                     collapse = "-"),")"))
 
   if (!is.null(output_folder_path)) {
 
@@ -501,8 +506,7 @@ write_outputs_to_csv <- function(regions_df, matsim, arraysim,
     write.csv(antot_bind, file = paste(output_folder_path, 'attributable_deaths_total.csv',  sep = ""))
     write.csv(afregions_bind, file = paste(output_folder_path, 'attributable_fraction_regions.csv', sep = ""))
     write.csv(aftot_bind, file = paste(output_folder_path, 'attributable_fraction_total.csv',  sep = ""))
-    # write.csv(tmean_uk, output_folder_path, paste(output_folder_path, 'death_temp_total.csv'))
-
+    # write.csv(total, file = paste(output_folder_path, 'death_temp_total.csv',  sep = ""))
 
   } else {
 
@@ -510,7 +514,7 @@ write_outputs_to_csv <- function(regions_df, matsim, arraysim,
     write.csv(antot_bind, 'attributable_deaths_total.csv')
     write.csv(afregions_bind, 'attributable_fraction_regions.csv')
     write.csv(aftot_bind, 'attributable_fraction_total.csv')
-    # write.csv(tmean_uk, output_folder_path, paste(output_folder_path, 'death_temp_total'))
+    # write.csv(total, 'death_temp_total')
 
   }
 
@@ -532,7 +536,7 @@ write_outputs_to_csv <- function(regions_df, matsim, arraysim,
 #'
 #' @return a plot
 #' @examples output_folder_path = 'myfolder/output/'
-plot_results <- function(df_list, argvar,
+plot_and_write_relative_risk <- function(df_list, argvar,
                          bvar, blup, regions_df, mintempregions,
                          output_folder_path){
 
@@ -556,6 +560,10 @@ plot_results <- function(df_list, argvar,
   xlab <- expression(paste("Temperature (",degree,"C)"))
 
   varper <- c(10, 75, 90)
+
+  region_vector <- c()
+  temperature <- c()
+  relative_risk <- c()
 
   for(i in seq(length(df_list))) {
 
@@ -607,21 +615,36 @@ plot_results <- function(df_list, argvar,
          breaks = breaks, freq = F, add = T)
 
     axis(4, at = counts*prop, labels = counts, cex.axis = 0.7)
-    #mtext("N",4,line=-0.5,at=mean(counts*prop),cex=0.5)
+    mtext("N",4,line=-0.5,at=mean(counts*prop),cex=0.5)
 
     abline(v = mintempregions[i], lty = 3)
     abline(v = c(per[i,c("2.5%","97.5%")]), lty = 2)
+
+    region_vector <- append(region_vector,
+                            rep(regions_df$region_names[i],
+                                length(pred$predvar)))
+    temperature <- append(temperature, pred$predvar)
+    relative_risk <- append(relative_risk, pred$allRRfit)
     }
 
   dev.off()
 
+  output_df <- data.frame(regions = region_vector,
+                          temperature = temperature,
+                          relative_risk = relative_risk)
+
+  write.csv(output_df,
+            paste(output_folder_path,
+                  'output_all_regions_data.csv', sep = ''),
+            row.names=FALSE)
+
   # Output for testing
-  output_df <- data.frame(regnames = rep(unique(data$regnames),
+  output_df_test <- data.frame(regnames = rep(unique(data$regnames),
                                          length(pred$predvar)),
                           temperature = pred$predvar,
                           relative_risk = pred$allRRfit)
   # Output for testing
-  write.csv(output_df,
+  write.csv(output_df_test,
             paste(output_folder_path,
                   'output_one_region_data_new.csv', sep = ''),
             row.names=FALSE)
@@ -666,7 +689,7 @@ do_analysis <- function(input_csv_path, output_csv_path){
     wald_results(mv = mv)
 
   c(argvar, bvar, mintempregions) %<-%
-    min_mortality(df_list = df_list,
+    calculate_min_mortality_temp(df_list = df_list,
                   regions_df = regions_df,
                   blup = blup)
 
@@ -679,13 +702,14 @@ do_analysis <- function(input_csv_path, output_csv_path){
                                 mintempregions = mintempregions)
 
   c(antot, totdeathtot, aftot, afregions) %<-%
-    write_outputs_to_csv(regions_df = regions_df,
+    write_attributable_deaths(df_list = df_list,
+                         regions_df = regions_df,
                          matsim = matsim,
                          arraysim = arraysim,
                          totdeath = totdeath,
                          output_folder_path = output_csv_path)
 
-  plot_results(df_list = df_list,
+  plot_and_write_relative_risk(df_list = df_list,
                argvar = argvar,
                bvar = bvar,
                blup = blup,
