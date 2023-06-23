@@ -14,7 +14,7 @@ test_that('Test total deaths is an integer of correct length', {
                                   vcov = vcov)
 
   c(argvar, bvar, mintempregions) %<-%
-    min_mortality(df_list = df_list, regions_df = regions_df, blup = blup)
+    calculate_min_mortality_temp(df_list = df_list, regions_df = regions_df, blup = blup)
 
   c(totdeath, arraysim, matsim) %<-%
     compute_attributable_deaths(df_list = df_list, regions_df = regions_df, coef = coef,
