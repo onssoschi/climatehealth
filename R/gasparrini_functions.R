@@ -10,7 +10,7 @@ config <- config::get()
 
 #' Load data for analysis
 #'
-#' @param input_path a path to a CSV contain daily time series of death and temperature
+#' @param input_path Path to a CSV contain daily time series of death and temperature per region.
 
 #' @return
 #' \itemize{
@@ -40,14 +40,15 @@ load_data <- function(input_path) {
 
 #' Get region metadata for analysis
 #'
-#' @param regions list of strings of region names
+#' @param regions A list of strings representing region names.
+#' **NOTE** Must be same order as input data.
 #' @param df_list_unordered list of dataframes for each region
 #'
 #' @return
 #' \itemize{
 #'   \item regions. A dataframe with two columns. Column 1 is abbreviated
 #'   region names. Column 2 is full region names.
-#'   \item df_list. A list of dataframes for each region.
+#'   \item df_list. An alphabetically-ordered list of dataframes for each region.
 #' @export
 #' @examples
 get_region_metadata <- function(regions, df_list_unordered, region_names = NULL) {
@@ -74,16 +75,16 @@ get_region_metadata <- function(regions, df_list_unordered, region_names = NULL)
 
 }
 
-#' Define and run regression model for each dataframe
+#' Define and run poisson regression model for each dataframe
 #'
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #' region names. Column 2 is full region names.
 #' @param df_list_unordered List of dataframes for each region.
 #' @return
 #' \itemize{
-#'   \item argvar Arguments ($fun, $knots, $degree) for cross-basis function.
-#'   \item coef Matrix of coefficients for reduced model.
-#'   \item vcov Co-variance matrix for reduced model.
+#'   \item argvar A list of arguments ($fun, $knots, $degree) for cross-basis function.
+#'   \item coef A matrix of coefficients for reduced model.
+#'   \item vcov A list of co-variance matrices for reduced model.
 #' @export
 run_model <- function(df_list, regions_df) {
 
@@ -154,13 +155,14 @@ run_model <- function(df_list, regions_df) {
 #' @param df_list A list of dataframes for each region.
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #' region names. Column 2 is full region names.
-#' @param coef Matrix of coefficients for reduced model.
-#' @param vcov A list. Co-variance matrix for reduced model.
+#' @param coef A matrix of coefficients for reduced model.
+#' @param vcov A list of co-variance matrices for reduced model.
 #'
 #' @return
 #' \itemize{
-#'   \item mvmeta model (multivariante meta-analysis).
-#'   \item blup BLUP (best linear unbiased predictions) for an mvmeta model.
+#'   \item mvmeta model (multivariate meta-analysis model).
+#'   \item blup BLUP (best linear unbiased predictions) from the
+#'   meta-analysis model.
 #'
 #' @export
 #' @import mvmeta
@@ -230,7 +232,7 @@ fwald <- function(model, var) {
 #'
 #' @param mv A model object
 #'
-#' @return P-values for avgtmean and rangetmean
+#' @return P-values for average and range of temperatures (avgtmean_wald, rangetmean_wald)
 wald_results <- function(mv) {
 
   avgtmean_wald <- fwald(mv, "avgtmean")
@@ -242,19 +244,20 @@ wald_results <- function(mv) {
 
 #' Calculate minimum mortality values
 #'
-#' ???
+#' Calculate the temperature at which there is minimum mortality
+#' using the product of the basis matrix and blup
 #'
 #' @param df_list A list of dataframes for each region.
 #' @param regions_df A dataframe with two columns.
 #' Column 1 is abbreviated region names.
 #' Column 2 is full region names.
-#' @param blup BLUP (best linear unbiased predictions).
+#' @param blup A list of BLUPs (best linear unbiased predictions).
 #'
 #' @return
 #' \itemize{
-#'   \item argvar arguments ($fun, $knots, $degree) for cross-basis function.
-#'   \item bvar basis matrix for a predictor vector.
-#'   \item mintempregions optimum temperature per region (lowest coefficient in bvar).
+#'   \item argvar Arguments ($fun, $knots, $degree) for cross-basis function.
+#'   \item bvar Basis matrix for the predictor vector.
+#'   \item mintempregions Minimum (optimum) mortality temperature per region.
 #' }
 #'
 #' @export
@@ -307,22 +310,26 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup) {
 }
 
 #' Compute attributable deaths
+#'
 #' Compute the attributable deaths for each regions,
 #' with empirical CI estimated using the re-centered bases.
-#' @param df_list
-#' @param regions_df
-#' @param coef
-#' @param vcov
-#' @param argvar
-#' @param bvar
-#' @param blup
-#' @param mintempregions
+#'
+#' @param df_list A list of dataframes for each region.
+#' @param regions_df A dataframe with two columns. Column 1 is abbreviated
+#' region names. Column 2 is full region names.
+#' @param coef Matrix of coefficients for reduced model.
+#' @param vcov A co-variance matrix for reduced model.
+#' @param argvar Arguments ($fun, $knots, $degree) for cross-basis function.
+#' @param bvar Basis matrix for the predictor vector.
+#' @param blup A list of BLUPs (best linear unbiased predictions).
+#' @param mintempregions minimum (optimum) mortlity temperature for each region
 #'
 #' @return A list of variables
 #' \itemize{
 #'   \item totdeath Total observed mortality per region.
-#'   \item arraysim Attributable deaths from 1000 simulations. Used to derive confidence intervals.
-#'   \item matsim Attributable deaths.
+#'   \item arraysim Total (glob), cold and heat-attributable deaths per region for 1000 simulations.
+#'   Used to derive confidence intervals.
+#'   \item matsim Total (glob), cold and heat-attributable deaths per region from reduced coefficients.
 #' }
 #' @export
 compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
@@ -442,12 +449,14 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
 #' Write the attributable deaths and temperature for each regions,
 #' with empirical CI estimated using the re-centered bases.
 #'
-#' @param df_list
-#' @param regions_df
-#' @param matsim
-#' @param arraysim
-#' @param totdeath
-#' @param output_folder_path
+#' @param df_list A list of dataframes for each region.
+#' @param regions_df A dataframe with two columns. Column 1 is abbreviated
+#' region names. Column 2 is full region names.
+#' @param totdeath Total observed mortality per region.
+#' @param arraysim Total (glob), cold and heat-attributable deaths per region over 1000 simulations.
+#' Used to derive confidence intervals.
+#' @param matsim Total (glob), cold and heat-attributable deaths per region from reduced coefficients.
+#' @param output_folder_path Path to folder for storing outputs.
 #'
 #' @export
 #'
@@ -523,20 +532,21 @@ write_attributable_deaths <- function(df_list, regions_df, matsim, arraysim,
 
 }
 
-#' Plot results of analysis
+#' Plot and write results of analysis
 #'
-#' @param df_list
-#' @param argvar
-#' @param bvar
-#' @param blup
-#' @param regions_df
-#' @param mintempregions
-#' @param output_folder_path
+#' @param df_list A list of dataframes for each region.
+#' @param argvar A list of arguments ($fun, $knots, $degree) for cross-basis function.
+#' @param bvar Basis matrix for the predictor vector.
+#' @param blup A list of BLUPs (best linear unbiased predictions).
+#' @param regions_df A dataframe with two columns. Column 1 is abbreviated
+#' region names. Column 2 is full region names.
+#' @param mintempregions A list of minimum (optimum) mortality temperatures for each region.
+#' @param output_folder_path Path to folder for storing outputs.
 #'
 #' @export
 #'
-#' @return a plot of temperature versus relative risk and
-#' a CSV of the data used to make the plot
+#' @return A PDF containing a line plot of temperature versus relative risk per region,
+#' and histogram of temperatures per region. A CSV of  relative risk per temperature per region.
 #' @examples output_folder_path = 'myfolder/output/'
 plot_and_write_relative_risk <- function(df_list, argvar,
                          bvar, blup, regions_df, mintempregions,
@@ -653,18 +663,17 @@ plot_and_write_relative_risk <- function(df_list, argvar,
 
 }
 
-#' Do full dlnm analysis
+#' Do full DLNM analysis (modified from Gasparrini et al. 2015)
 #'
-#' @param input_csv_path
-#' @param output_csv_path
+#' @param input_csv_path Path to a CSV contain daily time series of death and temperature per region.
+#' @param output_folder_path Path to folder for storing outputs.
 #'
-#' @return a plot of temperature versus relative risk for
-#' each region and a CSV of the data used to make the plot
+#' @return A PDF containing a line plot of temperature versus relative risk per region,
+#' and histogram of temperatures per region. A CSV of  relative risk per temperature per region.
 #'
 #' @export
-#'
 #' @examples
-do_analysis <- function(input_csv_path, output_csv_path){
+do_analysis <- function(input_csv_path, output_folder_path){
 
   c(df_list_unordered, regions) %<-%
     load_data(input_path = input_csv_path)
@@ -709,7 +718,7 @@ do_analysis <- function(input_csv_path, output_csv_path){
                          matsim = matsim,
                          arraysim = arraysim,
                          totdeath = totdeath,
-                         output_folder_path = output_csv_path)
+                         output_folder_path = output_folder_path)
 
   plot_and_write_relative_risk(df_list = df_list,
                argvar = argvar,
@@ -717,6 +726,6 @@ do_analysis <- function(input_csv_path, output_csv_path){
                blup = blup,
                regions_df = regions_df,
                mintempregions = mintempregions,
-               output_folder_path = output_csv_path)
+               output_folder_path = output_folder_path)
 }
 

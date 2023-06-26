@@ -2,7 +2,7 @@
 % Please edit documentation in R/gasparrini_functions.R
 \name{run_model}
 \alias{run_model}
-\title{Define and run regression model for each dataframe}
+\title{Define and run poisson regression model for each dataframe}
 \usage{
 run_model(df_list, regions_df)
 }
@@ -14,10 +14,10 @@ region names. Column 2 is full region names.}
 }
 \value{
 \itemize{
-\item argvar Arguments ($fun, $knots, $degree) for cross-basis function.
-\item coef Matrix of coefficients for reduced model.
-\item vcov Co-variance matrix for reduced model.
+\item argvar A list of arguments ($fun, $knots, $degree) for cross-basis function.
+\item coef A matrix of coefficients for reduced model.
+\item vcov A list of co-variance matrices for reduced model.
 }
 \description{
-Define and run regression model for each dataframe
+Define and run poisson regression model for each dataframe
 }
