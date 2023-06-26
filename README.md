@@ -26,13 +26,13 @@ Gasparrini A, Guo Y, Hashizume M, Lavigne E, Zanobetti A, Schwartz J, Tobias A, 
 
 Steps to calculate indicator:
 
-1. Change `input_csv_path` field in `config.yaml` to your input dataset (daily mortality and temperature measurements per region).
+1. Change `input_csv_path` field in `config.yaml` to your input dataset (daily mortality and temperature measurements per region). 
 
-2. Change `output_folder_path` field in `config.yaml` to the folder you want to store outputs.
+2. Change the column titles to reflect those in the data template `Data/regEngWales.csv` [beta solution; can be made generalisable in function & platform]
 
-3. Run `devtools:load_all()` to load indicatorfunctions package
+3. Change `output_folder_path` field in `config.yaml` to the folder you want to store outputs.
 
-3. Run `gasparrini_main.R` to run full analysis
+4. Run `gasparrini_main.R` to run full analysis **OR** run `devtools:load_all()` to load indicatorfunctions package and run individual functions (individual functions located in `R/`)
 
 ## Data
 
@@ -45,7 +45,7 @@ This dataset contains daily number of deaths and minimum, maximum, and mean temp
 
 ## Project status
 
-* Refining indicator calculation and usability
+* Refining usability and developing new indicator functions
 
 ---
 
