@@ -2,17 +2,19 @@
 % Please edit documentation in R/gasparrini_functions.R
 \name{do_analysis}
 \alias{do_analysis}
-\title{Do full dlnm analysis}
+\title{Do full DLNM analysis (modified from Gasparrini et al. 2015)}
 \usage{
-do_analysis(input_csv_path, output_csv_path)
+do_analysis(input_csv_path, output_folder_path)
 }
 \arguments{
-\item{output_csv_path}{}
+\item{input_csv_path}{Path to a CSV contain daily time series of death and temperature per region.}
+
+\item{output_folder_path}{Path to folder for storing outputs.}
 }
 \value{
-a plot of temperature versus relative risk for
-each region and a CSV of the data used to make the plot
+A PDF containing a line plot of temperature versus relative risk per region,
+and histogram of temperatures per region. A CSV of  relative risk per temperature per region.
 }
 \description{
-Do full dlnm analysis
+Do full DLNM analysis (modified from Gasparrini et al. 2015)
 }

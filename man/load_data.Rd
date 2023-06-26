@@ -7,7 +7,7 @@
 load_data(input_path)
 }
 \arguments{
-\item{input_path}{a path to a CSV contain daily time series of death and temperature}
+\item{input_path}{Path to a CSV contain daily time series of death and temperature per region.}
 }
 \value{
 \itemize{
