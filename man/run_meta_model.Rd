@@ -12,14 +12,15 @@ run_meta_model(df_list, regions_df, coef, vcov)
 \item{regions_df}{A dataframe with two columns. Column 1 is abbreviated
 region names. Column 2 is full region names.}
 
-\item{coef}{Matrix of coefficients for reduced model.}
+\item{coef}{A matrix of coefficients for reduced model.}
 
-\item{vcov}{A list. Co-variance matrix for reduced model.}
+\item{vcov}{A list of co-variance matrices for reduced model.}
 }
 \value{
 \itemize{
-\item mvmeta model (multivariante meta-analysis).
-\item blup BLUP (best linear unbiased predictions) for an mvmeta model.
+\item mvmeta model (multivariate meta-analysis model).
+\item blup BLUP (best linear unbiased predictions) from the
+meta-analysis model.
 }
 \description{
 Runs meta-analysis model and estimates best linear unbiased predictions
