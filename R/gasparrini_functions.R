@@ -258,9 +258,9 @@ wald_results <- function(mv) {
 #'
 #' @return
 #' \itemize{
-#'   \item argvar Arguments ($fun, $knots, $degree) for cross-basis function.
-#'   \item bvar Basis matrix for the predictor vector.
-#'   \item mintempregions Minimum (optimum) mortality temperature per region.
+#'   \item `argvar` An updated list of arguments ($x, $fun, $knots, $degree, $bound) for cross-basis function.
+#'   \item `bvar` A basis matrix for the predictor vector.
+#'   \item `mintempregions` A named numeric vector. Minimum (optimum) mortality temperature per region.
 #' }
 #'
 #' @export
