@@ -320,19 +320,19 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup) {
 #' @param df_list A list of dataframes for each region.
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #' region names. Column 2 is full region names.
-#' @param coef Matrix of coefficients for reduced model.
+#' @param coef A matrix of coefficients for reduced model.
 #' @param vcov A co-variance matrix for reduced model.
-#' @param argvar Arguments ($fun, $knots, $degree) for cross-basis function.
-#' @param bvar Basis matrix for the predictor vector.
+#' @param argvar An updated list of arguments ($x, $fun, $knots, $degree, $bound) for cross-basis function.
+#' @param bvar A basis matrix for the predictor vector.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
-#' @param mintempregions minimum (optimum) mortlity temperature for each region
+#' @param mintempregions A named numeric vector. Minimum (optimum) mortality temperature per region.
 #'
 #' @return A list of variables
 #' \itemize{
-#'   \item totdeath Total observed mortality per region.
-#'   \item arraysim Total (glob), cold and heat-attributable deaths per region for 1000 simulations.
+#'   \item `totdeath` A named vector of integers. Total observed mortality per region.
+#'   \item `arraysim` An array (numeric). Total (glob), cold and heat-attributable deaths per region for 1000 simulations.
 #'   Used to derive confidence intervals.
-#'   \item matsim Total (glob), cold and heat-attributable deaths per region from reduced coefficients.
+#'   \item `matsim` A matrix (numeric). Total (glob), cold and heat-attributable deaths per region from reduced coefficients.
 #' }
 #' @export
 compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
