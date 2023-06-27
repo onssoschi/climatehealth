@@ -17,9 +17,9 @@ Column 2 is full region names.}
 }
 \value{
 \itemize{
-\item argvar Arguments ($fun, $knots, $degree) for cross-basis function.
-\item bvar Basis matrix for the predictor vector.
-\item mintempregions Minimum (optimum) mortality temperature per region.
+\item \code{argvar} An updated list of arguments ($x, $fun, $knots, $degree, $bound) for cross-basis function.
+\item \code{bvar} A basis matrix for the predictor vector.
+\item \code{mintempregions} A named numeric vector. Minimum (optimum) mortality temperature per region.
 }
 }
 \description{
