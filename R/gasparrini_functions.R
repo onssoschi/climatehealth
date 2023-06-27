@@ -162,10 +162,10 @@ run_model <- function(df_list, regions_df) {
 #'
 #' @return
 #' \itemize{
-#'   \item mvmeta model (multivariate meta-analysis model).
-#'   \item blup BLUP (best linear unbiased predictions) from the
-#'   meta-analysis model.
-#'
+#'   \item `mvmeta` A model object. A multivariate meta-analysis model.
+#'   \item `blup` A list. BLUP (best linear unbiased predictions) from the
+#'   meta-analysis model for each region.
+#'   }
 #' @export
 #' @import mvmeta
 run_meta_model <- function(df_list, regions_df, coef, vcov) {

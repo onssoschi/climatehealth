@@ -18,9 +18,10 @@ region names. Column 2 is full region names.}
 }
 \value{
 \itemize{
-\item mvmeta model (multivariate meta-analysis model).
-\item blup BLUP (best linear unbiased predictions) from the
-meta-analysis model.
+\item \code{mvmeta} A model object. A multivariate meta-analysis model.
+\item \code{blup} A list. BLUP (best linear unbiased predictions) from the
+meta-analysis model for each region.
+}
 }
 \description{
 Runs meta-analysis model and estimates best linear unbiased predictions
