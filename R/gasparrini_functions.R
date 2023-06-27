@@ -10,14 +10,15 @@ config <- config::get()
 
 #' Load data for analysis
 #'
-#' @param input_path Path to a CSV contain daily time series of death and temperature per region.
-
+#' @description Loads data and names of regions for analysis from a CSV file.
+#'
+#' @param input_path Path to a CSV containing a daily time series of death and temperature per region.
 #' @return
 #' \itemize{
-#'   \item df_list_unordered A list of dataframes for each region comprising dates, deaths, and temperatures.
-#'   \item regions A list of strings of the names of each region.
+#'   \item `df_list_unordered` A list of dataframes for each region comprising dates, deaths, and temperatures.
+#'   \item `regions` A character vector with the names of each region.
+#'   }
 #' @export
-#' @examples
 load_data <- function(input_path) {
 
   if(substr(input_path, nchar(input_path) - 3, nchar(input_path)) !=  '.csv') {
