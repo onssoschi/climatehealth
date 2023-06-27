@@ -80,12 +80,13 @@ get_region_metadata <- function(regions, df_list_unordered, region_names = NULL)
 #'
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #' region names. Column 2 is full region names.
-#' @param df_list_unordered List of dataframes for each region.
+#' @param df_list_unordered A list of dataframes for each region.
 #' @return
 #' \itemize{
-#'   \item argvar A list of arguments ($fun, $knots, $degree) for cross-basis function.
-#'   \item coef A matrix of coefficients for reduced model.
-#'   \item vcov A list of co-variance matrices for reduced model.
+#'   \item `argvar` A list of arguments ($fun, $knots, $degree) for cross-basis function.
+#'   \item `coef` A matrix of coefficients for reduced model.
+#'   \item `vcov` A list. Co-variance matrices for each region for reduced model.
+#'   }
 #' @export
 run_model <- function(df_list, regions_df) {
 
