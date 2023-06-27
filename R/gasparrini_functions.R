@@ -232,9 +232,10 @@ fwald <- function(model, var) {
 
 #' Get Wald statistic for a meta-analysis model
 #'
-#' @param mv A model object
+#' @param mv A model object (multivariate meta-analysis model)
 #'
-#' @return P-values for average and range of temperatures (avgtmean_wald, rangetmean_wald)
+#' @return P-values for average and range of temperatures (avgtmean_wald, rangetmean_wald).
+#' @export
 wald_results <- function(mv) {
 
   avgtmean_wald <- fwald(mv, "avgtmean")
