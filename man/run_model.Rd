@@ -10,13 +10,14 @@ run_model(df_list, regions_df)
 \item{regions_df}{A dataframe with two columns. Column 1 is abbreviated
 region names. Column 2 is full region names.}
 
-\item{df_list_unordered}{List of dataframes for each region.}
+\item{df_list_unordered}{A list of dataframes for each region.}
 }
 \value{
 \itemize{
-\item argvar A list of arguments ($fun, $knots, $degree) for cross-basis function.
-\item coef A matrix of coefficients for reduced model.
-\item vcov A list of co-variance matrices for reduced model.
+\item \code{argvar} A list of arguments ($fun, $knots, $degree) for cross-basis function.
+\item \code{coef} A matrix of coefficients for reduced model.
+\item \code{vcov} A list. Co-variance matrices for each region for reduced model.
+}
 }
 \description{
 Define and run poisson regression model for each dataframe
