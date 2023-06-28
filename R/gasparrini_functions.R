@@ -535,8 +535,6 @@ write_attributable_deaths <- function(df_list, regions_df, matsim, arraysim,
 #' Plot and write results of analysis
 #'
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
-#' @param argvar An updated list of arguments ($x, $fun, $knots, $degree, $bound) for onebasis function.
-#' @param bvar A basis matrix for the predictor vector.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #'   region names. Column 2 is user-specified region names.
@@ -548,8 +546,8 @@ write_attributable_deaths <- function(df_list, regions_df, matsim, arraysim,
 #' @return A PDF containing a line plot of temperature versus relative risk per region,
 #' and histogram of temperatures per region. A CSV of relative risk per temperature per region.
 #' @examples output_folder_path = 'myfolder/output/'
-plot_and_write_relative_risk <- function(df_list, argvar,
-                         bvar, blup, regions_df, mintempregions,
+plot_and_write_relative_risk <- function(df_list,
+                         blup, regions_df, mintempregions,
                          output_folder_path){
 
   if (!is.null(output_folder_path)) {
@@ -726,8 +724,6 @@ do_analysis <- function(input_csv_path, output_folder_path_){
                          output_folder_path = output_folder_path_)
 
   plot_and_write_relative_risk(df_list = df_list_,
-               argvar = argvar_,
-               bvar = bvar_,
                blup = blup_,
                regions_df = regions_df_,
                mintempregions = mintempregions_,
