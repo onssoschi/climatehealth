@@ -681,59 +681,59 @@ plot_and_write_relative_risk <- function(df_list, argvar,
 #' @seealso [dlnm] package
 #'
 #' @export
-do_analysis <- function(input_csv_path, output_folder_path){
+do_analysis <- function(input_csv_path, output_folder_path_){
 
-  c(df_list_unordered, regions) %<-%
+  c(df_list_unordered_, regions_) %<-%
     load_data(input_path = input_csv_path)
 
-  c(regions_df, df_list) %<-%
-    get_region_metadata(regions = regions,
-                        df_list_unordered = df_list_unordered,
+  c(regions_df_, df_list_) %<-%
+    get_region_metadata(regions = regions_,
+                        df_list_unordered = df_list_unordered_,
                         region_names = c("North East","North West",
                                          "Yorkshire & Humber","East Midlands",
                                          "West Midlands","East","London",
                                          "South East","South West", "Wales"))
 
-  c(argvar, coef, vcov) %<-%
-    run_model(df_list = df_list,
-              regions_df = regions_df)
+  c(argvar_, coef_, vcov_) %<-%
+    run_model(df_list = df_list_,
+              regions_df = regions_df_)
 
-  c(mv, blup) %<-%
-    run_meta_model(df_list = df_list,
-                   regions_df = regions_df,
-                   coef = coef,
-                   vcov = vcov)
+  c(mv_, blup_) %<-%
+    run_meta_model(df_list = df_list_,
+                   regions_df = regions_df_,
+                   coef = coef_,
+                   vcov = vcov_)
 
   c(avgtmean_wald, rangetmean_wald) %<-%
-    wald_results(mv = mv)
+    wald_results(mv = mv_)
 
-  c(argvar, bvar, mintempregions) %<-%
-    calculate_min_mortality_temp(df_list = df_list,
-                  regions_df = regions_df,
-                  blup = blup)
+  c(argvar_, bvar_, mintempregions_) %<-%
+    calculate_min_mortality_temp(df_list = df_list_,
+                  regions_df = regions_df_,
+                  blup = blup_)
 
-  c(totdeath, arraysim, matsim) %<-%
-    compute_attributable_deaths(df_list = df_list,
-                                regions_df = regions_df,
-                                coef = coef,
-                                vcov = vcov, argvar = argvar,
-                                bvar = bvar, blup = blup,
-                                mintempregions = mintempregions)
+  c(totdeath_, arraysim_, matsim_) %<-%
+    compute_attributable_deaths(df_list = df_list_,
+                                regions_df = regions_df_,
+                                coef = coef_,
+                                vcov = vcov_, argvar = argvar_,
+                                bvar = bvar_, blup = blup_,
+                                mintempregions = mintempregions_)
 
   c(antot, totdeathtot, aftot, afregions) %<-%
-    write_attributable_deaths(df_list = df_list,
-                         regions_df = regions_df,
-                         matsim = matsim,
-                         arraysim = arraysim,
-                         totdeath = totdeath,
-                         output_folder_path = output_folder_path)
+    write_attributable_deaths(df_list = df_list_,
+                         regions_df = regions_df_,
+                         matsim = matsim_,
+                         arraysim = arraysim_,
+                         totdeath = totdeath_,
+                         output_folder_path = output_folder_path_)
 
-  plot_and_write_relative_risk(df_list = df_list,
-               argvar = argvar,
-               bvar = bvar,
-               blup = blup,
-               regions_df = regions_df,
-               mintempregions = mintempregions,
-               output_folder_path = output_folder_path)
+  plot_and_write_relative_risk(df_list = df_list_,
+               argvar = argvar_,
+               bvar = bvar_,
+               blup = blup_,
+               regions_df = regions_df_,
+               mintempregions = mintempregions_,
+               output_folder_path = output_folder_path_)
 }
 
