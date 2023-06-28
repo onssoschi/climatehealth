@@ -17,7 +17,7 @@ plot_and_write_relative_risk(
 \arguments{
 \item{df_list}{An alphabetically-ordered list of dataframes for each region.}
 
-\item{argvar}{An updated list of arguments ($x, $fun, $knots, $degree, $bound) for cross-basis function.}
+\item{argvar}{An updated list of arguments ($x, $fun, $knots, $degree, $bound) for onebasis function.}
 
 \item{bvar}{A basis matrix for the predictor vector.}
 
