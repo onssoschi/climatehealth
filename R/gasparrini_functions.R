@@ -667,13 +667,19 @@ plot_and_write_relative_risk <- function(df_list, argvar,
 
 }
 
-#' Do full DLNM analysis (modified from Gasparrini et al. 2015)
+#' Do full DLNM analysis
+#'
+#' @description Runs a sequence of functions to carry out heat-related mortality analysis.
+#'
+#' @details Modified from Gasparrini A et al. (2015) The Lancet. 2015;386(9991):369-375.
 #'
 #' @param input_csv_path Path to a CSV contain daily time series of death and temperature per region.
 #' @param output_folder_path Path to folder for storing outputs.
 #'
 #' @return A PDF containing a line plot of temperature versus relative risk per region,
-#' and histogram of temperatures per region. A CSV of  relative risk per temperature per region.
+#' and histogram of temperatures per region. A CSV of relative risk per temperature per region.
+#'
+#' @seealso [dlnm] package
 #'
 #' @export
 do_analysis <- function(input_csv_path, output_folder_path){
