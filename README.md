@@ -34,6 +34,10 @@ Steps to calculate indicator:
 
 4. Run `gasparrini_main.R` to run full analysis **OR** run `devtools:load_all()` to load indicatorfunctions package and run individual functions (individual functions located in `R/`)
 
+To run unit tests:
+
+* Run `devtools::test()` in the console.
+
 ## Data
 
 #### Heat-related mortality data
