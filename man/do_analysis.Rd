@@ -2,7 +2,7 @@
 % Please edit documentation in R/gasparrini_functions.R
 \name{do_analysis}
 \alias{do_analysis}
-\title{Do full DLNM analysis (modified from Gasparrini et al. 2015)}
+\title{Do full DLNM analysis}
 \usage{
 do_analysis(input_csv_path, output_folder_path)
 }
@@ -13,8 +13,14 @@ do_analysis(input_csv_path, output_folder_path)
 }
 \value{
 A PDF containing a line plot of temperature versus relative risk per region,
-and histogram of temperatures per region. A CSV of  relative risk per temperature per region.
+and histogram of temperatures per region. A CSV of relative risk per temperature per region.
 }
 \description{
-Do full DLNM analysis (modified from Gasparrini et al. 2015)
+Runs a sequence of functions to carry out heat-related mortality analysis.
+}
+\details{
+Modified from Gasparrini A et al. (2015) The Lancet. 2015;386(9991):369-375.
+}
+\seealso{
+\link{dlnm} package
 }
