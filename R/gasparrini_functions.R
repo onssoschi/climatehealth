@@ -257,7 +257,7 @@ wald_results <- function(mv) {
 #'
 #' @return
 #' \itemize{
-#'   \item `argvar` An updated list of arguments ($x, $fun, $knots, $degree, $bound) for cross-basis function.
+#'   \item `argvar` An updated list of arguments ($x, $fun, $knots, $degree, $bound) for onebasis function.
 #'   \item `bvar` A basis matrix for the predictor vector.
 #'   \item `mintempregions` A named numeric vector. Minimum (optimum) mortality temperature per region.
 #' }
@@ -538,7 +538,7 @@ write_attributable_deaths <- function(df_list, regions_df, matsim, arraysim,
 #' Plot and write results of analysis
 #'
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
-#' @param argvar An updated list of arguments ($x, $fun, $knots, $degree, $bound) for cross-basis function.
+#' @param argvar An updated list of arguments ($x, $fun, $knots, $degree, $bound) for onebasis function.
 #' @param bvar A basis matrix for the predictor vector.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
