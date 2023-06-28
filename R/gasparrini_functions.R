@@ -80,7 +80,7 @@ get_region_metadata <- function(regions, df_list_unordered, region_names = NULL)
 #'
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #' region names. Column 2 is full region names.
-#' @param df_list_unordered A list of dataframes for each region.
+#' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @return
 #' \itemize{
 #'   \item `argvar` A list of arguments ($fun, $knots, $degree) for cross-basis function.
@@ -154,7 +154,7 @@ run_model <- function(df_list, regions_df) {
 #' Runs meta-analysis model and estimates best linear unbiased predictions
 #' (BLUPs) from this model.
 #'
-#' @param df_list A list of dataframes for each region.
+#' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #' region names. Column 2 is full region names.
 #' @param coef A matrix of coefficients for reduced model.
@@ -250,7 +250,7 @@ wald_results <- function(mv) {
 #' Calculate the temperature at which there is minimum mortality
 #' using the product of the basis matrix and blup
 #'
-#' @param df_list A list of dataframes for each region.
+#' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @param regions_df A dataframe with two columns.
 #' Column 1 is abbreviated region names.
 #' Column 2 is full region names.
@@ -317,7 +317,7 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup) {
 #' Compute the attributable deaths for each regions,
 #' with empirical CI estimated using the re-centered bases.
 #'
-#' @param df_list A list of dataframes for each region.
+#' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #' region names. Column 2 is full region names.
 #' @param coef A matrix of coefficients for reduced model.
@@ -453,7 +453,7 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
 #' @description Write the attributable deaths and temperature for each regions,
 #' with empirical CI estimated using the re-centered bases.
 #'
-#' @param df_list A list of dataframes for each region.
+#' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #' region names. Column 2 is full region names.
 #' @param totdeath A named vector of integers. Total observed mortality per region.
@@ -538,7 +538,7 @@ write_attributable_deaths <- function(df_list, regions_df, matsim, arraysim,
 
 #' Plot and write results of analysis
 #'
-#' @param df_list A list of dataframes for each region.
+#' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @param argvar An updated list of arguments ($x, $fun, $knots, $degree, $bound) for cross-basis function.
 #' @param bvar A basis matrix for the predictor vector.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
