@@ -48,7 +48,7 @@ load_data <- function(input_path) {
 #' @return
 #' \itemize{
 #'   \item `regions_df` A dataframe with two columns. Column 1 is abbreviated
-#'   region names. Column 2 is full region names.
+#'   region names. Column 2 is user-specified region names.
 #'   \item `df_list` An alphabetically-ordered list of dataframes for each region. Same length as `regions`.
 #'   }
 #' @export
@@ -79,7 +79,7 @@ get_region_metadata <- function(regions, df_list_unordered, region_names = NULL)
 #' Define and run poisson regression model for each dataframe
 #'
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
-#' region names. Column 2 is full region names.
+#'   region names. Column 2 is user-specified region names.
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @return
 #' \itemize{
@@ -156,7 +156,7 @@ run_model <- function(df_list, regions_df) {
 #'
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
-#' region names. Column 2 is full region names.
+#'   region names. Column 2 is user-specified region names.
 #' @param coef A matrix of coefficients for reduced model.
 #' @param vcov A list of co-variance matrices for reduced model.
 #'
@@ -251,9 +251,8 @@ wald_results <- function(mv) {
 #' using the product of the basis matrix and blup
 #'
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
-#' @param regions_df A dataframe with two columns.
-#' Column 1 is abbreviated region names.
-#' Column 2 is full region names.
+#' @param regions_df A dataframe with two columns. Column 1 is abbreviated
+#'   region names. Column 2 is user-specified region names.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #'
 #' @return
@@ -319,7 +318,7 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup) {
 #'
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
-#' region names. Column 2 is full region names.
+#'   region names. Column 2 is user-specified region names.
 #' @param coef A matrix of coefficients for reduced model.
 #' @param vcov A co-variance matrix for reduced model.
 #' @param argvar An updated list of arguments ($x, $fun, $knots, $degree, $bound) for cross-basis function.
@@ -455,7 +454,7 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
 #'
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
-#' region names. Column 2 is full region names.
+#'   region names. Column 2 is user-specified region names.
 #' @param totdeath A named vector of integers. Total observed mortality per region.
 #' @param arraysim An array (numeric). Total (glob), cold and heat-attributable deaths per region for 1000 simulations.
 #'   Used to derive confidence intervals.
@@ -543,7 +542,7 @@ write_attributable_deaths <- function(df_list, regions_df, matsim, arraysim,
 #' @param bvar A basis matrix for the predictor vector.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
-#' region names. Column 2 is full region names.
+#'   region names. Column 2 is user-specified region names.
 #' @param mintempregions A named numeric vector. Minimum (optimum) mortality temperature per region.
 #' @param output_folder_path Path to folder for storing outputs.
 #'

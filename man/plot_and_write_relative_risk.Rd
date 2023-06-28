@@ -15,7 +15,7 @@ plot_and_write_relative_risk(
 )
 }
 \arguments{
-\item{df_list}{A list of dataframes for each region.}
+\item{df_list}{An alphabetically-ordered list of dataframes for each region.}
 
 \item{argvar}{An updated list of arguments ($x, $fun, $knots, $degree, $bound) for cross-basis function.}
 
@@ -24,7 +24,7 @@ plot_and_write_relative_risk(
 \item{blup}{A list of BLUPs (best linear unbiased predictions).}
 
 \item{regions_df}{A dataframe with two columns. Column 1 is abbreviated
-region names. Column 2 is full region names.}
+region names. Column 2 is user-specified region names.}
 
 \item{mintempregions}{A named numeric vector. Minimum (optimum) mortality temperature per region.}
 
