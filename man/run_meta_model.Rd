@@ -7,10 +7,10 @@
 run_meta_model(df_list, regions_df, coef, vcov)
 }
 \arguments{
-\item{df_list}{A list of dataframes for each region.}
+\item{df_list}{An alphabetically-ordered list of dataframes for each region.}
 
 \item{regions_df}{A dataframe with two columns. Column 1 is abbreviated
-region names. Column 2 is full region names.}
+region names. Column 2 is user-specified region names.}
 
 \item{coef}{A matrix of coefficients for reduced model.}
 

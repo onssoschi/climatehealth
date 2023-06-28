@@ -15,7 +15,7 @@ get_region_metadata(regions, df_list_unordered, region_names = NULL)
 \value{
 \itemize{
 \item \code{regions_df} A dataframe with two columns. Column 1 is abbreviated
-region names. Column 2 is full region names.
+region names. Column 2 is user-specified region names.
 \item \code{df_list} An alphabetically-ordered list of dataframes for each region. Same length as \code{regions}.
 }
 }
