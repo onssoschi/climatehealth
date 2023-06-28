@@ -91,7 +91,7 @@ get_region_metadata <- function(regions, df_list_unordered, region_names = NULL)
 run_model <- function(df_list, regions_df) {
 
   # Loop
-  time <- proc.time()[3]
+  timer <- proc.time()[3]
 
   varper <- c(10, 75, 90)
 
@@ -143,7 +143,7 @@ run_model <- function(df_list, regions_df) {
 
   }
 
-  proc.time()[3]-time
+  proc.time()[3]-timer
 
   return (list(argvar, coef, vcov))
 }
