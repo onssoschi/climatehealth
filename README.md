@@ -36,7 +36,7 @@ Steps to calculate indicator:
 
 To run unit tests:
 
-1. Run devtools::test() in the console
+* Run `devtools::test()` in the console.
 
 ## Data
 
