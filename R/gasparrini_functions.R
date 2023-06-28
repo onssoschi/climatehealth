@@ -50,7 +50,9 @@ load_data <- function(input_path) {
 #'   \item df_list - list of dataframes for each region
 #' @export
 #' @examples
-get_region_metadata <- function(regions, df_list_unordered, region_names = NULL) {
+get_region_metadata <- function(regions,
+                                df_list_unordered,
+                                region_names = NULL) {
 
   if (!is.null(region_names)) {
 
@@ -93,7 +95,8 @@ run_model <- function(df_list, regions_df) {
   varper <- c(10, 75, 90)
 
   # Model formula
-  formula <- death ~ cb + dow + ns(date, df = config$dfseas * length(unique(year)))
+  formula <- death ~ cb + dow + ns(date,
+                                   df = config$dfseas * length(unique(year)))
 
   # Coefficients and vcov for overall cumulative summary
   coef <- matrix(NA,
@@ -428,8 +431,10 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
                                   range = c(mintempregions[i],100),
                                   sim = T, nsim = nsim)
 
-    # Store the denominator of attributable deaths, i.e. total observed mortality
-    # Correct denominator to compute the attributable fraction later, as in attrdl
+    # Store the denominator of attributable deaths, i.e. total observed
+    # mortality
+    # Correct denominator to compute the attributable fraction later, as in
+    # attrdl
     totdeath[i] <- sum(data$death,na.rm=T)
 
   }
@@ -502,11 +507,21 @@ write_attributable_deaths <- function(df_list, regions_df, matsim, arraysim,
 
   if (!is.null(output_folder_path)) {
 
-    write.csv(anregions_bind, file = paste(output_folder_path, 'attributable_deaths_regions.csv',  sep = ""))
-    write.csv(antot_bind, file = paste(output_folder_path, 'attributable_deaths_total.csv',  sep = ""))
-    write.csv(afregions_bind, file = paste(output_folder_path, 'attributable_fraction_regions.csv', sep = ""))
-    write.csv(aftot_bind, file = paste(output_folder_path, 'attributable_fraction_total.csv',  sep = ""))
-    # write.csv(total, file = paste(output_folder_path, 'death_temp_total.csv',  sep = ""))
+    write.csv(anregions_bind, file = paste(output_folder_path,
+                                           'attributable_deaths_regions.csv',
+                                           sep = ""))
+    write.csv(antot_bind, file = paste(output_folder_path,
+                                       'attributable_deaths_total.csv',
+                                       sep = ""))
+    write.csv(afregions_bind, file = paste(output_folder_path,
+                                           'attributable_fraction_regions.csv',
+                                           sep = ""))
+    write.csv(aftot_bind, file = paste(output_folder_path,
+                                       'attributable_fraction_total.csv',
+                                       sep = ""))
+    # write.csv(total, file = paste(output_folder_path,
+    #                               'death_temp_total.csv',
+    #                               sep = ""))
 
   } else {
 
@@ -542,7 +557,8 @@ plot_and_write_relative_risk <- function(df_list, argvar,
 
   if (!is.null(output_folder_path)) {
 
-    pdf(paste(output_folder_path, "output_all_regions_plot.pdf", sep = ''), width = 8, height = 9)
+    pdf(paste(output_folder_path, "output_all_regions_plot.pdf", sep = ''),
+        width = 8, height = 9)
 
   } else {
 
