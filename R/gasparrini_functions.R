@@ -120,13 +120,13 @@ run_model <- function(df_list, regions_df) {
     data <- df_list[[i]]
 
     # Define crossbasis
-    argvar <- list(fun = config$varfun,
+    argvar_ <- list(fun = config$varfun,
                    knots = quantile(data$tmean, varper/100, na.rm=T),
                    degree = config$vardegree)
 
     cb <- crossbasis(data$tmean,
                      lag = config$lag,
-                     argvar = argvar,
+                     argvar = argvar_,
                      arglag = list(knots = logknots(config$lag,config$lagnk)))
 
     # Run the model and obtain predictions
@@ -135,12 +135,12 @@ run_model <- function(df_list, regions_df) {
                  family = quasipoisson,
                  na.action = "na.exclude")
 
-    cen <- mean(data$tmean, na.rm = T)
+    cen_ <- mean(data$tmean, na.rm = T)
 
-    pred <- crosspred(cb, model, cen = cen)
+    pred <- crosspred(cb, model, cen = cen_)
 
     # Reduction to overall cumulative
-    red <- crossreduce(cb, model, cen = cen)
+    red <- crossreduce(cb, model, cen = cen_)
 
     coef[i,] <- coef(red)
     vcov[[i]] <- vcov(red)
@@ -149,7 +149,7 @@ run_model <- function(df_list, regions_df) {
 
   proc.time()[3]-timer
 
-  return (list(argvar, coef, vcov))
+  return (list(argvar_, coef, vcov))
 }
 
 
