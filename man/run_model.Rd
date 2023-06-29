@@ -10,13 +10,13 @@ run_model(df_list, regions_df)
 \item{regions_df}{A dataframe with two columns. Column 1 is abbreviated
 region names. Column 2 is full region names.}
 
-\item{df_list_unordered}{list of dataframes for each region}
+\item{df_list_unordered}{List of dataframes for each region.}
 }
 \value{
 \itemize{
-\item argvar arguments ($fun, $knots, $degree) for cross-basis function
-\item coef matrix of coefficients for reduced model
-\item vcov co-variance matrix for reduced model
+\item argvar Arguments ($fun, $knots, $degree) for cross-basis function.
+\item coef Matrix of coefficients for reduced model.
+\item vcov Co-variance matrix for reduced model.
 }
 \description{
 Define and run regression model for each dataframe

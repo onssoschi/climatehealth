@@ -13,9 +13,9 @@ get_region_metadata(regions, df_list_unordered, region_names = NULL)
 }
 \value{
 \itemize{
-\item regions - A dataframe with two columns. Column 1 is abbreviated
+\item regions. A dataframe with two columns. Column 1 is abbreviated
 region names. Column 2 is full region names.
-\item df_list - list of dataframes for each region
+\item df_list. A list of dataframes for each region.
 }
 \description{
 Get region metadata for analysis
