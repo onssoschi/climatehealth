@@ -52,14 +52,10 @@ load_data <- function(input_path) {
 #'   \item `df_list` An alphabetically-ordered list of dataframes for each region. Same length as `regions`.
 #'   }
 #' @export
-<<<<<<< HEAD
 #' @examples
 get_region_metadata <- function(regions,
                                 df_list_unordered,
                                 region_names = NULL) {
-=======
-get_region_metadata <- function(regions, df_list_unordered, region_names = NULL) {
->>>>>>> 22690e58b8f18c61015d07744b3e0ac684096b3b
 
   if (!is.null(region_names)) {
 
