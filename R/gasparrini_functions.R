@@ -331,9 +331,11 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup) {
 #' @return A list of variables
 #' \itemize{
 #'   \item `totdeath` A named vector of integers. Total observed mortality per region.
-#'   \item `arraysim` An array (numeric). Total (glob), cold and heat-attributable deaths per region for 1000 simulations.
+#'   \item `arraysim` An array (numeric). Total (glob),
+#'    cold and heat-attributable deaths per region for 1000 simulations.
 #'   Used to derive confidence intervals.
-#'   \item `matsim` A matrix (numeric). Total (glob), cold and heat-attributable deaths per region from reduced coefficients.
+#'   \item `matsim` A matrix (numeric). Total (glob),
+#'   cold and heat-attributable deaths per region from reduced coefficients.
 #' }
 #' @export
 compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
@@ -459,9 +461,11 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #'   region names. Column 2 is user-specified region names.
 #' @param totdeath A named vector of integers. Total observed mortality per region.
-#' @param arraysim An array (numeric). Total (glob), cold and heat-attributable deaths per region for 1000 simulations.
+#' @param arraysim An array (numeric). Total (glob),
+#' cold and heat-attributable deaths per region for 1000 simulations.
 #'   Used to derive confidence intervals.
-#' @param matsim A matrix (numeric). Total (glob), cold and heat-attributable deaths per region from reduced coefficients.
+#' @param matsim A matrix (numeric). Total (glob),
+#' cold and heat-attributable deaths per region from reduced coefficients.
 #' @param output_folder_path Path to folder for storing outputs.
 #'
 #' @export
@@ -554,13 +558,15 @@ write_attributable_deaths <- function(df_list, regions_df, matsim, arraysim,
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #'   region names. Column 2 is user-specified region names.
-#' @param mintempregions A named numeric vector. Minimum (optimum) mortality temperature per region.
+#' @param mintempregions A named numeric vector.
+#'   Minimum (optimum) mortality temperature per region.
 #' @param output_folder_path Path to folder for storing outputs.
 #'
 #' @export
 #'
 #' @return A PDF containing a line plot of temperature versus relative risk per region,
-#' and histogram of temperatures per region. A CSV of relative risk per temperature per region.
+#' and histogram of temperatures per region.
+#' A CSV of relative risk per temperature per region.
 #' @examples output_folder_path = 'myfolder/output/'
 plot_and_write_relative_risk <- function(df_list,
                          blup, regions_df, mintempregions,
