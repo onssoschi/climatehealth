@@ -2,13 +2,17 @@
 % Please edit documentation in R/gasparrini_functions.R
 \name{do_analysis}
 \alias{do_analysis}
-\title{Do full Gasparrini analysis}
+\title{Do full dlnm analysis}
 \usage{
 do_analysis(input_csv_path, output_csv_path)
 }
 \arguments{
 \item{output_csv_path}{}
 }
+\value{
+a plot of temperature versus relative risk for
+each region and a CSV of the data used to make the plot
+}
 \description{
-Do full Gasparrini analysis
+Do full dlnm analysis
 }
