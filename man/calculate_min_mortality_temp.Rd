@@ -7,21 +7,21 @@
 calculate_min_mortality_temp(df_list, regions_df, blup)
 }
 \arguments{
-\item{df_list}{A list of dataframes for each region}
+\item{df_list}{An alphabetically-ordered list of dataframes for each region.}
 
-\item{regions_df}{A dataframe with two columns.
-Column 1 is abbreviated region names.
-Column 2 is full region names.}
+\item{regions_df}{A dataframe with two columns. Column 1 is abbreviated
+region names. Column 2 is user-specified region names.}
 
-\item{blup}{BLUP (best linear unbiased predictions) for an mvmeta model.}
+\item{blup}{A list of BLUPs (best linear unbiased predictions).}
 }
 \value{
 \itemize{
-\item argvar: arguments ($fun, $knots, $degree) for cross-basis function
-\item bvar:
-\item mintempregions: optimum temperature per region
+\item \code{argvar} An updated list of arguments ($x, $fun, $knots, $degree, $bound) for onebasis function.
+\item \code{bvar} A basis matrix for the predictor vector.
+\item \code{mintempregions} A named numeric vector. Minimum (optimum) mortality temperature per region.
 }
 }
 \description{
-???
+Calculate the temperature at which there is minimum mortality
+using the product of the basis matrix and blup
 }

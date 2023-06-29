@@ -2,7 +2,7 @@
 % Please edit documentation in R/gasparrini_functions.R
 \name{plot_and_write_relative_risk}
 \alias{plot_and_write_relative_risk}
-\title{Plot results of analysis}
+\title{Plot and write results of analysis}
 \usage{
 plot_and_write_relative_risk(
   df_list,
@@ -15,13 +15,27 @@ plot_and_write_relative_risk(
 )
 }
 \arguments{
-\item{output_folder_path}{}
+\item{df_list}{An alphabetically-ordered list of dataframes for each region.}
+
+\item{argvar}{An updated list of arguments ($x, $fun, $knots, $degree, $bound) for onebasis function.}
+
+\item{bvar}{A basis matrix for the predictor vector.}
+
+\item{blup}{A list of BLUPs (best linear unbiased predictions).}
+
+\item{regions_df}{A dataframe with two columns. Column 1 is abbreviated
+region names. Column 2 is user-specified region names.}
+
+\item{mintempregions}{A named numeric vector. Minimum (optimum) mortality temperature per region.}
+
+\item{output_folder_path}{Path to folder for storing outputs.}
 }
 \value{
-a plot
+A PDF containing a line plot of temperature versus relative risk per region,
+and histogram of temperatures per region. A CSV of relative risk per temperature per region.
 }
 \description{
-Plot results of analysis
+Plot and write results of analysis
 }
 \examples{
 output_folder_path = 'myfolder/output/'

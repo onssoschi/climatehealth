@@ -7,15 +7,17 @@
 get_region_metadata(regions, df_list_unordered, region_names = NULL)
 }
 \arguments{
-\item{regions}{list of strings of region names}
+\item{regions}{A character vector with the names of each region.
+\strong{NOTE} Must be same order as input data.}
 
-\item{df_list_unordered}{list of dataframes for each region}
+\item{df_list_unordered}{A list of dataframes for each region.}
 }
 \value{
 \itemize{
-\item regions - A dataframe with two columns. Column 1 is abbreviated
-region names. Column 2 is full region names.
-\item df_list - list of dataframes for each region
+\item \code{regions_df} A dataframe with two columns. Column 1 is abbreviated
+region names. Column 2 is user-specified region names.
+\item \code{df_list} An alphabetically-ordered list of dataframes for each region. Same length as \code{regions}.
+}
 }
 \description{
 Get region metadata for analysis

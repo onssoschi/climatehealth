@@ -2,22 +2,23 @@
 % Please edit documentation in R/gasparrini_functions.R
 \name{run_model}
 \alias{run_model}
-\title{Define and run regression model for each dataframe}
+\title{Define and run poisson regression model for each dataframe}
 \usage{
 run_model(df_list, regions_df)
 }
 \arguments{
-\item{regions_df}{A dataframe with two columns. Column 1 is abbreviated
-region names. Column 2 is full region names.}
+\item{df_list}{An alphabetically-ordered list of dataframes for each region.}
 
-\item{df_list_unordered}{list of dataframes for each region}
+\item{regions_df}{A dataframe with two columns. Column 1 is abbreviated
+region names. Column 2 is user-specified region names.}
 }
 \value{
 \itemize{
-\item argvar arguments ($fun, $knots, $degree) for cross-basis function
-\item coef matrix of coefficients for reduced model
-\item vcov co-variance matrix for reduced model
+\item \code{argvar} A list of arguments ($fun, $knots, $degree) for cross-basis function.
+\item \code{coef} A matrix of coefficients for reduced model.
+\item \code{vcov} A list. Co-variance matrices for each region for reduced model.
+}
 }
 \description{
-Define and run regression model for each dataframe
+Define and run poisson regression model for each dataframe
 }
