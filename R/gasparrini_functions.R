@@ -41,15 +41,16 @@ load_data <- function(input_path) {
 
 #' Get region metadata for analysis
 #'
-#' @param regions A list of strings representing region names.
+#' @param regions A character vector with the names of each region.
 #' **NOTE** Must be same order as input data.
-#' @param df_list_unordered list of dataframes for each region
+#' @param df_list_unordered A list of dataframes for each region.
 #'
 #' @return
 #' \itemize{
-#'   \item regions. A dataframe with two columns. Column 1 is abbreviated
+#'   \item `regions_df` A dataframe with two columns. Column 1 is abbreviated
 #'   region names. Column 2 is full region names.
-#'   \item df_list. An alphabetically-ordered list of dataframes for each region.
+#'   \item `df_list` An alphabetically-ordered list of dataframes for each region. Same length as `regions`.
+#'   }
 #' @export
 #' @examples
 get_region_metadata <- function(regions,
