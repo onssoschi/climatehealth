@@ -7,19 +7,21 @@
 run_meta_model(df_list, regions_df, coef, vcov)
 }
 \arguments{
-\item{df_list}{A list of dataframes for each region}
+\item{df_list}{An alphabetically-ordered list of dataframes for each region.}
 
 \item{regions_df}{A dataframe with two columns. Column 1 is abbreviated
-region names. Column 2 is full region names.}
+region names. Column 2 is user-specified region names.}
 
-\item{coef}{Matrix of coefficients for reduced model}
+\item{coef}{A matrix of coefficients for reduced model.}
 
-\item{vcov}{A list. Co-variance matrix for reduced model.}
+\item{vcov}{A list of co-variance matrices for reduced model.}
 }
 \value{
 \itemize{
-\item mvmeta model (multivariante meta-analysis)
-\item blup BLUP (best linear unbiased predictions) for an mvmeta model
+\item \code{mvmeta} A model object. A multivariate meta-analysis model.
+\item \code{blup} A list. BLUP (best linear unbiased predictions) from the
+meta-analysis model for each region.
+}
 }
 \description{
 Runs meta-analysis model and estimates best linear unbiased predictions

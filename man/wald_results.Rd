@@ -7,10 +7,10 @@
 wald_results(mv)
 }
 \arguments{
-\item{mv}{A model object}
+\item{mv}{A model object (multivariate meta-analysis model)}
 }
 \value{
-P-values for avgtmean and rangetmean
+P-values for average and range of temperatures (avgtmean_wald, rangetmean_wald).
 }
 \description{
 Get Wald statistic for a meta-analysis model
