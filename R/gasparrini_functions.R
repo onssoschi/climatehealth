@@ -86,7 +86,7 @@ get_region_metadata <- function(regions,
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @return
 #' \itemize{
-#'   \item `argvar` A list of arguments ($fun, $knots, $degree) for cross-basis function.
+#'   \item `argvar_` A list of arguments ($fun, $knots, $degree) for cross-basis function.
 #'   \item `coef` A matrix of coefficients for reduced model.
 #'   \item `vcov` A list. Co-variance matrices for each region for reduced model.
 #'   }
@@ -261,9 +261,9 @@ wald_results <- function(mv) {
 #'
 #' @return
 #' \itemize{
-#'   \item `argvar` An updated list of arguments ($x, $fun, $knots, $degree, $bound) for onebasis function.
-#'   \item `bvar` A basis matrix for the predictor vector.
-#'   \item `mintempregions` A named numeric vector. Minimum (optimum) mortality temperature per region.
+#'   \item `argvar_` An updated list of arguments ($x, $fun, $knots, $degree, $bound) for onebasis function.
+#'   \item `bvar_` A basis matrix for the predictor vector.
+#'   \item `mintempregions_` A named numeric vector. Minimum (optimum) mortality temperature per region.
 #' }
 #'
 #' @export
@@ -283,8 +283,8 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup) {
 
   # Re-centering
   # Generate the matrix for storing results
-  minpercregions <- mintempregions <- rep(NA, length(df_list))
-  names(mintempregions) <- names(minpercregions) <- regions_df$regions
+  minpercregions <- mintempregions_ <- rep(NA, length(df_list))
+  names(mintempregions_) <- names(minpercregions) <- regions_df$regions
 
   varper <- c(10, 75, 90)
 
@@ -295,23 +295,23 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup) {
     predvar <- quantile(data$tmean, 1:99/100, na.rm = T)
 
     # Redefine the function using all arguments (boundary knots included)
-    argvar <- list(x = predvar, fun = config$varfun,
+    argvar_ <- list(x = predvar, fun = config$varfun,
                    knots = quantile(data$tmean, varper/100, na.rm = TRUE),
                    degree = config$vardegree,
                    Bound = range(data$tmean, na.rm = T))
 
-    bvar <- do.call(onebasis, argvar)
+    bvar_ <- do.call(onebasis, argvar_)
 
-    minpercregions[i] <- (1:99)[which.min((bvar %*% blup[[i]]$blup))]
-    mintempregions[i] <- quantile(data$tmean, minpercregions[i]/100,
+    minpercregions[i] <- (1:99)[which.min((bvar_ %*% blup[[i]]$blup))]
+    mintempregions_[i] <- quantile(data$tmean, minpercregions[i]/100,
                                   na.rm = TRUE)
   }
 
   # Country-specific points of minimum mortality
   (minperccountry <- median(minpercregions))
 
-  return(list(argvar = argvar, bvar = bvar,
-              mintempregions = mintempregions))
+  return(list(argvar = argvar_, bvar = bvar_,
+              mintempregions = mintempregions_))
 
 }
 
@@ -325,8 +325,6 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup) {
 #'   region names. Column 2 is user-specified region names.
 #' @param coef A matrix of coefficients for reduced model.
 #' @param vcov A co-variance matrix for reduced model.
-#' @param argvar An updated list of arguments ($x, $fun, $knots, $degree, $bound) for cross-basis function.
-#' @param bvar A basis matrix for the predictor vector.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param mintempregions A named numeric vector. Minimum (optimum) mortality temperature per region.
 #'
@@ -339,8 +337,7 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup) {
 #' }
 #' @export
 compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
-                                        argvar, bvar, blup,
-                                        mintempregions) {
+                                        blup, mintempregions) {
 
   if (file.exists('R/attrdl.R')) {
     source('R/attrdl.R')
@@ -358,10 +355,10 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
                                    c("glob","cold","heat")))
 
   # Number of simulation runs for computing empirical CI
-  nsim <- 1000
+  nsim_ <- 1000
 
   # Create the array to store the CI of attributable deaths
-  arraysim <- array(NA, dim = c(nrow(regions_df),3,nsim),
+  arraysim <- array(NA, dim = c(nrow(regions_df),3,nsim_),
                     dimnames = list(regions_df$regions,
                                     c("glob","cold","heat")))
 
@@ -378,14 +375,14 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
 
     # Derive the cross-basis
     # NB: Centering point different than original choice of 75th
-    argvar <- list(x=data$tmean,
+    argvar_ <- list(x=data$tmean,
                    fun = config$varfun,
                    knots = quantile(data$tmean, varper/100,na.rm=T),
                    degree = config$vardegree)
 
     cb <- crossbasis(data$tmean,
                      lag = config$lag,
-                     argvar = argvar,
+                     argvar = argvar_,
                      arglag = list(knots = logknots(config$lag, config$lagnk)))
 
     # Compute the attributable deaths
@@ -421,7 +418,7 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
                                   type = "an",
                                   dir = "forw",
                                   cen = mintempregions[i],
-                                  sim = T, nsim = nsim)
+                                  sim = T, nsim = nsim_)
 
     arraysim[i, "cold", ] <- attrdl(data$tmean, cb, data$death,
                                   coef=blup[[i]]$blup,
@@ -430,7 +427,7 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
                                   dir = "forw",
                                   cen = mintempregions[i],
                                   range = c(-100,mintempregions[i]),
-                                  sim = T ,nsim = nsim)
+                                  sim = T ,nsim = nsim_)
 
     arraysim[i, "heat", ] <- attrdl(data$tmean, cb, data$death,
                                   coef=blup[[i]]$blup,
@@ -439,7 +436,7 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
                                   dir= "forw",
                                   cen = mintempregions[i],
                                   range = c(mintempregions[i],100),
-                                  sim = T, nsim = nsim)
+                                  sim = T, nsim = nsim_)
 
     # Store the denominator of attributable deaths, i.e. total observed
     # mortality
@@ -733,8 +730,8 @@ do_analysis <- function(input_csv_path, output_folder_path_){
     compute_attributable_deaths(df_list = df_list_,
                                 regions_df = regions_df_,
                                 coef = coef_,
-                                vcov = vcov_, argvar = argvar_,
-                                bvar = bvar_, blup = blup_,
+                                vcov = vcov_,
+                                blup = blup_,
                                 mintempregions = mintempregions_)
 
   c(antot, totdeathtot, aftot, afregions) %<-%
