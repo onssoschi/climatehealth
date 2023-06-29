@@ -20,8 +20,7 @@ test_that('Test output CSVs are written and of correct length', {
 
   c(totdeath, arraysim, matsim) %<-%
     compute_attributable_deaths(df_list = df_list, regions_df = regions_df, coef = coef,
-                                vcov = vcov, argvar = argvar,
-                                bvar = bvar, blup = blup,
+                                vcov = vcov, blup = blup,
                                 mintempregions = mintempregions)
 
   c(antot, totdeathtot, aftot, afregions) %<-%

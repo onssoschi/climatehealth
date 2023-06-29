@@ -12,10 +12,12 @@ config <- config::get()
 #'
 #' @description Loads data and names of regions for analysis from a CSV file.
 #'
-#' @param input_path Path to a CSV containing a daily time series of death and temperature per region.
+#' @param input_path Path to a CSV containing a
+#' daily time series of death and temperature per region.
 #' @return
 #' \itemize{
-#'   \item `df_list_unordered` A list of dataframes for each region comprising dates, deaths, and temperatures.
+#'   \item `df_list_unordered` A list of dataframes for each region
+#'    comprising dates, deaths, and temperatures.
 #'   \item `regions` A character vector with the names of each region.
 #'   }
 #' @export
@@ -261,7 +263,8 @@ wald_results <- function(mv) {
 #'
 #' @return
 #' \itemize{
-#'   \item `argvar_` An updated list of arguments ($x, $fun, $knots, $degree, $bound) for onebasis function.
+#'   \item `argvar_` An updated list of arguments
+#'   ($x, $fun, $knots, $degree, $bound) for onebasis function.
 #'   \item `bvar_` A basis matrix for the predictor vector.
 #'   \item `mintempregions_` A named numeric vector. Minimum (optimum) mortality temperature per region.
 #' }
@@ -326,7 +329,8 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup) {
 #' @param coef A matrix of coefficients for reduced model.
 #' @param vcov A co-variance matrix for reduced model.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
-#' @param mintempregions A named numeric vector. Minimum (optimum) mortality temperature per region.
+#' @param mintempregions A named numeric vector.
+#' Minimum (optimum) mortality temperature per region.
 #'
 #' @return A list of variables
 #' \itemize{
