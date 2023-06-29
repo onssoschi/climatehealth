@@ -18,8 +18,7 @@ test_that('Test total deaths is an integer of correct length', {
 
   c(totdeath, arraysim, matsim) %<-%
     compute_attributable_deaths(df_list = df_list, regions_df = regions_df, coef = coef,
-                                vcov = vcov, argvar = argvar,
-                                bvar = bvar, blup = blup,
+                                vcov = vcov, blup = blup,
                                 mintempregions = mintempregions)
 
   expected_output <- rep(5L, nrow(regions_df))
