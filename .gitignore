@@ -1,2 +1,12 @@
 .Rproj.user
 .Rhistory
+
+data/*
+output/*
+tests/testthat/testdata/*
+archive/*
+
+!data/.gitkeep
+!output/.gitkeep
+!tests/testthat/testdata/.gitkeep
+!archive/.gitkeep
