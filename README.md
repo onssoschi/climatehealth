@@ -28,7 +28,7 @@ Steps to calculate indicator:
 
 1. Change `input_csv_path` field in `config.yaml` to your input dataset (daily mortality and temperature measurements per region). 
 
-2. Change the column titles to reflect those in the data template `Data/regEngWales.csv` [beta solution; can be made generalisable in function & platform]
+2. Change the column titles to reflect those in the data template `data_template/regEngWales_data_template.csv` [beta solution; can be made generalisable in function & platform]
 
 3. Change `output_folder_path` field in `config.yaml` to the folder you want to store outputs.
 
