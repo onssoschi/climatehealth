@@ -3,7 +3,7 @@
 
 data/*
 output/*
-tests/testhat/testdata/regEngWales.csv
+tests/testthat/testdata/regEngWales.csv
 
 !data/.gitkeep
 !output/.gitkeep
