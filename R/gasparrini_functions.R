@@ -348,7 +348,7 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
   if (file.exists('R/attrdl.R')) {
     source('R/attrdl.R')
   } else {
-    source('testdata/attrdl.R')
+    source('attrdl.R')
   }
 
   # Create the vectors to store the total mortality (accounting for missing)
@@ -676,15 +676,16 @@ plot_and_write_relative_risk <- function(df_list,
             row.names=FALSE)
 
   # Output for testing
-  output_df_test <- data.frame(regnames = rep(unique(data$regnames),
-                                         length(pred$predvar)),
+  output_df_test <- data.frame(
                           temperature = pred$predvar,
-                          relative_risk = pred$allRRfit)
+                          relative_risk = pred$allRRfit
+                          )
   # Output for testing
   write.csv(output_df_test,
             paste(output_folder_path,
                   'output_one_region_data_new.csv', sep = ''),
-            row.names=FALSE)
+            row.names=FALSE
+            )
 
 }
 
