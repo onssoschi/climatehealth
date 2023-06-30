@@ -4,6 +4,8 @@
 data/*
 output/*
 tests/testthat/testdata/regEngWales.csv
+tests/testthat/testdata/output_one_region_data_new.csv
+tests/testthat/testdata/output_one_region_data_original.csv
 
 !data/.gitkeep
 !output/.gitkeep

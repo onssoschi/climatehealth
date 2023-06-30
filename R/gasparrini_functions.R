@@ -666,8 +666,7 @@ plot_and_write_relative_risk <- function(df_list,
 
   dev.off()
 
-  output_df <- data.frame(regions = region_vector,
-                          temperature = temperature,
+  output_df <- data.frame(temperature = temperature,
                           relative_risk = relative_risk)
 
   write.csv(output_df,
