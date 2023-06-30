@@ -348,7 +348,7 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
   if (file.exists('R/attrdl.R')) {
     source('R/attrdl.R')
   } else {
-    source('testdata/attrdl.R')
+    source('attrdl.R')
   }
 
   # Create the vectors to store the total mortality (accounting for missing)
