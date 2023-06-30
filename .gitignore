@@ -1,5 +1,9 @@
 .Rproj.user
 .Rhistory
+
 data/*
 output/*
 tests/testhat/testdata/regEngWales.csv
+
+!data/.gitkeep
+!output/.gitkeep
