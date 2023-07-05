@@ -93,7 +93,7 @@ get_region_metadata <- function(regions,
 #'   \item `vcov` A list. Co-variance matrices for each region for reduced model.
 #'   }
 #' @export
-run_model <- function(df_list, regions_df) {
+run_model <- function(df_list) {
 
   minpercity <- mintempcity <- rep(NA, length(df_list))
 
@@ -142,105 +142,103 @@ run_model <- function(df_list, regions_df) {
 
   proc.time()[3]-timer
 
-  return (list(argvar_))
+  return (list(argvar_, minpercity))
 }
 
 
-#' Meta-analysis model
+#' #' Meta-analysis model
+#' #'
+#' #' Runs meta-analysis model and estimates best linear unbiased predictions
+#' #' (BLUPs) from this model.
+#' #'
+#' #' @param df_list An alphabetically-ordered list of dataframes for each region.
+#' #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
+#' #'   region names. Column 2 is user-specified region names.
+#' #'
+#' #' @return
+#' #' \itemize{
+#' #'   \item `mvmeta` A model object. A multivariate meta-analysis model.
+#' #'   \item `blup` A list. BLUP (best linear unbiased predictions) from the
+#' #'   meta-analysis model for each region.
+#' #'   }
+#' #' @export
+#' #' @import mvmeta
+#' run_meta_model <- function(df_list, regions_df) {
 #'
-#' Runs meta-analysis model and estimates best linear unbiased predictions
-#' (BLUPs) from this model.
-#'
-#' @param df_list An alphabetically-ordered list of dataframes for each region.
-#' @param regions_df A dataframe with two columns. Column 1 is abbreviated
-#'   region names. Column 2 is user-specified region names.
-#' @param coef A matrix of coefficients for reduced model.
-#' @param vcov A list of co-variance matrices for reduced model.
-#'
-#' @return
-#' \itemize{
-#'   \item `mvmeta` A model object. A multivariate meta-analysis model.
-#'   \item `blup` A list. BLUP (best linear unbiased predictions) from the
-#'   meta-analysis model for each region.
+#'   if(!is.list(df_list) | !is.data.frame(df_list[[1]])) {
+#'     stop("Argument 'df_list' must be a list of data frames")
 #'   }
-#' @export
-#' @import mvmeta
-run_meta_model <- function(df_list, regions_df, coef, vcov) {
-
-  if(!is.list(df_list) | !is.data.frame(df_list[[1]])) {
-    stop("Argument 'df_list' must be a list of data frames")
-  }
-
-  if(!is.data.frame(regions_df)) {
-    stop("Argument 'regions_df' must be a data frame")
-  }
-
-  if(!is.matrix(coef) | !is.numeric(coef)) {
-    stop("Argument 'coef' must be a numeric matrix")
-  }
-
-  if(!is.list(vcov) | !is.matrix(vcov[[1]])) {
-    stop("Argument 'vcov' must be a list of matrices")
-  }
-
-  # Create average temperature and range as meta-predictors
-  avgtmean <- sapply(df_list,
-                     function(x) mean(x$tmean, na.rm = TRUE))
-  rangetmean <- sapply(df_list,
-                       function(x) diff(range(x$tmean, na.rm = TRUE)))
-
-  # Meta-analysis
-  # NB: country effects is not included in this example
-  mv <- mvmeta(coef ~ avgtmean + rangetmean,
-               vcov,
-               data = regions_df,
-               control = list(showiter = TRUE))
-
-  # Obtain blups
-  blup <- blup(mv, vcov = T)
-
-  return(list(mv, blup))
-}
-
-#' Calculate p-values for Wald test
 #'
-#' A function to calculate p-values for an explanatory variable.
+#'   if(!is.data.frame(regions_df)) {
+#'     stop("Argument 'regions_df' must be a data frame")
+#'   }
 #'
-#' @param model A model object.
-#' @param var A character. The name of the variable in the model to calculate
-#' p-values for.
+#'   if(!is.matrix(coef) | !is.numeric(coef)) {
+#'     stop("Argument 'coef' must be a numeric matrix")
+#'   }
 #'
-#' @export
-#' @return A number. The p-value of the explanatory variable.
-fwald <- function(model, var) {
-
-  if(!is.character(var)) {
-    stop("Argument 'var' must be a character")
-  }
-
-  ind <- grep(var, names(coef(model)))
-  coef <- coef(model)[ind]
-  vcov <- vcov(model)[ind, ind]
-  waldstat <- coef %*% solve(vcov) %*% coef
-  df <- length(coef)
-
-  return(1 - pchisq(waldstat, df))
-}
-
-#' Get Wald statistic for a meta-analysis model
+#'   if(!is.list(vcov) | !is.matrix(vcov[[1]])) {
+#'     stop("Argument 'vcov' must be a list of matrices")
+#'   }
 #'
-#' @param mv A model object (multivariate meta-analysis model)
+#'   # Create average temperature and range as meta-predictors
+#'   avgtmean <- sapply(df_list,
+#'                      function(x) mean(x$tmean, na.rm = TRUE))
+#'   rangetmean <- sapply(df_list,
+#'                        function(x) diff(range(x$tmean, na.rm = TRUE)))
 #'
-#' @return P-values for average and range of temperatures (avgtmean_wald, rangetmean_wald).
-#' @export
-wald_results <- function(mv) {
+#'   # Meta-analysis
+#'   # NB: country effects is not included in this example
+#'   mv <- mvmeta(coef ~ avgtmean + rangetmean,
+#'                vcov,
+#'                data = regions_df,
+#'                control = list(showiter = TRUE))
+#'
+#'   # Obtain blups
+#'   blup <- blup(mv, vcov = T)
+#'
+#'   return(list(mv, blup))
+#' }
 
-  avgtmean_wald <- fwald(mv, "avgtmean")
-  rangetmean_wald <- fwald(mv, "rangetmean")
+#' #' Calculate p-values for Wald test
+#' #'
+#' #' A function to calculate p-values for an explanatory variable.
+#' #'
+#' #' @param model A model object.
+#' #' @param var A character. The name of the variable in the model to calculate
+#' #' p-values for.
+#' #'
+#' #' @export
+#' #' @return A number. The p-value of the explanatory variable.
+#' fwald <- function(model, var) {
+#'
+#'   if(!is.character(var)) {
+#'     stop("Argument 'var' must be a character")
+#'   }
+#'
+#'   ind <- grep(var, names(coef(model)))
+#'   coef <- coef(model)[ind]
+#'   vcov <- vcov(model)[ind, ind]
+#'   waldstat <- coef %*% solve(vcov) %*% coef
+#'   df <- length(coef)
+#'
+#'   return(1 - pchisq(waldstat, df))
+#' }
 
-  return(list(avgtmean_wald, rangetmean_wald))
-
-}
+#' #' Get Wald statistic for a meta-analysis model
+#' #'
+#' #' @param mv A model object (multivariate meta-analysis model)
+#' #'
+#' #' @return P-values for average and range of temperatures (avgtmean_wald, rangetmean_wald).
+#' #' @export
+#' wald_results <- function(mv) {
+#'
+#'   avgtmean_wald <- fwald(mv, "avgtmean")
+#'   rangetmean_wald <- fwald(mv, "rangetmean")
+#'
+#'   return(list(avgtmean_wald, rangetmean_wald))
+#'
+#' }
 
 #' Calculate minimum mortality values
 #'
@@ -708,18 +706,15 @@ do_analysis <- function(input_csv_path, output_folder_path_){
                                          "West Midlands","East","London",
                                          "South East","South West", "Wales"))
 
-  c(argvar_) %<-%
-    run_model(df_list = df_list_,
-              regions_df = regions_df_)
+  c(argvar_, minpercity_) %<-%
+    run_model(df_list = df_list_)
 
-  c(mv_, blup_) %<-%
-    run_meta_model(df_list = df_list_,
-                   regions_df = regions_df_,
-                   coef = coef_,
-                   vcov = vcov_)
+  # c(mv_, blup_) %<-%
+  #   run_meta_model(df_list = df_list_,
+  #                  regions_df = regions_df_)
 
-  c(avgtmean_wald, rangetmean_wald) %<-%
-    wald_results(mv = mv_)
+  # c(avgtmean_wald, rangetmean_wald) %<-%
+  #   wald_results(mv = mv_)
 
   c(argvar_, bvar_, mintempregions_) %<-%
     calculate_min_mortality_temp(df_list = df_list_,
