@@ -95,24 +95,17 @@ get_region_metadata <- function(regions,
 #' @export
 run_model <- function(df_list, regions_df) {
 
+  minpercity <- mintempcity <- rep(NA, length(df_list))
+
   # Loop
   timer <- proc.time()[3]
 
   varper <- c(10, 75, 90)
 
   # Model formula
-  formula <- death ~ cb + dow + ns(date,
-                                   df = config$dfseas * length(unique(year)))
-
-  # Coefficients and vcov for overall cumulative summary
-  coef <- matrix(NA,
-                 nrow(regions_df),
-                 length(varper) + config$vardegree,
-                 dimnames = list(regions_df$regions))
-
-  vcov <- vector("list" ,nrow(regions_df))
-
-  names(vcov) <- regions_df$regions
+  formula <- death ~ cb + dow + ns(
+    date, df = config$dfseas * length(unique(year))
+    )
 
   for(i in seq(length(df_list))) {
 
@@ -139,19 +132,17 @@ run_model <- function(df_list, regions_df) {
 
     cen_ <- mean(data$tmean, na.rm = T)
 
-    pred <- crosspred(cb, model, cen = cen_)
+    pred <- crossreduce(cb, model, cen = cen_)
+    mintempcity[i] <- as.numeric(names(which.min(pred$RRfit)))
 
     # Reduction to overall cumulative
     red <- crossreduce(cb, model, cen = cen_)
-
-    coef[i,] <- coef(red)
-    vcov[[i]] <- vcov(red)
 
   }
 
   proc.time()[3]-timer
 
-  return (list(argvar_, coef, vcov))
+  return (list(argvar_))
 }
 
 
@@ -717,7 +708,7 @@ do_analysis <- function(input_csv_path, output_folder_path_){
                                          "West Midlands","East","London",
                                          "South East","South West", "Wales"))
 
-  c(argvar_, coef_, vcov_) %<-%
+  c(argvar_) %<-%
     run_model(df_list = df_list_,
               regions_df = regions_df_)
 
