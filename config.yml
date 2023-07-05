@@ -1,7 +1,6 @@
 default:
   # Input data
-  input_csv_path: 'data/regEngWales.csv'
-  # input_csv_path: 'C:/Users/soutte/Office for National Statistics/Climate and Health - Dummy Run/complete_input_data_20230620.csv'
+  input_csv_path: 'tests/testthat/testdata/regEngWales.csv'
 
   #Output folder path
   output_folder_path: 'output/'
@@ -9,6 +8,7 @@ default:
   # Specification of the exposure function
   varfun: 'bs'
   vardegree:  2
+  varper: !expr c(10, 75, 90)
 
   # Specification of the lag function
   lag: 21

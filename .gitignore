@@ -1,12 +1,13 @@
 .Rproj.user
+
 .Rhistory
 
 data/*
 output/*
 tests/testthat/testdata/*
-archive/*
 
 !data/.gitkeep
 !output/.gitkeep
 !tests/testthat/testdata/.gitkeep
-!archive/.gitkeep
+!tests/testthat/testdata/regEngWales.csv
+!tests/testthat/testdata/output_one_region_data_original.csv

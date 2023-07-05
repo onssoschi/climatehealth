@@ -98,8 +98,6 @@ run_model <- function(df_list, regions_df) {
   # Loop
   timer <- proc.time()[3]
 
-  varper <- c(10, 75, 90)
-
   # Model formula
   formula <- death ~ cb + dow + ns(date,
                                    df = config$dfseas * length(unique(year)))
@@ -107,7 +105,7 @@ run_model <- function(df_list, regions_df) {
   # Coefficients and vcov for overall cumulative summary
   coef <- matrix(NA,
                  nrow(regions_df),
-                 length(varper) + config$vardegree,
+                 length(config$varper) + config$vardegree,
                  dimnames = list(regions_df$regions))
 
   vcov <- vector("list" ,nrow(regions_df))
@@ -123,7 +121,7 @@ run_model <- function(df_list, regions_df) {
 
     # Define crossbasis
     argvar_ <- list(fun = config$varfun,
-                   knots = quantile(data$tmean, varper/100, na.rm=T),
+                   knots = quantile(data$tmean, config$varper/100, na.rm=T),
                    degree = config$vardegree)
 
     cb <- crossbasis(data$tmean,
@@ -289,8 +287,6 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup) {
   minpercregions <- mintempregions_ <- rep(NA, length(df_list))
   names(mintempregions_) <- names(minpercregions) <- regions_df$regions
 
-  varper <- c(10, 75, 90)
-
   # Define minimum mortality values: exclude low and very hot temperatures
   for(i in seq(length(df_list))) {
 
@@ -299,7 +295,7 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup) {
 
     # Redefine the function using all arguments (boundary knots included)
     argvar_ <- list(x = predvar, fun = config$varfun,
-                   knots = quantile(data$tmean, varper/100, na.rm = TRUE),
+                   knots = quantile(data$tmean, config$varper/100, na.rm = TRUE),
                    degree = config$vardegree,
                    Bound = range(data$tmean, na.rm = T))
 
@@ -368,8 +364,6 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
                     dimnames = list(regions_df$regions,
                                     c("glob","cold","heat")))
 
-  varper <- c(10, 75, 90)
-
   # Run the loop
   for(i in seq(df_list)){
 
@@ -383,7 +377,7 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
     # NB: Centering point different than original choice of 75th
     argvar_ <- list(x=data$tmean,
                    fun = config$varfun,
-                   knots = quantile(data$tmean, varper/100,na.rm=T),
+                   knots = quantile(data$tmean, config$varper/100,na.rm=T),
                    degree = config$vardegree)
 
     cb <- crossbasis(data$tmean,
@@ -596,8 +590,6 @@ plot_and_write_relative_risk <- function(df_list,
 
   xlab <- expression(paste("Temperature (",degree,"C)"))
 
-  varper <- c(10, 75, 90)
-
   region_vector <- c()
   temperature <- c()
   relative_risk <- c()
@@ -610,7 +602,7 @@ plot_and_write_relative_risk <- function(df_list,
     argvar <- list(x = data$tmean,
                    fun = config$varfun,
                    degree = config$vardegree,
-                   knots=quantile(data$tmean, varper/100, na.rm=T))
+                   knots=quantile(data$tmean, config$varper/100, na.rm=T))
 
     bvar <- do.call(onebasis, argvar)
 
