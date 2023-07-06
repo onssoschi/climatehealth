@@ -95,7 +95,7 @@ get_region_metadata <- function(regions,
 #' @export
 run_model <- function(df_list) {
 
-  minpercity <- mintempcity <- rep(NA, length(df_list))
+  # minpercity <- mintempcity <- rep(NA, length(df_list))
 
   # Loop
   timer <- proc.time()[3]
@@ -142,103 +142,103 @@ run_model <- function(df_list) {
 
   proc.time()[3]-timer
 
-  return (list(argvar_, minpercity))
+  return (list(argvar_))
 }
 
 
-#' #' Meta-analysis model
-#' #'
-#' #' Runs meta-analysis model and estimates best linear unbiased predictions
-#' #' (BLUPs) from this model.
-#' #'
-#' #' @param df_list An alphabetically-ordered list of dataframes for each region.
-#' #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
-#' #'   region names. Column 2 is user-specified region names.
-#' #'
-#' #' @return
-#' #' \itemize{
-#' #'   \item `mvmeta` A model object. A multivariate meta-analysis model.
-#' #'   \item `blup` A list. BLUP (best linear unbiased predictions) from the
-#' #'   meta-analysis model for each region.
-#' #'   }
-#' #' @export
-#' #' @import mvmeta
-#' run_meta_model <- function(df_list, regions_df) {
+#' Meta-analysis model
 #'
-#'   if(!is.list(df_list) | !is.data.frame(df_list[[1]])) {
-#'     stop("Argument 'df_list' must be a list of data frames")
+#' Runs meta-analysis model and estimates best linear unbiased predictions
+#' (BLUPs) from this model.
+#'
+#' @param df_list An alphabetically-ordered list of dataframes for each region.
+#' @param regions_df A dataframe with two columns. Column 1 is abbreviated
+#'   region names. Column 2 is user-specified region names.
+#'
+#' @return
+#' \itemize{
+#'   \item `mvmeta` A model object. A multivariate meta-analysis model.
+#'   \item `blup` A list. BLUP (best linear unbiased predictions) from the
+#'   meta-analysis model for each region.
 #'   }
-#'
-#'   if(!is.data.frame(regions_df)) {
-#'     stop("Argument 'regions_df' must be a data frame")
-#'   }
-#'
-#'   if(!is.matrix(coef) | !is.numeric(coef)) {
-#'     stop("Argument 'coef' must be a numeric matrix")
-#'   }
-#'
-#'   if(!is.list(vcov) | !is.matrix(vcov[[1]])) {
-#'     stop("Argument 'vcov' must be a list of matrices")
-#'   }
-#'
-#'   # Create average temperature and range as meta-predictors
-#'   avgtmean <- sapply(df_list,
-#'                      function(x) mean(x$tmean, na.rm = TRUE))
-#'   rangetmean <- sapply(df_list,
-#'                        function(x) diff(range(x$tmean, na.rm = TRUE)))
-#'
-#'   # Meta-analysis
-#'   # NB: country effects is not included in this example
-#'   mv <- mvmeta(coef ~ avgtmean + rangetmean,
-#'                vcov,
-#'                data = regions_df,
-#'                control = list(showiter = TRUE))
-#'
-#'   # Obtain blups
-#'   blup <- blup(mv, vcov = T)
-#'
-#'   return(list(mv, blup))
-#' }
+#' @export
+#' @import mvmeta
+run_meta_model <- function(df_list, regions_df) {
 
-#' #' Calculate p-values for Wald test
-#' #'
-#' #' A function to calculate p-values for an explanatory variable.
-#' #'
-#' #' @param model A model object.
-#' #' @param var A character. The name of the variable in the model to calculate
-#' #' p-values for.
-#' #'
-#' #' @export
-#' #' @return A number. The p-value of the explanatory variable.
-#' fwald <- function(model, var) {
-#'
-#'   if(!is.character(var)) {
-#'     stop("Argument 'var' must be a character")
-#'   }
-#'
-#'   ind <- grep(var, names(coef(model)))
-#'   coef <- coef(model)[ind]
-#'   vcov <- vcov(model)[ind, ind]
-#'   waldstat <- coef %*% solve(vcov) %*% coef
-#'   df <- length(coef)
-#'
-#'   return(1 - pchisq(waldstat, df))
-#' }
+  if(!is.list(df_list) | !is.data.frame(df_list[[1]])) {
+    stop("Argument 'df_list' must be a list of data frames")
+  }
 
-#' #' Get Wald statistic for a meta-analysis model
-#' #'
-#' #' @param mv A model object (multivariate meta-analysis model)
-#' #'
-#' #' @return P-values for average and range of temperatures (avgtmean_wald, rangetmean_wald).
-#' #' @export
-#' wald_results <- function(mv) {
+  if(!is.data.frame(regions_df)) {
+    stop("Argument 'regions_df' must be a data frame")
+  }
+
+  if(!is.matrix(coef) | !is.numeric(coef)) {
+    stop("Argument 'coef' must be a numeric matrix")
+  }
+
+  if(!is.list(vcov) | !is.matrix(vcov[[1]])) {
+    stop("Argument 'vcov' must be a list of matrices")
+  }
+
+  # Create average temperature and range as meta-predictors
+  avgtmean <- sapply(df_list,
+                     function(x) mean(x$tmean, na.rm = TRUE))
+  rangetmean <- sapply(df_list,
+                       function(x) diff(range(x$tmean, na.rm = TRUE)))
+
+  # Meta-analysis
+  # NB: country effects is not included in this example
+  mv <- mvmeta(coef ~ avgtmean + rangetmean,
+               vcov,
+               data = regions_df,
+               control = list(showiter = TRUE))
+
+  # Obtain blups
+  blup <- blup(mv, vcov = T)
+
+  return(list(mv, blup))
+}
+
+#' Calculate p-values for Wald test
 #'
-#'   avgtmean_wald <- fwald(mv, "avgtmean")
-#'   rangetmean_wald <- fwald(mv, "rangetmean")
+#' A function to calculate p-values for an explanatory variable.
 #'
-#'   return(list(avgtmean_wald, rangetmean_wald))
+#' @param model A model object.
+#' @param var A character. The name of the variable in the model to calculate
+#' p-values for.
 #'
-#' }
+#' @export
+#' @return A number. The p-value of the explanatory variable.
+fwald <- function(model, var) {
+
+   if(!is.character(var)) {
+     stop("Argument 'var' must be a character")
+   }
+
+   ind <- grep(var, names(coef(model)))
+   coef <- coef(model)[ind]
+   vcov <- vcov(model)[ind, ind]
+   waldstat <- coef %*% solve(vcov) %*% coef
+   df <- length(coef)
+
+   return(1 - pchisq(waldstat, df))
+ }
+
+#' Get Wald statistic for a meta-analysis model
+#'
+#' @param mv A model object (multivariate meta-analysis model)
+#'
+#' @return P-values for average and range of temperatures (avgtmean_wald, rangetmean_wald).
+#' @export
+wald_results <- function(mv) {
+
+  avgtmean_wald <- fwald(mv, "avgtmean")
+  rangetmean_wald <- fwald(mv, "rangetmean")
+
+  return(list(avgtmean_wald, rangetmean_wald))
+
+}
 
 #' Calculate minimum mortality values
 #'
@@ -259,7 +259,7 @@ run_model <- function(df_list) {
 #' }
 #'
 #' @export
-calculate_min_mortality_temp <-  function(df_list, regions_df, blup) {
+calculate_min_mortality_temp <-  function(df_list, regions_df, blup = NULL) {
 
   if(!is.list(df_list) | !is.data.frame(df_list[[1]])) {
     stop("Argument 'df_list' must be a list of data frames")
@@ -280,23 +280,35 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup) {
 
   varper <- c(10, 75, 90)
 
-  # Define minimum mortality values: exclude low and very hot temperatures
-  for(i in seq(length(df_list))) {
+  if (!is.na(blup)) {
 
-    data <- df_list[[i]]
-    predvar <- quantile(data$tmean, 1:99/100, na.rm = T)
+      # Define minimum mortality values: exclude low and very hot temperatures
+    for(i in seq(length(df_list))) {
 
-    # Redefine the function using all arguments (boundary knots included)
-    argvar_ <- list(x = predvar, fun = config$varfun,
-                   knots = quantile(data$tmean, varper/100, na.rm = TRUE),
-                   degree = config$vardegree,
-                   Bound = range(data$tmean, na.rm = T))
+      data <- df_list[[i]]
+      predvar <- quantile(data$tmean, 1:99/100, na.rm = T)
 
-    bvar_ <- do.call(onebasis, argvar_)
+      # Redefine the function using all arguments (boundary knots included)
+      argvar_ <- list(x = predvar, fun = config$varfun,
+                     knots = quantile(data$tmean, varper/100, na.rm = TRUE),
+                     degree = config$vardegree,
+                     Bound = range(data$tmean, na.rm = T))
 
-    minpercregions[i] <- (1:99)[which.min((bvar_ %*% blup[[i]]$blup))]
-    mintempregions_[i] <- quantile(data$tmean, minpercregions[i]/100,
-                                  na.rm = TRUE)
+      bvar_ <- do.call(onebasis, argvar_)
+
+      minpercregions[i] <- (1:99)[which.min((bvar_ %*% blup[[i]]$blup))]
+      mintempregions_[i] <- quantile(data$tmean, minpercregions[i]/100,
+                                    na.rm = TRUE)
+
+    }
+
+    (minperccountry <- median(minpercregions))
+
+  } else {
+
+    minpercregions <- mintempregions_ <- rep(NA, length(df_list))
+    names(mintempregions_) <- names(minpercregions) <- regions_df$regions
+
   }
 
   # Country-specific points of minimum mortality
@@ -332,7 +344,7 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup) {
 #' }
 #' @export
 compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
-                                        blup, mintempregions) {
+                                        blup = NULL, mintempregions) {
 
   if (file.exists('R/attrdl.R')) {
     source('R/attrdl.R')
@@ -380,56 +392,70 @@ compute_attributable_deaths <- function(df_list, regions_df, coef, vcov,
                      argvar = argvar_,
                      arglag = list(knots = logknots(config$lag, config$lagnk)))
 
+    if (!is.na(blup)) {
+
+      coefs <- blup[[i]]$blup
+      vcovs <- blup[[i]]$vcov
+      cens <- mintempregions[i]
+
+    } else {
+
+      coefs <- NULL
+      vcovs <- NULL
+      cens <- mean(data$tmean,na.rm=T)
+
+    }
+
     # Compute the attributable deaths
     # NB: The reduced coefficients are used here
     matsim[i, "glob"] <- attrdl(data$tmean, cb, data$death,
-                               coef=blup[[i]]$blup,
-                               vcov = blup[[i]]$vcov,
+                               coef = coefs,
+                               vcov = vcovs,
                                type="an",
                                dir = "forw",
-                               cen = mintempregions[i])
+                               cen = cens)
 
     matsim[i, "cold"] <- attrdl(data$tmean, cb, data$death,
-                               coef = blup[[i]]$blup,
-                               vcov = blup[[i]]$vcov,
+                               coef = coefs,
+                               vcov = vcovs,
                                type = "an",
                                dir = "forw",
-                               cen = mintempregions[i],
+                               cen = cens,
                                range = c(-100,mintempregions[i]))
 
     matsim[i, "heat" ] <- attrdl(data$tmean, cb, data$death,
-                               coef = blup[[i]]$blup,
-                               vcov = blup[[i]]$vcov,
+                               coef = coefs,
+                               vcov = vcovs,
                                type="an",
                                dir = "forw",
-                               cen = mintempregions[i],
+                               cen = cens,
                                range = c(mintempregions[i],100))
 
     # Compute empirical occurrences of the attributable deaths
     # Used to derive confidence intervals
     arraysim[i, "glob", ] <- attrdl(data$tmean, cb, data$death,
-                                  coef = blup[[i]]$blup,
-                                  vcov = blup[[i]]$vcov,
+                                  coef = coefs,
+                                  vcov = vcovs,
                                   type = "an",
                                   dir = "forw",
-                                  cen = mintempregions[i],
+                                  cen = cens,
                                   sim = T, nsim = nsim_)
 
     arraysim[i, "cold", ] <- attrdl(data$tmean, cb, data$death,
-                                  coef=blup[[i]]$blup,
-                                  vcov = blup[[i]]$vcov,
+                                  coef = coefs,
+                                  vcov = vcovs,
                                   type = "an",
                                   dir = "forw",
-                                  cen = mintempregions[i],
+                                  cen = cens,
                                   range = c(-100,mintempregions[i]),
                                   sim = T ,nsim = nsim_)
 
     arraysim[i, "heat", ] <- attrdl(data$tmean, cb, data$death,
-                                  coef=blup[[i]]$blup,
-                                  vcov = blup[[i]]$vcov,
+                                  coef = coefs,
+                                  vcov = vcovs,
                                   type = "an",
                                   dir= "forw",
-                                  cen = mintempregions[i],
+                                  cen = cens,
                                   range = c(mintempregions[i],100),
                                   sim = T, nsim = nsim_)
 
@@ -562,7 +588,7 @@ write_attributable_deaths <- function(df_list, regions_df, matsim, arraysim,
 #' A CSV of relative risk per temperature per region.
 #' @examples output_folder_path = 'myfolder/output/'
 plot_and_write_relative_risk <- function(df_list,
-                         blup, regions_df, mintempregions,
+                         blup = NULL, regions_df, mintempregions,
                          output_folder_path){
 
   if (!is.null(output_folder_path)) {
@@ -602,6 +628,20 @@ plot_and_write_relative_risk <- function(df_list,
                    knots=quantile(data$tmean, varper/100, na.rm=T))
 
     bvar <- do.call(onebasis, argvar)
+
+    if (!is.na(blup)) {
+
+      coefs <- blup[[i]]$blup
+      vcovs <- blup[[i]]$vcov
+      cens <- mintempregions[i]
+
+    } else {
+
+      coefs <- NULL
+      vcovs <- NULL
+      cens <- mean(data$tmean,na.rm=T)
+
+    }
 
     pred <- crosspred(bvar,
                       coef = blup[[i]]$blup,
@@ -693,7 +733,7 @@ plot_and_write_relative_risk <- function(df_list,
 #' @seealso [dlnm] package
 #'
 #' @export
-do_analysis <- function(input_csv_path, output_folder_path_){
+do_analysis <- function(input_csv_path, output_folder_path_, meta_analysis = FALSE) {
 
   c(df_list_unordered_, regions_) %<-%
     load_data(input_path = input_csv_path)
@@ -706,27 +746,31 @@ do_analysis <- function(input_csv_path, output_folder_path_){
                                          "West Midlands","East","London",
                                          "South East","South West", "Wales"))
 
-  c(argvar_, minpercity_) %<-%
+  c(argvar_) %<-%
     run_model(df_list = df_list_)
 
-  # c(mv_, blup_) %<-%
-  #   run_meta_model(df_list = df_list_,
-  #                  regions_df = regions_df_)
+  if (meta_analysis == TRUE) {
 
-  # c(avgtmean_wald, rangetmean_wald) %<-%
-  #   wald_results(mv = mv_)
+    c(mv_, blup_) %<-%
+      run_meta_model(df_list = df_list_,
+                      regions_df = regions_df_)
+
+    c(avgtmean_wald, rangetmean_wald) %<-%
+      wald_results(mv = mv_)
+
+  }
 
   c(argvar_, bvar_, mintempregions_) %<-%
     calculate_min_mortality_temp(df_list = df_list_,
                   regions_df = regions_df_,
-                  blup = blup_)
+                  blup = NULL)
 
   c(totdeath_, arraysim_, matsim_) %<-%
     compute_attributable_deaths(df_list = df_list_,
                                 regions_df = regions_df_,
                                 coef = coef_,
                                 vcov = vcov_,
-                                blup = blup_,
+                                blup = NULL,
                                 mintempregions = mintempregions_)
 
   c(antot, totdeathtot, aftot, afregions) %<-%
@@ -738,7 +782,7 @@ do_analysis <- function(input_csv_path, output_folder_path_){
                          output_folder_path = output_folder_path_)
 
   plot_and_write_relative_risk(df_list = df_list_,
-               blup = blup_,
+               blup = NULL,
                regions_df = regions_df_,
                mintempregions = mintempregions_,
                output_folder_path = output_folder_path_)
