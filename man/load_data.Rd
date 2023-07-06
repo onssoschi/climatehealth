@@ -7,11 +7,13 @@
 load_data(input_path)
 }
 \arguments{
-\item{input_path}{Path to a CSV containing a daily time series of death and temperature per region.}
+\item{input_path}{Path to a CSV containing a
+daily time series of death and temperature per region.}
 }
 \value{
 \itemize{
-\item \code{df_list_unordered} A list of dataframes for each region comprising dates, deaths, and temperatures.
+\item \code{df_list_unordered} A list of dataframes for each region
+comprising dates, deaths, and temperatures.
 \item \code{regions} A character vector with the names of each region.
 }
 }
