@@ -16,9 +16,10 @@ region names. Column 2 is user-specified region names.}
 }
 \value{
 \itemize{
-\item \code{argvar} An updated list of arguments ($x, $fun, $knots, $degree, $bound) for onebasis function.
-\item \code{bvar} A basis matrix for the predictor vector.
-\item \code{mintempregions} A named numeric vector. Minimum (optimum) mortality temperature per region.
+\item \code{argvar_} An updated list of arguments
+($x, $fun, $knots, $degree, $bound) for onebasis function.
+\item \code{bvar_} A basis matrix for the predictor vector.
+\item \code{mintempregions_} A named numeric vector. Minimum (optimum) mortality temperature per region.
 }
 }
 \description{
