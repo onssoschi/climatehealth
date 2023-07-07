@@ -221,9 +221,10 @@ run_meta_model <- function(df_list, regions_df) {
 fwald <- function(var) {
 
 
-  formula <- death ~ cb + dow + ns(
-    date, df = config$dfseas * length(unique(year))
-  )
+  formula <- as.formula(paste(paste(config$dependent),
+                              " ~ ",
+                              paste(config$independent,
+                                    collapse= "+")))
 
   model <- glm(formula, data,
                family = quasipoisson,
@@ -336,9 +337,10 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup = NULL) {
                        argvar = argvar_,
                        arglag = list(knots = logknots(config$lag,config$lagnk)))
 
-      formula <- death ~ cb + dow + ns(
-        date, df = config$dfseas * length(unique(year))
-      )
+      formula <- as.formula(paste(paste(config$dependent),
+                                  " ~ ",
+                                  paste(config$independent,
+                                        collapse= "+")))
 
       # Run the model and obtain predictions
       model <- glm(formula,
@@ -452,9 +454,10 @@ compute_attributable_deaths <- function(df_list,
                        arglag = list(knots = logknots(config$lag, config$lagnk)))
 
 
-      formula <- death ~ cb + dow + ns(
-        date, df = config$dfseas * length(unique(year))
-      )
+      formula <- as.formula(paste(paste(config$dependent),
+                                  " ~ ",
+                                  paste(config$independent,
+                                        collapse= "+")))
 
       model <- glm(formula, data,
                    family = quasipoisson,
@@ -692,9 +695,10 @@ plot_and_write_relative_risk <- function(df_list,
 
     data <- df_list[[i]]
 
-    formula <- death ~ cb + dow + ns(
-        date, df = config$dfseas * length(unique(year))
-      )
+    formula <- as.formula(paste(paste(config$dependent),
+                                " ~ ",
+                                paste(config$independent,
+                                      collapse= "+")))
 
     # NB: Centering point different than original choice of 75th
     argvar <- list(x = data$tmean,

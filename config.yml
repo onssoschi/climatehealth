@@ -16,3 +16,10 @@ default:
 
   # Degree of freedom for seasonality
   dfseas: 8
+
+  # Formula
+  dependent: death
+  independent:
+    - cb
+    - dow
+    - ns(date, df = config$dfseas * length(unique(year)))
