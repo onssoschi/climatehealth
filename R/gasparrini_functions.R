@@ -93,63 +93,70 @@ get_region_metadata <- function(regions,
 #'   \item `vcov` A list. Co-variance matrices for each region for reduced model.
 #'   }
 #' @export
-# run_model <- function(df_list, regions_df) {
-#
-#   minpercity <- mintempcity <- rep(NA, length(df_list))
-#
-#   # Loop
-#   timer <- proc.time()[3]
-#
-#   # Model formula
-#   formula <- death ~ cb + dow + ns(
-#     date, df = config$dfseas * length(unique(year))
-#     )
-#
-#   # Coefficients and vcov for overall cumulative summary
-#   coef <- matrix(NA,
-#                  nrow(regions_df),
-#                  length(config$varper) + config$vardegree,
-#                  dimnames = list(regions_df$regions))
-#
-#   vcov <- vector("list" ,nrow(regions_df))
-#
-#   names(vcov) <- regions_df$regions
-#
-#   for(i in seq(length(df_list))) {
-#
-#     cat(i,"")
-#
-#     # Extract data
-#     data <- df_list[[i]]
-#
-#     # Define crossbasis
-#     argvar_ <- list(fun = config$varfun,
-#                    knots = quantile(data$tmean, config$varper/100, na.rm=T),
-#                    degree = config$vardegree)
-#
-#     cb <- crossbasis(data$tmean,
-#                      lag = config$lag,
-#                      argvar = argvar_,
-#                      arglag = list(knots = logknots(config$lag,config$lagnk)))
-#
-#     # Run the model and obtain predictions
-#     model <- glm(formula,
-#                  data,
-#                  family = quasipoisson,
-#                  na.action = "na.exclude")
-#
-#     cen_ <- mean(data$tmean, na.rm = T)
-#
-#     # Reduction to overall cumulative
-#     pred <- crossreduce(cb, model, cen = cen_)
-#     mintempcity[i] <- as.numeric(names(which.min(pred$RRfit)))
-#
-#   }
-#
-#   proc.time()[3]-timer
-#
-#   return (list(mintempregion))
-# }
+run_model <- function(df_list, regions_df) {
+
+  minperregions <- mintempregions <- rep(NA, length(df_list))
+
+  # Loop
+  timer <- proc.time()[3]
+
+  # Model formula
+  formula <- as.formula(paste(paste(config$dependent),
+                              " ~ ",
+                              paste(config$independent,
+                                    collapse= "+")))
+
+  # Coefficients and vcov for overall cumulative summary
+  coef_ <- matrix(NA,
+                 nrow(regions_df),
+                 length(config$varper) + config$vardegree,
+                 dimnames = list(regions_df$regions))
+
+  vcov_ <- vector("list" ,nrow(regions_df))
+
+  names(vcov_) <- regions_df$regions
+
+  for(i in seq(length(df_list))) {
+
+    cat(i,"")
+
+    # Extract data
+    data <- df_list[[i]]
+
+    # Define crossbasis
+    argvar_ <- list(fun = config$varfun,
+                   knots = quantile(data$tmean, config$varper/100, na.rm=T),
+                   degree = config$vardegree)
+
+    cb <- crossbasis(data$tmean,
+                     lag = config$lag,
+                     argvar = argvar_,
+                     arglag = list(knots = logknots(config$lag,config$lagnk)))
+
+    # Run the model and obtain predictions
+    model <- glm(formula,
+                 data,
+                 family = quasipoisson,
+                 na.action = "na.exclude")
+
+    cen_ <- mean(data$tmean, na.rm = T)
+
+    # Reduction to overall cumulative
+    red <- crossreduce(cb, model, cen = cen_)
+    mintempregions[i] <- as.numeric(names(which.min(red$RRfit)))
+
+    # Reduction to overall cumulative
+    red <- crossreduce(cb, model, cen = cen_)
+
+    coef_[i,] <- coef(red)
+    vcov_[[i]] <- vcov(red)
+
+  }
+
+  proc.time()[3]-timer
+
+  return (list(coef_, vcov_))
+}
 
 
 #' Meta-analysis model
@@ -169,7 +176,7 @@ get_region_metadata <- function(regions,
 #'   }
 #' @export
 #' @import mvmeta
-run_meta_model <- function(df_list, regions_df) {
+run_meta_model <- function(df_list, regions_df, coef, vcov) {
 
   if(!is.list(df_list) | !is.data.frame(df_list[[1]])) {
     stop("Argument 'df_list' must be a list of data frames")
@@ -178,16 +185,6 @@ run_meta_model <- function(df_list, regions_df) {
   if(!is.data.frame(regions_df)) {
     stop("Argument 'regions_df' must be a data frame")
   }
-
-  # Coefficients and vcov for overall cumulative summary
-  coef <- matrix(NA,
-                 nrow(regions_df),
-                 length(config$varper) + config$vardegree,
-                 dimnames = list(regions_df$regions))
-
-  vcov <- vector("list" ,nrow(regions_df))
-
-  names(vcov) <- regions_df$regions
 
   # Create average temperature and range as meta-predictors
   avgtmean <- sapply(df_list,
@@ -313,7 +310,7 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup = NULL) {
       bvar_ <- do.call(onebasis, argvar_)
 
       minpercregions_[i] <- (1:99)[which.min((bvar_ %*% blup[[i]]$blup))]
-      mintempregions_[i] <- quantile(data$tmean, minpercregions[i]/100,
+      mintempregions_[i] <- quantile(data$tmean, minpercregions_[i]/100,
                                     na.rm = TRUE)
 
     }
@@ -430,6 +427,18 @@ compute_attributable_deaths <- function(df_list,
     # Extract the data
     data <- df_list[[i]]
 
+    # Derive the cross-basis
+    # NB: Centering point different than original choice of 75th
+    argvar_ <- list(x = data$tmean,
+                    fun = config$varfun,
+                    knots = quantile(data$tmean, config$varper/100,na.rm=T),
+                    degree = config$vardegree)
+
+    cb <- crossbasis(data$tmean,
+                     lag = config$lag,
+                     argvar = argvar_,
+                     arglag = list(knots = logknots(config$lag, config$lagnk)))
+
     if (!is.null(blup)) {
 
       coefs <- blup[[i]]$blup
@@ -440,19 +449,6 @@ compute_attributable_deaths <- function(df_list,
 
       coefs <- NULL
       vcovs <- NULL
-
-      # Derive the cross-basis
-      # NB: Centering point different than original choice of 75th
-      argvar_ <- list(x = data$tmean,
-                      fun = config$varfun,
-                      knots = quantile(data$tmean, config$varper/100,na.rm=T),
-                      degree = config$vardegree)
-
-      cb <- crossbasis(data$tmean,
-                       lag = config$lag,
-                       argvar = argvar_,
-                       arglag = list(knots = logknots(config$lag, config$lagnk)))
-
 
       formula <- as.formula(paste(paste(config$dependent),
                                   " ~ ",
@@ -721,13 +717,14 @@ plot_and_write_relative_risk <- function(df_list,
       coefs <- blup[[i]]$blup
       vcovs <- blup[[i]]$vcov
       model <- NULL
+      cen <- mintempregions[i]
 
       pred <- crosspred(bvar,
                         coef = blup[[i]]$blup,
                         vcov = blup[[i]]$vcov,
                         model.link = "log",
                         by = 0.1,
-                        cen = mintempregions[i])
+                        cen = cen)
 
     } else {
 
@@ -747,32 +744,51 @@ plot_and_write_relative_risk <- function(df_list,
       }
 
      plot(pred, type = "n",
-          ylim = c(0,2.5), yaxt = "n",
-          lab = c(6,5,7), xlab = xlab,
+          ylim = c(0,2.5),
+          yaxt = "n",
+          lab = c(6,5,7),
+          xlab = xlab,
           ylab = "RR",
           main = regions_df$region_names[i])
 
-     ind_a <- pred$predvar<=c(per[i,c("2.5%")])
-     ind_b <- pred$predvar>=c(per[i,c("2.5%")]) & pred$predvar<=cen
-     ind_c <- pred$predvar>=cen & pred$predvar<=c(per[i,c("97.5%")])
-     ind_d <- pred$predvar>=c(per[i,c("97.5%")])
+     ind_a <- pred$predvar <= c(per[i,c("2.5%")])
+     ind_b <- pred$predvar >= c(per[i,c("2.5%")]) & pred$predvar<=cen
+     ind_c <- pred$predvar >= cen & pred$predvar <= c(per[i,c("97.5%")])
+     ind_d <- pred$predvar >= c(per[i,c("97.5%")])
 
-     lines(pred$predvar[ind_a],pred$RRfit[ind_a],
-           col=c("#000FFF"),lwd=1.5)
-     lines(pred$predvar[ind_b],pred$RRfit[ind_b],
-           col=c("#ABAFFF"),lwd=1.5)
-     lines(pred$predvar[ind_c],pred$RRfit[ind_c],
-           col=c("#FFA7A7"),lwd=1.5)
-     lines(pred$predvar[ind_d],pred$RRfit[ind_d],
-           col=c("#C00000"),lwd=1.5)
+     if (!is.null(blup)) {
 
-     axis(2,at=1:5*0.5)
+       relative_risk_vals <- pred$allRRfit
 
-     breaks <- c(min(data$tmean,na.rm=T)-1,
+     } else {
+
+       relative_risk_vals <- pred$RRfit
+     }
+
+     lines(pred$predvar[ind_a],
+           relative_risk_vals[ind_a],
+           col = c("#000FFF"),
+           lwd = 1.5)
+     lines(pred$predvar[ind_b],
+           relative_risk_vals[ind_b],
+           col = c("#ABAFFF"),
+           lwd = 1.5)
+     lines(pred$predvar[ind_c],
+           relative_risk_vals[ind_c],
+           col = c("#FFA7A7"),
+           lwd = 1.5)
+     lines(pred$predvar[ind_d],
+           relative_risk_vals[ind_d],
+           col = c("#C00000"),
+           lwd = 1.5)
+
+     axis(2, at = 1:5*0.5)
+
+     breaks <- c(min(data$tmean, na.rm = T)-1,
                  seq(pred$predvar[1],
                      pred$predvar[length(pred$predvar)],
-                     length=30),
-                 max(data$tmean,na.rm=T)+1)
+                     length = 30),
+                 max(data$tmean,na.rm = T) + 1)
 
 
      hist <- hist(data$tmean, breaks = breaks, plot = F)
@@ -786,19 +802,28 @@ plot_and_write_relative_risk <- function(df_list,
           breaks = breaks, freq = F, add = T)
 
      axis(4, at = counts*prop, labels = counts, cex.axis = 0.7)
-     mtext("N",4,line=-0.5,at=mean(counts*prop),cex=0.5)
+     mtext("N",4,line = -0.5,at = mean(counts*prop),cex=0.5)
 
      abline(v = mintempregions[i], lty = 3)
      abline(v = c(per[i,c("2.5%","97.5%")]), lty = 2)
+
+     if (!is.null(blup)) {
+
+       relative_risk <- append(relative_risk,
+                               pred$allRRfit)
+      } else {
+
+       relative_risk <- append(relative_risk,
+                               pred$RRfit)
+      }
 
      region_vector <-
        append(region_vector,
               rep(regions_df$region_names[i],
                   length(pred$predvar)))
+
      temperature <- append(temperature,
                            pred$predvar)
-     relative_risk <- append(relative_risk,
-                             pred$RRfit)
 
     }
 
@@ -813,10 +838,19 @@ plot_and_write_relative_risk <- function(df_list,
                    'output_all_regions_data.csv', sep = ''),
              row.names=FALSE)
 
+  if (!is.null(blup)) {
+
+    relative_risk <- pred$allRRfit
+
+  } else {
+
+    relative_risk <- pred$RRfit
+  }
+
   # Output for testing
    output_df_test <- data.frame(
                            temperature = pred$predvar,
-                           relative_risk = pred$RRfit
+                           relative_risk = relative_risk
                            )
   # Output for testing
    write.csv(output_df_test,
@@ -844,7 +878,7 @@ plot_and_write_relative_risk <- function(df_list,
 #' @export
 do_analysis <- function(input_csv_path,
                         output_folder_path_,
-                        meta_analysis = FALSE) {
+                        meta_analysis) {
 
   c(df_list_unordered_, regions_) %<-%
     load_data(
@@ -863,16 +897,26 @@ do_analysis <- function(input_csv_path,
 
   if (meta_analysis == TRUE) {
 
+    c(coef_, vcov_) %<-%
+    run_model(df_list = df_list_,
+              regions_df = regions_df_)
+
     c(mv_, blup_) %<-%
       run_meta_model(
         df_list = df_list_,
-        regions_df = regions_df_
+        regions_df = regions_df_,
+        coef = coef_,
+        vcov = vcov_
         )
 
-    c(avgtmean_wald, rangetmean_wald) %<-%
-      wald_results(
-        mv = mv_
-        )
+    # c(avgtmean_wald, rangetmean_wald) %<-%
+    #   wald_results(
+    #     mv = mv_
+    #     )
+
+  } else {
+
+    blup_ <- NULL
 
   }
 
@@ -880,14 +924,14 @@ do_analysis <- function(input_csv_path,
     calculate_min_mortality_temp(
       df_list = df_list_,
       regions_df = regions_df_,
-      blup = NULL
+      blup = blup_
       )
 
   c(totdeath_, arraysim_, matsim_) %<-%
     compute_attributable_deaths(
       df_list = df_list_,
       regions_df = regions_df_,
-      blup = NULL,
+      blup = blup_,
       mintempregions = mintempregions_
       )
 
@@ -903,7 +947,7 @@ do_analysis <- function(input_csv_path,
 
   plot_and_write_relative_risk(
     df_list = df_list_,
-    blup = NULL,
+    blup = blup_,
     regions_df = regions_df_,
     mintempregions = mintempregions_,
     output_folder_path = output_folder_path_
