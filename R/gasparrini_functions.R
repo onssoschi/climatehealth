@@ -96,9 +96,8 @@ get_region_metadata <- function(regions,
 #' @export
 run_model <- function(df_list, regions_df) {
 
-  minperregions
-  <- mintempregions
-  <- rep(NA, length(df_list))
+  minperregions <- mintempregions <- rep(NA,
+                                         length(df_list))
 
   # Loop
   timer <- proc.time()[3]
@@ -300,10 +299,9 @@ calculate_min_mortality_temp <-  function(df_list,
 
   # Re-centering
   # Generate the matrix for storing results
-  minpercregions_ <- mintempregions_ <- rep(NA, length(df_list))
-  names(mintempregions_) <-
-    names(minpercregions_) <-
-    regions_df$regions
+  minpercregions_ <- mintempregions_ <- rep(NA,
+                                            length(df_list))
+  names(mintempregions_) <- names(minpercregions_) <- regions_df$regions
 
   if (!is.null(blup)) {
 
@@ -952,10 +950,10 @@ do_analysis <- function(input_csv_path,
         vcov = vcov_
         )
 
-    # c(avgtmean_wald, rangetmean_wald) %<-%
-    #   wald_results(
-    #     mv = mv_
-    #     )
+    c(avgtmean_wald, rangetmean_wald) %<-%
+      wald_results(
+        mv = mv_
+        )
 
   } else {
 
