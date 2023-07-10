@@ -51,7 +51,9 @@ load_data <- function(input_path) {
 #' \itemize{
 #'   \item `regions_df` A dataframe with two columns. Column 1 is abbreviated
 #'   region names. Column 2 is user-specified region names.
-#'   \item `df_list` An alphabetically-ordered list of dataframes for each region. Same length as `regions`.
+#'   \item `df_list` An alphabetically-ordered
+#'   list of dataframes for each region.
+#'   Same length as `regions`.
 #'   }
 #' @export
 #' @examples
@@ -94,7 +96,9 @@ get_region_metadata <- function(regions,
 #' @export
 run_model <- function(df_list, regions_df) {
 
-  minperregions <- mintempregions <- rep(NA, length(df_list))
+  minperregions
+  <- mintempregions
+  <- rep(NA, length(df_list))
 
   # Loop
   timer <- proc.time()[3]
@@ -124,13 +128,16 @@ run_model <- function(df_list, regions_df) {
 
     # Define crossbasis
     argvar_ <- list(fun = config$varfun,
-                   knots = quantile(data$tmean, config$varper/100, na.rm=T),
+                   knots = quantile(data$tmean,
+                                    config$varper/100,
+                                    na.rm=T),
                    degree = config$vardegree)
 
     cb <- crossbasis(data$tmean,
                      lag = config$lag,
                      argvar = argvar_,
-                     arglag = list(knots = logknots(config$lag,config$lagnk)))
+                     arglag = list(knots = logknots(config$lag,
+                                                    config$lagnk)))
 
     # Run the model and obtain predictions
     model <- glm(formula,
@@ -187,9 +194,12 @@ run_meta_model <- function(df_list, regions_df, coef, vcov) {
 
   # Create average temperature and range as meta-predictors
   avgtmean <- sapply(df_list,
-                     function(x) mean(x$tmean, na.rm = TRUE))
+                     function(x)
+                       mean(x$tmean, na.rm = TRUE))
+
   rangetmean <- sapply(df_list,
-                       function(x) diff(range(x$tmean, na.rm = TRUE)))
+                       function(x)
+                         diff(range(x$tmean, na.rm = TRUE)))
 
   # Meta-analysis
   # NB: country effects is not included in this example
@@ -243,7 +253,8 @@ fwald <- function(var) {
 #'
 #' @param mv A model object (multivariate meta-analysis model)
 #'
-#' @return P-values for average and range of temperatures (avgtmean_wald, rangetmean_wald).
+#' @return P-values for average and range of temperatures
+#' (avgtmean_wald, rangetmean_wald).
 #' @export
 wald_results <- function(mv) {
 
@@ -271,7 +282,9 @@ wald_results <- function(mv) {
 #' }
 #'
 #' @export
-calculate_min_mortality_temp <-  function(df_list, regions_df, blup = NULL) {
+calculate_min_mortality_temp <-  function(df_list,
+                                          regions_df,
+                                          blup = NULL) {
 
   if (!is.list(df_list) | !is.data.frame(df_list[[1]])) {
     stop("Argument 'df_list' must be a list of data frames")
@@ -288,7 +301,9 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup = NULL) {
   # Re-centering
   # Generate the matrix for storing results
   minpercregions_ <- mintempregions_ <- rep(NA, length(df_list))
-  names(mintempregions_) <- names(minpercregions_) <- regions_df$regions
+  names(mintempregions_) <-
+    names(minpercregions_) <-
+    regions_df$regions
 
   if (!is.null(blup)) {
 
@@ -300,15 +315,19 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup = NULL) {
 
       # Redefine the function using all arguments (boundary knots included)
       argvar_ <- list(x = predvar, fun = config$varfun,
-                   knots = quantile(data$tmean, config$varper/100, na.rm = TRUE),
+                   knots = quantile(data$tmean,
+                                    config$varper/100,
+                                    na.rm = TRUE),
                    degree = config$vardegree,
                    Bound = range(data$tmean, na.rm = T))
 
       bvar_ <- do.call(onebasis, argvar_)
 
-      minpercregions_[i] <- (1:99)[which.min((bvar_ %*% blup[[i]]$blup))]
-      mintempregions_[i] <- quantile(data$tmean, minpercregions_[i]/100,
-                                    na.rm = TRUE)
+      minpercregions_[i] <- (1:99)[which.min((bvar_ %*%
+                                                blup[[i]]$blup))]
+      mintempregions_[i] <- quantile(data$tmean,
+                                     minpercregions_[i]/100,
+                                     na.rm = TRUE)
 
     }
 
@@ -323,13 +342,16 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup = NULL) {
 
       # Define crossbasis
       argvar_ <- list(fun = config$varfun,
-                     knots = quantile(data$tmean, config$varper/100, na.rm=T),
+                     knots = quantile(data$tmean,
+                                      config$varper/100,
+                                      na.rm=T),
                      degree = config$vardegree)
 
       cb <- crossbasis(data$tmean,
                        lag = config$lag,
                        argvar = argvar_,
-                       arglag = list(knots = logknots(config$lag,config$lagnk)))
+                       arglag = list(knots = logknots(config$lag,
+                                                      config$lagnk)))
 
       formula <- as.formula(paste(paste(config$dependent),
                                   " ~ ",
@@ -364,9 +386,11 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup = NULL) {
 #' Compute the attributable deaths for each regions,
 #' with empirical CI estimated using the re-centered bases.
 #'
-#' @param df_list An alphabetically-ordered list of dataframes for each region.
-#' @param regions_df A dataframe with two columns. Column 1 is abbreviated
-#'   region names. Column 2 is user-specified region names.
+#' @param df_list An alphabetically-ordered list
+#' of dataframes for each region.
+#' @param regions_df A dataframe with two columns.
+#'  Column 1 is abbreviated region names.
+#'  Column 2 is user-specified region names.
 #' @param coef A matrix of coefficients for reduced model.
 #' @param vcov A co-variance matrix for reduced model.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
@@ -375,7 +399,8 @@ calculate_min_mortality_temp <-  function(df_list, regions_df, blup = NULL) {
 #'
 #' @return A list of variables
 #' \itemize{
-#'   \item `totdeath` A named vector of integers. Total observed mortality per region.
+#'   \item `totdeath` A named vector of integers.
+#'   otal observed mortality per region.
 #'   \item `arraysim` An array (numeric). Total (glob),
 #'    cold and heat-attributable deaths per region for 1000 simulations.
 #'   Used to derive confidence intervals.
@@ -428,13 +453,15 @@ compute_attributable_deaths <- function(df_list,
     # NB: Centering point different than original choice of 75th
     argvar_ <- list(x = data$tmean,
                     fun = config$varfun,
-                    knots = quantile(data$tmean, config$varper/100,na.rm=T),
+                    knots = quantile(data$tmean,
+                                     config$varper/100,na.rm=T),
                     degree = config$vardegree)
 
     cb <- crossbasis(data$tmean,
                      lag = config$lag,
                      argvar = argvar_,
-                     arglag = list(knots = logknots(config$lag, config$lagnk)))
+                     arglag = list(knots = logknots(config$lag,
+                                                    config$lagnk)))
 
     if (!is.null(blup)) {
 
@@ -561,15 +588,23 @@ compute_attributable_deaths <- function(df_list,
 #'
 #' @return None
 #' @examples output_folder_path = 'myfolder/output/'
-write_attributable_deaths <- function(df_list, regions_df, matsim, arraysim,
-                                      totdeath, output_folder_path = NULL) {
+write_attributable_deaths <- function(df_list,
+                                      regions_df,
+                                      matsim,
+                                      arraysim,
+                                      totdeath,
+                                      output_folder_path = NULL) {
 
   # Attributable numbers
   # regions-specific
   anregions <- matsim
   anregionslow <- apply(arraysim,c(1,2),quantile,0.025)
   anregionshigh <- apply(arraysim,c(1,2),quantile,0.975)
-  rownames(anregions) <- rownames(anregionslow) <- rownames(anregionshigh) <- regions_df$region_names
+
+  rownames(anregions) <-
+    rownames(anregionslow) <-
+    rownames(anregionshigh) <-
+    regions_df$region_names
 
   # Total
   # NB: first sum through regions_df
@@ -635,17 +670,20 @@ write_attributable_deaths <- function(df_list, regions_df, matsim, arraysim,
 
 #' Plot and write results of analysis
 #'
-#' @param df_list An alphabetically-ordered list of dataframes for each region.
+#' @param df_list An alphabetically-ordered
+#' list of dataframes for each region.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
-#' @param regions_df A dataframe with two columns. Column 1 is abbreviated
-#'   region names. Column 2 is user-specified region names.
+#' @param regions_df A dataframe with two columns.
+#'  Column 1 is abbreviated region names.
+#'  Column 2 is user-specified region names.
 #' @param mintempregions A named numeric vector.
 #'   Minimum (optimum) mortality temperature per region.
 #' @param output_folder_path Path to folder for storing outputs.
 #'
 #' @export
 #'
-#' @return A PDF containing a line plot of temperature versus relative risk per region,
+#' @return A PDF containing a line plot of temperature
+#' versus relative risk per region,
 #' and histogram of temperatures per region.
 #' A CSV of relative risk per temperature per region.
 #' @examples output_folder_path = 'myfolder/output/'
@@ -860,17 +898,23 @@ plot_and_write_relative_risk <- function(df_list,
 
 #' Do full DLNM analysis
 #'
-#' @description Runs a sequence of functions to carry out heat-related mortality analysis.
+#' @description Runs a sequence of functions to carry out
+#' heat-related mortality analysis.
 #'
-#' @details Modified from Gasparrini A et al. (2015) The Lancet. 2015;386(9991):369-375.
+#' @details Modified from Gasparrini A et al. (2015)
+#' The Lancet. 2015;386(9991):369-375.
 #'
-#' @param input_csv_path Path to a CSV contain daily time series of death and temperature per region.
+#' @param input_csv_path Path to a CSV contain
+#' daily time series of death and temperature per region.
 #' @param output_folder_path Path to folder for storing outputs.
-#' @param meta_analysis Boolean. Whether to include meta-analysis. TRUE or FALSE.
+#' @param meta_analysis Boolean. Whether to include meta-analysis.
+#' TRUE or FALSE.
 
 #'
-#' @return A PDF containing a line plot of temperature versus relative risk per region,
-#' and histogram of temperatures per region. A CSV of relative risk per temperature per region.
+#' @return A PDF containing a line plot of temperature versus
+#'relative risk per region,
+#' and histogram of temperatures per region.
+#'  A CSV of relative risk per temperature per region.
 #'
 #' @seealso [dlnm] package
 #'
