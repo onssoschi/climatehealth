@@ -18,8 +18,8 @@ default:
   dfseas: 8
 
   # Formula
-  dependent: death
+  dependent: death # Daily deaths
   independent:
-    - cb
-    - dow
-    - ns(date, df = config$dfseas * length(unique(year)))
+    - cb # Cross-basis
+    - dow # Day of week
+    - ns(date, df = config$dfseas * length(unique(year))) # Seasonal B-spline
