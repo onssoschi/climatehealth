@@ -88,7 +88,6 @@ get_region_metadata <- function(regions,
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @return
 #' \itemize{
-#'   \item `argvar_` A list of arguments ($fun, $knots, $degree) for cross-basis function.
 #'   \item `coef` A matrix of coefficients for reduced model.
 #'   \item `vcov` A list. Co-variance matrices for each region for reduced model.
 #'   }
@@ -267,10 +266,8 @@ wald_results <- function(mv) {
 #'
 #' @return
 #' \itemize{
-#'   \item `argvar_` An updated list of arguments
-#'   ($x, $fun, $knots, $degree, $bound) for onebasis function.
-#'   \item `bvar_` A basis matrix for the predictor vector.
-#'   \item `mintempregions_` A named numeric vector. Minimum (optimum) mortality temperature per region.
+#'   \item `mintempregions_` A named numeric vector.
+#'   Minimum (optimum) mortality temperature per region.
 #' }
 #'
 #' @export
@@ -869,6 +866,8 @@ plot_and_write_relative_risk <- function(df_list,
 #'
 #' @param input_csv_path Path to a CSV contain daily time series of death and temperature per region.
 #' @param output_folder_path Path to folder for storing outputs.
+#' @param meta_analysis Boolean. Whether to include meta-analysis. TRUE or FALSE.
+
 #'
 #' @return A PDF containing a line plot of temperature versus relative risk per region,
 #' and histogram of temperatures per region. A CSV of relative risk per temperature per region.

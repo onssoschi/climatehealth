@@ -6,7 +6,7 @@
 \usage{
 plot_and_write_relative_risk(
   df_list,
-  blup,
+  blup = NULL,
   regions_df,
   mintempregions,
   output_folder_path
