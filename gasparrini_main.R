@@ -14,5 +14,5 @@ library(zeallot)
 
 do_analysis(config$input_csv_path,
             config$output_folder_path,
-            meta_analysis = FALSE
+            config$meta_analysis
             )

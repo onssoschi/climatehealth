@@ -7,21 +7,27 @@
 do_analysis(input_csv_path, output_folder_path_, meta_analysis)
 }
 \arguments{
-\item{input_csv_path}{Path to a CSV contain daily time series of death and temperature per region.}
+\item{input_csv_path}{Path to a CSV contain
+daily time series of death and temperature per region.}
 
-\item{meta_analysis}{Boolean. Whether to include meta-analysis. TRUE or FALSE.}
+\item{meta_analysis}{Boolean. Whether to include meta-analysis.
+TRUE or FALSE.}
 
 \item{output_folder_path}{Path to folder for storing outputs.}
 }
 \value{
-A PDF containing a line plot of temperature versus relative risk per region,
-and histogram of temperatures per region. A CSV of relative risk per temperature per region.
+A PDF containing a line plot of temperature versus
+relative risk per region,
+and histogram of temperatures per region.
+A CSV of relative risk per temperature per region.
 }
 \description{
-Runs a sequence of functions to carry out heat-related mortality analysis.
+Runs a sequence of functions to carry out
+heat-related mortality analysis.
 }
 \details{
-Modified from Gasparrini A et al. (2015) The Lancet. 2015;386(9991):369-375.
+Modified from Gasparrini A et al. (2015)
+The Lancet. 2015;386(9991):369-375.
 }
 \seealso{
 \link{dlnm} package

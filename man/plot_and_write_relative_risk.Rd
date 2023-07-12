@@ -13,12 +13,14 @@ plot_and_write_relative_risk(
 )
 }
 \arguments{
-\item{df_list}{An alphabetically-ordered list of dataframes for each region.}
+\item{df_list}{An alphabetically-ordered
+list of dataframes for each region.}
 
 \item{blup}{A list of BLUPs (best linear unbiased predictions).}
 
-\item{regions_df}{A dataframe with two columns. Column 1 is abbreviated
-region names. Column 2 is user-specified region names.}
+\item{regions_df}{A dataframe with two columns.
+Column 1 is abbreviated region names.
+Column 2 is user-specified region names.}
 
 \item{mintempregions}{A named numeric vector.
 Minimum (optimum) mortality temperature per region.}
@@ -26,7 +28,8 @@ Minimum (optimum) mortality temperature per region.}
 \item{output_folder_path}{Path to folder for storing outputs.}
 }
 \value{
-A PDF containing a line plot of temperature versus relative risk per region,
+A PDF containing a line plot of temperature
+versus relative risk per region,
 and histogram of temperatures per region.
 A CSV of relative risk per temperature per region.
 }
