@@ -3,9 +3,12 @@ library(indicatorfunctions)
 
 test_that('Test data loads correctly', {
 
-  c(df_list, regions) %<-% load_data('testdata/regEngWales.csv')
+  c(df_list_unordered_, regions_) %<-%
+    load_data(
+      input_path =  'testdata/regEngWales.csv'
+    )
 
-  expect_that(regions, is_a("character"))
-  expect_equal(length(regions), length(df_list))
+  expect_that(regions_, is_a("character"))
+  expect_equal(length(regions_), length(df_list_unordered_))
 
 })

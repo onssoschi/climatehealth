@@ -70,33 +70,42 @@ test_that('Test run_meta_model() produces appropriate errors', {
 context("Test output data types")
 test_that('Test run_meta_model() returns correct data types', {
 
-  # blup
-  c(df_list_unordered, regions) %<-%
-    load_data(input_path = 'testdata/regEngWales.csv')
+  c(df_list_unordered_, regions_) %<-%
+    load_data(
+      input_path =  'testdata/regEngWales.csv'
+    )
 
-  c(regions_df, df_list) %<-%
-    get_region_metadata(regions = regions,
-                        df_list_unordered = df_list_unordered)
+  c(regions_df_, df_list_) %<-%
+    get_region_metadata(
+      regions = regions_,
+      df_list_unordered = df_list_unordered_,
+      region_names = c("North East","North West",
+                       "Yorkshire & Humber","East Midlands",
+                       "West Midlands","East","London",
+                       "South East","South West", "Wales")
+    )
 
-  c(argvar, coef, vcov) %<-%
-    run_model(df_list = df_list,
-              regions_df = regions_df)
+  c(coef_, vcov_) %<-%
+    run_model(df_list = df_list_,
+              regions_df = regions_df_)
 
-  c(mv, blup) %<-%
-    run_meta_model(df_list = df_list,
-                   regions_df = regions_df,
-                   coef = coef,
-                   vcov = vcov)
+  c(mv_, blup_) %<-%
+    run_meta_model(
+      df_list = df_list_,
+      regions_df = regions_df_,
+      coef = coef_,
+      vcov = vcov_
+    )
 
-  expect_equal(typeof(blup), "list")
-  expect_equal(typeof(blup[[1]]), "list")
-  expect_equal(typeof(blup[[2]]), "list")
-  expect_equal(typeof(blup[[1]][[1]]), "double")
-  expect_equal(is.numeric(blup[[1]][[2]]), TRUE)
-  expect_equal(is.numeric(blup[[1]][[2]]), TRUE)
+  expect_equal(typeof(blup_), "list")
+  expect_equal(typeof(blup_[[1]]), "list")
+  expect_equal(typeof(blup_[[2]]), "list")
+  expect_equal(typeof(blup_[[1]][[1]]), "double")
+  expect_equal(is.numeric(blup_[[1]][[2]]), TRUE)
+  expect_equal(is.numeric(blup_[[1]][[2]]), TRUE)
 
   # mv
-  expect_equal(typeof(mv), "list")
-  expect_equal(class(mv), "mvmeta")
+  expect_equal(typeof(mv_), "list")
+  expect_equal(class(mv_), "mvmeta")
 
 })

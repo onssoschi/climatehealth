@@ -83,6 +83,48 @@ get_region_metadata <- function(regions,
 
 }
 
+#' Define regression model
+#'
+#' @param regions_df A dataframe with two columns. Column 1 is abbreviated
+#'   region names. Column 2 is user-specified region names.
+#' @param df_list An alphabetically-ordered list of dataframes for each region.
+#' @return
+#' \itemize{
+#'   \item `coef` A matrix of coefficients for reduced model.
+#'   \item `vcov` A list. Co-variance matrices for each region for reduced model.
+#'   }
+#' @export
+define_model <- function(dataset) {
+
+  # Model formula
+  formula <- as.formula(paste(paste(config$dependent),
+                              " ~ ",
+                              paste(config$independent,
+                                    collapse= "+")))
+
+  # Define crossbasis
+  argvar_ <- list(fun = config$varfun,
+                  knots = quantile(dataset$tmean,
+                                   config$varper/100,
+                                   na.rm=T),
+                  degree = config$vardegree)
+
+  cb <- crossbasis(dataset$tmean,
+                   lag = config$lag,
+                   argvar = argvar_,
+                   arglag = list(knots = logknots(config$lag,
+                                                  config$lagnk)))
+
+  # Run the model and obtain predictions
+  model <- glm(formula,
+               dataset,
+               family = quasipoisson,
+               na.action = "na.exclude")
+
+  return (list(model, cb))
+
+}
+
 #' Define and run poisson regression model for each dataframe
 #'
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
@@ -102,12 +144,6 @@ run_model <- function(df_list, regions_df) {
   # Loop
   timer <- proc.time()[3]
 
-  # Model formula
-  formula <- as.formula(paste(paste(config$dependent),
-                              " ~ ",
-                              paste(config$independent,
-                                    collapse= "+")))
-
   # Coefficients and vcov for overall cumulative summary
   coef_ <- matrix(NA,
                  nrow(regions_df),
@@ -125,36 +161,16 @@ run_model <- function(df_list, regions_df) {
     # Extract data
     data <- df_list[[i]]
 
-    # Define crossbasis
-    argvar_ <- list(fun = config$varfun,
-                   knots = quantile(data$tmean,
-                                    config$varper/100,
-                                    na.rm=T),
-                   degree = config$vardegree)
-
-    cb <- crossbasis(data$tmean,
-                     lag = config$lag,
-                     argvar = argvar_,
-                     arglag = list(knots = logknots(config$lag,
-                                                    config$lagnk)))
-
-    # Run the model and obtain predictions
-    model <- glm(formula,
-                 data,
-                 family = quasipoisson,
-                 na.action = "na.exclude")
+    c(model, cb) %<-% define_model(data)
 
     cen_ <- mean(data$tmean, na.rm = T)
 
     # Reduction to overall cumulative
-    red <- crossreduce(cb, model, cen = cen_)
-    mintempregions[i] <- as.numeric(names(which.min(red$RRfit)))
+    pred <- crossreduce(cb, model, cen = cen_)
+    mintempregions[i] <- as.numeric(names(which.min(pred$RRfit)))
 
-    # Reduction to overall cumulative
-    red <- crossreduce(cb, model, cen = cen_)
-
-    coef_[i,] <- coef(red)
-    vcov_[[i]] <- vcov(red)
+    coef_[i,] <- coef(pred)
+    vcov_[[i]] <- vcov(pred)
 
   }
 
@@ -191,6 +207,15 @@ run_meta_model <- function(df_list, regions_df, coef, vcov) {
     stop("Argument 'regions_df' must be a data frame")
   }
 
+  if(!is.matrix(coef) | !is.numeric(coef)) {
+    stop("Argument 'coef' must be a numeric matrix")
+  }
+
+  if(!is.list(vcov) | !is.matrix(vcov[[1]])) {
+    stop("Argument 'vcov' must be a list of matrices")
+  }
+
+
   # Create average temperature and range as meta-predictors
   avgtmean <- sapply(df_list,
                      function(x)
@@ -223,17 +248,7 @@ run_meta_model <- function(df_list, regions_df, coef, vcov) {
 #'
 #' @export
 #' @return A number. The p-value of the explanatory variable.
-fwald <- function(var) {
-
-
-  formula <- as.formula(paste(paste(config$dependent),
-                              " ~ ",
-                              paste(config$independent,
-                                    collapse= "+")))
-
-  model <- glm(formula, data,
-               family = quasipoisson,
-               na.action="na.exclude")
+fwald <- function(model, var) {
 
    if(!is.character(var)) {
      stop("Argument 'var' must be a character")
@@ -246,6 +261,7 @@ fwald <- function(var) {
    df <- length(coef)
 
    return(1 - pchisq(waldstat, df))
+
  }
 
 #' Get Wald statistic for a meta-analysis model
@@ -338,29 +354,7 @@ calculate_min_mortality_temp <-  function(df_list,
       # Extract data
       data <- df_list[[i]]
 
-      # Define crossbasis
-      argvar_ <- list(fun = config$varfun,
-                     knots = quantile(data$tmean,
-                                      config$varper/100,
-                                      na.rm=T),
-                     degree = config$vardegree)
-
-      cb <- crossbasis(data$tmean,
-                       lag = config$lag,
-                       argvar = argvar_,
-                       arglag = list(knots = logknots(config$lag,
-                                                      config$lagnk)))
-
-      formula <- as.formula(paste(paste(config$dependent),
-                                  " ~ ",
-                                  paste(config$independent,
-                                        collapse= "+")))
-
-      # Run the model and obtain predictions
-      model <- glm(formula,
-                   data,
-                   family = quasipoisson,
-                   na.action = "na.exclude")
+      c(model, cb) %<-% define_model(data)
 
       cen_ <- mean(data$tmean, na.rm = T)
 
@@ -389,8 +383,6 @@ calculate_min_mortality_temp <-  function(df_list,
 #' @param regions_df A dataframe with two columns.
 #'  Column 1 is abbreviated region names.
 #'  Column 2 is user-specified region names.
-#' @param coef A matrix of coefficients for reduced model.
-#' @param vcov A co-variance matrix for reduced model.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param mintempregions A named numeric vector.
 #' Minimum (optimum) mortality temperature per region.
@@ -448,23 +440,13 @@ compute_attributable_deaths <- function(df_list,
     data <- df_list[[i]]
 
     # Derive the cross-basis
-    # NB: Centering point different than original choice of 75th
-    argvar_ <- list(x = data$tmean,
-                    fun = config$varfun,
-                    knots = quantile(data$tmean,
-                                     config$varper/100,na.rm=T),
-                    degree = config$vardegree)
 
-    cb <- crossbasis(data$tmean,
-                     lag = config$lag,
-                     argvar = argvar_,
-                     arglag = list(knots = logknots(config$lag,
-                                                    config$lagnk)))
 
     if (!is.null(blup)) {
 
       coefs <- blup[[i]]$blup
       vcovs <- blup[[i]]$vcov
+      c(model, cb) %<-% define_model(data)
       model <- NULL
 
     } else {
@@ -472,14 +454,7 @@ compute_attributable_deaths <- function(df_list,
       coefs <- NULL
       vcovs <- NULL
 
-      formula <- as.formula(paste(paste(config$dependent),
-                                  " ~ ",
-                                  paste(config$independent,
-                                        collapse= "+")))
-
-      model <- glm(formula, data,
-                   family = quasipoisson,
-                   na.action="na.exclude")
+      c(model, cb) %<-% define_model(data)
 
     }
 
@@ -724,24 +699,12 @@ plot_and_write_relative_risk <- function(df_list,
 
     data <- df_list[[i]]
 
-    formula <- as.formula(paste(paste(config$dependent),
-                                " ~ ",
-                                paste(config$independent,
-                                      collapse= "+")))
-
     # NB: Centering point different than original choice of 75th
     argvar <- list(x = data$tmean,
                    fun = config$varfun,
                    degree = config$vardegree,
                    knots=quantile(data$tmean,
                                   config$varper/100, na.rm=T))
-
-
-    cb <- crossbasis(data$tmean,
-                     lag = config$lag,
-                     argvar = argvar,
-                     arglag = list(knots =
-                                     logknots(config$lag,config$lagnk)))
 
     if (!is.null(blup)) {
 
@@ -762,10 +725,7 @@ plot_and_write_relative_risk <- function(df_list,
     } else {
 
       # Run the model and obtain predictions
-      model <- glm(formula,
-                   data,
-                   family = quasipoisson,
-                   na.action = "na.exclude")
+      c(model, cb) %<-% define_model(data)
 
       cen <- mean(data$tmean)
       pred <- crossreduce(cb, model, cen = cen)
