@@ -11,10 +11,6 @@ run_meta_model(df_list, regions_df, coef, vcov)
 
 \item{regions_df}{A dataframe with two columns. Column 1 is abbreviated
 region names. Column 2 is user-specified region names.}
-
-\item{coef}{A matrix of coefficients for reduced model.}
-
-\item{vcov}{A list of co-variance matrices for reduced model.}
 }
 \value{
 \itemize{

@@ -3,7 +3,7 @@ library(indicatorfunctions)
 
 test_that('Test new output matches original output', {
 
-  do_analysis('testdata/regEngWales.csv', 'testdata/')
+  do_analysis('testdata/regEngWales.csv', 'testdata/', meta_analysis = TRUE)
 
   expected_output <- read.csv('testdata/output_one_region_data_original.csv')
 
