@@ -14,7 +14,7 @@ https://github.com/gasparrini/2015_gasparrini_Lancet_Rcodedata
 
 ### Folder description
 
-- `gasparrini_main.R`: Runs distributed lag non-linear model (dlnm) to estimate the excess risk attributable to non-optimal outdoor temperature (modified from Gasparrini et al. 2015)
+- `temp_dlnm_main.R`: Runs distributed lag non-linear model (dlnm) to estimate the excess risk attributable to non-optimal outdoor temperature (modified from Gasparrini et al. 2015)
 - `R`:               Contains packaged R code for each the indicators
 - `data`:            Folder for storing data
 - `archive`:         Archived scripts
@@ -35,7 +35,7 @@ Steps to calculate indicator:
 
 3. Change `output_folder_path` field in `config.yaml` to the folder you want to store outputs.
 
-4. Run `gasparrini_main.R` to run full analysis **OR** run `devtools:load_all()` to load indicatorfunctions package and run individual functions (individual functions located in `R/`)
+4. Run `temp_dlnm_main.R` to run full analysis **OR** run `devtools:load_all()` to load indicatorfunctions package and run individual functions (individual functions located in `R/`)
 
 To run unit tests:
 
