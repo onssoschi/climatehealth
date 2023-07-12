@@ -12,4 +12,7 @@ library(zeallot)
 #             output_folder_path [folder that stores data and figure outputs] #
 ###############################################################################
 
-do_analysis(config$input_csv_path, config$output_folder_path)
+do_analysis(config$input_csv_path,
+            config$output_folder_path,
+            config$meta_analysis
+            )

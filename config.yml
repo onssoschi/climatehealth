@@ -2,8 +2,11 @@ default:
   # Input data
   input_csv_path: 'tests/testthat/testdata/regEngWales.csv'
 
-  #Output folder path
+  # Output folder path
   output_folder_path: 'output/'
+
+  # Whether to perform meta-analysis (boolean)
+  meta_analysis: TRUE
 
   # Specification of the exposure function
   varfun: 'bs'
@@ -16,3 +19,10 @@ default:
 
   # Degree of freedom for seasonality
   dfseas: 8
+
+  # Formula
+  dependent: death # Daily deaths
+  independent:
+    - cb # Cross-basis
+    - dow # Day of week
+    - ns(date, df = config$dfseas * length(unique(year))) # Seasonal B-spline

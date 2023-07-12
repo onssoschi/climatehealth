@@ -14,7 +14,6 @@ region names. Column 2 is user-specified region names.}
 }
 \value{
 \itemize{
-\item \code{argvar_} A list of arguments ($fun, $knots, $degree) for cross-basis function.
 \item \code{coef} A matrix of coefficients for reduced model.
 \item \code{vcov} A list. Co-variance matrices for each region for reduced model.
 }

@@ -4,7 +4,7 @@
 \alias{calculate_min_mortality_temp}
 \title{Calculate minimum mortality values}
 \usage{
-calculate_min_mortality_temp(df_list, regions_df, blup)
+calculate_min_mortality_temp(df_list, regions_df, blup = NULL)
 }
 \arguments{
 \item{df_list}{An alphabetically-ordered list of dataframes for each region.}
@@ -16,10 +16,8 @@ region names. Column 2 is user-specified region names.}
 }
 \value{
 \itemize{
-\item \code{argvar_} An updated list of arguments
-($x, $fun, $knots, $degree, $bound) for onebasis function.
-\item \code{bvar_} A basis matrix for the predictor vector.
-\item \code{mintempregions_} A named numeric vector. Minimum (optimum) mortality temperature per region.
+\item \code{mintempregions_} A named numeric vector.
+Minimum (optimum) mortality temperature per region.
 }
 }
 \description{
