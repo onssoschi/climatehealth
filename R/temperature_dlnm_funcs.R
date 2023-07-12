@@ -85,13 +85,12 @@ get_region_metadata <- function(regions,
 
 #' Define regression model
 #'
-#' @param regions_df A dataframe with two columns. Column 1 is abbreviated
-#'   region names. Column 2 is user-specified region names.
-#' @param df_list An alphabetically-ordered list of dataframes for each region.
+#' @param data dataframe with tmean column to be modelled
 #' @return
 #' \itemize{
-#'   \item `coef` A matrix of coefficients for reduced model.
-#'   \item `vcov` A list. Co-variance matrices for each region for reduced model.
+#'   \item `model` A quasi-poission generalised linear model object.
+#'   See: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/glm
+#'   \item `cb` Basis matrices for the two dimensions of predictor and lags.
 #'   }
 #' @export
 define_model <- function(dataset) {
