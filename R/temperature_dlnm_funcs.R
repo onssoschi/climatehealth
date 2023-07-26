@@ -664,27 +664,33 @@ plot_and_write_relative_risk <- function(df_list,
                                          blup = NULL,
                                          regions_df,
                                          mintempregions,
+                                         savefig = TRUE,
+                                         savecsv = TRUE,
                                          output_folder_path) {
 
-  if (!is.null(output_folder_path)) {
+  if (savefig == TRUE) {
 
-    pdf(paste(output_folder_path,
+      if (!is.null(output_folder_path)) {
+
+        pdf(paste(output_folder_path,
               "output_all_regions_plot.pdf",
               sep = ''),
         width = 8, height = 9)
 
-  } else {
+    } else {
 
-    pdf("output_all_regions_plot.pdf", width = 8, height = 9)
+        pdf("output_all_regions_plot.pdf", width = 8, height = 9)
 
-  }
+    }
 
-  layout(matrix(c(0,1,1,2,2,0,
+    layout(matrix(c(0,1,1,2,2,0,
                   rep(3:8, each = 2),0,9,9,10,10,0),
                 ncol = 6,
                 byrow = T))
-  par(mar=c(4,3.8,3,2.4), mgp = c(2.5,1,0), las=1)
 
+    par(mar=c(4,3.8,3,2.4), mgp = c(2.5,1,0), las=1)
+
+  }
 
   per <- t(sapply(df_list,function(x)
     quantile(x$tmean, c(2.5,10,25,50,75,90,97.5)/100, na.rm=T)))
@@ -692,8 +698,12 @@ plot_and_write_relative_risk <- function(df_list,
   xlab <- expression(paste("Temperature (",degree,"C)"))
 
   region_vector <- c()
-  temperature <- c()
-  relative_risk <- c()
+  temp_vector <- c()
+  relative_risk_vector <- c()
+  cen_vector <- c()
+
+  tmean_vector <- c()
+  tmean_region_vector <- c()
 
   for(i in seq(length(df_list))) {
 
@@ -802,11 +812,11 @@ plot_and_write_relative_risk <- function(df_list,
 
      if (!is.null(blup)) {
 
-       relative_risk <- append(relative_risk,
+       relative_risk_vector <- append(relative_risk_vector,
                                pred$allRRfit)
       } else {
 
-       relative_risk <- append(relative_risk,
+        relative_risk_vector <- append(relative_risk_vector,
                                pred$RRfit)
       }
 
@@ -815,42 +825,68 @@ plot_and_write_relative_risk <- function(df_list,
               rep(regions_df$region_names[i],
                   length(pred$predvar)))
 
-     temperature <- append(temperature,
+     temp_vector <- append(temp_vector,
                            pred$predvar)
+
+     cen_vector <- append(cen_vector,
+                          rep(cen[i],
+                              length(pred$predvar)))
+
+     tmean_vector <- append(tmean_vector,
+                            data$tmean)
+
+     tmean_region_vector <-
+       append(tmean_region_vector,
+              rep(regions_df$region_names[i],
+                  length(data$tmean)))
 
     }
 
-  dev.off()
+  if (savefig == TRUE) {
+
+    dev.off()
+
+  }
+
 
   output_df <- data.frame(regions = region_vector,
-                           temperature = temperature,
-                           relative_risk = relative_risk)
+                          temp = temp_vector,
+                          rel_risk = relative_risk_vector,
+                          centre_temp = cen_vector)
 
-  write.csv(output_df,
+  tmean_df <- data.frame(temp_mean = tmean_vector,
+                         regions = tmean_region_vector)
+
+  if (savecsv == TRUE) {
+
+      write.csv(output_df,
              paste(output_folder_path,
                    'output_all_regions_data.csv', sep = ''),
              row.names=FALSE)
 
-  if (!is.null(blup)) {
+    if (!is.null(blup)) {
 
-    relative_risk <- pred$allRRfit
+      relative_risk <- pred$allRRfit
 
-  } else {
+    } else {
 
-    relative_risk <- pred$RRfit
+      relative_risk <- pred$RRfit
+    }
+
+    # Output for testing
+     output_df_test <- data.frame(
+                             temperature = pred$predvar,
+                             relative_risk = relative_risk
+                             )
+    # Output for testing
+     write.csv(output_df_test,
+               paste(output_folder_path,
+                     'output_one_region_data_new.csv', sep = ''),
+               row.names=FALSE
+               )
   }
 
-  # Output for testing
-   output_df_test <- data.frame(
-                           temperature = pred$predvar,
-                           relative_risk = relative_risk
-                           )
-  # Output for testing
-   write.csv(output_df_test,
-             paste(output_folder_path,
-                   'output_one_region_data_new.csv', sep = ''),
-             row.names=FALSE
-             )
+  return (list(output_df, tmean_df))
 
 }
 
@@ -879,6 +915,8 @@ plot_and_write_relative_risk <- function(df_list,
 #' @export
 do_analysis <- function(input_csv_path,
                         output_folder_path_,
+                        savefig_ = TRUE,
+                        savecsv_ = TRUE,
                         meta_analysis) {
 
   c(df_list_unordered_, regions_) %<-%
@@ -946,13 +984,19 @@ do_analysis <- function(input_csv_path,
       output_folder_path = output_folder_path_
       )
 
-  plot_and_write_relative_risk(
+  c(output_df, tmean_df) %<-%
+    plot_and_write_relative_risk(
     df_list = df_list_,
     blup = blup_,
     regions_df = regions_df_,
     mintempregions = mintempregions_,
+    savefig = savefig_,
+    savecsv = savecsv_,
     output_folder_path = output_folder_path_
     )
+
+  return (list(output_df, tmean_df))
+
 }
 
 ###
@@ -1141,4 +1185,3 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
 }
 
 #
-
