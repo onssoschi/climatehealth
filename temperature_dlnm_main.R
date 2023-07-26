@@ -12,7 +12,10 @@ library(zeallot)
 #             output_folder_path [folder that stores data and figure outputs] #
 ###############################################################################
 
-do_analysis(config$input_csv_path,
+c(output_df, tmean_df) %<-%
+  do_analysis(config$input_csv_path,
             config$output_folder_path,
+            savefig_ = TRUE,
+            savecsv_ = TRUE,
             config$meta_analysis
             )
