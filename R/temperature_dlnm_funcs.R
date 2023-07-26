@@ -829,7 +829,7 @@ plot_and_write_relative_risk <- function(df_list,
                            pred$predvar)
 
      cen_vector <- append(cen_vector,
-                          rep(cen[i],
+                          rep(cen,
                               length(pred$predvar)))
 
      tmean_vector <- append(tmean_vector,
