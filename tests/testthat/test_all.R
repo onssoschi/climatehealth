@@ -20,7 +20,8 @@ test_that('Test new output matches original output', {
               varper_ = config$varper,
               vardegree_ = config$vardegree,
               lag_ = config$lag,
-              lagnk_ = config$lagnk
+              lagnk_ = config$lagnk,
+              dfseas_ = config$dfseas
   )
 
   expected_output <- read.csv('testdata/output_one_region_data_original.csv')

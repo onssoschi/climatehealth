@@ -110,7 +110,8 @@ define_model <- function(dataset,
                          varper,
                          vardegree,
                          lag,
-                         lagnk) {
+                         lagnk,
+                         dfseas) {
 
   # Model formula
   formula <- as.formula(paste(paste(dependent_col),
@@ -130,6 +131,8 @@ define_model <- function(dataset,
                    argvar = argvar_,
                    arglag = list(knots = logknots(lag,
                                                   lagnk)))
+
+  dfseas <- dfseas
 
   # Run the model and obtain predictions
   model <- glm(formula,
@@ -160,7 +163,8 @@ run_model <- function(df_list,
                       varper,
                       vardegree,
                       lag,
-                      lagnk) {
+                      lagnk,
+                      dfseas) {
 
   minperregions <- mintempregions <- rep(NA,
                                          length(df_list))
@@ -192,7 +196,8 @@ run_model <- function(df_list,
                                    varper = varper,
                                    vardegree = vardegree,
                                    lag = lag,
-                                   lagnk = lagnk)
+                                   lagnk = lagnk,
+                                   dfseas = dfseas)
 
     cen_ <- mean(data$tmean, na.rm = T)
 
@@ -335,7 +340,8 @@ calculate_min_mortality_temp <-  function(df_list,
                                           varper,
                                           vardegree,
                                           lag,
-                                          lagnk) {
+                                          lagnk,
+                                          dfseas) {
 
   if (!is.list(df_list) | !is.data.frame(df_list[[1]])) {
     stop("Argument 'df_list' must be a list of data frames")
@@ -397,7 +403,8 @@ calculate_min_mortality_temp <-  function(df_list,
                                      varper = varper,
                                      vardegree = vardegree,
                                      lag = lag,
-                                     lagnk = lagnk)
+                                     lagnk = lagnk,
+                                     dfseas = dfseas)
 
       cen_ <- mean(data$tmean, na.rm = T)
 
@@ -451,7 +458,8 @@ compute_attributable_deaths <- function(df_list,
                                         varper,
                                         vardegree,
                                         lag,
-                                        lagnk) {
+                                        lagnk,
+                                        dfseas) {
 
 
   # if (file.exists('R/attrdl.R')) {
@@ -504,7 +512,8 @@ compute_attributable_deaths <- function(df_list,
                                      varper = varper,
                                      vardegree = vardegree,
                                      lag = lag,
-                                     lagnk = lagnk)
+                                     lagnk = lagnk,
+                                     dfseas = dfseas)
       model <- NULL
 
     } else {
@@ -519,7 +528,8 @@ compute_attributable_deaths <- function(df_list,
                                      varper = varper,
                                      vardegree = vardegree,
                                      lag = lag,
-                                     lagnk = lagnk)
+                                     lagnk = lagnk,
+                                     dfseas = dfseas)
 
     }
 
@@ -736,6 +746,7 @@ plot_and_write_relative_risk <- function(df_list,
                                          vardegree,
                                          lag,
                                          lagnk,
+                                         dfseas,
                                          output_folder_path) {
 
   if (save_fig == TRUE) {
@@ -812,7 +823,8 @@ plot_and_write_relative_risk <- function(df_list,
                                      varper = varper,
                                      vardegree = vardegree,
                                      lag = lag,
-                                     lagnk = lagnk)
+                                     lagnk = lagnk,
+                                     dfseas = dfseas)
 
       cen <- mean(data$tmean)
       pred <- crossreduce(cb, model, cen = cen)
@@ -1004,7 +1016,8 @@ do_analysis <- function(input_csv_path_,
                         varper_,
                         vardegree_,
                         lag_,
-                        lagnk_) {
+                        lagnk_,
+                        dfseas_) {
 
   c(df_list_unordered_, regions_) %<-%
     load_data(
@@ -1033,7 +1046,8 @@ do_analysis <- function(input_csv_path_,
               varper = varper_,
               vardegree = vardegree_,
               lag = lag_,
-              lagnk = lagnk_)
+              lagnk = lagnk_,
+              dfseas = dfseas_)
 
     c(mv_, blup_) %<-%
       run_meta_model(
@@ -1063,7 +1077,8 @@ do_analysis <- function(input_csv_path_,
       varper = varper_,
       vardegree = vardegree_,
       lag = lag_,
-      lagnk = lagnk_
+      lagnk = lagnk_,
+      dfseas = dfseas_
       )
 
   c(totdeath_, arraysim_, matsim_) %<-%
@@ -1078,7 +1093,8 @@ do_analysis <- function(input_csv_path_,
       varper = varper_,
       vardegree = vardegree_,
       lag = lag_,
-      lagnk = lagnk_
+      lagnk = lagnk_,
+      dfseas = dfseas_
       )
 
   c(antot, totdeathtot, aftot, afregions) %<-%
@@ -1104,7 +1120,8 @@ do_analysis <- function(input_csv_path_,
     varper = varper_,
     vardegree = vardegree_,
     lag = lag_,
-    lagnk = lagnk_
+    lagnk = lagnk_,
+    dfseas = dfseas_
     )
 
   return (list(output_df, tmean_df))

@@ -35,7 +35,8 @@ test_that('Test wald_results() returns correct data type', {
                 varper = config$varper,
                 vardegree = config$vardegree,
                 lag = config$lag,
-                lagnk = config$lagnk)
+                lagnk = config$lagnk,
+                dfseas = config$dfseas)
 
     c(mv_, blup_) %<-%
       run_meta_model(
@@ -92,7 +93,8 @@ test_that('Test wald_results() returns list of correct length', {
                 varper = config$varper,
                 vardegree = config$vardegree,
                 lag = config$lag,
-                lagnk = config$lagnk)
+                lagnk = config$lagnk,
+                dfseas = config$dfseas)
 
     c(mv_, blup_) %<-%
       run_meta_model(
@@ -148,7 +150,8 @@ test_that('Test wald_results() returns p-values between 0 and 1', {
                 varper = config$varper,
                 vardegree = config$vardegree,
                 lag = config$lag,
-                lagnk = config$lagnk)
+                lagnk = config$lagnk,
+                dfseas = config$dfseas)
 
     c(mv_, blup_) %<-%
       run_meta_model(

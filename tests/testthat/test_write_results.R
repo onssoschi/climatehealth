@@ -33,7 +33,8 @@ test_that('Test output CSVs are written and of correct length', {
                 varper = config$varper,
                 vardegree = config$vardegree,
                 lag = config$lag,
-                lagnk = config$lagnk)
+                lagnk = config$lagnk,
+                dfseas = config$dfseas)
 
     c(mv_, blup_) %<-%
       run_meta_model(
@@ -63,7 +64,8 @@ test_that('Test output CSVs are written and of correct length', {
       varper = config$varper,
       vardegree = config$vardegree,
       lag = config$lag,
-      lagnk = config$lagnk
+      lagnk = config$lagnk,
+      dfseas = config$dfseas
     )
 
   c(totdeath_, arraysim_, matsim_) %<-%
@@ -78,7 +80,8 @@ test_that('Test output CSVs are written and of correct length', {
       varper = config$varper,
       vardegree = config$vardegree,
       lag = config$lag,
-      lagnk = config$lagnk
+      lagnk = config$lagnk,
+      dfseas = config$dfseas
     )
 
   c(antot, totdeathtot, aftot, afregions) %<-%
