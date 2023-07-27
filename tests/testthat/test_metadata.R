@@ -1,5 +1,6 @@
 library(testthat)
-library(indicatorfunctions)
+library(climatehealth)
+library(config)
 
 test_that('Test metadata sorted correctly', {
 
