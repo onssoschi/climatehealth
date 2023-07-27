@@ -21,13 +21,22 @@ config <- config::get()
 #'   \item `regions` A character vector with the names of each region.
 #'   }
 #' @export
-load_data <- function(input_path) {
+load_data <- function(input_csv_path,
+                      dependent_col,
+                      time_col,
+                      region_col,
+                      temp_col) {
 
-  if(substr(input_path, nchar(input_path) - 3, nchar(input_path)) !=  '.csv') {
+  if(substr(input_csv_path, nchar(input_csv_path) - 3, nchar(input_csv_path)) !=  '.csv') {
     stop("Input path must be a CSV")
   }
 
-  df <- read.csv(input_path, row.names=1)
+  df <- read.csv(input_csv_path, row.names=1) %>%
+    dplyr::rename(death = dependent_col,
+                  date = time_col,
+                  regnames = region_col,
+                  tmean = temp_col)
+
   df$date <- as.Date(df$date)
 
   regions <- as.character(unique(df$regnames)) # .distinct() on regnames
@@ -59,7 +68,8 @@ load_data <- function(input_path) {
 #' @examples
 get_region_metadata <- function(regions,
                                 df_list_unordered,
-                                region_names = NULL) {
+                                region_names = NULL
+                                ) {
 
   if (!is.null(region_names)) {
 
@@ -93,12 +103,19 @@ get_region_metadata <- function(regions,
 #'   \item `cb` Basis matrices for the two dimensions of predictor and lags.
 #'   }
 #' @export
-define_model <- function(dataset) {
+define_model <- function(dataset,
+                         dependent_col,
+                         independent_col,
+                         varfun,
+                         varper,
+                         vardegree,
+                         lag,
+                         lagnk) {
 
   # Model formula
-  formula <- as.formula(paste(paste(config$dependent),
+  formula <- as.formula(paste(paste(dependent_col),
                               " ~ ",
-                              paste(config$independent,
+                              paste(independent_col,
                                     collapse= "+")))
 
   # Define crossbasis
@@ -135,7 +152,15 @@ define_model <- function(dataset) {
 #'   \item `vcov` A list. Co-variance matrices for each region for reduced model.
 #'   }
 #' @export
-run_model <- function(df_list, regions_df) {
+run_model <- function(df_list,
+                      regions_df,
+                      dependent_col,
+                      independent_col,
+                      varfun,
+                      varper,
+                      vardegree,
+                      lag,
+                      lagnk) {
 
   minperregions <- mintempregions <- rep(NA,
                                          length(df_list))
@@ -160,7 +185,14 @@ run_model <- function(df_list, regions_df) {
     # Extract data
     data <- df_list[[i]]
 
-    c(model, cb) %<-% define_model(data)
+    c(model, cb) %<-% define_model(dataset = data,
+                                   dependent_col = dependent_col,
+                                   independent_col = independent_col,
+                                   varfun = varfun,
+                                   varper = varper,
+                                   vardegree = vardegree,
+                                   lag = lag,
+                                   lagnk = lagnk)
 
     cen_ <- mean(data$tmean, na.rm = T)
 
@@ -298,7 +330,12 @@ wald_results <- function(mv) {
 #' @export
 calculate_min_mortality_temp <-  function(df_list,
                                           regions_df,
-                                          blup = NULL) {
+                                          blup = NULL,
+                                          varfun,
+                                          varper,
+                                          vardegree,
+                                          lag,
+                                          lagnk) {
 
   if (!is.list(df_list) | !is.data.frame(df_list[[1]])) {
     stop("Argument 'df_list' must be a list of data frames")
@@ -353,7 +390,14 @@ calculate_min_mortality_temp <-  function(df_list,
       # Extract data
       data <- df_list[[i]]
 
-      c(model, cb) %<-% define_model(data)
+      c(model, cb) %<-% define_model(dataset = data,
+                                     dependent_col = dependent_col,
+                                     independent_col = independent_col,
+                                     varfun = varfun,
+                                     varper = varper,
+                                     vardegree = vardegree,
+                                     lag = lag,
+                                     lagnk = lagnk)
 
       cen_ <- mean(data$tmean, na.rm = T)
 
@@ -400,7 +444,14 @@ calculate_min_mortality_temp <-  function(df_list,
 compute_attributable_deaths <- function(df_list,
                                         regions_df,
                                         blup = NULL,
-                                        mintempregions) {
+                                        mintempregions,
+                                        dependent_col,
+                                        independent_col,
+                                        varfun,
+                                        varper,
+                                        vardegree,
+                                        lag,
+                                        lagnk) {
 
 
   # if (file.exists('R/attrdl.R')) {
@@ -446,7 +497,14 @@ compute_attributable_deaths <- function(df_list,
 
       coefs <- blup[[i]]$blup
       vcovs <- blup[[i]]$vcov
-      c(model, cb) %<-% define_model(data)
+      c(model, cb) %<-% define_model(dataset = data,
+                                     dependent_col = dependent_col,
+                                     independent_col = independent_col,
+                                     varfun = varfun,
+                                     varper = varper,
+                                     vardegree = vardegree,
+                                     lag = lag,
+                                     lagnk = lagnk)
       model <- NULL
 
     } else {
@@ -454,7 +512,14 @@ compute_attributable_deaths <- function(df_list,
       coefs <- NULL
       vcovs <- NULL
 
-      c(model, cb) %<-% define_model(data)
+      c(model, cb) %<-% define_model(dataset = data,
+                                     dependent_col = dependent_col,
+                                     independent_col = independent_col,
+                                     varfun = varfun,
+                                     varper = varper,
+                                     vardegree = vardegree,
+                                     lag = lag,
+                                     lagnk = lagnk)
 
     }
 
@@ -664,11 +729,16 @@ plot_and_write_relative_risk <- function(df_list,
                                          blup = NULL,
                                          regions_df,
                                          mintempregions,
-                                         savefig = TRUE,
-                                         savecsv = TRUE,
+                                         save_fig = TRUE,
+                                         save_csv = TRUE,
+                                         varfun,
+                                         varper,
+                                         vardegree,
+                                         lag,
+                                         lagnk,
                                          output_folder_path) {
 
-  if (savefig == TRUE) {
+  if (save_fig == TRUE) {
 
       if (!is.null(output_folder_path)) {
 
@@ -735,7 +805,14 @@ plot_and_write_relative_risk <- function(df_list,
     } else {
 
       # Run the model and obtain predictions
-      c(model, cb) %<-% define_model(data)
+      c(model, cb) %<-% define_model(dataset = data,
+                                     dependent_col = dependent_col,
+                                     independent_col = independent_col,
+                                     varfun = varfun,
+                                     varper = varper,
+                                     vardegree = vardegree,
+                                     lag = lag,
+                                     lagnk = lagnk)
 
       cen <- mean(data$tmean)
       pred <- crossreduce(cb, model, cen = cen)
@@ -842,7 +919,7 @@ plot_and_write_relative_risk <- function(df_list,
 
     }
 
-  if (savefig == TRUE) {
+  if (save_fig == TRUE) {
 
     dev.off()
 
@@ -857,7 +934,7 @@ plot_and_write_relative_risk <- function(df_list,
   tmean_df <- data.frame(temp_mean = tmean_vector,
                          regions = tmean_region_vector)
 
-  if (savecsv == TRUE) {
+  if (save_csv == TRUE) {
 
       write.csv(output_df,
              paste(output_folder_path,
@@ -913,32 +990,50 @@ plot_and_write_relative_risk <- function(df_list,
 #' @seealso [dlnm] package
 #'
 #' @export
-do_analysis <- function(input_csv_path,
+do_analysis <- function(input_csv_path_,
                         output_folder_path_,
-                        savefig_ = TRUE,
-                        savecsv_ = TRUE,
-                        meta_analysis) {
+                        save_fig_ = TRUE,
+                        save_csv_ = TRUE,
+                        meta_analysis,
+                        dependent_col_,
+                        independent_col_,
+                        time_col_,
+                        region_col_,
+                        temp_col_,
+                        varfun_,
+                        varper_,
+                        vardegree_,
+                        lag_,
+                        lagnk_) {
 
   c(df_list_unordered_, regions_) %<-%
     load_data(
-      input_path = input_csv_path
-              )
+      input_csv_path = input_csv_path_,
+      dependent_col = dependent_col_,
+      time_col = time_col_,
+      region_col = region_col_,
+      temp_col = temp_col_
+      )
 
   c(regions_df_, df_list_) %<-%
     get_region_metadata(
       regions = regions_,
       df_list_unordered = df_list_unordered_,
-      region_names = c("North East","North West",
-                       "Yorkshire & Humber","East Midlands",
-                       "West Midlands","East","London",
-                       "South East","South West", "Wales")
+      region_names = NULL
       )
 
   if (meta_analysis == TRUE) {
 
     c(coef_, vcov_) %<-%
     run_model(df_list = df_list_,
-              regions_df = regions_df_)
+              regions_df = regions_df_,
+              dependent_col = dependent_col_,
+              independent_col = independent_col_,
+              varfun = varfun_,
+              varper = varper_,
+              vardegree = vardegree_,
+              lag = lag_,
+              lagnk = lagnk_)
 
     c(mv_, blup_) %<-%
       run_meta_model(
@@ -963,7 +1058,12 @@ do_analysis <- function(input_csv_path,
     calculate_min_mortality_temp(
       df_list = df_list_,
       regions_df = regions_df_,
-      blup = blup_
+      blup = blup_,
+      varfun = varfun_,
+      varper = varper_,
+      vardegree = vardegree_,
+      lag = lag_,
+      lagnk = lagnk_
       )
 
   c(totdeath_, arraysim_, matsim_) %<-%
@@ -971,7 +1071,14 @@ do_analysis <- function(input_csv_path,
       df_list = df_list_,
       regions_df = regions_df_,
       blup = blup_,
-      mintempregions = mintempregions_
+      mintempregions = mintempregions_,
+      dependent_col = dependent_col_,
+      independent_col = independent_col_,
+      varfun = varfun_,
+      varper = varper_,
+      vardegree = vardegree_,
+      lag = lag_,
+      lagnk = lagnk_
       )
 
   c(antot, totdeathtot, aftot, afregions) %<-%
@@ -990,9 +1097,14 @@ do_analysis <- function(input_csv_path,
     blup = blup_,
     regions_df = regions_df_,
     mintempregions = mintempregions_,
-    savefig = savefig_,
-    savecsv = savecsv_,
-    output_folder_path = output_folder_path_
+    save_fig = save_fig_,
+    save_csv = save_csv_,
+    output_folder_path = output_folder_path_,
+    varfun = varfun_,
+    varper = varper_,
+    vardegree = vardegree_,
+    lag = lag_,
+    lagnk = lagnk_
     )
 
   return (list(output_df, tmean_df))
@@ -1113,7 +1225,7 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
   predvar <- if(typebasis=="one") x else seq(NROW(at))
   predlag <- if(typebasis=="one") 0 else dlnm:::seqlag(lag)
   #
-  # CREATE THE MATRIX OF TRANSFORMED CENTRED VARIABLES (DEPENDENT ON typebasis)
+  # CREATE THE MATRIX OF TRANSFORMED CENTRED VARIABLES (dependent_col ON typebasis)
   if(typebasis=="cb") {
     Xpred <- dlnm:::mkXpred(typebasis,basis,at,predvar,predlag,cen)
     Xpredall <- 0

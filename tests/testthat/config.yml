@@ -1,9 +1,9 @@
 default:
   # Input data
-  input_csv_path: 'tests/testthat/testdata/regEngWales.csv'
+  input_csv_path: 'testdata/regEngWales.csv'
 
   # Output folder path
-  output_folder_path: 'output/'
+  output_folder_path: 'testdata/'
 
   # Whether to perform meta-analysis (boolean)
   meta_analysis: TRUE
