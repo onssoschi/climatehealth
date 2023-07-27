@@ -100,7 +100,8 @@ test_that('Test run_meta_model() returns correct data types', {
                 varper = config$varper,
                 vardegree = config$vardegree,
                 lag = config$lag,
-                lagnk = config$lagnk)
+                lagnk = config$lagnk,
+                dfseas = config$dfseas)
 
     c(mv_, blup_) %<-%
       run_meta_model(

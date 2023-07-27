@@ -18,7 +18,7 @@ default:
   independent_col:
     - cb # Cross-basis
     - dow # Day of week
-    - ns(date, df = config$dfseas * length(unique(year))) # Seasonal B-spline
+    - ns(date, df = dfseas * length(unique(year))) # Seasonal B-spline
 
   # Specification of the exposure function
   varfun: 'bs'

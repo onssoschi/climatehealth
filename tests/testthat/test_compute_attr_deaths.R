@@ -32,7 +32,8 @@ test_that('Test total deaths is an integer of correct length', {
                 varper = config$varper,
                 vardegree = config$vardegree,
                 lag = config$lag,
-                lagnk = config$lagnk)
+                lagnk = config$lagnk,
+                dfseas = config$dfseas)
 
     c(mv_, blup_) %<-%
       run_meta_model(
@@ -62,7 +63,8 @@ test_that('Test total deaths is an integer of correct length', {
       varper = config$varper,
       vardegree = config$vardegree,
       lag = config$lag,
-      lagnk = config$lagnk
+      lagnk = config$lagnk,
+      dfseas = config$dfseas
     )
 
   c(totdeath_, arraysim_, matsim_) %<-%
@@ -77,7 +79,8 @@ test_that('Test total deaths is an integer of correct length', {
       varper = config$varper,
       vardegree = config$vardegree,
       lag = config$lag,
-      lagnk = config$lagnk
+      lagnk = config$lagnk,
+      dfseas = config$dfseas
     )
 
   expected_output <- rep(5L, nrow(regions_df_))

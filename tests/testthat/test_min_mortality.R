@@ -64,7 +64,8 @@ test_that('Test min_mortality() returns correct data types', {
                 varper = config$varper,
                 vardegree = config$vardegree,
                 lag = config$lag,
-                lagnk = config$lagnk)
+                lagnk = config$lagnk,
+                dfseas = config$dfseas)
 
     c(mv_, blup_) %<-%
       run_meta_model(
@@ -94,7 +95,8 @@ test_that('Test min_mortality() returns correct data types', {
       varper = config$varper,
       vardegree = config$vardegree,
       lag = config$lag,
-      lagnk = config$lagnk
+      lagnk = config$lagnk,
+      dfseas = config$dfseas
     )
 
   # mintempcity
