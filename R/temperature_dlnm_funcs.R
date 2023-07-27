@@ -119,17 +119,17 @@ define_model <- function(dataset,
                                     collapse= "+")))
 
   # Define crossbasis
-  argvar_ <- list(fun = config$varfun,
+  argvar_ <- list(fun = varfun,
                   knots = quantile(dataset$tmean,
-                                   config$varper/100,
+                                   varper/100,
                                    na.rm=T),
-                  degree = config$vardegree)
+                  degree = vardegree)
 
   cb <- crossbasis(dataset$tmean,
-                   lag = config$lag,
+                   lag = lag,
                    argvar = argvar_,
-                   arglag = list(knots = logknots(config$lag,
-                                                  config$lagnk)))
+                   arglag = list(knots = logknots(lag,
+                                                  lagnk)))
 
   # Run the model and obtain predictions
   model <- glm(formula,
@@ -171,7 +171,7 @@ run_model <- function(df_list,
   # Coefficients and vcov for overall cumulative summary
   coef_ <- matrix(NA,
                  nrow(regions_df),
-                 length(config$varper) + config$vardegree,
+                 length(varper) + vardegree,
                  dimnames = list(regions_df$regions))
 
   vcov_ <- vector("list" ,nrow(regions_df))
@@ -364,11 +364,11 @@ calculate_min_mortality_temp <-  function(df_list,
       predvar <- quantile(data$tmean, 1:99/100, na.rm = T)
 
       # Redefine the function using all arguments (boundary knots included)
-      argvar_ <- list(x = predvar, fun = config$varfun,
+      argvar_ <- list(x = predvar, fun = varfun,
                    knots = quantile(data$tmean,
-                                    config$varper/100,
+                                    varper/100,
                                     na.rm = TRUE),
-                   degree = config$vardegree,
+                   degree = vardegree,
                    Bound = range(data$tmean, na.rm = T))
 
       bvar_ <- do.call(onebasis, argvar_)
@@ -781,10 +781,10 @@ plot_and_write_relative_risk <- function(df_list,
 
     # NB: Centering point different than original choice of 75th
     argvar <- list(x = data$tmean,
-                   fun = config$varfun,
-                   degree = config$vardegree,
+                   fun = varfun,
+                   degree = vardegree,
                    knots=quantile(data$tmean,
-                                  config$varper/100, na.rm=T))
+                                  varper/100, na.rm=T))
 
     if (!is.null(blup)) {
 
