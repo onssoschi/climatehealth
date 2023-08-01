@@ -4,7 +4,7 @@
 \alias{load_data}
 \title{Load data for analysis}
 \usage{
-load_data(input_path)
+load_data(input_csv_path, dependent_col, time_col, region_col, temp_col)
 }
 \arguments{
 \item{input_path}{Path to a CSV containing a

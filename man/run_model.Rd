@@ -4,7 +4,18 @@
 \alias{run_model}
 \title{Define and run poisson regression model for each dataframe}
 \usage{
-run_model(df_list, regions_df)
+run_model(
+  df_list,
+  regions_df,
+  dependent_col,
+  independent_col,
+  varfun,
+  varper,
+  vardegree,
+  lag,
+  lagnk,
+  dfseas
+)
 }
 \arguments{
 \item{df_list}{An alphabetically-ordered list of dataframes for each region.}

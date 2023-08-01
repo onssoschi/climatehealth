@@ -232,7 +232,6 @@ run_model <- function(df_list,
 #'   meta-analysis model for each region.
 #'   }
 #' @export
-#' @import mvmeta
 run_meta_model <- function(df_list, regions_df, coef, vcov) {
 
   if(!is.list(df_list) | !is.data.frame(df_list[[1]])) {
