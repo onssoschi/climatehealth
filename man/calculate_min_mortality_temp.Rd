@@ -4,7 +4,19 @@
 \alias{calculate_min_mortality_temp}
 \title{Calculate minimum mortality values}
 \usage{
-calculate_min_mortality_temp(df_list, regions_df, blup = NULL)
+calculate_min_mortality_temp(
+  df_list,
+  regions_df,
+  blup = NULL,
+  dependent_col,
+  independent_col,
+  varfun,
+  varper,
+  vardegree,
+  lag,
+  lagnk,
+  dfseas
+)
 }
 \arguments{
 \item{df_list}{An alphabetically-ordered list of dataframes for each region.}

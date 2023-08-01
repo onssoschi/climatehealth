@@ -9,6 +9,16 @@ plot_and_write_relative_risk(
   blup = NULL,
   regions_df,
   mintempregions,
+  save_fig = TRUE,
+  save_csv = TRUE,
+  dependent_col,
+  independent_col,
+  varfun,
+  varper,
+  vardegree,
+  lag,
+  lagnk,
+  dfseas,
   output_folder_path
 )
 }

@@ -4,14 +4,31 @@
 \alias{do_analysis}
 \title{Do full DLNM analysis}
 \usage{
-do_analysis(input_csv_path, output_folder_path_, meta_analysis)
+do_analysis(
+  input_csv_path_,
+  output_folder_path_,
+  save_fig_ = TRUE,
+  save_csv_ = TRUE,
+  meta_analysis,
+  dependent_col_,
+  independent_col_,
+  time_col_,
+  region_col_,
+  temp_col_,
+  varfun_,
+  varper_,
+  vardegree_,
+  lag_,
+  lagnk_,
+  dfseas_
+)
 }
 \arguments{
-\item{input_csv_path}{Path to a CSV contain
-daily time series of death and temperature per region.}
-
 \item{meta_analysis}{Boolean. Whether to include meta-analysis.
 TRUE or FALSE.}
+
+\item{input_csv_path}{Path to a CSV contain
+daily time series of death and temperature per region.}
 
 \item{output_folder_path}{Path to folder for storing outputs.}
 }

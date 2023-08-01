@@ -4,7 +4,17 @@
 \alias{define_model}
 \title{Define regression model}
 \usage{
-define_model(dataset)
+define_model(
+  dataset,
+  dependent_col,
+  independent_col,
+  varfun,
+  varper,
+  vardegree,
+  lag,
+  lagnk,
+  dfseas
+)
 }
 \arguments{
 \item{data}{dataframe with tmean column to be modelled}
