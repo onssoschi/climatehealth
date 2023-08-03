@@ -24,13 +24,41 @@ do_analysis(
 )
 }
 \arguments{
+\item{input_csv_path_}{Path to a CSV contain
+daily time series of death and temperature per region.}
+
+\item{output_folder_path_}{Path to folder for storing outputs.}
+
+\item{save_fig_}{Whether to save output figure (Bool)}
+
+\item{save_csv_}{Whether to save output CSVs (Bool)}
+
 \item{meta_analysis}{Boolean. Whether to include meta-analysis.
 TRUE or FALSE.}
 
-\item{input_csv_path}{Path to a CSV contain
-daily time series of death and temperature per region.}
+\item{dependent_col_}{the column name of the
+dependent variable of interest e.g. deaths}
 
-\item{output_folder_path}{Path to folder for storing outputs.}
+\item{varfun_}{Exposure function
+(see dlnm::crossbasis)}
+
+\item{varper_}{Internal knot positions in exposure function
+(see dlnm::crossbasis)}
+
+\item{vardegree_}{Degrees of freedom in exposure function
+(see dlnm:crossbasis)}
+
+\item{lag_}{Lag length in time
+(see dlnm::logknots)}
+
+\item{lagnk_}{Number of knots in lag function
+(see dlnm::logknots)}
+
+\item{dfseas_}{Degrees of freedom for seasonality}
+
+\item{indepedent_col_}{column names of independent
+variables to include in regression (excluding temperature,
+see config file for formula structure)}
 }
 \value{
 A PDF containing a line plot of temperature versus

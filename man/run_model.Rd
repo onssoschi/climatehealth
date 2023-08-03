@@ -22,6 +22,30 @@ run_model(
 
 \item{regions_df}{A dataframe with two columns. Column 1 is abbreviated
 region names. Column 2 is user-specified region names.}
+
+\item{dependent_col}{the column name of the
+dependent variable of interest e.g. deaths}
+
+\item{varfun}{Exposure function
+(see dlnm::crossbasis)}
+
+\item{varper}{Internal knot positions in exposure function
+(see dlnm::crossbasis)}
+
+\item{vardegree}{Degrees of freedom in exposure function
+(see dlnm:crossbasis)}
+
+\item{lag}{Lag length in time
+(see dlnm::logknots)}
+
+\item{lagnk}{Number of knots in lag function
+(see dlnm::logknots)}
+
+\item{dfseas}{Degrees of freedom for seasonality}
+
+\item{indepedent_col}{column names of independent
+variables to include in regression (excluding temperature,
+see config file for formula structure)}
 }
 \value{
 \itemize{

@@ -7,8 +7,18 @@
 load_data(input_csv_path, dependent_col, time_col, region_col, temp_col)
 }
 \arguments{
-\item{input_path}{Path to a CSV containing a
+\item{input_csv_path}{Path to a CSV containing a
 daily time series of death and temperature per region.}
+
+\item{dependent_col}{the column name of the
+dependent variable of interest e.g. deaths}
+
+\item{time_col}{Time column e.g. date}
+
+\item{region_col}{The region column over which the data
+are spatially aggregated e.g. regnames}
+
+\item{temp_col}{The temperature column e.g. tmean}
 }
 \value{
 \itemize{
