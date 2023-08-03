@@ -1,0 +1,39 @@
+default:
+  # Input data
+  input_csv_path: 'testdata/regEngWales.csv'
+
+  # Output folder path
+  output_folder_path: 'testdata/'
+
+  # Whether to perform meta-analysis (boolean)
+  meta_analysis: TRUE
+
+  # Define columns
+  dependent_col: death
+  time_col: date
+  region_col: regnames
+  temp_col: tmean
+
+  # Formula
+  independent_col:
+    - cb # Cross-basis
+    - dow # Day of week
+    - ns(date, df = dfseas * length(unique(year))) # Seasonal B-spline
+
+  # Specification of the exposure function
+  varfun: 'bs'
+  vardegree:  2
+  varper: !expr c(10, 75, 90)
+
+  # Specification of the lag function
+  lag: 21
+  lagnk: 3
+
+  # Degree of freedom for seasonality
+  dfseas: 8
+
+  # Whether to save results figure and CSVs (boolean)
+  save_fig: TRUE
+  save_csv: TRUE
+
+

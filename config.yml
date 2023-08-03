@@ -8,21 +8,30 @@ default:
   # Whether to perform meta-analysis (boolean)
   meta_analysis: TRUE
 
+  # Define columns
+  dependent_col: death
+  time_col: date
+  region_col: regnames
+  temp_col: tmean
+
+  # Formula
+  independent_col:
+    - cb # Cross-basis for temperature variable
+    - dow # Day of week
+    - ns(date, df = dfseas * length(unique(year))) # Seasonal B-spline
+
   # Specification of the exposure function
-  varfun: 'bs'
-  vardegree:  2
-  varper: !expr c(10, 75, 90)
+  varfun: 'bs' # Exposure function (see dlnm::crossbasis)
+  vardegree:  2 # Degrees of freedom in exposure function (see dlnm::crossbasis)
+  varper: !expr c(10, 75, 90) # Internal knot positions in exposure function (see dlnm::crossbasis)
 
   # Specification of the lag function
-  lag: 21
-  lagnk: 3
+  lag: 21 # Lag length in days (see dlnm::logknots)
+  lagnk: 3 # Number of knots in lag function (see dlnm::logknots)
 
   # Degree of freedom for seasonality
   dfseas: 8
 
-  # Formula
-  dependent: death # Daily deaths
-  independent:
-    - cb # Cross-basis
-    - dow # Day of week
-    - ns(date, df = config$dfseas * length(unique(year))) # Seasonal B-spline
+  # Whether to save results figure and CSVs (Boolean)
+  save_fig: TRUE
+  save_csv: TRUE

@@ -1,36 +1,52 @@
 library(testthat)
-library(indicatorfunctions)
+library(climatehealth)
+library(config)
 library(zeallot)
 
 context("Test output data types")
 test_that('Test wald_results() returns correct data type', {
 
+  config <- config::get()
+
   c(df_list_unordered_, regions_) %<-%
     load_data(
-      input_path =  'testdata/regEngWales.csv'
+      input_csv_path = config$input_csv_path,
+      dependent_col = config$dependent_col,
+      time_col = config$time_col,
+      region_col = config$region_col,
+      temp_col = config$temp_col
     )
 
   c(regions_df_, df_list_) %<-%
     get_region_metadata(
       regions = regions_,
       df_list_unordered = df_list_unordered_,
-      region_names = c("North East","North West",
-                       "Yorkshire & Humber","East Midlands",
-                       "West Midlands","East","London",
-                       "South East","South West", "Wales")
+      region_names = NULL
     )
 
-  c(coef_, vcov_) %<-%
-    run_model(df_list = df_list_,
-              regions_df = regions_df_)
+  if (config$meta_analysis == TRUE) {
 
-  c(mv_, blup_) %<-%
-    run_meta_model(
-      df_list = df_list_,
-      regions_df = regions_df_,
-      coef = coef_,
-      vcov = vcov_
-    )
+    c(coef_, vcov_) %<-%
+      run_model(df_list = df_list_,
+                regions_df = regions_df_,
+                dependent_col = config$dependent_col,
+                independent_col = config$independent_col,
+                varfun = config$varfun,
+                varper = config$varper,
+                vardegree = config$vardegree,
+                lag = config$lag,
+                lagnk = config$lagnk,
+                dfseas = config$dfseas)
+
+    c(mv_, blup_) %<-%
+      run_meta_model(
+        df_list = df_list_,
+        regions_df = regions_df_,
+        coef = coef_,
+        vcov = vcov_
+      )
+
+  }
 
   c(avgtmean_wald, rangetmean_wald) %<-%
     wald_results(
@@ -48,37 +64,53 @@ test_that('Test wald_results() returns correct data type', {
 context("Test output length")
 test_that('Test wald_results() returns list of correct length', {
 
+  config <- config::get()
+
   c(df_list_unordered_, regions_) %<-%
     load_data(
-      input_path =  'testdata/regEngWales.csv'
+      input_csv_path = config$input_csv_path,
+      dependent_col = config$dependent_col,
+      time_col = config$time_col,
+      region_col = config$region_col,
+      temp_col = config$temp_col
     )
 
   c(regions_df_, df_list_) %<-%
     get_region_metadata(
       regions = regions_,
       df_list_unordered = df_list_unordered_,
-      region_names = c("North East","North West",
-                       "Yorkshire & Humber","East Midlands",
-                       "West Midlands","East","London",
-                       "South East","South West", "Wales")
+      region_names = NULL
     )
 
-  c(coef_, vcov_) %<-%
-    run_model(df_list = df_list_,
-              regions_df = regions_df_)
+  if (config$meta_analysis == TRUE) {
 
-  c(mv_, blup_) %<-%
-    run_meta_model(
-      df_list = df_list_,
-      regions_df = regions_df_,
-      coef = coef_,
-      vcov = vcov_
-    )
+    c(coef_, vcov_) %<-%
+      run_model(df_list = df_list_,
+                regions_df = regions_df_,
+                dependent_col = config$dependent_col,
+                independent_col = config$independent_col,
+                varfun = config$varfun,
+                varper = config$varper,
+                vardegree = config$vardegree,
+                lag = config$lag,
+                lagnk = config$lagnk,
+                dfseas = config$dfseas)
+
+    c(mv_, blup_) %<-%
+      run_meta_model(
+        df_list = df_list_,
+        regions_df = regions_df_,
+        coef = coef_,
+        vcov = vcov_
+      )
+
+  }
 
   c(avgtmean_wald, rangetmean_wald) %<-%
     wald_results(
       mv = mv_
     )
+
 
   expect_equal(length(wald_results(mv_)), 2)
   expect_equal(length(wald_results(mv_)[1]), 1)
@@ -89,37 +121,53 @@ test_that('Test wald_results() returns list of correct length', {
 context("Test output range")
 test_that('Test wald_results() returns p-values between 0 and 1', {
 
+  config <- config::get()
+
   c(df_list_unordered_, regions_) %<-%
     load_data(
-      input_path =  'testdata/regEngWales.csv'
+      input_csv_path = config$input_csv_path,
+      dependent_col = config$dependent_col,
+      time_col = config$time_col,
+      region_col = config$region_col,
+      temp_col = config$temp_col
     )
 
   c(regions_df_, df_list_) %<-%
     get_region_metadata(
       regions = regions_,
       df_list_unordered = df_list_unordered_,
-      region_names = c("North East","North West",
-                       "Yorkshire & Humber","East Midlands",
-                       "West Midlands","East","London",
-                       "South East","South West", "Wales")
+      region_names = NULL
     )
 
-  c(coef_, vcov_) %<-%
-    run_model(df_list = df_list_,
-              regions_df = regions_df_)
+  if (config$meta_analysis == TRUE) {
 
-  c(mv_, blup_) %<-%
-    run_meta_model(
-      df_list = df_list_,
-      regions_df = regions_df_,
-      coef = coef_,
-      vcov = vcov_
-    )
+    c(coef_, vcov_) %<-%
+      run_model(df_list = df_list_,
+                regions_df = regions_df_,
+                dependent_col = config$dependent_col,
+                independent_col = config$independent_col,
+                varfun = config$varfun,
+                varper = config$varper,
+                vardegree = config$vardegree,
+                lag = config$lag,
+                lagnk = config$lagnk,
+                dfseas = config$dfseas)
+
+    c(mv_, blup_) %<-%
+      run_meta_model(
+        df_list = df_list_,
+        regions_df = regions_df_,
+        coef = coef_,
+        vcov = vcov_
+      )
+
+  }
 
   c(avgtmean_wald, rangetmean_wald) %<-%
     wald_results(
       mv = mv_
     )
+
 
 
   expect_lte(wald_results(mv_)[[1]], 1)

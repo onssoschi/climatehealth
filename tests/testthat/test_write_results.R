@@ -1,40 +1,71 @@
 library(testthat)
-library(indicatorfunctions)
+library(climatehealth)
+library(config)
 
 test_that('Test output CSVs are written and of correct length', {
 
+  config <- config::get()
+
   c(df_list_unordered_, regions_) %<-%
     load_data(
-      input_path =  'testdata/regEngWales.csv'
+      input_csv_path = config$input_csv_path,
+      dependent_col = config$dependent_col,
+      time_col = config$time_col,
+      region_col = config$region_col,
+      temp_col = config$temp_col
     )
 
   c(regions_df_, df_list_) %<-%
     get_region_metadata(
       regions = regions_,
       df_list_unordered = df_list_unordered_,
-      region_names = c("North East","North West",
-                       "Yorkshire & Humber","East Midlands",
-                       "West Midlands","East","London",
-                       "South East","South West", "Wales")
+      region_names = NULL
     )
 
-  c(coef_, vcov_) %<-%
-    run_model(df_list = df_list_,
-              regions_df = regions_df_)
+  if (config$meta_analysis == TRUE) {
 
-  c(mv_, blup_) %<-%
-    run_meta_model(
-      df_list = df_list_,
-      regions_df = regions_df_,
-      coef = coef_,
-      vcov = vcov_
-    )
+    c(coef_, vcov_) %<-%
+      run_model(df_list = df_list_,
+                regions_df = regions_df_,
+                dependent_col = config$dependent_col,
+                independent_col = config$independent_col,
+                varfun = config$varfun,
+                varper = config$varper,
+                vardegree = config$vardegree,
+                lag = config$lag,
+                lagnk = config$lagnk,
+                dfseas = config$dfseas)
+
+    c(mv_, blup_) %<-%
+      run_meta_model(
+        df_list = df_list_,
+        regions_df = regions_df_,
+        coef = coef_,
+        vcov = vcov_
+      )
+
+    c(avgtmean_wald, rangetmean_wald) %<-%
+      wald_results(
+        mv = mv_
+      )
+
+  } else {
+
+    blup_ <- NULL
+
+  }
 
   c(mintempregions_) %<-%
     calculate_min_mortality_temp(
       df_list = df_list_,
       regions_df = regions_df_,
-      blup = blup_
+      blup = blup_,
+      varfun = config$varfun,
+      varper = config$varper,
+      vardegree = config$vardegree,
+      lag = config$lag,
+      lagnk = config$lagnk,
+      dfseas = config$dfseas
     )
 
   c(totdeath_, arraysim_, matsim_) %<-%
@@ -42,7 +73,15 @@ test_that('Test output CSVs are written and of correct length', {
       df_list = df_list_,
       regions_df = regions_df_,
       blup = blup_,
-      mintempregions = mintempregions_
+      mintempregions = mintempregions_,
+      dependent_col = config$dependent_col,
+      independent_col = config$independent_col,
+      varfun = config$varfun,
+      varper = config$varper,
+      vardegree = config$vardegree,
+      lag = config$lag,
+      lagnk = config$lagnk,
+      dfseas = config$dfseas
     )
 
   c(antot, totdeathtot, aftot, afregions) %<-%
@@ -52,7 +91,7 @@ test_that('Test output CSVs are written and of correct length', {
       matsim = matsim_,
       arraysim = arraysim_,
       totdeath = totdeath_,
-      output_folder_path = 'testdata/'
+      output_folder_path = config$output_folder_path
     )
 
   actual_output <- read.csv('testdata/attributable_deaths_regions.csv')

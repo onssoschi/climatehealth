@@ -1,5 +1,6 @@
 library(testthat)
-library(indicatorfunctions)
+library(climatehealth)
+library(config)
 library(zeallot)
 
 context("Test errors for incorrect inputs")
@@ -13,32 +14,56 @@ test_that('Test that fwald() arguments are correct type', {
 context("Test output data types")
 test_that('Test fwald() returns correct data type', {
 
+  config <- config::get()
+
   c(df_list_unordered_, regions_) %<-%
     load_data(
-      input_path =  'testdata/regEngWales.csv'
+      input_csv_path = config$input_csv_path,
+      dependent_col = config$dependent_col,
+      time_col = config$time_col,
+      region_col = config$region_col,
+      temp_col = config$temp_col
     )
 
   c(regions_df_, df_list_) %<-%
     get_region_metadata(
       regions = regions_,
       df_list_unordered = df_list_unordered_,
-      region_names = c("North East","North West",
-                       "Yorkshire & Humber","East Midlands",
-                       "West Midlands","East","London",
-                       "South East","South West", "Wales")
+      region_names = NULL
     )
 
-  c(coef_, vcov_) %<-%
-    run_model(df_list = df_list_,
-              regions_df = regions_df_)
+  if (config$meta_analysis == TRUE) {
 
-  c(mv_, blup_) %<-%
-    run_meta_model(
-      df_list = df_list_,
-      regions_df = regions_df_,
-      coef = coef_,
-      vcov = vcov_
-    )
+    c(coef_, vcov_) %<-%
+      run_model(df_list = df_list_,
+                regions_df = regions_df_,
+                dependent_col = config$dependent_col,
+                independent_col = config$independent_col,
+                varfun = config$varfun,
+                varper = config$varper,
+                vardegree = config$vardegree,
+                lag = config$lag,
+                lagnk = config$lagnk,
+                dfseas = config$dfseas)
+
+    c(mv_, blup_) %<-%
+      run_meta_model(
+        df_list = df_list_,
+        regions_df = regions_df_,
+        coef = coef_,
+        vcov = vcov_
+      )
+
+    c(avgtmean_wald, rangetmean_wald) %<-%
+      wald_results(
+        mv = mv_
+      )
+
+  } else {
+
+    blup_ <- NULL
+
+  }
 
   expect_equal(typeof(fwald(mv_, "avgtmean")), "double")
   expect_equal(is.numeric(fwald(mv_, "avgtmean")), TRUE)
@@ -48,32 +73,56 @@ test_that('Test fwald() returns correct data type', {
 context("Test output within expected range")
 test_that('Test fwald() returns p-value between 0 and 1', {
 
+  config <- config::get()
+
   c(df_list_unordered_, regions_) %<-%
     load_data(
-      input_path =  'testdata/regEngWales.csv'
+      input_csv_path = config$input_csv_path,
+      dependent_col = config$dependent_col,
+      time_col = config$time_col,
+      region_col = config$region_col,
+      temp_col = config$temp_col
     )
 
   c(regions_df_, df_list_) %<-%
     get_region_metadata(
       regions = regions_,
       df_list_unordered = df_list_unordered_,
-      region_names = c("North East","North West",
-                       "Yorkshire & Humber","East Midlands",
-                       "West Midlands","East","London",
-                       "South East","South West", "Wales")
+      region_names = NULL
     )
 
-  c(coef_, vcov_) %<-%
-    run_model(df_list = df_list_,
-              regions_df = regions_df_)
+  if (config$meta_analysis == TRUE) {
 
-  c(mv_, blup_) %<-%
-    run_meta_model(
-      df_list = df_list_,
-      regions_df = regions_df_,
-      coef = coef_,
-      vcov = vcov_
-    )
+    c(coef_, vcov_) %<-%
+      run_model(df_list = df_list_,
+                regions_df = regions_df_,
+                dependent_col = config$dependent_col,
+                independent_col = config$independent_col,
+                varfun = config$varfun,
+                varper = config$varper,
+                vardegree = config$vardegree,
+                lag = config$lag,
+                lagnk = config$lagnk,
+                dfseas = config$dfseas)
+
+    c(mv_, blup_) %<-%
+      run_meta_model(
+        df_list = df_list_,
+        regions_df = regions_df_,
+        coef = coef_,
+        vcov = vcov_
+      )
+
+    c(avgtmean_wald, rangetmean_wald) %<-%
+      wald_results(
+        mv = mv_
+      )
+
+  } else {
+
+    blup_ <- NULL
+
+  }
 
   expect_lte(fwald(mv_, "avgtmean"), 1)
   expect_gte(fwald(mv_, "avgtmean"), 0)

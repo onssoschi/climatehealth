@@ -12,8 +12,14 @@ config <- config::get()
 #'
 #' @description Loads data and names of regions for analysis from a CSV file.
 #'
-#' @param input_path Path to a CSV containing a
+#' @param input_csv_path Path to a CSV containing a
 #' daily time series of death and temperature per region.
+#' @param dependent_col the column name of the
+#' dependent variable of interest e.g. deaths
+#' @param time_col Time column e.g. date
+#' @param region_col The region column over which the data
+#' are spatially aggregated e.g. regnames
+#' @param temp_col The temperature column e.g. tmean
 #' @return
 #' \itemize{
 #'   \item `df_list_unordered` A list of dataframes for each region
@@ -21,13 +27,22 @@ config <- config::get()
 #'   \item `regions` A character vector with the names of each region.
 #'   }
 #' @export
-load_data <- function(input_path) {
+load_data <- function(input_csv_path,
+                      dependent_col,
+                      time_col,
+                      region_col,
+                      temp_col) {
 
-  if(substr(input_path, nchar(input_path) - 3, nchar(input_path)) !=  '.csv') {
+  if(substr(input_csv_path, nchar(input_csv_path) - 3, nchar(input_csv_path)) !=  '.csv') {
     stop("Input path must be a CSV")
   }
 
-  df <- read.csv(input_path, row.names=1)
+  df <- read.csv(input_csv_path, row.names=1) %>%
+    dplyr::rename(death = dependent_col,
+                  date = time_col,
+                  regnames = region_col,
+                  tmean = temp_col)
+
   df$date <- as.Date(df$date)
 
   regions <- as.character(unique(df$regnames)) # .distinct() on regnames
@@ -59,7 +74,8 @@ load_data <- function(input_path) {
 #' @examples
 get_region_metadata <- function(regions,
                                 df_list_unordered,
-                                region_names = NULL) {
+                                region_names = NULL
+                                ) {
 
   if (!is.null(region_names)) {
 
@@ -85,7 +101,23 @@ get_region_metadata <- function(regions,
 
 #' Define regression model
 #'
-#' @param data dataframe with tmean column to be modelled
+#' @param dataset dataframe with tmean column to be modelled
+#' @param dependent_col the column name of the
+#' dependent variable of interest e.g. deaths
+#' @param indepedent_col column names of independent
+#' variables to include in regression (excluding temperature,
+#' see config file for formula structure)
+#' @param varfun Exposure function
+#' (see dlnm::crossbasis)
+#' @param varper Internal knot positions in exposure function
+#' (see dlnm::crossbasis)
+#' @param vardegree Degrees of freedom in exposure function
+#' (see dlnm:crossbasis)
+#' @param lag Lag length in time
+#' (see dlnm::logknots)
+#' @param lagnk Number of knots in lag function
+#' (see dlnm::logknots)
+#' @param dfseas Degrees of freedom for seasonality
 #' @return
 #' \itemize{
 #'   \item `model` A quasi-poission generalised linear model object.
@@ -93,26 +125,36 @@ get_region_metadata <- function(regions,
 #'   \item `cb` Basis matrices for the two dimensions of predictor and lags.
 #'   }
 #' @export
-define_model <- function(dataset) {
+define_model <- function(dataset,
+                         dependent_col,
+                         independent_col,
+                         varfun,
+                         varper,
+                         vardegree,
+                         lag,
+                         lagnk,
+                         dfseas) {
 
   # Model formula
-  formula <- as.formula(paste(paste(config$dependent),
+  formula <- as.formula(paste(paste(dependent_col),
                               " ~ ",
-                              paste(config$independent,
+                              paste(independent_col,
                                     collapse= "+")))
 
   # Define crossbasis
-  argvar_ <- list(fun = config$varfun,
+  argvar_ <- list(fun = varfun,
                   knots = quantile(dataset$tmean,
-                                   config$varper/100,
+                                   varper/100,
                                    na.rm=T),
-                  degree = config$vardegree)
+                  degree = vardegree)
 
   cb <- crossbasis(dataset$tmean,
-                   lag = config$lag,
+                   lag = lag,
                    argvar = argvar_,
-                   arglag = list(knots = logknots(config$lag,
-                                                  config$lagnk)))
+                   arglag = list(knots = logknots(lag,
+                                                  lagnk)))
+
+  dfseas <- dfseas
 
   # Run the model and obtain predictions
   model <- glm(formula,
@@ -129,13 +171,38 @@ define_model <- function(dataset) {
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #'   region names. Column 2 is user-specified region names.
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
+#' @param dependent_col the column name of the
+#' dependent variable of interest e.g. deaths
+#' @param indepedent_col column names of independent
+#' variables to include in regression (excluding temperature,
+#' see config file for formula structure)
+#' @param varfun Exposure function
+#' (see dlnm::crossbasis)
+#' @param varper Internal knot positions in exposure function
+#' (see dlnm::crossbasis)
+#' @param vardegree Degrees of freedom in exposure function
+#' (see dlnm:crossbasis)
+#' @param lag Lag length in time
+#' (see dlnm::logknots)
+#' @param lagnk Number of knots in lag function
+#' (see dlnm::logknots)
+#' @param dfseas Degrees of freedom for seasonality
 #' @return
 #' \itemize{
 #'   \item `coef` A matrix of coefficients for reduced model.
 #'   \item `vcov` A list. Co-variance matrices for each region for reduced model.
 #'   }
 #' @export
-run_model <- function(df_list, regions_df) {
+run_model <- function(df_list,
+                      regions_df,
+                      dependent_col,
+                      independent_col,
+                      varfun,
+                      varper,
+                      vardegree,
+                      lag,
+                      lagnk,
+                      dfseas) {
 
   minperregions <- mintempregions <- rep(NA,
                                          length(df_list))
@@ -146,7 +213,7 @@ run_model <- function(df_list, regions_df) {
   # Coefficients and vcov for overall cumulative summary
   coef_ <- matrix(NA,
                  nrow(regions_df),
-                 length(config$varper) + config$vardegree,
+                 length(varper) + vardegree,
                  dimnames = list(regions_df$regions))
 
   vcov_ <- vector("list" ,nrow(regions_df))
@@ -160,7 +227,15 @@ run_model <- function(df_list, regions_df) {
     # Extract data
     data <- df_list[[i]]
 
-    c(model, cb) %<-% define_model(data)
+    c(model, cb) %<-% define_model(dataset = data,
+                                   dependent_col = dependent_col,
+                                   independent_col = independent_col,
+                                   varfun = varfun,
+                                   varper = varper,
+                                   vardegree = vardegree,
+                                   lag = lag,
+                                   lagnk = lagnk,
+                                   dfseas = dfseas)
 
     cen_ <- mean(data$tmean, na.rm = T)
 
@@ -187,6 +262,8 @@ run_model <- function(df_list, regions_df) {
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #'   region names. Column 2 is user-specified region names.
+#' @param coef A matrix of coefficients for reduced model.
+#' @param vcov A list. Co-variance matrices for each region for reduced model.
 #'
 #' @return
 #' \itemize{
@@ -195,7 +272,6 @@ run_model <- function(df_list, regions_df) {
 #'   meta-analysis model for each region.
 #'   }
 #' @export
-#' @import mvmeta
 run_meta_model <- function(df_list, regions_df, coef, vcov) {
 
   if(!is.list(df_list) | !is.data.frame(df_list[[1]])) {
@@ -288,6 +364,22 @@ wald_results <- function(mv) {
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #'   region names. Column 2 is user-specified region names.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
+#' @param dependent_col the column name of the
+#' dependent variable of interest e.g. deaths
+#' @param indepedent_col column names of independent
+#' variables to include in regression (excluding temperature,
+#' see config file for formula structure)
+#' @param varfun Exposure function
+#' (see dlnm::crossbasis)
+#' @param varper Internal knot positions in exposure function
+#' (see dlnm::crossbasis)
+#' @param vardegree Degrees of freedom in exposure function
+#' (see dlnm:crossbasis)
+#' @param lag Lag length in time
+#' (see dlnm::logknots)
+#' @param lagnk Number of knots in lag function
+#' (see dlnm::logknots)
+#' @param dfseas Degrees of freedom for seasonality
 #'
 #' @return
 #' \itemize{
@@ -298,7 +390,15 @@ wald_results <- function(mv) {
 #' @export
 calculate_min_mortality_temp <-  function(df_list,
                                           regions_df,
-                                          blup = NULL) {
+                                          blup = NULL,
+                                          dependent_col,
+                                          independent_col,
+                                          varfun,
+                                          varper,
+                                          vardegree,
+                                          lag,
+                                          lagnk,
+                                          dfseas) {
 
   if (!is.list(df_list) | !is.data.frame(df_list[[1]])) {
     stop("Argument 'df_list' must be a list of data frames")
@@ -327,11 +427,11 @@ calculate_min_mortality_temp <-  function(df_list,
       predvar <- quantile(data$tmean, 1:99/100, na.rm = T)
 
       # Redefine the function using all arguments (boundary knots included)
-      argvar_ <- list(x = predvar, fun = config$varfun,
+      argvar_ <- list(x = predvar, fun = varfun,
                    knots = quantile(data$tmean,
-                                    config$varper/100,
+                                    varper/100,
                                     na.rm = TRUE),
-                   degree = config$vardegree,
+                   degree = vardegree,
                    Bound = range(data$tmean, na.rm = T))
 
       bvar_ <- do.call(onebasis, argvar_)
@@ -353,7 +453,15 @@ calculate_min_mortality_temp <-  function(df_list,
       # Extract data
       data <- df_list[[i]]
 
-      c(model, cb) %<-% define_model(data)
+      c(model, cb) %<-% define_model(dataset = data,
+                                     dependent_col = dependent_col,
+                                     independent_col = independent_col,
+                                     varfun = varfun,
+                                     varper = varper,
+                                     vardegree = vardegree,
+                                     lag = lag,
+                                     lagnk = lagnk,
+                                     dfseas = dfseas)
 
       cen_ <- mean(data$tmean, na.rm = T)
 
@@ -385,6 +493,22 @@ calculate_min_mortality_temp <-  function(df_list,
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param mintempregions A named numeric vector.
 #' Minimum (optimum) mortality temperature per region.
+#' @param dependent_col the column name of the
+#' dependent variable of interest e.g. deaths
+#' @param indepedent_col column names of independent
+#' variables to include in regression (excluding temperature,
+#' see config file for formula structure)
+#' @param varfun Exposure function
+#' (see dlnm::crossbasis)
+#' @param varper Internal knot positions in exposure function
+#' (see dlnm::crossbasis)
+#' @param vardegree Degrees of freedom in exposure function
+#' (see dlnm:crossbasis)
+#' @param lag Lag length in time
+#' (see dlnm::logknots)
+#' @param lagnk Number of knots in lag function
+#' (see dlnm::logknots)
+#' @param dfseas Degrees of freedom for seasonality
 #'
 #' @return A list of variables
 #' \itemize{
@@ -400,17 +524,26 @@ calculate_min_mortality_temp <-  function(df_list,
 compute_attributable_deaths <- function(df_list,
                                         regions_df,
                                         blup = NULL,
-                                        mintempregions) {
+                                        mintempregions,
+                                        dependent_col,
+                                        independent_col,
+                                        varfun,
+                                        varper,
+                                        vardegree,
+                                        lag,
+                                        lagnk,
+                                        dfseas) {
 
 
-  if (file.exists('R/attrdl.R')) {
-
-    source('R/attrdl.R')
-  } else {
-
-    source('attrdl.R')
-
-  }
+  # if (file.exists('R/attrdl.R')) {
+  #
+  #   source('R/attrdl.R')
+  #
+  # } else {
+  #
+  #   source('attrdl.R')
+  #
+  # }
 
   # Create the vectors to store the total mortality (accounting for missing)
   totdeath <- rep(NA, nrow(regions_df))
@@ -445,7 +578,15 @@ compute_attributable_deaths <- function(df_list,
 
       coefs <- blup[[i]]$blup
       vcovs <- blup[[i]]$vcov
-      c(model, cb) %<-% define_model(data)
+      c(model, cb) %<-% define_model(dataset = data,
+                                     dependent_col = dependent_col,
+                                     independent_col = independent_col,
+                                     varfun = varfun,
+                                     varper = varper,
+                                     vardegree = vardegree,
+                                     lag = lag,
+                                     lagnk = lagnk,
+                                     dfseas = dfseas)
       model <- NULL
 
     } else {
@@ -453,7 +594,15 @@ compute_attributable_deaths <- function(df_list,
       coefs <- NULL
       vcovs <- NULL
 
-      c(model, cb) %<-% define_model(data)
+      c(model, cb) %<-% define_model(dataset = data,
+                                     dependent_col = dependent_col,
+                                     independent_col = independent_col,
+                                     varfun = varfun,
+                                     varper = varper,
+                                     vardegree = vardegree,
+                                     lag = lag,
+                                     lagnk = lagnk,
+                                     dfseas = dfseas)
 
     }
 
@@ -650,6 +799,24 @@ write_attributable_deaths <- function(df_list,
 #'  Column 2 is user-specified region names.
 #' @param mintempregions A named numeric vector.
 #'   Minimum (optimum) mortality temperature per region.
+#' @param save_fig Whether to save output figure (Bool)
+#' @param save_csv Whether to save output CSVs (Bool)
+#' @param dependent_col the column name of the
+#' dependent variable of interest e.g. deaths
+#' @param indepedent_col column names of independent
+#' variables to include in regression (excluding temperature,
+#' see config file for formula structure)
+#' @param varfun Exposure function
+#' (see dlnm::crossbasis)
+#' @param varper Internal knot positions in exposure function
+#' (see dlnm::crossbasis)
+#' @param vardegree Degrees of freedom in exposure function
+#' (see dlnm:crossbasis)
+#' @param lag Lag length in time
+#' (see dlnm::logknots)
+#' @param lagnk Number of knots in lag function
+#' (see dlnm::logknots)
+#' @param dfseas Degrees of freedom for seasonality
 #' @param output_folder_path Path to folder for storing outputs.
 #'
 #' @export
@@ -663,27 +830,41 @@ plot_and_write_relative_risk <- function(df_list,
                                          blup = NULL,
                                          regions_df,
                                          mintempregions,
+                                         save_fig = TRUE,
+                                         save_csv = TRUE,
+                                         dependent_col,
+                                         independent_col,
+                                         varfun,
+                                         varper,
+                                         vardegree,
+                                         lag,
+                                         lagnk,
+                                         dfseas,
                                          output_folder_path) {
 
-  if (!is.null(output_folder_path)) {
+  if (save_fig == TRUE) {
 
-    pdf(paste(output_folder_path,
+      if (!is.null(output_folder_path)) {
+
+        pdf(paste(output_folder_path,
               "output_all_regions_plot.pdf",
               sep = ''),
         width = 8, height = 9)
 
-  } else {
+    } else {
 
-    pdf("output_all_regions_plot.pdf", width = 8, height = 9)
+        pdf("output_all_regions_plot.pdf", width = 8, height = 9)
 
-  }
+    }
 
-  layout(matrix(c(0,1,1,2,2,0,
+    layout(matrix(c(0,1,1,2,2,0,
                   rep(3:8, each = 2),0,9,9,10,10,0),
                 ncol = 6,
                 byrow = T))
-  par(mar=c(4,3.8,3,2.4), mgp = c(2.5,1,0), las=1)
 
+    par(mar=c(4,3.8,3,2.4), mgp = c(2.5,1,0), las=1)
+
+  }
 
   per <- t(sapply(df_list,function(x)
     quantile(x$tmean, c(2.5,10,25,50,75,90,97.5)/100, na.rm=T)))
@@ -691,8 +872,12 @@ plot_and_write_relative_risk <- function(df_list,
   xlab <- expression(paste("Temperature (",degree,"C)"))
 
   region_vector <- c()
-  temperature <- c()
-  relative_risk <- c()
+  temp_vector <- c()
+  relative_risk_vector <- c()
+  cen_vector <- c()
+
+  tmean_vector <- c()
+  tmean_region_vector <- c()
 
   for(i in seq(length(df_list))) {
 
@@ -700,10 +885,10 @@ plot_and_write_relative_risk <- function(df_list,
 
     # NB: Centering point different than original choice of 75th
     argvar <- list(x = data$tmean,
-                   fun = config$varfun,
-                   degree = config$vardegree,
+                   fun = varfun,
+                   degree = vardegree,
                    knots=quantile(data$tmean,
-                                  config$varper/100, na.rm=T))
+                                  varper/100, na.rm=T))
 
     if (!is.null(blup)) {
 
@@ -724,7 +909,15 @@ plot_and_write_relative_risk <- function(df_list,
     } else {
 
       # Run the model and obtain predictions
-      c(model, cb) %<-% define_model(data)
+      c(model, cb) %<-% define_model(dataset = data,
+                                     dependent_col = dependent_col,
+                                     independent_col = independent_col,
+                                     varfun = varfun,
+                                     varper = varper,
+                                     vardegree = vardegree,
+                                     lag = lag,
+                                     lagnk = lagnk,
+                                     dfseas = dfseas)
 
       cen <- mean(data$tmean)
       pred <- crossreduce(cb, model, cen = cen)
@@ -801,11 +994,11 @@ plot_and_write_relative_risk <- function(df_list,
 
      if (!is.null(blup)) {
 
-       relative_risk <- append(relative_risk,
+       relative_risk_vector <- append(relative_risk_vector,
                                pred$allRRfit)
       } else {
 
-       relative_risk <- append(relative_risk,
+        relative_risk_vector <- append(relative_risk_vector,
                                pred$RRfit)
       }
 
@@ -814,42 +1007,68 @@ plot_and_write_relative_risk <- function(df_list,
               rep(regions_df$region_names[i],
                   length(pred$predvar)))
 
-     temperature <- append(temperature,
+     temp_vector <- append(temp_vector,
                            pred$predvar)
+
+     cen_vector <- append(cen_vector,
+                          rep(cen,
+                              length(pred$predvar)))
+
+     tmean_vector <- append(tmean_vector,
+                            data$tmean)
+
+     tmean_region_vector <-
+       append(tmean_region_vector,
+              rep(regions_df$region_names[i],
+                  length(data$tmean)))
 
     }
 
-  dev.off()
+  if (save_fig == TRUE) {
+
+    dev.off()
+
+  }
+
 
   output_df <- data.frame(regions = region_vector,
-                           temperature = temperature,
-                           relative_risk = relative_risk)
+                          temp = temp_vector,
+                          rel_risk = relative_risk_vector,
+                          centre_temp = cen_vector)
 
-  write.csv(output_df,
+  tmean_df <- data.frame(temp_mean = tmean_vector,
+                         regions = tmean_region_vector)
+
+  if (save_csv == TRUE) {
+
+      write.csv(output_df,
              paste(output_folder_path,
                    'output_all_regions_data.csv', sep = ''),
              row.names=FALSE)
 
-  if (!is.null(blup)) {
+    if (!is.null(blup)) {
 
-    relative_risk <- pred$allRRfit
+      relative_risk <- pred$allRRfit
 
-  } else {
+    } else {
 
-    relative_risk <- pred$RRfit
+      relative_risk <- pred$RRfit
+    }
+
+    # Output for testing
+     output_df_test <- data.frame(
+                             temperature = pred$predvar,
+                             relative_risk = relative_risk
+                             )
+    # Output for testing
+     write.csv(output_df_test,
+               paste(output_folder_path,
+                     'output_one_region_data_new.csv', sep = ''),
+               row.names=FALSE
+               )
   }
 
-  # Output for testing
-   output_df_test <- data.frame(
-                           temperature = pred$predvar,
-                           relative_risk = relative_risk
-                           )
-  # Output for testing
-   write.csv(output_df_test,
-             paste(output_folder_path,
-                   'output_one_region_data_new.csv', sep = ''),
-             row.names=FALSE
-             )
+  return (list(output_df, tmean_df))
 
 }
 
@@ -861,12 +1080,29 @@ plot_and_write_relative_risk <- function(df_list,
 #' @details Modified from Gasparrini A et al. (2015)
 #' The Lancet. 2015;386(9991):369-375.
 #'
-#' @param input_csv_path Path to a CSV contain
+#' @param input_csv_path_ Path to a CSV contain
 #' daily time series of death and temperature per region.
-#' @param output_folder_path Path to folder for storing outputs.
+#' @param output_folder_path_ Path to folder for storing outputs.
 #' @param meta_analysis Boolean. Whether to include meta-analysis.
 #' TRUE or FALSE.
-
+#' @param save_fig_ Whether to save output figure (Bool)
+#' @param save_csv_ Whether to save output CSVs (Bool)
+#' @param dependent_col_ the column name of the
+#' dependent variable of interest e.g. deaths
+#' @param indepedent_col_ column names of independent
+#' variables to include in regression (excluding temperature,
+#' see config file for formula structure)
+#' @param varfun_ Exposure function
+#' (see dlnm::crossbasis)
+#' @param varper_ Internal knot positions in exposure function
+#' (see dlnm::crossbasis)
+#' @param vardegree_ Degrees of freedom in exposure function
+#' (see dlnm:crossbasis)
+#' @param lag_ Lag length in time
+#' (see dlnm::logknots)
+#' @param lagnk_ Number of knots in lag function
+#' (see dlnm::logknots)
+#' @param dfseas_ Degrees of freedom for seasonality
 #'
 #' @return A PDF containing a line plot of temperature versus
 #'relative risk per region,
@@ -876,30 +1112,52 @@ plot_and_write_relative_risk <- function(df_list,
 #' @seealso [dlnm] package
 #'
 #' @export
-do_analysis <- function(input_csv_path,
+do_analysis <- function(input_csv_path_,
                         output_folder_path_,
-                        meta_analysis) {
+                        save_fig_ = TRUE,
+                        save_csv_ = TRUE,
+                        meta_analysis,
+                        dependent_col_,
+                        independent_col_,
+                        time_col_,
+                        region_col_,
+                        temp_col_,
+                        varfun_,
+                        varper_,
+                        vardegree_,
+                        lag_,
+                        lagnk_,
+                        dfseas_) {
 
   c(df_list_unordered_, regions_) %<-%
     load_data(
-      input_path = input_csv_path
-              )
+      input_csv_path = input_csv_path_,
+      dependent_col = dependent_col_,
+      time_col = time_col_,
+      region_col = region_col_,
+      temp_col = temp_col_
+      )
 
   c(regions_df_, df_list_) %<-%
     get_region_metadata(
       regions = regions_,
       df_list_unordered = df_list_unordered_,
-      region_names = c("North East","North West",
-                       "Yorkshire & Humber","East Midlands",
-                       "West Midlands","East","London",
-                       "South East","South West", "Wales")
+      region_names = NULL
       )
 
   if (meta_analysis == TRUE) {
 
     c(coef_, vcov_) %<-%
     run_model(df_list = df_list_,
-              regions_df = regions_df_)
+              regions_df = regions_df_,
+              dependent_col = dependent_col_,
+              independent_col = independent_col_,
+              varfun = varfun_,
+              varper = varper_,
+              vardegree = vardegree_,
+              lag = lag_,
+              lagnk = lagnk_,
+              dfseas = dfseas_)
 
     c(mv_, blup_) %<-%
       run_meta_model(
@@ -924,7 +1182,15 @@ do_analysis <- function(input_csv_path,
     calculate_min_mortality_temp(
       df_list = df_list_,
       regions_df = regions_df_,
-      blup = blup_
+      blup = blup_,
+      dependent_col = dependent_col_,
+      independent_col = independent_col_,
+      varfun = varfun_,
+      varper = varper_,
+      vardegree = vardegree_,
+      lag = lag_,
+      lagnk = lagnk_,
+      dfseas = dfseas_
       )
 
   c(totdeath_, arraysim_, matsim_) %<-%
@@ -932,7 +1198,15 @@ do_analysis <- function(input_csv_path,
       df_list = df_list_,
       regions_df = regions_df_,
       blup = blup_,
-      mintempregions = mintempregions_
+      mintempregions = mintempregions_,
+      dependent_col = dependent_col_,
+      independent_col = independent_col_,
+      varfun = varfun_,
+      varper = varper_,
+      vardegree = vardegree_,
+      lag = lag_,
+      lagnk = lagnk_,
+      dfseas = dfseas_
       )
 
   c(antot, totdeathtot, aftot, afregions) %<-%
@@ -945,11 +1219,212 @@ do_analysis <- function(input_csv_path,
       output_folder_path = output_folder_path_
       )
 
-  plot_and_write_relative_risk(
+  c(output_df, tmean_df) %<-%
+    plot_and_write_relative_risk(
     df_list = df_list_,
     blup = blup_,
     regions_df = regions_df_,
     mintempregions = mintempregions_,
-    output_folder_path = output_folder_path_
+    save_fig = save_fig_,
+    save_csv = save_csv_,
+    output_folder_path = output_folder_path_,
+    dependent_col = dependent_col_,
+    independent_col = independent_col_,
+    varfun = varfun_,
+    varper = varper_,
+    vardegree = vardegree_,
+    lag = lag_,
+    lagnk = lagnk_,
+    dfseas = dfseas_
     )
+
+  return (list(output_df, tmean_df))
+
 }
+
+###
+### (c) Antonio Gasparrini 2015-2017
+#
+################################################################################
+# FUNCTION FOR COMPUTING ATTRIBUTABLE MEASURES FROM DLNM
+#   REQUIRES dlnm VERSION 2.2.0 AND ON
+################################################################################
+#
+# DISCLAIMER:
+#   THE CODE COMPOSING THIS FUNCTION HAS NOT BEEN SYSTEMATICALLY TESTED. THE
+#   PRESENCE OF BUGS CANNOT BE RULED OUT. ALSO, ALTHOUGH WRITTEN GENERICALLY
+#   FOR WORKING IN DIFFERENT SCENARIOS AND DATA, THE FUNCTION HAS NOT BEEN
+#   TESTED IN CONTEXTS DIFFERENT THAN THE EXAMPLE INCLUDED IN THE PAPER.
+#   IT IS RESPONSIBILITY OF THE USER TO CHECK THE RELIABILITY OF THE RESULTS IN
+#   DIFFERENT APPLICATIONS.
+#
+# Version: 25 January 2017
+# AN UPDATED VERSION CAN BE FOUND AT:
+#   https://github.com/gasparrini/2014_gasparrini_BMCmrm_Rcodedata
+#
+################################################################################
+# SEE THE PDF WITH A DETAILED DOCUMENTATION AT www.ag-myresearch.com
+#
+#   - x: AN EXPOSURE VECTOR OR (ONLY FOR dir="back") A MATRIX OF LAGGED EXPOSURES
+#   - basis: THE CROSS-BASIS COMPUTED FROM x
+#   - cases: THE CASES VECTOR OR (ONLY FOR dir="forw") THE MATRIX OF FUTURE CASES
+#   - model: THE FITTED MODEL
+#   - coef, vcov: COEF AND VCOV FOR basis IF model IS NOT PROVIDED
+#   - model.link: LINK FUNCTION IF model IS NOT PROVIDED
+#   - type: EITHER "an" OR "af" FOR ATTRIBUTABLE NUMBER OR FRACTION
+#   - dir: EITHER "back" OR "forw" FOR BACKWARD OR FORWARD PERSPECTIVES
+#   - tot: IF TRUE, THE TOTAL ATTRIBUTABLE RISK IS COMPUTED
+#   - cen: THE REFERENCE VALUE USED AS COUNTERFACTUAL SCENARIO
+#   - range: THE RANGE OF EXPOSURE. IF NULL, THE WHOLE RANGE IS USED
+#   - sim: IF SIMULATION SAMPLES SHOULD BE RETURNED. ONLY FOR tot=TRUE
+#   - nsim: NUMBER OF SIMULATION SAMPLES
+################################################################################
+attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
+                   type="af",dir="back",tot=TRUE,cen,range=NULL,sim=FALSE,nsim=5000) {
+  ################################################################################
+  #
+  # CHECK VERSION OF THE DLNM PACKAGE
+  if(packageVersion("dlnm")<"2.2.0")
+    stop("update dlnm package to version >= 2.2.0")
+  #
+  # EXTRACT NAME AND CHECK type AND dir
+  name <- deparse(substitute(basis))
+  type <- match.arg(type,c("an","af"))
+  dir <- match.arg(dir,c("back","forw"))
+  #
+  # DEFINE CENTERING
+  if(missing(cen) && is.null(cen <- attr(basis,"argvar")$cen))
+    stop("'cen' must be provided")
+  if(!is.numeric(cen) && length(cen)>1L) stop("'cen' must be a numeric scalar")
+  attributes(basis)$argvar$cen <- NULL
+  #
+  # SELECT RANGE (FORCE TO CENTERING VALUE OTHERWISE, MEANING NULL RISK)
+  if(!is.null(range)) x[x<range[1]|x>range[2]] <- cen
+  #
+  # COMPUTE THE MATRIX OF
+  #   - LAGGED EXPOSURES IF dir="back"
+  #   - CONSTANT EXPOSURES ALONG LAGS IF dir="forw"
+  lag <- attr(basis,"lag")
+  if(NCOL(x)==1L) {
+    at <- if(dir=="back") tsModel:::Lag(x,seq(lag[1],lag[2])) else
+      matrix(rep(x,diff(lag)+1),length(x))
+  } else {
+    if(dir=="forw") stop("'x' must be a vector when dir='forw'")
+    if(ncol(at <- x)!=diff(lag)+1)
+      stop("dimension of 'x' not compatible with 'basis'")
+  }
+  #
+  # NUMBER USED FOR THE CONTRIBUTION AT EACH TIME IN FORWARD TYPE
+  #   - IF cases PROVIDED AS A MATRIX, TAKE THE ROW AVERAGE
+  #   - IF PROVIDED AS A TIME SERIES, COMPUTE THE FORWARD MOVING AVERAGE
+  #   - THIS EXCLUDES MISSING ACCORDINGLY
+  # ALSO COMPUTE THE DENOMINATOR TO BE USED BELOW
+  if(NROW(cases)!=NROW(at)) stop("'x' and 'cases' not consistent")
+  if(NCOL(cases)>1L) {
+    if(dir=="back") stop("'cases' must be a vector if dir='back'")
+    if(ncol(cases)!=diff(lag)+1) stop("dimension of 'cases' not compatible")
+    den <- sum(rowMeans(cases,na.rm=TRUE),na.rm=TRUE)
+    cases <- rowMeans(cases)
+  } else {
+    den <- sum(cases,na.rm=TRUE)
+    if(dir=="forw")
+      cases <- rowMeans(as.matrix(tsModel:::Lag(cases,-seq(lag[1],lag[2]))))
+  }
+  #
+  ################################################################################
+  #
+  # EXTRACT COEF AND VCOV IF MODEL IS PROVIDED
+  if(!is.null(model)) {
+    cond <- paste0(name,"[[:print:]]*v[0-9]{1,2}\\.l[0-9]{1,2}")
+    if(ncol(basis)==1L) cond <- name
+    model.class <- class(model)
+    coef <- dlnm:::getcoef(model,model.class)
+    ind <- grep(cond,names(coef))
+    coef <- coef[ind]
+    vcov <- dlnm:::getvcov(model,model.class)[ind,ind,drop=FALSE]
+    model.link <- dlnm:::getlink(model,model.class)
+    if(!model.link %in% c("log","logit"))
+      stop("'model' must have a log or logit link function")
+  }
+  #
+  # IF REDUCED ESTIMATES ARE PROVIDED
+  typebasis <- ifelse(length(coef)!=ncol(basis),"one","cb")
+  #
+  ################################################################################
+  #
+  # PREPARE THE ARGUMENTS FOR TH BASIS TRANSFORMATION
+  predvar <- if(typebasis=="one") x else seq(NROW(at))
+  predlag <- if(typebasis=="one") 0 else dlnm:::seqlag(lag)
+  #
+  # CREATE THE MATRIX OF TRANSFORMED CENTRED VARIABLES (dependent_col ON typebasis)
+  if(typebasis=="cb") {
+    Xpred <- dlnm:::mkXpred(typebasis,basis,at,predvar,predlag,cen)
+    Xpredall <- 0
+    for (i in seq(length(predlag))) {
+      ind <- seq(length(predvar))+length(predvar)*(i-1)
+      Xpredall <- Xpredall + Xpred[ind,,drop=FALSE]
+    }
+  } else {
+    basis <- do.call(onebasis,c(list(x=x),attr(basis,"argvar")))
+    Xpredall <- dlnm:::mkXpred(typebasis,basis,x,predvar,predlag,cen)
+  }
+  #
+  # CHECK DIMENSIONS
+  if(length(coef)!=ncol(Xpredall))
+    stop("arguments 'basis' do not match 'model' or 'coef'-'vcov'")
+  if(any(dim(vcov)!=c(length(coef),length(coef))))
+    stop("arguments 'coef' and 'vcov' do no match")
+  if(typebasis=="one" && dir=="back")
+    stop("only dir='forw' allowed for reduced estimates")
+  #
+  ################################################################################
+  #
+  # COMPUTE AF AND AN
+  af <- 1-exp(-drop(as.matrix(Xpredall%*%coef)))
+  an <- af*cases
+  #
+  # TOTAL
+  #   - SELECT NON-MISSING OBS CONTRIBUTING TO COMPUTATION
+  #   - DERIVE TOTAL AF
+  #   - COMPUTE TOTAL AN WITH ADJUSTED DENOMINATOR (OBSERVED TOTAL NUMBER)
+  if(tot) {
+    isna <- is.na(an)
+    af <- sum(an[!isna])/sum(cases[!isna])
+    an <- af*den
+  }
+  #
+  ################################################################################
+  #
+  # EMPIRICAL CONFIDENCE INTERVALS
+  if(!tot && sim) {
+    sim <- FALSE
+    warning("simulation samples only returned for tot=T")
+  }
+  if(sim) {
+    # SAMPLE COEF
+    k <- length(coef)
+    eigen <- eigen(vcov)
+    X <- matrix(rnorm(length(coef)*nsim),nsim)
+    coefsim <- coef + eigen$vectors %*% diag(sqrt(eigen$values),k) %*% t(X)
+    # RUN THE LOOP
+    # pre_afsim <- (1 - exp(- Xpredall %*% coefsim)) * cases # a matrix
+    # afsim <- colSums(pre_afsim,na.rm=TRUE) / sum(cases[!isna],na.rm=TRUE)
+    afsim <- apply(coefsim,2, function(coefi) {
+      ani <- (1-exp(-drop(Xpredall%*%coefi)))*cases
+      sum(ani[!is.na(ani)])/sum(cases[!is.na(ani)])
+    })
+    ansim <- afsim*den
+  }
+  #
+  ################################################################################
+  #
+  res <- if(sim) {
+    if(type=="an") ansim else afsim
+  } else {
+    if(type=="an") an else af
+  }
+  #
+  return(res)
+}
+
+#
