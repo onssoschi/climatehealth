@@ -4,7 +4,19 @@
 \alias{calculate_min_mortality_temp}
 \title{Calculate minimum mortality values}
 \usage{
-calculate_min_mortality_temp(df_list, regions_df, blup = NULL)
+calculate_min_mortality_temp(
+  df_list,
+  regions_df,
+  blup = NULL,
+  dependent_col,
+  independent_col,
+  varfun,
+  varper,
+  vardegree,
+  lag,
+  lagnk,
+  dfseas
+)
 }
 \arguments{
 \item{df_list}{An alphabetically-ordered list of dataframes for each region.}
@@ -13,6 +25,30 @@ calculate_min_mortality_temp(df_list, regions_df, blup = NULL)
 region names. Column 2 is user-specified region names.}
 
 \item{blup}{A list of BLUPs (best linear unbiased predictions).}
+
+\item{dependent_col}{the column name of the
+dependent variable of interest e.g. deaths}
+
+\item{varfun}{Exposure function
+(see dlnm::crossbasis)}
+
+\item{varper}{Internal knot positions in exposure function
+(see dlnm::crossbasis)}
+
+\item{vardegree}{Degrees of freedom in exposure function
+(see dlnm:crossbasis)}
+
+\item{lag}{Lag length in time
+(see dlnm::logknots)}
+
+\item{lagnk}{Number of knots in lag function
+(see dlnm::logknots)}
+
+\item{dfseas}{Degrees of freedom for seasonality}
+
+\item{indepedent_col}{column names of independent
+variables to include in regression (excluding temperature,
+see config file for formula structure)}
 }
 \value{
 \itemize{

@@ -4,16 +4,61 @@
 \alias{do_analysis}
 \title{Do full DLNM analysis}
 \usage{
-do_analysis(input_csv_path, output_folder_path_, meta_analysis)
+do_analysis(
+  input_csv_path_,
+  output_folder_path_,
+  save_fig_ = TRUE,
+  save_csv_ = TRUE,
+  meta_analysis,
+  dependent_col_,
+  independent_col_,
+  time_col_,
+  region_col_,
+  temp_col_,
+  varfun_,
+  varper_,
+  vardegree_,
+  lag_,
+  lagnk_,
+  dfseas_
+)
 }
 \arguments{
-\item{input_csv_path}{Path to a CSV contain
+\item{input_csv_path_}{Path to a CSV contain
 daily time series of death and temperature per region.}
+
+\item{output_folder_path_}{Path to folder for storing outputs.}
+
+\item{save_fig_}{Whether to save output figure (Bool)}
+
+\item{save_csv_}{Whether to save output CSVs (Bool)}
 
 \item{meta_analysis}{Boolean. Whether to include meta-analysis.
 TRUE or FALSE.}
 
-\item{output_folder_path}{Path to folder for storing outputs.}
+\item{dependent_col_}{the column name of the
+dependent variable of interest e.g. deaths}
+
+\item{varfun_}{Exposure function
+(see dlnm::crossbasis)}
+
+\item{varper_}{Internal knot positions in exposure function
+(see dlnm::crossbasis)}
+
+\item{vardegree_}{Degrees of freedom in exposure function
+(see dlnm:crossbasis)}
+
+\item{lag_}{Lag length in time
+(see dlnm::logknots)}
+
+\item{lagnk_}{Number of knots in lag function
+(see dlnm::logknots)}
+
+\item{dfseas_}{Degrees of freedom for seasonality}
+
+\item{indepedent_col_}{column names of independent
+variables to include in regression (excluding temperature,
+see config file for formula structure)}
 }
 \value{
 A PDF containing a line plot of temperature versus
