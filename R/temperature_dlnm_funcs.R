@@ -12,8 +12,14 @@ config <- config::get()
 #'
 #' @description Loads data and names of regions for analysis from a CSV file.
 #'
-#' @param input_path Path to a CSV containing a
+#' @param input_csv_path Path to a CSV containing a
 #' daily time series of death and temperature per region.
+#' @param dependent_col the column name of the
+#' dependent variable of interest e.g. deaths
+#' @param time_col Time column e.g. date
+#' @param region_col The region column over which the data
+#' are spatially aggregated e.g. regnames
+#' @param temp_col The temperature column e.g. tmean
 #' @return
 #' \itemize{
 #'   \item `df_list_unordered` A list of dataframes for each region
@@ -95,7 +101,23 @@ get_region_metadata <- function(regions,
 
 #' Define regression model
 #'
-#' @param data dataframe with tmean column to be modelled
+#' @param dataset dataframe with tmean column to be modelled
+#' @param dependent_col the column name of the
+#' dependent variable of interest e.g. deaths
+#' @param indepedent_col column names of independent
+#' variables to include in regression (excluding temperature,
+#' see config file for formula structure)
+#' @param varfun Exposure function
+#' (see dlnm::crossbasis)
+#' @param varper Internal knot positions in exposure function
+#' (see dlnm::crossbasis)
+#' @param vardegree Degrees of freedom in exposure function
+#' (see dlnm:crossbasis)
+#' @param lag Lag length in time
+#' (see dlnm::logknots)
+#' @param lagnk Number of knots in lag function
+#' (see dlnm::logknots)
+#' @param dfseas Degrees of freedom for seasonality
 #' @return
 #' \itemize{
 #'   \item `model` A quasi-poission generalised linear model object.
@@ -149,6 +171,22 @@ define_model <- function(dataset,
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #'   region names. Column 2 is user-specified region names.
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
+#' @param dependent_col the column name of the
+#' dependent variable of interest e.g. deaths
+#' @param indepedent_col column names of independent
+#' variables to include in regression (excluding temperature,
+#' see config file for formula structure)
+#' @param varfun Exposure function
+#' (see dlnm::crossbasis)
+#' @param varper Internal knot positions in exposure function
+#' (see dlnm::crossbasis)
+#' @param vardegree Degrees of freedom in exposure function
+#' (see dlnm:crossbasis)
+#' @param lag Lag length in time
+#' (see dlnm::logknots)
+#' @param lagnk Number of knots in lag function
+#' (see dlnm::logknots)
+#' @param dfseas Degrees of freedom for seasonality
 #' @return
 #' \itemize{
 #'   \item `coef` A matrix of coefficients for reduced model.
@@ -224,6 +262,8 @@ run_model <- function(df_list,
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #'   region names. Column 2 is user-specified region names.
+#' @param coef A matrix of coefficients for reduced model.
+#' @param vcov A list. Co-variance matrices for each region for reduced model.
 #'
 #' @return
 #' \itemize{
@@ -324,6 +364,22 @@ wald_results <- function(mv) {
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #'   region names. Column 2 is user-specified region names.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
+#' @param dependent_col the column name of the
+#' dependent variable of interest e.g. deaths
+#' @param indepedent_col column names of independent
+#' variables to include in regression (excluding temperature,
+#' see config file for formula structure)
+#' @param varfun Exposure function
+#' (see dlnm::crossbasis)
+#' @param varper Internal knot positions in exposure function
+#' (see dlnm::crossbasis)
+#' @param vardegree Degrees of freedom in exposure function
+#' (see dlnm:crossbasis)
+#' @param lag Lag length in time
+#' (see dlnm::logknots)
+#' @param lagnk Number of knots in lag function
+#' (see dlnm::logknots)
+#' @param dfseas Degrees of freedom for seasonality
 #'
 #' @return
 #' \itemize{
@@ -437,6 +493,22 @@ calculate_min_mortality_temp <-  function(df_list,
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param mintempregions A named numeric vector.
 #' Minimum (optimum) mortality temperature per region.
+#' @param dependent_col the column name of the
+#' dependent variable of interest e.g. deaths
+#' @param indepedent_col column names of independent
+#' variables to include in regression (excluding temperature,
+#' see config file for formula structure)
+#' @param varfun Exposure function
+#' (see dlnm::crossbasis)
+#' @param varper Internal knot positions in exposure function
+#' (see dlnm::crossbasis)
+#' @param vardegree Degrees of freedom in exposure function
+#' (see dlnm:crossbasis)
+#' @param lag Lag length in time
+#' (see dlnm::logknots)
+#' @param lagnk Number of knots in lag function
+#' (see dlnm::logknots)
+#' @param dfseas Degrees of freedom for seasonality
 #'
 #' @return A list of variables
 #' \itemize{
@@ -727,6 +799,24 @@ write_attributable_deaths <- function(df_list,
 #'  Column 2 is user-specified region names.
 #' @param mintempregions A named numeric vector.
 #'   Minimum (optimum) mortality temperature per region.
+#' @param save_fig Whether to save output figure (Bool)
+#' @param save_csv Whether to save output CSVs (Bool)
+#' @param dependent_col the column name of the
+#' dependent variable of interest e.g. deaths
+#' @param indepedent_col column names of independent
+#' variables to include in regression (excluding temperature,
+#' see config file for formula structure)
+#' @param varfun Exposure function
+#' (see dlnm::crossbasis)
+#' @param varper Internal knot positions in exposure function
+#' (see dlnm::crossbasis)
+#' @param vardegree Degrees of freedom in exposure function
+#' (see dlnm:crossbasis)
+#' @param lag Lag length in time
+#' (see dlnm::logknots)
+#' @param lagnk Number of knots in lag function
+#' (see dlnm::logknots)
+#' @param dfseas Degrees of freedom for seasonality
 #' @param output_folder_path Path to folder for storing outputs.
 #'
 #' @export
@@ -990,12 +1080,29 @@ plot_and_write_relative_risk <- function(df_list,
 #' @details Modified from Gasparrini A et al. (2015)
 #' The Lancet. 2015;386(9991):369-375.
 #'
-#' @param input_csv_path Path to a CSV contain
+#' @param input_csv_path_ Path to a CSV contain
 #' daily time series of death and temperature per region.
-#' @param output_folder_path Path to folder for storing outputs.
+#' @param output_folder_path_ Path to folder for storing outputs.
 #' @param meta_analysis Boolean. Whether to include meta-analysis.
 #' TRUE or FALSE.
-
+#' @param save_fig_ Whether to save output figure (Bool)
+#' @param save_csv_ Whether to save output CSVs (Bool)
+#' @param dependent_col_ the column name of the
+#' dependent variable of interest e.g. deaths
+#' @param indepedent_col_ column names of independent
+#' variables to include in regression (excluding temperature,
+#' see config file for formula structure)
+#' @param varfun_ Exposure function
+#' (see dlnm::crossbasis)
+#' @param varper_ Internal knot positions in exposure function
+#' (see dlnm::crossbasis)
+#' @param vardegree_ Degrees of freedom in exposure function
+#' (see dlnm:crossbasis)
+#' @param lag_ Lag length in time
+#' (see dlnm::logknots)
+#' @param lagnk_ Number of knots in lag function
+#' (see dlnm::logknots)
+#' @param dfseas_ Degrees of freedom for seasonality
 #'
 #' @return A PDF containing a line plot of temperature versus
 #'relative risk per region,
