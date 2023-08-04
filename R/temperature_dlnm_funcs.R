@@ -879,7 +879,9 @@ plot_and_write_relative_risk <- function(df_list,
   tmean_vector <- c()
   tmean_region_vector <- c()
 
-  for(i in seq(length(df_list))) {
+  no_of_regions <- seq(length(df_list))
+
+  for(i in no_of_regions) {
 
     data <- df_list[[i]]
 
@@ -1072,6 +1074,255 @@ plot_and_write_relative_risk <- function(df_list,
 
 }
 
+#' Plot and write results of analysis
+#'
+#' @param df_list An alphabetically-ordered
+#' list of dataframes for each region.
+#' @param blup A list of BLUPs (best linear unbiased predictions).
+#' @param regions_df A dataframe with two columns.
+#'  Column 1 is abbreviated region names.
+#'  Column 2 is user-specified region names.
+#' @param mintempregions A named numeric vector.
+#'   Minimum (optimum) mortality temperature per region.
+#' @param save_fig Whether to save output figure (Bool)
+#' @param save_csv Whether to save output CSVs (Bool)
+#' @param dependent_col the column name of the
+#' dependent variable of interest e.g. deaths
+#' @param indepedent_col column names of independent
+#' variables to include in regression (excluding temperature,
+#' see config file for formula structure)
+#' @param varfun Exposure function
+#' (see dlnm::crossbasis)
+#' @param varper Internal knot positions in exposure function
+#' (see dlnm::crossbasis)
+#' @param vardegree Degrees of freedom in exposure function
+#' (see dlnm:crossbasis)
+#' @param lag Lag length in time
+#' (see dlnm::logknots)
+#' @param lagnk Number of knots in lag function
+#' (see dlnm::logknots)
+#' @param dfseas Degrees of freedom for seasonality
+#' @param output_folder_path Path to folder for storing outputs.
+#'
+#' @export
+#'
+#' @return A PDF containing a line plot of temperature
+#' versus relative risk per region,
+#' and histogram of temperatures per region.
+#' A CSV of relative risk per temperature per region.
+#' @examples output_folder_path = 'myfolder/output/'
+plot_and_write_relative_risk_all <- function(df_list,
+                                         mintempregions,
+                                         save_fig = TRUE,
+                                         save_csv = TRUE,
+                                         varfun,
+                                         varper,
+                                         vardegree,
+                                         coef,
+                                         vcov,
+                                         output_folder_path,
+                                         ...
+                                         ) {
+
+  if (save_fig == TRUE) {
+
+    if (!is.null(output_folder_path)) {
+
+      pdf(paste(output_folder_path,
+                "output_all_plot.pdf",
+                sep = ''),
+          width = 8, height = 9)
+
+    } else {
+
+      pdf("output_all_plot.pdf", width = 8, height = 9)
+
+    }
+
+  }
+
+  par(mar = c(4,3.8,3,2.4),mgp = c(2.5,1,0),las = 1)
+
+  layout(matrix(1:1, ncol = 1))
+
+  region_vector <- c()
+  temp_vector <- c()
+  relative_risk_vector <- c()
+  cen_vector <- c()
+
+  tmean_vector <- c()
+  tmean_region_vector <- c()
+
+  data <- do.call(rbind, df_list)
+
+  # Estimation method
+  method <- "reml"
+
+  # Overall cumulative summary for main model
+  mvall <- mvmeta(coef~1, vcov, method = method)
+
+  # Exclude extreme temps
+  # predvar <- quantile(data$tmean, 1:99/100, na.rm=T)
+
+  # All temps
+  predvar <- data$tmean
+
+  argvar <- list(x = predvar,
+                 fun = varfun,
+                 degree = vardegree,
+                 knots=quantile(data$tmean,
+                                varper/100, na.rm=T),
+                 Bound = range(data$tmean,na.rm=T))
+
+  bvar <- do.call(onebasis, argvar)
+
+  model <- NULL
+  cen <- median(mintempregions)
+
+  pred <- crosspred(bvar,
+                    coef = coef(mvall),
+                    vcov = vcov(mvall),
+                    model.link = "log",
+                    by = 0.1,
+                    cen = cen)
+
+  plot(pred,
+       type = "n",
+       ylab = "RR",
+       ylim=c(.0,3),
+       xlim=c(-8,30),
+       xlab=expression(paste("Temperature (",degree,"C)")),
+       main="England - aged 18 to 64 years")
+
+  abline(h=1)
+
+  optimal_meta_lower <- as.numeric(names(
+    which.min(which(pred$allRRfit >= 1 & pred$allRRfit <= 1.1))))
+  optimal_meta_upper <- as.numeric(names(
+    which.max(which(pred$allRRfit >= 1 & pred$allRRfit <= 1.1))))
+
+  ind_a <- pred$predvar <= optimal_meta_lower
+  ind_b <- pred$predvar >= optimal_meta_lower & pred$predvar <= cen
+  ind_c <- pred$predvar >= cen & pred$predvar <= optimal_meta_upper
+  ind_d <- pred$predvar >= optimal_meta_upper
+
+  relative_risk_vals <- pred$allRRfit
+
+  lines(pred$predvar,
+        pred$allRRfit,
+        col = 'black',
+        lwd = 1)
+
+  lines(pred$predvar[ind_a],
+        pred$allRRfit[ind_a],
+        col = c("#000FFF"),
+        lwd = 1.5)
+  lines(pred$predvar[ind_b],
+        pred$allRRfit[ind_b],
+        col = c("#ABAFFF"),
+        lwd = 1.5)
+  lines(pred$predvar[ind_c],
+        pred$allRRfit[ind_c],
+        col = c("#FFA7A7"),
+        lwd = 1.5)
+  lines(pred$predvar[ind_d],
+        pred$allRRfit[ind_d],
+        col = c("#C00000"),
+        lwd = 1.5)
+
+  axis(2, at = 1:5*0.5)
+
+  breaks <- c(min(data$tmean, na.rm = T)-1,
+              seq(pred$predvar[1],
+                  pred$predvar[length(pred$predvar)],
+                  length = 30),
+              max(data$tmean,na.rm = T) + 1)
+
+
+  # hist <- hist(data$tmean, breaks = breaks, plot = F)
+  # hist$density <- hist$density / max(hist$density) * 0.7
+  # prop <- max(hist$density) / max(hist$counts)
+  # counts <- pretty(hist$count, 3)
+
+  # plot(hist,
+  #      ylim = c(0,max(hist$density)*3.5),
+  #      axes = F, ann = F, col = grey(0.95),
+  #      breaks = breaks, freq = F, add = T)
+  #
+  # axis(4, at = counts*prop, labels = counts, cex.axis = 0.7)
+  # mtext("N",4,line = -0.5,at = mean(counts*prop),cex=0.5)
+  #
+  # axis(1,at = c(-5,0,5,10,15,20,25,30))
+  # axis(2,at = 1:6*0.5)
+
+  abline(v = optimal_meta_lower,lty=3)
+  abline(v = optimal_meta_upper,lty=3)
+
+  relative_risk_vector <- append(relative_risk_vector,
+                                   pred$allRRfit)
+
+  region_vector <-
+    append(region_vector,
+           rep('England',
+               length(pred$predvar)))
+
+  temp_vector <- append(temp_vector,
+                        pred$predvar)
+
+  cen_vector <- append(cen_vector,
+                       rep(cen,
+                           length(pred$predvar)))
+
+  tmean_vector <- append(tmean_vector,
+                         data$tmean)
+
+  tmean_region_vector <-
+    append(tmean_region_vector,
+           rep('England',
+               length(data$tmean)))
+
+  if (save_fig == TRUE) {
+
+    dev.off()
+
+  }
+
+  output_df <- data.frame(regions = region_vector,
+                          temp = temp_vector,
+                          rel_risk = relative_risk_vector,
+                          centre_temp = cen_vector)
+
+  tmean_df <- data.frame(temp_mean = tmean_vector,
+                         regions = tmean_region_vector)
+
+  if (save_csv == TRUE) {
+
+    write.csv(output_df,
+              paste(output_folder_path,
+                    'output_all_data.csv', sep = ''),
+              row.names=FALSE)
+
+
+    relative_risk <- pred$allRRfit
+
+    # Output for testing
+    output_df_test <- data.frame(
+      temperature = pred$predvar,
+      relative_risk = relative_risk
+    )
+    # Output for testing
+    write.csv(output_df_test,
+              paste(output_folder_path,
+                    'output_one_data_new.csv', sep = ''),
+              row.names=FALSE
+    )
+
+  }
+
+  return (list(output_df, tmean_df))
+
+}
+
 #' Do full DLNM analysis
 #'
 #' @description Runs a sequence of functions to carry out
@@ -1127,7 +1378,8 @@ do_analysis <- function(input_csv_path_,
                         vardegree_,
                         lag_,
                         lagnk_,
-                        dfseas_) {
+                        dfseas_,
+                        all = TRUE) {
 
   c(df_list_unordered_, regions_) %<-%
     load_data(
@@ -1219,24 +1471,44 @@ do_analysis <- function(input_csv_path_,
       output_folder_path = output_folder_path_
       )
 
-  c(output_df, tmean_df) %<-%
-    plot_and_write_relative_risk(
-    df_list = df_list_,
-    blup = blup_,
-    regions_df = regions_df_,
-    mintempregions = mintempregions_,
-    save_fig = save_fig_,
-    save_csv = save_csv_,
-    output_folder_path = output_folder_path_,
-    dependent_col = dependent_col_,
-    independent_col = independent_col_,
-    varfun = varfun_,
-    varper = varper_,
-    vardegree = vardegree_,
-    lag = lag_,
-    lagnk = lagnk_,
-    dfseas = dfseas_
-    )
+  if (all == TRUE) {
+
+    c(output_df, tmean_df) %<-%
+      plot_and_write_relative_risk_all(
+        df_list = df_list_,
+        mintempregions = mintempregions_,
+        save_fig = save_fig_,
+        save_csv = save_csv_,
+        varfun = varfun_,
+        varper = varper_,
+        vardegree = vardegree_,
+        coef = coef_,
+        vcov = vcov_,
+        output_folder_path = output_folder_path_,
+      )
+
+  } else {
+
+    c(output_df, tmean_df) %<-%
+      plot_and_write_relative_risk(
+      df_list = df_list_,
+      blup = blup_,
+      regions_df = regions_df_,
+      mintempregions = mintempregions_,
+      save_fig = save_fig_,
+      save_csv = save_csv_,
+      output_folder_path = output_folder_path_,
+      dependent_col = dependent_col_,
+      independent_col = independent_col_,
+      varfun = varfun_,
+      varper = varper_,
+      vardegree = vardegree_,
+      lag = lag_,
+      lagnk = lagnk_,
+      dfseas = dfseas_
+      )
+
+  }
 
   return (list(output_df, tmean_df))
 
