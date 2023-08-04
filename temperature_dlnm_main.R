@@ -28,5 +28,6 @@ c(output_df, tmean_df) %<-%
             vardegree_ = config$vardegree,
             lag_ = config$lag,
             lagnk_ = config$lagnk,
-            dfseas_ = config$dfseas
+            dfseas_ = config$dfseas,
+            all = TRUE
             )
