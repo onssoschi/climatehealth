@@ -7,7 +7,6 @@
 run_model(
   df_list,
   regions_df,
-  dependent_col,
   independent_col,
   varfun,
   varper,
@@ -22,9 +21,6 @@ run_model(
 
 \item{regions_df}{A dataframe with two columns. Column 1 is abbreviated
 region names. Column 2 is user-specified region names.}
-
-\item{dependent_col}{the column name of the
-dependent variable of interest e.g. deaths}
 
 \item{varfun}{Exposure function
 (see dlnm::crossbasis)}

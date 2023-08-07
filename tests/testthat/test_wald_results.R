@@ -29,7 +29,6 @@ test_that('Test wald_results() returns correct data type', {
     c(coef_, vcov_) %<-%
       run_model(df_list = df_list_,
                 regions_df = regions_df_,
-                dependent_col = config$dependent_col,
                 independent_col = config$independent_col,
                 varfun = config$varfun,
                 varper = config$varper,
@@ -87,7 +86,6 @@ test_that('Test wald_results() returns list of correct length', {
     c(coef_, vcov_) %<-%
       run_model(df_list = df_list_,
                 regions_df = regions_df_,
-                dependent_col = config$dependent_col,
                 independent_col = config$independent_col,
                 varfun = config$varfun,
                 varper = config$varper,
@@ -144,7 +142,6 @@ test_that('Test wald_results() returns p-values between 0 and 1', {
     c(coef_, vcov_) %<-%
       run_model(df_list = df_list_,
                 regions_df = regions_df_,
-                dependent_col = config$dependent_col,
                 independent_col = config$independent_col,
                 varfun = config$varfun,
                 varper = config$varper,

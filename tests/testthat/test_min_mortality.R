@@ -58,7 +58,6 @@ test_that('Test min_mortality() returns correct data types', {
     c(coef_, vcov_) %<-%
       run_model(df_list = df_list_,
                 regions_df = regions_df_,
-                dependent_col = config$dependent_col,
                 independent_col = config$independent_col,
                 varfun = config$varfun,
                 varper = config$varper,
