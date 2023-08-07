@@ -18,6 +18,7 @@ c(output_df, tmean_df) %<-%
             save_fig_ = config$save_fig,
             save_csv_ = config$save_csv,
             meta_analysis = config$meta_analysis,
+            by_region = config$by_region,
             dependent_col_ = config$dependent_col,
             independent_col_ = config$independent_col,
             time_col_ = config$time_col,
@@ -28,6 +29,5 @@ c(output_df, tmean_df) %<-%
             vardegree_ = config$vardegree,
             lag_ = config$lag,
             lagnk_ = config$lagnk,
-            dfseas_ = config$dfseas,
-            all = TRUE
+            dfseas_ = config$dfseas
             )

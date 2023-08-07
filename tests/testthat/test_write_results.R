@@ -27,7 +27,6 @@ test_that('Test output CSVs are written and of correct length', {
     c(coef_, vcov_) %<-%
       run_model(df_list = df_list_,
                 regions_df = regions_df_,
-                dependent_col = config$dependent_col,
                 independent_col = config$independent_col,
                 varfun = config$varfun,
                 varper = config$varper,
@@ -74,7 +73,6 @@ test_that('Test output CSVs are written and of correct length', {
       regions_df = regions_df_,
       blup = blup_,
       mintempregions = mintempregions_,
-      dependent_col = config$dependent_col,
       independent_col = config$independent_col,
       varfun = config$varfun,
       varper = config$varper,
@@ -86,7 +84,6 @@ test_that('Test output CSVs are written and of correct length', {
 
   c(antot, totdeathtot, aftot, afregions) %<-%
     write_attributable_deaths(
-      df_list = df_list_,
       regions_df = regions_df_,
       matsim = matsim_,
       arraysim = arraysim_,

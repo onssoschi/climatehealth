@@ -1,12 +1,16 @@
 default:
   # Input data
-  input_csv_path: 'tests/testthat/testdata/regEngWales.csv'
+  # input_csv_path: 'tests/testthat/testdata/regEngWales.csv'
+  input_csv_path: 'C:/Users/soutte/Office for National Statistics/Climate and Health - First run/complete_input_data_20230726.csv'
 
   # Output folder path
   output_folder_path: 'output/'
 
-  # Whether to perform meta-analysis (boolean)
+  # Whether to perform meta-analysis (boolean). Must be TRUE if by_region is FALSE
   meta_analysis: TRUE
+
+  # Whether to disaggregate by region. Must be TRUE if meta-analysis is FALSE.
+  by_region: FALSE
 
   # Define columns
   dependent_col: death

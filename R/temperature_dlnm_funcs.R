@@ -38,7 +38,7 @@ load_data <- function(input_csv_path,
   }
 
   df <- read.csv(input_csv_path, row.names=1) %>%
-    dplyr::rename(death = dependent_col,
+    dplyr::rename(dependent = dependent_col,
                   date = time_col,
                   regnames = region_col,
                   tmean = temp_col)
@@ -102,8 +102,6 @@ get_region_metadata <- function(regions,
 #' Define regression model
 #'
 #' @param dataset dataframe with tmean column to be modelled
-#' @param dependent_col the column name of the
-#' dependent variable of interest e.g. deaths
 #' @param indepedent_col column names of independent
 #' variables to include in regression (excluding temperature,
 #' see config file for formula structure)
@@ -126,7 +124,6 @@ get_region_metadata <- function(regions,
 #'   }
 #' @export
 define_model <- function(dataset,
-                         dependent_col,
                          independent_col,
                          varfun,
                          varper,
@@ -136,7 +133,7 @@ define_model <- function(dataset,
                          dfseas) {
 
   # Model formula
-  formula <- as.formula(paste(paste(dependent_col),
+  formula <- as.formula(paste(paste('dependent'),
                               " ~ ",
                               paste(independent_col,
                                     collapse= "+")))
@@ -171,8 +168,6 @@ define_model <- function(dataset,
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #'   region names. Column 2 is user-specified region names.
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
-#' @param dependent_col the column name of the
-#' dependent variable of interest e.g. deaths
 #' @param indepedent_col column names of independent
 #' variables to include in regression (excluding temperature,
 #' see config file for formula structure)
@@ -195,7 +190,6 @@ define_model <- function(dataset,
 #' @export
 run_model <- function(df_list,
                       regions_df,
-                      dependent_col,
                       independent_col,
                       varfun,
                       varper,
@@ -228,7 +222,6 @@ run_model <- function(df_list,
     data <- df_list[[i]]
 
     c(model, cb) %<-% define_model(dataset = data,
-                                   dependent_col = dependent_col,
                                    independent_col = independent_col,
                                    varfun = varfun,
                                    varper = varper,
@@ -364,8 +357,6 @@ wald_results <- function(mv) {
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #'   region names. Column 2 is user-specified region names.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
-#' @param dependent_col the column name of the
-#' dependent variable of interest e.g. deaths
 #' @param indepedent_col column names of independent
 #' variables to include in regression (excluding temperature,
 #' see config file for formula structure)
@@ -391,7 +382,6 @@ wald_results <- function(mv) {
 calculate_min_mortality_temp <-  function(df_list,
                                           regions_df,
                                           blup = NULL,
-                                          dependent_col,
                                           independent_col,
                                           varfun,
                                           varper,
@@ -454,7 +444,6 @@ calculate_min_mortality_temp <-  function(df_list,
       data <- df_list[[i]]
 
       c(model, cb) %<-% define_model(dataset = data,
-                                     dependent_col = dependent_col,
                                      independent_col = independent_col,
                                      varfun = varfun,
                                      varper = varper,
@@ -493,8 +482,6 @@ calculate_min_mortality_temp <-  function(df_list,
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param mintempregions A named numeric vector.
 #' Minimum (optimum) mortality temperature per region.
-#' @param dependent_col the column name of the
-#' dependent variable of interest e.g. deaths
 #' @param indepedent_col column names of independent
 #' variables to include in regression (excluding temperature,
 #' see config file for formula structure)
@@ -525,7 +512,6 @@ compute_attributable_deaths <- function(df_list,
                                         regions_df,
                                         blup = NULL,
                                         mintempregions,
-                                        dependent_col,
                                         independent_col,
                                         varfun,
                                         varper,
@@ -579,7 +565,6 @@ compute_attributable_deaths <- function(df_list,
       coefs <- blup[[i]]$blup
       vcovs <- blup[[i]]$vcov
       c(model, cb) %<-% define_model(dataset = data,
-                                     dependent_col = dependent_col,
                                      independent_col = independent_col,
                                      varfun = varfun,
                                      varper = varper,
@@ -595,7 +580,6 @@ compute_attributable_deaths <- function(df_list,
       vcovs <- NULL
 
       c(model, cb) %<-% define_model(dataset = data,
-                                     dependent_col = dependent_col,
                                      independent_col = independent_col,
                                      varfun = varfun,
                                      varper = varper,
@@ -610,7 +594,7 @@ compute_attributable_deaths <- function(df_list,
     # NB: The reduced coefficients are used here
     matsim[i, "glob"] <- attrdl(x = data$tmean,
                                basis = cb,
-                               cases = data$death,
+                               cases = data$dependent,
                                coef = coefs,
                                vcov = vcovs,
                                type = "an",
@@ -620,7 +604,7 @@ compute_attributable_deaths <- function(df_list,
 
     matsim[i, "cold"] <- attrdl(x = data$tmean,
                                basis = cb,
-                               cases = data$death,
+                               cases = data$dependent,
                                coef = coefs,
                                vcov = vcovs,
                                type = "an",
@@ -631,7 +615,7 @@ compute_attributable_deaths <- function(df_list,
 
     matsim[i, "heat" ] <- attrdl(x = data$tmean,
                                basis = cb,
-                               cases = data$death,
+                               cases = data$dependent,
                                coef = coefs,
                                vcov = vcovs,
                                type="an",
@@ -644,7 +628,7 @@ compute_attributable_deaths <- function(df_list,
     # Used to derive confidence intervals
     arraysim[i, "glob", ] <- attrdl(x = data$tmean,
                                   basis = cb,
-                                  cases = data$death,
+                                  cases = data$dependent,
                                   coef = coefs,
                                   vcov = vcovs,
                                   type = "an",
@@ -655,7 +639,7 @@ compute_attributable_deaths <- function(df_list,
 
     arraysim[i, "cold", ] <- attrdl(x = data$tmean,
                                   basis = cb,
-                                  cases = data$death,
+                                  cases = data$dependent,
                                   coef = coefs,
                                   vcov = vcovs,
                                   type = "an",
@@ -667,7 +651,7 @@ compute_attributable_deaths <- function(df_list,
 
     arraysim[i, "heat", ] <- attrdl(x = data$tmean,
                                   basis = cb,
-                                  cases = data$death,
+                                  cases = data$dependent,
                                   coef = coefs,
                                   vcov = vcovs,
                                   type = "an",
@@ -709,8 +693,7 @@ compute_attributable_deaths <- function(df_list,
 #'
 #' @return None
 #' @examples output_folder_path = 'myfolder/output/'
-write_attributable_deaths <- function(df_list,
-                                      regions_df,
+write_attributable_deaths <- function(regions_df,
                                       matsim,
                                       arraysim,
                                       totdeath,
@@ -801,8 +784,6 @@ write_attributable_deaths <- function(df_list,
 #'   Minimum (optimum) mortality temperature per region.
 #' @param save_fig Whether to save output figure (Bool)
 #' @param save_csv Whether to save output CSVs (Bool)
-#' @param dependent_col the column name of the
-#' dependent variable of interest e.g. deaths
 #' @param indepedent_col column names of independent
 #' variables to include in regression (excluding temperature,
 #' see config file for formula structure)
@@ -826,13 +807,15 @@ write_attributable_deaths <- function(df_list,
 #' and histogram of temperatures per region.
 #' A CSV of relative risk per temperature per region.
 #' @examples output_folder_path = 'myfolder/output/'
+#'
+
 plot_and_write_relative_risk <- function(df_list,
                                          blup = NULL,
                                          regions_df,
                                          mintempregions,
                                          save_fig = TRUE,
                                          save_csv = TRUE,
-                                         dependent_col,
+                                         output_folder_path,
                                          independent_col,
                                          varfun,
                                          varper,
@@ -840,14 +823,15 @@ plot_and_write_relative_risk <- function(df_list,
                                          lag,
                                          lagnk,
                                          dfseas,
-                                         output_folder_path) {
+                                         ...
+                                         ) {
 
   if (save_fig == TRUE) {
 
       if (!is.null(output_folder_path)) {
 
         pdf(paste(output_folder_path,
-              "output_all_regions_plot.pdf",
+              "output_all_regions_plot_.pdf",
               sep = ''),
         width = 8, height = 9)
 
@@ -912,7 +896,6 @@ plot_and_write_relative_risk <- function(df_list,
 
       # Run the model and obtain predictions
       c(model, cb) %<-% define_model(dataset = data,
-                                     dependent_col = dependent_col,
                                      independent_col = independent_col,
                                      varfun = varfun,
                                      varper = varper,
@@ -931,9 +914,9 @@ plot_and_write_relative_risk <- function(df_list,
       }
 
      plot(pred, type = "n",
-          ylim = c(0,2.5),
+          ylim = c(0, 3),
           yaxt = "n",
-          lab = c(6,5,7),
+          lab = c(6, 5, 7),
           xlab = xlab,
           ylab = "RR",
           main = regions_df$region_names[i])
@@ -1086,8 +1069,6 @@ plot_and_write_relative_risk <- function(df_list,
 #'   Minimum (optimum) mortality temperature per region.
 #' @param save_fig Whether to save output figure (Bool)
 #' @param save_csv Whether to save output CSVs (Bool)
-#' @param dependent_col the column name of the
-#' dependent variable of interest e.g. deaths
 #' @param indepedent_col column names of independent
 #' variables to include in regression (excluding temperature,
 #' see config file for formula structure)
@@ -1115,13 +1096,13 @@ plot_and_write_relative_risk_all <- function(df_list,
                                          mintempregions,
                                          save_fig = TRUE,
                                          save_csv = TRUE,
+                                         dependent_col,
                                          varfun,
                                          varper,
                                          vardegree,
                                          coef,
                                          vcov,
-                                         output_folder_path,
-                                         ...
+                                         output_folder_path
                                          ) {
 
   if (save_fig == TRUE) {
@@ -1189,10 +1170,11 @@ plot_and_write_relative_risk_all <- function(df_list,
   plot(pred,
        type = "n",
        ylab = "RR",
-       ylim=c(.0,3),
+       ylim=c(.0, 3),
        xlim=c(-8,30),
        xlab=expression(paste("Temperature (",degree,"C)")),
-       main="England - aged 18 to 64 years")
+       main = dependent_col,
+)
 
   abline(h=1)
 
@@ -1365,9 +1347,10 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @export
 do_analysis <- function(input_csv_path_,
                         output_folder_path_,
-                        save_fig_ = TRUE,
-                        save_csv_ = TRUE,
+                        save_fig_,
+                        save_csv_,
                         meta_analysis,
+                        by_region,
                         dependent_col_,
                         independent_col_,
                         time_col_,
@@ -1378,8 +1361,8 @@ do_analysis <- function(input_csv_path_,
                         vardegree_,
                         lag_,
                         lagnk_,
-                        dfseas_,
-                        all = TRUE) {
+                        dfseas_
+                        ) {
 
   c(df_list_unordered_, regions_) %<-%
     load_data(
@@ -1402,14 +1385,14 @@ do_analysis <- function(input_csv_path_,
     c(coef_, vcov_) %<-%
     run_model(df_list = df_list_,
               regions_df = regions_df_,
-              dependent_col = dependent_col_,
               independent_col = independent_col_,
               varfun = varfun_,
               varper = varper_,
               vardegree = vardegree_,
               lag = lag_,
               lagnk = lagnk_,
-              dfseas = dfseas_)
+              dfseas = dfseas_
+              )
 
     c(mv_, blup_) %<-%
       run_meta_model(
@@ -1435,7 +1418,6 @@ do_analysis <- function(input_csv_path_,
       df_list = df_list_,
       regions_df = regions_df_,
       blup = blup_,
-      dependent_col = dependent_col_,
       independent_col = independent_col_,
       varfun = varfun_,
       varper = varper_,
@@ -1451,7 +1433,6 @@ do_analysis <- function(input_csv_path_,
       regions_df = regions_df_,
       blup = blup_,
       mintempregions = mintempregions_,
-      dependent_col = dependent_col_,
       independent_col = independent_col_,
       varfun = varfun_,
       varper = varper_,
@@ -1463,15 +1444,13 @@ do_analysis <- function(input_csv_path_,
 
   c(antot, totdeathtot, aftot, afregions) %<-%
     write_attributable_deaths(
-      df_list = df_list_,
       regions_df = regions_df_,
       matsim = matsim_,
       arraysim = arraysim_,
-      totdeath = totdeath_,
-      output_folder_path = output_folder_path_
+      totdeath = totdeath_
       )
 
-  if (all == TRUE) {
+  if (by_region == FALSE) {
 
     c(output_df, tmean_df) %<-%
       plot_and_write_relative_risk_all(
@@ -1479,12 +1458,13 @@ do_analysis <- function(input_csv_path_,
         mintempregions = mintempregions_,
         save_fig = save_fig_,
         save_csv = save_csv_,
+        dependent_col = dependent_col_,
         varfun = varfun_,
         varper = varper_,
         vardegree = vardegree_,
         coef = coef_,
         vcov = vcov_,
-        output_folder_path = output_folder_path_,
+        output_folder_path = output_folder_path_
       )
 
   } else {
@@ -1498,7 +1478,6 @@ do_analysis <- function(input_csv_path_,
       save_fig = save_fig_,
       save_csv = save_csv_,
       output_folder_path = output_folder_path_,
-      dependent_col = dependent_col_,
       independent_col = independent_col_,
       varfun = varfun_,
       varper = varper_,

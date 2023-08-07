@@ -8,7 +8,6 @@ calculate_min_mortality_temp(
   df_list,
   regions_df,
   blup = NULL,
-  dependent_col,
   independent_col,
   varfun,
   varper,
@@ -25,9 +24,6 @@ calculate_min_mortality_temp(
 region names. Column 2 is user-specified region names.}
 
 \item{blup}{A list of BLUPs (best linear unbiased predictions).}
-
-\item{dependent_col}{the column name of the
-dependent variable of interest e.g. deaths}
 
 \item{varfun}{Exposure function
 (see dlnm::crossbasis)}
