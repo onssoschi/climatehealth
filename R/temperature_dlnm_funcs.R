@@ -47,11 +47,11 @@ load_data <- function(input_csv_path,
 
   df$date <- as.Date(df$date)
 
-  if (!time_range == 'NULL') {
+  if (!'NULL' %in% time_range) {
 
     df <- df %>%
-      dplyr::filter(date > as.Date(config$time_range[1])
-                    & date < as.Date(config$time_range[2]))
+      dplyr::filter(date > config$time_range[1]
+                    & date < config$time_range[2])
 
   }
 
