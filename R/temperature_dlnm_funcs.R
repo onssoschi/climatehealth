@@ -31,11 +31,13 @@ load_data <- function(input_csv_path,
                       dependent_col,
                       time_col,
                       region_col,
-                      temp_col) {
+                      temp_col,
+                      time_range) {
 
   if(substr(input_csv_path, nchar(input_csv_path) - 3, nchar(input_csv_path)) !=  '.csv') {
     stop("Input path must be a CSV")
   }
+
 
   df <- read.csv(input_csv_path, row.names=1) %>%
     dplyr::rename(dependent = dependent_col,
@@ -44,6 +46,14 @@ load_data <- function(input_csv_path,
                   tmean = temp_col)
 
   df$date <- as.Date(df$date)
+
+  if (!time_range == 'NULL') {
+
+    df <- df %>%
+      dplyr::filter(date > as.Date(config$time_range[1])
+                    & date < as.Date(config$time_range[2]))
+
+  }
 
   regions <- as.character(unique(df$regnames)) # .distinct() on regnames
 
@@ -1348,6 +1358,7 @@ do_analysis <- function(input_csv_path_,
                         save_csv_,
                         meta_analysis,
                         by_region,
+                        time_range_,
                         dependent_col_,
                         independent_col_,
                         time_col_,
@@ -1367,7 +1378,8 @@ do_analysis <- function(input_csv_path_,
       dependent_col = dependent_col_,
       time_col = time_col_,
       region_col = region_col_,
-      temp_col = temp_col_
+      temp_col = temp_col_,
+      time_range = time_range_
       )
 
   c(regions_df_, df_list_) %<-%

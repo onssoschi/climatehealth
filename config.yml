@@ -24,6 +24,11 @@ default:
     - dow # Day of week
     - ns(date, df = dfseas * length(unique(year))) # Seasonal B-spline
 
+  # Time range. Format '2008-01-01'. Set both as NULL to use full range in data.
+  time_range:
+   - NULL
+   - NULL
+
   # Specification of the exposure function
   varfun: 'bs' # Exposure function (see dlnm::crossbasis)
   vardegree:  2 # Degrees of freedom in exposure function (see dlnm::crossbasis)
