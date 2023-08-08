@@ -807,8 +807,6 @@ write_attributable_deaths <- function(regions_df,
 #' and histogram of temperatures per region.
 #' A CSV of relative risk per temperature per region.
 #' @examples output_folder_path = 'myfolder/output/'
-#'
-
 plot_and_write_relative_risk <- function(df_list,
                                          blup = NULL,
                                          regions_df,
@@ -822,8 +820,7 @@ plot_and_write_relative_risk <- function(df_list,
                                          vardegree,
                                          lag,
                                          lagnk,
-                                         dfseas,
-                                         ...
+                                         dfseas
                                          ) {
 
   if (save_fig == TRUE) {
@@ -831,7 +828,7 @@ plot_and_write_relative_risk <- function(df_list,
       if (!is.null(output_folder_path)) {
 
         pdf(paste(output_folder_path,
-              "output_all_regions_plot_.pdf",
+              "output_all_regions_plot.pdf",
               sep = ''),
         width = 8, height = 9)
 

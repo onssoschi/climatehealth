@@ -10,7 +10,7 @@ default:
   meta_analysis: TRUE
 
   # Whether to disaggregate by region. Must be TRUE if meta-analysis is FALSE.
-  by_region: FALSE
+  by_region: TRUE
 
   # Define columns
   dependent_col: death
