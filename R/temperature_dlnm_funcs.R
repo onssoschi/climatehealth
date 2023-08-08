@@ -50,8 +50,8 @@ load_data <- function(input_csv_path,
   if (!'NULL' %in% time_range) {
 
     df <- df %>%
-      dplyr::filter(date > config$time_range[1]
-                    & date < config$time_range[2])
+      dplyr::filter(date > time_range[1]
+                    & date < time_range[2])
 
   }
 
@@ -1456,7 +1456,8 @@ do_analysis <- function(input_csv_path_,
       regions_df = regions_df_,
       matsim = matsim_,
       arraysim = arraysim_,
-      totdeath = totdeath_
+      totdeath = totdeath_,
+      output_folder_path = output_folder_path_
       )
 
   if (by_region == FALSE) {
