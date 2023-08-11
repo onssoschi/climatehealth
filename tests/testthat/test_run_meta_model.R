@@ -79,7 +79,8 @@ test_that('Test run_meta_model() returns correct data types', {
       dependent_col = config$dependent_col,
       time_col = config$time_col,
       region_col = config$region_col,
-      temp_col = config$temp_col
+      temp_col = config$temp_col,
+      time_range = config$time_range
     )
 
   c(regions_df_, df_list_) %<-%
@@ -100,7 +101,8 @@ test_that('Test run_meta_model() returns correct data types', {
                 vardegree = config$vardegree,
                 lag = config$lag,
                 lagnk = config$lagnk,
-                dfseas = config$dfseas)
+                dfseas = config$dfseas
+      )
 
     c(mv_, blup_) %<-%
       run_meta_model(
@@ -109,6 +111,15 @@ test_that('Test run_meta_model() returns correct data types', {
         coef = coef_,
         vcov = vcov_
       )
+
+    c(avgtmean_wald, rangetmean_wald) %<-%
+      wald_results(
+        mv = mv_
+      )
+
+  } else {
+
+    blup_ <- NULL
 
   }
 

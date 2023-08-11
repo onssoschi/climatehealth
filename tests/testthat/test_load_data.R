@@ -12,7 +12,8 @@ test_that('Test data loads correctly', {
       dependent_col = config$dependent_col,
       time_col = config$time_col,
       region_col = config$region_col,
-      temp_col = config$temp_col
+      temp_col = config$temp_col,
+      time_range = config$time_range
     )
 
   expect_that(regions_, is_a("character"))
