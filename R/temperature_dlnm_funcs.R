@@ -541,22 +541,26 @@ compute_attributable_deaths <- function(df_list,
   #
   # }
 
+  per <- t(sapply(df_list, function(x)
+    quantile(x$tmean, c(2.5, 10, 25, 50, 75, 90, 97.5)/100, na.rm = T)))
+
   # Create the vectors to store the total mortality (accounting for missing)
   totdeath <- rep(NA, nrow(regions_df))
   names(totdeath) <- regions_df$regions
 
   # Create the matrix to store the attributable deaths
-  matsim <- matrix(NA, nrow(regions_df), 3,
+  matsim <- matrix(NA, nrow(regions_df), 5,
                    dimnames = list(regions_df$regions,
-                                   c("glob","cold","heat")))
+                                   c("glob", "cold", "heat", "extreme_cold", "extreme_heat")))
 
   # Number of simulation runs for computing empirical CI
   nsim_ <- 1000
 
   # Create the array to store the CI of attributable deaths
-  arraysim <- array(NA, dim = c(nrow(regions_df),3,nsim_),
+  arraysim <- array(NA, dim = c(nrow(regions_df),5, nsim_),
                     dimnames = list(regions_df$regions,
-                                    c("glob","cold","heat")))
+                                    c("glob_ci", "cold_ci", "heat_ci",
+                                      "extreme_cold_ci", "extreme_heat_ci")))
 
   # Run the loop
   for(i in seq(df_list)){
@@ -634,9 +638,32 @@ compute_attributable_deaths <- function(df_list,
                                model = model,
                                range = c(mintempregions[i], 100))
 
+    # Attributable deaths for extremes:
+    matsim[i,"extreme_cold"] <- attrdl(x = data$tmean,
+                                       basis = cb,
+                                       cases = data$dependent,
+                                       coef = coefs,
+                                       vcov = vcovs,
+                                       model = model,
+                                       type = "an",
+                                       dir = "forw",
+                                       cen = mintempregions[i],
+                                       range = c(-100, per[i, 1]))
+
+    matsim[i,"extreme_heat"] <- attrdl(x = data$tmean,
+                                       basis = cb,
+                                       cases = data$dependent,
+                                       coef = coefs,
+                                       vcov = vcovs,
+                                       model = model,
+                                       type = "an",
+                                       dir = "forw",
+                                       cen = mintempregions[i],
+                                       range = c(per[i, 7], 100))
+
     # Compute empirical occurrences of the attributable deaths
     # Used to derive confidence intervals
-    arraysim[i, "glob", ] <- attrdl(x = data$tmean,
+    arraysim[i, "glob_ci", ] <- attrdl(x = data$tmean,
                                   basis = cb,
                                   cases = data$dependent,
                                   coef = coefs,
@@ -647,7 +674,7 @@ compute_attributable_deaths <- function(df_list,
                                   model = model,
                                   sim = T, nsim = nsim_)
 
-    arraysim[i, "cold", ] <- attrdl(x = data$tmean,
+    arraysim[i, "cold_ci", ] <- attrdl(x = data$tmean,
                                   basis = cb,
                                   cases = data$dependent,
                                   coef = coefs,
@@ -659,7 +686,7 @@ compute_attributable_deaths <- function(df_list,
                                   range = c(-100, mintempregions[i]),
                                   sim = T , nsim = nsim_)
 
-    arraysim[i, "heat", ] <- attrdl(x = data$tmean,
+    arraysim[i, "heat_ci", ] <- attrdl(x = data$tmean,
                                   basis = cb,
                                   cases = data$dependent,
                                   coef = coefs,
@@ -668,8 +695,33 @@ compute_attributable_deaths <- function(df_list,
                                   dir= "forw",
                                   cen = mintempregions[i],
                                   model = model,
-                                  range = c(mintempregions[i],100),
+                                  range = c(mintempregions[i], 100),
                                   sim = T, nsim = nsim_)
+
+    arraysim[i, "extreme_cold_ci", ] <- attrdl(x = data$tmean,
+                                    basis = cb,
+                                    cases = data$dependent,
+                                    coef = coefs,
+                                    vcov = vcovs,
+                                    type = "an",
+                                    dir= "forw",
+                                    cen = mintempregions[i],
+                                    model = model,
+                                    range = c(-100, per[i, 1]),
+                                    sim = T, nsim = nsim_)
+
+    arraysim[i, "extreme_heat_ci", ] <- attrdl(x = data$tmean,
+                                    basis = cb,
+                                    cases = data$dependent,
+                                    coef = coefs,
+                                    vcov = vcovs,
+                                    type = "an",
+                                    dir= "forw",
+                                    cen = mintempregions[i],
+                                    model = model,
+                                    range = c(per[i, 7], 100),
+                                    sim = T, nsim = nsim_)
+
 
     # Store the denominator of attributable deaths, i.e. total observed
     # mortality
@@ -712,8 +764,8 @@ write_attributable_deaths <- function(regions_df,
   # Attributable numbers
   # regions-specific
   anregions <- matsim
-  anregionslow <- apply(arraysim,c(1,2),quantile,0.025)
-  anregionshigh <- apply(arraysim,c(1,2),quantile,0.975)
+  anregionslow <- apply(arraysim, c(1,2), quantile, 0.025)
+  anregionshigh <- apply(arraysim, c(1,2), quantile, 0.975)
 
   rownames(anregions) <-
     rownames(anregionslow) <-
@@ -725,6 +777,8 @@ write_attributable_deaths <- function(regions_df,
   antot <- colSums(matsim)
   antotlow <- apply(apply(arraysim,c(2,3),sum),1,quantile,0.025)
   antothigh <- apply(apply(arraysim,c(2,3),sum),1,quantile,0.975)
+
+  paste(anregionshigh, '_', 'ci_upper')
 
   # Total mortality
   # By country
