@@ -22,7 +22,8 @@ test_that('Test fwald() returns correct data type', {
       dependent_col = config$dependent_col,
       time_col = config$time_col,
       region_col = config$region_col,
-      temp_col = config$temp_col
+      temp_col = config$temp_col,
+      time_range = config$time_range
     )
 
   c(regions_df_, df_list_) %<-%
@@ -43,7 +44,8 @@ test_that('Test fwald() returns correct data type', {
                 vardegree = config$vardegree,
                 lag = config$lag,
                 lagnk = config$lagnk,
-                dfseas = config$dfseas)
+                dfseas = config$dfseas
+      )
 
     c(mv_, blup_) %<-%
       run_meta_model(
@@ -80,7 +82,8 @@ test_that('Test fwald() returns p-value between 0 and 1', {
       dependent_col = config$dependent_col,
       time_col = config$time_col,
       region_col = config$region_col,
-      temp_col = config$temp_col
+      temp_col = config$temp_col,
+      time_range = config$time_range
     )
 
   c(regions_df_, df_list_) %<-%
@@ -101,7 +104,8 @@ test_that('Test fwald() returns p-value between 0 and 1', {
                 vardegree = config$vardegree,
                 lag = config$lag,
                 lagnk = config$lagnk,
-                dfseas = config$dfseas)
+                dfseas = config$dfseas
+      )
 
     c(mv_, blup_) %<-%
       run_meta_model(

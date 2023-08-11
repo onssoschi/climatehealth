@@ -14,7 +14,8 @@ test_that('Test wald_results() returns correct data type', {
       dependent_col = config$dependent_col,
       time_col = config$time_col,
       region_col = config$region_col,
-      temp_col = config$temp_col
+      temp_col = config$temp_col,
+      time_range = config$time_range
     )
 
   c(regions_df_, df_list_) %<-%
@@ -35,7 +36,8 @@ test_that('Test wald_results() returns correct data type', {
                 vardegree = config$vardegree,
                 lag = config$lag,
                 lagnk = config$lagnk,
-                dfseas = config$dfseas)
+                dfseas = config$dfseas
+      )
 
     c(mv_, blup_) %<-%
       run_meta_model(
@@ -45,12 +47,12 @@ test_that('Test wald_results() returns correct data type', {
         vcov = vcov_
       )
 
-  }
-
-  c(avgtmean_wald, rangetmean_wald) %<-%
-    wald_results(
-      mv = mv_
+    c(avgtmean_wald, rangetmean_wald) %<-%
+      wald_results(
+        mv = mv_
       )
+
+  }
 
   expect_equal(typeof(wald_results(mv_)), "list")
   expect_equal(typeof(wald_results(mv_)[[1]]), "double")
@@ -71,7 +73,8 @@ test_that('Test wald_results() returns list of correct length', {
       dependent_col = config$dependent_col,
       time_col = config$time_col,
       region_col = config$region_col,
-      temp_col = config$temp_col
+      temp_col = config$temp_col,
+      time_range = config$time_range
     )
 
   c(regions_df_, df_list_) %<-%
@@ -92,7 +95,8 @@ test_that('Test wald_results() returns list of correct length', {
                 vardegree = config$vardegree,
                 lag = config$lag,
                 lagnk = config$lagnk,
-                dfseas = config$dfseas)
+                dfseas = config$dfseas
+      )
 
     c(mv_, blup_) %<-%
       run_meta_model(
@@ -102,13 +106,12 @@ test_that('Test wald_results() returns list of correct length', {
         vcov = vcov_
       )
 
+    c(avgtmean_wald, rangetmean_wald) %<-%
+      wald_results(
+        mv = mv_
+      )
+
   }
-
-  c(avgtmean_wald, rangetmean_wald) %<-%
-    wald_results(
-      mv = mv_
-    )
-
 
   expect_equal(length(wald_results(mv_)), 2)
   expect_equal(length(wald_results(mv_)[1]), 1)
@@ -127,7 +130,8 @@ test_that('Test wald_results() returns p-values between 0 and 1', {
       dependent_col = config$dependent_col,
       time_col = config$time_col,
       region_col = config$region_col,
-      temp_col = config$temp_col
+      temp_col = config$temp_col,
+      time_range = config$time_range
     )
 
   c(regions_df_, df_list_) %<-%
@@ -148,7 +152,8 @@ test_that('Test wald_results() returns p-values between 0 and 1', {
                 vardegree = config$vardegree,
                 lag = config$lag,
                 lagnk = config$lagnk,
-                dfseas = config$dfseas)
+                dfseas = config$dfseas
+      )
 
     c(mv_, blup_) %<-%
       run_meta_model(
@@ -158,14 +163,12 @@ test_that('Test wald_results() returns p-values between 0 and 1', {
         vcov = vcov_
       )
 
+    c(avgtmean_wald, rangetmean_wald) %<-%
+      wald_results(
+        mv = mv_
+      )
+
   }
-
-  c(avgtmean_wald, rangetmean_wald) %<-%
-    wald_results(
-      mv = mv_
-    )
-
-
 
   expect_lte(wald_results(mv_)[[1]], 1)
   expect_gte(wald_results(mv_)[[1]], 0)
