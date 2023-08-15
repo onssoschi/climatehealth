@@ -31,19 +31,29 @@ load_data <- function(input_csv_path,
                       dependent_col,
                       time_col,
                       region_col,
-                      temp_col) {
+                      temp_col,
+                      time_range) {
 
   if(substr(input_csv_path, nchar(input_csv_path) - 3, nchar(input_csv_path)) !=  '.csv') {
     stop("Input path must be a CSV")
   }
 
+
   df <- read.csv(input_csv_path, row.names=1) %>%
-    dplyr::rename(death = dependent_col,
+    dplyr::rename(dependent = dependent_col,
                   date = time_col,
                   regnames = region_col,
                   tmean = temp_col)
 
   df$date <- as.Date(df$date)
+
+  if (!'NULL' %in% time_range) {
+
+    df <- df %>%
+      dplyr::filter(date > time_range[1]
+                    & date < time_range[2])
+
+  }
 
   regions <- as.character(unique(df$regnames)) # .distinct() on regnames
 
@@ -102,8 +112,6 @@ get_region_metadata <- function(regions,
 #' Define regression model
 #'
 #' @param dataset dataframe with tmean column to be modelled
-#' @param dependent_col the column name of the
-#' dependent variable of interest e.g. deaths
 #' @param indepedent_col column names of independent
 #' variables to include in regression (excluding temperature,
 #' see config file for formula structure)
@@ -126,7 +134,6 @@ get_region_metadata <- function(regions,
 #'   }
 #' @export
 define_model <- function(dataset,
-                         dependent_col,
                          independent_col,
                          varfun,
                          varper,
@@ -136,7 +143,7 @@ define_model <- function(dataset,
                          dfseas) {
 
   # Model formula
-  formula <- as.formula(paste(paste(dependent_col),
+  formula <- as.formula(paste(paste('dependent'),
                               " ~ ",
                               paste(independent_col,
                                     collapse= "+")))
@@ -171,8 +178,6 @@ define_model <- function(dataset,
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #'   region names. Column 2 is user-specified region names.
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
-#' @param dependent_col the column name of the
-#' dependent variable of interest e.g. deaths
 #' @param indepedent_col column names of independent
 #' variables to include in regression (excluding temperature,
 #' see config file for formula structure)
@@ -195,7 +200,6 @@ define_model <- function(dataset,
 #' @export
 run_model <- function(df_list,
                       regions_df,
-                      dependent_col,
                       independent_col,
                       varfun,
                       varper,
@@ -228,7 +232,6 @@ run_model <- function(df_list,
     data <- df_list[[i]]
 
     c(model, cb) %<-% define_model(dataset = data,
-                                   dependent_col = dependent_col,
                                    independent_col = independent_col,
                                    varfun = varfun,
                                    varper = varper,
@@ -364,8 +367,6 @@ wald_results <- function(mv) {
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
 #'   region names. Column 2 is user-specified region names.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
-#' @param dependent_col the column name of the
-#' dependent variable of interest e.g. deaths
 #' @param indepedent_col column names of independent
 #' variables to include in regression (excluding temperature,
 #' see config file for formula structure)
@@ -391,7 +392,6 @@ wald_results <- function(mv) {
 calculate_min_mortality_temp <-  function(df_list,
                                           regions_df,
                                           blup = NULL,
-                                          dependent_col,
                                           independent_col,
                                           varfun,
                                           varper,
@@ -454,7 +454,6 @@ calculate_min_mortality_temp <-  function(df_list,
       data <- df_list[[i]]
 
       c(model, cb) %<-% define_model(dataset = data,
-                                     dependent_col = dependent_col,
                                      independent_col = independent_col,
                                      varfun = varfun,
                                      varper = varper,
@@ -493,8 +492,6 @@ calculate_min_mortality_temp <-  function(df_list,
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param mintempregions A named numeric vector.
 #' Minimum (optimum) mortality temperature per region.
-#' @param dependent_col the column name of the
-#' dependent variable of interest e.g. deaths
 #' @param indepedent_col column names of independent
 #' variables to include in regression (excluding temperature,
 #' see config file for formula structure)
@@ -525,7 +522,6 @@ compute_attributable_deaths <- function(df_list,
                                         regions_df,
                                         blup = NULL,
                                         mintempregions,
-                                        dependent_col,
                                         independent_col,
                                         varfun,
                                         varper,
@@ -545,22 +541,26 @@ compute_attributable_deaths <- function(df_list,
   #
   # }
 
+  per <- t(sapply(df_list, function(x)
+    quantile(x$tmean, c(2.5, 10, 25, 50, 75, 90, 97.5)/100, na.rm = T)))
+
   # Create the vectors to store the total mortality (accounting for missing)
   totdeath <- rep(NA, nrow(regions_df))
   names(totdeath) <- regions_df$regions
 
   # Create the matrix to store the attributable deaths
-  matsim <- matrix(NA, nrow(regions_df), 3,
+  matsim <- matrix(NA, nrow(regions_df), 5,
                    dimnames = list(regions_df$regions,
-                                   c("glob","cold","heat")))
+                                   c("glob", "cold", "heat", "extreme_cold", "extreme_heat")))
 
   # Number of simulation runs for computing empirical CI
   nsim_ <- 1000
 
   # Create the array to store the CI of attributable deaths
-  arraysim <- array(NA, dim = c(nrow(regions_df),3,nsim_),
+  arraysim <- array(NA, dim = c(nrow(regions_df),5, nsim_),
                     dimnames = list(regions_df$regions,
-                                    c("glob","cold","heat")))
+                                    c("glob_ci", "cold_ci", "heat_ci",
+                                      "extreme_cold_ci", "extreme_heat_ci")))
 
   # Run the loop
   for(i in seq(df_list)){
@@ -579,7 +579,6 @@ compute_attributable_deaths <- function(df_list,
       coefs <- blup[[i]]$blup
       vcovs <- blup[[i]]$vcov
       c(model, cb) %<-% define_model(dataset = data,
-                                     dependent_col = dependent_col,
                                      independent_col = independent_col,
                                      varfun = varfun,
                                      varper = varper,
@@ -595,7 +594,6 @@ compute_attributable_deaths <- function(df_list,
       vcovs <- NULL
 
       c(model, cb) %<-% define_model(dataset = data,
-                                     dependent_col = dependent_col,
                                      independent_col = independent_col,
                                      varfun = varfun,
                                      varper = varper,
@@ -610,7 +608,7 @@ compute_attributable_deaths <- function(df_list,
     # NB: The reduced coefficients are used here
     matsim[i, "glob"] <- attrdl(x = data$tmean,
                                basis = cb,
-                               cases = data$death,
+                               cases = data$dependent,
                                coef = coefs,
                                vcov = vcovs,
                                type = "an",
@@ -620,7 +618,7 @@ compute_attributable_deaths <- function(df_list,
 
     matsim[i, "cold"] <- attrdl(x = data$tmean,
                                basis = cb,
-                               cases = data$death,
+                               cases = data$dependent,
                                coef = coefs,
                                vcov = vcovs,
                                type = "an",
@@ -631,7 +629,7 @@ compute_attributable_deaths <- function(df_list,
 
     matsim[i, "heat" ] <- attrdl(x = data$tmean,
                                basis = cb,
-                               cases = data$death,
+                               cases = data$dependent,
                                coef = coefs,
                                vcov = vcovs,
                                type="an",
@@ -640,11 +638,34 @@ compute_attributable_deaths <- function(df_list,
                                model = model,
                                range = c(mintempregions[i], 100))
 
+    # Attributable deaths for extremes:
+    matsim[i,"extreme_cold"] <- attrdl(x = data$tmean,
+                                       basis = cb,
+                                       cases = data$dependent,
+                                       coef = coefs,
+                                       vcov = vcovs,
+                                       model = model,
+                                       type = "an",
+                                       dir = "forw",
+                                       cen = mintempregions[i],
+                                       range = c(-100, per[i, 1]))
+
+    matsim[i,"extreme_heat"] <- attrdl(x = data$tmean,
+                                       basis = cb,
+                                       cases = data$dependent,
+                                       coef = coefs,
+                                       vcov = vcovs,
+                                       model = model,
+                                       type = "an",
+                                       dir = "forw",
+                                       cen = mintempregions[i],
+                                       range = c(per[i, 7], 100))
+
     # Compute empirical occurrences of the attributable deaths
     # Used to derive confidence intervals
-    arraysim[i, "glob", ] <- attrdl(x = data$tmean,
+    arraysim[i, "glob_ci", ] <- attrdl(x = data$tmean,
                                   basis = cb,
-                                  cases = data$death,
+                                  cases = data$dependent,
                                   coef = coefs,
                                   vcov = vcovs,
                                   type = "an",
@@ -653,9 +674,9 @@ compute_attributable_deaths <- function(df_list,
                                   model = model,
                                   sim = T, nsim = nsim_)
 
-    arraysim[i, "cold", ] <- attrdl(x = data$tmean,
+    arraysim[i, "cold_ci", ] <- attrdl(x = data$tmean,
                                   basis = cb,
-                                  cases = data$death,
+                                  cases = data$dependent,
                                   coef = coefs,
                                   vcov = vcovs,
                                   type = "an",
@@ -665,17 +686,42 @@ compute_attributable_deaths <- function(df_list,
                                   range = c(-100, mintempregions[i]),
                                   sim = T , nsim = nsim_)
 
-    arraysim[i, "heat", ] <- attrdl(x = data$tmean,
+    arraysim[i, "heat_ci", ] <- attrdl(x = data$tmean,
                                   basis = cb,
-                                  cases = data$death,
+                                  cases = data$dependent,
                                   coef = coefs,
                                   vcov = vcovs,
                                   type = "an",
                                   dir= "forw",
                                   cen = mintempregions[i],
                                   model = model,
-                                  range = c(mintempregions[i],100),
+                                  range = c(mintempregions[i], 100),
                                   sim = T, nsim = nsim_)
+
+    arraysim[i, "extreme_cold_ci", ] <- attrdl(x = data$tmean,
+                                    basis = cb,
+                                    cases = data$dependent,
+                                    coef = coefs,
+                                    vcov = vcovs,
+                                    type = "an",
+                                    dir= "forw",
+                                    cen = mintempregions[i],
+                                    model = model,
+                                    range = c(-100, per[i, 1]),
+                                    sim = T, nsim = nsim_)
+
+    arraysim[i, "extreme_heat_ci", ] <- attrdl(x = data$tmean,
+                                    basis = cb,
+                                    cases = data$dependent,
+                                    coef = coefs,
+                                    vcov = vcovs,
+                                    type = "an",
+                                    dir= "forw",
+                                    cen = mintempregions[i],
+                                    model = model,
+                                    range = c(per[i, 7], 100),
+                                    sim = T, nsim = nsim_)
+
 
     # Store the denominator of attributable deaths, i.e. total observed
     # mortality
@@ -709,8 +755,7 @@ compute_attributable_deaths <- function(df_list,
 #'
 #' @return None
 #' @examples output_folder_path = 'myfolder/output/'
-write_attributable_deaths <- function(df_list,
-                                      regions_df,
+write_attributable_deaths <- function(regions_df,
                                       matsim,
                                       arraysim,
                                       totdeath,
@@ -719,8 +764,8 @@ write_attributable_deaths <- function(df_list,
   # Attributable numbers
   # regions-specific
   anregions <- matsim
-  anregionslow <- apply(arraysim,c(1,2),quantile,0.025)
-  anregionshigh <- apply(arraysim,c(1,2),quantile,0.975)
+  anregionslow <- apply(arraysim, c(1,2), quantile, 0.025)
+  anregionshigh <- apply(arraysim, c(1,2), quantile, 0.975)
 
   rownames(anregions) <-
     rownames(anregionslow) <-
@@ -732,6 +777,8 @@ write_attributable_deaths <- function(df_list,
   antot <- colSums(matsim)
   antotlow <- apply(apply(arraysim,c(2,3),sum),1,quantile,0.025)
   antothigh <- apply(apply(arraysim,c(2,3),sum),1,quantile,0.975)
+
+  paste(anregionshigh, '_', 'ci_upper')
 
   # Total mortality
   # By country
@@ -785,7 +832,7 @@ write_attributable_deaths <- function(df_list,
               'attributable_fraction_total.csv')
   }
 
-  return(list(antot, totdeathtot, aftot, afregions))
+  return(list(anregions_bind, antot_bind, afregions_bind, aftot_bind))
 
 }
 
@@ -801,8 +848,6 @@ write_attributable_deaths <- function(df_list,
 #'   Minimum (optimum) mortality temperature per region.
 #' @param save_fig Whether to save output figure (Bool)
 #' @param save_csv Whether to save output CSVs (Bool)
-#' @param dependent_col the column name of the
-#' dependent variable of interest e.g. deaths
 #' @param indepedent_col column names of independent
 #' variables to include in regression (excluding temperature,
 #' see config file for formula structure)
@@ -832,15 +877,15 @@ plot_and_write_relative_risk <- function(df_list,
                                          mintempregions,
                                          save_fig = TRUE,
                                          save_csv = TRUE,
-                                         dependent_col,
+                                         output_folder_path,
                                          independent_col,
                                          varfun,
                                          varper,
                                          vardegree,
                                          lag,
                                          lagnk,
-                                         dfseas,
-                                         output_folder_path) {
+                                         dfseas
+                                         ) {
 
   if (save_fig == TRUE) {
 
@@ -879,7 +924,9 @@ plot_and_write_relative_risk <- function(df_list,
   tmean_vector <- c()
   tmean_region_vector <- c()
 
-  for(i in seq(length(df_list))) {
+  no_of_regions <- seq(length(df_list))
+
+  for(i in no_of_regions) {
 
     data <- df_list[[i]]
 
@@ -910,7 +957,6 @@ plot_and_write_relative_risk <- function(df_list,
 
       # Run the model and obtain predictions
       c(model, cb) %<-% define_model(dataset = data,
-                                     dependent_col = dependent_col,
                                      independent_col = independent_col,
                                      varfun = varfun,
                                      varper = varper,
@@ -929,9 +975,9 @@ plot_and_write_relative_risk <- function(df_list,
       }
 
      plot(pred, type = "n",
-          ylim = c(0,2.5),
+          ylim = c(0, 3),
           yaxt = "n",
-          lab = c(6,5,7),
+          lab = c(6, 5, 7),
           xlab = xlab,
           ylab = "RR",
           main = regions_df$region_names[i])
@@ -1072,6 +1118,254 @@ plot_and_write_relative_risk <- function(df_list,
 
 }
 
+#' Plot and write results of analysis
+#'
+#' @param df_list An alphabetically-ordered
+#' list of dataframes for each region.
+#' @param blup A list of BLUPs (best linear unbiased predictions).
+#' @param regions_df A dataframe with two columns.
+#'  Column 1 is abbreviated region names.
+#'  Column 2 is user-specified region names.
+#' @param mintempregions A named numeric vector.
+#'   Minimum (optimum) mortality temperature per region.
+#' @param save_fig Whether to save output figure (Bool)
+#' @param save_csv Whether to save output CSVs (Bool)
+#' @param indepedent_col column names of independent
+#' variables to include in regression (excluding temperature,
+#' see config file for formula structure)
+#' @param varfun Exposure function
+#' (see dlnm::crossbasis)
+#' @param varper Internal knot positions in exposure function
+#' (see dlnm::crossbasis)
+#' @param vardegree Degrees of freedom in exposure function
+#' (see dlnm:crossbasis)
+#' @param lag Lag length in time
+#' (see dlnm::logknots)
+#' @param lagnk Number of knots in lag function
+#' (see dlnm::logknots)
+#' @param dfseas Degrees of freedom for seasonality
+#' @param output_folder_path Path to folder for storing outputs.
+#'
+#' @export
+#'
+#' @return A PDF containing a line plot of temperature
+#' versus relative risk per region,
+#' and histogram of temperatures per region.
+#' A CSV of relative risk per temperature per region.
+#' @examples output_folder_path = 'myfolder/output/'
+plot_and_write_relative_risk_all <- function(df_list,
+                                         mintempregions,
+                                         save_fig = TRUE,
+                                         save_csv = TRUE,
+                                         dependent_col,
+                                         varfun,
+                                         varper,
+                                         vardegree,
+                                         coef,
+                                         vcov,
+                                         output_folder_path
+                                         ) {
+
+  if (save_fig == TRUE) {
+
+    if (!is.null(output_folder_path)) {
+
+      pdf(paste(output_folder_path,
+                "output_all_plot.pdf",
+                sep = ''),
+          width = 8, height = 9)
+
+    } else {
+
+      pdf("output_all_plot.pdf", width = 8, height = 9)
+
+    }
+
+  }
+
+  par(mar = c(4,3.8,3,2.4),mgp = c(2.5,1,0),las = 1)
+
+  layout(matrix(1:1, ncol = 1))
+
+  region_vector <- c()
+  temp_vector <- c()
+  relative_risk_vector <- c()
+  cen_vector <- c()
+
+  tmean_vector <- c()
+  tmean_region_vector <- c()
+
+  data <- do.call(rbind, df_list)
+
+  # Estimation method
+  method <- "reml"
+
+  # Overall cumulative summary for main model
+  mvall <- mvmeta(coef~1, vcov, method = method)
+
+  # Exclude extreme temps
+  # predvar <- quantile(data$tmean, 1:99/100, na.rm=T)
+
+  # All temps
+  predvar <- data$tmean
+
+  argvar <- list(x = predvar,
+                 fun = varfun,
+                 degree = vardegree,
+                 knots=quantile(data$tmean,
+                                varper/100, na.rm=T),
+                 Bound = range(data$tmean,na.rm=T))
+
+  bvar <- do.call(onebasis, argvar)
+
+  model <- NULL
+  cen <- median(mintempregions)
+
+  pred <- crosspred(bvar,
+                    coef = coef(mvall),
+                    vcov = vcov(mvall),
+                    model.link = "log",
+                    by = 0.1,
+                    cen = cen)
+
+  plot(pred,
+       type = "n",
+       ylab = "RR",
+       ylim=c(.0, 3),
+       xlim=c(-8,30),
+       xlab=expression(paste("Temperature (",degree,"C)")),
+       main = dependent_col,
+)
+
+  abline(h=1)
+
+  optimal_meta_lower <- as.numeric(names(
+    which.min(which(pred$allRRfit >= 1 & pred$allRRfit <= 1.1))))
+  optimal_meta_upper <- as.numeric(names(
+    which.max(which(pred$allRRfit >= 1 & pred$allRRfit <= 1.1))))
+
+  ind_a <- pred$predvar <= optimal_meta_lower
+  ind_b <- pred$predvar >= optimal_meta_lower & pred$predvar <= cen
+  ind_c <- pred$predvar >= cen & pred$predvar <= optimal_meta_upper
+  ind_d <- pred$predvar >= optimal_meta_upper
+
+  relative_risk_vals <- pred$allRRfit
+
+  lines(pred$predvar,
+        pred$allRRfit,
+        col = 'black',
+        lwd = 1)
+
+  lines(pred$predvar[ind_a],
+        pred$allRRfit[ind_a],
+        col = c("#000FFF"),
+        lwd = 1.5)
+  lines(pred$predvar[ind_b],
+        pred$allRRfit[ind_b],
+        col = c("#ABAFFF"),
+        lwd = 1.5)
+  lines(pred$predvar[ind_c],
+        pred$allRRfit[ind_c],
+        col = c("#FFA7A7"),
+        lwd = 1.5)
+  lines(pred$predvar[ind_d],
+        pred$allRRfit[ind_d],
+        col = c("#C00000"),
+        lwd = 1.5)
+
+  axis(2, at = 1:5*0.5)
+
+  breaks <- c(min(data$tmean, na.rm = T)-1,
+              seq(pred$predvar[1],
+                  pred$predvar[length(pred$predvar)],
+                  length = 30),
+              max(data$tmean,na.rm = T) + 1)
+
+
+  # hist <- hist(data$tmean, breaks = breaks, plot = F)
+  # hist$density <- hist$density / max(hist$density) * 0.7
+  # prop <- max(hist$density) / max(hist$counts)
+  # counts <- pretty(hist$count, 3)
+
+  # plot(hist,
+  #      ylim = c(0,max(hist$density)*3.5),
+  #      axes = F, ann = F, col = grey(0.95),
+  #      breaks = breaks, freq = F, add = T)
+  #
+  # axis(4, at = counts*prop, labels = counts, cex.axis = 0.7)
+  # mtext("N",4,line = -0.5,at = mean(counts*prop),cex=0.5)
+  #
+  # axis(1,at = c(-5,0,5,10,15,20,25,30))
+  # axis(2,at = 1:6*0.5)
+
+  abline(v = optimal_meta_lower,lty=3)
+  abline(v = optimal_meta_upper,lty=3)
+
+  relative_risk_vector <- append(relative_risk_vector,
+                                   pred$allRRfit)
+
+  region_vector <-
+    append(region_vector,
+           rep('England',
+               length(pred$predvar)))
+
+  temp_vector <- append(temp_vector,
+                        pred$predvar)
+
+  cen_vector <- append(cen_vector,
+                       rep(cen,
+                           length(pred$predvar)))
+
+  tmean_vector <- append(tmean_vector,
+                         data$tmean)
+
+  tmean_region_vector <-
+    append(tmean_region_vector,
+           rep('England',
+               length(data$tmean)))
+
+  if (save_fig == TRUE) {
+
+    dev.off()
+
+  }
+
+  output_df <- data.frame(regions = region_vector,
+                          temp = temp_vector,
+                          rel_risk = relative_risk_vector,
+                          centre_temp = cen_vector)
+
+  tmean_df <- data.frame(temp_mean = tmean_vector,
+                         regions = tmean_region_vector)
+
+  if (save_csv == TRUE) {
+
+    write.csv(output_df,
+              paste(output_folder_path,
+                    'output_all_data.csv', sep = ''),
+              row.names=FALSE)
+
+
+    relative_risk <- pred$allRRfit
+
+    # Output for testing
+    output_df_test <- data.frame(
+      temperature = pred$predvar,
+      relative_risk = relative_risk
+    )
+    # Output for testing
+    write.csv(output_df_test,
+              paste(output_folder_path,
+                    'output_one_data_new.csv', sep = ''),
+              row.names=FALSE
+    )
+
+  }
+
+  return (list(output_df, tmean_df))
+
+}
+
 #' Do full DLNM analysis
 #'
 #' @description Runs a sequence of functions to carry out
@@ -1114,9 +1408,11 @@ plot_and_write_relative_risk <- function(df_list,
 #' @export
 do_analysis <- function(input_csv_path_,
                         output_folder_path_,
-                        save_fig_ = TRUE,
-                        save_csv_ = TRUE,
+                        save_fig_,
+                        save_csv_,
                         meta_analysis,
+                        by_region,
+                        time_range_,
                         dependent_col_,
                         independent_col_,
                         time_col_,
@@ -1127,7 +1423,8 @@ do_analysis <- function(input_csv_path_,
                         vardegree_,
                         lag_,
                         lagnk_,
-                        dfseas_) {
+                        dfseas_
+                        ) {
 
   c(df_list_unordered_, regions_) %<-%
     load_data(
@@ -1135,7 +1432,8 @@ do_analysis <- function(input_csv_path_,
       dependent_col = dependent_col_,
       time_col = time_col_,
       region_col = region_col_,
-      temp_col = temp_col_
+      temp_col = temp_col_,
+      time_range = time_range_
       )
 
   c(regions_df_, df_list_) %<-%
@@ -1150,14 +1448,14 @@ do_analysis <- function(input_csv_path_,
     c(coef_, vcov_) %<-%
     run_model(df_list = df_list_,
               regions_df = regions_df_,
-              dependent_col = dependent_col_,
               independent_col = independent_col_,
               varfun = varfun_,
               varper = varper_,
               vardegree = vardegree_,
               lag = lag_,
               lagnk = lagnk_,
-              dfseas = dfseas_)
+              dfseas = dfseas_
+              )
 
     c(mv_, blup_) %<-%
       run_meta_model(
@@ -1183,7 +1481,6 @@ do_analysis <- function(input_csv_path_,
       df_list = df_list_,
       regions_df = regions_df_,
       blup = blup_,
-      dependent_col = dependent_col_,
       independent_col = independent_col_,
       varfun = varfun_,
       varper = varper_,
@@ -1199,7 +1496,6 @@ do_analysis <- function(input_csv_path_,
       regions_df = regions_df_,
       blup = blup_,
       mintempregions = mintempregions_,
-      dependent_col = dependent_col_,
       independent_col = independent_col_,
       varfun = varfun_,
       varper = varper_,
@@ -1209,9 +1505,8 @@ do_analysis <- function(input_csv_path_,
       dfseas = dfseas_
       )
 
-  c(antot, totdeathtot, aftot, afregions) %<-%
+  c(anregions_bind, antot_bind, afregions_bind, aftot_bind) %<-%
     write_attributable_deaths(
-      df_list = df_list_,
       regions_df = regions_df_,
       matsim = matsim_,
       arraysim = arraysim_,
@@ -1219,26 +1514,46 @@ do_analysis <- function(input_csv_path_,
       output_folder_path = output_folder_path_
       )
 
-  c(output_df, tmean_df) %<-%
-    plot_and_write_relative_risk(
-    df_list = df_list_,
-    blup = blup_,
-    regions_df = regions_df_,
-    mintempregions = mintempregions_,
-    save_fig = save_fig_,
-    save_csv = save_csv_,
-    output_folder_path = output_folder_path_,
-    dependent_col = dependent_col_,
-    independent_col = independent_col_,
-    varfun = varfun_,
-    varper = varper_,
-    vardegree = vardegree_,
-    lag = lag_,
-    lagnk = lagnk_,
-    dfseas = dfseas_
-    )
+  if (by_region == FALSE) {
 
-  return (list(output_df, tmean_df))
+    c(output_df, tmean_df) %<-%
+      plot_and_write_relative_risk_all(
+        df_list = df_list_,
+        mintempregions = mintempregions_,
+        save_fig = save_fig_,
+        save_csv = save_csv_,
+        dependent_col = dependent_col_,
+        varfun = varfun_,
+        varper = varper_,
+        vardegree = vardegree_,
+        coef = coef_,
+        vcov = vcov_,
+        output_folder_path = output_folder_path_
+      )
+
+  } else {
+
+    c(output_df, tmean_df) %<-%
+      plot_and_write_relative_risk(
+      df_list = df_list_,
+      blup = blup_,
+      regions_df = regions_df_,
+      mintempregions = mintempregions_,
+      save_fig = save_fig_,
+      save_csv = save_csv_,
+      output_folder_path = output_folder_path_,
+      independent_col = independent_col_,
+      varfun = varfun_,
+      varper = varper_,
+      vardegree = vardegree_,
+      lag = lag_,
+      lagnk = lagnk_,
+      dfseas = dfseas_
+      )
+
+  }
+
+  return (list(output_df, tmean_df, anregions_bind))
 
 }
 

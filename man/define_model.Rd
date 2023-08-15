@@ -6,7 +6,6 @@
 \usage{
 define_model(
   dataset,
-  dependent_col,
   independent_col,
   varfun,
   varper,
@@ -18,9 +17,6 @@ define_model(
 }
 \arguments{
 \item{dataset}{dataframe with tmean column to be modelled}
-
-\item{dependent_col}{the column name of the
-dependent variable of interest e.g. deaths}
 
 \item{varfun}{Exposure function
 (see dlnm::crossbasis)}
