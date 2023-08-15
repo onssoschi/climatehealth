@@ -7,9 +7,10 @@
 do_analysis(
   input_csv_path_,
   output_folder_path_,
-  save_fig_ = TRUE,
-  save_csv_ = TRUE,
+  save_fig_,
+  save_csv_,
   meta_analysis,
+  by_region,
   dependent_col_,
   independent_col_,
   time_col_,

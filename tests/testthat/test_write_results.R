@@ -12,7 +12,8 @@ test_that('Test output CSVs are written and of correct length', {
       dependent_col = config$dependent_col,
       time_col = config$time_col,
       region_col = config$region_col,
-      temp_col = config$temp_col
+      temp_col = config$temp_col,
+      time_range = config$time_range
     )
 
   c(regions_df_, df_list_) %<-%
@@ -27,14 +28,14 @@ test_that('Test output CSVs are written and of correct length', {
     c(coef_, vcov_) %<-%
       run_model(df_list = df_list_,
                 regions_df = regions_df_,
-                dependent_col = config$dependent_col,
                 independent_col = config$independent_col,
                 varfun = config$varfun,
                 varper = config$varper,
                 vardegree = config$vardegree,
                 lag = config$lag,
                 lagnk = config$lagnk,
-                dfseas = config$dfseas)
+                dfseas = config$dfseas
+      )
 
     c(mv_, blup_) %<-%
       run_meta_model(
@@ -60,6 +61,7 @@ test_that('Test output CSVs are written and of correct length', {
       df_list = df_list_,
       regions_df = regions_df_,
       blup = blup_,
+      independent_col = config$independent_col,
       varfun = config$varfun,
       varper = config$varper,
       vardegree = config$vardegree,
@@ -74,7 +76,6 @@ test_that('Test output CSVs are written and of correct length', {
       regions_df = regions_df_,
       blup = blup_,
       mintempregions = mintempregions_,
-      dependent_col = config$dependent_col,
       independent_col = config$independent_col,
       varfun = config$varfun,
       varper = config$varper,
@@ -84,15 +85,15 @@ test_that('Test output CSVs are written and of correct length', {
       dfseas = config$dfseas
     )
 
-  c(antot, totdeathtot, aftot, afregions) %<-%
+  c(anregions_bind, antot_bind, afregions_bind, aftot_bind) %<-%
     write_attributable_deaths(
-      df_list = df_list_,
       regions_df = regions_df_,
       matsim = matsim_,
       arraysim = arraysim_,
       totdeath = totdeath_,
       output_folder_path = config$output_folder_path
     )
+
 
   actual_output <- read.csv('testdata/attributable_deaths_regions.csv')
 
