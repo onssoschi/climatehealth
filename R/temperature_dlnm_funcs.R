@@ -1553,7 +1553,7 @@ do_analysis <- function(input_csv_path_,
 
   }
 
-  return (list(output_df, tmean_df))
+  return (list(output_df, tmean_df, anregions_bind))
 
 }
 
