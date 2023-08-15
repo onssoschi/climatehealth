@@ -85,7 +85,7 @@ test_that('Test output CSVs are written and of correct length', {
       dfseas = config$dfseas
     )
 
-  c(antot, totdeathtot, aftot, afregions) %<-%
+  c(anregions_bind, antot_bind, afregions_bind, aftot_bind) %<-%
     write_attributable_deaths(
       regions_df = regions_df_,
       matsim = matsim_,
