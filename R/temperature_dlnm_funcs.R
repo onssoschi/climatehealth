@@ -832,7 +832,7 @@ write_attributable_deaths <- function(regions_df,
               'attributable_fraction_total.csv')
   }
 
-  return(list(antot, totdeathtot, aftot, afregions))
+  return(list(anregions_bind, antot_bind, afregions_bind, aftot_bind))
 
 }
 
@@ -1505,7 +1505,7 @@ do_analysis <- function(input_csv_path_,
       dfseas = dfseas_
       )
 
-  c(antot, totdeathtot, aftot, afregions) %<-%
+  c(anregions_bind, antot_bind, afregions_bind, aftot_bind) %<-%
     write_attributable_deaths(
       regions_df = regions_df_,
       matsim = matsim_,
