@@ -920,6 +920,8 @@ plot_and_write_relative_risk <- function(df_list,
   temp_vector <- c()
   relative_risk_vector <- c()
   cen_vector <- c()
+  upper_vector <- c()
+  lower_vector <- c()
 
   tmean_vector <- c()
   tmean_region_vector <- c()
@@ -1068,6 +1070,27 @@ plot_and_write_relative_risk <- function(df_list,
               rep(regions_df$region_names[i],
                   length(data$tmean)))
 
+
+     if (!is.null(blup)) {
+
+     upper_vector <- append(upper_vector,
+                            pred$allRRhigh)
+
+
+     lower_vector <- append(lower_vector,
+                            pred$allRRlow)
+
+     } else {
+
+       upper_vector <- append(upper_vector,
+                              pred$RRhigh)
+
+
+       lower_vector <- append(lower_vector,
+                              pred$RRlow)
+
+     }
+
     }
 
   if (save_fig == TRUE) {
@@ -1080,7 +1103,9 @@ plot_and_write_relative_risk <- function(df_list,
   output_df <- data.frame(regions = region_vector,
                           temp = temp_vector,
                           rel_risk = relative_risk_vector,
-                          centre_temp = cen_vector)
+                          centre_temp = cen_vector,
+                          upper = upper_vector,
+                          lower = lower_vector)
 
   tmean_df <- data.frame(temp_mean = tmean_vector,
                          regions = tmean_region_vector)
@@ -1333,7 +1358,9 @@ plot_and_write_relative_risk_all <- function(df_list,
   output_df <- data.frame(regions = region_vector,
                           temp = temp_vector,
                           rel_risk = relative_risk_vector,
-                          centre_temp = cen_vector)
+                          centre_temp = cen_vector,
+                          upper = upper_vector,
+                          lower = lower_vector)
 
   tmean_df <- data.frame(temp_mean = tmean_vector,
                          regions = tmean_region_vector)
