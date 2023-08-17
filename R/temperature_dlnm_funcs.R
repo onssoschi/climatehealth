@@ -1062,12 +1062,6 @@ plot_and_write_relative_risk <- function(df_list,
                           rep(cen,
                               length(pred$predvar)))
 
-     upper_vector <- append(upper_vector,
-                            pred$allRRhigh)
-
-     lower_vector <- append(lower_vector,
-                            pred$allRRlow)
-
      tmean_vector <- append(tmean_vector,
                             data$tmean)
 
@@ -1075,6 +1069,27 @@ plot_and_write_relative_risk <- function(df_list,
        append(tmean_region_vector,
               rep(regions_df$region_names[i],
                   length(data$tmean)))
+
+
+     if (!is.null(blup)) {
+
+     upper_vector <- append(upper_vector,
+                            pred$allRRhigh)
+
+
+     lower_vector <- append(lower_vector,
+                            pred$allRRlow)
+
+     } else {
+
+       upper_vector <- append(upper_vector,
+                              pred$RRhigh)
+
+
+       lower_vector <- append(lower_vector,
+                              pred$RRlow)
+
+     }
 
     }
 
