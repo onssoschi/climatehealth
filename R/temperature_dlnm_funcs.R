@@ -176,7 +176,7 @@ define_model <- function(dataset,
 #' Define and run poisson regression model for each dataframe
 #'
 #' @param regions_df A dataframe with two columns. Column 1 is abbreviated
-#'   region names. Column 2 is user-specified region names.
+#'   region names. Cootlumn 2 is user-specified region names.
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @param indepedent_col column names of independent
 #' variables to include in regression (excluding temperature,
@@ -727,7 +727,7 @@ compute_attributable_deaths <- function(df_list,
     # mortality
     # Correct denominator to compute the attributable fraction later, as in
     # attrdl
-    totdeath[i] <- sum(data$death, na.rm = T)
+    totdeath[i] <- sum(data$dependent, na.rm = T)
 
   }
 
