@@ -722,7 +722,6 @@ compute_attributable_deaths <- function(df_list,
                                     range = c(per[i, 7], 100),
                                     sim = T, nsim = nsim_)
 
-
     # Store the denominator of attributable deaths, i.e. total observed
     # mortality
     # Correct denominator to compute the attributable fraction later, as in
@@ -767,6 +766,9 @@ write_attributable_deaths <- function(regions_df,
   anregionslow <- apply(arraysim, c(1,2), quantile, 0.025)
   anregionshigh <- apply(arraysim, c(1,2), quantile, 0.975)
 
+  colnames(anregionslow) <- paste(colnames(anregionslow), 'low', sep = '_')
+  colnames(anregionshigh) <- paste(colnames(anregionshigh), 'high', sep = '_')
+
   rownames(anregions) <-
     rownames(anregionslow) <-
     rownames(anregionshigh) <-
@@ -777,8 +779,6 @@ write_attributable_deaths <- function(regions_df,
   antot <- colSums(matsim)
   antotlow <- apply(apply(arraysim,c(2,3),sum),1,quantile,0.025)
   antothigh <- apply(apply(arraysim,c(2,3),sum),1,quantile,0.975)
-
-  paste(anregionshigh, '_', 'ci_upper')
 
   # Total mortality
   # By country
