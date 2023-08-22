@@ -610,7 +610,7 @@ compute_attributable_deaths <- function(df_list,
     # PROBLEM: mintempregions currently calculated
     # across all years and not for an individual year
 
-    year_range <- unique(lubridate::year(data$date))
+    year_range <- sort(unique(lubridate::year(data$date)))
 
     attrdl_years <- function(ind_year, temp_range) {
 
@@ -633,43 +633,55 @@ compute_attributable_deaths <- function(df_list,
 
     attrdl_glob <- lapply(year_range,
                           attrdl_years,
-                          temp_range = NULL)
+                          temp_range = NULL) %>%
+      purrr:::map(as.data.frame) %>%
+      purrr::list_rbind()
 
     attrdl_cold <- lapply(year_range,
                           attrdl_years,
-                          temp_range = c(-100, mintempregions[i]))
+                          temp_range = c(-100, mintempregions[i])) %>%
+      purrr:::map(as.data.frame) %>%
+      purrr::list_rbind()
 
     attrdl_heat <- lapply(year_range,
                           attrdl_years,
-                          temp_range = c(mintempregions[i], 100))
+                          temp_range = c(mintempregions[i], 100)) %>%
+      purrr:::map(as.data.frame) %>%
+      purrr::list_rbind()
 
     attrdl_ext_cold <- lapply(year_range,
                               attrdl_years,
-                              temp_range = c(-100, per[i, 1]))
+                              temp_range = c(-100, per[i, 1])) %>%
+      purrr:::map(as.data.frame) %>%
+      purrr::list_rbind()
 
     attrdl_ext_heat <- lapply(year_range,
                               attrdl_years,
-                              temp_range = c(per[i, 7], 100))
+                              temp_range = c(per[i, 7], 100)) %>%
+      purrr:::map(as.data.frame) %>%
+      purrr::list_rbind()
 
-    for (attrdl_year in attrdl_heat) {
 
-      cat("region:", regions_df$regions[i], "/",
-          "year:", attrdl_year$ind_year, "/",
-          "heat attr deaths:", round(attrdl_year$attrdl_year, 0), "\n")
-    }
+    # for (attrdl_year in attrdl_heat) {
+    #
+    #   cat("region:", regions_df$regions[i], "/",
+    #       "year:", attrdl_year$ind_year, "/",
+    #       "heat attr deaths:", round(attrdl_year$attrdl_year, 0), "\n")
+    # }
 
     attrdl_yr_df <- data.frame(region = rep(regions_df$regions[i],
-                                            length(year_range)),
-                               year = year_range,
-                               glob = attrdl_cold$attrdl_year,
-                               heat = attrdl_heat$attrdl_year,
-                               cold = attrdl_cold$attrdl_year,
-                               extreme_cold = attrdl_ext_cold$attrdl_year,
-                               extreme_heat = attrdl_ext_heat$attrdl_year)
+                                            length(year_range))
+                               , year = year_range
+                               , glob = attrdl_glob$attrdl_year
+                               , heat = attrdl_heat$attrdl_year
+                               , cold = attrdl_cold$attrdl_year
+                               , extreme_cold = attrdl_ext_cold$attrdl_year
+                               , extreme_heat = attrdl_ext_heat$attrdl_year
+                               )
 
     print(attrdl_yr_df)
 
-    append(attrdl_yr_all, attrdl_yr_df)
+    #append(attrdl_yr_all, attrdl_yr_df)
 
     #############################################
 
