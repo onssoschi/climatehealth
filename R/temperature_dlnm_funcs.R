@@ -631,7 +631,9 @@ compute_attributable_deaths <- function(df_list,
 
     for (attrdl_year in attrdl_years) {
 
-      cat("individual year:", attrdl_year$ind_year, "attrdl:", attrdl_year$attrdl_year, "\n")
+      cat("region:", regions_df$regions[i], "/",
+          "year:", attrdl_year$ind_year, "/",
+          "heat attr deaths:", round(attrdl_year$attrdl_year, 0), "\n")
     }
 
     #############################################
