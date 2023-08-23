@@ -1608,7 +1608,7 @@ do_analysis <- function(input_csv_path_,
       dfseas = dfseas_
       )
 
-  c(totdeath_, arraysim_, matsim_, attrdl_yr_all_) %<-%
+  c(totdeath_, arraysim_, matsim_, attrdl_yr_all) %<-%
     compute_attributable_deaths(
       df_list = df_list_,
       regions_df = regions_df_,
@@ -1630,7 +1630,7 @@ do_analysis <- function(input_csv_path_,
       arraysim = arraysim_,
       totdeath = totdeath_,
       output_folder_path = output_folder_path_,
-      attrdl_yr_all = attrdl_yr_all_
+      attrdl_yr_all = attrdl_yr_all
       )
 
   if (by_region == FALSE) {
@@ -1672,7 +1672,7 @@ do_analysis <- function(input_csv_path_,
 
   }
 
-  return (list(output_df, tmean_df, anregions_bind))
+  return (list(output_df, tmean_df, anregions_bind, attrdl_yr_all))
 
 }
 
