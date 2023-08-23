@@ -516,6 +516,8 @@ calculate_min_mortality_temp <-  function(df_list,
 #'   Used to derive confidence intervals.
 #'   \item `matsim` A matrix (numeric). Total (glob),
 #'   cold and heat-attributable deaths per region from reduced coefficients.
+#'    \item `attrdl_yr_all` a dataframe containing attributable deaths by year
+#'    for each region.
 #' }
 #' @export
 compute_attributable_deaths <- function(df_list,
@@ -562,6 +564,8 @@ compute_attributable_deaths <- function(df_list,
                                     c("glob_ci", "cold_ci", "heat_ci",
                                       "extreme_cold_ci", "extreme_heat_ci")))
 
+  attrdl_yr_all <- list()
+
   # Run the loop
   for(i in seq(df_list)){
 
@@ -572,8 +576,6 @@ compute_attributable_deaths <- function(df_list,
     data <- df_list[[i]]
 
     # Derive the cross-basis
-
-
     if (!is.null(blup)) {
 
       coefs <- blup[[i]]$blup
@@ -604,39 +606,117 @@ compute_attributable_deaths <- function(df_list,
 
     }
 
+    #############################################
+    # Return heat attributable deaths per year
+
+    # PROBLEM: mintempregions currently calculated
+    # across all years and not for an individual year
+
+    year_range <- sort(unique(lubridate::year(data$date)))
+
+    attrdl_years <- function(ind_year, temp_range) {
+
+      subset <- data[data$year == ind_year, ]
+
+      attrdl_year <- attrdl(x = subset$tmean,
+                            basis = cb,
+                            cases = subset$dependent,
+                            coef = coefs,
+                            vcov = vcovs,
+                            type = "an",
+                            dir = "forw",
+                            cen = mintempregions[i],
+                            model = model,
+                            range = temp_range)
+
+      return(list(ind_year = ind_year, attrdl_year = attrdl_year))
+
+    }
+
+    attrdl_glob <- lapply(year_range,
+                          attrdl_years,
+                          temp_range = NULL) %>%
+      purrr:::map(as.data.frame) %>%
+      purrr::list_rbind()
+
+    attrdl_cold <- lapply(year_range,
+                          attrdl_years,
+                          temp_range = c(-100, mintempregions[i])) %>%
+      purrr:::map(as.data.frame) %>%
+      purrr::list_rbind()
+
+    attrdl_heat <- lapply(year_range,
+                          attrdl_years,
+                          temp_range = c(mintempregions[i], 100)) %>%
+      purrr:::map(as.data.frame) %>%
+      purrr::list_rbind()
+
+    attrdl_ext_cold <- lapply(year_range,
+                              attrdl_years,
+                              temp_range = c(-100, per[i, 1])) %>%
+      purrr:::map(as.data.frame) %>%
+      purrr::list_rbind()
+
+    attrdl_ext_heat <- lapply(year_range,
+                              attrdl_years,
+                              temp_range = c(per[i, 7], 100)) %>%
+      purrr:::map(as.data.frame) %>%
+      purrr::list_rbind()
+
+
+    # for (attrdl_year in attrdl_heat) {
+    #
+    #   cat("region:", regions_df$regions[i], "/",
+    #       "year:", attrdl_year$ind_year, "/",
+    #       "heat attr deaths:", round(attrdl_year$attrdl_year, 0), "\n")
+    # }
+
+    attrdl_yr_df <- data.frame(region = rep(regions_df$regions[i],
+                                            length(year_range)),
+                               glob = attrdl_glob$attrdl_year,
+                               heat = attrdl_heat$attrdl_year,
+                               cold = attrdl_cold$attrdl_year,
+                               extreme_cold = attrdl_ext_cold$attrdl_year,
+                               extreme_heat = attrdl_ext_heat$attrdl_year
+                               )
+
+    attrdl_yr_all[[i]] <- attrdl_yr_df
+
+    #############################################
+
     # Compute the attributable deaths
     # NB: The reduced coefficients are used here
     matsim[i, "glob"] <- attrdl(x = data$tmean,
-                               basis = cb,
-                               cases = data$dependent,
-                               coef = coefs,
-                               vcov = vcovs,
-                               type = "an",
-                               dir = "forw",
-                               cen = mintempregions[i],
-                               model = model)
+                                basis = cb,
+                                cases = data$dependent,
+                                coef = coefs,
+                                vcov = vcovs,
+                                type = "an",
+                                dir = "forw",
+                                cen = mintempregions[i],
+                                model = model)
 
     matsim[i, "cold"] <- attrdl(x = data$tmean,
-                               basis = cb,
-                               cases = data$dependent,
-                               coef = coefs,
-                               vcov = vcovs,
-                               type = "an",
-                               dir = "forw",
-                               cen = mintempregions[i],
-                               model = model,
-                               range = c(-100, mintempregions[i]))
+                                basis = cb,
+                                cases = data$dependent,
+                                coef = coefs,
+                                vcov = vcovs,
+                                type = "an",
+                                dir = "forw",
+                                cen = mintempregions[i],
+                                model = model,
+                                range = c(-100, mintempregions[i]))
 
     matsim[i, "heat" ] <- attrdl(x = data$tmean,
-                               basis = cb,
-                               cases = data$dependent,
-                               coef = coefs,
-                               vcov = vcovs,
-                               type="an",
-                               dir = "forw",
-                               cen = mintempregions[i],
-                               model = model,
-                               range = c(mintempregions[i], 100))
+                                 basis = cb,
+                                 cases = data$dependent,
+                                 coef = coefs,
+                                 vcov = vcovs,
+                                 type="an",
+                                 dir = "forw",
+                                 cen = mintempregions[i],
+                                 model = model,
+                                 range = c(mintempregions[i], 100))
 
     # Attributable deaths for extremes:
     matsim[i,"extreme_cold"] <- attrdl(x = data$tmean,
@@ -664,63 +744,63 @@ compute_attributable_deaths <- function(df_list,
     # Compute empirical occurrences of the attributable deaths
     # Used to derive confidence intervals
     arraysim[i, "glob_ci", ] <- attrdl(x = data$tmean,
-                                  basis = cb,
-                                  cases = data$dependent,
-                                  coef = coefs,
-                                  vcov = vcovs,
-                                  type = "an",
-                                  dir = "forw",
-                                  cen = mintempregions[i],
-                                  model = model,
-                                  sim = T, nsim = nsim_)
+                                       basis = cb,
+                                       cases = data$dependent,
+                                       coef = coefs,
+                                       vcov = vcovs,
+                                       type = "an",
+                                       dir = "forw",
+                                       cen = mintempregions[i],
+                                       model = model,
+                                       sim = T, nsim = nsim_)
 
     arraysim[i, "cold_ci", ] <- attrdl(x = data$tmean,
-                                  basis = cb,
-                                  cases = data$dependent,
-                                  coef = coefs,
-                                  vcov = vcovs,
-                                  type = "an",
-                                  dir = "forw",
-                                  cen = mintempregions[i],
-                                  model = model,
-                                  range = c(-100, mintempregions[i]),
-                                  sim = T , nsim = nsim_)
+                                       basis = cb,
+                                       cases = data$dependent,
+                                       coef = coefs,
+                                       vcov = vcovs,
+                                       type = "an",
+                                       dir = "forw",
+                                       cen = mintempregions[i],
+                                       model = model,
+                                       range = c(-100, mintempregions[i]),
+                                       sim = T , nsim = nsim_)
 
     arraysim[i, "heat_ci", ] <- attrdl(x = data$tmean,
-                                  basis = cb,
-                                  cases = data$dependent,
-                                  coef = coefs,
-                                  vcov = vcovs,
-                                  type = "an",
-                                  dir= "forw",
-                                  cen = mintempregions[i],
-                                  model = model,
-                                  range = c(mintempregions[i], 100),
-                                  sim = T, nsim = nsim_)
+                                       basis = cb,
+                                       cases = data$dependent,
+                                       coef = coefs,
+                                       vcov = vcovs,
+                                       type = "an",
+                                       dir = "forw",
+                                       cen = mintempregions[i],
+                                       model = model,
+                                       range = c(mintempregions[i], 100),
+                                       sim = T, nsim = nsim_)
 
     arraysim[i, "extreme_cold_ci", ] <- attrdl(x = data$tmean,
-                                    basis = cb,
-                                    cases = data$dependent,
-                                    coef = coefs,
-                                    vcov = vcovs,
-                                    type = "an",
-                                    dir= "forw",
-                                    cen = mintempregions[i],
-                                    model = model,
-                                    range = c(-100, per[i, 1]),
-                                    sim = T, nsim = nsim_)
+                                               basis = cb,
+                                               cases = data$dependent,
+                                               coef = coefs,
+                                               vcov = vcovs,
+                                               type = "an",
+                                               dir= "forw",
+                                               cen = mintempregions[i],
+                                               model = model,
+                                               range = c(-100, per[i, 1]),
+                                               sim = T, nsim = nsim_)
 
     arraysim[i, "extreme_heat_ci", ] <- attrdl(x = data$tmean,
-                                    basis = cb,
-                                    cases = data$dependent,
-                                    coef = coefs,
-                                    vcov = vcovs,
-                                    type = "an",
-                                    dir= "forw",
-                                    cen = mintempregions[i],
-                                    model = model,
-                                    range = c(per[i, 7], 100),
-                                    sim = T, nsim = nsim_)
+                                               basis = cb,
+                                               cases = data$dependent,
+                                               coef = coefs,
+                                               vcov = vcovs,
+                                               type = "an",
+                                               dir= "forw",
+                                               cen = mintempregions[i],
+                                               model = model,
+                                               range = c(per[i, 7], 100),
+                                               sim = T, nsim = nsim_)
 
     # Store the denominator of attributable deaths, i.e. total observed
     # mortality
@@ -730,7 +810,9 @@ compute_attributable_deaths <- function(df_list,
 
   }
 
-  return (list(totdeath, arraysim, matsim))
+  attrdl_yr_all <- dplyr::bind_rows(attrdl_yr_all)
+
+  return (list(totdeath, arraysim, matsim, attrdl_yr_all))
 
 }
 
@@ -748,6 +830,7 @@ compute_attributable_deaths <- function(df_list,
 #'   Used to derive confidence intervals.
 #' @param matsim A matrix (numeric). Total (glob),
 #' cold and heat-attributable deaths per region from reduced coefficients.
+#' @param attrdl_yr_all A dataframe with attributable deaths by year for each region.
 #' @param output_folder_path Path to folder for storing outputs.
 #'
 #' @export
@@ -758,6 +841,7 @@ write_attributable_deaths <- function(regions_df,
                                       matsim,
                                       arraysim,
                                       totdeath,
+                                      attrdl_yr_all,
                                       output_folder_path = NULL) {
 
   # Attributable numbers
@@ -820,6 +904,11 @@ write_attributable_deaths <- function(regions_df,
                            'attributable_fraction_total.csv',
                            sep = ""))
 
+    write.csv(attrdl_yr_all,
+              file = paste(output_folder_path,
+                           'attributable_deaths_year.csv',
+                           sep = ""))
+
   } else {
 
     write.csv(anregions_bind,
@@ -830,6 +919,8 @@ write_attributable_deaths <- function(regions_df,
               'attributable_fraction_regions.csv')
     write.csv(aftot_bind,
               'attributable_fraction_total.csv')
+    write.csv(attrdl_yr_all,
+              'attributable_deaths_year.csv')
   }
 
   return(list(anregions_bind, antot_bind, afregions_bind, aftot_bind))
@@ -1517,7 +1608,7 @@ do_analysis <- function(input_csv_path_,
       dfseas = dfseas_
       )
 
-  c(totdeath_, arraysim_, matsim_) %<-%
+  c(totdeath_, arraysim_, matsim_, attrdl_yr_all_) %<-%
     compute_attributable_deaths(
       df_list = df_list_,
       regions_df = regions_df_,
@@ -1538,7 +1629,8 @@ do_analysis <- function(input_csv_path_,
       matsim = matsim_,
       arraysim = arraysim_,
       totdeath = totdeath_,
-      output_folder_path = output_folder_path_
+      output_folder_path = output_folder_path_,
+      attrdl_yr_all = attrdl_yr_all_
       )
 
   if (by_region == FALSE) {
