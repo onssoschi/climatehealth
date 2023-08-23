@@ -672,13 +672,12 @@ compute_attributable_deaths <- function(df_list,
     # }
 
     attrdl_yr_df <- data.frame(region = rep(regions_df$regions[i],
-                                            length(year_range))
-                               , year = year_range
-                               , glob = attrdl_glob$attrdl_year
-                               , heat = attrdl_heat$attrdl_year
-                               , cold = attrdl_cold$attrdl_year
-                               , extreme_cold = attrdl_ext_cold$attrdl_year
-                               , extreme_heat = attrdl_ext_heat$attrdl_year
+                                            length(year_range)),
+                               glob = attrdl_glob$attrdl_year,
+                               heat = attrdl_heat$attrdl_year,
+                               cold = attrdl_cold$attrdl_year,
+                               extreme_cold = attrdl_ext_cold$attrdl_year,
+                               extreme_heat = attrdl_ext_heat$attrdl_year
                                )
 
     attrdl_yr_all[[i]] <- attrdl_yr_df
