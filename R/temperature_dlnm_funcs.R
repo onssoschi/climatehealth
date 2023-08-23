@@ -562,7 +562,7 @@ compute_attributable_deaths <- function(df_list,
                                     c("glob_ci", "cold_ci", "heat_ci",
                                       "extreme_cold_ci", "extreme_heat_ci")))
 
-  attrdl_yr_all <- c()
+  attrdl_yr_all <- list()
 
   # Run the loop
   for(i in seq(df_list)){
@@ -679,9 +679,7 @@ compute_attributable_deaths <- function(df_list,
                                , extreme_heat = attrdl_ext_heat$attrdl_year
                                )
 
-    print(attrdl_yr_df)
-
-    #append(attrdl_yr_all, attrdl_yr_df)
+    attrdl_yr_all[[i]] <- attrdl_yr_df
 
     #############################################
 
@@ -810,6 +808,8 @@ compute_attributable_deaths <- function(df_list,
     totdeath[i] <- sum(data$dependent, na.rm = T)
 
   }
+
+  attrdl_yr_all <- dplyr::bind_rows(attrdl_yr_all)
 
   return (list(totdeath, arraysim, matsim))
 
