@@ -70,7 +70,7 @@ test_that('Test output CSVs are written and of correct length', {
       dfseas = config$dfseas
     )
 
-  c(totdeath_, arraysim_, matsim_, attrdl_yr_all_) %<-%
+  c(totdeath_, arraysim_, matsim_, attrdl_yr_all) %<-%
     compute_attributable_deaths(
       df_list = df_list_,
       regions_df = regions_df_,
@@ -92,7 +92,7 @@ test_that('Test output CSVs are written and of correct length', {
       arraysim = arraysim_,
       totdeath = totdeath_,
       output_folder_path = config$output_folder_path,
-      attrdl_yr_all = attrdl_yr_all_
+      attrdl_yr_all = attrdl_yr_all
     )
 
 
