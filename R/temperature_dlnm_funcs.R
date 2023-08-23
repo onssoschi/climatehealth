@@ -516,6 +516,8 @@ calculate_min_mortality_temp <-  function(df_list,
 #'   Used to derive confidence intervals.
 #'   \item `matsim` A matrix (numeric). Total (glob),
 #'   cold and heat-attributable deaths per region from reduced coefficients.
+#'    \item `attrdl_yr_all` a dataframe containing attributable deaths by year
+#'    for each region.
 #' }
 #' @export
 compute_attributable_deaths <- function(df_list,
@@ -811,7 +813,7 @@ compute_attributable_deaths <- function(df_list,
 
   attrdl_yr_all <- dplyr::bind_rows(attrdl_yr_all)
 
-  return (list(totdeath, arraysim, matsim))
+  return (list(totdeath, arraysim, matsim, attrdl_yr_all))
 
 }
 
@@ -829,6 +831,7 @@ compute_attributable_deaths <- function(df_list,
 #'   Used to derive confidence intervals.
 #' @param matsim A matrix (numeric). Total (glob),
 #' cold and heat-attributable deaths per region from reduced coefficients.
+#' @param attrdl_yr_all A dataframe with attributable deaths by year for each region.
 #' @param output_folder_path Path to folder for storing outputs.
 #'
 #' @export
@@ -839,6 +842,7 @@ write_attributable_deaths <- function(regions_df,
                                       matsim,
                                       arraysim,
                                       totdeath,
+                                      attrdl_yr_all,
                                       output_folder_path = NULL) {
 
   # Attributable numbers
@@ -900,6 +904,11 @@ write_attributable_deaths <- function(regions_df,
                            'attributable_fraction_total.csv',
                            sep = ""))
 
+    write.csv(attrdl_yr_all,
+              file = paste(output_folder_path,
+                           'attributable_deaths_year.csv',
+                           sep = ""))
+
   } else {
 
     write.csv(anregions_bind,
@@ -910,6 +919,8 @@ write_attributable_deaths <- function(regions_df,
               'attributable_fraction_regions.csv')
     write.csv(aftot_bind,
               'attributable_fraction_total.csv')
+    write.csv(attrdl_yr_all,
+              'attributable_deaths_year.csv')
   }
 
   return(list(anregions_bind, antot_bind, afregions_bind, aftot_bind))
@@ -1597,7 +1608,7 @@ do_analysis <- function(input_csv_path_,
       dfseas = dfseas_
       )
 
-  c(totdeath_, arraysim_, matsim_) %<-%
+  c(totdeath_, arraysim_, matsim_, attrdl_yr_all_) %<-%
     compute_attributable_deaths(
       df_list = df_list_,
       regions_df = regions_df_,
@@ -1618,7 +1629,8 @@ do_analysis <- function(input_csv_path_,
       matsim = matsim_,
       arraysim = arraysim_,
       totdeath = totdeath_,
-      output_folder_path = output_folder_path_
+      output_folder_path = output_folder_path_,
+      attrdl_yr_all = attrdl_yr_all_
       )
 
   if (by_region == FALSE) {
