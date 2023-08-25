@@ -673,6 +673,7 @@ compute_attributable_deaths <- function(df_list,
 
     attrdl_yr_df <- data.frame(region = rep(regions_df$regions[i],
                                             length(year_range)),
+                               year = rep(year_range),
                                glob = attrdl_glob$attrdl_year,
                                heat = attrdl_heat$attrdl_year,
                                cold = attrdl_cold$attrdl_year,
