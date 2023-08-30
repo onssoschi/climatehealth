@@ -879,6 +879,8 @@ compute_attributable_deaths <- function(df_list,
 #' @param matsim A matrix (numeric). Total (glob),
 #' cold and heat-attributable deaths per region from reduced coefficients.
 #' @param attrdl_yr_all A dataframe with attributable deaths by year for each region.
+#' @param attr_fractions_regions A dataframe with attributable fractions by year and region.
+#' @param attr_fractions_all A datataframe with attributable fractions by year aggregated across regions
 #' @param output_folder_path Path to folder for storing outputs.
 #'
 #' @export
@@ -890,6 +892,8 @@ write_attributable_deaths <- function(regions_df,
                                       arraysim,
                                       totdeath,
                                       attrdl_yr_all,
+                                      attr_fractions_regions,
+                                      attr_fractions_all,
                                       output_folder_path = NULL) {
 
   # Attributable numbers
@@ -957,6 +961,16 @@ write_attributable_deaths <- function(regions_df,
                            'attributable_deaths_year.csv',
                            sep = ""))
 
+    write.csv(attrdl_fractions_regions,
+              file = paste(output_folder_path,
+                           'attributable_fraction_year_region.csv',
+                           sep = ""))
+
+    write.csv(attrdl_fractions_all,
+              file = paste(output_folder_path,
+                           'attributable_fraction_year.csv',
+                           sep = ""))
+
   } else {
 
     write.csv(anregions_bind,
@@ -969,6 +983,11 @@ write_attributable_deaths <- function(regions_df,
               'attributable_fraction_total.csv')
     write.csv(attrdl_yr_all,
               'attributable_deaths_year.csv')
+    write.csv(attrdl_fractions_regions,
+              'attributable_fraction_year_region.csv')
+    write.csv(attrdl_fractions_all,
+              'attributable_fraction_year.csv')
+
   }
 
   return(list(anregions_bind, antot_bind, afregions_bind, aftot_bind))
