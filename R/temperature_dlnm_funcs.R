@@ -813,7 +813,54 @@ compute_attributable_deaths <- function(df_list,
 
   attrdl_yr_all <- dplyr::bind_rows(attrdl_yr_all)
 
-  return (list(totdeath, arraysim, matsim, attrdl_yr_all))
+  all_data <- dplyr::bind_rows(df_list)
+
+  # attributable fraction
+
+  attr_fractions <- attrdl_yr_all
+
+  totregyear <- all_data %>%
+    dplyr::group_by(regnames, year) %>%
+    dplyr::summarise(total_deaths = sum(dependent)) %>%
+    dplyr::rename(region = regnames)
+
+  attr_fractions_regions <- dplyr::left_join(x = attr_fractions,
+                            y = totregyear,
+                            by = c("year", "region")) %>%
+    dplyr::mutate(glob = glob / total_deaths * 100,
+                  heat = heat / total_deaths * 100,
+                  cold = cold / total_deaths * 100,
+                  extreme_cold = extreme_cold / total_deaths * 100,
+                  extreme_heat = extreme_heat / total_deaths * 100) %>%
+    dplyr::select(-total_deaths)
+
+  # aggregated across regions
+
+  attr_fractions_all <- attrdl_yr_all %>%
+    dplyr::group_by(year) %>%
+    dplyr::summarise(glob = sum(glob),
+                     heat = sum(heat),
+                     cold = sum(cold),
+                     extreme_cold = sum(extreme_cold),
+                     extreme_heat = sum(extreme_heat))
+
+  totyear <- all_data %>%
+    dplyr::group_by(year) %>%
+    dplyr::summarise(total_deaths = sum(dependent))
+
+  attr_fractions_all <- dplyr::left_join(x = attr_fractions_all,
+                                             y = totyear,
+                                             by = "year") %>%
+    dplyr::mutate(glob = glob / total_deaths * 100,
+                  heat = heat / total_deaths * 100,
+                  cold = cold / total_deaths * 100,
+                  extreme_cold = extreme_cold / total_deaths * 100,
+                  extreme_heat = extreme_heat / total_deaths * 100) %>%
+    dplyr::select(-total_deaths)
+
+
+  return (list(totdeath, arraysim, matsim, attrdl_yr_all,
+               attr_fractions_regions, attr_fractions_all))
 
 }
 
