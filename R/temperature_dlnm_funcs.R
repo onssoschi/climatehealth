@@ -961,12 +961,12 @@ write_attributable_deaths <- function(regions_df,
                            'attributable_deaths_year.csv',
                            sep = ""))
 
-    write.csv(attrdl_fractions_regions,
+    write.csv(attr_fractions_regions,
               file = paste(output_folder_path,
                            'attributable_fraction_year_region.csv',
                            sep = ""))
 
-    write.csv(attrdl_fractions_all,
+    write.csv(attr_fractions_all,
               file = paste(output_folder_path,
                            'attributable_fraction_year.csv',
                            sep = ""))
@@ -983,9 +983,9 @@ write_attributable_deaths <- function(regions_df,
               'attributable_fraction_total.csv')
     write.csv(attrdl_yr_all,
               'attributable_deaths_year.csv')
-    write.csv(attrdl_fractions_regions,
+    write.csv(attr_fractions_regions,
               'attributable_fraction_year_region.csv')
-    write.csv(attrdl_fractions_all,
+    write.csv(attr_fractions_all,
               'attributable_fraction_year.csv')
 
   }
@@ -1675,7 +1675,8 @@ do_analysis <- function(input_csv_path_,
       dfseas = dfseas_
       )
 
-  c(totdeath_, arraysim_, matsim_, attrdl_yr_all) %<-%
+  c(totdeath_, arraysim_, matsim_, attrdl_yr_all,
+    attr_fractions_regions, attr_fractions_all) %<-%
     compute_attributable_deaths(
       df_list = df_list_,
       regions_df = regions_df_,
@@ -1697,7 +1698,9 @@ do_analysis <- function(input_csv_path_,
       arraysim = arraysim_,
       totdeath = totdeath_,
       output_folder_path = output_folder_path_,
-      attrdl_yr_all = attrdl_yr_all
+      attrdl_yr_all = attrdl_yr_all,
+      attr_fractions_regions = attr_fractions_regions,
+      attr_fractions_all = attr_fractions_all
       )
 
   if (by_region == FALSE) {
@@ -1739,7 +1742,8 @@ do_analysis <- function(input_csv_path_,
 
   }
 
-  return (list(output_df, tmean_df, anregions_bind, attrdl_yr_all))
+  return (list(output_df, tmean_df, anregions_bind, attrdl_yr_all,
+               attr_fractions_regions, attr_fractions_all))
 
 }
 
