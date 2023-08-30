@@ -813,9 +813,9 @@ compute_attributable_deaths <- function(df_list,
 
   attrdl_yr_all <- dplyr::bind_rows(attrdl_yr_all)
 
-  all_data <- dplyr::bind_rows(df_list)
+  # Compute attributable fraction
 
-  # attributable fraction
+  all_data <- dplyr::bind_rows(df_list)
 
   attr_fractions <- attrdl_yr_all
 
@@ -836,7 +836,7 @@ compute_attributable_deaths <- function(df_list,
 
   # aggregated across regions
 
-  attr_fractions_all <- attrdl_yr_all %>%
+  attr_deaths_all <- attrdl_yr_all %>%
     dplyr::group_by(year) %>%
     dplyr::summarise(glob = sum(glob),
                      heat = sum(heat),
@@ -848,7 +848,7 @@ compute_attributable_deaths <- function(df_list,
     dplyr::group_by(year) %>%
     dplyr::summarise(total_deaths = sum(dependent))
 
-  attr_fractions_all <- dplyr::left_join(x = attr_fractions_all,
+  attr_fractions_all <- dplyr::left_join(x = attr_deaths_all,
                                              y = totyear,
                                              by = "year") %>%
     dplyr::mutate(region = "All",
