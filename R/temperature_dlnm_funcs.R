@@ -152,13 +152,13 @@ define_model <- function(dataset,
   formula <- as.formula(paste(paste('dependent'),
                               " ~ ",
                               paste(independent_col,
-                                    collapse= "+")))
+                                    collapse = "+")))
 
   # Define crossbasis
   argvar_ <- list(fun = varfun,
                   knots = quantile(dataset$tmean,
                                    varper/100,
-                                   na.rm=T),
+                                   na.rm = T),
                   degree = vardegree)
 
   cb <- crossbasis(dataset$tmean,
