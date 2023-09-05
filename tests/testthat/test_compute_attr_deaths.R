@@ -69,7 +69,8 @@ test_that('Test total deaths is an integer of correct length', {
       dfseas = config$dfseas
     )
 
-  c(totdeath_, arraysim_, matsim_, attrdl_yr_all) %<-%
+  c(totdeath_, arraysim_, matsim_, attrdl_yr_all,
+    attr_fractions_yr) %<-%
     compute_attributable_deaths(
       df_list = df_list_,
       regions_df = regions_df_,

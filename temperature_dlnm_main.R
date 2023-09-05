@@ -12,7 +12,8 @@ library(zeallot)
 #             output_folder_path [folder that stores data and figure outputs] #
 ###############################################################################
 
-c(output_df, tmean_df, anregions_bind) %<-%
+c(output_df, tmean_df, anregions_bind, attrdl_yr_all,
+  attr_fractions_yr) %<-%
   do_analysis(input_csv_path_ = config$input_csv_path,
             output_folder_path_ = config$output_folder_path,
             save_fig_ = config$save_fig,
@@ -32,3 +33,4 @@ c(output_df, tmean_df, anregions_bind) %<-%
             lagnk_ = config$lagnk,
             dfseas_ = config$dfseas
             )
+

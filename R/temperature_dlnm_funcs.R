@@ -813,7 +813,57 @@ compute_attributable_deaths <- function(df_list,
 
   attrdl_yr_all <- dplyr::bind_rows(attrdl_yr_all)
 
-  return (list(totdeath, arraysim, matsim, attrdl_yr_all))
+  # Compute attributable fraction
+
+  all_data <- dplyr::bind_rows(df_list)
+
+  attr_fractions <- attrdl_yr_all
+
+  totregyear <- all_data %>%
+    dplyr::group_by(regnames, year) %>%
+    dplyr::summarise(total_deaths = sum(dependent)) %>%
+    dplyr::rename(region = regnames)
+
+  attr_fractions_regions <- dplyr::left_join(x = attr_fractions,
+                            y = totregyear,
+                            by = c("year", "region")) %>%
+    dplyr::mutate(glob = glob / total_deaths * 100,
+                  heat = heat / total_deaths * 100,
+                  cold = cold / total_deaths * 100,
+                  extreme_cold = extreme_cold / total_deaths * 100,
+                  extreme_heat = extreme_heat / total_deaths * 100) %>%
+    dplyr::select(-total_deaths)
+
+  # aggregated across regions
+
+  attr_deaths_all <- attrdl_yr_all %>%
+    dplyr::group_by(year) %>%
+    dplyr::summarise(glob = sum(glob),
+                     heat = sum(heat),
+                     cold = sum(cold),
+                     extreme_cold = sum(extreme_cold),
+                     extreme_heat = sum(extreme_heat))
+
+  totyear <- all_data %>%
+    dplyr::group_by(year) %>%
+    dplyr::summarise(total_deaths = sum(dependent))
+
+  attr_fractions_all <- dplyr::left_join(x = attr_deaths_all,
+                                             y = totyear,
+                                             by = "year") %>%
+    dplyr::mutate(region = "All",
+                  glob = glob / total_deaths * 100,
+                  heat = heat / total_deaths * 100,
+                  cold = cold / total_deaths * 100,
+                  extreme_cold = extreme_cold / total_deaths * 100,
+                  extreme_heat = extreme_heat / total_deaths * 100) %>%
+    dplyr::select(-total_deaths)
+
+  attr_fractions_yr <- dplyr::bind_rows(attr_fractions_all,
+                                         attr_fractions_regions)
+
+  return (list(totdeath, arraysim, matsim, attrdl_yr_all,
+               attr_fractions_yr))
 
 }
 
@@ -832,6 +882,7 @@ compute_attributable_deaths <- function(df_list,
 #' @param matsim A matrix (numeric). Total (glob),
 #' cold and heat-attributable deaths per region from reduced coefficients.
 #' @param attrdl_yr_all A dataframe with attributable deaths by year for each region.
+#' @param attr_fractions_yr A dataframe with attributable fractions by year and region.
 #' @param output_folder_path Path to folder for storing outputs.
 #'
 #' @export
@@ -843,6 +894,7 @@ write_attributable_deaths <- function(regions_df,
                                       arraysim,
                                       totdeath,
                                       attrdl_yr_all,
+                                      attr_fractions_yr,
                                       output_folder_path = NULL) {
 
   # Attributable numbers
@@ -910,6 +962,11 @@ write_attributable_deaths <- function(regions_df,
                            'attributable_deaths_year.csv',
                            sep = ""))
 
+    write.csv(attr_fractions_yr,
+              file = paste(output_folder_path,
+                           'attributable_fraction_year.csv',
+                           sep = ""))
+
   } else {
 
     write.csv(anregions_bind,
@@ -922,6 +979,9 @@ write_attributable_deaths <- function(regions_df,
               'attributable_fraction_total.csv')
     write.csv(attrdl_yr_all,
               'attributable_deaths_year.csv')
+    write.csv(attr_fractions_yr,
+              'attributable_fraction_year.csv')
+
   }
 
   return(list(anregions_bind, antot_bind, afregions_bind, aftot_bind))
@@ -1609,7 +1669,8 @@ do_analysis <- function(input_csv_path_,
       dfseas = dfseas_
       )
 
-  c(totdeath_, arraysim_, matsim_, attrdl_yr_all) %<-%
+  c(totdeath_, arraysim_, matsim_, attrdl_yr_all,
+    attr_fractions_yr) %<-%
     compute_attributable_deaths(
       df_list = df_list_,
       regions_df = regions_df_,
@@ -1631,7 +1692,8 @@ do_analysis <- function(input_csv_path_,
       arraysim = arraysim_,
       totdeath = totdeath_,
       output_folder_path = output_folder_path_,
-      attrdl_yr_all = attrdl_yr_all
+      attrdl_yr_all = attrdl_yr_all,
+      attr_fractions_yr = attr_fractions_yr
       )
 
   if (by_region == FALSE) {
@@ -1673,7 +1735,8 @@ do_analysis <- function(input_csv_path_,
 
   }
 
-  return (list(output_df, tmean_df, anregions_bind, attrdl_yr_all))
+  return (list(output_df, tmean_df, anregions_bind, attrdl_yr_all,
+               attr_fractions_yr))
 
 }
 
