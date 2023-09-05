@@ -20,6 +20,8 @@ config <- config::get()
 #' @param region_col The region column over which the data
 #' are spatially aggregated e.g. regnames
 #' @param temp_col The temperature column e.g. tmean
+#' @param time_range A list of two dates (format YYYY-MM-DD) representing the
+#' min and max (inclusive) of the time range over which to filter the data.
 #' @return
 #' \itemize{
 #'   \item `df_list_unordered` A list of dataframes for each region
@@ -34,31 +36,34 @@ load_data <- function(input_csv_path,
                       temp_col,
                       time_range) {
 
-  if(substr(input_csv_path, nchar(input_csv_path) - 3, nchar(input_csv_path)) !=  '.csv') {
+  if(substr(input_csv_path, nchar(input_csv_path) - 3, nchar(input_csv_path)) !=
+     '.csv') {
+
     stop("Input path must be a CSV")
+
   }
 
 
-  df <- read.csv(input_csv_path, row.names=1) %>%
+  df <- read.csv(input_csv_path, row.names = 1) %>%
     dplyr::rename(dependent = dependent_col,
                   date = time_col,
                   regnames = region_col,
-                  tmean = temp_col)
+                  tmean = temp_col) %>%
+    dplyr::mutate(date = as.Date(date))
 
-  df$date <- as.Date(df$date)
 
   if (!'NULL' %in% time_range) {
 
     df <- df %>%
-      dplyr::filter(date > time_range[1]
-                    & date < time_range[2])
+      dplyr::filter(date >= time_range[1]
+                    & date <= time_range[2])
 
   }
 
   regions <- as.character(unique(df$regnames)) # .distinct() on regnames
 
   df_list_unordered <- lapply(regions,
-                              function(x) df[df$regnames == x, ])
+                              function(x) df %>% dplyr::filter(regnames == x))
 
   names(df_list_unordered) <- regions
 
