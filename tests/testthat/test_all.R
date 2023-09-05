@@ -6,7 +6,8 @@ test_that('Test new output matches original output', {
 
   config <- config::get()
 
-  c(output_df, tmean_df, anregions_bind, attrdl_yr_all) %<-%
+  c(output_df, tmean_df, anregions_bind, attrdl_yr_all,
+    attr_fractions_yr) %<-%
     do_analysis(input_csv_path_ = config$input_csv_path,
                 output_folder_path_ = config$output_folder_path,
                 save_fig_ = config$save_fig,
