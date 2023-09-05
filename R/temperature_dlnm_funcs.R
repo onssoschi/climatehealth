@@ -226,7 +226,7 @@ run_model <- function(df_list,
                  length(varper) + vardegree,
                  dimnames = list(regions_df$regions))
 
-  vcov_ <- vector("list" ,nrow(regions_df))
+  vcov_ <- vector("list", nrow(regions_df))
 
   names(vcov_) <- regions_df$regions
 
