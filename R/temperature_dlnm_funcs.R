@@ -247,7 +247,7 @@ run_model <- function(df_list,
                                    lagnk = lagnk,
                                    dfseas = dfseas)
 
-    cen_ <- mean(data$tmean, na.rm = T)
+    cen_ <- mean(data$tmean, na.rm = TRUE)
 
     # Reduction to overall cumulative
     pred <- crossreduce(cb, model, cen = cen_)
@@ -318,7 +318,7 @@ run_meta_model <- function(df_list, regions_df, coef, vcov) {
                control = list(showiter = TRUE))
 
   # Obtain blups
-  blup <- blup(mv, vcov = T)
+  blup <- blup(mv, vcov = TRUE)
 
   return(list(mv, blup))
 }
@@ -431,12 +431,12 @@ calculate_min_mortality_temp <-  function(df_list,
     for(i in seq(length(df_list))) {
 
       data <- df_list[[i]]
-      predvar <- quantile(data$tmean, 1:99/100, na.rm = TRUE)
+      predvar <- quantile(data$tmean, 1:99 / 100, na.rm = TRUE)
 
       # Redefine the function using all arguments (boundary knots included)
       argvar_ <- list(x = predvar, fun = varfun,
                    knots = quantile(data$tmean,
-                                    varper/100,
+                                    varper / 100,
                                     na.rm = TRUE),
                    degree = vardegree,
                    Bound = range(data$tmean, na.rm = TRUE))
@@ -446,7 +446,7 @@ calculate_min_mortality_temp <-  function(df_list,
       minpercregions_[i] <- (1:99)[which.min((bvar_ %*%
                                                 blup[[i]]$blup))]
       mintempregions_[i] <- quantile(data$tmean,
-                                     minpercregions_[i]/100,
+                                     minpercregions_[i] / 100,
                                      na.rm = TRUE)
 
     }
@@ -469,7 +469,7 @@ calculate_min_mortality_temp <-  function(df_list,
                                      lagnk = lagnk,
                                      dfseas = dfseas)
 
-      cen_ <- mean(data$tmean, na.rm = T)
+      cen_ <- mean(data$tmean, na.rm = TRUE)
 
       # Reduction to overall cumulative
       pred <- crossreduce(cb, model, cen = cen_)
@@ -551,7 +551,7 @@ compute_attributable_deaths <- function(df_list,
   # }
 
   per <- t(sapply(df_list, function(x)
-    quantile(x$tmean, c(2.5, 10, 25, 50, 75, 90, 97.5)/100, na.rm = T)))
+    quantile(x$tmean, c(2.5, 10, 25, 50, 75, 90, 97.5) / 100, na.rm = TRUE)))
 
   # Create the vectors to store the total mortality (accounting for missing)
   totdeath <- rep(NA, nrow(regions_df))
@@ -816,7 +816,7 @@ compute_attributable_deaths <- function(df_list,
     # mortality
     # Correct denominator to compute the attributable fraction later, as in
     # attrdl
-    totdeath[i] <- sum(data$dependent, na.rm = T)
+    totdeath[i] <- sum(data$dependent, na.rm = TRUE)
 
   }
 
@@ -923,8 +923,8 @@ write_attributable_deaths <- function(regions_df,
   # Total
   # NB: first sum through regions_df
   antot <- colSums(matsim)
-  antotlow <- apply(apply(arraysim,c(2,3),sum),1,quantile,0.025)
-  antothigh <- apply(apply(arraysim,c(2,3),sum),1,quantile,0.975)
+  antotlow <- apply(apply(arraysim, c(2,3), sum), 1, quantile, 0.025)
+  antothigh <- apply(apply(arraysim, c(2,3), sum), 1, quantile, 0.975)
 
   # Total mortality
   # By country
@@ -1063,17 +1063,17 @@ plot_and_write_relative_risk <- function(df_list,
 
     }
 
-    layout(matrix(c(0,1,1,2,2,0,
-                  rep(3:8, each = 2),0,9,9,10,10,0),
+    layout(matrix(c(0, 1, 1, 2, 2, 0,
+                  rep(3:8, each = 2), 0, 9, 9, 10, 10, 0),
                 ncol = 6,
                 byrow = T))
 
-    par(mar=c(4,3.8,3,2.4), mgp = c(2.5,1,0), las=1)
+    par(mar=c(4, 3.8, 3, 2.4), mgp = c(2.5, 1, 0), las = 1)
 
   }
 
   per <- t(sapply(df_list,function(x)
-    quantile(x$tmean, c(2.5,10,25,50,75,90,97.5)/100, na.rm=T)))
+    quantile(x$tmean, c(2.5, 10, 25, 50, 75, 90, 97.5) / 100, na.rm = TRUE)))
 
   xlab <- expression(paste("Temperature (",degree,"C)"))
 
@@ -1098,7 +1098,7 @@ plot_and_write_relative_risk <- function(df_list,
                    fun = varfun,
                    degree = vardegree,
                    knots=quantile(data$tmean,
-                                  varper/100, na.rm=T))
+                                  varper / 100, na.rm = TRUE))
 
     if (!is.null(blup)) {
 
@@ -1146,7 +1146,7 @@ plot_and_write_relative_risk <- function(df_list,
           main = regions_df$region_names[i])
 
      ind_a <- pred$predvar <= c(per[i,c("2.5%")])
-     ind_b <- pred$predvar >= c(per[i,c("2.5%")]) & pred$predvar<=cen
+     ind_b <- pred$predvar >= c(per[i,c("2.5%")]) & pred$predvar <= cen
      ind_c <- pred$predvar >= cen & pred$predvar <= c(per[i,c("97.5%")])
      ind_d <- pred$predvar >= c(per[i,c("97.5%")])
 
@@ -1176,30 +1176,30 @@ plot_and_write_relative_risk <- function(df_list,
            col = c("#C00000"),
            lwd = 1.5)
 
-     axis(2, at = 1:5*0.5)
+     axis(2, at = 1:5 * 0.5)
 
-     breaks <- c(min(data$tmean, na.rm = T)-1,
+     breaks <- c(min(data$tmean, na.rm = TRUE) - 1,
                  seq(pred$predvar[1],
                      pred$predvar[length(pred$predvar)],
                      length = 30),
-                 max(data$tmean,na.rm = T) + 1)
+                 max(data$tmean, na.rm = TRUE) + 1)
 
 
-     hist <- hist(data$tmean, breaks = breaks, plot = F)
+     hist <- hist(data$tmean, breaks = breaks, plot = FALSE)
      hist$density <- hist$density / max(hist$density) * 0.7
      prop <- max(hist$density) / max(hist$counts)
      counts <- pretty(hist$count, 3)
 
      plot(hist,
-          ylim = c(0,max(hist$density)*3.5),
-          axes = F, ann = F, col = grey(0.95),
-          breaks = breaks, freq = F, add = T)
+          ylim = c(0, max(hist$density) * 3.5),
+          axes = FALSE, ann = FALSE, col = grey(0.95),
+          breaks = breaks, freq = FALSE, add = TRUE)
 
-     axis(4, at = counts*prop, labels = counts, cex.axis = 0.7)
-     mtext("N",4,line = -0.5,at = mean(counts*prop),cex=0.5)
+     axis(4, at = counts * prop, labels = counts, cex.axis = 0.7)
+     mtext("N", 4, line = -0.5, at = mean(counts * prop), cex = 0.5)
 
      abline(v = mintempregions[i], lty = 3)
-     abline(v = c(per[i,c("2.5%","97.5%")]), lty = 2)
+     abline(v = c(per[i, c("2.5%", "97.5%")]), lty = 2)
 
      if (!is.null(blup)) {
 
@@ -1276,7 +1276,7 @@ plot_and_write_relative_risk <- function(df_list,
       write.csv(output_df,
              paste(output_folder_path,
                    'output_all_regions_data.csv', sep = ''),
-             row.names=FALSE)
+             row.names = FALSE)
 
     if (!is.null(blup)) {
 
@@ -1296,7 +1296,7 @@ plot_and_write_relative_risk <- function(df_list,
      write.csv(output_df_test,
                paste(output_folder_path,
                      'output_one_region_data_new.csv', sep = ''),
-               row.names=FALSE
+               row.names = FALSE
                )
   }
 
@@ -1369,7 +1369,7 @@ plot_and_write_relative_risk_all <- function(df_list,
 
   }
 
-  par(mar = c(4,3.8,3,2.4),mgp = c(2.5,1,0),las = 1)
+  par(mar = c(4, 3.8, 3, 2.4), mgp = c(2.5, 1, 0), las = 1)
 
   layout(matrix(1:1, ncol = 1))
 
@@ -1387,7 +1387,7 @@ plot_and_write_relative_risk_all <- function(df_list,
   method <- "reml"
 
   # Overall cumulative summary for main model
-  mvall <- mvmeta(coef~1, vcov, method = method)
+  mvall <- mvmeta(coef ~ 1, vcov, method = method)
 
   # Exclude extreme temps
   # predvar <- quantile(data$tmean, 1:99/100, na.rm=T)
@@ -1399,8 +1399,8 @@ plot_and_write_relative_risk_all <- function(df_list,
                  fun = varfun,
                  degree = vardegree,
                  knots=quantile(data$tmean,
-                                varper/100, na.rm=T),
-                 Bound = range(data$tmean,na.rm=T))
+                                varper / 100, na.rm = TRUE),
+                 Bound = range(data$tmean, na.rm = TRUE))
 
   bvar <- do.call(onebasis, argvar)
 
@@ -1418,12 +1418,12 @@ plot_and_write_relative_risk_all <- function(df_list,
        type = "n",
        ylab = "RR",
        ylim=c(.0, 3),
-       xlim=c(-8,30),
-       xlab=expression(paste("Temperature (",degree,"C)")),
+       xlim=c(-8, 30),
+       xlab=expression(paste("Temperature (", degree, "C)")),
        main = dependent_col,
 )
 
-  abline(h=1)
+  abline(h = 1)
 
   optimal_meta_lower <- as.numeric(names(
     which.min(which(pred$allRRfit >= 1 & pred$allRRfit <= 1.1))))
@@ -1459,13 +1459,13 @@ plot_and_write_relative_risk_all <- function(df_list,
         col = c("#C00000"),
         lwd = 1.5)
 
-  axis(2, at = 1:5*0.5)
+  axis(2, at = 1:5 * 0.5)
 
-  breaks <- c(min(data$tmean, na.rm = T)-1,
+  breaks <- c(min(data$tmean, na.rm = TRUE) - 1,
               seq(pred$predvar[1],
                   pred$predvar[length(pred$predvar)],
                   length = 30),
-              max(data$tmean,na.rm = T) + 1)
+              max(data$tmean, na.rm = TRUE) + 1)
 
 
   # hist <- hist(data$tmean, breaks = breaks, plot = F)
@@ -1484,8 +1484,8 @@ plot_and_write_relative_risk_all <- function(df_list,
   # axis(1,at = c(-5,0,5,10,15,20,25,30))
   # axis(2,at = 1:6*0.5)
 
-  abline(v = optimal_meta_lower,lty=3)
-  abline(v = optimal_meta_upper,lty=3)
+  abline(v = optimal_meta_lower, lty = 3)
+  abline(v = optimal_meta_upper, lty = 3)
 
   relative_risk_vector <- append(relative_risk_vector,
                                    pred$allRRfit)
@@ -1531,7 +1531,7 @@ plot_and_write_relative_risk_all <- function(df_list,
     write.csv(output_df,
               paste(output_folder_path,
                     'output_all_data.csv', sep = ''),
-              row.names=FALSE)
+              row.names = FALSE)
 
 
     relative_risk <- pred$allRRfit
@@ -1545,7 +1545,7 @@ plot_and_write_relative_risk_all <- function(df_list,
     write.csv(output_df_test,
               paste(output_folder_path,
                     'output_one_data_new.csv', sep = ''),
-              row.names=FALSE
+              row.names = FALSE
     )
 
   }
@@ -1791,33 +1791,33 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
   ################################################################################
   #
   # CHECK VERSION OF THE DLNM PACKAGE
-  if(packageVersion("dlnm")<"2.2.0")
+  if(packageVersion("dlnm") < "2.2.0")
     stop("update dlnm package to version >= 2.2.0")
   #
   # EXTRACT NAME AND CHECK type AND dir
   name <- deparse(substitute(basis))
-  type <- match.arg(type,c("an","af"))
-  dir <- match.arg(dir,c("back","forw"))
+  type <- match.arg(type, c("an", "af"))
+  dir <- match.arg(dir, c("back", "forw"))
   #
   # DEFINE CENTERING
-  if(missing(cen) && is.null(cen <- attr(basis,"argvar")$cen))
+  if(missing(cen) && is.null(cen <- attr(basis, "argvar")$cen))
     stop("'cen' must be provided")
-  if(!is.numeric(cen) && length(cen)>1L) stop("'cen' must be a numeric scalar")
+  if(!is.numeric(cen) && length(cen) > 1L) stop("'cen' must be a numeric scalar")
   attributes(basis)$argvar$cen <- NULL
   #
   # SELECT RANGE (FORCE TO CENTERING VALUE OTHERWISE, MEANING NULL RISK)
-  if(!is.null(range)) x[x<range[1]|x>range[2]] <- cen
+  if(!is.null(range)) x[x < range[1]|x > range[2]] <- cen
   #
   # COMPUTE THE MATRIX OF
   #   - LAGGED EXPOSURES IF dir="back"
   #   - CONSTANT EXPOSURES ALONG LAGS IF dir="forw"
-  lag <- attr(basis,"lag")
-  if(NCOL(x)==1L) {
-    at <- if(dir=="back") tsModel:::Lag(x,seq(lag[1],lag[2])) else
-      matrix(rep(x,diff(lag)+1),length(x))
+  lag <- attr(basis, "lag")
+  if(NCOL(x) == 1L) {
+    at <- if(dir == "back") tsModel:::Lag(x, seq(lag[1], lag[2])) else
+      matrix(rep(x, diff(lag) + 1), length(x))
   } else {
-    if(dir=="forw") stop("'x' must be a vector when dir='forw'")
-    if(ncol(at <- x)!=diff(lag)+1)
+    if(dir == "forw") stop("'x' must be a vector when dir='forw'")
+    if(ncol(at <- x) != diff(lag) + 1)
       stop("dimension of 'x' not compatible with 'basis'")
   }
   #
@@ -1826,69 +1826,69 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
   #   - IF PROVIDED AS A TIME SERIES, COMPUTE THE FORWARD MOVING AVERAGE
   #   - THIS EXCLUDES MISSING ACCORDINGLY
   # ALSO COMPUTE THE DENOMINATOR TO BE USED BELOW
-  if(NROW(cases)!=NROW(at)) stop("'x' and 'cases' not consistent")
-  if(NCOL(cases)>1L) {
-    if(dir=="back") stop("'cases' must be a vector if dir='back'")
-    if(ncol(cases)!=diff(lag)+1) stop("dimension of 'cases' not compatible")
-    den <- sum(rowMeans(cases,na.rm=TRUE),na.rm=TRUE)
+  if(NROW(cases) != NROW(at)) stop("'x' and 'cases' not consistent")
+  if(NCOL(cases) > 1L) {
+    if(dir == "back") stop("'cases' must be a vector if dir='back'")
+    if(ncol(cases) != diff(lag) + 1) stop("dimension of 'cases' not compatible")
+    den <- sum(rowMeans(cases, na.rm = TRUE), na.rm = TRUE)
     cases <- rowMeans(cases)
   } else {
-    den <- sum(cases,na.rm=TRUE)
-    if(dir=="forw")
-      cases <- rowMeans(as.matrix(tsModel:::Lag(cases,-seq(lag[1],lag[2]))))
+    den <- sum(cases, na.rm = TRUE)
+    if(dir == "forw")
+      cases <- rowMeans(as.matrix(tsModel:::Lag(cases, -seq(lag[1], lag[2]))))
   }
   #
   ################################################################################
   #
   # EXTRACT COEF AND VCOV IF MODEL IS PROVIDED
   if(!is.null(model)) {
-    cond <- paste0(name,"[[:print:]]*v[0-9]{1,2}\\.l[0-9]{1,2}")
-    if(ncol(basis)==1L) cond <- name
+    cond <- paste0(name, "[[:print:]]*v[0-9]{1,2}\\.l[0-9]{1,2}")
+    if(ncol(basis) == 1L) cond <- name
     model.class <- class(model)
-    coef <- dlnm:::getcoef(model,model.class)
-    ind <- grep(cond,names(coef))
+    coef <- dlnm:::getcoef(model, model.class)
+    ind <- grep(cond, names(coef))
     coef <- coef[ind]
-    vcov <- dlnm:::getvcov(model,model.class)[ind,ind,drop=FALSE]
-    model.link <- dlnm:::getlink(model,model.class)
-    if(!model.link %in% c("log","logit"))
+    vcov <- dlnm:::getvcov(model, model.class)[ind, ind, drop = FALSE]
+    model.link <- dlnm:::getlink(model, model.class)
+    if(!model.link %in% c("log", "logit"))
       stop("'model' must have a log or logit link function")
   }
   #
   # IF REDUCED ESTIMATES ARE PROVIDED
-  typebasis <- ifelse(length(coef)!=ncol(basis),"one","cb")
+  typebasis <- ifelse(length(coef) != ncol(basis), "one", "cb")
   #
   ################################################################################
   #
   # PREPARE THE ARGUMENTS FOR TH BASIS TRANSFORMATION
-  predvar <- if(typebasis=="one") x else seq(NROW(at))
-  predlag <- if(typebasis=="one") 0 else dlnm:::seqlag(lag)
+  predvar <- if(typebasis == "one") x else seq(NROW(at))
+  predlag <- if(typebasis == "one") 0 else dlnm:::seqlag(lag)
   #
   # CREATE THE MATRIX OF TRANSFORMED CENTRED VARIABLES (dependent_col ON typebasis)
-  if(typebasis=="cb") {
-    Xpred <- dlnm:::mkXpred(typebasis,basis,at,predvar,predlag,cen)
+  if(typebasis == "cb") {
+    Xpred <- dlnm:::mkXpred(typebasis, basis, at, predvar, predlag, cen)
     Xpredall <- 0
     for (i in seq(length(predlag))) {
-      ind <- seq(length(predvar))+length(predvar)*(i-1)
-      Xpredall <- Xpredall + Xpred[ind,,drop=FALSE]
+      ind <- seq(length(predvar)) + length(predvar) * (i-1)
+      Xpredall <- Xpredall + Xpred[ind, , drop = FALSE]
     }
   } else {
-    basis <- do.call(onebasis,c(list(x=x),attr(basis,"argvar")))
-    Xpredall <- dlnm:::mkXpred(typebasis,basis,x,predvar,predlag,cen)
+    basis <- do.call(onebasis, c(list(x = x), attr(basis, "argvar")))
+    Xpredall <- dlnm:::mkXpred(typebasis, basis, x, predvar, predlag, cen)
   }
   #
   # CHECK DIMENSIONS
-  if(length(coef)!=ncol(Xpredall))
+  if(length(coef) != ncol(Xpredall))
     stop("arguments 'basis' do not match 'model' or 'coef'-'vcov'")
-  if(any(dim(vcov)!=c(length(coef),length(coef))))
+  if(any(dim(vcov) != c(length(coef), length(coef))))
     stop("arguments 'coef' and 'vcov' do no match")
-  if(typebasis=="one" && dir=="back")
+  if(typebasis == "one" && dir == "back")
     stop("only dir='forw' allowed for reduced estimates")
   #
   ################################################################################
   #
   # COMPUTE AF AND AN
-  af <- 1-exp(-drop(as.matrix(Xpredall%*%coef)))
-  an <- af*cases
+  af <- 1 - exp(-drop(as.matrix(Xpredall %*% coef)))
+  an <- af * cases
   #
   # TOTAL
   #   - SELECT NON-MISSING OBS CONTRIBUTING TO COMPUTATION
@@ -1896,8 +1896,8 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
   #   - COMPUTE TOTAL AN WITH ADJUSTED DENOMINATOR (OBSERVED TOTAL NUMBER)
   if(tot) {
     isna <- is.na(an)
-    af <- sum(an[!isna])/sum(cases[!isna])
-    an <- af*den
+    af <- sum(an[!isna]) / sum(cases[!isna])
+    an <- af * den
   }
   #
   ################################################################################
@@ -1911,24 +1911,24 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
     # SAMPLE COEF
     k <- length(coef)
     eigen <- eigen(vcov)
-    X <- matrix(rnorm(length(coef)*nsim),nsim)
-    coefsim <- coef + eigen$vectors %*% diag(sqrt(eigen$values),k) %*% t(X)
+    X <- matrix(rnorm(length(coef) * nsim), nsim)
+    coefsim <- coef + eigen$vectors %*% diag(sqrt(eigen$values), k) %*% t(X)
     # RUN THE LOOP
     # pre_afsim <- (1 - exp(- Xpredall %*% coefsim)) * cases # a matrix
     # afsim <- colSums(pre_afsim,na.rm=TRUE) / sum(cases[!isna],na.rm=TRUE)
-    afsim <- apply(coefsim,2, function(coefi) {
-      ani <- (1-exp(-drop(Xpredall%*%coefi)))*cases
-      sum(ani[!is.na(ani)])/sum(cases[!is.na(ani)])
+    afsim <- apply(coefsim, 2, function(coefi) {
+      ani <- (1 - exp(-drop(Xpredall %*% coefi))) * cases
+      sum(ani[!is.na(ani)]) / sum(cases[!is.na(ani)])
     })
-    ansim <- afsim*den
+    ansim <- afsim * den
   }
   #
   ################################################################################
   #
   res <- if(sim) {
-    if(type=="an") ansim else afsim
+    if(type == "an") ansim else afsim
   } else {
-    if(type=="an") an else af
+    if(type == "an") an else af
   }
   #
   return(res)
