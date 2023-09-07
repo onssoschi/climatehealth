@@ -63,7 +63,8 @@ load_data <- function(input_csv_path,
   regions <- as.character(unique(df$regnames)) # .distinct() on regnames
 
   df_list_unordered <- lapply(regions,
-                              function(x) df %>% dplyr::filter(regnames == x))
+                              function(x) df %>%
+                                dplyr::filter(regnames == x))
 
   names(df_list_unordered) <- regions
 
@@ -157,8 +158,8 @@ define_model <- function(dataset,
   # Define crossbasis
   argvar_ <- list(fun = varfun,
                   knots = quantile(dataset$tmean,
-                                   varper/100,
-                                   na.rm = T),
+                                   varper / 100,
+                                   na.rm = TRUE),
                   degree = vardegree)
 
   cb <- crossbasis(dataset$tmean,
@@ -430,7 +431,7 @@ calculate_min_mortality_temp <-  function(df_list,
     for(i in seq(length(df_list))) {
 
       data <- df_list[[i]]
-      predvar <- quantile(data$tmean, 1:99/100, na.rm = T)
+      predvar <- quantile(data$tmean, 1:99/100, na.rm = TRUE)
 
       # Redefine the function using all arguments (boundary knots included)
       argvar_ <- list(x = predvar, fun = varfun,
@@ -438,7 +439,7 @@ calculate_min_mortality_temp <-  function(df_list,
                                     varper/100,
                                     na.rm = TRUE),
                    degree = vardegree,
-                   Bound = range(data$tmean, na.rm = T))
+                   Bound = range(data$tmean, na.rm = TRUE))
 
       bvar_ <- do.call(onebasis, argvar_)
 
@@ -559,13 +560,14 @@ compute_attributable_deaths <- function(df_list,
   # Create the matrix to store the attributable deaths
   matsim <- matrix(NA, nrow(regions_df), 5,
                    dimnames = list(regions_df$regions,
-                                   c("glob", "cold", "heat", "extreme_cold", "extreme_heat")))
+                                   c("glob", "cold", "heat", "extreme_cold",
+                                     "extreme_heat")))
 
   # Number of simulation runs for computing empirical CI
   nsim_ <- 1000
 
   # Create the array to store the CI of attributable deaths
-  arraysim <- array(NA, dim = c(nrow(regions_df),5, nsim_),
+  arraysim <- array(NA, dim = c(nrow(regions_df), 5, nsim_),
                     dimnames = list(regions_df$regions,
                                     c("glob_ci", "cold_ci", "heat_ci",
                                       "extreme_cold_ci", "extreme_heat_ci")))
@@ -622,7 +624,8 @@ compute_attributable_deaths <- function(df_list,
 
     attrdl_years <- function(ind_year, temp_range) {
 
-      subset <- data[data$year == ind_year, ]
+      subset <- data %>%
+        dplyr::filter(year == ind_year)
 
       attrdl_year <- attrdl(x = subset$tmean,
                             basis = cb,
