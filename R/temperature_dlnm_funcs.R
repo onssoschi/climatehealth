@@ -86,7 +86,7 @@ load_data <- function(input_csv_path,
                       dplyr::filter(regnames == x)
   )
 
-  names(df_list) <- regions
+  names(df_list) <- region_names
 
   return (list(df_list, regions_df))
 
@@ -290,7 +290,7 @@ run_meta_model <- function(df_list, regions_df, coef, vcov) {
   # NB: country effects is not included in this example
   mv <- mvmeta(coef ~ avgtmean + rangetmean,
                vcov,
-               data = regions_df,
+               data = as.data.frame(names(df_list)), # was data = regions_df
                control = list(showiter = TRUE))
 
   # Obtain blups
@@ -399,7 +399,7 @@ calculate_min_mortality_temp <-  function(df_list,
   # Generate the matrix for storing results
   minpercregions_ <- mintempregions_ <- rep(NA,
                                             length(df_list))
-  names(mintempregions_) <- names(minpercregions_) <- regions_df$regions
+  names(mintempregions_) <- names(minpercregions_) <- names(df_list)
 
   if (!is.null(blup)) {
 
@@ -530,12 +530,12 @@ compute_attributable_deaths <- function(df_list,
     quantile(x$tmean, c(2.5, 10, 25, 50, 75, 90, 97.5) / 100, na.rm = TRUE)))
 
   # Create the vectors to store the total mortality (accounting for missing)
-  totdeath <- rep(NA, nrow(regions_df))
-  names(totdeath) <- regions_df$regions
+  totdeath <- rep(NA, length(names(df_list)))
+  names(totdeath) <- names(df_list)
 
   # Create the matrix to store the attributable deaths
-  matsim <- matrix(NA, nrow(regions_df), 5,
-                   dimnames = list(regions_df$regions,
+  matsim <- matrix(NA, length(names(df_list)), 5,
+                   dimnames = list(names(df_list),
                                    c("glob", "cold", "heat", "extreme_cold",
                                      "extreme_heat")))
 
@@ -543,8 +543,8 @@ compute_attributable_deaths <- function(df_list,
   nsim_ <- 1000
 
   # Create the array to store the CI of attributable deaths
-  arraysim <- array(NA, dim = c(nrow(regions_df), 5, nsim_),
-                    dimnames = list(regions_df$regions,
+  arraysim <- array(NA, dim = c(length(names(df_list)), 5, nsim_),
+                    dimnames = list(names(df_list),
                                     c("glob_ci", "cold_ci", "heat_ci",
                                       "extreme_cold_ci", "extreme_heat_ci")))
 
@@ -656,7 +656,7 @@ compute_attributable_deaths <- function(df_list,
     #       "heat attr deaths:", round(attrdl_year$attrdl_year, 0), "\n")
     # }
 
-    attrdl_yr_df <- data.frame(region = rep(regions_df$regions[i],
+    attrdl_yr_df <- data.frame(region = rep(names(df_list)[i],
                                             length(year_range)),
                                year = rep(year_range),
                                glob = attrdl_glob$attrdl_year,
