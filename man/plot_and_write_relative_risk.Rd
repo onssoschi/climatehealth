@@ -18,8 +18,7 @@ plot_and_write_relative_risk(
   vardegree,
   lag,
   lagnk,
-  dfseas,
-  ...
+  dfseas
 )
 }
 \arguments{
@@ -73,5 +72,4 @@ Plot and write results of analysis
 }
 \examples{
 output_folder_path = 'myfolder/output/'
-
 }

@@ -20,7 +20,7 @@ run_model(
 \item{df_list}{An alphabetically-ordered list of dataframes for each region.}
 
 \item{regions_df}{A dataframe with two columns. Column 1 is abbreviated
-region names. Column 2 is user-specified region names.}
+region names. Cootlumn 2 is user-specified region names.}
 
 \item{varfun}{Exposure function
 (see dlnm::crossbasis)}

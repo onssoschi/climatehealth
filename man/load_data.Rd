@@ -4,7 +4,15 @@
 \alias{load_data}
 \title{Load data for analysis}
 \usage{
-load_data(input_csv_path, dependent_col, time_col, region_col, temp_col)
+load_data(
+  input_csv_path,
+  dependent_col,
+  time_col,
+  region_col,
+  temp_col,
+  time_range,
+  region_names = NULL
+)
 }
 \arguments{
 \item{input_csv_path}{Path to a CSV containing a
@@ -19,12 +27,19 @@ dependent variable of interest e.g. deaths}
 are spatially aggregated e.g. regnames}
 
 \item{temp_col}{The temperature column e.g. tmean}
+
+\item{time_range}{A list of two dates (format YYYY-MM-DD) representing the
+min and max (inclusive) of the time range over which to filter the data.}
+
+\item{region_names}{An optional argument (default is NULL). A character
+vector to rename regions.}
 }
 \value{
 \itemize{
-\item \code{df_list_unordered} A list of dataframes for each region
-comprising dates, deaths, and temperatures.
-\item \code{regions} A character vector with the names of each region.
+\item \code{df_list} An alphabetically-ordered list of dataframes for each
+region comprising dates, deaths, and temperatures.
+\item \code{regions_df} A dataframe with two columns. Column 1 is abbreviated
+region names. Column 2 is user-specified region names.
 }
 }
 \description{
