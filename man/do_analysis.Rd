@@ -11,6 +11,7 @@ do_analysis(
   save_csv_,
   meta_analysis,
   by_region,
+  time_range_,
   dependent_col_,
   independent_col_,
   time_col_,
