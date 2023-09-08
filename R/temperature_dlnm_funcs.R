@@ -22,11 +22,14 @@ config <- config::get()
 #' @param temp_col The temperature column e.g. tmean
 #' @param time_range A list of two dates (format YYYY-MM-DD) representing the
 #' min and max (inclusive) of the time range over which to filter the data.
+#' @param region_names An optional argument (default is NULL). A character
+#' vector to rename regions.
 #' @return
 #' \itemize{
-#'   \item `df_list_unordered` A list of dataframes for each region
-#'    comprising dates, deaths, and temperatures.
-#'   \item `regions` A character vector with the names of each region.
+#'   \item `df_list` An alphabetically-ordered list of dataframes for each
+#'   region comprising dates, deaths, and temperatures.
+#'   \item `regions_df` A dataframe with two columns. Column 1 is abbreviated
+#'   region names. Column 2 is user-specified region names.
 #'   }
 #' @export
 load_data <- function(input_csv_path,
@@ -34,7 +37,8 @@ load_data <- function(input_csv_path,
                       time_col,
                       region_col,
                       temp_col,
-                      time_range) {
+                      time_range,
+                      region_names = NULL) {
 
   if(substr(input_csv_path, nchar(input_csv_path) - 3, nchar(input_csv_path)) !=
      '.csv') {
@@ -60,59 +64,31 @@ load_data <- function(input_csv_path,
 
   }
 
-  regions <- as.character(unique(df$regnames)) # .distinct() on regnames
-
-  df_list_unordered <- lapply(regions,
-                              function(x) df %>%
-                                dplyr::filter(regnames == x))
-
-  names(df_list_unordered) <- regions
-
-  return (list(df_list_unordered, regions))
-
-}
-
-#' Get region metadata for analysis
-#'
-#' @param regions A character vector with the names of each region.
-#' **NOTE** Must be same order as input data.
-#' @param df_list_unordered A list of dataframes for each region.
-#' @param region_names An optional argument (default is NULL). A character
-#' vector to rename regions.
-#' @return
-#' \itemize{
-#'   \item `regions_df` A dataframe with two columns. Column 1 is abbreviated
-#'   region names. Column 2 is user-specified region names.
-#'   \item `df_list` An alphabetically-ordered
-#'   list of dataframes for each region.
-#'   Same length as `regions`.
-#'   }
-#' @export
-#' @examples
-get_region_metadata <- function(regions,
-                                df_list_unordered,
-                                region_names = NULL
-                                ) {
+  regions <- sort(as.character(unique(df$regnames)))
 
   if (!is.null(region_names)) {
 
-    region_names = region_names
+    region_names = sort(region_names)
 
   } else {
 
     region_names = regions
+
   }
 
   regions_df <- data.frame(
     regions = regions,
     region_names = region_names)
 
-  # Order
-  ord <- order(regions_df$region_names)
-  df_list <- df_list_unordered[ord]
-  regions_df <- regions_df[ord,]
+  df_list <- lapply(regions,
+                    function(x)
+                      df %>%
+                      dplyr::filter(regnames == x)
+  )
 
-  return (list(regions_df, df_list))
+  names(df_list) <- regions
+
+  return (list(df_list, regions_df))
 
 }
 
@@ -1614,7 +1590,7 @@ do_analysis <- function(input_csv_path_,
                         dfseas_
                         ) {
 
-  c(df_list_unordered_, regions_) %<-%
+  c(df_list_, regions_df_) %<-%
     load_data(
       input_csv_path = input_csv_path_,
       dependent_col = dependent_col_,
@@ -1622,13 +1598,6 @@ do_analysis <- function(input_csv_path_,
       region_col = region_col_,
       temp_col = temp_col_,
       time_range = time_range_
-      )
-
-  c(regions_df_, df_list_) %<-%
-    get_region_metadata(
-      regions = regions_,
-      df_list_unordered = df_list_unordered_,
-      region_names = NULL
       )
 
   if (meta_analysis == TRUE) {
