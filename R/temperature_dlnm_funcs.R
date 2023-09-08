@@ -199,13 +199,13 @@ run_model <- function(df_list,
 
   # Coefficients and vcov for overall cumulative summary
   coef_ <- matrix(NA,
-                 nrow(regions_df),
+                 length(names(df_list)),
                  length(varper) + vardegree,
-                 dimnames = list(regions_df$regions))
+                 dimnames = list(names(df_list)))
 
-  vcov_ <- vector("list", nrow(regions_df))
+  vcov_ <- vector("list", length(names(df_list)))
 
-  names(vcov_) <- regions_df$regions
+  names(vcov_) <- names(df_list)
 
   for(i in seq(length(df_list))) {
 
