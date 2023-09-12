@@ -1721,8 +1721,21 @@ do_analysis <- function(input_csv_path_,
 #   - sim: IF SIMULATION SAMPLES SHOULD BE RETURNED. ONLY FOR tot=TRUE
 #   - nsim: NUMBER OF SIMULATION SAMPLES
 ################################################################################
-attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
-                   type="af",dir="back",tot=TRUE,cen,range=NULL,sim=FALSE,nsim=5000) {
+attrdl <- function(x,
+                   basis,
+                   cases,
+                   model = NULL,
+                   coef = NULL,
+                   vcov = NULL,
+                   model.link = NULL,
+                   type = "af",
+                   dir = "back",
+                   tot = TRUE,
+                   cen,
+                   range = NULL,
+                   sim = FALSE,
+                   nsim=5000
+                   ){
   ################################################################################
   #
   # CHECK VERSION OF THE DLNM PACKAGE
