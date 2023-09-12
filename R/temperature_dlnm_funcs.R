@@ -338,8 +338,6 @@ wald_results <- function(mv) {
 #' using the product of the basis matrix and blup
 #'
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
-#' @param regions_df A dataframe with two columns. Column 1 is abbreviated
-#'   region names. Column 2 is user-specified region names.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param indepedent_col column names of independent
 #' variables to include in regression (excluding temperature,
@@ -364,7 +362,6 @@ wald_results <- function(mv) {
 #'
 #' @export
 calculate_min_mortality_temp <-  function(df_list,
-                                          regions_df,
                                           blup = NULL,
                                           independent_col,
                                           varfun,
@@ -376,10 +373,6 @@ calculate_min_mortality_temp <-  function(df_list,
 
   if (!is.list(df_list) | !is.data.frame(df_list[[1]])) {
     stop("Argument 'df_list' must be a list of data frames")
-  }
-
-  if (!is.data.frame(regions_df)) {
-    stop("Argument 'regions_df' must be a data frame")
   }
 
   if (!is.null(blup) && !is.list(blup)) {
@@ -1625,7 +1618,6 @@ do_analysis <- function(input_csv_path_,
   c(mintempregions_) %<-%
     calculate_min_mortality_temp(
       df_list = df_list_,
-      regions_df = regions_df_,
       blup = blup_,
       independent_col = independent_col_,
       varfun = varfun_,

@@ -6,7 +6,6 @@
 \usage{
 calculate_min_mortality_temp(
   df_list,
-  regions_df,
   blup = NULL,
   independent_col,
   varfun,
@@ -19,9 +18,6 @@ calculate_min_mortality_temp(
 }
 \arguments{
 \item{df_list}{An alphabetically-ordered list of dataframes for each region.}
-
-\item{regions_df}{A dataframe with two columns. Column 1 is abbreviated
-region names. Column 2 is user-specified region names.}
 
 \item{blup}{A list of BLUPs (best linear unbiased predictions).}
 
