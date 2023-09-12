@@ -243,8 +243,6 @@ run_model <- function(df_list,
 #' (BLUPs) from this model.
 #'
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
-#' @param regions_df A dataframe with two columns. Column 1 is abbreviated
-#'   region names. Column 2 is user-specified region names.
 #' @param coef A matrix of coefficients for reduced model.
 #' @param vcov A list. Co-variance matrices for each region for reduced model.
 #'
@@ -255,14 +253,10 @@ run_model <- function(df_list,
 #'   meta-analysis model for each region.
 #'   }
 #' @export
-run_meta_model <- function(df_list, regions_df, coef, vcov) {
+run_meta_model <- function(df_list, coef, vcov) {
 
   if(!is.list(df_list) | !is.data.frame(df_list[[1]])) {
     stop("Argument 'df_list' must be a list of data frames")
-  }
-
-  if(!is.data.frame(regions_df)) {
-    stop("Argument 'regions_df' must be a data frame")
   }
 
   if(!is.matrix(coef) | !is.numeric(coef)) {
@@ -1613,7 +1607,6 @@ do_analysis <- function(input_csv_path_,
     c(mv_, blup_) %<-%
       run_meta_model(
         df_list = df_list_,
-        regions_df = regions_df_,
         coef = coef_,
         vcov = vcov_
         )
