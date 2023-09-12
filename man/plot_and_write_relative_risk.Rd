@@ -7,7 +7,6 @@
 plot_and_write_relative_risk(
   df_list,
   blup = NULL,
-  regions_df,
   mintempregions,
   save_fig = TRUE,
   save_csv = TRUE,
@@ -26,10 +25,6 @@ plot_and_write_relative_risk(
 list of dataframes for each region.}
 
 \item{blup}{A list of BLUPs (best linear unbiased predictions).}
-
-\item{regions_df}{A dataframe with two columns.
-Column 1 is abbreviated region names.
-Column 2 is user-specified region names.}
 
 \item{mintempregions}{A named numeric vector.
 Minimum (optimum) mortality temperature per region.}

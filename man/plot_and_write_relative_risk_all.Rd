@@ -42,10 +42,6 @@ Minimum (optimum) mortality temperature per region.}
 
 \item{blup}{A list of BLUPs (best linear unbiased predictions).}
 
-\item{regions_df}{A dataframe with two columns.
-Column 1 is abbreviated region names.
-Column 2 is user-specified region names.}
-
 \item{indepedent_col}{column names of independent
 variables to include in regression (excluding temperature,
 see config file for formula structure)}

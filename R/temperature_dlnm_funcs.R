@@ -956,9 +956,6 @@ write_attributable_deaths <- function(df_list,
 #' @param df_list An alphabetically-ordered
 #' list of dataframes for each region.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
-#' @param regions_df A dataframe with two columns.
-#'  Column 1 is abbreviated region names.
-#'  Column 2 is user-specified region names.
 #' @param mintempregions A named numeric vector.
 #'   Minimum (optimum) mortality temperature per region.
 #' @param save_fig Whether to save output figure (Bool)
@@ -988,7 +985,6 @@ write_attributable_deaths <- function(df_list,
 #' @examples output_folder_path = 'myfolder/output/'
 plot_and_write_relative_risk <- function(df_list,
                                          blup = NULL,
-                                         regions_df,
                                          mintempregions,
                                          save_fig = TRUE,
                                          save_csv = TRUE,
@@ -1051,7 +1047,7 @@ plot_and_write_relative_risk <- function(df_list,
     argvar <- list(x = data$tmean,
                    fun = varfun,
                    degree = vardegree,
-                   knots=quantile(data$tmean,
+                   knots = quantile(data$tmean,
                                   varper / 100, na.rm = TRUE))
 
     if (!is.null(blup)) {
@@ -1097,7 +1093,7 @@ plot_and_write_relative_risk <- function(df_list,
           lab = c(6, 5, 7),
           xlab = xlab,
           ylab = "RR",
-          main = regions_df$region_names[i])
+          main = names(df_list)[i])
 
      ind_a <- pred$predvar <= c(per[i,c("2.5%")])
      ind_b <- pred$predvar >= c(per[i,c("2.5%")]) & pred$predvar <= cen
@@ -1167,7 +1163,7 @@ plot_and_write_relative_risk <- function(df_list,
 
      region_vector <-
        append(region_vector,
-              rep(regions_df$region_names[i],
+              rep(names(df_list)[i],
                   length(pred$predvar)))
 
      temp_vector <- append(temp_vector,
@@ -1182,7 +1178,7 @@ plot_and_write_relative_risk <- function(df_list,
 
      tmean_region_vector <-
        append(tmean_region_vector,
-              rep(regions_df$region_names[i],
+              rep(names(df_list)[i],
                   length(data$tmean)))
 
 
@@ -1263,9 +1259,6 @@ plot_and_write_relative_risk <- function(df_list,
 #' @param df_list An alphabetically-ordered
 #' list of dataframes for each region.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
-#' @param regions_df A dataframe with two columns.
-#'  Column 1 is abbreviated region names.
-#'  Column 2 is user-specified region names.
 #' @param mintempregions A named numeric vector.
 #'   Minimum (optimum) mortality temperature per region.
 #' @param save_fig Whether to save output figure (Bool)
@@ -1352,7 +1345,7 @@ plot_and_write_relative_risk_all <- function(df_list,
   argvar <- list(x = predvar,
                  fun = varfun,
                  degree = vardegree,
-                 knots=quantile(data$tmean,
+                 knots = quantile(data$tmean,
                                 varper / 100, na.rm = TRUE),
                  Bound = range(data$tmean, na.rm = TRUE))
 
@@ -1371,8 +1364,8 @@ plot_and_write_relative_risk_all <- function(df_list,
   plot(pred,
        type = "n",
        ylab = "RR",
-       ylim=c(.0, 3),
-       xlim=c(-8, 30),
+       ylim = c(.0, 3),
+       xlim = c(-8, 30),
        xlab=expression(paste("Temperature (", degree, "C)")),
        main = dependent_col,
 )
@@ -1671,7 +1664,6 @@ do_analysis <- function(input_csv_path_,
       plot_and_write_relative_risk(
       df_list = df_list_,
       blup = blup_,
-      regions_df = regions_df_,
       mintempregions = mintempregions_,
       save_fig = save_fig_,
       save_csv = save_csv_,
