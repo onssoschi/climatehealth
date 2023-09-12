@@ -35,12 +35,8 @@ min and max (inclusive) of the time range over which to filter the data.}
 vector to rename regions.}
 }
 \value{
-\itemize{
-\item \code{df_list} An alphabetically-ordered list of dataframes for each
+\code{df_list} An alphabetically-ordered list of dataframes for each
 region comprising dates, deaths, and temperatures.
-\item \code{regions_df} A dataframe with two columns. Column 1 is abbreviated
-region names. Column 2 is user-specified region names.
-}
 }
 \description{
 Loads data and names of regions for analysis from a CSV file.
