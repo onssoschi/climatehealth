@@ -158,8 +158,6 @@ define_model <- function(dataset,
 
 #' Define and run poisson regression model for each dataframe
 #'
-#' @param regions_df A dataframe with two columns. Column 1 is abbreviated
-#'   region names. Cootlumn 2 is user-specified region names.
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @param indepedent_col column names of independent
 #' variables to include in regression (excluding temperature,
@@ -182,7 +180,6 @@ define_model <- function(dataset,
 #'   }
 #' @export
 run_model <- function(df_list,
-                      regions_df,
                       independent_col,
                       varfun,
                       varper,
@@ -1604,7 +1601,6 @@ do_analysis <- function(input_csv_path_,
 
     c(coef_, vcov_) %<-%
     run_model(df_list = df_list_,
-              regions_df = regions_df_,
               independent_col = independent_col_,
               varfun = varfun_,
               varper = varper_,
