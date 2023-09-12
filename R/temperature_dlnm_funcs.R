@@ -838,8 +838,6 @@ compute_attributable_deaths <- function(df_list,
 #' with empirical CI estimated using the re-centered bases.
 #'
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
-#' @param regions_df A dataframe with two columns. Column 1 is abbreviated
-#'   region names. Column 2 is user-specified region names.
 #' @param totdeath A named vector of integers. Total observed mortality per region.
 #' @param arraysim An array (numeric). Total (glob),
 #' cold and heat-attributable deaths per region for 1000 simulations.
@@ -854,7 +852,7 @@ compute_attributable_deaths <- function(df_list,
 #'
 #' @return None
 #' @examples output_folder_path = 'myfolder/output/'
-write_attributable_deaths <- function(regions_df,
+write_attributable_deaths <- function(df_list,
                                       matsim,
                                       arraysim,
                                       totdeath,
@@ -874,7 +872,7 @@ write_attributable_deaths <- function(regions_df,
   rownames(anregions) <-
     rownames(anregionslow) <-
     rownames(anregionshigh) <-
-    regions_df$region_names
+    names(df_list)
 
   # Total
   # NB: first sum through regions_df
@@ -1641,7 +1639,7 @@ do_analysis <- function(input_csv_path_,
 
   c(anregions_bind, antot_bind, afregions_bind, aftot_bind) %<-%
     write_attributable_deaths(
-      regions_df = regions_df_,
+      df_list = df_list_,
       matsim = matsim_,
       arraysim = arraysim_,
       totdeath = totdeath_,
