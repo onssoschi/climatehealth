@@ -24,13 +24,8 @@ config <- config::get()
 #' min and max (inclusive) of the time range over which to filter the data.
 #' @param region_names An optional argument (default is NULL). A character
 #' vector to rename regions.
-#' @return
-#' \itemize{
-#'   \item `df_list` An alphabetically-ordered list of dataframes for each
-#'   region comprising dates, deaths, and temperatures.
-#'   \item `regions_df` A dataframe with two columns. Column 1 is abbreviated
-#'   region names. Column 2 is user-specified region names.
-#'   }
+#' @return `df_list` An alphabetically-ordered list of dataframes for each
+#' region comprising dates, deaths, and temperatures.
 #' @export
 load_data <- function(input_csv_path,
                       dependent_col,
@@ -76,10 +71,6 @@ load_data <- function(input_csv_path,
 
   }
 
-  regions_df <- data.frame(
-    regions = regions,
-    region_names = region_names)
-
   df_list <- lapply(regions,
                     function(x)
                       df %>%
@@ -88,7 +79,7 @@ load_data <- function(input_csv_path,
 
   names(df_list) <- region_names
 
-  return (list(df_list, regions_df))
+  return (list(df_list))
 
 }
 
@@ -1561,7 +1552,7 @@ do_analysis <- function(input_csv_path_,
                         dfseas_
                         ) {
 
-  c(df_list_, regions_df_) %<-%
+  c(df_list_) %<-%
     load_data(
       input_csv_path = input_csv_path_,
       dependent_col = dependent_col_,
