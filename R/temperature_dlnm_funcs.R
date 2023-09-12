@@ -453,9 +453,6 @@ calculate_min_mortality_temp <-  function(df_list,
 #'
 #' @param df_list An alphabetically-ordered list
 #' of dataframes for each region.
-#' @param regions_df A dataframe with two columns.
-#'  Column 1 is abbreviated region names.
-#'  Column 2 is user-specified region names.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param mintempregions A named numeric vector.
 #' Minimum (optimum) mortality temperature per region.
@@ -488,7 +485,6 @@ calculate_min_mortality_temp <-  function(df_list,
 #' }
 #' @export
 compute_attributable_deaths <- function(df_list,
-                                        regions_df,
                                         blup = NULL,
                                         mintempregions,
                                         independent_col,
@@ -1632,7 +1628,6 @@ do_analysis <- function(input_csv_path_,
     attr_fractions_yr) %<-%
     compute_attributable_deaths(
       df_list = df_list_,
-      regions_df = regions_df_,
       blup = blup_,
       mintempregions = mintempregions_,
       independent_col = independent_col_,
