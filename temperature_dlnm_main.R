@@ -21,6 +21,7 @@ c(output_df, tmean_df, anregions_bind, attrdl_yr_all,
             meta_analysis = config$meta_analysis,
             by_region = config$by_region,
             time_range_ = config$time_range,
+            region_names = config$region_names,
             dependent_col_ = config$dependent_col,
             independent_col_ = config$independent_col,
             time_col_ = config$time_col,
@@ -33,4 +34,5 @@ c(output_df, tmean_df, anregions_bind, attrdl_yr_all,
             lagnk_ = config$lagnk,
             dfseas_ = config$dfseas
             )
+
 
