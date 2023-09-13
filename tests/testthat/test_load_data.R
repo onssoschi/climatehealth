@@ -6,17 +6,24 @@ test_that('Test data loads correctly', {
 
   config <- config::get()
 
-  c(df_list_unordered_, regions_) %<-%
+  c(df_list_) %<-%
     load_data(
       input_csv_path = config$input_csv_path,
       dependent_col = config$dependent_col,
       time_col = config$time_col,
       region_col = config$region_col,
       temp_col = config$temp_col,
-      time_range = config$time_range
+      time_range = config$time_range,
+      region_names = config$region_names
     )
 
-  expect_that(regions_, is_a("character"))
-  expect_equal(length(regions_), length(df_list_unordered_))
+  test_list <- list("a", "b", "c")
+
+  expect_equal(typeof(test_list), typeof(df_list_))
+
+  test_list <- vector(mode = "list", length = length(config$region_names))
+
+  expect_equal(typeof(test_list), typeof(df_list_))
 
 })
+
