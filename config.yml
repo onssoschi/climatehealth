@@ -1,7 +1,7 @@
 default:
   # Input data
   # input_csv_path: 'tests/testthat/testdata/regEngWales.csv'
-  input_csv_path: 'C:/Users/soutte/Office for National Statistics/Climate and Health - First run/complete_input_data_20230726.csv'
+  input_csv_path: 'C:/My_RStudio/Workspace/Remote/data_explorer/data/regEngWales.csv'
 
   # Output folder path
   output_folder_path: 'output/'
@@ -28,6 +28,18 @@ default:
   time_range:
    - NULL
    - NULL
+
+  # Region names. These do not have to be listed alphabetically.
+  region_names:
+  - "Wales"
+  - "East"
+  - "East Midlands"
+  - "West Midlands"
+  - "London"
+  - "South East"
+  - "South West"
+  - "Yorkshire & The Humber"
+  - "North East"
 
   # Specification of the exposure function
   varfun: 'bs' # Exposure function (see dlnm::crossbasis)
