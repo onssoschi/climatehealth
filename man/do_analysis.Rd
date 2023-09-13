@@ -12,6 +12,7 @@ do_analysis(
   meta_analysis,
   by_region,
   time_range_,
+  region_names_,
   dependent_col_,
   independent_col_,
   time_col_,
