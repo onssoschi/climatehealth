@@ -5,28 +5,21 @@ test_that('Test total deaths is an integer of correct length', {
 
   config <- config::get()
 
-  c(df_list_unordered_, regions_) %<-%
+  c(df_list_) %<-%
     load_data(
       input_csv_path = config$input_csv_path,
       dependent_col = config$dependent_col,
       time_col = config$time_col,
       region_col = config$region_col,
       temp_col = config$temp_col,
-      time_range = config$time_range
-    )
-
-  c(regions_df_, df_list_) %<-%
-    get_region_metadata(
-      regions = regions_,
-      df_list_unordered = df_list_unordered_,
-      region_names = NULL
+      time_range = config$time_range,
+      region_names = config$region_names
     )
 
   if (config$meta_analysis == TRUE) {
 
     c(coef_, vcov_) %<-%
       run_model(df_list = df_list_,
-                regions_df = regions_df_,
                 independent_col = config$independent_col,
                 varfun = config$varfun,
                 varper = config$varper,
@@ -39,7 +32,6 @@ test_that('Test total deaths is an integer of correct length', {
     c(mv_, blup_) %<-%
       run_meta_model(
         df_list = df_list_,
-        regions_df = regions_df_,
         coef = coef_,
         vcov = vcov_
       )
@@ -58,7 +50,6 @@ test_that('Test total deaths is an integer of correct length', {
   c(mintempregions_) %<-%
     calculate_min_mortality_temp(
       df_list = df_list_,
-      regions_df = regions_df_,
       blup = blup_,
       independent_col = config$independent_col,
       varfun = config$varfun,
@@ -73,7 +64,6 @@ test_that('Test total deaths is an integer of correct length', {
     attr_fractions_yr) %<-%
     compute_attributable_deaths(
       df_list = df_list_,
-      regions_df = regions_df_,
       blup = blup_,
       mintempregions = mintempregions_,
       independent_col = config$independent_col,
@@ -85,7 +75,7 @@ test_that('Test total deaths is an integer of correct length', {
       dfseas = config$dfseas
     )
 
-  expected_output <- rep(5L, nrow(regions_df_))
+  expected_output <- rep(5L, length(names(df_list_)))
 
   expect_equal(typeof(totdeath_), typeof(expected_output))
   expect_equal(length(totdeath_), length(expected_output))
