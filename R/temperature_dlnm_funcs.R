@@ -1539,6 +1539,7 @@ do_analysis <- function(input_csv_path_,
                         meta_analysis,
                         by_region,
                         time_range_,
+                        region_names_,
                         dependent_col_,
                         independent_col_,
                         time_col_,
@@ -1559,7 +1560,8 @@ do_analysis <- function(input_csv_path_,
       time_col = time_col_,
       region_col = region_col_,
       temp_col = temp_col_,
-      time_range = time_range_
+      time_range = time_range_,
+      region_names = region_names_
       )
 
   if (meta_analysis == TRUE) {
