@@ -8,7 +8,7 @@ test_that('Test min_mortality() produces appropriate errors', {
 
   # dlist not a list
   expect_error(calculate_min_mortality_temp(
-    df_list = data.frame(x = c(1, 2, 3), y = c(1,2,3)),
+    df_list = data.frame(x = c(1, 2, 3), y = c(1, 2, 3)),
     regions_df = data.frame(x = 1, y = 1),
     blup = list(1, 2),
     "Argument 'dlist' must be a list of data frames", fixed = TRUE))
@@ -36,7 +36,7 @@ test_that('Test min_mortality() returns correct data types', {
 
   config <- config::get()
 
-  c(df_list_unordered_, regions_) %<-%
+  c(df_list_) %<-%
     load_data(
       input_csv_path = config$input_csv_path,
       dependent_col = config$dependent_col,
@@ -46,18 +46,10 @@ test_that('Test min_mortality() returns correct data types', {
       time_range = config$time_range
     )
 
-  c(regions_df_, df_list_) %<-%
-    get_region_metadata(
-      regions = regions_,
-      df_list_unordered = df_list_unordered_,
-      region_names = NULL
-    )
-
   if (config$meta_analysis == TRUE) {
 
     c(coef_, vcov_) %<-%
       run_model(df_list = df_list_,
-                regions_df = regions_df_,
                 independent_col = config$independent_col,
                 varfun = config$varfun,
                 varper = config$varper,
@@ -70,7 +62,6 @@ test_that('Test min_mortality() returns correct data types', {
     c(mv_, blup_) %<-%
       run_meta_model(
         df_list = df_list_,
-        regions_df = regions_df_,
         coef = coef_,
         vcov = vcov_
       )
@@ -89,7 +80,6 @@ test_that('Test min_mortality() returns correct data types', {
   c(mintempregions_) %<-%
     calculate_min_mortality_temp(
       df_list = df_list_,
-      regions_df = regions_df_,
       blup = blup_,
       independent_col = config$independent_col,
       varfun = config$varfun,
