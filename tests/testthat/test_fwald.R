@@ -23,7 +23,8 @@ test_that('Test fwald() returns correct data type', {
       time_col = config$time_col,
       region_col = config$region_col,
       temp_col = config$temp_col,
-      time_range = config$time_range
+      time_range = config$time_range,
+      region_names = config$region_names
     )
 
   if (config$meta_analysis == TRUE) {
@@ -74,7 +75,8 @@ test_that('Test fwald() returns p-value between 0 and 1', {
       time_col = config$time_col,
       region_col = config$region_col,
       temp_col = config$temp_col,
-      time_range = config$time_range
+      time_range = config$time_range,
+      region_names = config$region_names
     )
 
   if (config$meta_analysis == TRUE) {
