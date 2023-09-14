@@ -1,5 +1,6 @@
 library(testthat)
 library(climatehealth)
+library(config)
 
 test_that('Test total deaths is an integer of correct length', {
 
