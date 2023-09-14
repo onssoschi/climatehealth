@@ -6,28 +6,24 @@ library(zeallot)
 context("Test errors for incorrect inputs")
 test_that('Test min_mortality() produces appropriate errors', {
 
-  # dlist not a list
-  expect_error(calculate_min_mortality_temp(
-    df_list = data.frame(x = c(1, 2, 3), y = c(1, 2, 3)),
-    regions_df = data.frame(x = 1, y = 1),
-    blup = list(1, 2),
-    "Argument 'dlist' must be a list of data frames", fixed = TRUE))
-
-  # cities not a data frame
-  expect_error(calculate_min_mortality_temp(
-    df_list = list(a <- data.frame(x = c(1, 2, 3), y = c(1, 2, 3)),
-                 b <- data.frame(x = c(4, 5, 6), y = c(4, 5, 6))),
-    regions_df = c(1:10),
-    blup = list(1, 2),
-    "Argument 'cities' must be a data frame", fixed = TRUE))
+  # df_list not a list
+  expect_error(
+    calculate_min_mortality_temp(
+      df_list = data.frame(x = c(1, 2, 3), y = c(1, 2, 3)),
+      blup = list(1, 2)
+      ),
+    regexp = "Argument 'df_list' must be a list of data frames",
+    fixed = TRUE)
 
   # blup not a list
-  expect_error(calculate_min_mortality_temp(
-    df_list = list(a <- data.frame(x = c(1, 2, 3), y = c(1, 2, 3)),
-                 b <- data.frame(x = c(4, 5, 6), y = c(4, 5, 6))),
-    regions_df = data.frame(x = 1, y = 1),
-    blup = c(1, 2),
-    "Argument 'blup' must be a list", fixed = TRUE))
+  expect_error(
+    calculate_min_mortality_temp(
+      df_list = list(a <- data.frame(x = c(1, 2, 3), y = c(1, 2, 3)),
+                     b <- data.frame(x = c(4, 5, 6), y = c(4, 5, 6))),
+      blup = c(1, 2)
+      ),
+    regexp = "Argument 'blup' must be a list",
+    fixed = TRUE)
 
 })
 
@@ -43,7 +39,8 @@ test_that('Test min_mortality() returns correct data types', {
       time_col = config$time_col,
       region_col = config$region_col,
       temp_col = config$temp_col,
-      time_range = config$time_range
+      time_range = config$time_range,
+      region_names = config$region_names
     )
 
   if (config$meta_analysis == TRUE) {
