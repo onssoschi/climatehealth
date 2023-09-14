@@ -6,28 +6,21 @@ test_that('Test output CSVs are written and of correct length', {
 
   config <- config::get()
 
-  c(df_list_unordered_, regions_) %<-%
+  c(df_list_) %<-%
     load_data(
       input_csv_path = config$input_csv_path,
       dependent_col = config$dependent_col,
       time_col = config$time_col,
       region_col = config$region_col,
       temp_col = config$temp_col,
-      time_range = config$time_range
-    )
-
-  c(regions_df_, df_list_) %<-%
-    get_region_metadata(
-      regions = regions_,
-      df_list_unordered = df_list_unordered_,
-      region_names = NULL
+      time_range = config$time_range,
+      region_names = config$region_names
     )
 
   if (config$meta_analysis == TRUE) {
 
     c(coef_, vcov_) %<-%
       run_model(df_list = df_list_,
-                regions_df = regions_df_,
                 independent_col = config$independent_col,
                 varfun = config$varfun,
                 varper = config$varper,
@@ -40,7 +33,6 @@ test_that('Test output CSVs are written and of correct length', {
     c(mv_, blup_) %<-%
       run_meta_model(
         df_list = df_list_,
-        regions_df = regions_df_,
         coef = coef_,
         vcov = vcov_
       )
@@ -59,7 +51,6 @@ test_that('Test output CSVs are written and of correct length', {
   c(mintempregions_) %<-%
     calculate_min_mortality_temp(
       df_list = df_list_,
-      regions_df = regions_df_,
       blup = blup_,
       independent_col = config$independent_col,
       varfun = config$varfun,
@@ -74,7 +65,6 @@ test_that('Test output CSVs are written and of correct length', {
     attr_fractions_yr) %<-%
     compute_attributable_deaths(
       df_list = df_list_,
-      regions_df = regions_df_,
       blup = blup_,
       mintempregions = mintempregions_,
       independent_col = config$independent_col,
@@ -88,7 +78,7 @@ test_that('Test output CSVs are written and of correct length', {
 
   c(anregions_bind, antot_bind, afregions_bind, aftot_bind) %<-%
     write_attributable_deaths(
-      regions_df = regions_df_,
+      df_list = df_list_,
       matsim = matsim_,
       arraysim = arraysim_,
       totdeath = totdeath_,
@@ -100,7 +90,7 @@ test_that('Test output CSVs are written and of correct length', {
 
   actual_output <- read.csv('testdata/attributable_deaths_regions.csv')
 
-  expected_output <- data.frame(matrix(NA, nrow = 1, ncol = length(regions_) + 1))
+  expected_output <- data.frame(matrix(NA, nrow = 1, ncol = length(names(df_list_)) + 1))
 
   expect_equal(typeof(actual_output), typeof(expected_output))
   expect_equal(length(actual_output), length(expected_output))
