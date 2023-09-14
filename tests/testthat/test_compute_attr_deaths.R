@@ -2,7 +2,8 @@ library(testthat)
 library(climatehealth)
 library(config)
 
-test_that('Test total deaths is an integer of correct length', {
+test_that('Test compute_attributable_deaths() returns correct data types and
+          lengths', {
 
   config <- config::get()
 
@@ -76,9 +77,28 @@ test_that('Test total deaths is an integer of correct length', {
       dfseas = config$dfseas
     )
 
+  # totdeath
   expected_output <- rep(5L, length(names(df_list_)))
 
   expect_equal(typeof(totdeath_), typeof(expected_output))
   expect_equal(length(totdeath_), length(expected_output))
+  expect_equal(is.vector(totdeath_), TRUE)
 
+  # arraysim
+  expect_equal(typeof(arraysim_), "double")
+  expect_equal(class(arraysim_), "array")
+  expect_equal(is.numeric(arraysim_), TRUE)
+  expect_equal(is.numeric(arraysim_[1]), TRUE)
+  expect_equal(nrow(arraysim_[, , 1]), length(names(df_list_)))
+
+  # matsim
+  expect_equal(typeof(matsim_), "double")
+  expect_equal(class(matsim_)[1], "matrix")
+  expect_equal(is.numeric(matsim_), TRUE)
+  expect_equal(is.numeric(matsim_[1]), TRUE)
+  expect_equal(nrow(matsim_), length(names(df_list_)))
+
+  # attrdl_yr_all
+  expect_equal(is.data.frame(attrdl_yr_all), TRUE)
+  expect_equal(length(unique(attrdl_yr_all$region)), length(names(df_list_)))
 })
