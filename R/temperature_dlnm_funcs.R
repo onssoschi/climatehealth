@@ -984,10 +984,18 @@ write_attributable_deaths <- function(df_list,
 #'
 #' @export
 #'
-#' @return A PDF containing a line plot of temperature
-#' versus relative risk per region,
-#' and histogram of temperatures per region.
-#' A CSV of relative risk per temperature per region.
+#' @return
+#' \itemize{
+#'
+#'   \item A PDF containing a line plot of temperature versus relative risk per
+#'   region, and histogram of temperatures per region.
+#'   \item A CSV of relative risk per temperature per region.
+#'   \item `output_df` A dataframe with relative risk estimates and confidence
+#'   intervals across the temperature range for each region.
+#'   \item `tmean_df` A dataframe with daily mean exposure values for each
+#'   region.
+#' }
+#'
 #' @examples output_folder_path = 'myfolder/output/'
 plot_and_write_relative_risk <- function(df_list,
                                          blup = NULL,
