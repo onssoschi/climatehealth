@@ -38,27 +38,27 @@ Minimum (optimum) mortality temperature per region.}
 \item{vardegree}{Degrees of freedom in exposure function
 (see dlnm:crossbasis)}
 
-\item{output_folder_path}{Path to folder for storing outputs.}
+\item{coef}{A matrix of coefficients for reduced model.}
 
-\item{blup}{A list of BLUPs (best linear unbiased predictions).}
+\item{vcov}{A list. Co-variance matrices for each region for reduced model.}
+
+\item{output_folder_path}{Path to folder for storing outputs.}
 
 \item{indepedent_col}{column names of independent
 variables to include in regression (excluding temperature,
 see config file for formula structure)}
-
-\item{lag}{Lag length in time
-(see dlnm::logknots)}
-
-\item{lagnk}{Number of knots in lag function
-(see dlnm::logknots)}
-
-\item{dfseas}{Degrees of freedom for seasonality}
 }
 \value{
-A PDF containing a line plot of temperature
-versus relative risk per region,
-and histogram of temperatures per region.
-A CSV of relative risk per temperature per region.
+\itemize{
+
+\item A PDF containing a line plot of temperature versus relative risk per
+region, and histogram of temperatures per region.
+\item A CSV of relative risk per temperature per region.
+\item \code{output_df} A dataframe with relative risk estimates and confidence
+intervals across the temperature range for each region.
+\item \code{tmean_df} A dataframe with daily mean exposure values for each
+region.
+}
 }
 \description{
 Plot and write results of analysis
