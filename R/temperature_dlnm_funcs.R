@@ -1290,11 +1290,17 @@ plot_and_write_relative_risk <- function(df_list,
 #' @param output_folder_path Path to folder for storing outputs.
 #'
 #' @export
+#' @return
+#' \itemize{
 #'
-#' @return A PDF containing a line plot of temperature
-#' versus relative risk per region,
-#' and histogram of temperatures per region.
-#' A CSV of relative risk per temperature per region.
+#'   \item A PDF containing a line plot of temperature versus relative risk per
+#'   region, and histogram of temperatures per region.
+#'   \item A CSV of relative risk per temperature per region.
+#'   \item `output_df` A dataframe with relative risk estimates and confidence
+#'   intervals across the temperature range for each region.
+#'   \item `tmean_df` A dataframe with daily mean exposure values for each
+#'   region.
+#' }
 #' @examples output_folder_path = 'myfolder/output/'
 plot_and_write_relative_risk_all <- function(df_list,
                                          mintempregions,
@@ -1522,15 +1528,23 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @param input_csv_path_ Path to a CSV contain
 #' daily time series of death and temperature per region.
 #' @param output_folder_path_ Path to folder for storing outputs.
-#' @param meta_analysis Boolean. Whether to include meta-analysis.
-#' TRUE or FALSE.
-#' @param save_fig_ Whether to save output figure (Bool)
-#' @param save_csv_ Whether to save output CSVs (Bool)
+#' @param save_fig_ Boolean (TRUE or FALSE). Whether to save output figure.
+#' @param save_csv_ Boolean (TRUE or FALSE). Whether to save output CSVs.
+#' @param meta_analysis Boolean (TRUE or FALSE). Whether to include
+#' meta-analysis. Must be TRUE if by_region argument is FALSE.
+#' @param by_region Boolean (TRUE or FALSE). Whether to disaggregate by region.
+#' Must be TRUE if meta-analysis is FALSE.
+#' @param time_range_ Time range over which to run the analysis.
+#' @param region_names_ Region names. These do not have to be listed
+#' alphabetically.
 #' @param dependent_col_ the column name of the
 #' dependent variable of interest e.g. deaths
 #' @param indepedent_col_ column names of independent
 #' variables to include in regression (excluding temperature,
 #' see config file for formula structure)
+#' @param time_col_ The column name of column containing dates (e.g date, year).
+#' @param region_col_ The column name of the column containing regions.
+#' @param temp_col_ the column name of the column containing the exposure.
 #' @param varfun_ Exposure function
 #' (see dlnm::crossbasis)
 #' @param varper_ Internal knot positions in exposure function
@@ -1543,10 +1557,25 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' (see dlnm::logknots)
 #' @param dfseas_ Degrees of freedom for seasonality
 #'
-#' @return A PDF containing a line plot of temperature versus
+#' @return
+#' \itemize{
+#'
+#'   \item A PDF containing a line plot of temperature versus
 #'relative risk per region,
 #' and histogram of temperatures per region.
-#'  A CSV of relative risk per temperature per region.
+#'   \item A CSV of relative risk per temperature per region.
+#'   \item `output_df` A dataframe with relative risk estimates and confidence
+#'   intervals across the temperature range for each region.
+#'   \item `tmean_df` A dataframe with daily mean exposure values for each
+#'   region.
+#'   \item `anregions_bind` A matrix of numbers of deaths attributable to
+#'   temperature, heat, cold, extreme heat and extreme cold (with confidence
+#'   intervals), disaggregated by region.
+#'   \item `attrdl_yr_all` A dataframe with attributable deaths by year for each
+#'   region.
+#'   \item `attr_fractions_yr` A dataframe with attributable fractions by year
+#'   and region.
+#' }
 #'
 #' @seealso [dlnm] package
 #'
