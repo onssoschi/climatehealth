@@ -1272,7 +1272,6 @@ plot_and_write_relative_risk <- function(df_list,
 #'
 #' @param df_list An alphabetically-ordered
 #' list of dataframes for each region.
-#' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param mintempregions A named numeric vector.
 #'   Minimum (optimum) mortality temperature per region.
 #' @param save_fig Whether to save output figure (Bool)
@@ -1286,11 +1285,8 @@ plot_and_write_relative_risk <- function(df_list,
 #' (see dlnm::crossbasis)
 #' @param vardegree Degrees of freedom in exposure function
 #' (see dlnm:crossbasis)
-#' @param lag Lag length in time
-#' (see dlnm::logknots)
-#' @param lagnk Number of knots in lag function
-#' (see dlnm::logknots)
-#' @param dfseas Degrees of freedom for seasonality
+#' @param coef A matrix of coefficients for reduced model.
+#' @param vcov A list. Co-variance matrices for each region for reduced model.
 #' @param output_folder_path Path to folder for storing outputs.
 #'
 #' @export
