@@ -841,7 +841,22 @@ compute_attributable_deaths <- function(df_list,
 #'
 #' @export
 #'
-#' @return None
+#'
+#' @return
+#' \itemize{
+#'   \item `anregions_bind` A matrix of numbers of deaths attributable to
+#'   temperature, heat, cold, extreme heat and extreme cold (with confidence
+#'   intervals), disaggregated by region.
+#'   \item `antot_bind` A matrix of numbers of numbers of deaths attributable to
+#'   temperature, heat, cold, extreme heat and extreme cold (with confidence
+#'   intervals).
+#'   \item `afregions_bind` A matrix of fractions of all-cause mortality
+#'   attributable to temperature, heat, cold, extreme heat and extreme cold
+#'   (with confidence intervals), disaggregated by region.
+#'    \item `aftot_bind` A matrix of fractions of all-cause mortality
+#'   attributable to temperature, heat, cold, extreme heat and extreme cold
+#'   (with confidence intervals).
+#' }
 #' @examples output_folder_path = 'myfolder/output/'
 write_attributable_deaths <- function(df_list,
                                       matsim,
