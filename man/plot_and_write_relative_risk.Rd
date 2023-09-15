@@ -57,10 +57,16 @@ variables to include in regression (excluding temperature,
 see config file for formula structure)}
 }
 \value{
-A PDF containing a line plot of temperature
-versus relative risk per region,
-and histogram of temperatures per region.
-A CSV of relative risk per temperature per region.
+\itemize{
+
+\item A PDF containing a line plot of temperature versus relative risk per
+region, and histogram of temperatures per region.
+\item A CSV of relative risk per temperature per region.
+\item \code{output_df} A dataframe with relative risk estimates and confidence
+intervals across the temperature range for each region.
+\item \code{tmean_df} A dataframe with daily mean exposure values for each
+region.
+}
 }
 \description{
 Plot and write results of analysis
