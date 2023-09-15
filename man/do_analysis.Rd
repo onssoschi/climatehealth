@@ -32,15 +32,29 @@ daily time series of death and temperature per region.}
 
 \item{output_folder_path_}{Path to folder for storing outputs.}
 
-\item{save_fig_}{Whether to save output figure (Bool)}
+\item{save_fig_}{Boolean (TRUE or FALSE). Whether to save output figure.}
 
-\item{save_csv_}{Whether to save output CSVs (Bool)}
+\item{save_csv_}{Boolean (TRUE or FALSE). Whether to save output CSVs.}
 
-\item{meta_analysis}{Boolean. Whether to include meta-analysis.
-TRUE or FALSE.}
+\item{meta_analysis}{Boolean (TRUE or FALSE). Whether to include
+meta-analysis. Must be TRUE if by_region argument is FALSE.}
+
+\item{by_region}{Boolean (TRUE or FALSE). Whether to disaggregate by region.
+Must be TRUE if meta-analysis is FALSE.}
+
+\item{time_range_}{Time range over which to run the analysis.}
+
+\item{region_names_}{Region names. These do not have to be listed
+alphabetically.}
 
 \item{dependent_col_}{the column name of the
 dependent variable of interest e.g. deaths}
+
+\item{time_col_}{The column name of column containing dates (e.g date, year).}
+
+\item{region_col_}{The column name of the column containing regions.}
+
+\item{temp_col_}{the column name of the column containing the exposure.}
 
 \item{varfun_}{Exposure function
 (see dlnm::crossbasis)}
@@ -64,10 +78,24 @@ variables to include in regression (excluding temperature,
 see config file for formula structure)}
 }
 \value{
-A PDF containing a line plot of temperature versus
+\itemize{
+
+\item A PDF containing a line plot of temperature versus
 relative risk per region,
 and histogram of temperatures per region.
-A CSV of relative risk per temperature per region.
+\item A CSV of relative risk per temperature per region.
+\item \code{output_df} A dataframe with relative risk estimates and confidence
+intervals across the temperature range for each region.
+\item \code{tmean_df} A dataframe with daily mean exposure values for each
+region.
+\item \code{anregions_bind} A matrix of numbers of deaths attributable to
+temperature, heat, cold, extreme heat and extreme cold (with confidence
+intervals), disaggregated by region.
+\item \code{attrdl_yr_all} A dataframe with attributable deaths by year for each
+region.
+\item \code{attr_fractions_yr} A dataframe with attributable fractions by year
+and region.
+}
 }
 \description{
 Runs a sequence of functions to carry out
