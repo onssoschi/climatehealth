@@ -15,8 +15,7 @@ test_that('Test wald_results() returns correct data type', {
       time_col = config$time_col,
       region_col = config$region_col,
       temp_col = config$temp_col,
-      time_range = config$time_range,
-      region_names = config$region_names
+      time_range = config$time_range
     )
 
   if (config$meta_analysis == TRUE) {
@@ -66,8 +65,7 @@ test_that('Test wald_results() returns list of correct length', {
       time_col = config$time_col,
       region_col = config$region_col,
       temp_col = config$temp_col,
-      time_range = config$time_range,
-      region_names = config$region_names
+      time_range = config$time_range
     )
 
   if (config$meta_analysis == TRUE) {
@@ -115,8 +113,7 @@ test_that('Test wald_results() returns p-values between 0 and 1', {
       time_col = config$time_col,
       region_col = config$region_col,
       temp_col = config$temp_col,
-      time_range = config$time_range,
-      region_names = config$region_names
+      time_range = config$time_range
     )
 
   if (config$meta_analysis == TRUE) {

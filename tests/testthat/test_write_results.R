@@ -13,8 +13,7 @@ test_that('Test output CSVs are written and of correct length', {
       time_col = config$time_col,
       region_col = config$region_col,
       temp_col = config$temp_col,
-      time_range = config$time_range,
-      region_names = config$region_names
+      time_range = config$time_range
     )
 
   if (config$meta_analysis == TRUE) {
