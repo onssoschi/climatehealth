@@ -10,8 +10,7 @@ load_data(
   time_col,
   region_col,
   temp_col,
-  time_range,
-  region_names = NULL
+  time_range
 )
 }
 \arguments{
@@ -30,9 +29,6 @@ are spatially aggregated e.g. regnames}
 
 \item{time_range}{A list of two dates (format YYYY-MM-DD) representing the
 min and max (inclusive) of the time range over which to filter the data.}
-
-\item{region_names}{An optional argument (default is NULL). A character
-vector to rename regions.}
 }
 \value{
 \code{df_list} An alphabetically-ordered list of dataframes for each
