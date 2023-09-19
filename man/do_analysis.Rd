@@ -12,7 +12,6 @@ do_analysis(
   meta_analysis,
   by_region,
   time_range_,
-  region_names_,
   dependent_col_,
   independent_col_,
   time_col_,
@@ -43,9 +42,6 @@ meta-analysis. Must be TRUE if by_region argument is FALSE.}
 Must be TRUE if meta-analysis is FALSE.}
 
 \item{time_range_}{Time range over which to run the analysis.}
-
-\item{region_names_}{Region names. These do not have to be listed
-alphabetically.}
 
 \item{dependent_col_}{the column name of the
 dependent variable of interest e.g. deaths}
