@@ -22,8 +22,6 @@ config <- config::get()
 #' @param temp_col The temperature column e.g. tmean
 #' @param time_range A list of two dates (format YYYY-MM-DD) representing the
 #' min and max (inclusive) of the time range over which to filter the data.
-#' @param region_names An optional argument (default is NULL). A character
-#' vector to rename regions.
 #' @return `df_list` An alphabetically-ordered list of dataframes for each
 #' region comprising dates, deaths, and temperatures.
 #' @export
@@ -32,8 +30,7 @@ load_data <- function(input_csv_path,
                       time_col,
                       region_col,
                       temp_col,
-                      time_range,
-                      region_names = NULL) {
+                      time_range) {
 
   if(substr(input_csv_path, nchar(input_csv_path) - 3, nchar(input_csv_path)) !=
      '.csv') {
@@ -61,23 +58,13 @@ load_data <- function(input_csv_path,
 
   regions <- sort(as.character(unique(df$regnames)))
 
-  if (!is.null(region_names)) {
-
-    region_names = sort(region_names)
-
-  } else {
-
-    region_names = regions
-
-  }
-
   df_list <- lapply(regions,
                     function(x)
                       df %>%
                       dplyr::filter(regnames == x)
-  )
+                    )
 
-  names(df_list) <- region_names
+  names(df_list) <- regions
 
   return (list(df_list))
 
@@ -1535,8 +1522,6 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @param by_region Boolean (TRUE or FALSE). Whether to disaggregate by region.
 #' Must be TRUE if meta-analysis is FALSE.
 #' @param time_range_ Time range over which to run the analysis.
-#' @param region_names_ Region names. These do not have to be listed
-#' alphabetically.
 #' @param dependent_col_ the column name of the
 #' dependent variable of interest e.g. deaths
 #' @param indepedent_col_ column names of independent
@@ -1587,7 +1572,6 @@ do_analysis <- function(input_csv_path_,
                         meta_analysis,
                         by_region,
                         time_range_,
-                        region_names_,
                         dependent_col_,
                         independent_col_,
                         time_col_,
@@ -1608,8 +1592,7 @@ do_analysis <- function(input_csv_path_,
       time_col = time_col_,
       region_col = region_col_,
       temp_col = temp_col_,
-      time_range = time_range_,
-      region_names = region_names_
+      time_range = time_range_
       )
 
   if (meta_analysis == TRUE) {
