@@ -15,7 +15,6 @@ test_that('Test new output matches original output', {
                 meta_analysis = config$meta_analysis,
                 by_region = config$by_region,
                 time_range_ = config$time_range,
-                region_names_ = config$region_names,
                 dependent_col_ = config$dependent_col,
                 independent_col_ = config$independent_col,
                 time_col_ = config$time_col,

@@ -28,20 +28,6 @@ default:
    - NULL
    - NULL
 
-  # Region names. These do not have to be listed alphabetically.
-  region_names:
-  - "Wales"
-  - "East"
-  - "East Midlands"
-  - "West Midlands"
-  - "London"
-  - "South East"
-  - "South West"
-  - "Yorkshire & The Humber"
-  - "North East"
-  - "North West"
-
-
   # Specification of the exposure function
   varfun: 'bs' # Exposure function (see dlnm::crossbasis)
   vardegree:  2 # Degrees of freedom in exposure function (see dlnm::crossbasis)
