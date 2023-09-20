@@ -20,9 +20,13 @@ test_that('Test data loads correctly', {
 
   expect_equal(typeof(test_list), typeof(df_list_))
 
-  test_list <- vector(mode = "list", length = length(config$region_names))
+  df <- read.csv(config$input_csv_path, row.names = 1)
 
-  expect_equal(typeof(test_list), typeof(df_list_))
+  df <- unique(df$regnames)
+
+  test_list <- vector(mode = "list", length = length(df))
+
+  expect_equal(length(test_list), length(df_list_))
 
 })
 
