@@ -1,11 +1,13 @@
 library(testthat)
 library(climatehealth)
+library(config)
 
-test_that('Test total deaths is an integer of correct length', {
+test_that('Test compute_attributable_deaths() returns correct data types and
+          lengths', {
 
   config <- config::get()
 
-  c(df_list_unordered_, regions_) %<-%
+  c(df_list_) %<-%
     load_data(
       input_csv_path = config$input_csv_path,
       dependent_col = config$dependent_col,
@@ -15,18 +17,10 @@ test_that('Test total deaths is an integer of correct length', {
       time_range = config$time_range
     )
 
-  c(regions_df_, df_list_) %<-%
-    get_region_metadata(
-      regions = regions_,
-      df_list_unordered = df_list_unordered_,
-      region_names = NULL
-    )
-
   if (config$meta_analysis == TRUE) {
 
     c(coef_, vcov_) %<-%
       run_model(df_list = df_list_,
-                regions_df = regions_df_,
                 independent_col = config$independent_col,
                 varfun = config$varfun,
                 varper = config$varper,
@@ -39,7 +33,6 @@ test_that('Test total deaths is an integer of correct length', {
     c(mv_, blup_) %<-%
       run_meta_model(
         df_list = df_list_,
-        regions_df = regions_df_,
         coef = coef_,
         vcov = vcov_
       )
@@ -58,7 +51,6 @@ test_that('Test total deaths is an integer of correct length', {
   c(mintempregions_) %<-%
     calculate_min_mortality_temp(
       df_list = df_list_,
-      regions_df = regions_df_,
       blup = blup_,
       independent_col = config$independent_col,
       varfun = config$varfun,
@@ -73,7 +65,6 @@ test_that('Test total deaths is an integer of correct length', {
     attr_fractions_yr) %<-%
     compute_attributable_deaths(
       df_list = df_list_,
-      regions_df = regions_df_,
       blup = blup_,
       mintempregions = mintempregions_,
       independent_col = config$independent_col,
@@ -85,9 +76,28 @@ test_that('Test total deaths is an integer of correct length', {
       dfseas = config$dfseas
     )
 
-  expected_output <- rep(5L, nrow(regions_df_))
+  # totdeath
+  expected_output <- rep(5L, length(names(df_list_)))
 
   expect_equal(typeof(totdeath_), typeof(expected_output))
   expect_equal(length(totdeath_), length(expected_output))
+  expect_equal(is.vector(totdeath_), TRUE)
 
+  # arraysim
+  expect_equal(typeof(arraysim_), "double")
+  expect_equal(class(arraysim_), "array")
+  expect_equal(is.numeric(arraysim_), TRUE)
+  expect_equal(is.numeric(arraysim_[1]), TRUE)
+  expect_equal(nrow(arraysim_[, , 1]), length(names(df_list_)))
+
+  # matsim
+  expect_equal(typeof(matsim_), "double")
+  expect_equal(class(matsim_)[1], "matrix")
+  expect_equal(is.numeric(matsim_), TRUE)
+  expect_equal(is.numeric(matsim_[1]), TRUE)
+  expect_equal(nrow(matsim_), length(names(df_list_)))
+
+  # attrdl_yr_all
+  expect_equal(is.data.frame(attrdl_yr_all), TRUE)
+  expect_equal(length(unique(attrdl_yr_all$region)), length(names(df_list_)))
 })

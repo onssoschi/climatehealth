@@ -16,7 +16,7 @@ test_that('Test fwald() returns correct data type', {
 
   config <- config::get()
 
-  c(df_list_unordered_, regions_) %<-%
+  c(df_list_) %<-%
     load_data(
       input_csv_path = config$input_csv_path,
       dependent_col = config$dependent_col,
@@ -26,18 +26,10 @@ test_that('Test fwald() returns correct data type', {
       time_range = config$time_range
     )
 
-  c(regions_df_, df_list_) %<-%
-    get_region_metadata(
-      regions = regions_,
-      df_list_unordered = df_list_unordered_,
-      region_names = NULL
-    )
-
   if (config$meta_analysis == TRUE) {
 
     c(coef_, vcov_) %<-%
       run_model(df_list = df_list_,
-                regions_df = regions_df_,
                 independent_col = config$independent_col,
                 varfun = config$varfun,
                 varper = config$varper,
@@ -50,7 +42,6 @@ test_that('Test fwald() returns correct data type', {
     c(mv_, blup_) %<-%
       run_meta_model(
         df_list = df_list_,
-        regions_df = regions_df_,
         coef = coef_,
         vcov = vcov_
       )
@@ -76,7 +67,7 @@ test_that('Test fwald() returns p-value between 0 and 1', {
 
   config <- config::get()
 
-  c(df_list_unordered_, regions_) %<-%
+  c(df_list_) %<-%
     load_data(
       input_csv_path = config$input_csv_path,
       dependent_col = config$dependent_col,
@@ -86,18 +77,10 @@ test_that('Test fwald() returns p-value between 0 and 1', {
       time_range = config$time_range
     )
 
-  c(regions_df_, df_list_) %<-%
-    get_region_metadata(
-      regions = regions_,
-      df_list_unordered = df_list_unordered_,
-      region_names = NULL
-    )
-
   if (config$meta_analysis == TRUE) {
 
     c(coef_, vcov_) %<-%
       run_model(df_list = df_list_,
-                regions_df = regions_df_,
                 independent_col = config$independent_col,
                 varfun = config$varfun,
                 varper = config$varper,
@@ -110,7 +93,6 @@ test_that('Test fwald() returns p-value between 0 and 1', {
     c(mv_, blup_) %<-%
       run_meta_model(
         df_list = df_list_,
-        regions_df = regions_df_,
         coef = coef_,
         vcov = vcov_
       )
