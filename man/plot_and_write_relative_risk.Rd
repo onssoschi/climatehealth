@@ -7,7 +7,6 @@
 plot_and_write_relative_risk(
   df_list,
   blup = NULL,
-  regions_df,
   mintempregions,
   save_fig = TRUE,
   save_csv = TRUE,
@@ -18,8 +17,7 @@ plot_and_write_relative_risk(
   vardegree,
   lag,
   lagnk,
-  dfseas,
-  ...
+  dfseas
 )
 }
 \arguments{
@@ -27,10 +25,6 @@ plot_and_write_relative_risk(
 list of dataframes for each region.}
 
 \item{blup}{A list of BLUPs (best linear unbiased predictions).}
-
-\item{regions_df}{A dataframe with two columns.
-Column 1 is abbreviated region names.
-Column 2 is user-specified region names.}
 
 \item{mintempregions}{A named numeric vector.
 Minimum (optimum) mortality temperature per region.}
@@ -63,15 +57,20 @@ variables to include in regression (excluding temperature,
 see config file for formula structure)}
 }
 \value{
-A PDF containing a line plot of temperature
-versus relative risk per region,
-and histogram of temperatures per region.
-A CSV of relative risk per temperature per region.
+\itemize{
+
+\item A PDF containing a line plot of temperature versus relative risk per
+region, and histogram of temperatures per region.
+\item A CSV of relative risk per temperature per region.
+\item \code{output_df} A dataframe with relative risk estimates and confidence
+intervals across the temperature range for each region.
+\item \code{tmean_df} A dataframe with daily mean exposure values for each
+region.
+}
 }
 \description{
 Plot and write results of analysis
 }
 \examples{
 output_folder_path = 'myfolder/output/'
-
 }
