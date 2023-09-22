@@ -56,4 +56,4 @@ Please follow the coding style for this project.
     * [PEP8 style guide for Python](https://peps.python.org/pep-0008/)
 * In general, we do not load whole packages using the library() function. We reference the namespace directly e.g. `dplyr::mutate()`.
 * Keep each line of code under 80 characters.
-* Use comments sparingly.
+* Use comments sparingly (e.g. to explain *why* the code does what it does, not *what* the code does).
