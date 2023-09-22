@@ -17,7 +17,6 @@ To request a feature or bug fix to be implemented by the Climate and Health Team
 
 * Be clear whether the issue is a request for a new feature or a bug fix.
 * **If you find a security vulnerability, do NOT open an issue. Email climate.health@ons.gov.uk instead.**
-* Assign a current maintainer as the "Assignee" (see list of current maintainers below).
 
 ## Merge request process
 
