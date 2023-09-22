@@ -894,6 +894,44 @@ write_attributable_deaths <- function(df_list,
   afregions_bind <- t(cbind(afregions, afregionslow, afregionshigh))
   aftot_bind <- t(cbind(aftot, aftotlow, aftothigh))
 
+  #### CONVERT DATA TO PUBLICATION FORMAT ####
+
+  # AN_regions (attributable deaths by region)
+  anregions_publication <- anregions_bind %>%
+    t() %>%
+    as.data.frame() %>%
+    tibble::rownames_to_column() %>%
+    dplyr::rename(region = 1) %>%
+    dplyr::mutate(
+      region = stringr::str_replace_all(region, "[^[:alnum:]]", "")) %>%
+    dplyr::arrange(region) %>%
+    dplyr::select(region, glob, extreme_cold, extreme_cold_ci_low,
+                  extreme_cold_ci_high, extreme_heat, extreme_heat_ci_low,
+                  extreme_heat_ci_high)
+
+
+  # AF_regions (attributable fraction by region)
+
+  total_deaths <- anregions_bind %>%
+    dplyr::select(region, glob)
+
+  afregions_publication <- afregions_bind %>%
+    t() %>%
+    as.data.frame() %>%
+    tibble::rownames_to_column() %>%
+    dplyr::rename(region = 1) %>%
+    dplyr::mutate(
+      region = stringr::str_replace_all(region, "[^[:alnum:]]", "")) %>%
+    dplyr::arrange(region) %>%
+    dplyr::select(-glob) %>%
+    dplyr::left_join(y = total_deaths, by = "region") %>%
+    dplyr::select(region, glob, extreme_cold, extreme_cold_ci_low,
+                  extreme_cold_ci_high, extreme_heat, extreme_heat_ci_low,
+                  extreme_heat_ci_high)
+
+
+  ####
+
   if (!is.null(output_folder_path)) {
 
     write.csv(anregions_bind,
@@ -921,6 +959,16 @@ write_attributable_deaths <- function(df_list,
     write.csv(attr_fractions_yr,
               file = paste(output_folder_path,
                            'attributable_fraction_year.csv',
+                           sep = ""))
+
+    write.csv(anregions_publication,
+              file = paste(output_folder_path,
+                           'AN_publication.csv',
+                           sep = ""))
+
+    write.csv(afregions_publication,
+              file = paste(output_folder_path,
+                           'AF_publication.csv',
                            sep = ""))
 
   } else {
@@ -1232,10 +1280,15 @@ plot_and_write_relative_risk <- function(df_list,
     if (!is.null(blup)) {
 
       relative_risk <- pred$allRRfit
+      rr_low <- pred$allRRlow
+      rr_high <- pred$allRRhigh
 
     } else {
 
       relative_risk <- pred$RRfit
+      rr_low <- pred$RRlow
+      rr_high <- pred$RRhigh
+
     }
 
     # Output for testing
@@ -1249,6 +1302,23 @@ plot_and_write_relative_risk <- function(df_list,
                      'output_one_region_data_new.csv', sep = ''),
                row.names = FALSE
                )
+
+    # Output for testing (publication format)
+
+     output_df_test_publication <- data.frame(
+       temperature = pred$predvar,
+       relative_risk = relative_risk,
+       rr_low = rr_low,
+       rr_high = rr_high
+     ) %>%
+       dplyr::mutate(temperature = round(temperature, digits = 1)) %>%
+       dplyr::filter(temperature %in% seq(-100, 100, 0.5))
+
+     write.csv(output_df_test_publication,
+               paste(output_folder_path,
+                     'output_one_region_data_publication.csv', sep = ''),
+               row.names = FALSE
+     )
   }
 
   return (list(output_df, tmean_df))
