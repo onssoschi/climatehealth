@@ -912,7 +912,7 @@ write_attributable_deaths <- function(df_list,
 
   # AF_regions (attributable fraction by region)
 
-  total_deaths <- anregions_bind %>%
+  total_deaths <- anregions_publication %>%
     dplyr::select(region, glob)
 
   afregions_publication <- afregions_bind %>%
