@@ -912,7 +912,7 @@ write_attributable_deaths <- function(df_list,
 
   # AF_regions (attributable fraction by region)
 
-  total_deaths <- anregions_publication %>%
+  total_deaths_df <- anregions_publication %>%
     dplyr::select(region, glob)
 
   afregions_publication <- afregions_bind %>%
@@ -924,7 +924,7 @@ write_attributable_deaths <- function(df_list,
       region = stringr::str_replace_all(region, "[^[:alnum:]]", "")) %>%
     dplyr::arrange(region) %>%
     dplyr::select(-glob) %>%
-    dplyr::left_join(y = total_deaths, by = "region") %>%
+    dplyr::left_join(y = total_deaths_df, by = "region") %>%
     dplyr::select(region, glob, extreme_cold, extreme_cold_ci_low,
                   extreme_cold_ci_high, extreme_heat, extreme_heat_ci_low,
                   extreme_heat_ci_high)
