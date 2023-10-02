@@ -1,50 +1,59 @@
-# Introduction
+Contribution guidelines
+=======================
 
-> Thank you for considering contributing to <climatehealth>.
+`climatehealth` is maintained and developed by the ONS Climate and Health Team. Currently contributions can only be made internally.
 
-> Following these guidelines helps to communicate that you respect the time of the developers managing and developing this open source project. In return, they should reciprocate that respect in addressing your issue, assessing changes, and helping you finalize your pull requests.
+We intend to open-source this project in future, and will welcome contributions from external users and developers. 
 
-### What to Contribute
+## General guidance
 
-> <climatehealth> is an open source project and we love to receive contributions from our community — you! There are many ways to contribute, from writing tutorials or blog posts, improving the documentation, submitting bug reports and feature requests or writing code which can be incorporated into Elasticsearch itself.
+* **Do not upload any sensitive data to this repository.**
+* `main` is the production branch and is protected. 
+* `dev` is the development branch and is the default branch. Branch off from `dev` to create feature branches.
 
-# Ground Rules
+## Request a feature or fix
 
-> Responsibilities
-> * Ensure cross-platform compatibility for every change that's accepted. Windows, Mac, Debian & Ubuntu Linux.
-> * Create issues for any major changes and enhancements that you wish to make. Discuss things transparently and get community feedback.
-> * Don't add any classes to the codebase unless absolutely needed. Err on the side of using functions.
-> * Keep feature versions as small as possible, preferably one new feature per version.
-> * Be welcoming to newcomers and encourage diverse new contributors from all backgrounds. 
-> Beginner issues - issues which should only require a few lines of code, and a test or two.
-> Help wanted issues - issues which should be a bit more involved than beginner issues.
-> Both issue lists are sorted by total number of comments. While not perfect, number of comments is a reasonable proxy for impact a given change will have.
+To request a feature or bug fix to be implemented by the Climate and Health Team, please create an issue clearly describing the feature or fix.
 
-> Working on your first Pull Request? You can learn how from this *free* series, [How to Contribute to an Open Source Project on GitHub](https://egghead.io/series/how-to-contribute-to-an-open-source-project-on-github).
+* Be clear whether the issue is a request for a new feature or a bug fix.
+* **If you find a security vulnerability, do NOT open an issue. Email climate.health@ons.gov.uk instead.**
 
-# Getting started
+## Merge request process
 
-### Git workflow
+To implement a new feature or fix a bug, please follow the process outlined below.
 
-* We use git-flow - create a feature branch from `develop`. If the feature corresponds to a Jira sub-task, prefix the branch name with the Jira issue key (e.g. `WTCHF-254-feature-name`)
-* Merge requests must contain a succinct, clear summary of what the user need is driving this feature change. 
-* Ensure your branch contains logical atomic commits before sending a pull request - follow the [alphagov Git styleguide](https://github.com/alphagov/styleguides/blob/master/git.md)
-* You may rebase your branch after feedback if it's to include relevant updates from the develop branch. We prefer a rebase here to a merge commit as we prefer a clean and straight history on develop with discrete merge commits for features
+1. Create an issue clearly describing the feature or fix.
+2. Create a feature branch from `dev` and do changes in that branch. 
+    * Use logical atomic commits. Keep commit messages short but informative (e.g. "add plot function").
+    * Ensure any new functions have unit tests and are properly documented (roxygen).
+    * Update the README following any major changes.
+    * Branches are ready to merge once the feature or fix is completed. Avoid pushing broken code or unfinished features / fixes.
+3. Create a new merge request into the `dev` branch. 
+    * Give the merge request a succinct, clear summary of the new feature or fix.
+    * Assign a reviewer (see list of maintainers).
+    * Select "Delete source branch when merge request is accepted".
+    * Do not select "Squash commits when merge request is accepted".
+    * Resolve any merge conflicts after creating the request.
+4. Implement reviewer suggestions. Once the reviewer is happy with the changes, they will accept the merge request and the feature branch will be merged into `dev`.
 
-### How to submit a Contribution.
+The Climate and Health Team reviews merge requests on a regular basis.
 
->1. Create your own fork of the code
->2. Do the changes in your fork
->3. If you like the change and think the project could use it:
-    * Be sure you have followed the code style for the project.
-    * Send a pull request.
+## Current maintainers
 
-# How to report a bug
+Please assign one of the following maintainers to review a new merge request:
 
-> If you find a security vulnerability, do NOT open an issue. Email climate.health@ons.gov.uk instead.
+* Euan Soutter (@soutte)
+* Antony Brown (@browna6)
+* Paul Slocombe (@slocop)
 
-> When filing an issue, make sure to answer the questions in the Bug template.
+## Code style
 
-# Code review process
-
-> The Climate and Health Team looks at Pull Requests on a regular basis but cannot unfortunately guarantee prompt implementation of Pull Requests.
+Please follow the coding style for this project. 
+* Use tidyverse packages where possible.
+* Employ coding best practice to ensure code is clean and readable:
+    * [Tidyverse style guide for R](https://style.tidyverse.org/index.html)
+    * [Quality assurance of code for analysis and research](https://best-practice-and-impact.github.io/qa-of-code-guidance/readable_code.html)
+    * [PEP8 style guide for Python](https://peps.python.org/pep-0008/)
+* In general, we do not load whole packages using the library() function. We reference the namespace directly e.g. `dplyr::mutate()`.
+* Keep each line of code under 80 characters.
+* Use comments sparingly (e.g. to explain *why* the code does what it does, not *what* the code does).
