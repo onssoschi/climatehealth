@@ -1219,6 +1219,17 @@ plot_and_write_relative_risk <- function(df_list,
                           upper = upper_vector,
                           lower = lower_vector)
 
+  optimal_temp_df <- output_df %>%
+    dplyr::group_by(regions) %>%
+    dplyr::filter(rel_risk < 1.1) %>%
+    dplyr::summarise(optimal_temp_range_min = min(temp),
+                     optimal_temp_range_max = max(temp))
+
+  output_df <- dplyr::left_join(x = output_df,
+                                y = optimal_temp_df,
+                                by = "regions")
+
+
   tmean_df <- data.frame(temp_mean = tmean_vector,
                          regions = tmean_region_vector)
 
