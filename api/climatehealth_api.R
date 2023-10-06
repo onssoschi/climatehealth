@@ -1,9 +1,10 @@
 library(climatehealth)
 library(plumber)
+library(zeallot)
 
 #* @apiTitle Climatehealth regression
 #* @apiDescription An API that computes Quasi-Poission regression
-#* @get /regression_results
+#* @post /regression_results
 #* @param input_csv_path_ Path to a CSV contain
 #* daily time series of death and temperature per region.
 #* @param output_folder_path_ Path to folder for storing outputs.
