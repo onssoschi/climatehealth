@@ -30,7 +30,8 @@ load_data <- function(input_csv_path,
                       time_col,
                       region_col,
                       temp_col,
-                      time_range) {
+                      time_range_start,
+                      time_range_end) {
 
   if(substr(input_csv_path, nchar(input_csv_path) - 3, nchar(input_csv_path)) !=
      '.csv') {
@@ -48,11 +49,11 @@ load_data <- function(input_csv_path,
     dplyr::mutate(date = as.Date(date))
 
 
-  if (!'NULL' %in% time_range) {
+  if (!'NONE' %in% c(time_range_start, time_range_end)) {
 
     df <- df %>%
-      dplyr::filter(date >= time_range[1]
-                    & date <= time_range[2])
+      dplyr::filter(date >= time_range_start
+                    & date <= time_range_end)
 
   }
 
@@ -95,7 +96,9 @@ load_data <- function(input_csv_path,
 #'   }
 #' @export
 define_model <- function(dataset,
-                         independent_col,
+                         independent_col1,
+                         independent_col2,
+                         independent_col3,
                          varfun,
                          varper,
                          vardegree,
@@ -103,11 +106,21 @@ define_model <- function(dataset,
                          lagnk,
                          dfseas) {
 
+  if ('NONE' %in% c(independent_col1,
+                    independent_col2,
+                    independent_col3)) {
+
+    independent_cols <- c('cb',
+                          'dow',
+                          'ns(date, df = dfseas * length(unique(year)))')
+
+    }
+
   # Model formula
   formula <- as.formula(paste(paste('dependent'),
                               " ~ ",
-                              paste(independent_col,
-                                    collapse = "+")))
+                              paste(independent_cols,
+                                    collapse = " + ")))
 
   # Define crossbasis
   argvar_ <- list(fun = varfun,
@@ -121,8 +134,6 @@ define_model <- function(dataset,
                    argvar = argvar_,
                    arglag = list(knots = logknots(lag,
                                                   lagnk)))
-
-  dfseas <- dfseas
 
   # Run the model and obtain predictions
   model <- glm(formula,
@@ -158,7 +169,9 @@ define_model <- function(dataset,
 #'   }
 #' @export
 run_model <- function(df_list,
-                      independent_col,
+                      independent_col1,
+                      independent_col2,
+                      independent_col3,
                       varfun,
                       varper,
                       vardegree,
@@ -190,7 +203,9 @@ run_model <- function(df_list,
     data <- df_list[[i]]
 
     c(model, cb) %<-% define_model(dataset = data,
-                                   independent_col = independent_col,
+                                   independent_col1 = independent_col1,
+                                   independent_col2 = independent_col2,
+                                   independent_col3 = independent_col3,
                                    varfun = varfun,
                                    varper = varper,
                                    vardegree = vardegree,
@@ -341,7 +356,9 @@ wald_results <- function(mv) {
 #' @export
 calculate_min_mortality_temp <-  function(df_list,
                                           blup = NULL,
-                                          independent_col,
+                                          independent_col1,
+                                          independent_col2,
+                                          independent_col3,
                                           varfun,
                                           varper,
                                           vardegree,
@@ -399,7 +416,9 @@ calculate_min_mortality_temp <-  function(df_list,
       data <- df_list[[i]]
 
       c(model, cb) %<-% define_model(dataset = data,
-                                     independent_col = independent_col,
+                                     independent_col1 = independent_col1,
+                                     independent_col2 = independent_col2,
+                                     independent_col3 = independent_col3,
                                      varfun = varfun,
                                      varper = varper,
                                      vardegree = vardegree,
@@ -465,7 +484,9 @@ calculate_min_mortality_temp <-  function(df_list,
 compute_attributable_deaths <- function(df_list,
                                         blup = NULL,
                                         mintempregions,
-                                        independent_col,
+                                        independent_col1,
+                                        independent_col2,
+                                        independent_col3,
                                         varfun,
                                         varper,
                                         vardegree,
@@ -523,7 +544,9 @@ compute_attributable_deaths <- function(df_list,
       coefs <- blup[[i]]$blup
       vcovs <- blup[[i]]$vcov
       c(model, cb) %<-% define_model(dataset = data,
-                                     independent_col = independent_col,
+                                     independent_col1 = independent_col1,
+                                     independent_col2 = independent_col2,
+                                     independent_col3 = independent_col3,
                                      varfun = varfun,
                                      varper = varper,
                                      vardegree = vardegree,
@@ -538,7 +561,9 @@ compute_attributable_deaths <- function(df_list,
       vcovs <- NULL
 
       c(model, cb) %<-% define_model(dataset = data,
-                                     independent_col = independent_col,
+                                     independent_col1 = independent_col1,
+                                     independent_col2 = independent_col2,
+                                     independent_col3 = independent_col3,
                                      varfun = varfun,
                                      varper = varper,
                                      vardegree = vardegree,
@@ -990,7 +1015,9 @@ plot_and_write_relative_risk <- function(df_list,
                                          save_fig = TRUE,
                                          save_csv = TRUE,
                                          output_folder_path,
-                                         independent_col,
+                                         independent_col1,
+                                         independent_col2,
+                                         independent_col3,
                                          varfun,
                                          varper,
                                          vardegree,
@@ -1071,7 +1098,9 @@ plot_and_write_relative_risk <- function(df_list,
 
       # Run the model and obtain predictions
       c(model, cb) %<-% define_model(dataset = data,
-                                     independent_col = independent_col,
+                                     independent_col1 = independent_col1,
+                                     independent_col2 = independent_col2,
+                                     independent_col3 = independent_col3,
                                      varfun = varfun,
                                      varper = varper,
                                      vardegree = vardegree,
@@ -1521,12 +1550,19 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' meta-analysis. Must be TRUE if by_region argument is FALSE.
 #' @param by_region Boolean (TRUE or FALSE). Whether to disaggregate by region.
 #' Must be TRUE if meta-analysis is FALSE.
-#' @param time_range_ Time range over which to run the analysis.
+#' @param time_range_start_ Start of time range over which to run the analysis.  'None' if over full range.
+#' @param time_range_end_ End of time range over which to run the analysis.  'None' if over full range.
 #' @param dependent_col_ the column name of the
 #' dependent variable of interest e.g. deaths
-#' @param indepedent_col_ column names of independent
-#' variables to include in regression (excluding temperature,
-#' see config file for formula structure)
+#' @param indepedent_col1_ column name of first extra independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col2_ column name of second independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
 #' @param time_col_ The column name of column containing dates (e.g date, year).
 #' @param region_col_ The column name of the column containing regions.
 #' @param temp_col_ the column name of the column containing the exposure.
@@ -1566,24 +1602,31 @@ plot_and_write_relative_risk_all <- function(df_list,
 #'
 #' @export
 do_analysis <- function(input_csv_path_,
-                        output_folder_path_,
-                        save_fig_,
-                        save_csv_,
-                        meta_analysis,
-                        by_region,
-                        time_range_,
-                        dependent_col_,
-                        independent_col_,
-                        time_col_,
-                        region_col_,
-                        temp_col_,
-                        varfun_,
-                        varper_,
-                        vardegree_,
-                        lag_,
-                        lagnk_,
-                        dfseas_
+                        output_folder_path_ = NULL,
+                        save_fig_ = TRUE,
+                        save_csv_ = TRUE,
+                        meta_analysis = TRUE,
+                        by_region = TRUE,
+                        time_range_start_ = 'NONE',
+                        time_range_end_ = 'NONE',
+                        dependent_col_ = 'death',
+                        independent_col1_ = 'NONE',
+                        independent_col2_ = 'NONE',
+                        independent_col3_ = 'NONE',
+                        time_col_ = 'date',
+                        region_col_ = 'regnames',
+                        temp_col_ = 'tmean',
+                        varfun_ = 'bs',
+                        vardegree_ = 2,
+                        lag_  = 21
+                        # lagnk_ = 3,
+                        # dfseas_ = 8
                         ) {
+
+  varper_ <- c(10, 75, 90)
+  lag_ <- 21
+  lagnk_ <- 3
+  dfseas_ <- 8
 
   c(df_list_) %<-%
     load_data(
@@ -1592,14 +1635,17 @@ do_analysis <- function(input_csv_path_,
       time_col = time_col_,
       region_col = region_col_,
       temp_col = temp_col_,
-      time_range = time_range_
+      time_range_start = time_range_start_,
+      time_range_end = time_range_end_
       )
 
   if (meta_analysis == TRUE) {
 
     c(coef_, vcov_) %<-%
     run_model(df_list = df_list_,
-              independent_col = independent_col_,
+              independent_col1 = independent_col1_,
+              independent_col2 = independent_col2_,
+              independent_col3 = independent_col3_,
               varfun = varfun_,
               varper = varper_,
               vardegree = vardegree_,
@@ -1630,7 +1676,9 @@ do_analysis <- function(input_csv_path_,
     calculate_min_mortality_temp(
       df_list = df_list_,
       blup = blup_,
-      independent_col = independent_col_,
+      independent_col1 = independent_col1_,
+      independent_col2 = independent_col2_,
+      independent_col3 = independent_col3_,
       varfun = varfun_,
       varper = varper_,
       vardegree = vardegree_,
@@ -1645,7 +1693,9 @@ do_analysis <- function(input_csv_path_,
       df_list = df_list_,
       blup = blup_,
       mintempregions = mintempregions_,
-      independent_col = independent_col_,
+      independent_col1 = independent_col1_,
+      independent_col2 = independent_col2_,
+      independent_col3 = independent_col3_,
       varfun = varfun_,
       varper = varper_,
       vardegree = vardegree_,
@@ -1692,7 +1742,9 @@ do_analysis <- function(input_csv_path_,
       save_fig = save_fig_,
       save_csv = save_csv_,
       output_folder_path = output_folder_path_,
-      independent_col = independent_col_,
+      independent_col1 = independent_col1_,
+      independent_col2 = independent_col2_,
+      independent_col3 = independent_col3_,
       varfun = varfun_,
       varper = varper_,
       vardegree = vardegree_,
