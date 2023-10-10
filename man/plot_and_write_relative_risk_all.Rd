@@ -29,6 +29,9 @@ Minimum (optimum) mortality temperature per region.}
 
 \item{save_csv}{Whether to save output CSVs (Bool)}
 
+\item{dependent_col}{the column name of the
+dependent variable of interest e.g. deaths}
+
 \item{varfun}{Exposure function
 (see dlnm::crossbasis)}
 
@@ -43,10 +46,6 @@ Minimum (optimum) mortality temperature per region.}
 \item{vcov}{A list. Co-variance matrices for each region for reduced model.}
 
 \item{output_folder_path}{Path to folder for storing outputs.}
-
-\item{indepedent_col}{column names of independent
-variables to include in regression (excluding temperature,
-see config file for formula structure)}
 }
 \value{
 \itemize{
