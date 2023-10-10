@@ -38,5 +38,5 @@ default:
   dfseas: 8
 
   # Whether to save results figure and CSVs (Boolean)
-  save_fig: FALSE
-  save_csv: FALSE
+  save_fig: TRUE
+  save_csv: TRUE
