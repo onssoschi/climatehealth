@@ -34,10 +34,10 @@ default:
 
   # Specification of the lag function
   lag: 21 # Lag length in days (see dlnm::logknots)
-  # lagnk: 3 # Number of knots in lag function (see dlnm::logknots)
+  lagnk: 3 # Number of knots in lag function (see dlnm::logknots)
 
   # Degree of freedom for seasonality
-  # dfseas: 8
+  dfseas: 8
 
   # Whether to save results figure and CSVs (Boolean)
   save_fig: TRUE

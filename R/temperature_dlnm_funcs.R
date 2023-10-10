@@ -129,6 +129,10 @@ define_model <- function(dataset,
                                    na.rm = TRUE),
                   degree = vardegree)
 
+  lag <- as.numeric(lag)
+  lagnk <- as.numeric(lagnk)
+  dfseas <- as.numeric(dfseas)
+
   cb <- crossbasis(dataset$tmean,
                    lag = lag,
                    argvar = argvar_,
@@ -1618,15 +1622,13 @@ do_analysis <- function(input_csv_path_,
                         temp_col_ = 'tmean',
                         varfun_ = 'bs',
                         vardegree_ = 2,
-                        lag_  = 21
-                        # lagnk_ = 3,
-                        # dfseas_ = 8
+                        lag_  = 21,
+                        lagnk_ = 3,
+                        dfseas_ = 8
+                        # varper_ = c(10, 75, 90)
                         ) {
 
   varper_ <- c(10, 75, 90)
-  lag_ <- 21
-  lagnk_ <- 3
-  dfseas_ <- 8
 
   c(df_list_) %<-%
     load_data(

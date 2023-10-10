@@ -33,9 +33,10 @@ c(output_df, tmean_df, anregions_bind, attrdl_yr_all,
                              varfun_ = config$varfun,
                              vardegree_ = config$vardegree,
                              lag_ = config$lag,
-                             # varper_ = config$varper,
-                             # lagnk_ = config$lagnk,
-                             # dfseas_ = config$dfseas
+                             lagnk_ = config$lagnk,
+                             dfseas_ = config$dfseas
+                             # varper_ = config$varper
+
             )
 
 
