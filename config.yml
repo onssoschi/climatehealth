@@ -1,7 +1,6 @@
 default:
   # Input data
   input_csv_path: 'tests/testthat/testdata/regEngWales.csv'
-  # input_csv_path: 'C:/My_RStudio/Workspace/Remote/data_explorer/data/regEngWales.csv'
 
   # Output folder path
   output_folder_path: 'output/'
@@ -30,7 +29,6 @@ default:
   # Specification of the exposure function
   varfun: 'bs' # Exposure function (see dlnm::crossbasis)
   vardegree:  2 # Degrees of freedom in exposure function (see dlnm::crossbasis)
-  # varper: !expr c(10, 75, 90) # Internal knot positions in exposure function (see dlnm::crossbasis)
 
   # Specification of the lag function
   lag: 21 # Lag length in days (see dlnm::logknots)
@@ -40,5 +38,5 @@ default:
   dfseas: 8
 
   # Whether to save results figure and CSVs (Boolean)
-  save_fig: TRUE
-  save_csv: TRUE
+  save_fig: FALSE
+  save_csv: FALSE

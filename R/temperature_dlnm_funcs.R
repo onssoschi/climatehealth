@@ -74,9 +74,15 @@ load_data <- function(input_csv_path,
 #' Define regression model
 #'
 #' @param dataset dataframe with tmean column to be modelled
-#' @param indepedent_col column names of independent
-#' variables to include in regression (excluding temperature,
-#' see config file for formula structure)
+#' @param indepedent_col1_ column name of first extra independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col2_ column name of second independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
@@ -152,9 +158,15 @@ define_model <- function(dataset,
 #' Define and run poisson regression model for each dataframe
 #'
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
-#' @param indepedent_col column names of independent
-#' variables to include in regression (excluding temperature,
-#' see config file for formula structure)
+#' @param indepedent_col1_ column name of first extra independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col2_ column name of second independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
@@ -336,9 +348,15 @@ wald_results <- function(mv) {
 #'
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
-#' @param indepedent_col column names of independent
-#' variables to include in regression (excluding temperature,
-#' see config file for formula structure)
+#' @param indepedent_col1_ column name of first extra independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col2_ column name of second independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
@@ -457,9 +475,15 @@ calculate_min_mortality_temp <-  function(df_list,
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param mintempregions A named numeric vector.
 #' Minimum (optimum) mortality temperature per region.
-#' @param indepedent_col column names of independent
-#' variables to include in regression (excluding temperature,
-#' see config file for formula structure)
+#' @param indepedent_col1_ column name of first extra independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col2_ column name of second independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
@@ -843,7 +867,6 @@ compute_attributable_deaths <- function(df_list,
 #'
 #' @description Write the attributable deaths and temperature for each regions,
 #' with empirical CI estimated using the re-centered bases.
-#'
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @param totdeath A named vector of integers. Total observed mortality per region.
 #' @param arraysim An array (numeric). Total (glob),
@@ -982,9 +1005,15 @@ write_attributable_deaths <- function(df_list,
 #'   Minimum (optimum) mortality temperature per region.
 #' @param save_fig Whether to save output figure (Bool)
 #' @param save_csv Whether to save output CSVs (Bool)
-#' @param indepedent_col column names of independent
-#' variables to include in regression (excluding temperature,
-#' see config file for formula structure)
+#' @param indepedent_col1_ column name of first extra independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col2_ column name of second independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
@@ -1296,9 +1325,8 @@ plot_and_write_relative_risk <- function(df_list,
 #'   Minimum (optimum) mortality temperature per region.
 #' @param save_fig Whether to save output figure (Bool)
 #' @param save_csv Whether to save output CSVs (Bool)
-#' @param indepedent_col column names of independent
-#' variables to include in regression (excluding temperature,
-#' see config file for formula structure)
+#' @param dependent_col the column name of the
+#' dependent variable of interest e.g. deaths
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
@@ -1572,8 +1600,6 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @param temp_col_ the column name of the column containing the exposure.
 #' @param varfun_ Exposure function
 #' (see dlnm::crossbasis)
-#' @param varper_ Internal knot positions in exposure function
-#' (see dlnm::crossbasis)
 #' @param vardegree_ Degrees of freedom in exposure function
 #' (see dlnm:crossbasis)
 #' @param lag_ Lag length in time
@@ -1625,7 +1651,6 @@ do_analysis <- function(input_csv_path_,
                         lag_  = 21,
                         lagnk_ = 3,
                         dfseas_ = 8
-                        # varper_ = c(10, 75, 90)
                         ) {
 
   varper_ <- c(10, 75, 90)

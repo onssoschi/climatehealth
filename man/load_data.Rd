@@ -10,7 +10,8 @@ load_data(
   time_col,
   region_col,
   temp_col,
-  time_range
+  time_range_start,
+  time_range_end
 )
 }
 \arguments{

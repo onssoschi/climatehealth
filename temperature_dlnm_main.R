@@ -13,7 +13,10 @@ library(climatehealth)
 #             output_folder_path [folder that stores data and figure outputs] #
 ###############################################################################
 
-c(output_df, tmean_df, anregions_bind, attrdl_yr_all,
+c(output_df,
+  tmean_df,
+  anregions_bind,
+  attrdl_yr_all,
   attr_fractions_yr) %<-%
   climatehealth::do_analysis(input_csv_path_ = config$input_csv_path,
                              output_folder_path_ = config$output_folder_path,
@@ -35,8 +38,4 @@ c(output_df, tmean_df, anregions_bind, attrdl_yr_all,
                              lag_ = config$lag,
                              lagnk_ = config$lagnk,
                              dfseas_ = config$dfseas
-                             # varper_ = config$varper
-
-            )
-
-
+                             )
