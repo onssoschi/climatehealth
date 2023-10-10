@@ -1,6 +1,5 @@
-library(climatehealth)
 library(plumber)
-library(zeallot)
+library(climatehealth)
 
 #* @apiTitle Climatehealth regression
 #* @apiDescription An API that computes Quasi-Poission regression
@@ -38,7 +37,3 @@ library(zeallot)
 #' (see dlnm::logknots)
 
 climatehealth_func <- climatehealth::do_analysis
-
-# library(plumber)
-# plumber::pr("climatehealth_api.R") %>%
-#   plumber::pr_run(port=8000)
