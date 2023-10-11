@@ -6,23 +6,25 @@
 \usage{
 do_analysis(
   input_csv_path_,
-  output_folder_path_,
-  save_fig_,
-  save_csv_,
-  meta_analysis,
-  by_region,
-  time_range_,
-  dependent_col_,
-  independent_col_,
-  time_col_,
-  region_col_,
-  temp_col_,
-  varfun_,
-  varper_,
-  vardegree_,
-  lag_,
-  lagnk_,
-  dfseas_
+  output_folder_path_ = NULL,
+  save_fig_ = TRUE,
+  save_csv_ = TRUE,
+  meta_analysis = TRUE,
+  by_region = TRUE,
+  time_range_start_ = "NONE",
+  time_range_end_ = "NONE",
+  dependent_col_ = "death",
+  independent_col1_ = "NONE",
+  independent_col2_ = "NONE",
+  independent_col3_ = "NONE",
+  time_col_ = "date",
+  region_col_ = "regnames",
+  temp_col_ = "tmean",
+  varfun_ = "bs",
+  vardegree_ = 2,
+  lag_ = 21,
+  lagnk_ = 3,
+  dfseas_ = 8
 )
 }
 \arguments{
@@ -41,7 +43,9 @@ meta-analysis. Must be TRUE if by_region argument is FALSE.}
 \item{by_region}{Boolean (TRUE or FALSE). Whether to disaggregate by region.
 Must be TRUE if meta-analysis is FALSE.}
 
-\item{time_range_}{Time range over which to run the analysis.}
+\item{time_range_start_}{Start of time range over which to run the analysis.  'None' if over full range.}
+
+\item{time_range_end_}{End of time range over which to run the analysis.  'None' if over full range.}
 
 \item{dependent_col_}{the column name of the
 dependent variable of interest e.g. deaths}
@@ -55,9 +59,6 @@ dependent variable of interest e.g. deaths}
 \item{varfun_}{Exposure function
 (see dlnm::crossbasis)}
 
-\item{varper_}{Internal knot positions in exposure function
-(see dlnm::crossbasis)}
-
 \item{vardegree_}{Degrees of freedom in exposure function
 (see dlnm:crossbasis)}
 
@@ -69,9 +70,17 @@ dependent variable of interest e.g. deaths}
 
 \item{dfseas_}{Degrees of freedom for seasonality}
 
-\item{indepedent_col_}{column names of independent
-variables to include in regression (excluding temperature,
-see config file for formula structure)}
+\item{indepedent_col1_}{column name of first extra independent
+variable to include in regression (excluding temperature,
+see config file for formula structure). 'None' if none.}
+
+\item{indepedent_col2_}{column name of second independent
+variable to include in regression (excluding temperature,
+see config file for formula structure). 'None' if none.}
+
+\item{indepedent_col3_}{column name of third independent
+variable to include in regression (excluding temperature,
+see config file for formula structure). 'None' if none.}
 }
 \value{
 \itemize{
