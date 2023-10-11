@@ -20,8 +20,8 @@ config <- config::get()
 #' @param region_col The region column over which the data
 #' are spatially aggregated e.g. regnames
 #' @param temp_col The temperature column e.g. tmean
-#' @param time_range A list of two dates (format YYYY-MM-DD) representing the
-#' min and max (inclusive) of the time range over which to filter the data.
+#' @param time_range_start_ Start of time range over which to run the analysis.  'None' if over full range.
+#' @param time_range_end_ End of time range over which to run the analysis.  'None' if over full range.
 #' @return `df_list` An alphabetically-ordered list of dataframes for each
 #' region comprising dates, deaths, and temperatures.
 #' @export
