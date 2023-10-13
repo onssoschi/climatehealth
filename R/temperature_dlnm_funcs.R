@@ -30,6 +30,7 @@ load_data <- function(input_csv_path,
                       time_col,
                       region_col,
                       temp_col,
+                      population_col,
                       time_range_start,
                       time_range_end) {
 
@@ -40,14 +41,27 @@ load_data <- function(input_csv_path,
 
   }
 
+  if (!population_col == 'NONE') {
 
-  df <- read.csv(input_csv_path, row.names = 1) %>%
-    dplyr::rename(dependent = dependent_col,
-                  date = time_col,
-                  regnames = region_col,
-                  tmean = temp_col) %>%
-    dplyr::mutate(date = as.Date(date))
+    df <- read.csv(input_csv_path, row.names = 1) %>%
+      dplyr::rename(dependent = dependent_col,
+                    date = time_col,
+                    regnames = region_col,
+                    tmean = temp_col,
+                    pop_col = population_col) %>%
+      dplyr::mutate(date = as.Date(date))
 
+  } else {
+
+    df <- read.csv(input_csv_path, row.names = 1) %>%
+      dplyr::mutate(pop_col = 'NONE') %>%
+      dplyr::rename(dependent = dependent_col,
+                    date = time_col,
+                    regnames = region_col,
+                    tmean = temp_col) %>%
+      dplyr::mutate(date = as.Date(date))
+
+  }
 
   if (!'NONE' %in% c(time_range_start, time_range_end)) {
 
@@ -461,6 +475,9 @@ calculate_min_mortality_temp <-  function(df_list,
   # Country-specific points of minimum mortality
   (minperccountry <- median(minpercregions_))
 
+  # print(minpercregions_)
+  # print(mintempregions_)
+
   return(list(mintempregions = mintempregions_))
 
 }
@@ -556,6 +573,8 @@ compute_attributable_deaths <- function(df_list,
                                       "extreme_cold_ci", "extreme_heat_ci")))
 
   attrdl_yr_all <- list()
+  attrdl_CI_all <- list()
+  attrdl_yr_all_rate <- list()
 
   # Run the loop
   for(i in seq(df_list)){
@@ -659,13 +678,8 @@ compute_attributable_deaths <- function(df_list,
       purrr:::map(as.data.frame) %>%
       purrr::list_rbind()
 
-
-    # for (attrdl_year in attrdl_heat) {
-    #
-    #   cat("region:", regions_df$regions[i], "/",
-    #       "year:", attrdl_year$ind_year, "/",
-    #       "heat attr deaths:", round(attrdl_year$attrdl_year, 0), "\n")
-    # }
+    ###################
+    # Create dataframe of deaths per year per regions
 
     attrdl_yr_df <- data.frame(region = rep(names(df_list)[i],
                                             length(year_range)),
@@ -677,7 +691,78 @@ compute_attributable_deaths <- function(df_list,
                                extreme_heat = attrdl_ext_heat$attrdl_year
                                )
 
-    attrdl_yr_all[[i]] <- attrdl_yr_df
+    # Add population rate
+    if (!'NONE' %in% data$pop_col) {
+
+    attrdl_yr_all[[i]] <- attrdl_yr_df %>%
+      dplyr::mutate(
+        glob_per100k = (glob/data[1, "pop_col"]) * 100000,
+        heat_per100k = (heat/data[1, "pop_col"]) * 100000,
+        cold_per100k = (cold/data[1, "pop_col"]) * 100000,
+        ext_cold_per100k = (extreme_cold/data[1, "pop_col"]) * 100000,
+        ext_heat_per100k = (extreme_heat/data[1, "pop_col"]) * 100000
+        )
+
+    } else {
+
+      attrdl_yr_all[[i]] <- attrdl_yr_df
+
+    }
+
+    ###################
+
+    ## Put CI generation into function [working] ##
+
+    # attrdl_years_CI <- function(temp_range) {
+    #
+    #   attrdl_year_CI <- attrdl(x = data$tmean,
+    #                            basis = cb,
+    #                            cases = data$dependent,
+    #                            coef = coefs,
+    #                            vcov = vcovs,
+    #                            type = "an",
+    #                            dir = "forw",
+    #                            cen = mintempregions[i],
+    #                            model = model,
+    #                            range = temp_range,
+    #                            sim = T, nsim = nsim_)
+    #
+    #   return (attrdl_year_CI)
+    #
+    # }
+    #
+    # attrdl_glob_CI <- attrdl_years_CI(temp_range = NULL) %>%
+    #   purrr:::map(as.data.frame) %>%
+    #   purrr::list_rbind()
+    #
+    # attrdl_cold_CI <- attrdl_years_CI(temp_range = c(-100, mintempregions[i])) %>%
+    #   purrr:::map(as.data.frame) %>%
+    #   purrr::list_rbind()
+    #
+    # attrdl_heat_CI <- attrdl_years_CI(temp_range = c(mintempregions[i], 100)) %>%
+    #   purrr:::map(as.data.frame) %>%
+    #   purrr::list_rbind()
+    #
+    # attrdl_ext_cold_CI <- attrdl_years_CI(temp_range = c(-100, per[i, 1])) %>%
+    #   purrr:::map(as.data.frame) %>%
+    #   purrr::list_rbind()
+    #
+    # attrdl_ext_heat_CI <- attrdl_years_CI(temp_range = c(per[i, 7], 100)) %>%
+    #   purrr:::map(as.data.frame) %>%
+    #   purrr::list_rbind()
+    #
+    # ###################
+    #
+    # attrdl_CI_df <- data.frame(region = rep(unique(data$regnames),
+    #                                         length(1000)),
+    #                            glob_CI = attrdl_glob_CI[-1,],
+    #                            heat_CI = attrdl_heat_CI[-1,],
+    #                            cold_CI = attrdl_cold_CI[-1,],
+    #                            extreme_cold_CI = attrdl_ext_cold_CI[-1,],
+    #                            extreme_heat_CI = attrdl_ext_heat_CI[-1,]
+    #                            )
+    #
+    # attrdl_CI_all[[i]] <- attrdl_CI_df
 
     #############################################
 
@@ -808,9 +893,10 @@ compute_attributable_deaths <- function(df_list,
   }
 
   attrdl_yr_all <- dplyr::bind_rows(attrdl_yr_all)
+  # attrdl_CI_all <- dplyr::bind_rows(attrdl_CI_all)
 
+  ###################################################
   # Compute attributable fraction
-
   all_data <- dplyr::bind_rows(df_list)
 
   attr_fractions <- attrdl_yr_all
@@ -830,7 +916,8 @@ compute_attributable_deaths <- function(df_list,
                   extreme_heat = extreme_heat / total_deaths * 100) %>%
     dplyr::select(-total_deaths)
 
-  # aggregated across regions
+  ###################################################
+  # Deaths aggregated across regions
 
   attr_deaths_all <- attrdl_yr_all %>%
     dplyr::group_by(year) %>%
@@ -844,6 +931,8 @@ compute_attributable_deaths <- function(df_list,
     dplyr::group_by(year) %>%
     dplyr::summarise(total_deaths = sum(dependent))
 
+  ###################################################
+  # Fractions aggregated across regions
   attr_fractions_all <- dplyr::left_join(x = attr_deaths_all,
                                              y = totyear,
                                              by = "year") %>%
@@ -857,6 +946,14 @@ compute_attributable_deaths <- function(df_list,
 
   attr_fractions_yr <- dplyr::bind_rows(attr_fractions_all,
                                          attr_fractions_regions)
+
+
+  # matsim <- attrdl_yr_all %>%
+  #           dplyr::group_by(region) %>%
+  #           dplyr::select(-year) %>%
+  #           dplyr::summarise(across(everything(), sum))
+
+  # arraysim <- attrdl_CI_all
 
   return (list(totdeath, arraysim, matsim, attrdl_yr_all,
                attr_fractions_yr))
@@ -903,9 +1000,12 @@ write_attributable_deaths <- function(df_list,
                                       totdeath,
                                       attrdl_yr_all,
                                       attr_fractions_yr,
+                                      population_col,
                                       output_folder_path = NULL) {
 
+  ###################################################
   # Attributable numbers
+
   # regions-specific
   anregions <- matsim
   anregionslow <- apply(arraysim, c(1,2), quantile, 0.025)
@@ -925,28 +1025,30 @@ write_attributable_deaths <- function(df_list,
   antotlow <- apply(apply(arraysim, c(2,3), sum), 1, quantile, 0.025)
   antothigh <- apply(apply(arraysim, c(2,3), sum), 1, quantile, 0.975)
 
-  # Total mortality
-  # By country
-  totdeathtot <- sum(totdeath)
-
+  ###################################################
   # Attributable fractions
+
   # regions-specific
   afregions <- anregions/totdeath * 100
   afregionslow <- anregionslow/totdeath * 100
   afregionshigh <- anregionshigh/totdeath * 100
 
   # Total
+  totdeathtot <- sum(totdeath)
   aftot <- antot/totdeathtot * 100
   aftotlow <- antotlow/totdeathtot * 100
   aftothigh <- antothigh/totdeathtot * 100
 
+  ###################################################
   # Bind datasets
+
   anregions_bind <- t(cbind(anregions, anregionslow, anregionshigh))
   antot_bind <- t(cbind(antot, antotlow, antothigh))
   afregions_bind <- t(cbind(afregions, afregionslow, afregionshigh))
   aftot_bind <- t(cbind(aftot, aftotlow, aftothigh))
 
-  #### CONVERT DATA TO PUBLICATION FORMAT ####
+  ###################################################
+  # Convert data to publication format
 
   # AN_regions (attributable deaths by region)
   anregions_publication <- anregions_bind %>%
@@ -1716,6 +1818,7 @@ do_analysis <- function(input_csv_path_,
                         time_col_ = 'date',
                         region_col_ = 'regnames',
                         temp_col_ = 'tmean',
+                        population_col_ = 'pop',
                         varfun_ = 'bs',
                         vardegree_ = 2,
                         lag_  = 21,
@@ -1732,6 +1835,7 @@ do_analysis <- function(input_csv_path_,
       time_col = time_col_,
       region_col = region_col_,
       temp_col = temp_col_,
+      population_col = population_col_,
       time_range_start = time_range_start_,
       time_range_end = time_range_end_
       )
