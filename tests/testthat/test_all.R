@@ -26,6 +26,7 @@ test_that('Test new output matches original output', {
                                time_col_ = config$time_col,
                                region_col_ = config$region_col,
                                temp_col_ = config$temp_col,
+                               population_col = config$population_col,
                                varfun_ = config$varfun,
                                vardegree_ = config$vardegree,
                                lag_ = config$lag,

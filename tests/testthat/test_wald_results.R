@@ -16,6 +16,7 @@ test_that('Test wald_results() returns correct data type', {
       time_col = config$time_col,
       region_col = config$region_col,
       temp_col = config$temp_col,
+      population_col = config$population_col,
       time_range_start = config$time_range_start,
       time_range_end = config$time_range_end
     )
@@ -70,6 +71,7 @@ test_that('Test wald_results() returns list of correct length', {
       time_col = config$time_col,
       region_col = config$region_col,
       temp_col = config$temp_col,
+      population_col = config$population_col,
       time_range_start = config$time_range_start,
       time_range_end = config$time_range_end
     )
