@@ -4,6 +4,7 @@
 
 data/*
 output/*
+api/*
 tests/testthat/testdata/*
 
 !data/.gitkeep
@@ -11,3 +12,6 @@ tests/testthat/testdata/*
 !tests/testthat/testdata/.gitkeep
 !tests/testthat/testdata/regEngWales.csv
 !tests/testthat/testdata/output_one_region_data_original.csv
+!api/api_guide.txt
+!api/run_api.R
+!api/climatehealth_api.R
