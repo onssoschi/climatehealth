@@ -1,0 +1,14 @@
+## Guide for using Plumber API ##
+
+# Input CSV file path. Change to your local version.
+
+C:\Users\soutte\code\climatehealth\tests\testthat\testdata\regEngWales.csv
+
+# Terminal command for calling function from API server. Returns results as JSON.
+# curl = command line tool for making HTTPS requests from web servers
+# -X POST = specified POST HTTPS request method. Used for sending data.
+# "input_csv_path={path}" = data to send to API server (argument in climatehealth function). Key-value pair.
+# http://127.0.0.1:8000/regression = URL for POST request. 127.0.0.1 is the IP address (localhost), 8000 is the port number. 
+# 'regression' is API endpoint (function in climatehealth_api.R).
+
+curl -X POST -d "input_csv_path_=C://Users/soutte/code/climatehealth/tests/testthat/testdata/regEngWales.csv" http://127.0.0.1:8000/regression
