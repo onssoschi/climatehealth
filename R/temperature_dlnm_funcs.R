@@ -33,27 +33,43 @@ load_data <- function(input_csv_path,
                       time_range_start,
                       time_range_end) {
 
-  if(substr(input_csv_path, nchar(input_csv_path) - 3, nchar(input_csv_path)) !=
-     '.csv') {
+  if (is.list(input_csv_path) == TRUE) {
 
-    stop("Input path must be a CSV")
+    print('data upload by API')
 
-  }
-
-
-  df <- read.csv(input_csv_path, row.names = 1) %>%
-    dplyr::rename(dependent = dependent_col,
-                  date = time_col,
-                  regnames = region_col,
-                  tmean = temp_col) %>%
-    dplyr::mutate(date = as.Date(date))
-
-
-  if (!'NONE' %in% c(time_range_start, time_range_end)) {
+    df <- data.frame(input_csv_path)
 
     df <- df %>%
-      dplyr::filter(date >= time_range_start
-                    & date <= time_range_end)
+      dplyr::rename(dependent = dependent_col,
+                    date = time_col,
+                    regnames = region_col,
+                    tmean = temp_col) %>%
+      dplyr::mutate(date = as.Date(date))
+  }
+
+  if (is.character(input_csv_path) == TRUE) {
+
+    print('data upload by local path')
+
+    df <- read.csv(input_csv_path, row.names = 1) %>%
+      dplyr::rename(dependent = dependent_col,
+                    date = time_col,
+                    regnames = region_col,
+                    tmean = temp_col) %>%
+      dplyr::mutate(date = as.Date(date))
+  }
+
+  # if (substr(input_csv_path, nchar(input_csv_path) - 3, nchar(input_csv_path)) !=
+  #       '.csv') {
+  #
+  #    stop("Input path must be a CSV")
+  # }
+
+ if (!'NONE' %in% c(time_range_start, time_range_end)) {
+
+   df <- df %>%
+     dplyr::filter(date >= time_range_start
+                   & date <= time_range_end)
 
   }
 
@@ -1631,7 +1647,7 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @seealso [dlnm] package
 #'
 #' @export
-do_analysis <- function(input_csv_path_,
+do_analysis <- function(input_csv_path_ = 'NONE',
                         output_folder_path_ = NULL,
                         save_fig_ = TRUE,
                         save_csv_ = TRUE,
