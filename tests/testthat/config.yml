@@ -16,22 +16,20 @@ default:
   time_col: date
   region_col: regnames
   temp_col: tmean
+  population_col: 'NONE'
 
-  # Formula
-  independent_col:
-    - cb # Cross-basis for temperature variable
-    - dow # Day of week
-    - ns(date, df = dfseas * length(unique(year))) # Seasonal B-spline
+  # Extra independent variables. Cross-basis, day of the week, and seasonal spline included by default. Use ('NONE' if none).
+  independent_col1: 'NONE'
+  independent_col2: 'NONE'
+  independent_col3: 'NONE'
 
-  # Time range. Format '2008-01-01'. Set both as NULL to use full range in data.
-  time_range:
-   - NULL
-   - NULL
+  # Time range. Format '2008-01-01'. Set both as 'None' to use full range in data.
+  time_range start: 'NONE'
+  time_range_end: 'NONE'
 
   # Specification of the exposure function
   varfun: 'bs' # Exposure function (see dlnm::crossbasis)
   vardegree:  2 # Degrees of freedom in exposure function (see dlnm::crossbasis)
-  varper: !expr c(10, 75, 90) # Internal knot positions in exposure function (see dlnm::crossbasis)
 
   # Specification of the lag function
   lag: 21 # Lag length in days (see dlnm::logknots)

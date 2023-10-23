@@ -20,8 +20,8 @@ config <- config::get()
 #' @param region_col The region column over which the data
 #' are spatially aggregated e.g. regnames
 #' @param temp_col The temperature column e.g. tmean
-#' @param time_range A list of two dates (format YYYY-MM-DD) representing the
-#' min and max (inclusive) of the time range over which to filter the data.
+#' @param time_range_start_ Start of time range over which to run the analysis.  'None' if over full range.
+#' @param time_range_end_ End of time range over which to run the analysis.  'None' if over full range.
 #' @return `df_list` An alphabetically-ordered list of dataframes for each
 #' region comprising dates, deaths, and temperatures.
 #' @export
@@ -30,7 +30,9 @@ load_data <- function(input_csv_path,
                       time_col,
                       region_col,
                       temp_col,
-                      time_range) {
+                      population_col,
+                      time_range_start,
+                      time_range_end) {
 
   if(substr(input_csv_path, nchar(input_csv_path) - 3, nchar(input_csv_path)) !=
      '.csv') {
@@ -39,20 +41,33 @@ load_data <- function(input_csv_path,
 
   }
 
+  if (!population_col == 'NONE') {
 
-  df <- read.csv(input_csv_path, row.names = 1) %>%
-    dplyr::rename(dependent = dependent_col,
-                  date = time_col,
-                  regnames = region_col,
-                  tmean = temp_col) %>%
-    dplyr::mutate(date = as.Date(date))
+    df <- read.csv(input_csv_path, row.names = 1) %>%
+      dplyr::rename(dependent = dependent_col,
+                    date = time_col,
+                    regnames = region_col,
+                    tmean = temp_col,
+                    pop_col = population_col) %>%
+      dplyr::mutate(date = as.Date(date))
 
+  } else {
 
-  if (!'NULL' %in% time_range) {
+    df <- read.csv(input_csv_path, row.names = 1) %>%
+      dplyr::mutate(pop_col = 'NONE') %>%
+      dplyr::rename(dependent = dependent_col,
+                    date = time_col,
+                    regnames = region_col,
+                    tmean = temp_col) %>%
+      dplyr::mutate(date = as.Date(date))
+
+  }
+
+  if (!'NONE' %in% c(time_range_start, time_range_end)) {
 
     df <- df %>%
-      dplyr::filter(date >= time_range[1]
-                    & date <= time_range[2])
+      dplyr::filter(date >= time_range_start
+                    & date <= time_range_end)
 
   }
 
@@ -73,9 +88,15 @@ load_data <- function(input_csv_path,
 #' Define regression model
 #'
 #' @param dataset dataframe with tmean column to be modelled
-#' @param indepedent_col column names of independent
-#' variables to include in regression (excluding temperature,
-#' see config file for formula structure)
+#' @param indepedent_col1_ column name of first extra independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col2_ column name of second independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
@@ -95,7 +116,9 @@ load_data <- function(input_csv_path,
 #'   }
 #' @export
 define_model <- function(dataset,
-                         independent_col,
+                         independent_col1,
+                         independent_col2,
+                         independent_col3,
                          varfun,
                          varper,
                          vardegree,
@@ -103,11 +126,21 @@ define_model <- function(dataset,
                          lagnk,
                          dfseas) {
 
+  if ('NONE' %in% c(independent_col1,
+                    independent_col2,
+                    independent_col3)) {
+
+    independent_cols <- c('cb',
+                          'dow',
+                          'ns(date, df = dfseas * length(unique(year)))')
+
+    }
+
   # Model formula
   formula <- as.formula(paste(paste('dependent'),
                               " ~ ",
-                              paste(independent_col,
-                                    collapse = "+")))
+                              paste(independent_cols,
+                                    collapse = " + ")))
 
   # Define crossbasis
   argvar_ <- list(fun = varfun,
@@ -116,13 +149,15 @@ define_model <- function(dataset,
                                    na.rm = TRUE),
                   degree = vardegree)
 
+  lag <- as.numeric(lag)
+  lagnk <- as.numeric(lagnk)
+  dfseas <- as.numeric(dfseas)
+
   cb <- crossbasis(dataset$tmean,
                    lag = lag,
                    argvar = argvar_,
                    arglag = list(knots = logknots(lag,
                                                   lagnk)))
-
-  dfseas <- dfseas
 
   # Run the model and obtain predictions
   model <- glm(formula,
@@ -137,9 +172,15 @@ define_model <- function(dataset,
 #' Define and run poisson regression model for each dataframe
 #'
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
-#' @param indepedent_col column names of independent
-#' variables to include in regression (excluding temperature,
-#' see config file for formula structure)
+#' @param indepedent_col1_ column name of first extra independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col2_ column name of second independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
@@ -158,7 +199,9 @@ define_model <- function(dataset,
 #'   }
 #' @export
 run_model <- function(df_list,
-                      independent_col,
+                      independent_col1,
+                      independent_col2,
+                      independent_col3,
                       varfun,
                       varper,
                       vardegree,
@@ -190,7 +233,9 @@ run_model <- function(df_list,
     data <- df_list[[i]]
 
     c(model, cb) %<-% define_model(dataset = data,
-                                   independent_col = independent_col,
+                                   independent_col1 = independent_col1,
+                                   independent_col2 = independent_col2,
+                                   independent_col3 = independent_col3,
                                    varfun = varfun,
                                    varper = varper,
                                    vardegree = vardegree,
@@ -317,9 +362,15 @@ wald_results <- function(mv) {
 #'
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
-#' @param indepedent_col column names of independent
-#' variables to include in regression (excluding temperature,
-#' see config file for formula structure)
+#' @param indepedent_col1_ column name of first extra independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col2_ column name of second independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
@@ -341,7 +392,9 @@ wald_results <- function(mv) {
 #' @export
 calculate_min_mortality_temp <-  function(df_list,
                                           blup = NULL,
-                                          independent_col,
+                                          independent_col1,
+                                          independent_col2,
+                                          independent_col3,
                                           varfun,
                                           varper,
                                           vardegree,
@@ -399,7 +452,9 @@ calculate_min_mortality_temp <-  function(df_list,
       data <- df_list[[i]]
 
       c(model, cb) %<-% define_model(dataset = data,
-                                     independent_col = independent_col,
+                                     independent_col1 = independent_col1,
+                                     independent_col2 = independent_col2,
+                                     independent_col3 = independent_col3,
                                      varfun = varfun,
                                      varper = varper,
                                      vardegree = vardegree,
@@ -420,6 +475,9 @@ calculate_min_mortality_temp <-  function(df_list,
   # Country-specific points of minimum mortality
   (minperccountry <- median(minpercregions_))
 
+  # print(minpercregions_)
+  # print(mintempregions_)
+
   return(list(mintempregions = mintempregions_))
 
 }
@@ -434,9 +492,15 @@ calculate_min_mortality_temp <-  function(df_list,
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param mintempregions A named numeric vector.
 #' Minimum (optimum) mortality temperature per region.
-#' @param indepedent_col column names of independent
-#' variables to include in regression (excluding temperature,
-#' see config file for formula structure)
+#' @param indepedent_col1_ column name of first extra independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col2_ column name of second independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
@@ -465,7 +529,9 @@ calculate_min_mortality_temp <-  function(df_list,
 compute_attributable_deaths <- function(df_list,
                                         blup = NULL,
                                         mintempregions,
-                                        independent_col,
+                                        independent_col1,
+                                        independent_col2,
+                                        independent_col3,
                                         varfun,
                                         varper,
                                         vardegree,
@@ -507,6 +573,8 @@ compute_attributable_deaths <- function(df_list,
                                       "extreme_cold_ci", "extreme_heat_ci")))
 
   attrdl_yr_all <- list()
+  attrdl_CI_all <- list()
+  attrdl_yr_all_rate <- list()
 
   # Run the loop
   for(i in seq(df_list)){
@@ -523,7 +591,9 @@ compute_attributable_deaths <- function(df_list,
       coefs <- blup[[i]]$blup
       vcovs <- blup[[i]]$vcov
       c(model, cb) %<-% define_model(dataset = data,
-                                     independent_col = independent_col,
+                                     independent_col1 = independent_col1,
+                                     independent_col2 = independent_col2,
+                                     independent_col3 = independent_col3,
                                      varfun = varfun,
                                      varper = varper,
                                      vardegree = vardegree,
@@ -538,7 +608,9 @@ compute_attributable_deaths <- function(df_list,
       vcovs <- NULL
 
       c(model, cb) %<-% define_model(dataset = data,
-                                     independent_col = independent_col,
+                                     independent_col1 = independent_col1,
+                                     independent_col2 = independent_col2,
+                                     independent_col3 = independent_col3,
                                      varfun = varfun,
                                      varper = varper,
                                      vardegree = vardegree,
@@ -606,13 +678,8 @@ compute_attributable_deaths <- function(df_list,
       purrr:::map(as.data.frame) %>%
       purrr::list_rbind()
 
-
-    # for (attrdl_year in attrdl_heat) {
-    #
-    #   cat("region:", regions_df$regions[i], "/",
-    #       "year:", attrdl_year$ind_year, "/",
-    #       "heat attr deaths:", round(attrdl_year$attrdl_year, 0), "\n")
-    # }
+    ###################
+    # Create dataframe of deaths per year per regions
 
     attrdl_yr_df <- data.frame(region = rep(names(df_list)[i],
                                             length(year_range)),
@@ -624,7 +691,78 @@ compute_attributable_deaths <- function(df_list,
                                extreme_heat = attrdl_ext_heat$attrdl_year
                                )
 
-    attrdl_yr_all[[i]] <- attrdl_yr_df
+    # Add population rate
+    if (!'NONE' %in% data$pop_col) {
+
+    attrdl_yr_all[[i]] <- attrdl_yr_df %>%
+      dplyr::mutate(
+        glob_per100k = (glob/data[1, "pop_col"]) * 100000,
+        heat_per100k = (heat/data[1, "pop_col"]) * 100000,
+        cold_per100k = (cold/data[1, "pop_col"]) * 100000,
+        ext_cold_per100k = (extreme_cold/data[1, "pop_col"]) * 100000,
+        ext_heat_per100k = (extreme_heat/data[1, "pop_col"]) * 100000
+        )
+
+    } else {
+
+      attrdl_yr_all[[i]] <- attrdl_yr_df
+
+    }
+
+    ###################
+
+    ## Put CI generation into function [working] ##
+
+    # attrdl_years_CI <- function(temp_range) {
+    #
+    #   attrdl_year_CI <- attrdl(x = data$tmean,
+    #                            basis = cb,
+    #                            cases = data$dependent,
+    #                            coef = coefs,
+    #                            vcov = vcovs,
+    #                            type = "an",
+    #                            dir = "forw",
+    #                            cen = mintempregions[i],
+    #                            model = model,
+    #                            range = temp_range,
+    #                            sim = T, nsim = nsim_)
+    #
+    #   return (attrdl_year_CI)
+    #
+    # }
+    #
+    # attrdl_glob_CI <- attrdl_years_CI(temp_range = NULL) %>%
+    #   purrr:::map(as.data.frame) %>%
+    #   purrr::list_rbind()
+    #
+    # attrdl_cold_CI <- attrdl_years_CI(temp_range = c(-100, mintempregions[i])) %>%
+    #   purrr:::map(as.data.frame) %>%
+    #   purrr::list_rbind()
+    #
+    # attrdl_heat_CI <- attrdl_years_CI(temp_range = c(mintempregions[i], 100)) %>%
+    #   purrr:::map(as.data.frame) %>%
+    #   purrr::list_rbind()
+    #
+    # attrdl_ext_cold_CI <- attrdl_years_CI(temp_range = c(-100, per[i, 1])) %>%
+    #   purrr:::map(as.data.frame) %>%
+    #   purrr::list_rbind()
+    #
+    # attrdl_ext_heat_CI <- attrdl_years_CI(temp_range = c(per[i, 7], 100)) %>%
+    #   purrr:::map(as.data.frame) %>%
+    #   purrr::list_rbind()
+    #
+    # ###################
+    #
+    # attrdl_CI_df <- data.frame(region = rep(unique(data$regnames),
+    #                                         length(1000)),
+    #                            glob_CI = attrdl_glob_CI[-1,],
+    #                            heat_CI = attrdl_heat_CI[-1,],
+    #                            cold_CI = attrdl_cold_CI[-1,],
+    #                            extreme_cold_CI = attrdl_ext_cold_CI[-1,],
+    #                            extreme_heat_CI = attrdl_ext_heat_CI[-1,]
+    #                            )
+    #
+    # attrdl_CI_all[[i]] <- attrdl_CI_df
 
     #############################################
 
@@ -755,9 +893,10 @@ compute_attributable_deaths <- function(df_list,
   }
 
   attrdl_yr_all <- dplyr::bind_rows(attrdl_yr_all)
+  # attrdl_CI_all <- dplyr::bind_rows(attrdl_CI_all)
 
+  ###################################################
   # Compute attributable fraction
-
   all_data <- dplyr::bind_rows(df_list)
 
   attr_fractions <- attrdl_yr_all
@@ -777,7 +916,8 @@ compute_attributable_deaths <- function(df_list,
                   extreme_heat = extreme_heat / total_deaths * 100) %>%
     dplyr::select(-total_deaths)
 
-  # aggregated across regions
+  ###################################################
+  # Deaths aggregated across regions
 
   attr_deaths_all <- attrdl_yr_all %>%
     dplyr::group_by(year) %>%
@@ -791,6 +931,8 @@ compute_attributable_deaths <- function(df_list,
     dplyr::group_by(year) %>%
     dplyr::summarise(total_deaths = sum(dependent))
 
+  ###################################################
+  # Fractions aggregated across regions
   attr_fractions_all <- dplyr::left_join(x = attr_deaths_all,
                                              y = totyear,
                                              by = "year") %>%
@@ -805,6 +947,14 @@ compute_attributable_deaths <- function(df_list,
   attr_fractions_yr <- dplyr::bind_rows(attr_fractions_all,
                                          attr_fractions_regions)
 
+
+  # matsim <- attrdl_yr_all %>%
+  #           dplyr::group_by(region) %>%
+  #           dplyr::select(-year) %>%
+  #           dplyr::summarise(across(everything(), sum))
+
+  # arraysim <- attrdl_CI_all
+
   return (list(totdeath, arraysim, matsim, attrdl_yr_all,
                attr_fractions_yr))
 
@@ -814,7 +964,6 @@ compute_attributable_deaths <- function(df_list,
 #'
 #' @description Write the attributable deaths and temperature for each regions,
 #' with empirical CI estimated using the re-centered bases.
-#'
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @param totdeath A named vector of integers. Total observed mortality per region.
 #' @param arraysim An array (numeric). Total (glob),
@@ -851,9 +1000,12 @@ write_attributable_deaths <- function(df_list,
                                       totdeath,
                                       attrdl_yr_all,
                                       attr_fractions_yr,
+                                      population_col,
                                       output_folder_path = NULL) {
 
+  ###################################################
   # Attributable numbers
+
   # regions-specific
   anregions <- matsim
   anregionslow <- apply(arraysim, c(1,2), quantile, 0.025)
@@ -873,26 +1025,66 @@ write_attributable_deaths <- function(df_list,
   antotlow <- apply(apply(arraysim, c(2,3), sum), 1, quantile, 0.025)
   antothigh <- apply(apply(arraysim, c(2,3), sum), 1, quantile, 0.975)
 
-  # Total mortality
-  # By country
-  totdeathtot <- sum(totdeath)
-
+  ###################################################
   # Attributable fractions
+
   # regions-specific
   afregions <- anregions/totdeath * 100
   afregionslow <- anregionslow/totdeath * 100
   afregionshigh <- anregionshigh/totdeath * 100
 
   # Total
+  totdeathtot <- sum(totdeath)
   aftot <- antot/totdeathtot * 100
   aftotlow <- antotlow/totdeathtot * 100
   aftothigh <- antothigh/totdeathtot * 100
 
+  ###################################################
   # Bind datasets
+
   anregions_bind <- t(cbind(anregions, anregionslow, anregionshigh))
   antot_bind <- t(cbind(antot, antotlow, antothigh))
   afregions_bind <- t(cbind(afregions, afregionslow, afregionshigh))
   aftot_bind <- t(cbind(aftot, aftotlow, aftothigh))
+
+  ###################################################
+  # Convert data to publication format
+
+  # AN_regions (attributable deaths by region)
+  anregions_publication <- anregions_bind %>%
+    t() %>%
+    as.data.frame() %>%
+    tibble::rownames_to_column() %>%
+    dplyr::rename(region = 1) %>%
+    dplyr::mutate(
+      region = stringr::str_replace_all(region, "[^[:alnum:]]", "")) %>%
+    dplyr::arrange(region) %>%
+    dplyr::select(region, glob, extreme_cold, extreme_cold_ci_low,
+                  extreme_cold_ci_high, extreme_heat, extreme_heat_ci_low,
+                  extreme_heat_ci_high)
+
+
+  # AF_regions (attributable fraction by region)
+
+  total_deaths_df <- anregions_publication %>%
+    dplyr::select(region, glob)
+
+  afregions_publication <- afregions_bind %>%
+    t() %>%
+    as.data.frame() %>%
+    tibble::rownames_to_column() %>%
+    dplyr::rename(region = 1) %>%
+    dplyr::mutate(
+      region = stringr::str_replace_all(region, "[^[:alnum:]]", "")) %>%
+    dplyr::arrange(region) %>%
+    dplyr::select(-glob) %>%
+    dplyr::left_join(y = total_deaths_df, by = "region") %>%
+    dplyr::select(region, glob, extreme_cold, extreme_cold_ci_low,
+                  extreme_cold_ci_high, extreme_heat, extreme_heat_ci_low,
+                  extreme_heat_ci_high)
+
+
+  ####
 
   if (!is.null(output_folder_path)) {
 
@@ -921,6 +1113,16 @@ write_attributable_deaths <- function(df_list,
     write.csv(attr_fractions_yr,
               file = paste(output_folder_path,
                            'attributable_fraction_year.csv',
+                           sep = ""))
+
+    write.csv(anregions_publication,
+              file = paste(output_folder_path,
+                           'AN_publication.csv',
+                           sep = ""))
+
+    write.csv(afregions_publication,
+              file = paste(output_folder_path,
+                           'AF_publication.csv',
                            sep = ""))
 
   } else {
@@ -953,9 +1155,15 @@ write_attributable_deaths <- function(df_list,
 #'   Minimum (optimum) mortality temperature per region.
 #' @param save_fig Whether to save output figure (Bool)
 #' @param save_csv Whether to save output CSVs (Bool)
-#' @param indepedent_col column names of independent
-#' variables to include in regression (excluding temperature,
-#' see config file for formula structure)
+#' @param indepedent_col1_ column name of first extra independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col2_ column name of second independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
@@ -990,7 +1198,9 @@ plot_and_write_relative_risk <- function(df_list,
                                          save_fig = TRUE,
                                          save_csv = TRUE,
                                          output_folder_path,
-                                         independent_col,
+                                         independent_col1,
+                                         independent_col2,
+                                         independent_col3,
                                          varfun,
                                          varper,
                                          vardegree,
@@ -1071,7 +1281,9 @@ plot_and_write_relative_risk <- function(df_list,
 
       # Run the model and obtain predictions
       c(model, cb) %<-% define_model(dataset = data,
-                                     independent_col = independent_col,
+                                     independent_col1 = independent_col1,
+                                     independent_col2 = independent_col2,
+                                     independent_col3 = independent_col3,
                                      varfun = varfun,
                                      varper = varper,
                                      vardegree = vardegree,
@@ -1243,10 +1455,15 @@ plot_and_write_relative_risk <- function(df_list,
     if (!is.null(blup)) {
 
       relative_risk <- pred$allRRfit
+      rr_low <- pred$allRRlow
+      rr_high <- pred$allRRhigh
 
     } else {
 
       relative_risk <- pred$RRfit
+      rr_low <- pred$RRlow
+      rr_high <- pred$RRhigh
+
     }
 
     # Output for testing
@@ -1260,6 +1477,23 @@ plot_and_write_relative_risk <- function(df_list,
                      'output_one_region_data_new.csv', sep = ''),
                row.names = FALSE
                )
+
+    # Output for testing (publication format)
+
+     output_df_test_publication <- data.frame(
+       temperature = pred$predvar,
+       relative_risk = relative_risk,
+       rr_low = rr_low,
+       rr_high = rr_high
+     ) %>%
+       dplyr::mutate(temperature = round(temperature, digits = 1)) %>%
+       dplyr::filter(temperature %in% seq(-100, 100, 0.5))
+
+     write.csv(output_df_test_publication,
+               paste(output_folder_path,
+                     'output_one_region_data_publication.csv', sep = ''),
+               row.names = FALSE
+     )
   }
 
   return (list(output_df, tmean_df))
@@ -1274,9 +1508,8 @@ plot_and_write_relative_risk <- function(df_list,
 #'   Minimum (optimum) mortality temperature per region.
 #' @param save_fig Whether to save output figure (Bool)
 #' @param save_csv Whether to save output CSVs (Bool)
-#' @param indepedent_col column names of independent
-#' variables to include in regression (excluding temperature,
-#' see config file for formula structure)
+#' @param dependent_col the column name of the
+#' dependent variable of interest e.g. deaths
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
@@ -1532,18 +1765,23 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' meta-analysis. Must be TRUE if by_region argument is FALSE.
 #' @param by_region Boolean (TRUE or FALSE). Whether to disaggregate by region.
 #' Must be TRUE if meta-analysis is FALSE.
-#' @param time_range_ Time range over which to run the analysis.
+#' @param time_range_start_ Start of time range over which to run the analysis.  'None' if over full range.
+#' @param time_range_end_ End of time range over which to run the analysis.  'None' if over full range.
 #' @param dependent_col_ the column name of the
 #' dependent variable of interest e.g. deaths
-#' @param indepedent_col_ column names of independent
-#' variables to include in regression (excluding temperature,
-#' see config file for formula structure)
+#' @param indepedent_col1_ column name of first extra independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col2_ column name of second independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
 #' @param time_col_ The column name of column containing dates (e.g date, year).
 #' @param region_col_ The column name of the column containing regions.
 #' @param temp_col_ the column name of the column containing the exposure.
 #' @param varfun_ Exposure function
-#' (see dlnm::crossbasis)
-#' @param varper_ Internal knot positions in exposure function
 #' (see dlnm::crossbasis)
 #' @param vardegree_ Degrees of freedom in exposure function
 #' (see dlnm:crossbasis)
@@ -1577,24 +1815,29 @@ plot_and_write_relative_risk_all <- function(df_list,
 #'
 #' @export
 do_analysis <- function(input_csv_path_,
-                        output_folder_path_,
-                        save_fig_,
-                        save_csv_,
-                        meta_analysis,
-                        by_region,
-                        time_range_,
-                        dependent_col_,
-                        independent_col_,
-                        time_col_,
-                        region_col_,
-                        temp_col_,
-                        varfun_,
-                        varper_,
-                        vardegree_,
-                        lag_,
-                        lagnk_,
-                        dfseas_
+                        output_folder_path_ = NULL,
+                        save_fig_ = TRUE,
+                        save_csv_ = TRUE,
+                        meta_analysis = TRUE,
+                        by_region = TRUE,
+                        time_range_start_ = 'NONE',
+                        time_range_end_ = 'NONE',
+                        dependent_col_ = 'death',
+                        independent_col1_ = 'NONE',
+                        independent_col2_ = 'NONE',
+                        independent_col3_ = 'NONE',
+                        time_col_ = 'date',
+                        region_col_ = 'regnames',
+                        temp_col_ = 'tmean',
+                        population_col_ = 'pop',
+                        varfun_ = 'bs',
+                        vardegree_ = 2,
+                        lag_  = 21,
+                        lagnk_ = 3,
+                        dfseas_ = 8
                         ) {
+
+  varper_ <- c(10, 75, 90)
 
   c(df_list_) %<-%
     load_data(
@@ -1603,14 +1846,18 @@ do_analysis <- function(input_csv_path_,
       time_col = time_col_,
       region_col = region_col_,
       temp_col = temp_col_,
-      time_range = time_range_
+      population_col = population_col_,
+      time_range_start = time_range_start_,
+      time_range_end = time_range_end_
       )
 
   if (meta_analysis == TRUE) {
 
     c(coef_, vcov_) %<-%
     run_model(df_list = df_list_,
-              independent_col = independent_col_,
+              independent_col1 = independent_col1_,
+              independent_col2 = independent_col2_,
+              independent_col3 = independent_col3_,
               varfun = varfun_,
               varper = varper_,
               vardegree = vardegree_,
@@ -1641,7 +1888,9 @@ do_analysis <- function(input_csv_path_,
     calculate_min_mortality_temp(
       df_list = df_list_,
       blup = blup_,
-      independent_col = independent_col_,
+      independent_col1 = independent_col1_,
+      independent_col2 = independent_col2_,
+      independent_col3 = independent_col3_,
       varfun = varfun_,
       varper = varper_,
       vardegree = vardegree_,
@@ -1656,7 +1905,9 @@ do_analysis <- function(input_csv_path_,
       df_list = df_list_,
       blup = blup_,
       mintempregions = mintempregions_,
-      independent_col = independent_col_,
+      independent_col1 = independent_col1_,
+      independent_col2 = independent_col2_,
+      independent_col3 = independent_col3_,
       varfun = varfun_,
       varper = varper_,
       vardegree = vardegree_,
@@ -1703,7 +1954,9 @@ do_analysis <- function(input_csv_path_,
       save_fig = save_fig_,
       save_csv = save_csv_,
       output_folder_path = output_folder_path_,
-      independent_col = independent_col_,
+      independent_col1 = independent_col1_,
+      independent_col2 = independent_col2_,
+      independent_col3 = independent_col3_,
       varfun = varfun_,
       varper = varper_,
       vardegree = vardegree_,
