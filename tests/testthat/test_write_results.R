@@ -6,6 +6,10 @@ test_that('Test output CSVs are written and of correct length', {
 
   config <- config::get()
 
+  varper_ <- c(10, 75, 90)
+
+  by_region <- TRUE
+
   c(df_list_) %<-%
     load_data(
       input_csv_path = config$input_csv_path,
@@ -13,16 +17,20 @@ test_that('Test output CSVs are written and of correct length', {
       time_col = config$time_col,
       region_col = config$region_col,
       temp_col = config$temp_col,
-      time_range = config$time_range
+      population_col = config$population_col,
+      time_range_start = config$time_range_start,
+      time_range_end = config$time_range_end
     )
 
   if (config$meta_analysis == TRUE) {
 
     c(coef_, vcov_) %<-%
       run_model(df_list = df_list_,
-                independent_col = config$independent_col,
+                independent_col1 = config$independent_col1,
+                independent_col2 = config$independent_col2,
+                independent_col3 = config$independent_col3,
                 varfun = config$varfun,
-                varper = config$varper,
+                varper = varper_,
                 vardegree = config$vardegree,
                 lag = config$lag,
                 lagnk = config$lagnk,
@@ -51,9 +59,11 @@ test_that('Test output CSVs are written and of correct length', {
     calculate_min_mortality_temp(
       df_list = df_list_,
       blup = blup_,
-      independent_col = config$independent_col,
+      independent_col1 = config$independent_col1,
+      independent_col2 = config$independent_col2,
+      independent_col3 = config$independent_col3,
       varfun = config$varfun,
-      varper = config$varper,
+      varper = varper_,
       vardegree = config$vardegree,
       lag = config$lag,
       lagnk = config$lagnk,
@@ -66,26 +76,55 @@ test_that('Test output CSVs are written and of correct length', {
       df_list = df_list_,
       blup = blup_,
       mintempregions = mintempregions_,
-      independent_col = config$independent_col,
+      independent_col1 = config$independent_col1,
+      independent_col2 = config$independent_col2,
+      independent_col3 = config$independent_col3,
       varfun = config$varfun,
-      varper = config$varper,
+      varper = varper_,
       vardegree = config$vardegree,
       lag = config$lag,
       lagnk = config$lagnk,
       dfseas = config$dfseas
     )
+  if (by_region == FALSE) {
 
-  c(anregions_bind, antot_bind, afregions_bind, aftot_bind) %<-%
-    write_attributable_deaths(
-      df_list = df_list_,
-      matsim = matsim_,
-      arraysim = arraysim_,
-      totdeath = totdeath_,
-      output_folder_path = config$output_folder_path,
-      attrdl_yr_all = attrdl_yr_all,
-      attr_fractions_yr = attr_fractions_yr
-    )
+    c(output_df, tmean_df) %<-%
+      plot_and_write_relative_risk_all(
+        df_list = df_list_,
+        mintempregions = mintempregions_,
+        save_fig = config$save_fig,
+        save_csv = config$save_csv,
+        dependent_col = config$dependent_col,
+        varfun = config$varfun,
+        varper = varper_,
+        vardegree = config$vardegree,
+        coef = coef_,
+        vcov = vcov_,
+        output_folder_path = config$output_folder_path
+      )
 
+  } else {
+
+    c(output_df, tmean_df) %<-%
+      plot_and_write_relative_risk(
+        df_list = df_list_,
+        blup = blup_,
+        mintempregions = mintempregions_,
+        save_fig = config$save_fig,
+        save_csv = config$save_csv,
+        independent_col1 = config$independent_col1,
+        independent_col2 = config$independent_col2,
+        independent_col3 = config$independent_col3,
+        varfun = config$varfun,
+        varper = varper_,
+        vardegree = config$vardegree,
+        lag = config$lag,
+        lagnk = config$lagnk,
+        dfseas = config$dfseas,
+        output_folder_path = config$output_folder_path
+      )
+
+  }
 
   actual_output <- read.csv('testdata/attributable_deaths_regions.csv')
 

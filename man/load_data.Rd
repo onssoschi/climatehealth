@@ -10,7 +10,8 @@ load_data(
   time_col,
   region_col,
   temp_col,
-  time_range
+  time_range_start,
+  time_range_end
 )
 }
 \arguments{
@@ -27,8 +28,9 @@ are spatially aggregated e.g. regnames}
 
 \item{temp_col}{The temperature column e.g. tmean}
 
-\item{time_range}{A list of two dates (format YYYY-MM-DD) representing the
-min and max (inclusive) of the time range over which to filter the data.}
+\item{time_range_start_}{Start of time range over which to run the analysis.  'None' if over full range.}
+
+\item{time_range_end_}{End of time range over which to run the analysis.  'None' if over full range.}
 }
 \value{
 \code{df_list} An alphabetically-ordered list of dataframes for each

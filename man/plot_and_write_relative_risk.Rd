@@ -11,7 +11,9 @@ plot_and_write_relative_risk(
   save_fig = TRUE,
   save_csv = TRUE,
   output_folder_path,
-  independent_col,
+  independent_col1,
+  independent_col2,
+  independent_col3,
   varfun,
   varper,
   vardegree,
@@ -52,9 +54,17 @@ Minimum (optimum) mortality temperature per region.}
 
 \item{dfseas}{Degrees of freedom for seasonality}
 
-\item{indepedent_col}{column names of independent
-variables to include in regression (excluding temperature,
-see config file for formula structure)}
+\item{indepedent_col1_}{column name of first extra independent
+variable to include in regression (excluding temperature,
+see config file for formula structure). 'None' if none.}
+
+\item{indepedent_col2_}{column name of second independent
+variable to include in regression (excluding temperature,
+see config file for formula structure). 'None' if none.}
+
+\item{indepedent_col3_}{column name of third independent
+variable to include in regression (excluding temperature,
+see config file for formula structure). 'None' if none.}
 }
 \value{
 \itemize{
