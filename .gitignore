@@ -10,4 +10,5 @@ tests/testthat/testdata/*
 !output/.gitkeep
 !tests/testthat/testdata/.gitkeep
 !tests/testthat/testdata/regEngWales.csv
+!tests/testthat/testdata/regEngWalesPop.csv
 !tests/testthat/testdata/output_one_region_data_original.csv
