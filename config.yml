@@ -16,7 +16,7 @@ default:
   time_col: date
   region_col: regnames
   temp_col: tmean
-  population_col: NONE
+  population_col: pop
 
   # Extra independent variables. Cross-basis, day of the week, and seasonal spline included by default. Use ('NONE' if none).
   independent_col1: 'NONE'
@@ -30,6 +30,7 @@ default:
   # Specification of the exposure function
   varfun: 'bs' # Exposure function (see dlnm::crossbasis)
   vardegree:  2 # Degrees of freedom in exposure function (see dlnm::crossbasis)
+  varper: !expr c(10, 75, 90) # Internal knot positions in exposure function (see dlnm::crossbasis)
 
   # Specification of the lag function
   lag: 21 # Lag length in days (see dlnm::logknots)
