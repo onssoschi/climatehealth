@@ -386,6 +386,8 @@ wald_results <- function(mv) {
 #' \itemize{
 #'   \item `mintempregions_` A named numeric vector.
 #'   Minimum (optimum) mortality temperature per region.
+#'    \item `an_thresholds` A dataframe with the optimal temperature range and
+#' temperature thresholds for calculation of attributable deaths.
 #' }
 #'
 #' @export
@@ -449,11 +451,19 @@ calculate_min_mortality_temp <-  function(df_list,
                                      na.rm = TRUE)
 
       # OVERALL CUMULATIVE SUMMARY ASSOCIATION FOR MAIN MODEL
-      cp <- crosspred(bvar_,coef=blup[[i]]$blup,vcov=blup[[i]]$vcov, cen=mintempregions_[i],
-                      model.link="log",by=0.1, from=ranges[i,1], to=ranges[i,2])
+      cp <- crosspred(bvar_,
+                      coef = blup[[i]]$blup,
+                      vcov = blup[[i]]$vcov,
+                      cen = mintempregions_[i],
+                      model.link = "log",
+                      by = 0.1,
+                      from = ranges[i,1],
+                      to = ranges[i,2])
 
-      optimal_temp_range[i,"lower"] <- as.numeric(names(which.min(which(cp$allRRfit>=1 & cp$allRRfit<=1.1))))
-      optimal_temp_range[i, "upper"] <- as.numeric(names(which.max(which(cp$allRRfit>=1 & cp$allRRfit<=1.1))))
+      optimal_temp_range[i,"lower"] <- as.numeric(names(
+        which.min(which(cp$allRRfit >= 1 & cp$allRRfit <= 1.1))))
+      optimal_temp_range[i, "upper"] <- as.numeric(names(
+        which.max(which(cp$allRRfit >= 1 & cp$allRRfit <= 1.1))))
 
     }
 
@@ -483,8 +493,10 @@ calculate_min_mortality_temp <-  function(df_list,
       pred <- crossreduce(cb, model, cen = cen_)
       mintempregions_[i] <- as.numeric(names(which.min(pred$RRfit)))
 
-      optimal_temp_range[i,"lower"] <- as.numeric(names(which.min(which(pred$RRfit>=1 & pred$RRfit<=1.1))))
-      optimal_temp_range[i, "upper"] <- as.numeric(names(which.max(which(pred$RRfit>=1 & pred$RRfit<=1.1))))
+      optimal_temp_range[i,"lower"] <- as.numeric(names(
+        which.min(which(pred$RRfit >= 1 & pred$RRfit <= 1.1))))
+      optimal_temp_range[i, "upper"] <- as.numeric(names(
+        which.max(which(pred$RRfit >= 1 & pred$RRfit <= 1.1))))
 
     }
 
@@ -495,16 +507,19 @@ calculate_min_mortality_temp <-  function(df_list,
 
   # data frame with final thresholds to use for hot and cold days to attribute deaths to
   an_thresholds <- as.data.frame(cbind(per,optimal_temp_range)) %>%
-    mutate(min_high_cold = -100,
-           max_high_heat = 100,
-           moderate_cold_OTR = lower,
-           moderate_heat_OTR = upper,
-           high_moderate_cold = ifelse(moderate_cold_OTR<`2.5%`, moderate_cold_OTR, `2.5%`),
-           high_moderate_heat = ifelse(moderate_heat_OTR>`97.5%`, moderate_heat_OTR, `97.5%`)) %>%
-    select(min_high_cold, high_moderate_cold, moderate_cold_OTR,
-           moderate_heat_OTR, high_moderate_heat, max_high_heat)
-
-  print(an_thresholds)
+    dplyr::mutate(
+      min_high_cold = -100,
+      max_high_heat = 100,
+      moderate_cold_OTR = lower,
+      moderate_heat_OTR = upper,
+      high_moderate_cold = ifelse(moderate_cold_OTR < `2.5%`,
+                                  moderate_cold_OTR,
+                                  `2.5%`),
+      high_moderate_heat = ifelse(moderate_heat_OTR > `97.5%`,
+                                  moderate_heat_OTR,
+                                  `97.5%`)) %>%
+    dplyr::select(min_high_cold, high_moderate_cold, moderate_cold_OTR,
+                  moderate_heat_OTR, high_moderate_heat, max_high_heat)
 
   # Country-specific points of minimum mortality
   (minperccountry <- median(minpercregions_))
@@ -526,6 +541,8 @@ calculate_min_mortality_temp <-  function(df_list,
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param mintempregions A named numeric vector.
 #' Minimum (optimum) mortality temperature per region.
+#' @param an_thresholds A dataframe with the optimal temperature range and
+#' temperature thresholds for calculation of attributable deaths.
 #' @param indepedent_col1_ column name of first extra independent
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
@@ -602,8 +619,9 @@ compute_attributable_deaths <- function(df_list,
   # Create the array to store the CI of attributable deaths
   arraysim <- array(NA, dim = c(length(names(df_list)), 6, nsim_),
                     dimnames = list(names(df_list),
-                                    c("glob_cold_ci", "glob_heat_ci", "moderate_cold_ci",
-                                      "moderate_heat_ci", "high_cold_ci", "high_heat_ci")))
+                                    c("glob_cold_ci", "glob_heat_ci",
+                                      "moderate_cold_ci", "moderate_heat_ci",
+                                      "high_cold_ci", "high_heat_ci")))
 
   attrdl_yr_all <- list()
   attrdl_CI_all <- list()
@@ -686,43 +704,49 @@ compute_attributable_deaths <- function(df_list,
 
     attrdl_glob_cold <- lapply(year_range,
                           attrdl_years,
-                          temp_range = c(an_thresholds[i,"min_high_cold"],
-                                         an_thresholds[i,"moderate_cold_OTR"])) %>%
+                          temp_range = c(
+                            an_thresholds[i,"min_high_cold"],
+                            an_thresholds[i,"moderate_cold_OTR"])) %>%
       purrr:::map(as.data.frame) %>%
       purrr:::list_rbind()
-
+print(attrdl_glob_cold)
     attrdl_glob_heat <- lapply(year_range,
                                attrdl_years,
-                               temp_range = c(an_thresholds[i,"moderate_heat_OTR"],
-                                              an_thresholds[i,"max_high_heat"])) %>%
+                               temp_range = c(
+                                 an_thresholds[i,"moderate_heat_OTR"],
+                                 an_thresholds[i,"max_high_heat"])) %>%
       purrr:::map(as.data.frame) %>%
       purrr:::list_rbind()
 
     attrdl_mod_intensity_cold <- lapply(year_range,
                           attrdl_years,
-                          temp_range = c(an_thresholds[i,"high_moderate_cold"],
-                                         an_thresholds[i,"moderate_cold_OTR"])) %>%
+                          temp_range = c(
+                            an_thresholds[i,"high_moderate_cold"],
+                            an_thresholds[i,"moderate_cold_OTR"])) %>%
       purrr:::map(as.data.frame) %>%
       purrr:::list_rbind()
 
     attrdl_mod_intensity_heat <- lapply(year_range,
                           attrdl_years,
-                          temp_range = c(an_thresholds[i,"moderate_heat_OTR"],
-                                         an_thresholds[i,"high_moderate_heat"])) %>%
+                          temp_range = c(
+                            an_thresholds[i,"moderate_heat_OTR"],
+                            an_thresholds[i,"high_moderate_heat"])) %>%
       purrr:::map(as.data.frame) %>%
       purrr:::list_rbind()
 
     attrdl_high_intensity_cold <- lapply(year_range,
                               attrdl_years,
-                              temp_range = c(an_thresholds[i,"min_high_cold"],
-                                             an_thresholds[i,"high_moderate_cold"])) %>%
+                              temp_range = c(
+                                an_thresholds[i,"min_high_cold"],
+                                an_thresholds[i,"high_moderate_cold"])) %>%
       purrr:::map(as.data.frame) %>%
       purrr:::list_rbind()
 
     attrdl_high_intensity_heat <- lapply(year_range,
                               attrdl_years,
-                              temp_range = c(an_thresholds[i,"high_moderate_heat"],
-                                             an_thresholds[i,"max_high_heat"])) %>%
+                              temp_range = c(
+                                an_thresholds[i,"high_moderate_heat"],
+                                an_thresholds[i,"max_high_heat"])) %>%
       purrr:::map(as.data.frame) %>%
       purrr:::list_rbind()
 
