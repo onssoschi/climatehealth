@@ -23,14 +23,15 @@ default:
   independent_col2: 'NONE'
   independent_col3: 'NONE'
 
-  # Time range. Format '2008-01-01'. Set both as 'NONE' to use full range in data.
-  time_range_start: 'NONE'
-  time_range_end: 'NONE'
+  # Number of years for the calculation of RR distribution. Set both as 'NONE' to use full range in data.
+  RR_distribution_length: 10
+
+  # Year to calculate output for
+  output_year: 2002
 
   # Specification of the exposure function
   varfun: 'bs' # Exposure function (see dlnm::crossbasis)
   vardegree:  2 # Degrees of freedom in exposure function (see dlnm::crossbasis)
-  varper: !expr c(10, 75, 90) # Internal knot positions in exposure function (see dlnm::crossbasis)
 
   # Specification of the lag function
   lag: 21 # Lag length in days (see dlnm::logknots)

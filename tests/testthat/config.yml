@@ -1,6 +1,6 @@
 default:
   # Input data
-  input_csv_path: 'testdata/regEngWales.csv'
+  input_csv_path: 'testdata/regEngWalesPop.csv'
 
   # Output folder path
   output_folder_path: 'testdata/'
@@ -16,7 +16,7 @@ default:
   time_col: date
   region_col: regnames
   temp_col: tmean
-  population_col: 'NONE'
+  population_col: pop
 
   # Extra independent variables. Cross-basis, day of the week, and seasonal spline included by default. Use ('NONE' if none).
   independent_col1: 'NONE'
@@ -24,7 +24,7 @@ default:
   independent_col3: 'NONE'
 
   # Time range. Format '2008-01-01'. Set both as 'None' to use full range in data.
-  time_range start: 'NONE'
+  time_range_start: 'NONE'
   time_range_end: 'NONE'
 
   # Specification of the exposure function

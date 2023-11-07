@@ -13,19 +13,15 @@ library(climatehealth)
 #             output_folder_path [folder that stores data and figure outputs] #
 ###############################################################################
 
-c(output_df,
-  tmean_df,
-  anregions_bind,
-  attrdl_yr_all,
-  attr_fractions_yr) %<-%
+c(output_df, temp_df, anregions_publication, antot_bind, arregions_publication, artot_bind) %<-%
   climatehealth::do_analysis(input_csv_path_ = config$input_csv_path,
                              output_folder_path_ = config$output_folder_path,
                              save_fig_ = config$save_fig,
                              save_csv_ = config$save_csv,
-                             meta_analysis = config$meta_analysis,
-                             by_region = config$by_region,
-                             time_range_start_ = config$time_range_start,
-                             time_range_end_ = config$time_range_end,
+                             meta_analysis_ = config$meta_analysis,
+                             by_region_ = config$by_region,
+                             RR_distribution_length_ = config$RR_distribution_length,
+                             output_year_ = config$output_year,
                              dependent_col_ = config$dependent_col,
                              independent_col1_ = config$independent_col1,
                              independent_col2_ = config$independent_col2,
