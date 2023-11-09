@@ -516,6 +516,9 @@ calculate_min_mortality_temp <-  function(df_list,
 
   }
 
+  per <- t(sapply(df_list, function(x)
+    quantile(x$temp, c(2.5, 97.5)/100, na.rm = T)))
+
   # data frame with final thresholds to use for hot and cold days to attribute deaths to
   an_thresholds <- as.data.frame(cbind(per,optimal_temp_range)) %>%
     dplyr::mutate(
