@@ -31,6 +31,7 @@ load_data <- function(input_csv_path,
                       region_col,
                       temp_col,
                       population_col,
+                      output_year,
                       RR_distribution_length) {
 
   if(substr(input_csv_path, nchar(input_csv_path) - 3, nchar(input_csv_path)) !=
@@ -94,6 +95,44 @@ load_data <- function(input_csv_path,
   return (list(df_list))
 
 }
+
+
+
+#' Check power of sample size
+#'
+#' @description Checks the statistical power for each region is above 0.8
+#'
+#' @param dataset dataframe with temp column to be modelled
+#' @return whether or not the analysis can go forward
+#' @export
+
+power_check <- function(dataset){
+  temp_distributions<-lapply(df_list, function(x) fitdist(x$temp, "norm"))
+  powers <- vector(mode = "numeric", length = length(df_list))
+
+  for (i in seq(df_list)){
+
+    cat(i,"")
+    data<- df_list[[i]]
+    mean_temp<-mean(data$temp)
+
+    # Check this is how you calculate the base inc and the IRR
+    base_incidence <- mean(data$dependent[which(data$temp<1 & data$temp>-1)])
+    incidence_rate_ratio <- mean(data$dependent[which(data$temp<2 & data$temp>1)])/base_incidence
+
+    dist<-list(dist="normal",mean = temp_distributions[[i]]$estimate["mean"], sd=temp_distributions[[i]]$estimate["sd"])
+    pwr <- pwrss.z.poisreg(exp.beta0 = base_incidence, exp.beta1 = incidence_rate_ratio, n = length(df_list[[i]]), alpha = 0.05, dist = dist)
+    powers[i] <- pwr$power
+
+    if(powers[i] < 0.8) {
+
+      stop("Statistical power is <0.8")
+
+    }
+  }
+}
+
+
 
 #' Define regression model
 #'
