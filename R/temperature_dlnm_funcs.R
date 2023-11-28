@@ -62,6 +62,7 @@ load_data <- function(input_csv_path,
                     temp = temp_col,
                     pop_col = population_col) %>%
       dplyr::mutate(date = as.Date(date))
+    df <- df %>% dplyr::mutate(dependent = ifelse(is.na(dependent), 0, dependent))
 
   } else {
 
@@ -71,7 +72,8 @@ load_data <- function(input_csv_path,
                     date = time_col,
                     regnames = region_col,
                     temp = temp_col) %>%
-      dplyr::mutate(date = as.Date(date))
+      dplyr::mutate(date = as.Date(date))%>%
+      dplyr::mutate(dependent = ifelse(is.na(dependent), 0, dependent))
 
   }
 
@@ -175,13 +177,20 @@ define_model <- function(dataset,
                          lagnk,
                          dfseas) {
 
-  if ('NONE' %in% c(independent_col1,
-                    independent_col2,
-                    independent_col3)) {
+  independent_cols <- c('cb',
+                        'ns(date, df = dfseas * length(unique(year)))')
 
-    independent_cols <- c('cb',
-                          'dow',
-                          'ns(date, df = dfseas * length(unique(year)))')
+  if (independent_col1 != "NONE") {
+    independent_cols <- c(independent_col1, independent_cols)
+
+    } else if (independent_col2 != "NONE") {
+    independent_cols <- c(independent_col2, independent_cols)
+
+    } else if (independent_col3 != "NONE") {
+    independent_cols <- c(independent_col3, independent_cols)
+
+    } else {
+    independent_cols <- independent_cols
 
     }
 
@@ -355,6 +364,7 @@ run_meta_model <- function(df_list, coef, vcov) {
                vcov,
                data = as.data.frame(names(df_list)), # was data = regions_df
                control = list(showiter = TRUE))
+  print(summary(mv)["AIC"])
 
   # Obtain blups
   blup <- blup(mv, vcov = TRUE)
@@ -494,8 +504,8 @@ calculate_min_mortality_temp <-  function(df_list,
 
       bvar_ <- do.call(onebasis, argvar_)
 
-      minpercregions_[i] <- (1:99)[which.min((bvar_ %*%
-                                                blup[[i]]$blup))]
+      minpercregions_[i] <- (1:99)[which.min(bvar_ %*%
+                                                blup[[i]]$blup)]
       mintempregions_[i] <- quantile(data$temp,
                                      minpercregions_[i] / 100,
                                      na.rm = TRUE)
@@ -1758,8 +1768,8 @@ do_analysis <- function(input_csv_path_,
                         save_csv_ = TRUE,
                         meta_analysis_ = TRUE,
                         by_region_ = TRUE,
-                        RR_distribution_length_ = 15,
-                        output_year_,
+                        RR_distribution_length_ = 'NONE',
+                        output_year_ = 'NONE',
                         dependent_col_ = 'death',
                         independent_col1_ = 'NONE',
                         independent_col2_ = 'NONE',
