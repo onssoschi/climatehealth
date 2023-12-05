@@ -100,42 +100,6 @@ load_data <- function(input_csv_path,
 
 
 
-#' Check power of sample size
-#'
-#' @description Checks the statistical power for each region is above 0.8
-#'
-#' @param dataset dataframe with temp column to be modelled
-#' @return whether or not the analysis can go forward
-#' @export
-
-power_check <- function(dataset){
-  temp_distributions<-lapply(df_list, function(x) fitdist(x$temp, "norm"))
-  powers <- vector(mode = "numeric", length = length(df_list))
-
-  for (i in seq(df_list)){
-
-    cat(i,"")
-    data<- df_list[[i]]
-    mean_temp<-mean(data$temp)
-
-    # Check this is how you calculate the base inc and the IRR
-    base_incidence <- mean(data$dependent[which(data$temp<1 & data$temp>-1)])
-    incidence_rate_ratio <- mean(data$dependent[which(data$temp<2 & data$temp>1)])/base_incidence
-
-    dist<-list(dist="normal",mean = temp_distributions[[i]]$estimate["mean"], sd=temp_distributions[[i]]$estimate["sd"])
-    pwr <- pwrss.z.poisreg(exp.beta0 = base_incidence, exp.beta1 = incidence_rate_ratio, n = length(df_list[[i]]), alpha = 0.05, dist = dist)
-    powers[i] <- pwr$power
-
-    if(powers[i] < 0.8) {
-
-      stop("Statistical power is <0.8")
-
-    }
-  }
-}
-
-
-
 #' Define regression model
 #'
 #' @param dataset dataframe with temp column to be modelled
@@ -170,6 +134,7 @@ define_model <- function(dataset,
                          independent_col1,
                          independent_col2,
                          independent_col3,
+                         independent_col4,
                          varfun,
                          varper,
                          vardegree,
@@ -188,6 +153,9 @@ define_model <- function(dataset,
 
     } else if (independent_col3 != "NONE") {
     independent_cols <- c(independent_col3, independent_cols)
+
+    } else if (independent_col4 != "NONE") {
+      independent_cols <- c(independent_col4, independent_cols)
 
     } else {
     independent_cols <- independent_cols
@@ -260,6 +228,7 @@ run_model <- function(df_list,
                       independent_col1,
                       independent_col2,
                       independent_col3,
+                      independent_col4,
                       varfun,
                       varper,
                       vardegree,
@@ -294,6 +263,7 @@ run_model <- function(df_list,
                                    independent_col1 = independent_col1,
                                    independent_col2 = independent_col2,
                                    independent_col3 = independent_col3,
+                                   independent_col4 = independent_col4,
                                    varfun = varfun,
                                    varper = varper,
                                    vardegree = vardegree,
@@ -456,6 +426,7 @@ calculate_min_mortality_temp <-  function(df_list,
                                           independent_col1,
                                           independent_col2,
                                           independent_col3,
+                                          independent_col4,
                                           varfun,
                                           varper,
                                           vardegree,
@@ -540,6 +511,7 @@ calculate_min_mortality_temp <-  function(df_list,
                                      independent_col1 = independent_col1,
                                      independent_col2 = independent_col2,
                                      independent_col3 = independent_col3,
+                                     independent_col4 = independent_col4,
                                      varfun = varfun,
                                      varper = varper,
                                      vardegree = vardegree,
@@ -648,6 +620,7 @@ compute_attributable_deaths <- function(df_list,
                                         independent_col1,
                                         independent_col2,
                                         independent_col3,
+                                        independent_col4,
                                         varfun,
                                         varper,
                                         vardegree,
@@ -660,20 +633,21 @@ compute_attributable_deaths <- function(df_list,
   names(totdeath) <- names(df_list)
 
   # Create the matrix to store the attributable deaths
-  matsim <- matrix(NA, length(names(df_list)), 6,
+  matsim <- matrix(NA, length(names(df_list)), 7,
                    dimnames = list(names(df_list),
                                    c("glob_cold", "glob_heat", "moderate_cold",
-                                     "moderate_heat", "high_cold", "high_heat")))
+                                     "moderate_heat", "high_cold", "high_heat",
+                                     "heatwave")))
 
   # Number of simulation runs for computing empirical CI
   nsim_ <- 1000
 
   # Create the array to store the CI of attributable deaths
-  arraysim <- array(NA, dim = c(length(names(df_list)), 6, nsim_),
+  arraysim <- array(NA, dim = c(length(names(df_list)), 7, nsim_),
                     dimnames = list(names(df_list),
                                     c("glob_cold_ci", "glob_heat_ci",
                                       "moderate_cold_ci", "moderate_heat_ci",
-                                      "high_cold_ci", "high_heat_ci")))
+                                      "high_cold_ci", "high_heat_ci", "heatwave_ci")))
 
   # Run the loop
   for(i in seq(df_list)){
@@ -694,6 +668,7 @@ compute_attributable_deaths <- function(df_list,
                                      independent_col1 = independent_col1,
                                      independent_col2 = independent_col2,
                                      independent_col3 = independent_col3,
+                                     independent_col4 = independent_col4,
                                      varfun = varfun,
                                      varper = varper,
                                      vardegree = vardegree,
@@ -711,6 +686,7 @@ compute_attributable_deaths <- function(df_list,
                                      independent_col1 = independent_col1,
                                      independent_col2 = independent_col2,
                                      independent_col3 = independent_col3,
+                                     independent_col4 = independent_col4,
                                      varfun = varfun,
                                      varper = varper,
                                      vardegree = vardegree,
@@ -723,7 +699,39 @@ compute_attributable_deaths <- function(df_list,
     #############################################
     # Return heat attributable deaths for the output year
 
-    data_output_year <- data %>% dplyr::filter(year == output_year)
+    data_output_year <- data %>% dplyr::filter(year == output_year) %>%
+      dplyr::mutate(high_heat_flag = ifelse(data_output_year$temp > an_thresholds[i,"high_moderate_heat"],1, 0))
+
+    # Prepare temperature column for attribution to heatwaves
+    # Force the temperature to be the centering value for non-heatwave days
+    data_output_year$heatwave_flag <- NA
+    for (j in seq(nrow(data_output_year))){
+
+      if(j==1){
+
+        data_output_year$heatwave_flag[j] <-
+          ifelse(data_output_year$high_heat_flag[j] == 1 &
+                   data_output_year$high_heat_flag[j+1] == 1, 1, 0)
+
+      } else if (j==nrow(data_output_year)){
+
+        data_output_year$heatwave_flag[j] <-
+          ifelse(data_output_year$high_heat_flag[j] == 1 &
+                   data_output_year$high_heat_flag[j-1] == 1, 1, 0)
+
+      } else {
+
+        data_output_year$heatwave_flag[j] <-
+          ifelse((data_output_year$high_heat_flag[j] == 1 &
+                    data_output_year$high_heat_flag[j-1] == 1) |
+                   (data_output_year$high_heat_flag[j] == 1 &
+                      data_output_year$high_heat_flag[j+1] == 1), 1, 0)
+      }
+    }
+
+    data_output_year <- data_output_year %>%
+      dplyr::mutate(heatwave_temp = ifelse(heatwave_flag == 1, temp, mintempregions[i])) %>%
+      dplyr::select(-high_heat_flag,-heatwave_flag)
 
     matsim[i, "glob_cold"] <- attrdl(x = data_output_year$temp,
                                 basis = cb,
@@ -797,6 +805,17 @@ compute_attributable_deaths <- function(df_list,
                                        cen = mintempregions[i],
                                        range = c(an_thresholds[i,"high_moderate_heat"],
                                                  an_thresholds[i,"max_high_heat"]))
+
+
+    matsim[i,"heatwave"] <- attrdl(x = data_output_year$heatwave_temp,
+                                    basis = cb,
+                                    cases = data_output_year$dependent,
+                                    coef = coefs,
+                                    vcov = vcovs,
+                                    model = model,
+                                    type = "an",
+                                    dir = "forw",
+                                    cen = mintempregions[i])
 
     # Compute empirical occurrences of the attributable deaths
     # Used to derive confidence intervals
@@ -877,6 +896,17 @@ compute_attributable_deaths <- function(df_list,
                                                range = c(an_thresholds[i,"high_moderate_heat"],
                                                          an_thresholds[i,"max_high_heat"]),
                                                sim = T, nsim = nsim_)
+
+    arraysim[i, "heatwave_ci", ] <- attrdl(x = data_output_year$heatwave_temp,
+                                            basis = cb,
+                                            cases = data_output_year$dependent,
+                                            coef = coefs,
+                                            vcov = vcovs,
+                                            type = "an",
+                                            dir= "forw",
+                                            cen = mintempregions[i],
+                                            model = model,
+                                            sim = T, nsim = nsim_)
 
   }
 
@@ -999,7 +1029,9 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 #'   (with confidence intervals).
 #' }
 #' @examples output_folder_path = 'myfolder/output/'
-write_attributable_deaths <- function(anregions_bind,
+write_attributable_deaths <- function(avgtmean_wald,
+                                      rangetmean_wald,
+                                      anregions_bind,
                                       antot_bind,
                                       arregions_bind,
                                       artot_bind,
@@ -1007,6 +1039,15 @@ write_attributable_deaths <- function(anregions_bind,
 
   ###################################################
   # Convert data to publication format
+
+  # Wald test results
+  if (!is.null(avgtmean_wald) & !is.null(rangetmean_wald)){
+    wald_publication <- data.frame(cbind(avgtmean_wald,rangetmean_wald))
+  colnames(wald_publication) <- c("region_mean_temp","region_temp_range")
+  rownames(wald_publication) <- "Wald statistic p-value"
+  } else {
+    wald_publication <- NULL
+  }
 
   # AN_regions (attributable deaths by region)
   anregions_publication <- anregions_bind %>%
@@ -1017,7 +1058,8 @@ write_attributable_deaths <- function(anregions_bind,
                   moderate_cold,moderate_cold_ci_2.5,moderate_cold_ci_97.5,
                   moderate_heat,moderate_heat_ci_2.5,moderate_heat_ci_97.5,
                   high_cold,high_cold_ci_2.5,high_cold_ci_97.5,
-                  high_heat,high_heat_ci_2.5,high_heat_ci_97.5)
+                  high_heat,high_heat_ci_2.5,high_heat_ci_97.5,
+                  heatwave, heatwave_ci_2.5,heatwave_ci_97.5)
 
 
   # AR_regions (attributable rates by region)
@@ -1029,11 +1071,17 @@ write_attributable_deaths <- function(anregions_bind,
                   moderate_cold,moderate_cold_ci_2.5,moderate_cold_ci_97.5,
                   moderate_heat,moderate_heat_ci_2.5,moderate_heat_ci_97.5,
                   high_cold,high_cold_ci_2.5,high_cold_ci_97.5,
-                  high_heat,high_heat_ci_2.5,high_heat_ci_97.5)
+                  high_heat,high_heat_ci_2.5,high_heat_ci_97.5,
+                  heatwave, heatwave_ci_2.5,heatwave_ci_97.5)
 
   ####
 
   if (!is.null(output_folder_path)) {
+
+    write.csv(wald_publication,
+              file = paste(output_folder_path,
+                           'wald_test_results.csv',
+                           sep = ""))
 
     write.csv(anregions_publication,
               file = paste(output_folder_path,
@@ -1054,6 +1102,8 @@ write_attributable_deaths <- function(anregions_bind,
 
   } else {
 
+    write.csv(wald_publication,
+              'wald_test_results.csv')
     write.csv(anregions_publication,
               'attributable_deaths_regions.csv')
     write.csv(antot_bind,
@@ -1065,7 +1115,7 @@ write_attributable_deaths <- function(anregions_bind,
 
   }
 
-  return(list(anregions_publication, antot_bind, arregions_publication, artot_bind))
+  return(list(wald_publication, anregions_publication, antot_bind, arregions_publication, artot_bind))
 
 }
 
@@ -1125,6 +1175,7 @@ plot_and_write_relative_risk <- function(df_list,
                                          independent_col1,
                                          independent_col2,
                                          independent_col3,
+                                         independent_col4,
                                          varfun,
                                          varper,
                                          vardegree,
@@ -1204,6 +1255,7 @@ plot_and_write_relative_risk <- function(df_list,
                                      independent_col1 = independent_col1,
                                      independent_col2 = independent_col2,
                                      independent_col3 = independent_col3,
+                                     independent_col4 = independent_col4,
                                      varfun = varfun,
                                      varper = varper,
                                      vardegree = vardegree,
@@ -1774,6 +1826,7 @@ do_analysis <- function(input_csv_path_,
                         independent_col1_ = 'NONE',
                         independent_col2_ = 'NONE',
                         independent_col3_ = 'NONE',
+                        independent_col4_ = 'NONE',
                         time_col_ = 'date',
                         region_col_ = 'regnames',
                         temp_col_ = 'tmean',
@@ -1795,6 +1848,7 @@ do_analysis <- function(input_csv_path_,
       region_col = region_col_,
       temp_col = temp_col_,
       population_col = population_col_,
+      output_year = output_year_,
       RR_distribution_length = RR_distribution_length_
       )
 
@@ -1805,6 +1859,7 @@ do_analysis <- function(input_csv_path_,
               independent_col1 = independent_col1_,
               independent_col2 = independent_col2_,
               independent_col3 = independent_col3_,
+              independent_col4 = independent_col4_,
               varfun = varfun_,
               varper = varper_,
               vardegree = vardegree_,
@@ -1820,7 +1875,7 @@ do_analysis <- function(input_csv_path_,
         vcov = vcov_
         )
 
-    c(avgtmean_wald, rangetmean_wald) %<-%
+    c(avgtmean_wald_, rangetmean_wald_) %<-%
       wald_results(
         mv = mv_
         )
@@ -1828,6 +1883,8 @@ do_analysis <- function(input_csv_path_,
   } else {
 
     blup_ <- NULL
+    avgtmean_wald_ <- NULL
+    rangetmean_wald_ <- NULL
 
   }
 
@@ -1838,6 +1895,7 @@ do_analysis <- function(input_csv_path_,
       independent_col1 = independent_col1_,
       independent_col2 = independent_col2_,
       independent_col3 = independent_col3_,
+      independent_col4 = independent_col4_,
       varfun = varfun_,
       varper = varper_,
       vardegree = vardegree_,
@@ -1856,6 +1914,7 @@ do_analysis <- function(input_csv_path_,
       independent_col1 = independent_col1_,
       independent_col2 = independent_col2_,
       independent_col3 = independent_col3_,
+      independent_col4 = independent_col4_,
       varfun = varfun_,
       varper = varper_,
       vardegree = vardegree_,
@@ -1870,8 +1929,10 @@ do_analysis <- function(input_csv_path_,
                                matsim = matsim_,
                                arraysim = arraysim_)
 
-  c(anregions_publication_, antot_bind_, arregions_publication_, artot_bind_) %<-%
+  c(wald_publication_, anregions_publication_, antot_bind_, arregions_publication_, artot_bind_) %<-%
     write_attributable_deaths(
+      avgtmean_wald = avgtmean_wald_,
+      rangetmean_wald = rangetmean_wald_,
       anregions_bind = anregions_bind_,
       antot_bind = antot_bind_,
       arregions_bind = arregions_bind_,
@@ -1910,6 +1971,7 @@ do_analysis <- function(input_csv_path_,
       independent_col1 = independent_col1_,
       independent_col2 = independent_col2_,
       independent_col3 = independent_col3_,
+      independent_col4 = independent_col4_,
       varfun = varfun_,
       varper = varper_,
       vardegree = vardegree_,
@@ -1917,7 +1979,6 @@ do_analysis <- function(input_csv_path_,
       lagnk = lagnk_,
       dfseas = dfseas_
       )
-
   }
 
   return (list(output_df, temp_df, anregions_publication_, antot_bind_, arregions_publication_, artot_bind_))
