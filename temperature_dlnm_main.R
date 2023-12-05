@@ -1,3 +1,4 @@
+setwd("C:/My_RStudio/Workspace/Git projects/climatehealth")
 devtools::load_all()
 library(dlnm)
 library(mvmeta)
@@ -12,6 +13,7 @@ library(climatehealth)
 #             input_csv_path [input dataset]                                  #
 #             output_folder_path [folder that stores data and figure outputs] #
 ###############################################################################
+config <- config::get()
 
 c(output_df, temp_df, anregions_publication, antot_bind, arregions_publication, artot_bind) %<-%
   climatehealth::do_analysis(input_csv_path_ = config$input_csv_path,
@@ -26,6 +28,7 @@ c(output_df, temp_df, anregions_publication, antot_bind, arregions_publication, 
                              independent_col1_ = config$independent_col1,
                              independent_col2_ = config$independent_col2,
                              independent_col3_ = config$independent_col3,
+                             independent_col4_ = config$independent_col4,
                              time_col_ = config$time_col,
                              region_col_ = config$region_col,
                              temp_col_ = config$temp_col,
@@ -36,3 +39,4 @@ c(output_df, temp_df, anregions_publication, antot_bind, arregions_publication, 
                              lagnk_ = config$lagnk,
                              dfseas_ = config$dfseas
                              )
+
