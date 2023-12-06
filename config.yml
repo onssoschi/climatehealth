@@ -28,7 +28,7 @@ default:
   RR_distribution_length: 15
 
   # Year(s) to calculate output for
-  output_year: !expr c(2015:2019)
+  output_year: !expr c(2019)
 
   # Specification of the exposure function
   varfun: 'bs' # Exposure function (see dlnm::crossbasis)
