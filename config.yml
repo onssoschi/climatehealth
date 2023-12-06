@@ -1,9 +1,9 @@
 default:
   # Input data #'tests/testthat/testdata/regEngWalesPop.csv'
-  input_csv_path: "C:/Users/sempll1/OneDrive - Office for National Statistics/Wellcome project/Framework development/Heat indicator/Code development/Final_input_data/20231127_input_data_la.csv"
+  input_csv_path: "C:/Users/sempll1/OneDrive - Office for National Statistics/Wellcome project/Framework development/Heat indicator/Code development/Final_input_data/20231204_input_data_reg_age_NEW.csv"
 
   # Output folder path 'tests/testthat'
-  output_folder_path: 'tests/tests_Layli/by_LA/tmean/'
+  output_folder_path: 'tests/tests_Layli/region/by_age_group/final_breakdown/large_groups/2019/64under/'
 
   # Whether to perform meta-analysis (boolean). Must be TRUE if by_region is FALSE
   meta_analysis: TRUE
@@ -12,11 +12,11 @@ default:
   by_region: TRUE
 
   # Define columns
-  dependent_col: deaths_la
+  dependent_col: deaths_Y64
   time_col: date
-  region_col: la_name
+  region_col: reg_name
   temp_col: tmean
-  population_col: la_pop
+  population_col: reg_Y64_pop
 
   # Extra independent variables. Cross-basis, day of the week, and seasonal spline included by default. Use ('NONE' if none).
   independent_col1: 'ma_imputed_pm10'
@@ -27,8 +27,8 @@ default:
   # Number of years for the calculation of RR distribution. Set both as 'NONE' to use full range in data.
   RR_distribution_length: 15
 
-  # Year to calculate output for
-  output_year: 2019
+  # Year(s) to calculate output for
+  output_year: !expr c(2015:2019)
 
   # Specification of the exposure function
   varfun: 'bs' # Exposure function (see dlnm::crossbasis)
