@@ -80,8 +80,8 @@ load_data <- function(input_csv_path,
   if ('NONE' != RR_distribution_length) {
 
     df <- df %>%
-      dplyr::filter(year >= (output_year - RR_distribution_length + 1)
-                    & year <= output_year)
+      dplyr::filter(year >= (max(as.integer(output_year)) - RR_distribution_length + 1)
+                    & year <= max(as.integer(output_year)))
 
   }
 
@@ -699,8 +699,8 @@ compute_attributable_deaths <- function(df_list,
     #############################################
     # Return heat attributable deaths for the output year
 
-    data_output_year <- data %>% dplyr::filter(year == output_year) %>%
-      dplyr::mutate(high_heat_flag = ifelse(data_output_year$temp > an_thresholds[i,"high_moderate_heat"],1, 0))
+    data_output_year <- data %>% dplyr::filter(year %in% output_year) %>%
+      dplyr::mutate(high_heat_flag = ifelse(temp > an_thresholds[i,"high_moderate_heat"],1, 0))
 
     # Prepare temperature column for attribution to heatwaves
     # Force the temperature to be the centering value for non-heatwave days
@@ -959,14 +959,18 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 
   # Populations to compute attributable rates with
   regions_pop <- rep(NA, length(df_list))
+  names(regions_pop) <- names(df_list)
+  years_pop <- rep(NA, length(output_year))
+
   for (i in seq(df_list)){
-
-    data_output_year <- df_list[[i]] %>% dplyr::filter(year == output_year)
-    regions_pop[i] <- unique(data_output_year["pop_col"])
-
+    for (j in seq(length(output_year))){
+      data_output_year <- df_list[[i]] %>% dplyr::filter(year == output_year[j])
+      years_pop[j] <- as.numeric(unique(data_output_year["pop_col"]))
+    }
+    regions_pop[i] <- mean(years_pop)
   }
 
-  totpopulation <- sum(as.data.frame(regions_pop))
+  totpopulation <- sum(regions_pop)
 
   # regions-specific AR
   arregions <- anregions/as.numeric(regions_pop) * 100000
@@ -1445,34 +1449,6 @@ plot_and_write_relative_risk <- function(df_list,
 
     }
 
-    # Output for testing
-     output_df_test <- data.frame(
-                             temperature = pred$predvar,
-                             relative_risk = relative_risk
-                             )
-    # Output for testing
-     write.csv(output_df_test,
-               paste(output_folder_path,
-                     'output_one_region_data_new.csv', sep = ''),
-               row.names = FALSE
-               )
-
-    # Output for testing (publication format)
-
-     output_df_test_publication <- data.frame(
-       temperature = pred$predvar,
-       relative_risk = relative_risk,
-       rr_low = rr_low,
-       rr_high = rr_high
-     ) %>%
-       dplyr::mutate(temperature = round(temperature, digits = 1)) %>%
-       dplyr::filter(temperature %in% seq(-100, 100, 0.5))
-
-     write.csv(output_df_test_publication,
-               paste(output_folder_path,
-                     'output_one_region_data_publication.csv', sep = ''),
-               row.names = FALSE
-     )
   }
 
   return (list(output_df, temp_df))
@@ -1726,21 +1702,6 @@ plot_and_write_relative_risk_all <- function(df_list,
               paste(output_folder_path,
                     'output_all_data.csv', sep = ''),
               row.names = FALSE)
-
-
-    relative_risk <- pred$allRRfit
-
-    # Output for testing
-    output_df_test <- data.frame(
-      temperature = pred$predvar,
-      relative_risk = relative_risk
-    )
-    # Output for testing
-    write.csv(output_df_test,
-              paste(output_folder_path,
-                    'output_one_data_new.csv', sep = ''),
-              row.names = FALSE
-    )
 
   }
 
