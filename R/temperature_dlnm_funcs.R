@@ -496,6 +496,14 @@ calculate_min_mortality_temp <-  function(df_list,
       optimal_temp_range[i, "upper"] <- as.numeric(names(
         which.max(which(cp$allRRfit >= 1 & cp$allRRfit <= 1.1))))
 
+      below_one <- which(cp$allRRfit < 1)
+      above_OTR <- which(as.numeric(names(cp$allRRfit)) > optimal_temp_range[i, "upper"])
+      below_OTR <- which(as.numeric(names(cp$allRRfit))< optimal_temp_range[i, "lower"])
+
+      if (length(which((below_one %in% above_OTR) | (below_one %in% below_OTR))) > 0) {
+        stop("Predicted RR goes below 1 in the ends")
+      }
+
     }
 
   } else {
@@ -532,6 +540,14 @@ calculate_min_mortality_temp <-  function(df_list,
         which.min(which(pred$RRfit >= 1 & pred$RRfit <= 1.1))))
       optimal_temp_range[i, "upper"] <- as.numeric(names(
         which.max(which(pred$RRfit >= 1 & pred$RRfit <= 1.1))))
+
+      below_one <- which(pred$RRfit < 1)
+      above_OTR <- which(as.numeric(names(pred$RRfit)) > optimal_temp_range[i, "upper"])
+      below_OTR <- which(as.numeric(names(pred$RRfit))< optimal_temp_range[i, "lower"])
+
+      if (length(which((below_one %in% above_OTR) | (below_one %in% below_OTR))) > 0) {
+        stop("Predicted RR goes below 1 in the ends")
+      }
 
     }
 
