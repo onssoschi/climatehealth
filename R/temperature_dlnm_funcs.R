@@ -41,17 +41,18 @@ load_data <- function(input_csv_path,
 
   }
 
-  if(RR_distribution_length < 5) {
+  if (RR_distribution_length == 'NONE') {
+
+  } else if(RR_distribution_length < 5) {
 
     stop("Timeseries to calculate the RR is less than 5 years")
 
-  }
-
-  if(RR_distribution_length > 15) {
+  } else if (RR_distribution_length > 15) {
 
     stop("Timeseries to calculate the RR is more than 15 years")
 
   }
+
 
   if (!population_col == 'NONE') {
 
