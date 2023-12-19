@@ -1,4 +1,4 @@
-setwd("C:/My_RStudio/Workspace/Git projects/climatehealth")
+# setwd("C:/My_RStudio/Workspace/Git projects/climatehealth")
 devtools::load_all()
 library(dlnm)
 library(mvmeta)
