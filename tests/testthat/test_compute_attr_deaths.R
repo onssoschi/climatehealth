@@ -17,8 +17,8 @@ test_that('Test compute_attributable_deaths() returns correct data types and
       region_col = config$region_col,
       temp_col = config$temp_col,
       population_col = config$population_col,
-      time_range_start = config$time_range_start,
-      time_range_end = config$time_range_end
+      output_year = config$output_year,
+      RR_distribution_length = config$RR_distribution_length
     )
 
   if (config$meta_analysis == TRUE) {
@@ -28,6 +28,7 @@ test_that('Test compute_attributable_deaths() returns correct data types and
                 independent_col1 = config$independent_col1,
                 independent_col2 = config$independent_col2,
                 independent_col3 = config$independent_col3,
+                independent_col4 = config$independent_col4,
                 varfun = config$varfun,
                 varper = varper_,
                 vardegree = config$vardegree,
@@ -43,7 +44,7 @@ test_that('Test compute_attributable_deaths() returns correct data types and
         vcov = vcov_
       )
 
-    c(avgtmean_wald, rangetmean_wald) %<-%
+    c(avgtmean_wald_, rangetmean_wald_) %<-%
       wald_results(
         mv = mv_
       )
@@ -51,16 +52,19 @@ test_that('Test compute_attributable_deaths() returns correct data types and
   } else {
 
     blup_ <- NULL
+    avgtmean_wald_ <- NULL
+    rangetmean_wald_ <- NULL
 
   }
 
-  c(mintempregions_) %<-%
+  c(mintempregions_, an_thresholds_) %<-%
     calculate_min_mortality_temp(
       df_list = df_list_,
       blup = blup_,
       independent_col1 = config$independent_col1,
       independent_col2 = config$independent_col2,
       independent_col3 = config$independent_col3,
+      independent_col4 = config$independent_col4,
       varfun = config$varfun,
       varper = varper_,
       vardegree = config$vardegree,
@@ -69,15 +73,17 @@ test_that('Test compute_attributable_deaths() returns correct data types and
       dfseas = config$dfseas
     )
 
-  c(totdeath_, arraysim_, matsim_, attrdl_yr_all,
-    attr_fractions_yr) %<-%
+  c(arraysim_, matsim_) %<-%
     compute_attributable_deaths(
       df_list = df_list_,
+      output_year = config$output_year,
       blup = blup_,
       mintempregions = mintempregions_,
+      an_thresholds = an_thresholds_,
       independent_col1 = config$independent_col1,
       independent_col2 = config$independent_col2,
       independent_col3 = config$independent_col3,
+      independent_col4 = config$independent_col4,
       varfun = config$varfun,
       varper = varper_,
       vardegree = config$vardegree,
@@ -88,10 +94,6 @@ test_that('Test compute_attributable_deaths() returns correct data types and
 
   # totdeath
   expected_output <- rep(5L, length(names(df_list_)))
-
-  expect_equal(typeof(totdeath_), typeof(expected_output))
-  expect_equal(length(totdeath_), length(expected_output))
-  expect_equal(is.vector(totdeath_), TRUE)
 
   # arraysim
   expect_equal(typeof(arraysim_), "double")
@@ -107,7 +109,4 @@ test_that('Test compute_attributable_deaths() returns correct data types and
   expect_equal(is.numeric(matsim_[1]), TRUE)
   expect_equal(nrow(matsim_), length(names(df_list_)))
 
-  # attrdl_yr_all
-  expect_equal(is.data.frame(attrdl_yr_all), TRUE)
-  expect_equal(length(unique(attrdl_yr_all$region)), length(names(df_list_)))
 })

@@ -17,8 +17,8 @@ test_that('Test run_model() returns correct data types', {
       region_col = config$region_col,
       temp_col = config$temp_col,
       population_col = config$population_col,
-      time_range_start = config$time_range_start,
-      time_range_end = config$time_range_end
+      output_year = config$output_year,
+      RR_distribution_length = config$RR_distribution_length
     )
 
   if (config$meta_analysis == TRUE) {
@@ -28,6 +28,7 @@ test_that('Test run_model() returns correct data types', {
                 independent_col1 = config$independent_col1,
                 independent_col2 = config$independent_col2,
                 independent_col3 = config$independent_col3,
+                independent_col4 = config$independent_col4,
                 varfun = config$varfun,
                 varper = varper_,
                 vardegree = config$vardegree,
@@ -35,21 +36,18 @@ test_that('Test run_model() returns correct data types', {
                 lagnk = config$lagnk,
                 dfseas = config$dfseas
       )
-
-      # coef
-      expect_equal(typeof(coef_), "double")
-      expect_equal(class(coef_)[1], "matrix")
-      expect_equal(is.numeric(coef_), TRUE)
-      expect_equal(is.numeric(coef_[1]), TRUE)
-      expect_equal(nrow(coef_), length(names(df_list_)))
-
-      # vcov
-      expect_equal(typeof(vcov_), "list")
-      expect_equal(typeof(vcov_[[1]]), "double")
-      expect_equal(is.numeric(vcov_[[1]]), TRUE)
-      expect_equal(length(vcov_), length(names(df_list_)))
-
   }
+    # coef
+    expect_equal(typeof(coef_), "double")
+    expect_equal(class(coef_)[1], "matrix")
+    expect_equal(is.numeric(coef_), TRUE)
+    expect_equal(is.numeric(coef_[1]), TRUE)
+    expect_equal(nrow(coef_), length(names(df_list_)))
 
+    # vcov
+    expect_equal(typeof(vcov_), "list")
+    expect_equal(typeof(vcov_[[1]]), "double")
+    expect_equal(is.numeric(vcov_[[1]]), TRUE)
+    expect_equal(length(vcov_), length(names(df_list_)))
 
 })

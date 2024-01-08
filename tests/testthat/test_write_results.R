@@ -10,6 +10,10 @@ test_that('Test output CSVs are written and of correct length', {
 
   by_region <- TRUE
 
+  config <- config::get()
+
+  varper_ <- c(10, 75, 90)
+
   c(df_list_) %<-%
     load_data(
       input_csv_path = config$input_csv_path,
@@ -18,8 +22,8 @@ test_that('Test output CSVs are written and of correct length', {
       region_col = config$region_col,
       temp_col = config$temp_col,
       population_col = config$population_col,
-      time_range_start = config$time_range_start,
-      time_range_end = config$time_range_end
+      output_year = config$output_year,
+      RR_distribution_length = config$RR_distribution_length
     )
 
   if (config$meta_analysis == TRUE) {
@@ -29,6 +33,7 @@ test_that('Test output CSVs are written and of correct length', {
                 independent_col1 = config$independent_col1,
                 independent_col2 = config$independent_col2,
                 independent_col3 = config$independent_col3,
+                independent_col4 = config$independent_col4,
                 varfun = config$varfun,
                 varper = varper_,
                 vardegree = config$vardegree,
@@ -44,7 +49,7 @@ test_that('Test output CSVs are written and of correct length', {
         vcov = vcov_
       )
 
-    c(avgtmean_wald, rangetmean_wald) %<-%
+    c(avgtmean_wald_, rangetmean_wald_) %<-%
       wald_results(
         mv = mv_
       )
@@ -52,16 +57,19 @@ test_that('Test output CSVs are written and of correct length', {
   } else {
 
     blup_ <- NULL
+    avgtmean_wald_ <- NULL
+    rangetmean_wald_ <- NULL
 
   }
 
-  c(mintempregions_) %<-%
+  c(mintempregions_, an_thresholds_) %<-%
     calculate_min_mortality_temp(
       df_list = df_list_,
       blup = blup_,
       independent_col1 = config$independent_col1,
       independent_col2 = config$independent_col2,
       independent_col3 = config$independent_col3,
+      independent_col4 = config$independent_col4,
       varfun = config$varfun,
       varper = varper_,
       vardegree = config$vardegree,
@@ -70,15 +78,17 @@ test_that('Test output CSVs are written and of correct length', {
       dfseas = config$dfseas
     )
 
-  c(totdeath_, arraysim_, matsim_, attrdl_yr_all,
-    attr_fractions_yr) %<-%
+  c(arraysim_, matsim_) %<-%
     compute_attributable_deaths(
       df_list = df_list_,
+      output_year = config$output_year,
       blup = blup_,
       mintempregions = mintempregions_,
+      an_thresholds = an_thresholds_,
       independent_col1 = config$independent_col1,
       independent_col2 = config$independent_col2,
       independent_col3 = config$independent_col3,
+      independent_col4 = config$independent_col4,
       varfun = config$varfun,
       varper = varper_,
       vardegree = config$vardegree,
@@ -86,6 +96,24 @@ test_that('Test output CSVs are written and of correct length', {
       lagnk = config$lagnk,
       dfseas = config$dfseas
     )
+
+  c(anregions_bind_,antot_bind_, arregions_bind_, artot_bind_) %<-%
+    compute_attributable_rates(df_list = df_list_,
+                               output_year = config$output_year,
+                               matsim = matsim_,
+                               arraysim = arraysim_)
+
+  c(wald_publication_, anregions_publication_, antot_bind_, arregions_publication_, artot_bind_) %<-%
+    write_attributable_deaths(
+      avgtmean_wald = avgtmean_wald_,
+      rangetmean_wald = rangetmean_wald_,
+      anregions_bind = anregions_bind_,
+      antot_bind = antot_bind_,
+      arregions_bind = arregions_bind_,
+      artot_bind = artot_bind_,
+      output_folder_path = config$output_folder_path
+    )
+
   if (by_region == FALSE) {
 
     c(output_df, tmean_df) %<-%
@@ -110,11 +138,13 @@ test_that('Test output CSVs are written and of correct length', {
         df_list = df_list_,
         blup = blup_,
         mintempregions = mintempregions_,
+        an_thresholds = an_thresholds_,
         save_fig = config$save_fig,
         save_csv = config$save_csv,
         independent_col1 = config$independent_col1,
         independent_col2 = config$independent_col2,
         independent_col3 = config$independent_col3,
+        independent_col4 = config$independent_col4,
         varfun = config$varfun,
         varper = varper_,
         vardegree = config$vardegree,
@@ -128,9 +158,10 @@ test_that('Test output CSVs are written and of correct length', {
 
   actual_output <- read.csv('testdata/attributable_deaths_regions.csv')
 
-  expected_output <- data.frame(matrix(NA, nrow = 1, ncol = length(names(df_list_)) + 1))
+  expected_output <- data.frame(matrix(NA, nrow = length(names(df_list_))), ncol = 1)
 
+  print(expected_output)
   expect_equal(typeof(actual_output), typeof(expected_output))
-  expect_equal(length(actual_output), length(expected_output))
+  expect_equal(nrow(actual_output), nrow(expected_output))
 
 })
