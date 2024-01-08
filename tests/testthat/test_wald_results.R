@@ -17,8 +17,8 @@ test_that('Test wald_results() returns correct data type', {
       region_col = config$region_col,
       temp_col = config$temp_col,
       population_col = config$population_col,
-      time_range_start = config$time_range_start,
-      time_range_end = config$time_range_end
+      output_year = config$output_year,
+      RR_distribution_length = config$RR_distribution_length
     )
 
   if (config$meta_analysis == TRUE) {
@@ -28,6 +28,7 @@ test_that('Test wald_results() returns correct data type', {
                 independent_col1 = config$independent_col1,
                 independent_col2 = config$independent_col2,
                 independent_col3 = config$independent_col3,
+                independent_col4 = config$independent_col4,
                 varfun = config$varfun,
                 varper = varper_,
                 vardegree = config$vardegree,
@@ -43,10 +44,11 @@ test_that('Test wald_results() returns correct data type', {
         vcov = vcov_
       )
 
-    c(avgtmean_wald, rangetmean_wald) %<-%
+    c(avgtmean_wald_, rangetmean_wald_) %<-%
       wald_results(
         mv = mv_
       )
+
   }
 
   expect_equal(typeof(wald_results(mv_)), "list")
@@ -72,8 +74,8 @@ test_that('Test wald_results() returns list of correct length', {
       region_col = config$region_col,
       temp_col = config$temp_col,
       population_col = config$population_col,
-      time_range_start = config$time_range_start,
-      time_range_end = config$time_range_end
+      output_year = config$output_year,
+      RR_distribution_length = config$RR_distribution_length
     )
 
   if (config$meta_analysis == TRUE) {
@@ -83,6 +85,7 @@ test_that('Test wald_results() returns list of correct length', {
                 independent_col1 = config$independent_col1,
                 independent_col2 = config$independent_col2,
                 independent_col3 = config$independent_col3,
+                independent_col4 = config$independent_col4,
                 varfun = config$varfun,
                 varper = varper_,
                 vardegree = config$vardegree,
@@ -98,12 +101,12 @@ test_that('Test wald_results() returns list of correct length', {
         vcov = vcov_
       )
 
-    c(avgtmean_wald, rangetmean_wald) %<-%
+    c(avgtmean_wald_, rangetmean_wald_) %<-%
       wald_results(
         mv = mv_
       )
 
-  }
+}
 
   expect_lte(wald_results(mv_)[[1]], 1)
   expect_gte(wald_results(mv_)[[1]], 0)
