@@ -2,7 +2,7 @@ library(testthat)
 library(climatehealth)
 library(config)
 
-test_that('Test new output matches original output', {
+test_that('Test expected outputs have been created and contain data', {
 
   config <- config::get()
 

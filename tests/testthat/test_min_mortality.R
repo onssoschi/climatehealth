@@ -103,5 +103,12 @@ test_that('Test min_mortality() returns correct data types', {
   expect_equal(is.vector(mintempregions_), TRUE)
   expect_equal(is.numeric(mintempregions_), TRUE)
 
+  # an_thresholds
+  expect_equal(typeof(an_thresholds_), "list")
+  expect_equal(typeof(an_thresholds_[[1]]), "double")
+  expect_equal(class(an_thresholds_), "data.frame")
+  expect_equal(is.data.frame(an_thresholds_), TRUE)
+  expect_equal(is.numeric(an_thresholds_[[1]]), TRUE)
+
 })
 
