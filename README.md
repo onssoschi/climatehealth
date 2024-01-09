@@ -14,14 +14,16 @@ https://github.com/gasparrini/2015_gasparrini_Lancet_Rcodedata
 
 ### Folder description
 
-- `temp_dlnm_main.R`: Runs distributed lag non-linear model (dlnm) to estimate the excess risk attributable to non-optimal outdoor temperature (modified from Gasparrini et al. 2015)
+- `temp_dlnm_main.R`: Runs distributed lag non-linear model (dlnm) to estimate the mortality risk attributable to non-optimal outdoor temperature (modified from Gasparrini et al. 2015)
 - `R`:               Contains packaged R code for each the indicators
 - `data`:            Folder for storing data
 - `archive`:         Archived scripts
+- `api`:             Contains scripts to run API
 - `man`:             Automatically generated package documentation from roxygen2 comments (do not edit manually)
 - `output`:          Stores outputs from scripts
 - `tests`:           Unit tests and test data
 - `data_template`:   Template of input data structure and column names
+- `git_filter`:      Contains git-filter-repo file for filtering git history
 
 ---
 
@@ -39,20 +41,21 @@ Steps to calculate indicator:
 
 To run unit tests:
 
-  * Run `devtools::test()` in the console. Tests in `tests/testthat/`. Test data in `tests/testthat/testdata/regEngWales.csv` (from https://github.com/gasparrini/2015_gasparrini_Lancet_Rcodedata).
+  * Run `devtools::test()` in the console. Tests in `tests/testthat/`. 
 
 ## Data
 
 #### Heat-related mortality data
 
-We are currently testing the indicator using real heat-related mortality data for England and Wales (``tests/testthat/testdata/regEngWales.csv`). The raw data is being used by our team to develop an indicator of heat-related mortality and is taken from https://github.com/gasparrini/2015_gasparrini_Lancet_Rcodedata.
+We are currently testing the indicator using real heat-related mortality data for England and Wales (``tests/testthat/testdata/regEngWalesPop.csv`). This has been modified from https://github.com/gasparrini/2015_gasparrini_Lancet_Rcodedata, with an additional column of population estimates.
 
 This dataset contains daily number of deaths and minimum, maximum, and mean temperature, disaggregated by region (nine English regions).
 
 
 ## Project status
 
-* Refining usability and developing new indicator functions
+* Integrating functions into online platform.
+* Development of functions for other indicators
 
 ---
 
