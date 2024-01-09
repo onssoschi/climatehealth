@@ -10,8 +10,9 @@ load_data(
   time_col,
   region_col,
   temp_col,
-  time_range_start,
-  time_range_end
+  population_col,
+  output_year,
+  RR_distribution_length
 )
 }
 \arguments{
@@ -28,9 +29,11 @@ are spatially aggregated e.g. regnames}
 
 \item{temp_col}{The temperature column e.g. tmean}
 
-\item{time_range_start_}{Start of time range over which to run the analysis.  'None' if over full range.}
+\item{population_col}{The population column e.g. pop}
 
-\item{time_range_end_}{End of time range over which to run the analysis.  'None' if over full range.}
+\item{RR_distribution_length}{Number of years for the calculation of RR distribution. Set both as 'NONE' to use full range in data.}
+
+\item{output_year_}{Year(s) to calculate output for.}
 }
 \value{
 \code{df_list} An alphabetically-ordered list of dataframes for each

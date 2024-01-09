@@ -20,8 +20,9 @@ config <- config::get()
 #' @param region_col The region column over which the data
 #' are spatially aggregated e.g. regnames
 #' @param temp_col The temperature column e.g. tmean
-#' @param time_range_start_ Start of time range over which to run the analysis.  'None' if over full range.
-#' @param time_range_end_ End of time range over which to run the analysis.  'None' if over full range.
+#' @param population_col The population column e.g. pop
+#' @param output_year_ Year(s) to calculate output for.
+#' @param RR_distribution_length Number of years for the calculation of RR distribution. Set both as 'NONE' to use full range in data.
 #' @return `df_list` An alphabetically-ordered list of dataframes for each
 #' region comprising dates, deaths, and temperatures.
 #' @export
@@ -30,46 +31,58 @@ load_data <- function(input_csv_path,
                       time_col,
                       region_col,
                       temp_col,
-                      time_range_start,
-                      time_range_end) {
+                      population_col,
+                      output_year,
+                      RR_distribution_length) {
 
   if (is.list(input_csv_path) == TRUE) {
 
     print('data upload by API')
 
-    df <- data.frame(input_csv_path)
-
-    df <- df %>%
-      dplyr::rename(dependent = dependent_col,
-                    date = time_col,
-                    regnames = region_col,
-                    tmean = temp_col) %>%
-      dplyr::mutate(date = as.Date(date))
   }
 
-  if (is.character(input_csv_path) == TRUE) {
+  if (RR_distribution_length == 'NONE') {
 
-    print('data upload by local path')
+  } else if(RR_distribution_length < 5) {
+
+    stop("Timeseries to calculate the RR is less than 5 years")
+
+  } else if (RR_distribution_length > 15) {
+
+    stop("Timeseries to calculate the RR is more than 15 years")
+
+  }
+
+
+  if (!population_col == 'NONE') {
 
     df <- read.csv(input_csv_path, row.names = 1) %>%
       dplyr::rename(dependent = dependent_col,
                     date = time_col,
                     regnames = region_col,
-                    tmean = temp_col) %>%
+                    temp = temp_col,
+                    pop_col = population_col) %>%
       dplyr::mutate(date = as.Date(date))
+    df <- df %>% dplyr::mutate(dependent = ifelse(is.na(dependent), 0, dependent))
+
+  } else {
+
+    df <- read.csv(input_csv_path, row.names = 1) %>%
+      dplyr::mutate(pop_col = 'NONE') %>%
+      dplyr::rename(dependent = dependent_col,
+                    date = time_col,
+                    regnames = region_col,
+                    temp = temp_col) %>%
+      dplyr::mutate(date = as.Date(date))%>%
+      dplyr::mutate(dependent = ifelse(is.na(dependent), 0, dependent))
+
   }
 
-  # if (substr(input_csv_path, nchar(input_csv_path) - 3, nchar(input_csv_path)) !=
-  #       '.csv') {
-  #
-  #    stop("Input path must be a CSV")
-  # }
+  if ('NONE' != RR_distribution_length) {
 
- if (!'NONE' %in% c(time_range_start, time_range_end)) {
-
-   df <- df %>%
-     dplyr::filter(date >= time_range_start
-                   & date <= time_range_end)
+    df <- df %>%
+      dplyr::filter(year >= (max(as.integer(output_year)) - RR_distribution_length + 1)
+                    & year <= max(as.integer(output_year)))
 
   }
 
@@ -78,8 +91,7 @@ load_data <- function(input_csv_path,
   df_list <- lapply(regions,
                     function(x)
                       df %>%
-                      dplyr::filter(regnames == x)
-                    )
+                      dplyr::filter(regnames == x))
 
   names(df_list) <- regions
 
@@ -87,9 +99,11 @@ load_data <- function(input_csv_path,
 
 }
 
+
+
 #' Define regression model
 #'
-#' @param dataset dataframe with tmean column to be modelled
+#' @param dataset dataframe with temp column to be modelled
 #' @param indepedent_col1_ column name of first extra independent
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
@@ -97,6 +111,9 @@ load_data <- function(input_csv_path,
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
 #' @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col4_ column name of fourth independent
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
 #' @param varfun Exposure function
@@ -121,6 +138,7 @@ define_model <- function(dataset,
                          independent_col1,
                          independent_col2,
                          independent_col3,
+                         independent_col4,
                          varfun,
                          varper,
                          vardegree,
@@ -128,13 +146,23 @@ define_model <- function(dataset,
                          lagnk,
                          dfseas) {
 
-  if ('NONE' %in% c(independent_col1,
-                    independent_col2,
-                    independent_col3)) {
+  independent_cols <- c('cb',
+                        'ns(date, df = dfseas * length(unique(year)))')
 
-    independent_cols <- c('cb',
-                          'dow',
-                          'ns(date, df = dfseas * length(unique(year)))')
+  if (independent_col1 != "NONE") {
+    independent_cols <- c(independent_col1, independent_cols)
+
+    } else if (independent_col2 != "NONE") {
+    independent_cols <- c(independent_col2, independent_cols)
+
+    } else if (independent_col3 != "NONE") {
+    independent_cols <- c(independent_col3, independent_cols)
+
+    } else if (independent_col4 != "NONE") {
+      independent_cols <- c(independent_col4, independent_cols)
+
+    } else {
+    independent_cols <- independent_cols
 
     }
 
@@ -146,7 +174,7 @@ define_model <- function(dataset,
 
   # Define crossbasis
   argvar_ <- list(fun = varfun,
-                  knots = quantile(dataset$tmean,
+                  knots = quantile(dataset$temp,
                                    varper / 100,
                                    na.rm = TRUE),
                   degree = vardegree)
@@ -155,7 +183,7 @@ define_model <- function(dataset,
   lagnk <- as.numeric(lagnk)
   dfseas <- as.numeric(dfseas)
 
-  cb <- crossbasis(dataset$tmean,
+  cb <- crossbasis(dataset$temp,
                    lag = lag,
                    argvar = argvar_,
                    arglag = list(knots = logknots(lag,
@@ -183,6 +211,9 @@ define_model <- function(dataset,
 #' @param indepedent_col3_ column name of third independent
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
+#' @param indepedent_col4_ column name of fourth independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
@@ -204,6 +235,7 @@ run_model <- function(df_list,
                       independent_col1,
                       independent_col2,
                       independent_col3,
+                      independent_col4,
                       varfun,
                       varper,
                       vardegree,
@@ -238,6 +270,7 @@ run_model <- function(df_list,
                                    independent_col1 = independent_col1,
                                    independent_col2 = independent_col2,
                                    independent_col3 = independent_col3,
+                                   independent_col4 = independent_col4,
                                    varfun = varfun,
                                    varper = varper,
                                    vardegree = vardegree,
@@ -245,7 +278,7 @@ run_model <- function(df_list,
                                    lagnk = lagnk,
                                    dfseas = dfseas)
 
-    cen_ <- mean(data$tmean, na.rm = TRUE)
+    cen_ <- mean(data$temp, na.rm = TRUE)
 
     # Reduction to overall cumulative
     pred <- crossreduce(cb, model, cen = cen_)
@@ -296,11 +329,11 @@ run_meta_model <- function(df_list, coef, vcov) {
   # Create average temperature and range as meta-predictors
   avgtmean <- sapply(df_list,
                      function(x)
-                       mean(x$tmean, na.rm = TRUE))
+                       mean(x$temp, na.rm = TRUE))
 
   rangetmean <- sapply(df_list,
                        function(x)
-                         diff(range(x$tmean, na.rm = TRUE)))
+                         diff(range(x$temp, na.rm = TRUE)))
 
   # Meta-analysis
   # NB: country effects is not included in this example
@@ -308,6 +341,7 @@ run_meta_model <- function(df_list, coef, vcov) {
                vcov,
                data = as.data.frame(names(df_list)), # was data = regions_df
                control = list(showiter = TRUE))
+  print(summary(mv)["AIC"])
 
   # Obtain blups
   blup <- blup(mv, vcov = TRUE)
@@ -373,6 +407,9 @@ wald_results <- function(mv) {
 #' @param indepedent_col3_ column name of third independent
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
+#' @param indepedent_col4_ column name of fourth independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
@@ -389,6 +426,8 @@ wald_results <- function(mv) {
 #' \itemize{
 #'   \item `mintempregions_` A named numeric vector.
 #'   Minimum (optimum) mortality temperature per region.
+#'    \item `an_thresholds` A dataframe with the optimal temperature range and
+#' temperature thresholds for calculation of attributable deaths.
 #' }
 #'
 #' @export
@@ -397,6 +436,7 @@ calculate_min_mortality_temp <-  function(df_list,
                                           independent_col1,
                                           independent_col2,
                                           independent_col3,
+                                          independent_col4,
                                           varfun,
                                           varper,
                                           vardegree,
@@ -418,29 +458,61 @@ calculate_min_mortality_temp <-  function(df_list,
                                             length(df_list))
   names(mintempregions_) <- names(minpercregions_) <- names(df_list)
 
+  optimal_temp_range <- matrix(NA,
+                               length(df_list),
+                               2,
+                               dimnames = list(names(df_list),
+                                               c("lower","upper")))
+
+  ranges <- t(sapply(df_list, function(x)
+    range(x$temp,na.rm=T)))
+
   if (!is.null(blup)) {
 
     # Define minimum mortality values: exclude low and very hot temperatures
     for(i in seq(length(df_list))) {
 
       data <- df_list[[i]]
-      predvar <- quantile(data$tmean, 1:99 / 100, na.rm = TRUE)
+      predvar <- quantile(data$temp, 1:99 / 100, na.rm = TRUE)
 
       # Redefine the function using all arguments (boundary knots included)
       argvar_ <- list(x = predvar, fun = varfun,
-                   knots = quantile(data$tmean,
+                   knots = quantile(data$temp,
                                     varper / 100,
                                     na.rm = TRUE),
                    degree = vardegree,
-                   Bound = range(data$tmean, na.rm = TRUE))
+                   Bound = range(data$temp, na.rm = TRUE))
 
       bvar_ <- do.call(onebasis, argvar_)
 
-      minpercregions_[i] <- (1:99)[which.min((bvar_ %*%
-                                                blup[[i]]$blup))]
-      mintempregions_[i] <- quantile(data$tmean,
+      minpercregions_[i] <- (1:99)[which.min(bvar_ %*%
+                                                blup[[i]]$blup)]
+      mintempregions_[i] <- quantile(data$temp,
                                      minpercregions_[i] / 100,
                                      na.rm = TRUE)
+
+      # OVERALL CUMULATIVE SUMMARY ASSOCIATION FOR MAIN MODEL
+      cp <- crosspred(bvar_,
+                      coef = blup[[i]]$blup,
+                      vcov = blup[[i]]$vcov,
+                      cen = mintempregions_[i],
+                      model.link = "log",
+                      by = 0.1,
+                      from = ranges[i,1],
+                      to = ranges[i,2])
+
+      optimal_temp_range[i,"lower"] <- as.numeric(names(
+        which.min(which(cp$allRRfit >= 1 & cp$allRRfit <= 1.1))))
+      optimal_temp_range[i, "upper"] <- as.numeric(names(
+        which.max(which(cp$allRRfit >= 1 & cp$allRRfit <= 1.1))))
+
+      below_one <- which(cp$allRRfit < 1)
+      above_OTR <- which(as.numeric(names(cp$allRRfit)) > optimal_temp_range[i, "upper"])
+      below_OTR <- which(as.numeric(names(cp$allRRfit))< optimal_temp_range[i, "lower"])
+
+      if (length(which((below_one %in% above_OTR) | (below_one %in% below_OTR))) > 0) {
+        stop("Predicted RR goes below 1 in the ends")
+      }
 
     }
 
@@ -457,6 +529,7 @@ calculate_min_mortality_temp <-  function(df_list,
                                      independent_col1 = independent_col1,
                                      independent_col2 = independent_col2,
                                      independent_col3 = independent_col3,
+                                     independent_col4 = independent_col4,
                                      varfun = varfun,
                                      varper = varper,
                                      vardegree = vardegree,
@@ -464,20 +537,58 @@ calculate_min_mortality_temp <-  function(df_list,
                                      lagnk = lagnk,
                                      dfseas = dfseas)
 
-      cen_ <- mean(data$tmean, na.rm = TRUE)
+      cen_ <- mean(data$temp, na.rm = TRUE)
 
       # Reduction to overall cumulative
       pred <- crossreduce(cb, model, cen = cen_)
       mintempregions_[i] <- as.numeric(names(which.min(pred$RRfit)))
 
+      cen_ <- mintempregions_[i]
+      pred <- crossreduce(cb, model, cen = cen_)
+
+      optimal_temp_range[i,"lower"] <- as.numeric(names(
+        which.min(which(pred$RRfit >= 1 & pred$RRfit <= 1.1))))
+      optimal_temp_range[i, "upper"] <- as.numeric(names(
+        which.max(which(pred$RRfit >= 1 & pred$RRfit <= 1.1))))
+
+      below_one <- which(pred$RRfit < 1)
+      above_OTR <- which(as.numeric(names(pred$RRfit)) > optimal_temp_range[i, "upper"])
+      below_OTR <- which(as.numeric(names(pred$RRfit))< optimal_temp_range[i, "lower"])
+
+      if (length(which((below_one %in% above_OTR) | (below_one %in% below_OTR))) > 0) {
+        stop("Predicted RR goes below 1 in the ends")
+      }
+
     }
 
   }
 
+  per <- t(sapply(df_list, function(x)
+    quantile(x$temp, c(2.5, 97.5)/100, na.rm = T)))
+
+  # data frame with final thresholds to use for hot and cold days to attribute deaths to
+  an_thresholds <- as.data.frame(cbind(per,optimal_temp_range)) %>%
+    dplyr::mutate(
+      min_high_cold = -100,
+      max_high_heat = 100,
+      moderate_cold_OTR = lower,
+      moderate_heat_OTR = upper,
+      high_moderate_cold = ifelse(moderate_cold_OTR < `2.5%`,
+                                  moderate_cold_OTR,
+                                  `2.5%`),
+      high_moderate_heat = ifelse(moderate_heat_OTR > `97.5%`,
+                                  moderate_heat_OTR,
+                                  `97.5%`)) %>%
+    dplyr::select(min_high_cold, high_moderate_cold, moderate_cold_OTR,
+                  moderate_heat_OTR, high_moderate_heat, max_high_heat)
+
   # Country-specific points of minimum mortality
   (minperccountry <- median(minpercregions_))
 
-  return(list(mintempregions = mintempregions_))
+  # print(minpercregions_)
+  # print(mintempregions_)
+
+  return(list(mintempregions = mintempregions_, an_thresholds))
 
 }
 
@@ -491,6 +602,8 @@ calculate_min_mortality_temp <-  function(df_list,
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param mintempregions A named numeric vector.
 #' Minimum (optimum) mortality temperature per region.
+#' @param an_thresholds A dataframe with the optimal temperature range and
+#' temperature thresholds for calculation of attributable deaths.
 #' @param indepedent_col1_ column name of first extra independent
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
@@ -498,6 +611,9 @@ calculate_min_mortality_temp <-  function(df_list,
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
 #' @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col4_ column name of fourth independent
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
 #' @param varfun Exposure function
@@ -526,11 +642,14 @@ calculate_min_mortality_temp <-  function(df_list,
 #' }
 #' @export
 compute_attributable_deaths <- function(df_list,
+                                        output_year,
                                         blup = NULL,
                                         mintempregions,
+                                        an_thresholds,
                                         independent_col1,
                                         independent_col2,
                                         independent_col3,
+                                        independent_col4,
                                         varfun,
                                         varper,
                                         vardegree,
@@ -538,40 +657,26 @@ compute_attributable_deaths <- function(df_list,
                                         lagnk,
                                         dfseas) {
 
-
-  # if (file.exists('R/attrdl.R')) {
-  #
-  #   source('R/attrdl.R')
-  #
-  # } else {
-  #
-  #   source('attrdl.R')
-  #
-  # }
-
-  per <- t(sapply(df_list, function(x)
-    quantile(x$tmean, c(2.5, 10, 25, 50, 75, 90, 97.5) / 100, na.rm = TRUE)))
-
   # Create the vectors to store the total mortality (accounting for missing)
   totdeath <- rep(NA, length(names(df_list)))
   names(totdeath) <- names(df_list)
 
   # Create the matrix to store the attributable deaths
-  matsim <- matrix(NA, length(names(df_list)), 5,
+  matsim <- matrix(NA, length(names(df_list)), 7,
                    dimnames = list(names(df_list),
-                                   c("glob", "cold", "heat", "extreme_cold",
-                                     "extreme_heat")))
+                                   c("glob_cold", "glob_heat", "moderate_cold",
+                                     "moderate_heat", "high_cold", "high_heat",
+                                     "heatwave")))
 
   # Number of simulation runs for computing empirical CI
   nsim_ <- 1000
 
   # Create the array to store the CI of attributable deaths
-  arraysim <- array(NA, dim = c(length(names(df_list)), 5, nsim_),
+  arraysim <- array(NA, dim = c(length(names(df_list)), 7, nsim_),
                     dimnames = list(names(df_list),
-                                    c("glob_ci", "cold_ci", "heat_ci",
-                                      "extreme_cold_ci", "extreme_heat_ci")))
-
-  attrdl_yr_all <- list()
+                                    c("glob_cold_ci", "glob_heat_ci",
+                                      "moderate_cold_ci", "moderate_heat_ci",
+                                      "high_cold_ci", "high_heat_ci", "heatwave_ci")))
 
   # Run the loop
   for(i in seq(df_list)){
@@ -587,10 +692,12 @@ compute_attributable_deaths <- function(df_list,
 
       coefs <- blup[[i]]$blup
       vcovs <- blup[[i]]$vcov
+
       c(model, cb) %<-% define_model(dataset = data,
                                      independent_col1 = independent_col1,
                                      independent_col2 = independent_col2,
                                      independent_col3 = independent_col3,
+                                     independent_col4 = independent_col4,
                                      varfun = varfun,
                                      varper = varper,
                                      vardegree = vardegree,
@@ -608,6 +715,7 @@ compute_attributable_deaths <- function(df_list,
                                      independent_col1 = independent_col1,
                                      independent_col2 = independent_col2,
                                      independent_col3 = independent_col3,
+                                     independent_col4 = independent_col4,
                                      varfun = varfun,
                                      varper = varper,
                                      vardegree = vardegree,
@@ -618,266 +726,311 @@ compute_attributable_deaths <- function(df_list,
     }
 
     #############################################
-    # Return heat attributable deaths per year
+    # Return heat attributable deaths for the output year
 
-    # PROBLEM: mintempregions currently calculated
-    # across all years and not for an individual year
+    data_output_year <- data %>% dplyr::filter(year %in% output_year) %>%
+      dplyr::mutate(high_heat_flag = ifelse(temp > an_thresholds[i,"high_moderate_heat"],1, 0))
 
-    year_range <- sort(unique(lubridate::year(data$date)))
+    # Prepare temperature column for attribution to heatwaves
+    # Force the temperature to be the centering value for non-heatwave days
+    data_output_year$heatwave_flag <- NA
+    for (j in seq(nrow(data_output_year))){
 
-    attrdl_years <- function(ind_year, temp_range) {
+      if(j==1){
 
-      subset <- data %>%
-        dplyr::filter(year == ind_year)
+        data_output_year$heatwave_flag[j] <-
+          ifelse(data_output_year$high_heat_flag[j] == 1 &
+                   data_output_year$high_heat_flag[j+1] == 1, 1, 0)
 
-      attrdl_year <- attrdl(x = subset$tmean,
-                            basis = cb,
-                            cases = subset$dependent,
-                            coef = coefs,
-                            vcov = vcovs,
-                            type = "an",
-                            dir = "forw",
-                            cen = mintempregions[i],
-                            model = model,
-                            range = temp_range)
+      } else if (j==nrow(data_output_year)){
 
-      return(list(ind_year = ind_year, attrdl_year = attrdl_year))
+        data_output_year$heatwave_flag[j] <-
+          ifelse(data_output_year$high_heat_flag[j] == 1 &
+                   data_output_year$high_heat_flag[j-1] == 1, 1, 0)
 
+      } else {
+
+        data_output_year$heatwave_flag[j] <-
+          ifelse((data_output_year$high_heat_flag[j] == 1 &
+                    data_output_year$high_heat_flag[j-1] == 1) |
+                   (data_output_year$high_heat_flag[j] == 1 &
+                      data_output_year$high_heat_flag[j+1] == 1), 1, 0)
+      }
     }
 
-    attrdl_glob <- lapply(year_range,
-                          attrdl_years,
-                          temp_range = NULL) %>%
-      purrr:::map(as.data.frame) %>%
-      purrr::list_rbind()
+    data_output_year <- data_output_year %>%
+      dplyr::mutate(heatwave_temp = ifelse(heatwave_flag == 1, temp, mintempregions[i])) %>%
+      dplyr::select(-high_heat_flag,-heatwave_flag)
 
-    attrdl_cold <- lapply(year_range,
-                          attrdl_years,
-                          temp_range = c(-100, mintempregions[i])) %>%
-      purrr:::map(as.data.frame) %>%
-      purrr::list_rbind()
-
-    attrdl_heat <- lapply(year_range,
-                          attrdl_years,
-                          temp_range = c(mintempregions[i], 100)) %>%
-      purrr:::map(as.data.frame) %>%
-      purrr::list_rbind()
-
-    attrdl_ext_cold <- lapply(year_range,
-                              attrdl_years,
-                              temp_range = c(-100, per[i, 1])) %>%
-      purrr:::map(as.data.frame) %>%
-      purrr::list_rbind()
-
-    attrdl_ext_heat <- lapply(year_range,
-                              attrdl_years,
-                              temp_range = c(per[i, 7], 100)) %>%
-      purrr:::map(as.data.frame) %>%
-      purrr::list_rbind()
-
-
-    # for (attrdl_year in attrdl_heat) {
-    #
-    #   cat("region:", regions_df$regions[i], "/",
-    #       "year:", attrdl_year$ind_year, "/",
-    #       "heat attr deaths:", round(attrdl_year$attrdl_year, 0), "\n")
-    # }
-
-    attrdl_yr_df <- data.frame(region = rep(names(df_list)[i],
-                                            length(year_range)),
-                               year = rep(year_range),
-                               glob = attrdl_glob$attrdl_year,
-                               heat = attrdl_heat$attrdl_year,
-                               cold = attrdl_cold$attrdl_year,
-                               extreme_cold = attrdl_ext_cold$attrdl_year,
-                               extreme_heat = attrdl_ext_heat$attrdl_year
-                               )
-
-    attrdl_yr_all[[i]] <- attrdl_yr_df
-
-    #############################################
-
-    # Compute the attributable deaths
-    # NB: The reduced coefficients are used here
-    matsim[i, "glob"] <- attrdl(x = data$tmean,
+    matsim[i, "glob_cold"] <- attrdl(x = data_output_year$temp,
                                 basis = cb,
-                                cases = data$dependent,
-                                coef = coefs,
-                                vcov = vcovs,
-                                type = "an",
-                                dir = "forw",
-                                cen = mintempregions[i],
-                                model = model)
-
-    matsim[i, "cold"] <- attrdl(x = data$tmean,
-                                basis = cb,
-                                cases = data$dependent,
+                                cases = data_output_year$dependent,
                                 coef = coefs,
                                 vcov = vcovs,
                                 type = "an",
                                 dir = "forw",
                                 cen = mintempregions[i],
                                 model = model,
-                                range = c(-100, mintempregions[i]))
+                                range = c(an_thresholds[i,"min_high_cold"],
+                                          an_thresholds[i,"moderate_cold_OTR"]))
 
-    matsim[i, "heat" ] <- attrdl(x = data$tmean,
+    matsim[i, "glob_heat"] <- attrdl(x = data_output_year$temp,
+                                     basis = cb,
+                                     cases = data_output_year$dependent,
+                                     coef = coefs,
+                                     vcov = vcovs,
+                                     type = "an",
+                                     dir = "forw",
+                                     cen = mintempregions[i],
+                                     model = model,
+                                     range = c(an_thresholds[i,"moderate_heat_OTR"],
+                                               an_thresholds[i,"max_high_heat"]))
+
+    matsim[i, "moderate_cold"] <- attrdl(x = data_output_year$temp,
+                                basis = cb,
+                                cases = data_output_year$dependent,
+                                coef = coefs,
+                                vcov = vcovs,
+                                type = "an",
+                                dir = "forw",
+                                cen = mintempregions[i],
+                                model = model,
+                                range = c(an_thresholds[i,"high_moderate_cold"],
+                                          an_thresholds[i,"moderate_cold_OTR"]))
+
+    matsim[i, "moderate_heat" ] <- attrdl(x = data_output_year$temp,
                                  basis = cb,
-                                 cases = data$dependent,
+                                 cases = data_output_year$dependent,
                                  coef = coefs,
                                  vcov = vcovs,
                                  type="an",
                                  dir = "forw",
                                  cen = mintempregions[i],
                                  model = model,
-                                 range = c(mintempregions[i], 100))
+                                 range = c(an_thresholds[i,"moderate_heat_OTR"],
+                                           an_thresholds[i,"high_moderate_heat"]))
 
     # Attributable deaths for extremes:
-    matsim[i,"extreme_cold"] <- attrdl(x = data$tmean,
+    matsim[i,"high_cold"] <- attrdl(x = data_output_year$temp,
                                        basis = cb,
-                                       cases = data$dependent,
+                                       cases = data_output_year$dependent,
                                        coef = coefs,
                                        vcov = vcovs,
                                        model = model,
                                        type = "an",
                                        dir = "forw",
                                        cen = mintempregions[i],
-                                       range = c(-100, per[i, 1]))
+                                       range = c(an_thresholds[i,"min_high_cold"],
+                                                 an_thresholds[i,"high_moderate_cold"]))
 
-    matsim[i,"extreme_heat"] <- attrdl(x = data$tmean,
+    matsim[i,"high_heat"] <- attrdl(x = data_output_year$temp,
                                        basis = cb,
-                                       cases = data$dependent,
+                                       cases = data_output_year$dependent,
                                        coef = coefs,
                                        vcov = vcovs,
                                        model = model,
                                        type = "an",
                                        dir = "forw",
                                        cen = mintempregions[i],
-                                       range = c(per[i, 7], 100))
+                                       range = c(an_thresholds[i,"high_moderate_heat"],
+                                                 an_thresholds[i,"max_high_heat"]))
+
+
+    matsim[i,"heatwave"] <- attrdl(x = data_output_year$heatwave_temp,
+                                    basis = cb,
+                                    cases = data_output_year$dependent,
+                                    coef = coefs,
+                                    vcov = vcovs,
+                                    model = model,
+                                    type = "an",
+                                    dir = "forw",
+                                    cen = mintempregions[i])
 
     # Compute empirical occurrences of the attributable deaths
     # Used to derive confidence intervals
-    arraysim[i, "glob_ci", ] <- attrdl(x = data$tmean,
+    arraysim[i, "glob_cold_ci", ] <- attrdl(x = data_output_year$temp,
                                        basis = cb,
-                                       cases = data$dependent,
+                                       cases = data_output_year$dependent,
                                        coef = coefs,
                                        vcov = vcovs,
                                        type = "an",
                                        dir = "forw",
                                        cen = mintempregions[i],
                                        model = model,
+                                       range = c(an_thresholds[i,"min_high_cold"],
+                                                 an_thresholds[i,"moderate_cold_OTR"]),
                                        sim = T, nsim = nsim_)
 
-    arraysim[i, "cold_ci", ] <- attrdl(x = data$tmean,
+    arraysim[i, "glob_heat_ci", ] <- attrdl(x = data_output_year$temp,
+                                            basis = cb,
+                                            cases = data_output_year$dependent,
+                                            coef = coefs,
+                                            vcov = vcovs,
+                                            type = "an",
+                                            dir = "forw",
+                                            cen = mintempregions[i],
+                                            model = model,
+                                            range = c(an_thresholds[i,"moderate_heat_OTR"],
+                                                      an_thresholds[i,"max_high_heat"]),
+                                            sim = T, nsim = nsim_)
+
+    arraysim[i, "moderate_cold_ci", ] <- attrdl(x = data_output_year$temp,
                                        basis = cb,
-                                       cases = data$dependent,
+                                       cases = data_output_year$dependent,
                                        coef = coefs,
                                        vcov = vcovs,
                                        type = "an",
                                        dir = "forw",
                                        cen = mintempregions[i],
                                        model = model,
-                                       range = c(-100, mintempregions[i]),
+                                       range = c(an_thresholds[i,"high_moderate_cold"],
+                                                 an_thresholds[i,"moderate_cold_OTR"]),
                                        sim = T , nsim = nsim_)
 
-    arraysim[i, "heat_ci", ] <- attrdl(x = data$tmean,
+    arraysim[i, "moderate_heat_ci", ] <- attrdl(x = data_output_year$temp,
                                        basis = cb,
-                                       cases = data$dependent,
+                                       cases = data_output_year$dependent,
                                        coef = coefs,
                                        vcov = vcovs,
                                        type = "an",
                                        dir = "forw",
                                        cen = mintempregions[i],
                                        model = model,
-                                       range = c(mintempregions[i], 100),
+                                       range = c(an_thresholds[i,"moderate_heat_OTR"],
+                                                 an_thresholds[i,"high_moderate_heat"]),
                                        sim = T, nsim = nsim_)
 
-    arraysim[i, "extreme_cold_ci", ] <- attrdl(x = data$tmean,
+    arraysim[i, "high_cold_ci", ] <- attrdl(x = data_output_year$temp,
                                                basis = cb,
-                                               cases = data$dependent,
+                                               cases = data_output_year$dependent,
                                                coef = coefs,
                                                vcov = vcovs,
                                                type = "an",
                                                dir= "forw",
                                                cen = mintempregions[i],
                                                model = model,
-                                               range = c(-100, per[i, 1]),
+                                               range = c(an_thresholds[i,"min_high_cold"],
+                                                         an_thresholds[i,"high_moderate_cold"]),
                                                sim = T, nsim = nsim_)
 
-    arraysim[i, "extreme_heat_ci", ] <- attrdl(x = data$tmean,
+    arraysim[i, "high_heat_ci", ] <- attrdl(x = data_output_year$temp,
                                                basis = cb,
-                                               cases = data$dependent,
+                                               cases = data_output_year$dependent,
                                                coef = coefs,
                                                vcov = vcovs,
                                                type = "an",
                                                dir= "forw",
                                                cen = mintempregions[i],
                                                model = model,
-                                               range = c(per[i, 7], 100),
+                                               range = c(an_thresholds[i,"high_moderate_heat"],
+                                                         an_thresholds[i,"max_high_heat"]),
                                                sim = T, nsim = nsim_)
 
-    # Store the denominator of attributable deaths, i.e. total observed
-    # mortality
-    # Correct denominator to compute the attributable fraction later, as in
-    # attrdl
-    totdeath[i] <- sum(data$dependent, na.rm = TRUE)
+    arraysim[i, "heatwave_ci", ] <- attrdl(x = data_output_year$heatwave_temp,
+                                            basis = cb,
+                                            cases = data_output_year$dependent,
+                                            coef = coefs,
+                                            vcov = vcovs,
+                                            type = "an",
+                                            dir= "forw",
+                                            cen = mintempregions[i],
+                                            model = model,
+                                            sim = T, nsim = nsim_)
 
   }
 
-  attrdl_yr_all <- dplyr::bind_rows(attrdl_yr_all)
-
-  # Compute attributable fraction
-
-  all_data <- dplyr::bind_rows(df_list)
-
-  attr_fractions <- attrdl_yr_all
-
-  totregyear <- all_data %>%
-    dplyr::group_by(regnames, year) %>%
-    dplyr::summarise(total_deaths = sum(dependent)) %>%
-    dplyr::rename(region = regnames)
-
-  attr_fractions_regions <- dplyr::left_join(x = attr_fractions,
-                            y = totregyear,
-                            by = c("year", "region")) %>%
-    dplyr::mutate(glob = glob / total_deaths * 100,
-                  heat = heat / total_deaths * 100,
-                  cold = cold / total_deaths * 100,
-                  extreme_cold = extreme_cold / total_deaths * 100,
-                  extreme_heat = extreme_heat / total_deaths * 100) %>%
-    dplyr::select(-total_deaths)
-
-  # aggregated across regions
-
-  attr_deaths_all <- attrdl_yr_all %>%
-    dplyr::group_by(year) %>%
-    dplyr::summarise(glob = sum(glob),
-                     heat = sum(heat),
-                     cold = sum(cold),
-                     extreme_cold = sum(extreme_cold),
-                     extreme_heat = sum(extreme_heat))
-
-  totyear <- all_data %>%
-    dplyr::group_by(year) %>%
-    dplyr::summarise(total_deaths = sum(dependent))
-
-  attr_fractions_all <- dplyr::left_join(x = attr_deaths_all,
-                                             y = totyear,
-                                             by = "year") %>%
-    dplyr::mutate(region = "All",
-                  glob = glob / total_deaths * 100,
-                  heat = heat / total_deaths * 100,
-                  cold = cold / total_deaths * 100,
-                  extreme_cold = extreme_cold / total_deaths * 100,
-                  extreme_heat = extreme_heat / total_deaths * 100) %>%
-    dplyr::select(-total_deaths)
-
-  attr_fractions_yr <- dplyr::bind_rows(attr_fractions_all,
-                                         attr_fractions_regions)
-
-  return (list(totdeath, arraysim, matsim, attrdl_yr_all,
-               attr_fractions_yr))
+  return (list(arraysim, matsim))
 
 }
+
+
+#' Compute attributable rates
+#'
+#' @description
+#' @param df_list An alphabetically-ordered list of dataframes for each
+#' region comprising dates, deaths, and temperatures.
+#' @param output_year Year(s) to calculate output for.
+#' @param arraysim` An array (numeric). Total (glob),
+#' cold and heat-attributable deaths per region for 1000 simulations.
+#'  Used to derive confidence intervals.
+#' @param matsim A matrix (numeric). Total (glob),
+#' cold and heat-attributable deaths per region from reduced coefficients.
+#'
+#' @export
+#'
+#'
+#' @return
+#' \itemize{
+#'   \item `anregions_bind`
+#'   \item `antot_bind`
+#'   \item `arregions_bind`
+#'   \item `artot_bind`
+#' }
+#' @examples
+compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
+
+  ###################################################
+  # Attributable numbers: estimates as well as the upper and lower ends of the 95% confidence interval, derived from the simulated arraysim
+
+  # Regions-specific
+  anregions <- matsim
+  anregionslow <- apply(arraysim, c(1,2), quantile, 0.025)
+  anregionshigh <- apply(arraysim, c(1,2), quantile, 0.975)
+
+  rownames(anregions) <-
+    rownames(anregionslow) <-
+    rownames(anregionshigh) <-
+    names(df_list)
+
+  # Whole country
+  antot <- colSums(matsim)
+  antotlow <- apply(apply(arraysim,c(2,3),sum),1,quantile,0.025)
+  antothigh <- apply(apply(arraysim,c(2,3),sum),1,quantile,0.975)
+
+  ###################################################
+  # Attributable rates
+
+  # Populations to compute attributable rates with
+  regions_pop <- rep(NA, length(df_list))
+  names(regions_pop) <- names(df_list)
+  years_pop <- rep(NA, length(output_year))
+
+  for (i in seq(df_list)){
+    for (j in seq(length(output_year))){
+      data_output_year <- df_list[[i]] %>% dplyr::filter(year == output_year[j])
+      years_pop[j] <- as.numeric(unique(data_output_year["pop_col"]))
+    }
+    regions_pop[i] <- mean(years_pop)
+  }
+
+  totpopulation <- sum(regions_pop)
+
+  # regions-specific AR
+  arregions <- anregions/as.numeric(regions_pop) * 100000
+  arregionslow <- anregionslow/as.numeric(regions_pop) * 100000
+  arregionshigh <- anregionshigh/as.numeric(regions_pop) * 100000
+
+  # Total AR
+  artot <- antot/totpopulation * 100000
+  artotlow <- antotlow/totpopulation * 100000
+  artothigh <- antothigh/totpopulation * 100000
+
+  ###################################################
+  # Bind datasets
+
+  colnames(anregionslow) <- paste(colnames(anregionslow), '2.5', sep = '_')
+  colnames(anregionshigh) <- paste(colnames(anregionshigh), '97.5', sep = '_')
+  colnames(arregionslow) <- paste(colnames(arregionslow), '2.5', sep = '_')
+  colnames(arregionshigh) <- paste(colnames(arregionshigh), '97.5', sep = '_')
+
+  anregions_bind <- t(cbind(anregions, anregionslow, anregionshigh))
+  antot_bind <- t(cbind(antot, antotlow, antothigh))
+  arregions_bind <- t(cbind(arregions, arregionslow, arregionshigh))
+  artot_bind <- t(cbind(artot, artotlow, artothigh))
+
+  return(list(anregions_bind,antot_bind,arregions_bind,artot_bind))
+}
+
 
 #' Write outputs to csv
 #'
@@ -890,8 +1043,8 @@ compute_attributable_deaths <- function(df_list,
 #'   Used to derive confidence intervals.
 #' @param matsim A matrix (numeric). Total (glob),
 #' cold and heat-attributable deaths per region from reduced coefficients.
-#' @param attrdl_yr_all A dataframe with attributable deaths by year for each region.
-#' @param attr_fractions_yr A dataframe with attributable fractions by year and region.
+#' @param anregions_bind A dataframe with attributable deaths for each region.
+#' @param arregions_bind A dataframe with attributable rates by region.
 #' @param output_folder_path Path to folder for storing outputs.
 #'
 #' @export
@@ -905,66 +1058,69 @@ compute_attributable_deaths <- function(df_list,
 #'   \item `antot_bind` A matrix of numbers of numbers of deaths attributable to
 #'   temperature, heat, cold, extreme heat and extreme cold (with confidence
 #'   intervals).
-#'   \item `afregions_bind` A matrix of fractions of all-cause mortality
+#'   \item `arregions_bind` A matrix of fractions of all-cause mortality
 #'   attributable to temperature, heat, cold, extreme heat and extreme cold
 #'   (with confidence intervals), disaggregated by region.
-#'    \item `aftot_bind` A matrix of fractions of all-cause mortality
+#'    \item `artot_bind` A matrix of fractions of all-cause mortality
 #'   attributable to temperature, heat, cold, extreme heat and extreme cold
 #'   (with confidence intervals).
 #' }
 #' @examples output_folder_path = 'myfolder/output/'
-write_attributable_deaths <- function(df_list,
-                                      matsim,
-                                      arraysim,
-                                      totdeath,
-                                      attrdl_yr_all,
-                                      attr_fractions_yr,
+write_attributable_deaths <- function(avgtmean_wald,
+                                      rangetmean_wald,
+                                      anregions_bind,
+                                      antot_bind,
+                                      arregions_bind,
+                                      artot_bind,
                                       output_folder_path = NULL) {
 
-  # Attributable numbers
-  # regions-specific
-  anregions <- matsim
-  anregionslow <- apply(arraysim, c(1,2), quantile, 0.025)
-  anregionshigh <- apply(arraysim, c(1,2), quantile, 0.975)
+  ###################################################
+  # Convert data to publication format
 
-  colnames(anregionslow) <- paste(colnames(anregionslow), 'low', sep = '_')
-  colnames(anregionshigh) <- paste(colnames(anregionshigh), 'high', sep = '_')
+  # Wald test results
+  if (!is.null(avgtmean_wald) & !is.null(rangetmean_wald)){
+    wald_publication <- data.frame(cbind(avgtmean_wald,rangetmean_wald))
+  colnames(wald_publication) <- c("region_mean_temp","region_temp_range")
+  rownames(wald_publication) <- "Wald statistic p-value"
+  } else {
+    wald_publication <- NULL
+  }
 
-  rownames(anregions) <-
-    rownames(anregionslow) <-
-    rownames(anregionshigh) <-
-    names(df_list)
+  # AN_regions (attributable deaths by region)
+  anregions_publication <- anregions_bind %>%
+    t() %>%
+    as.data.frame() %>%
+    dplyr::select(glob_cold, glob_cold_ci_2.5, glob_cold_ci_97.5,
+                  glob_heat, glob_heat_ci_2.5, glob_heat_ci_97.5,
+                  moderate_cold,moderate_cold_ci_2.5,moderate_cold_ci_97.5,
+                  moderate_heat,moderate_heat_ci_2.5,moderate_heat_ci_97.5,
+                  high_cold,high_cold_ci_2.5,high_cold_ci_97.5,
+                  high_heat,high_heat_ci_2.5,high_heat_ci_97.5,
+                  heatwave, heatwave_ci_2.5,heatwave_ci_97.5)
 
-  # Total
-  # NB: first sum through regions_df
-  antot <- colSums(matsim)
-  antotlow <- apply(apply(arraysim, c(2,3), sum), 1, quantile, 0.025)
-  antothigh <- apply(apply(arraysim, c(2,3), sum), 1, quantile, 0.975)
 
-  # Total mortality
-  # By country
-  totdeathtot <- sum(totdeath)
+  # AR_regions (attributable rates by region)
+  arregions_publication <- arregions_bind %>%
+    t() %>%
+    as.data.frame() %>%
+    dplyr::select(glob_cold, glob_cold_ci_2.5, glob_cold_ci_97.5,
+                  glob_heat, glob_heat_ci_2.5, glob_heat_ci_97.5,
+                  moderate_cold,moderate_cold_ci_2.5,moderate_cold_ci_97.5,
+                  moderate_heat,moderate_heat_ci_2.5,moderate_heat_ci_97.5,
+                  high_cold,high_cold_ci_2.5,high_cold_ci_97.5,
+                  high_heat,high_heat_ci_2.5,high_heat_ci_97.5,
+                  heatwave, heatwave_ci_2.5,heatwave_ci_97.5)
 
-  # Attributable fractions
-  # regions-specific
-  afregions <- anregions/totdeath * 100
-  afregionslow <- anregionslow/totdeath * 100
-  afregionshigh <- anregionshigh/totdeath * 100
-
-  # Total
-  aftot <- antot/totdeathtot * 100
-  aftotlow <- antotlow/totdeathtot * 100
-  aftothigh <- antothigh/totdeathtot * 100
-
-  # Bind datasets
-  anregions_bind <- t(cbind(anregions, anregionslow, anregionshigh))
-  antot_bind <- t(cbind(antot, antotlow, antothigh))
-  afregions_bind <- t(cbind(afregions, afregionslow, afregionshigh))
-  aftot_bind <- t(cbind(aftot, aftotlow, aftothigh))
+  ####
 
   if (!is.null(output_folder_path)) {
 
-    write.csv(anregions_bind,
+    write.csv(wald_publication,
+              file = paste(output_folder_path,
+                           'wald_test_results.csv',
+                           sep = ""))
+
+    write.csv(anregions_publication,
               file = paste(output_folder_path,
                            'attributable_deaths_regions.csv',
                            sep = ""))
@@ -972,43 +1128,31 @@ write_attributable_deaths <- function(df_list,
               file = paste(output_folder_path,
                            'attributable_deaths_total.csv',
                            sep = ""))
-    write.csv(afregions_bind,
+    write.csv(arregions_publication,
               file = paste(output_folder_path,
-                           'attributable_fraction_regions.csv',
+                           'attributable_rates_regions.csv',
                            sep = ""))
-    write.csv(aftot_bind,
+    write.csv(artot_bind,
               file = paste(output_folder_path,
-                           'attributable_fraction_total.csv',
-                           sep = ""))
-
-    write.csv(attrdl_yr_all,
-              file = paste(output_folder_path,
-                           'attributable_deaths_year.csv',
-                           sep = ""))
-
-    write.csv(attr_fractions_yr,
-              file = paste(output_folder_path,
-                           'attributable_fraction_year.csv',
+                           'attributable_rates_total.csv',
                            sep = ""))
 
   } else {
 
-    write.csv(anregions_bind,
+    write.csv(wald_publication,
+              'wald_test_results.csv')
+    write.csv(anregions_publication,
               'attributable_deaths_regions.csv')
     write.csv(antot_bind,
               'attributable_deaths_total.csv')
-    write.csv(afregions_bind,
-              'attributable_fraction_regions.csv')
-    write.csv(aftot_bind,
-              'attributable_fraction_total.csv')
-    write.csv(attrdl_yr_all,
-              'attributable_deaths_year.csv')
-    write.csv(attr_fractions_yr,
-              'attributable_fraction_year.csv')
+    write.csv(arregions_publication,
+              'attributable_rates_regions.csv')
+    write.csv(artot_bind,
+              'attributable_rates_total.csv')
 
   }
 
-  return(list(anregions_bind, antot_bind, afregions_bind, aftot_bind))
+  return(list(wald_publication, anregions_publication, antot_bind, arregions_publication, artot_bind))
 
 }
 
@@ -1019,6 +1163,8 @@ write_attributable_deaths <- function(df_list,
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param mintempregions A named numeric vector.
 #'   Minimum (optimum) mortality temperature per region.
+#' @param an_thresholds A dataframe with the optimal temperature range and
+#' temperature thresholds for calculation of attributable deaths.
 #' @param save_fig Whether to save output figure (Bool)
 #' @param save_csv Whether to save output CSVs (Bool)
 #' @param indepedent_col1_ column name of first extra independent
@@ -1028,6 +1174,9 @@ write_attributable_deaths <- function(df_list,
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
 #' @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col4_ column name of third independent
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
 #' @param varfun Exposure function
@@ -1053,7 +1202,7 @@ write_attributable_deaths <- function(df_list,
 #'   \item A CSV of relative risk per temperature per region.
 #'   \item `output_df` A dataframe with relative risk estimates and confidence
 #'   intervals across the temperature range for each region.
-#'   \item `tmean_df` A dataframe with daily mean exposure values for each
+#'   \item `temp_df` A dataframe with daily mean exposure values for each
 #'   region.
 #' }
 #'
@@ -1061,19 +1210,20 @@ write_attributable_deaths <- function(df_list,
 plot_and_write_relative_risk <- function(df_list,
                                          blup = NULL,
                                          mintempregions,
+                                         an_thresholds,
                                          save_fig = TRUE,
                                          save_csv = TRUE,
                                          output_folder_path,
                                          independent_col1,
                                          independent_col2,
                                          independent_col3,
+                                         independent_col4,
                                          varfun,
                                          varper,
                                          vardegree,
                                          lag,
                                          lagnk,
-                                         dfseas
-                                         ) {
+                                         dfseas) {
 
   if (save_fig == TRUE) {
 
@@ -1084,7 +1234,7 @@ plot_and_write_relative_risk <- function(df_list,
               sep = ''),
         width = 8, height = 9)
 
-    } else {
+        } else {
 
         pdf("output_all_regions_plot.pdf", width = 8, height = 9)
 
@@ -1099,9 +1249,6 @@ plot_and_write_relative_risk <- function(df_list,
 
   }
 
-  per <- t(sapply(df_list,function(x)
-    quantile(x$tmean, c(2.5, 10, 25, 50, 75, 90, 97.5) / 100, na.rm = TRUE)))
-
   xlab <- expression(paste("Temperature (",degree,"C)"))
 
   region_vector <- c()
@@ -1111,8 +1258,8 @@ plot_and_write_relative_risk <- function(df_list,
   upper_vector <- c()
   lower_vector <- c()
 
-  tmean_vector <- c()
-  tmean_region_vector <- c()
+  temperature_vector <- c()
+  temperature_region_vector <- c()
 
   no_of_regions <- seq(length(df_list))
 
@@ -1121,10 +1268,10 @@ plot_and_write_relative_risk <- function(df_list,
     data <- df_list[[i]]
 
     # NB: Centering point different than original choice of 75th
-    argvar <- list(x = data$tmean,
+    argvar <- list(x = data$temp,
                    fun = varfun,
                    degree = vardegree,
-                   knots = quantile(data$tmean,
+                   knots = quantile(data$temp,
                                   varper / 100, na.rm = TRUE))
 
     if (!is.null(blup)) {
@@ -1150,6 +1297,7 @@ plot_and_write_relative_risk <- function(df_list,
                                      independent_col1 = independent_col1,
                                      independent_col2 = independent_col2,
                                      independent_col3 = independent_col3,
+                                     independent_col4 = independent_col4,
                                      varfun = varfun,
                                      varper = varper,
                                      vardegree = vardegree,
@@ -1157,7 +1305,7 @@ plot_and_write_relative_risk <- function(df_list,
                                      lagnk = lagnk,
                                      dfseas = dfseas)
 
-      cen <- mean(data$tmean)
+      cen <- mean(data$temp, na.rm = TRUE)
       pred <- crossreduce(cb, model, cen = cen)
 
       mintempregions[i] <- as.numeric(names(which.min(pred$RRfit)))
@@ -1174,10 +1322,11 @@ plot_and_write_relative_risk <- function(df_list,
           ylab = "RR",
           main = names(df_list)[i])
 
-     ind_a <- pred$predvar <= c(per[i,c("2.5%")])
-     ind_b <- pred$predvar >= c(per[i,c("2.5%")]) & pred$predvar <= cen
-     ind_c <- pred$predvar >= cen & pred$predvar <= c(per[i,c("97.5%")])
-     ind_d <- pred$predvar >= c(per[i,c("97.5%")])
+     ind_a <- pred$predvar <= c(an_thresholds[i,c("high_moderate_cold")])
+     ind_b <- pred$predvar >= c(an_thresholds[i,c("high_moderate_cold")]) & pred$predvar <= c(an_thresholds[i,c("moderate_cold_OTR")])
+     ind_c <- pred$predvar >= c(an_thresholds[i,c("moderate_cold_OTR")]) & pred$predvar <= c(an_thresholds[i,c("moderate_heat_OTR")])
+     ind_d <- pred$predvar >= c(an_thresholds[i,c("moderate_heat_OTR")]) & pred$predvar <= c(an_thresholds[i,c("high_moderate_heat")])
+     ind_e <- pred$predvar >= c(an_thresholds[i,c("high_moderate_heat")])
 
      if (!is.null(blup)) {
 
@@ -1198,23 +1347,27 @@ plot_and_write_relative_risk <- function(df_list,
            lwd = 1.5)
      lines(pred$predvar[ind_c],
            relative_risk_vals[ind_c],
-           col = c("#FFA7A7"),
+           col = c("black"),
            lwd = 1.5)
      lines(pred$predvar[ind_d],
            relative_risk_vals[ind_d],
-           col = c("#C00000"),
+           col = c("#FFA7A7"),
+           lwd = 1.5)
+     lines(pred$predvar[ind_e],
+           relative_risk_vals[ind_e],
+           col = c("#FF0000"),
            lwd = 1.5)
 
      axis(2, at = 1:5 * 0.5)
 
-     breaks <- c(min(data$tmean, na.rm = TRUE) - 1,
+     breaks <- c(min(data$temp, na.rm = TRUE) - 1,
                  seq(pred$predvar[1],
                      pred$predvar[length(pred$predvar)],
                      length = 30),
-                 max(data$tmean, na.rm = TRUE) + 1)
+                 max(data$temp, na.rm = TRUE) + 1)
 
 
-     hist <- hist(data$tmean, breaks = breaks, plot = FALSE)
+     hist <- hist(data$temp, breaks = breaks, plot = FALSE)
      hist$density <- hist$density / max(hist$density) * 0.7
      prop <- max(hist$density) / max(hist$counts)
      counts <- pretty(hist$count, 3)
@@ -1227,8 +1380,10 @@ plot_and_write_relative_risk <- function(df_list,
      axis(4, at = counts * prop, labels = counts, cex.axis = 0.7)
      mtext("N", 4, line = -0.5, at = mean(counts * prop), cex = 0.5)
 
-     abline(v = mintempregions[i], lty = 3)
-     abline(v = c(per[i, c("2.5%", "97.5%")]), lty = 2)
+     abline(v = mintempregions[i], lty = 1, col = 3)
+     abline(v = c(an_thresholds[i,c("moderate_cold_OTR", "moderate_cold_OTR")]), lty = 2)
+     abline(v = c(an_thresholds[i,c("high_moderate_cold", "high_moderate_heat")]), lty = 3)
+
 
      if (!is.null(blup)) {
 
@@ -1252,13 +1407,13 @@ plot_and_write_relative_risk <- function(df_list,
                           rep(cen,
                               length(pred$predvar)))
 
-     tmean_vector <- append(tmean_vector,
-                            data$tmean)
+     temperature_vector <- append(temperature_vector,
+                            data$temp)
 
-     tmean_region_vector <-
-       append(tmean_region_vector,
+     temperature_region_vector <-
+       append(temperature_region_vector,
               rep(names(df_list)[i],
-                  length(data$tmean)))
+                  length(data$temp)))
 
 
      if (!is.null(blup)) {
@@ -1297,8 +1452,19 @@ plot_and_write_relative_risk <- function(df_list,
                           upper = upper_vector,
                           lower = lower_vector)
 
-  tmean_df <- data.frame(temp_mean = tmean_vector,
-                         regions = tmean_region_vector)
+  optimal_temp_df <- output_df %>%
+    dplyr::group_by(regions) %>%
+    dplyr::filter(rel_risk < 1.1) %>%
+    dplyr::summarise(optimal_temp_range_min = min(temp),
+                     optimal_temp_range_max = max(temp))
+
+  output_df <- dplyr::left_join(x = output_df,
+                                y = optimal_temp_df,
+                                by = "regions")
+
+
+  temp_df <- data.frame(temp_mean = temperature_vector,
+                         regions = temperature_region_vector)
 
   if (save_csv == TRUE) {
 
@@ -1310,26 +1476,20 @@ plot_and_write_relative_risk <- function(df_list,
     if (!is.null(blup)) {
 
       relative_risk <- pred$allRRfit
+      rr_low <- pred$allRRlow
+      rr_high <- pred$allRRhigh
 
     } else {
 
       relative_risk <- pred$RRfit
+      rr_low <- pred$RRlow
+      rr_high <- pred$RRhigh
+
     }
 
-    # Output for testing
-     output_df_test <- data.frame(
-                             temperature = pred$predvar,
-                             relative_risk = relative_risk
-                             )
-    # Output for testing
-     write.csv(output_df_test,
-               paste(output_folder_path,
-                     'output_one_region_data_new.csv', sep = ''),
-               row.names = FALSE
-               )
   }
 
-  return (list(output_df, tmean_df))
+  return (list(output_df, temp_df))
 
 }
 
@@ -1362,7 +1522,7 @@ plot_and_write_relative_risk <- function(df_list,
 #'   \item A CSV of relative risk per temperature per region.
 #'   \item `output_df` A dataframe with relative risk estimates and confidence
 #'   intervals across the temperature range for each region.
-#'   \item `tmean_df` A dataframe with daily mean exposure values for each
+#'   \item `temp_df` A dataframe with daily mean exposure values for each
 #'   region.
 #' }
 #' @examples output_folder_path = 'myfolder/output/'
@@ -1403,10 +1563,12 @@ plot_and_write_relative_risk_all <- function(df_list,
   region_vector <- c()
   temp_vector <- c()
   relative_risk_vector <- c()
+  upper_vector <- c()
+  lower_vector <- c()
   cen_vector <- c()
 
-  tmean_vector <- c()
-  tmean_region_vector <- c()
+  temperature_vector <- c()
+  temperature_region_vector <- c()
 
   data <- do.call(rbind, df_list)
 
@@ -1420,14 +1582,14 @@ plot_and_write_relative_risk_all <- function(df_list,
   # predvar <- quantile(data$tmean, 1:99/100, na.rm=T)
 
   # All temps
-  predvar <- data$tmean
+  predvar <- data$temp
 
   argvar <- list(x = predvar,
                  fun = varfun,
                  degree = vardegree,
-                 knots = quantile(data$tmean,
+                 knots = quantile(data$temp,
                                 varper / 100, na.rm = TRUE),
-                 Bound = range(data$tmean, na.rm = TRUE))
+                 Bound = range(data$temp, na.rm = TRUE))
 
   bvar <- do.call(onebasis, argvar)
 
@@ -1447,8 +1609,7 @@ plot_and_write_relative_risk_all <- function(df_list,
        ylim = c(.0, 3),
        xlim = c(-8, 30),
        xlab=expression(paste("Temperature (", degree, "C)")),
-       main = dependent_col,
-)
+       main = dependent_col)
 
   abline(h = 1)
 
@@ -1457,10 +1618,18 @@ plot_and_write_relative_risk_all <- function(df_list,
   optimal_meta_upper <- as.numeric(names(
     which.max(which(pred$allRRfit >= 1 & pred$allRRfit <= 1.1))))
 
-  ind_a <- pred$predvar <= optimal_meta_lower
-  ind_b <- pred$predvar >= optimal_meta_lower & pred$predvar <= cen
-  ind_c <- pred$predvar >= cen & pred$predvar <= optimal_meta_upper
-  ind_d <- pred$predvar >= optimal_meta_upper
+  extreme_cold <- ifelse(optimal_meta_lower < quantile(data$temp, 2.5/100, na.rm = TRUE),
+                         optimal_meta_lower,
+                         quantile(data$temp, 2.5/100, na.rm = TRUE))
+  extreme_heat <- ifelse(optimal_meta_upper > quantile(data$temp, 97.5/100, na.rm = TRUE),
+                         optimal_meta_upper,
+                         quantile(data$temp, 97.5/100, na.rm = TRUE))
+
+  ind_a <- pred$predvar <= extreme_cold
+  ind_b <- pred$predvar >= extreme_cold & pred$predvar <= optimal_meta_lower
+  ind_c <- pred$predvar >= optimal_meta_lower & pred$predvar <= optimal_meta_upper
+  ind_d <- pred$predvar >= optimal_meta_upper & pred$predvar <= extreme_heat
+  ind_e <- pred$predvar >= extreme_heat
 
   relative_risk_vals <- pred$allRRfit
 
@@ -1479,43 +1648,55 @@ plot_and_write_relative_risk_all <- function(df_list,
         lwd = 1.5)
   lines(pred$predvar[ind_c],
         pred$allRRfit[ind_c],
-        col = c("#FFA7A7"),
+        col = c("black"),
         lwd = 1.5)
   lines(pred$predvar[ind_d],
         pred$allRRfit[ind_d],
-        col = c("#C00000"),
+        col = c("#FFA7A7"),
         lwd = 1.5)
+  lines(pred$predvar[ind_e],
+        pred$allRRfit[ind_e],
+        col = c("#FF0000"),
+        lwd = 1.5)
+
 
   axis(2, at = 1:5 * 0.5)
 
-  breaks <- c(min(data$tmean, na.rm = TRUE) - 1,
+  breaks <- c(min(data$temp, na.rm = TRUE) - 1,
               seq(pred$predvar[1],
                   pred$predvar[length(pred$predvar)],
                   length = 30),
-              max(data$tmean, na.rm = TRUE) + 1)
+              max(data$temp, na.rm = TRUE) + 1)
 
 
-  # hist <- hist(data$tmean, breaks = breaks, plot = F)
-  # hist$density <- hist$density / max(hist$density) * 0.7
-  # prop <- max(hist$density) / max(hist$counts)
-  # counts <- pretty(hist$count, 3)
+  hist <- hist(data$temp, breaks = breaks, plot = FALSE)
+  hist$density <- hist$density / max(hist$density) * 0.7
+  prop <- max(hist$density) / max(hist$counts)
+  counts <- pretty(hist$count, 3)
 
-  # plot(hist,
-  #      ylim = c(0,max(hist$density)*3.5),
-  #      axes = F, ann = F, col = grey(0.95),
-  #      breaks = breaks, freq = F, add = T)
-  #
-  # axis(4, at = counts*prop, labels = counts, cex.axis = 0.7)
-  # mtext("N",4,line = -0.5,at = mean(counts*prop),cex=0.5)
-  #
+  plot(hist,
+       ylim = c(0, max(hist$density) * 3.5),
+       axes = FALSE, ann = FALSE, col = grey(0.95),
+       breaks = breaks, freq = FALSE, add = TRUE)
+
+  axis(4, at = counts * prop, labels = counts, cex.axis = 0.7)
+  mtext("N", 4, line = -0.5, at = mean(counts * prop), cex = 0.5)
+
   # axis(1,at = c(-5,0,5,10,15,20,25,30))
   # axis(2,at = 1:6*0.5)
 
-  abline(v = optimal_meta_lower, lty = 3)
-  abline(v = optimal_meta_upper, lty = 3)
+  abline(v = cen, lty = 1, col = 3)
+  abline(v = c(optimal_meta_lower, optimal_meta_upper), lty = 2)
+  abline(v = c(extreme_cold, extreme_heat), lty = 3)
 
   relative_risk_vector <- append(relative_risk_vector,
                                    pred$allRRfit)
+
+  upper_vector <- append(upper_vector,
+                         pred$allRRhigh)
+
+  lower_vector <- append(lower_vector,
+                         pred$allRRlow)
 
   region_vector <-
     append(region_vector,
@@ -1529,13 +1710,13 @@ plot_and_write_relative_risk_all <- function(df_list,
                        rep(cen,
                            length(pred$predvar)))
 
-  tmean_vector <- append(tmean_vector,
-                         data$tmean)
+  temperature_vector <- append(temperature_vector,
+                         data$temp)
 
-  tmean_region_vector <-
-    append(tmean_region_vector,
+  temperature_region_vector <-
+    append(temperature_region_vector,
            rep('England',
-               length(data$tmean)))
+               length(data$temp)))
 
   if (save_fig == TRUE) {
 
@@ -1550,8 +1731,8 @@ plot_and_write_relative_risk_all <- function(df_list,
                           upper = upper_vector,
                           lower = lower_vector)
 
-  tmean_df <- data.frame(temp_mean = tmean_vector,
-                         regions = tmean_region_vector)
+  temp_df <- data.frame(temp = temperature_vector,
+                         regions = temperature_region_vector)
 
   if (save_csv == TRUE) {
 
@@ -1560,24 +1741,9 @@ plot_and_write_relative_risk_all <- function(df_list,
                     'output_all_data.csv', sep = ''),
               row.names = FALSE)
 
-
-    relative_risk <- pred$allRRfit
-
-    # Output for testing
-    output_df_test <- data.frame(
-      temperature = pred$predvar,
-      relative_risk = relative_risk
-    )
-    # Output for testing
-    write.csv(output_df_test,
-              paste(output_folder_path,
-                    'output_one_data_new.csv', sep = ''),
-              row.names = FALSE
-    )
-
   }
 
-  return (list(output_df, tmean_df))
+  return (list(output_df, temp_df))
 
 }
 
@@ -1598,8 +1764,8 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' meta-analysis. Must be TRUE if by_region argument is FALSE.
 #' @param by_region Boolean (TRUE or FALSE). Whether to disaggregate by region.
 #' Must be TRUE if meta-analysis is FALSE.
-#' @param time_range_start_ Start of time range over which to run the analysis.  'None' if over full range.
-#' @param time_range_end_ End of time range over which to run the analysis.  'None' if over full range.
+#' @param RR_distribution_length Number of years for the calculation of RR distribution. Set both as 'NONE' to use full range in data.
+#' @param output_year_ Year(s) to calculate output for.
 #' @param dependent_col_ the column name of the
 #' dependent variable of interest e.g. deaths
 #' @param indepedent_col1_ column name of first extra independent
@@ -1608,12 +1774,16 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @param indepedent_col2_ column name of second independent
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
-#' @param indepedent_col3_ column name of third independent
+#'  @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col4_ column name of third independent
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
 #' @param time_col_ The column name of column containing dates (e.g date, year).
 #' @param region_col_ The column name of the column containing regions.
 #' @param temp_col_ the column name of the column containing the exposure.
+#' @param population_col_ the column name of the column containing population values.
 #' @param varfun_ Exposure function
 #' (see dlnm::crossbasis)
 #' @param vardegree_ Degrees of freedom in exposure function
@@ -1633,7 +1803,7 @@ plot_and_write_relative_risk_all <- function(df_list,
 #'   \item A CSV of relative risk per temperature per region.
 #'   \item `output_df` A dataframe with relative risk estimates and confidence
 #'   intervals across the temperature range for each region.
-#'   \item `tmean_df` A dataframe with daily mean exposure values for each
+#'   \item `temp_df` A dataframe with daily mean exposure values for each
 #'   region.
 #'   \item `anregions_bind` A matrix of numbers of deaths attributable to
 #'   temperature, heat, cold, extreme heat and extreme cold (with confidence
@@ -1651,17 +1821,19 @@ do_analysis <- function(input_csv_path_ = 'NONE',
                         output_folder_path_ = NULL,
                         save_fig_ = TRUE,
                         save_csv_ = TRUE,
-                        meta_analysis = TRUE,
-                        by_region = TRUE,
-                        time_range_start_ = 'NONE',
-                        time_range_end_ = 'NONE',
+                        meta_analysis_ = TRUE,
+                        by_region_ = TRUE,
+                        RR_distribution_length_ = 15,
+                        output_year_,
                         dependent_col_ = 'death',
                         independent_col1_ = 'NONE',
                         independent_col2_ = 'NONE',
                         independent_col3_ = 'NONE',
+                        independent_col4_ = 'NONE',
                         time_col_ = 'date',
                         region_col_ = 'regnames',
                         temp_col_ = 'tmean',
+                        population_col_ = 'pop',
                         varfun_ = 'bs',
                         vardegree_ = 2,
                         lag_  = 21,
@@ -1678,17 +1850,19 @@ do_analysis <- function(input_csv_path_ = 'NONE',
       time_col = time_col_,
       region_col = region_col_,
       temp_col = temp_col_,
-      time_range_start = time_range_start_,
-      time_range_end = time_range_end_
+      population_col = population_col_,
+      output_year = output_year_,
+      RR_distribution_length = RR_distribution_length_
       )
 
-  if (meta_analysis == TRUE) {
+  if (meta_analysis_ == TRUE) {
 
     c(coef_, vcov_) %<-%
     run_model(df_list = df_list_,
               independent_col1 = independent_col1_,
               independent_col2 = independent_col2_,
               independent_col3 = independent_col3_,
+              independent_col4 = independent_col4_,
               varfun = varfun_,
               varper = varper_,
               vardegree = vardegree_,
@@ -1704,7 +1878,7 @@ do_analysis <- function(input_csv_path_ = 'NONE',
         vcov = vcov_
         )
 
-    c(avgtmean_wald, rangetmean_wald) %<-%
+    c(avgtmean_wald_, rangetmean_wald_) %<-%
       wald_results(
         mv = mv_
         )
@@ -1712,16 +1886,19 @@ do_analysis <- function(input_csv_path_ = 'NONE',
   } else {
 
     blup_ <- NULL
+    avgtmean_wald_ <- NULL
+    rangetmean_wald_ <- NULL
 
   }
 
-  c(mintempregions_) %<-%
+  c(mintempregions_, an_thresholds_) %<-%
     calculate_min_mortality_temp(
       df_list = df_list_,
       blup = blup_,
       independent_col1 = independent_col1_,
       independent_col2 = independent_col2_,
       independent_col3 = independent_col3_,
+      independent_col4 = independent_col4_,
       varfun = varfun_,
       varper = varper_,
       vardegree = vardegree_,
@@ -1730,15 +1907,17 @@ do_analysis <- function(input_csv_path_ = 'NONE',
       dfseas = dfseas_
       )
 
-  c(totdeath_, arraysim_, matsim_, attrdl_yr_all,
-    attr_fractions_yr) %<-%
+  c(arraysim_, matsim_) %<-%
     compute_attributable_deaths(
       df_list = df_list_,
+      output_year = output_year_,
       blup = blup_,
       mintempregions = mintempregions_,
+      an_thresholds = an_thresholds_,
       independent_col1 = independent_col1_,
       independent_col2 = independent_col2_,
       independent_col3 = independent_col3_,
+      independent_col4 = independent_col4_,
       varfun = varfun_,
       varper = varper_,
       vardegree = vardegree_,
@@ -1747,20 +1926,26 @@ do_analysis <- function(input_csv_path_ = 'NONE',
       dfseas = dfseas_
       )
 
-  c(anregions_bind, antot_bind, afregions_bind, aftot_bind) %<-%
+  c(anregions_bind_,antot_bind_, arregions_bind_, artot_bind_) %<-%
+    compute_attributable_rates(df_list = df_list_,
+                               output_year = output_year_,
+                               matsim = matsim_,
+                               arraysim = arraysim_)
+
+  c(wald_publication_, anregions_publication_, antot_bind_, arregions_publication_, artot_bind_) %<-%
     write_attributable_deaths(
-      df_list = df_list_,
-      matsim = matsim_,
-      arraysim = arraysim_,
-      totdeath = totdeath_,
-      output_folder_path = output_folder_path_,
-      attrdl_yr_all = attrdl_yr_all,
-      attr_fractions_yr = attr_fractions_yr
-      )
+      avgtmean_wald = avgtmean_wald_,
+      rangetmean_wald = rangetmean_wald_,
+      anregions_bind = anregions_bind_,
+      antot_bind = antot_bind_,
+      arregions_bind = arregions_bind_,
+      artot_bind = artot_bind_,
+      output_folder_path = output_folder_path_
+    )
 
-  if (by_region == FALSE) {
+  if (by_region_ == FALSE) {
 
-    c(output_df, tmean_df) %<-%
+    c(output_df, temp_df) %<-%
       plot_and_write_relative_risk_all(
         df_list = df_list_,
         mintempregions = mintempregions_,
@@ -1777,17 +1962,19 @@ do_analysis <- function(input_csv_path_ = 'NONE',
 
   } else {
 
-    c(output_df, tmean_df) %<-%
+    c(output_df, temp_df) %<-%
       plot_and_write_relative_risk(
       df_list = df_list_,
       blup = blup_,
       mintempregions = mintempregions_,
+      an_thresholds = an_thresholds_,
       save_fig = save_fig_,
       save_csv = save_csv_,
       output_folder_path = output_folder_path_,
       independent_col1 = independent_col1_,
       independent_col2 = independent_col2_,
       independent_col3 = independent_col3_,
+      independent_col4 = independent_col4_,
       varfun = varfun_,
       varper = varper_,
       vardegree = vardegree_,
@@ -1795,11 +1982,9 @@ do_analysis <- function(input_csv_path_ = 'NONE',
       lagnk = lagnk_,
       dfseas = dfseas_
       )
-
   }
 
-  return (list(output_df, tmean_df, anregions_bind, attrdl_yr_all,
-               attr_fractions_yr))
+  return (list(output_df, temp_df, anregions_publication_, antot_bind_, arregions_publication_, artot_bind_))
 
 }
 

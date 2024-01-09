@@ -9,6 +9,7 @@ define_model(
   independent_col1,
   independent_col2,
   independent_col3,
+  independent_col4,
   varfun,
   varper,
   vardegree,
@@ -18,7 +19,7 @@ define_model(
 )
 }
 \arguments{
-\item{dataset}{dataframe with tmean column to be modelled}
+\item{dataset}{dataframe with temp column to be modelled}
 
 \item{varfun}{Exposure function
 (see dlnm::crossbasis)}
@@ -46,6 +47,10 @@ variable to include in regression (excluding temperature,
 see config file for formula structure). 'None' if none.}
 
 \item{indepedent_col3_}{column name of third independent
+variable to include in regression (excluding temperature,
+see config file for formula structure). 'None' if none.}
+
+\item{indepedent_col4_}{column name of fourth independent
 variable to include in regression (excluding temperature,
 see config file for formula structure). 'None' if none.}
 }
