@@ -1,0 +1,18 @@
+## Guide for using Plumber API ##
+
+## 1. Run command 'devtools::load_all()' in console to load package and dependencies
+
+## 2. Run 'api/run_api.R' script to run plumber API at http://127.0.0.1:8000
+
+## 3. Get CSV file path (your local path). All other function arguments set to default for testing purpose
+
+C:\Users\soutte\code\climatehealth\tests\testthat\testdata\regEngWales.csv
+
+## 4. Run terminal command for calling function from API server. Returns results as JSON in terminal and CSVs in 'api/'.
+## curl = command line tool for making HTTPS requests from web servers
+## -X POST = specified POST HTTPS request method. Used for sending data.
+## "input_csv_path={path}" = data to send to API server (argument in climatehealth function). Key-value pair.
+## http://127.0.0.1:8000/regression = URL for POST request. 127.0.0.1 is the IP address (localhost), 8000 is the port number. 
+## 'regression' is API endpoint (function in api/climatehealth_api.R).
+
+curl -X POST -d "input_csv_path_=C://Users/soutte/code/climatehealth/tests/testthat/testdata/regEngWales.csv" http://127.0.0.1:8000/regression

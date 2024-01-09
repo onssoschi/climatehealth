@@ -35,10 +35,9 @@ load_data <- function(input_csv_path,
                       output_year,
                       RR_distribution_length) {
 
-  if(substr(input_csv_path, nchar(input_csv_path) - 3, nchar(input_csv_path)) !=
-     '.csv') {
+  if (is.list(input_csv_path) == TRUE) {
 
-    stop("Input path must be a CSV")
+    print('data upload by API')
 
   }
 
@@ -1818,7 +1817,7 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @seealso [dlnm] package
 #'
 #' @export
-do_analysis <- function(input_csv_path_,
+do_analysis <- function(input_csv_path_ = 'NONE',
                         output_folder_path_ = NULL,
                         save_fig_ = TRUE,
                         save_csv_ = TRUE,
