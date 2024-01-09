@@ -1,11 +1,11 @@
 .Rproj.user
-
 .Rhistory
 
 data/*
 output/*
 api/*
 tests/testthat/testdata/*
+tests/tests_Layli/*
 
 !data/.gitkeep
 !output/.gitkeep
