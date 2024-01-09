@@ -20,8 +20,9 @@ config <- config::get()
 #' @param region_col The region column over which the data
 #' are spatially aggregated e.g. regnames
 #' @param temp_col The temperature column e.g. tmean
-#' @param time_range_start_ Start of time range over which to run the analysis.  'None' if over full range.
-#' @param time_range_end_ End of time range over which to run the analysis.  'None' if over full range.
+#' @param population_col The population column e.g. pop
+#' @param output_year_ Year(s) to calculate output for.
+#' @param RR_distribution_length Number of years for the calculation of RR distribution. Set both as 'NONE' to use full range in data.
 #' @return `df_list` An alphabetically-ordered list of dataframes for each
 #' region comprising dates, deaths, and temperatures.
 #' @export
@@ -111,6 +112,9 @@ load_data <- function(input_csv_path,
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
 #' @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col4_ column name of fourth independent
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
 #' @param varfun Exposure function
@@ -206,6 +210,9 @@ define_model <- function(dataset,
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
 #' @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col4_ column name of fourth independent
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
 #' @param varfun Exposure function
@@ -399,6 +406,9 @@ wald_results <- function(mv) {
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
 #' @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col4_ column name of fourth independent
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
 #' @param varfun Exposure function
@@ -602,6 +612,9 @@ calculate_min_mortality_temp <-  function(df_list,
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
 #' @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col4_ column name of fourth independent
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
 #' @param varfun Exposure function
@@ -935,10 +948,14 @@ compute_attributable_deaths <- function(df_list,
 #' Compute attributable rates
 #'
 #' @description
-#' @param df_list
-#' @param output_year
-#' @param matsim
-#' @param arraysim
+#' @param df_list An alphabetically-ordered list of dataframes for each
+#' region comprising dates, deaths, and temperatures.
+#' @param output_year Year(s) to calculate output for.
+#' @param arraysim` An array (numeric). Total (glob),
+#' cold and heat-attributable deaths per region for 1000 simulations.
+#'  Used to derive confidence intervals.
+#' @param matsim A matrix (numeric). Total (glob),
+#' cold and heat-attributable deaths per region from reduced coefficients.
 #'
 #' @export
 #'
@@ -1147,6 +1164,8 @@ write_attributable_deaths <- function(avgtmean_wald,
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param mintempregions A named numeric vector.
 #'   Minimum (optimum) mortality temperature per region.
+#' @param an_thresholds A dataframe with the optimal temperature range and
+#' temperature thresholds for calculation of attributable deaths.
 #' @param save_fig Whether to save output figure (Bool)
 #' @param save_csv Whether to save output CSVs (Bool)
 #' @param indepedent_col1_ column name of first extra independent
@@ -1156,6 +1175,9 @@ write_attributable_deaths <- function(avgtmean_wald,
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
 #' @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col4_ column name of third independent
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
 #' @param varfun Exposure function
@@ -1743,8 +1765,8 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' meta-analysis. Must be TRUE if by_region argument is FALSE.
 #' @param by_region Boolean (TRUE or FALSE). Whether to disaggregate by region.
 #' Must be TRUE if meta-analysis is FALSE.
-#' @param time_range_start_ Start of time range over which to run the analysis.  'None' if over full range.
-#' @param time_range_end_ End of time range over which to run the analysis.  'None' if over full range.
+#' @param RR_distribution_length Number of years for the calculation of RR distribution. Set both as 'NONE' to use full range in data.
+#' @param output_year_ Year(s) to calculate output for.
 #' @param dependent_col_ the column name of the
 #' dependent variable of interest e.g. deaths
 #' @param indepedent_col1_ column name of first extra independent
@@ -1753,12 +1775,16 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @param indepedent_col2_ column name of second independent
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
-#' @param indepedent_col3_ column name of third independent
+#'  @param indepedent_col3_ column name of third independent
+#' variable to include in regression (excluding temperature,
+#' see config file for formula structure). 'None' if none.
+#' @param indepedent_col4_ column name of third independent
 #' variable to include in regression (excluding temperature,
 #' see config file for formula structure). 'None' if none.
 #' @param time_col_ The column name of column containing dates (e.g date, year).
 #' @param region_col_ The column name of the column containing regions.
 #' @param temp_col_ the column name of the column containing the exposure.
+#' @param population_col_ the column name of the column containing population values.
 #' @param varfun_ Exposure function
 #' (see dlnm::crossbasis)
 #' @param vardegree_ Degrees of freedom in exposure function

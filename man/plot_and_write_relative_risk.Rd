@@ -8,12 +8,14 @@ plot_and_write_relative_risk(
   df_list,
   blup = NULL,
   mintempregions,
+  an_thresholds,
   save_fig = TRUE,
   save_csv = TRUE,
   output_folder_path,
   independent_col1,
   independent_col2,
   independent_col3,
+  independent_col4,
   varfun,
   varper,
   vardegree,
@@ -30,6 +32,9 @@ list of dataframes for each region.}
 
 \item{mintempregions}{A named numeric vector.
 Minimum (optimum) mortality temperature per region.}
+
+\item{an_thresholds}{A dataframe with the optimal temperature range and
+temperature thresholds for calculation of attributable deaths.}
 
 \item{save_fig}{Whether to save output figure (Bool)}
 
@@ -65,6 +70,10 @@ see config file for formula structure). 'None' if none.}
 \item{indepedent_col3_}{column name of third independent
 variable to include in regression (excluding temperature,
 see config file for formula structure). 'None' if none.}
+
+\item{indepedent_col4_}{column name of third independent
+variable to include in regression (excluding temperature,
+see config file for formula structure). 'None' if none.}
 }
 \value{
 \itemize{
@@ -74,7 +83,7 @@ region, and histogram of temperatures per region.
 \item A CSV of relative risk per temperature per region.
 \item \code{output_df} A dataframe with relative risk estimates and confidence
 intervals across the temperature range for each region.
-\item \code{tmean_df} A dataframe with daily mean exposure values for each
+\item \code{temp_df} A dataframe with daily mean exposure values for each
 region.
 }
 }
