@@ -9,17 +9,19 @@ do_analysis(
   output_folder_path_ = NULL,
   save_fig_ = TRUE,
   save_csv_ = TRUE,
-  meta_analysis = TRUE,
-  by_region = TRUE,
-  time_range_start_ = "NONE",
-  time_range_end_ = "NONE",
+  meta_analysis_ = TRUE,
+  by_region_ = TRUE,
+  RR_distribution_length_ = 15,
+  output_year_,
   dependent_col_ = "death",
   independent_col1_ = "NONE",
   independent_col2_ = "NONE",
   independent_col3_ = "NONE",
+  independent_col4_ = "NONE",
   time_col_ = "date",
   region_col_ = "regnames",
   temp_col_ = "tmean",
+  population_col_ = "pop",
   varfun_ = "bs",
   vardegree_ = 2,
   lag_ = 21,
@@ -37,15 +39,7 @@ daily time series of death and temperature per region.}
 
 \item{save_csv_}{Boolean (TRUE or FALSE). Whether to save output CSVs.}
 
-\item{meta_analysis}{Boolean (TRUE or FALSE). Whether to include
-meta-analysis. Must be TRUE if by_region argument is FALSE.}
-
-\item{by_region}{Boolean (TRUE or FALSE). Whether to disaggregate by region.
-Must be TRUE if meta-analysis is FALSE.}
-
-\item{time_range_start_}{Start of time range over which to run the analysis.  'None' if over full range.}
-
-\item{time_range_end_}{End of time range over which to run the analysis.  'None' if over full range.}
+\item{output_year_}{Year(s) to calculate output for.}
 
 \item{dependent_col_}{the column name of the
 dependent variable of interest e.g. deaths}
@@ -55,6 +49,8 @@ dependent variable of interest e.g. deaths}
 \item{region_col_}{The column name of the column containing regions.}
 
 \item{temp_col_}{the column name of the column containing the exposure.}
+
+\item{population_col_}{the column name of the column containing population values.}
 
 \item{varfun_}{Exposure function
 (see dlnm::crossbasis)}
@@ -70,15 +66,26 @@ dependent variable of interest e.g. deaths}
 
 \item{dfseas_}{Degrees of freedom for seasonality}
 
+\item{meta_analysis}{Boolean (TRUE or FALSE). Whether to include
+meta-analysis. Must be TRUE if by_region argument is FALSE.}
+
+\item{by_region}{Boolean (TRUE or FALSE). Whether to disaggregate by region.
+Must be TRUE if meta-analysis is FALSE.}
+
+\item{RR_distribution_length}{Number of years for the calculation of RR distribution. Set both as 'NONE' to use full range in data.}
+
 \item{indepedent_col1_}{column name of first extra independent
 variable to include in regression (excluding temperature,
 see config file for formula structure). 'None' if none.}
 
 \item{indepedent_col2_}{column name of second independent
 variable to include in regression (excluding temperature,
+see config file for formula structure). 'None' if none.
+@param indepedent_col3_ column name of third independent
+variable to include in regression (excluding temperature,
 see config file for formula structure). 'None' if none.}
 
-\item{indepedent_col3_}{column name of third independent
+\item{indepedent_col4_}{column name of third independent
 variable to include in regression (excluding temperature,
 see config file for formula structure). 'None' if none.}
 }
@@ -91,7 +98,7 @@ and histogram of temperatures per region.
 \item A CSV of relative risk per temperature per region.
 \item \code{output_df} A dataframe with relative risk estimates and confidence
 intervals across the temperature range for each region.
-\item \code{tmean_df} A dataframe with daily mean exposure values for each
+\item \code{temp_df} A dataframe with daily mean exposure values for each
 region.
 \item \code{anregions_bind} A matrix of numbers of deaths attributable to
 temperature, heat, cold, extreme heat and extreme cold (with confidence

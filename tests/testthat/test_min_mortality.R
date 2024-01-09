@@ -41,8 +41,9 @@ test_that('Test min_mortality() returns correct data types', {
       time_col = config$time_col,
       region_col = config$region_col,
       temp_col = config$temp_col,
-      time_range_start = config$time_range_start,
-      time_range_end = config$time_range_end
+      population_col = config$population_col,
+      output_year = config$output_year,
+      RR_distribution_length = config$RR_distribution_length
     )
 
   if (config$meta_analysis == TRUE) {
@@ -52,6 +53,7 @@ test_that('Test min_mortality() returns correct data types', {
                 independent_col1 = config$independent_col1,
                 independent_col2 = config$independent_col2,
                 independent_col3 = config$independent_col3,
+                independent_col4 = config$independent_col4,
                 varfun = config$varfun,
                 varper = varper_,
                 vardegree = config$vardegree,
@@ -67,7 +69,7 @@ test_that('Test min_mortality() returns correct data types', {
         vcov = vcov_
       )
 
-    c(avgtmean_wald, rangetmean_wald) %<-%
+    c(avgtmean_wald_, rangetmean_wald_) %<-%
       wald_results(
         mv = mv_
       )
@@ -75,16 +77,19 @@ test_that('Test min_mortality() returns correct data types', {
   } else {
 
     blup_ <- NULL
+    avgtmean_wald_ <- NULL
+    rangetmean_wald_ <- NULL
 
   }
 
-  c(mintempregions_) %<-%
+  c(mintempregions_, an_thresholds_) %<-%
     calculate_min_mortality_temp(
       df_list = df_list_,
       blup = blup_,
       independent_col1 = config$independent_col1,
       independent_col2 = config$independent_col2,
       independent_col3 = config$independent_col3,
+      independent_col4 = config$independent_col4,
       varfun = config$varfun,
       varper = varper_,
       vardegree = config$vardegree,
@@ -97,6 +102,13 @@ test_that('Test min_mortality() returns correct data types', {
   expect_equal(typeof(mintempregions_), "double")
   expect_equal(is.vector(mintempregions_), TRUE)
   expect_equal(is.numeric(mintempregions_), TRUE)
+
+  # an_thresholds
+  expect_equal(typeof(an_thresholds_), "list")
+  expect_equal(typeof(an_thresholds_[[1]]), "double")
+  expect_equal(class(an_thresholds_), "data.frame")
+  expect_equal(is.data.frame(an_thresholds_), TRUE)
+  expect_equal(is.numeric(an_thresholds_[[1]]), TRUE)
 
 })
 

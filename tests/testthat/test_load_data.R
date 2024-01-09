@@ -15,8 +15,9 @@ test_that('Test data loads correctly', {
       time_col = config$time_col,
       region_col = config$region_col,
       temp_col = config$temp_col,
-      time_range_start = config$time_range_start,
-      time_range_end = config$time_range_end
+      population_col = config$population_col,
+      output_year = config$output_year,
+      RR_distribution_length = config$RR_distribution_length
     )
 
   test_list <- list("a", "b", "c")

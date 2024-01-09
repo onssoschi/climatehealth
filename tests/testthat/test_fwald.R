@@ -25,8 +25,9 @@ test_that('Test fwald() returns correct data type', {
       time_col = config$time_col,
       region_col = config$region_col,
       temp_col = config$temp_col,
-      time_range_start = config$time_range_start,
-      time_range_end = config$time_range_end
+      population_col = config$population_col,
+      output_year = config$output_year,
+      RR_distribution_length = config$RR_distribution_length
     )
 
   if (config$meta_analysis == TRUE) {
@@ -36,6 +37,7 @@ test_that('Test fwald() returns correct data type', {
                 independent_col1 = config$independent_col1,
                 independent_col2 = config$independent_col2,
                 independent_col3 = config$independent_col3,
+                independent_col4 = config$independent_col4,
                 varfun = config$varfun,
                 varper = varper_,
                 vardegree = config$vardegree,
@@ -51,11 +53,10 @@ test_that('Test fwald() returns correct data type', {
         vcov = vcov_
       )
 
-    c(avgtmean_wald, rangetmean_wald) %<-%
+    c(avgtmean_wald_, rangetmean_wald_) %<-%
       wald_results(
         mv = mv_
       )
-
   }
 
   expect_lte(fwald(mv_, "avgtmean"), 1)
