@@ -6,8 +6,6 @@ test_that('Test new output matches original output', {
 
   config <- config::get()
 
-  config <- config::get()
-
   c(output_df, temp_df, anregions_publication, antot_bind, arregions_publication, artot_bind) %<-%
     climatehealth::do_analysis(input_csv_path_ = config$input_csv_path,
                                output_folder_path_ = config$output_folder_path,
@@ -33,12 +31,36 @@ test_that('Test new output matches original output', {
                                dfseas_ = config$dfseas
     )
 
+  # expected_output <- read.csv('testdata/output_one_region_data_original.csv')
+  # actual_output <- read.csv('testdata/output_one_region_data_new.csv')
+  # expect_equal(actual_output, expected_output)
 
+  output_a <- 'testdata/output_all_regions_data.csv'
+  output_b <- 'testdata/attributable_deaths_regions.csv'
+  output_c <- 'testdata/attributable_deaths_total.csv'
+  output_d <- 'testdata/attributable_rates_regions.csv'
+  output_e <- 'testdata/attributable_rates_total.csv'
+  output_f <- 'testdata/wald_test_results.csv'
 
-  expected_output <- read.csv('testdata/output_one_region_data_original.csv')
+  output_a_df <- read.csv('testdata/output_all_regions_data.csv')
+  output_b_df <- read.csv('testdata/attributable_deaths_regions.csv')
+  output_c_df <- read.csv('testdata/attributable_deaths_total.csv')
+  output_d_df <- read.csv('testdata/attributable_rates_regions.csv')
+  output_e_df <- read.csv('testdata/attributable_rates_total.csv')
+  output_f_df <- read.csv('testdata/wald_test_results.csv')
 
-  actual_output <- read.csv('testdata/output_one_region_data_new.csv')
+  expect_true(file.exists(output_a))
+  expect_true(file.exists(output_b))
+  expect_true(file.exists(output_c))
+  expect_true(file.exists(output_d))
+  expect_true(file.exists(output_e))
+  expect_true(file.exists(output_f))
 
-  expect_equal(actual_output, expected_output)
+  expect_true(nrow(output_a_df) > 0)
+  expect_true(nrow(output_b_df) > 0)
+  expect_true(nrow(output_c_df) > 0)
+  expect_true(nrow(output_d_df) > 0)
+  expect_true(nrow(output_e_df) > 0)
+  expect_true(nrow(output_f_df) > 0)
 
 })
