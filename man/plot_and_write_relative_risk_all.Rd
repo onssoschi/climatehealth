@@ -55,7 +55,7 @@ region, and histogram of temperatures per region.
 \item A CSV of relative risk per temperature per region.
 \item \code{output_df} A dataframe with relative risk estimates and confidence
 intervals across the temperature range for each region.
-\item \code{tmean_df} A dataframe with daily mean exposure values for each
+\item \code{temp_df} A dataframe with daily mean exposure values for each
 region.
 }
 }

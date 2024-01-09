@@ -2,6 +2,7 @@
 
 export(calculate_min_mortality_temp)
 export(compute_attributable_deaths)
+export(compute_attributable_rates)
 export(define_model)
 export(do_analysis)
 export(fwald)
