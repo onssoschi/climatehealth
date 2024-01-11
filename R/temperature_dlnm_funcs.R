@@ -41,19 +41,6 @@ load_data <- function(input_csv_path,
 
   }
 
-  if (RR_distribution_length == 'NONE') {
-
-  } else if(RR_distribution_length < 5) {
-
-    stop("Timeseries to calculate the RR is less than 5 years")
-
-  } else if (RR_distribution_length > 15) {
-
-    stop("Timeseries to calculate the RR is more than 15 years")
-
-  }
-
-
   if (!population_col == 'NONE') {
 
     df <- read.csv(input_csv_path, row.names = 1) %>%
@@ -78,13 +65,36 @@ load_data <- function(input_csv_path,
 
   }
 
-  if ('NONE' != RR_distribution_length) {
+  if (output_year == 0) {
 
-    df <- df %>%
-      dplyr::filter(year >= (max(as.integer(output_year)) - RR_distribution_length + 1)
-                    & year <= max(as.integer(output_year)))
+    output_year = max(df$year)
+
+  } else {
+
+    output_year = output_year
+  }
+
+
+  if (RR_distribution_length == 0) {
+
+    RR_distribution_length = max(df$year) - min(df$year)
+    print(RR_distribution_length)
+
+  } else if(RR_distribution_length < 5) {
+
+    stop("Timeseries to calculate the RR is less than 5 years")
+
+  } else if (RR_distribution_length > 15) {
+
+    stop("Timeseries to calculate the RR is more than 15 years")
 
   }
+
+
+  df <- df %>%
+    dplyr::filter(year >= (max(as.integer(output_year)) - RR_distribution_length + 1)
+                  & year <= max(as.integer(output_year)))
+
 
   regions <- sort(as.character(unique(df$regnames)))
 
@@ -678,6 +688,16 @@ compute_attributable_deaths <- function(df_list,
                                       "moderate_cold_ci", "moderate_heat_ci",
                                       "high_cold_ci", "high_heat_ci", "heatwave_ci")))
 
+
+  if (output_year == 0) {
+
+    output_year = max(df_list[[1]]$year)
+
+  } else {
+
+    output_year = output_year
+  }
+
   # Run the loop
   for(i in seq(df_list)){
 
@@ -971,6 +991,15 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 
   ###################################################
   # Attributable numbers: estimates as well as the upper and lower ends of the 95% confidence interval, derived from the simulated arraysim
+
+  if (output_year == 0) {
+
+    output_year = max(df_list[[1]]$year)
+
+  } else {
+
+    output_year = output_year
+  }
 
   # Regions-specific
   anregions <- matsim
@@ -1823,8 +1852,8 @@ do_analysis <- function(input_csv_path_ = 'NONE',
                         save_csv_ = TRUE,
                         meta_analysis_ = TRUE,
                         by_region_ = TRUE,
-                        RR_distribution_length_ = 15,
-                        output_year_,
+                        RR_distribution_length_ = 0,
+                        output_year_ = 0,
                         dependent_col_ = 'death',
                         independent_col1_ = 'NONE',
                         independent_col2_ = 'NONE',

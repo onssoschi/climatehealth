@@ -26,11 +26,11 @@ default:
   independent_col3: 'NONE'
   independent_col4: 'NONE'
 
-  # Number of years for the calculation of RR distribution. Set both as 'NONE' to use full range in data.
-  RR_distribution_length: 'NONE'
+  # Number of years for the calculation of RR distribution. Set as 0 to use full range in data (must be < 15 years).
+  RR_distribution_length: 0
 
-  # Year(s) to calculate output for
-  output_year: !expr c(2006)
+  # Year to calculate output for. Set as 0 to use most recent year (all of the data). The output is the average of the output_year and the previous 5 years.
+  output_year: 0
 
   # Specification of the exposure function
   varfun: 'bs' # Exposure function (see dlnm::crossbasis)
