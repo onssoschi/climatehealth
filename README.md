@@ -14,7 +14,7 @@ https://github.com/gasparrini/2015_gasparrini_Lancet_Rcodedata
 
 ### Folder description
 
-- `temp_dlnm_main.R`: Runs distributed lag non-linear model (dlnm) to estimate the mortality risk attributable to non-optimal outdoor temperature (modified from Gasparrini et al. 2015)
+- `temperature_dlnm_main.R`: Runs distributed lag non-linear model (dlnm) to estimate the mortality risk attributable to non-optimal outdoor temperature (modified from Gasparrini et al. 2015)
 - `R`:               Contains packaged R code for each the indicators
 - `data`:            Folder for storing data
 - `archive`:         Archived scripts
@@ -37,7 +37,7 @@ Steps to calculate indicator:
 
 3. Change `output_folder_path` field in `config.yaml` to the folder you want to store outputs.
 
-4. Run `temp_dlnm_main.R` to run full analysis **OR** run `devtools:load_all()` to load indicatorfunctions package and run individual functions (individual functions located in `R/`)
+4. Run `temperature_dlnm_main.R` to run full analysis **OR** run `devtools:load_all()` to load climatehealth package and run individual functions (individual functions located in `R/`)
 
 To run unit tests:
 
@@ -63,6 +63,6 @@ This dataset contains daily number of deaths and minimum, maximum, and mean temp
 
 Climate and Health, Epidemiology and Global Health Analysis, Office for National Statistics  
 
-[Euan Soutter, Antony Brown, Cerys Hopkins, Paul Slocombe, Vijendra Ingole]
+[Euan Soutter, Antony Brown, Layli Semple, Vijendra Ingole]
 
 
