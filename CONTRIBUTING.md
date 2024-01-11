@@ -1,15 +1,13 @@
 Contribution guidelines
 =======================
 
-`climatehealth` is maintained and developed by the ONS Climate and Health Team. Currently contributions can only be made internally.
-
-We intend to open-source this project in future, and will welcome contributions from external users and developers. 
+`climatehealth` is maintained and developed by the ONS Climate and Health Team. We welcome contributions from our project partners. 
 
 ## General guidance
 
 * **Do not upload any sensitive data to this repository.**
 * `main` is the production branch and is protected. 
-* `dev` is the development branch and is the default branch. Branch off from `dev` to create feature branches.
+* `dev` is the development branch and is the default branch. Branch off from `dev` to create feature branches. **Any changes you wish to make to code must be committed on your own feature branch.**
 
 ## Request a feature or fix
 
@@ -19,6 +17,8 @@ To request a feature or bug fix to be implemented by the Climate and Health Team
 * **If you find a security vulnerability, do NOT open an issue. Email climate.health@ons.gov.uk instead.**
 
 ## Merge request process
+
+**Merge requests must be reviewed by a maintainer before feature branches can be merged into dev or main**
 
 To implement a new feature or fix a bug, please follow the process outlined below.
 
@@ -30,9 +30,9 @@ To implement a new feature or fix a bug, please follow the process outlined belo
     * Branches are ready to merge once the feature or fix is completed. Avoid pushing broken code or unfinished features / fixes.
 3. Create a new merge request into the `dev` branch. 
     * Give the merge request a succinct, clear summary of the new feature or fix.
-    * Assign a reviewer (see list of maintainers).
+    * Assign a reviewer (see list of maintainers below).
     * Select "Delete source branch when merge request is accepted".
-    * Do not select "Squash commits when merge request is accepted".
+    * Do **not** select "Squash commits when merge request is accepted".
     * Resolve any merge conflicts after creating the request.
 4. Implement reviewer suggestions. Once the reviewer is happy with the changes, they will accept the merge request and the feature branch will be merged into `dev`.
 
@@ -44,7 +44,6 @@ Please assign one of the following maintainers to review a new merge request:
 
 * Euan Soutter (@soutte)
 * Antony Brown (@browna6)
-* Paul Slocombe (@slocop)
 
 ## Code style
 
