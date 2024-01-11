@@ -29,6 +29,8 @@ https://github.com/gasparrini/2015_gasparrini_Lancet_Rcodedata
 
 ## Usage
 
+See [CONTRIBUTING](CONTRIBUTING.md) for guidance on contributing to this repository before making changes to the code.
+
 Steps to calculate indicator:
 
 1. Change `input_csv_path` field in `config.yaml` to your input dataset (daily mortality and temperature measurements per region). 
