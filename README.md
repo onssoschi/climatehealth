@@ -35,11 +35,9 @@ Steps to calculate indicator:
 
 1. Change `input_csv_path` field in `config.yaml` to your input dataset (daily mortality and temperature measurements per region). 
 
-2. Change the column titles to reflect those in the data template `data_template/regEngWales_data_template.csv` (modified from Gasparrini et al. 2015). [beta solution; can be made generalisable in function & platform]
+2. Change the column titles (under "Define columns" in `config.yml`) to reflect those in the data template `data_template/regEngWales_data_template.csv` (modified from Gasparrini et al. 2015). [beta solution; can be made generalisable in function & platform]
 
-3. Change `output_folder_path` field in `config.yaml` to the folder you want to store outputs.
-
-4. Run `temperature_dlnm_main.R` to run full analysis **OR** run `devtools:load_all()` to load climatehealth package and run individual functions (individual functions located in `R/`)
+3. Run `temperature_dlnm_main.R` to run full analysis **OR** run `devtools:load_all()` to load climatehealth package and run individual functions (individual functions located in `R/`)
 
 To run unit tests:
 
