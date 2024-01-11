@@ -4,9 +4,11 @@
 
 ## 2. Run 'api/run_api.R' script to run plumber API at http://127.0.0.1:8000
 
-## 3. Get CSV file path (your local path). All other function arguments set to default for testing purpose
+## 3. Get test CSV file path (your local path):
 
-C:\Users\soutte\code\climatehealth\tests\testthat\testdata\regEngWalesPop.csv
+   climatehealth\tests\testthat\testdata\regEngWalesPop.csv
+
+   All other function arguments set to default for testing purpose
 
 ## 4. Run terminal command for calling function from API server. Returns results as JSON in terminal and CSVs in 'api/'.
 ## curl = command line tool for making HTTPS requests from web servers

@@ -35,7 +35,7 @@ function(req, res) {
 #' meta-analysis. Must be TRUE if by_region argument is FALSE.
 #' @param by_region:bool Boolean (TRUE or FALSE). Whether to disaggregate by region.
 #' Must be TRUE if meta-analysis is FALSE.
-#' @param RR_distribution_length:str Number of years for the calculation of RR distribution. Set both as 'NONE' to use full range in data.
+#' @param RR_distribution_length:int Number of years for the calculation of RR distribution. Set both as 'NONE' to use full range in data.
 #' @param output_year_:int Year(s) to calculate output for.
 #' @param dependent_col_:str the column name of the
 #' dependent variable of interest e.g. deaths
