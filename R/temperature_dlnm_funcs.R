@@ -39,9 +39,23 @@ load_data <- function(input_csv_path,
 
     print('data upload by API')
 
+    df <- data.frame(input_csv_path)
+
+    df <- df %>%
+      dplyr::rename(dependent = dependent_col,
+                    date = time_col,
+                    regnames = region_col,
+                    temp = temp_col,
+                    pop_col = population_col) %>%
+      dplyr::mutate(date = as.Date(date))
+
+    df <- df %>% dplyr::mutate(dependent = ifelse(is.na(dependent), 0, dependent))
+
   }
 
-  if (!population_col == 'NONE') {
+  if ((is.character(input_csv_path) == TRUE) && (!population_col == 'NONE')) {
+
+    print('data upload locally')
 
     df <- read.csv(input_csv_path, row.names = 1) %>%
       dplyr::rename(dependent = dependent_col,
@@ -52,7 +66,7 @@ load_data <- function(input_csv_path,
       dplyr::mutate(date = as.Date(date))
     df <- df %>% dplyr::mutate(dependent = ifelse(is.na(dependent), 0, dependent))
 
-  } else {
+  } else if ((is.character(input_csv_path) == TRUE) && (population_col == 'NONE')) {
 
     df <- read.csv(input_csv_path, row.names = 1) %>%
       dplyr::mutate(pop_col = 'NONE') %>%
@@ -67,18 +81,18 @@ load_data <- function(input_csv_path,
 
   if (output_year == 0) {
 
-    output_year = max(df$year)
+    output_year <- max(df$year, na.rm = TRUE)
 
   } else {
 
-    output_year = output_year
+    output_year <- output_year
   }
 
+  print(max(df$year, na.rm = TRUE))
 
   if (RR_distribution_length == 0) {
 
-    RR_distribution_length = max(df$year) - min(df$year)
-    print(RR_distribution_length)
+    RR_distribution_length = max(df$year, na.rm = TRUE) - min(df$year, na.rm = TRUE)
 
   } else if(RR_distribution_length < 5) {
 
@@ -94,7 +108,6 @@ load_data <- function(input_csv_path,
   df <- df %>%
     dplyr::filter(year >= (max(as.integer(output_year)) - RR_distribution_length + 1)
                   & year <= max(as.integer(output_year)))
-
 
   regions <- sort(as.character(unique(df$regnames)))
 
