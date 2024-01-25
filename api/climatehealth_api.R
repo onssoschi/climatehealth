@@ -59,8 +59,8 @@ function(req, res) {
 #' (see dlnm::crossbasis)
 #' @param vardegree_:int Degrees of freedom in exposure function
 #' (see dlnm:crossbasis)
-#' @param lag_:int Lag length in time
-#' (see dlnm::logknots)
+#* @param lag_:int Lag length in time
+#* (see dlnm::logknots)
 #' @param lagnk_:int Number of knots in lag function
 #' (see dlnm::logknots)
 #* @param dfseas_:int Degrees of freedom for seasonality
