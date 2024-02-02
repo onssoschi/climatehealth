@@ -3,6 +3,7 @@ library(climatehealth)
 library(zeallot)
 library(webutils)
 library(readr)
+library(dplyr)
 
 #* @filter cors
 function(res) {
