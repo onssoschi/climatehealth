@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: r-api
+  namespace: ons-data-explorer
+  labels:
+    app: climate-health-r-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: climate-health-r-api
+  template:
+    metadata:
+      labels:
+        app: climate-health-r-api
+    spec:
+      containers:
+      - name: r-api
+        image: 142496269814.dkr.ecr.us-west-2.amazonaws.com/ons-climate-health/climatehealth:latest
+        ports:
+        - containerPort: 8000

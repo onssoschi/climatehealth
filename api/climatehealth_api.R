@@ -12,6 +12,11 @@ function(res) {
   plumber::forward()
 }
 
+#* @get /
+function() {
+  return("Hello, World!")
+}
+
 #* Handle OPTIONS requests (preflight)
 #* @param req Request object
 #* @options /regression
