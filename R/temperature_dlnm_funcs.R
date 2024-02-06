@@ -206,7 +206,7 @@ define_model <- function(dataset,
   lagnk <- as.numeric(lagnk)
   dfseas <- as.numeric(dfseas)
 
-  cb <- crossbasis(dataset$temp,
+  cb <- dlnm::crossbasis(dataset$temp,
                    lag = lag,
                    argvar = argvar_,
                    arglag = list(knots = logknots(lag,
