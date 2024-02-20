@@ -209,7 +209,7 @@ define_model <- function(dataset,
   cb <- dlnm::crossbasis(dataset$temp,
                    lag = lag,
                    argvar = argvar_,
-                   arglag = list(knots = logknots(lag,
+                   arglag = list(knots = dlnm::logknots(lag,
                                                   lagnk)))
 
   # Run the model and obtain predictions
