@@ -170,7 +170,7 @@ define_model <- function(dataset,
                          dfseas) {
 
   independent_cols <- c('cb',
-                        'ns(date, df = dfseas * length(unique(year)))')
+                        'splines::ns(date, df = dfseas * length(unique(year)))')
 
   if (independent_col1 != "NONE") {
     independent_cols <- c(independent_col1, independent_cols)
@@ -214,9 +214,9 @@ define_model <- function(dataset,
 
   # Run the model and obtain predictions
   model <- glm(formula,
-               dataset,
-               family = quasipoisson,
-               na.action = "na.exclude")
+                      dataset,
+                      family = quasipoisson,
+                      na.action = "na.exclude")
 
   return (list(model, cb))
 
@@ -304,7 +304,7 @@ run_model <- function(df_list,
     cen_ <- mean(data$temp, na.rm = TRUE)
 
     # Reduction to overall cumulative
-    pred <- crossreduce(cb, model, cen = cen_)
+    pred <- dlnm::crossreduce(cb, model, cen = cen_)
     mintempregions[i] <- as.numeric(names(which.min(pred$RRfit)))
 
     coef_[i,] <- coef(pred)
@@ -515,7 +515,7 @@ calculate_min_mortality_temp <-  function(df_list,
                                      na.rm = TRUE)
 
       # OVERALL CUMULATIVE SUMMARY ASSOCIATION FOR MAIN MODEL
-      cp <- crosspred(bvar_,
+      cp <- dlnm::crosspred(bvar_,
                       coef = blup[[i]]$blup,
                       vcov = blup[[i]]$vcov,
                       cen = mintempregions_[i],
@@ -563,11 +563,11 @@ calculate_min_mortality_temp <-  function(df_list,
       cen_ <- mean(data$temp, na.rm = TRUE)
 
       # Reduction to overall cumulative
-      pred <- crossreduce(cb, model, cen = cen_)
+      pred <- dlnm::crossreduce(cb, model, cen = cen_)
       mintempregions_[i] <- as.numeric(names(which.min(pred$RRfit)))
 
       cen_ <- mintempregions_[i]
-      pred <- crossreduce(cb, model, cen = cen_)
+      pred <- dlnm::crossreduce(cb, model, cen = cen_)
 
       optimal_temp_range[i,"lower"] <- as.numeric(names(
         which.min(which(pred$RRfit >= 1 & pred$RRfit <= 1.1))))
@@ -1325,7 +1325,7 @@ plot_and_write_relative_risk <- function(df_list,
       model <- NULL
       cen <- mintempregions[i]
 
-      pred <- crosspred(bvar,
+      pred <- dlnm::crosspred(bvar,
                         coef = blup[[i]]$blup,
                         vcov = blup[[i]]$vcov,
                         model.link = "log",
@@ -1348,11 +1348,11 @@ plot_and_write_relative_risk <- function(df_list,
                                      dfseas = dfseas)
 
       cen <- mean(data$temp, na.rm = TRUE)
-      pred <- crossreduce(cb, model, cen = cen)
+      pred <- dlnm::crossreduce(cb, model, cen = cen)
 
       mintempregions[i] <- as.numeric(names(which.min(pred$RRfit)))
       cen <- mintempregions[i]
-      pred <- crossreduce(cb, model, cen = cen)
+      pred <- dlnm::crossreduce(cb, model, cen = cen)
 
       }
 
@@ -1638,7 +1638,7 @@ plot_and_write_relative_risk_all <- function(df_list,
   model <- NULL
   cen <- median(mintempregions)
 
-  pred <- crosspred(bvar,
+  pred <- dlnm::crosspred(bvar,
                     coef = coef(mvall),
                     vcov = vcov(mvall),
                     model.link = "log",
