@@ -361,14 +361,14 @@ run_meta_model <- function(df_list, coef, vcov) {
 
   # Meta-analysis
   # NB: country effects is not included in this example
-  mv <- mvmeta(coef ~ avgtmean + rangetmean,
+  mv <- mvmeta::mvmeta(coef ~ avgtmean + rangetmean,
                vcov,
                data = as.data.frame(names(df_list)), # was data = regions_df
                control = list(showiter = TRUE))
   print(summary(mv)["AIC"])
 
   # Obtain blups
-  blup <- blup(mv, vcov = TRUE)
+  blup <- mvmeta::blup(mv, vcov = TRUE)
 
   return(list(mv, blup))
 }
@@ -1619,7 +1619,7 @@ plot_and_write_relative_risk_all <- function(df_list,
   method <- "reml"
 
   # Overall cumulative summary for main model
-  mvall <- mvmeta(coef ~ 1, vcov, method = method)
+  mvall <- mvmeta::mvmeta(coef ~ 1, vcov, method = method)
 
   # Exclude extreme temps
   # predvar <- quantile(data$tmean, 1:99/100, na.rm=T)
