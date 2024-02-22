@@ -507,7 +507,7 @@ calculate_min_mortality_temp <-  function(df_list,
                    degree = vardegree,
                    Bound = range(data$temp, na.rm = TRUE))
 
-      bvar_ <- do.call(onebasis, argvar_)
+      bvar_ <- do.call(dlnm::onebasis, argvar_)
 
       minpercregions_[i] <- (1:99)[which.min(bvar_ %*%
                                                 blup[[i]]$blup)]
@@ -1319,7 +1319,7 @@ plot_and_write_relative_risk <- function(df_list,
 
     if (!is.null(blup)) {
 
-      bvar <- do.call(onebasis, argvar)
+      bvar <- do.call(dlnm::onebasis, argvar)
 
       coefs <- blup[[i]]$blup
       vcovs <- blup[[i]]$vcov
@@ -1634,7 +1634,7 @@ plot_and_write_relative_risk_all <- function(df_list,
                                 varper / 100, na.rm = TRUE),
                  Bound = range(data$temp, na.rm = TRUE))
 
-  bvar <- do.call(onebasis, argvar)
+  bvar <- do.call(dlnm::onebasis, argvar)
 
   model <- NULL
   cen <- median(mintempregions)
