@@ -496,6 +496,8 @@ calculate_min_mortality_temp <-  function(df_list,
     for(i in seq(length(df_list))) {
 
       data <- df_list[[i]]
+      cat(unique(data[,"regnames"]),"")
+
       predvar <- quantile(data$temp, 1:99 / 100, na.rm = TRUE)
 
       # Redefine the function using all arguments (boundary knots included)
@@ -534,7 +536,7 @@ calculate_min_mortality_temp <-  function(df_list,
       below_OTR <- which(as.numeric(names(cp$allRRfit))< optimal_temp_range[i, "lower"])
 
       if (length(which((below_one %in% above_OTR) | (below_one %in% below_OTR))) > 0) {
-        stop("Predicted RR goes below 1 in the ends")
+        print(warning("Predicted RR goes below 1 in the ends"))
       }
 
     }
@@ -543,10 +545,10 @@ calculate_min_mortality_temp <-  function(df_list,
 
     for(i in seq(length(df_list))) {
 
-      cat(i,"")
-
       # Extract data
       data <- df_list[[i]]
+
+      cat(unique(data[,"regnames"]),"")
 
       c(model, cb) %<-% define_model(dataset = data,
                                      independent_col1 = independent_col1,
@@ -579,7 +581,7 @@ calculate_min_mortality_temp <-  function(df_list,
       below_OTR <- which(as.numeric(names(pred$RRfit))< optimal_temp_range[i, "lower"])
 
       if (length(which((below_one %in% above_OTR) | (below_one %in% below_OTR))) > 0) {
-        stop("Predicted RR goes below 1 in the ends")
+        print(warning("Predicted RR goes below 1 in the ends"))
       }
 
     }
