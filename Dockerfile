@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
   libxml2-dev
 
 # install R packages
-RUN R -e "install.packages(c('dplyr', 'dlnm', 'mvmeta', 'splines', 'tsModel', 'config', 'zeallot', 'lubridate'))"
+RUN R -e "install.packages(c('dplyr', 'dlnm', 'mvmeta', 'splines', 'tsModel', 'config', 'zeallot', 'lubridate', 'FluMoDL'))"
 RUN R -e "install.packages('yaml')"
 RUN R -e "install.packages('readr')"
 RUN R -e "install.packages('plumber')"
