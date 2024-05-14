@@ -5,14 +5,14 @@
 \title{Do full DLNM analysis}
 \usage{
 do_analysis(
-  input_csv_path_,
+  input_csv_path_ = "NONE",
   output_folder_path_ = NULL,
   save_fig_ = TRUE,
   save_csv_ = TRUE,
   meta_analysis_ = TRUE,
   by_region_ = TRUE,
-  RR_distribution_length_ = 15,
-  output_year_,
+  RR_distribution_length_ = 0,
+  output_year_ = 0,
   dependent_col_ = "death",
   independent_col1_ = "NONE",
   independent_col2_ = "NONE",
