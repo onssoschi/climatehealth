@@ -7,6 +7,7 @@ library(tsModel)
 library(config)
 library(zeallot)
 library(climatehealth)
+library(FluMoDL)
 
 ###############################################################################
 # IMPORTANT: Before running this script update the following in config.yml:   #
