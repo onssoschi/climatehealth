@@ -2,5 +2,5 @@
 library(plumber)
 
 plumber::pr("api/climatehealth_api.R") %>%
-  plumber::pr_run(port=8000)
+  plumber::pr_run(port=8000, host="0.0.0.0")
 
