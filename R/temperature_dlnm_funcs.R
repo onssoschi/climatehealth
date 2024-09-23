@@ -2,12 +2,8 @@ library(dlnm)
 library(mvmeta)
 library(splines)
 library(tsModel)
-library(config)
 library(zeallot)
 library(FluMoDL)
-
-# Load config file
-config <- config::get()
 
 #' Load data for analysis
 #'
@@ -129,17 +125,13 @@ load_data <- function(input_csv_path,
 #'
 #' @param dataset dataframe with temp column to be modelled
 #' @param indepedent_col1_ column name of first extra independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param indepedent_col2_ column name of second independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param indepedent_col3_ column name of third independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param indepedent_col4_ column name of fourth independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
@@ -227,17 +219,13 @@ define_model <- function(dataset,
 #'
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @param indepedent_col1_ column name of first extra independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param indepedent_col2_ column name of second independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param indepedent_col3_ column name of third independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param indepedent_col4_ column name of fourth independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
@@ -423,17 +411,13 @@ wald_results <- function(mv) {
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param indepedent_col1_ column name of first extra independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param indepedent_col2_ column name of second independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param indepedent_col3_ column name of third independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param indepedent_col4_ column name of fourth independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
@@ -631,17 +615,13 @@ calculate_min_mortality_temp <-  function(df_list,
 #' @param an_thresholds A dataframe with the optimal temperature range and
 #' temperature thresholds for calculation of attributable deaths.
 #' @param indepedent_col1_ column name of first extra independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param indepedent_col2_ column name of second independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param indepedent_col3_ column name of third independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param indepedent_col4_ column name of fourth independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
@@ -1213,17 +1193,13 @@ write_attributable_deaths <- function(avgtmean_wald,
 #' @param save_fig Whether to save output figure (Bool)
 #' @param save_csv Whether to save output CSVs (Bool)
 #' @param indepedent_col1_ column name of first extra independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param indepedent_col2_ column name of second independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param indepedent_col3_ column name of third independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param indepedent_col4_ column name of third independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
@@ -1814,17 +1790,13 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @param dependent_col_ the column name of the
 #' dependent variable of interest e.g. deaths
 #' @param indepedent_col1_ column name of first extra independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param indepedent_col2_ column name of second independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #'  @param indepedent_col3_ column name of third independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param indepedent_col4_ column name of third independent
-#' variable to include in regression (excluding temperature,
-#' see config file for formula structure). 'None' if none.
+#' variable to include in regression (excluding temperature). 'None' if none.
 #' @param time_col_ The column name of column containing dates (e.g date, year).
 #' @param region_col_ The column name of the column containing regions.
 #' @param temp_col_ the column name of the column containing the exposure.
