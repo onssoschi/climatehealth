@@ -101,10 +101,7 @@ test_that('Test run_meta_model() returns correct data types', {
 
     c(coef_, vcov_) %<-%
       run_model(df_list = df_list_,
-                independent_col1 = config$independent_col1,
-                independent_col2 = config$independent_col2,
-                independent_col3 = config$independent_col3,
-                independent_col4 = config$independent_col4,
+                independent_cols = config$independent_cols,
                 varfun = config$varfun,
                 varper = varper_,
                 vardegree = config$vardegree,

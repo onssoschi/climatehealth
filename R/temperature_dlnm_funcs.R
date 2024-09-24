@@ -151,36 +151,45 @@ load_data <- function(input_csv_path,
 #'   }
 #' @export
 define_model <- function(dataset,
-                         independent_col1,
-                         independent_col2,
-                         independent_col3,
-                         independent_col4,
+                         independent_cols = NULL,
                          varfun,
                          varper,
                          vardegree,
                          lag,
                          lagnk,
                          dfseas) {
+  # define the base independent cols
+  base_independent_cols <- c(
+    'cb',
+    'splines::ns(date, df = dfseas * length(unique(year)))'
+  )
 
-  independent_cols <- c('cb',
-                        'splines::ns(date, df = dfseas * length(unique(year)))')
+  if (!is.null(independent_cols)) {
 
-  if (independent_col1 != "NONE") {
-    independent_cols <- c(independent_col1, independent_cols)
-
-    } else if (independent_col2 != "NONE") {
-    independent_cols <- c(independent_col2, independent_cols)
-
-    } else if (independent_col3 != "NONE") {
-    independent_cols <- c(independent_col3, independent_cols)
-
-    } else if (independent_col4 != "NONE") {
-      independent_cols <- c(independent_col4, independent_cols)
-
-    } else {
-    independent_cols <- independent_cols
-
+    # normalize type
+    if (is.character(independent_cols)) {
+      independent_cols <- c(independent_cols)
     }
+
+    # type check column names
+    for (col in independent_cols){
+      if (!is.character(col)){
+        stop(
+          cat(
+            "'independent_cols' expected a vector of strings or a string. Got",
+            typeof(i)
+          )
+        )
+      }
+    }
+  } else {
+    independent_cols = c()
+  }
+  print(independent_cols)
+  # Join on user-defined independent cols
+  independent_cols <- c(base_independent_cols, independent_cols)
+
+  print(independent_cols)
 
   # Model formula
   formula <- as.formula(paste(paste('dependent'),
@@ -244,10 +253,7 @@ define_model <- function(dataset,
 #'   }
 #' @export
 run_model <- function(df_list,
-                      independent_col1,
-                      independent_col2,
-                      independent_col3,
-                      independent_col4,
+                      independent_cols = NULL,
                       varfun,
                       varper,
                       vardegree,
@@ -279,10 +285,7 @@ run_model <- function(df_list,
     data <- df_list[[i]]
 
     c(model, cb) %<-% define_model(dataset = data,
-                                   independent_col1 = independent_col1,
-                                   independent_col2 = independent_col2,
-                                   independent_col3 = independent_col3,
-                                   independent_col4 = independent_col4,
+                                   independent_cols=independent_cols,
                                    varfun = varfun,
                                    varper = varper,
                                    vardegree = vardegree,
@@ -441,10 +444,7 @@ wald_results <- function(mv) {
 #' @export
 calculate_min_mortality_temp <-  function(df_list,
                                           blup = NULL,
-                                          independent_col1,
-                                          independent_col2,
-                                          independent_col3,
-                                          independent_col4,
+                                          independent_cols = NULL,
                                           varfun,
                                           varper,
                                           vardegree,
@@ -536,10 +536,7 @@ calculate_min_mortality_temp <-  function(df_list,
       cat(unique(data[,"regnames"]),"")
 
       c(model, cb) %<-% define_model(dataset = data,
-                                     independent_col1 = independent_col1,
-                                     independent_col2 = independent_col2,
-                                     independent_col3 = independent_col3,
-                                     independent_col4 = independent_col4,
+                                     independent_cols = independent_cols,
                                      varfun = varfun,
                                      varper = varper,
                                      vardegree = vardegree,
@@ -652,10 +649,7 @@ compute_attributable_deaths <- function(df_list,
                                         blup = NULL,
                                         mintempregions,
                                         an_thresholds,
-                                        independent_col1,
-                                        independent_col2,
-                                        independent_col3,
-                                        independent_col4,
+                                        independent_cols = NULL,
                                         varfun,
                                         varper,
                                         vardegree,
@@ -710,10 +704,7 @@ compute_attributable_deaths <- function(df_list,
       vcovs <- blup[[i]]$vcov
 
       c(model, cb) %<-% define_model(dataset = data,
-                                     independent_col1 = independent_col1,
-                                     independent_col2 = independent_col2,
-                                     independent_col3 = independent_col3,
-                                     independent_col4 = independent_col4,
+                                     independent_cols = independent_cols,
                                      varfun = varfun,
                                      varper = varper,
                                      vardegree = vardegree,
@@ -728,10 +719,7 @@ compute_attributable_deaths <- function(df_list,
       vcovs <- NULL
 
       c(model, cb) %<-% define_model(dataset = data,
-                                     independent_col1 = independent_col1,
-                                     independent_col2 = independent_col2,
-                                     independent_col3 = independent_col3,
-                                     independent_col4 = independent_col4,
+                                     independent_cols = independent_cols,
                                      varfun = varfun,
                                      varper = varper,
                                      vardegree = vardegree,
@@ -1235,10 +1223,7 @@ plot_and_write_relative_risk <- function(df_list,
                                          save_fig = TRUE,
                                          save_csv = TRUE,
                                          output_folder_path,
-                                         independent_col1,
-                                         independent_col2,
-                                         independent_col3,
-                                         independent_col4,
+                                         independent_cols,
                                          varfun,
                                          varper,
                                          vardegree,
@@ -1315,10 +1300,7 @@ plot_and_write_relative_risk <- function(df_list,
 
       # Run the model and obtain predictions
       c(model, cb) %<-% define_model(dataset = data,
-                                     independent_col1 = independent_col1,
-                                     independent_col2 = independent_col2,
-                                     independent_col3 = independent_col3,
-                                     independent_col4 = independent_col4,
+                                     independent_cols = independent_cols,
                                      varfun = varfun,
                                      varper = varper,
                                      vardegree = vardegree,
@@ -1843,10 +1825,7 @@ do_analysis <- function(input_csv_path_ = 'NONE',
                         RR_distribution_length_ = 0,
                         output_year_ = 0,
                         dependent_col_ = 'death',
-                        independent_col1_ = 'NONE',
-                        independent_col2_ = 'NONE',
-                        independent_col3_ = 'NONE',
-                        independent_col4_ = 'NONE',
+                        independent_cols_ = NULL,
                         time_col_ = 'date',
                         region_col_ = 'regnames',
                         temp_col_ = 'tmean',
@@ -1876,10 +1855,7 @@ do_analysis <- function(input_csv_path_ = 'NONE',
 
     c(coef_, vcov_) %<-%
     run_model(df_list = df_list_,
-              independent_col1 = independent_col1_,
-              independent_col2 = independent_col2_,
-              independent_col3 = independent_col3_,
-              independent_col4 = independent_col4_,
+              independent_cols = independent_cols_,
               varfun = varfun_,
               varper = varper_,
               vardegree = vardegree_,
@@ -1912,10 +1888,7 @@ do_analysis <- function(input_csv_path_ = 'NONE',
     calculate_min_mortality_temp(
       df_list = df_list_,
       blup = blup_,
-      independent_col1 = independent_col1_,
-      independent_col2 = independent_col2_,
-      independent_col3 = independent_col3_,
-      independent_col4 = independent_col4_,
+      independent_cols = independent_cols_,
       varfun = varfun_,
       varper = varper_,
       vardegree = vardegree_,
@@ -1931,10 +1904,7 @@ do_analysis <- function(input_csv_path_ = 'NONE',
       blup = blup_,
       mintempregions = mintempregions_,
       an_thresholds = an_thresholds_,
-      independent_col1 = independent_col1_,
-      independent_col2 = independent_col2_,
-      independent_col3 = independent_col3_,
-      independent_col4 = independent_col4_,
+      independent_cols = independent_cols_,
       varfun = varfun_,
       varper = varper_,
       vardegree = vardegree_,
@@ -1988,10 +1958,7 @@ do_analysis <- function(input_csv_path_ = 'NONE',
       save_fig = save_fig_,
       save_csv = save_csv_,
       output_folder_path = output_folder_path_,
-      independent_col1 = independent_col1_,
-      independent_col2 = independent_col2_,
-      independent_col3 = independent_col3_,
-      independent_col4 = independent_col4_,
+      independent_cols = independent_cols_,
       varfun = varfun_,
       varper = varper_,
       vardegree = vardegree_,
