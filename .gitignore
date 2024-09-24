@@ -1,19 +1,31 @@
+# Git Files
+!/**/.gitkeep
+
+# R Environment Files
 .Rproj.user
 .Rhistory
+.Rapp.history
 .RData
+.RDataTmp
+.Renviron
 
-data/*
-output/*
-api/*
+# Common Data Files
+*.csv
+*.pdf
+*.JSON
+*.yml
+*.yaml
+*.toml
+*.xlsx
+*.xml
+*.txt
+*.html
+*.xls
+*.rds
+
+# Output Folders
 tests/testthat/testdata/*
-tests/tests_Layli/*
 
-!data/.gitkeep
-!output/.gitkeep
-!tests/testthat/testdata/.gitkeep
-!tests/testthat/testdata/regEngWales.csv
+# Test Data Exclusions
+!tests/testthat/config.yml
 !tests/testthat/testdata/regEngWalesPop.csv
-!tests/testthat/testdata/output_one_region_data_original.csv
-!api/api_guide.txt
-!api/run_api.R
-!api/climatehealth_api.R
