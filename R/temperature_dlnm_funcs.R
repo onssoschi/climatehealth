@@ -644,6 +644,7 @@ calculate_min_mortality_temp <-  function(df_list,
 #' @param lagnk Number of knots in lag function
 #' (see dlnm::logknots)
 #' @param dfseas Degrees of freedom for seasonality
+#' @param nsim_ The number of simulation runs used for computing emprical CI
 #'
 #' @return A list of variables
 #' \itemize{
@@ -669,7 +670,8 @@ compute_attributable_deaths <- function(df_list,
                                         vardegree,
                                         lag,
                                         lagnk,
-                                        dfseas) {
+                                        dfseas,
+                                        nsim_ = 1000) {
 
   # Create the vectors to store the total mortality (accounting for missing)
   totdeath <- rep(NA, length(names(df_list)))
@@ -682,8 +684,11 @@ compute_attributable_deaths <- function(df_list,
                                      "moderate_heat", "high_cold", "high_heat",
                                      "heatwave")))
 
-  # Number of simulation runs for computing empirical CI
-  nsim_ <- 1000
+  # Validate the user-passed number of simulations
+  if (!is.numeric(nsim_)) {
+    stop("The number of simulations (nsim_) must be an integer.")
+  }
+  nsim_ <- round(nsim_, 0)
 
   # Create the array to store the CI of attributable deaths
   arraysim <- array(NA, dim = c(length(names(df_list)), 7, nsim_),
