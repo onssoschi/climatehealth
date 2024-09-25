@@ -72,6 +72,9 @@ load_data <- function(input_csv_path,
       dplyr::mutate(date = as.Date(date))%>%
       dplyr::mutate(dependent = ifelse(is.na(dependent), 0, dependent))
 
+  } else {
+    # Raise an error when the input_csv argument isn't valid
+    stop("The value passed for 'input_csv' is invalid.")
   }
 
   if (output_year == 0) {
