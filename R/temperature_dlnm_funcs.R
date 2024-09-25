@@ -44,10 +44,8 @@ load_data <- function(input_csv_path,
                     regnames = region_col,
                     temp = temp_col,
                     pop_col = population_col) %>%
-      dplyr::mutate(date = as.Date(date))
-
-    df <- df %>% dplyr::mutate(dependent = ifelse(is.na(dependent), 0, dependent))
-
+      dplyr::mutate(date = as.Date(date)) %>%
+      dplyr::mutate(dependent = ifelse(is.na(dependent), 0, dependent))
   }
 
   if ((is.character(input_csv_path) == TRUE) && (!population_col == 'NONE')) {
@@ -60,8 +58,8 @@ load_data <- function(input_csv_path,
                     regnames = region_col,
                     temp = temp_col,
                     pop_col = population_col) %>%
-      dplyr::mutate(date = as.Date(date))
-    df <- df %>% dplyr::mutate(dependent = ifelse(is.na(dependent), 0, dependent))
+      dplyr::mutate(date = as.Date(date)) %>%
+      dplyr::mutate(dependent = ifelse(is.na(dependent), 0, dependent))
 
   } else if ((is.character(input_csv_path) == TRUE) && (population_col == 'NONE')) {
 
@@ -80,9 +78,6 @@ load_data <- function(input_csv_path,
 
     output_year <- max(df$year, na.rm = TRUE)
 
-  } else {
-
-    output_year <- output_year
   }
 
   print(max(df$year, na.rm = TRUE))
