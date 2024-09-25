@@ -9,12 +9,11 @@ test_that('Test run_meta_model() produces appropriate errors', {
   # df_list not a list
   expect_error(
     run_meta_model(
-      df_list = data.frame(x = c(1, 2, 3),
-                           y = c(1,2,3)),
+      df_list = "tester",
       coef = as.matrix(1:10),
       vcov = list(as.matrix(1:10),
                   as.matrix(11:20))),
-    regexp = "Argument 'df_list' must be a list of data frames",
+    regexp = "'df_list' expected a list. Got character",
     fixed = TRUE)
 
   # df_list elements not data frames
@@ -24,7 +23,10 @@ test_that('Test run_meta_model() produces appropriate errors', {
       coef = as.matrix(1:10),
       vcov = list(as.matrix(1:10),
                   as.matrix(11:20))),
-    regexp = "Argument 'df_list' must be a list of data frames",
+    regexp = paste(
+      "'df_list' expected a list of dataframes. List contains item of",
+      "type double"
+    ),
     fixed = TRUE)
 
   # coef not a matrix
@@ -35,8 +37,7 @@ test_that('Test run_meta_model() produces appropriate errors', {
                      b <- data.frame(x = c(4, 5, 6),
                                      y = c(4, 5, 6))),
       coef = c(1:10),
-      vcov = list(as.matrix(1:10),
-                  as.matrix(11:20))),
+      vcov = c(1:10)),
     regexp = "Argument 'coef' must be a numeric matrix",
     fixed = TRUE)
 
@@ -60,8 +61,8 @@ test_that('Test run_meta_model() produces appropriate errors', {
                      b <- data.frame(x = c(4, 5, 6),
                                      y = c(4, 5, 6))),
       coef = as.matrix(1:10),
-      vcov = as.matrix(1:10)),
-    regexp = "Argument 'vcov' must be a list of matrices",
+      vcov = 2),
+    regexp = "'vcov' expected a list. Got double",
     fixed = TRUE)
 
   # vcov elements not matrices
@@ -73,7 +74,10 @@ test_that('Test run_meta_model() produces appropriate errors', {
                                      y = c(4, 5, 6))),
       coef = as.matrix(1:10),
       vcov = list(1, 2, 3)),
-    regexp = "Argument 'vcov' must be a list of matrices",
+    regexp = paste(
+      "'vcov' expected a list of matrices. List contains item of",
+      "type double"
+    ),
     fixed = TRUE)
 
   })
