@@ -9,10 +9,10 @@ test_that('Test min_mortality() produces appropriate errors', {
   # df_list not a list
   expect_error(
     calculate_min_mortality_temp(
-      df_list = data.frame(x = c(1, 2, 3), y = c(1, 2, 3)),
+      df_list = "test",
       blup = list(1, 2)
       ),
-    regexp = "Argument 'df_list' must be a list of data frames",
+    regexp = "'df_list' expected a list. Got character",
     fixed = TRUE)
 
   # blup not a list

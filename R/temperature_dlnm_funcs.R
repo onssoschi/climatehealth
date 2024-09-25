@@ -460,8 +460,20 @@ calculate_min_mortality_temp <-  function(df_list,
                                           lagnk,
                                           dfseas) {
 
-  if (!is.list(df_list) | !is.data.frame(df_list[[1]])) {
-    stop("Argument 'df_list' must be a list of data frames")
+  # TODO: functionalise this since it is now repeated code
+  if (is.list(df_list)) {
+    for (df in df_list){
+      if (!is.data.frame(df)) {
+        stop(paste(
+          "'df_list' expected a list of dataframes. List contains item of",
+          "type", toString(typeof(df))
+        )
+        )
+      }
+    }
+  }
+  else {
+    stop(paste("'df_list' expected a list. Got", class(df_list)))
   }
 
   if (!is.null(blup) && !is.list(blup)) {
