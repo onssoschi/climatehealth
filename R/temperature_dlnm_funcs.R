@@ -313,16 +313,47 @@ run_model <- function(df_list,
 #' @export
 run_meta_model <- function(df_list, coef, vcov) {
 
-  if(!is.list(df_list) | !is.data.frame(df_list[[1]])) {
-    stop("Argument 'df_list' must be a list of data frames")
+  # Assert that df_list is a list of dataframes.
+  if (is.list(df_list)) {
+    for (df in df_list){
+      if (!is.data.frame(df)) {
+        stop(paste(
+          "'df_list' expected a list of dataframes. List contains item of",
+          "type", toString(typeof(df))
+          )
+        )
+      }
+    }
+  }
+  else {
+    stop(paste("'df_list' expected a list. Got", class(df_list)))
   }
 
-  if(!is.matrix(coef) | !is.numeric(coef)) {
+  # Assert that coef is a numeric matrix
+  if(!is.matrix(coef)) {
     stop("Argument 'coef' must be a numeric matrix")
   }
+  else {
+    if (!is.numeric(coef)) {
+      stop("Argument 'coef' must be a numeric matrix")
+    }
+  }
 
-  if(!is.list(vcov) | !is.matrix(vcov[[1]])) {
-    stop("Argument 'vcov' must be a list of matrices")
+  # Assert that vcov is a list of matrices.
+  # TODO: Functionalise this functionality into a defences module
+  if (is.list(vcov)) {
+    for (matr in vcov){
+      if (!is.matrix(matr)) {
+        stop(paste(
+          "'vcov' expected a list of matrices. List contains item of",
+          "type", toString(typeof(matr))
+        )
+        )
+      }
+    }
+  }
+  else {
+    stop(paste("'vcov' expected a list. Got", toString(typeof(vcov))))
   }
 
 
@@ -655,12 +686,7 @@ compute_attributable_deaths <- function(df_list,
   if (output_year == 0) {
 
     output_year = max(df_list[[1]]$year)
-
-  } else {
-
-    output_year = output_year
   }
-
   # Run the loop
   for(i in seq(df_list)){
 
