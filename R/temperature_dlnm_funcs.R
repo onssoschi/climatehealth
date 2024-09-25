@@ -1135,44 +1135,32 @@ write_attributable_deaths <- function(avgtmean_wald,
 
   ####
 
-  if (!is.null(output_folder_path)) {
-
-    write.csv(wald_publication,
-              file = paste(output_folder_path,
-                           'wald_test_results.csv',
-                           sep = ""))
-
-    write.csv(anregions_publication,
-              file = paste(output_folder_path,
-                           'attributable_deaths_regions.csv',
-                           sep = ""))
-    write.csv(antot_bind,
-              file = paste(output_folder_path,
-                           'attributable_deaths_total.csv',
-                           sep = ""))
-    write.csv(arregions_publication,
-              file = paste(output_folder_path,
-                           'attributable_rates_regions.csv',
-                           sep = ""))
-    write.csv(artot_bind,
-              file = paste(output_folder_path,
-                           'attributable_rates_total.csv',
-                           sep = ""))
-
-  } else {
-
-    write.csv(wald_publication,
-              'wald_test_results.csv')
-    write.csv(anregions_publication,
-              'attributable_deaths_regions.csv')
-    write.csv(antot_bind,
-              'attributable_deaths_total.csv')
-    write.csv(arregions_publication,
-              'attributable_rates_regions.csv')
-    write.csv(artot_bind,
-              'attributable_rates_total.csv')
-
+  # define output_folder_path as CWD if it is null
+  if (is.null(output_folder_path)) {
+   output_folder_path <- ""
   }
+
+  write.csv(wald_publication,
+            file = paste(output_folder_path,
+                         'wald_test_results.csv',
+                         sep = ""))
+
+  write.csv(anregions_publication,
+            file = paste(output_folder_path,
+                         'attributable_deaths_regions.csv',
+                         sep = ""))
+  write.csv(antot_bind,
+            file = paste(output_folder_path,
+                         'attributable_deaths_total.csv',
+                         sep = ""))
+  write.csv(arregions_publication,
+            file = paste(output_folder_path,
+                         'attributable_rates_regions.csv',
+                         sep = ""))
+  write.csv(artot_bind,
+            file = paste(output_folder_path,
+                         'attributable_rates_total.csv',
+                         sep=""))
 
   return(list(wald_publication, anregions_publication, antot_bind, arregions_publication, artot_bind))
 
