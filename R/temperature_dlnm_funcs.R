@@ -1183,6 +1183,7 @@ write_attributable_deaths <- function(avgtmean_wald,
 #' temperature thresholds for calculation of attributable deaths.
 #' @param save_fig Whether to save output figure (Bool)
 #' @param save_csv Whether to save output CSVs (Bool)
+#' @param output_folder_path Path to folder for storing outputs.
 #' @param indepedent_cols column name (or list of names) of extra independent
 #' variable to include in regression (excluding temperature). Defaults to NULL.
 #' @param varfun Exposure function
@@ -1196,7 +1197,6 @@ write_attributable_deaths <- function(avgtmean_wald,
 #' @param lagnk Number of knots in lag function
 #' (see dlnm::logknots)
 #' @param dfseas Degrees of freedom for seasonality
-#' @param output_folder_path Path to folder for storing outputs.
 #'
 #' @export
 #'
