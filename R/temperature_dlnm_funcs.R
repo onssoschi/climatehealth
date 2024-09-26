@@ -43,12 +43,9 @@ load_data <- function(input_csv_path,
                     date = time_col,
                     regnames = region_col,
                     temp = temp_col,
-                    pop_col = population_col) %>%
-      dplyr::mutate(date = as.Date(date)) %>%
-      dplyr::mutate(dependent = ifelse(is.na(dependent), 0, dependent))
-  }
+                    pop_col = population_col)
 
-  if ((is.character(input_csv_path) == TRUE) && (!population_col == 'NONE')) {
+  } else if ((is.character(input_csv_path) == TRUE) && (!population_col == 'NONE')) {
 
     print('data upload locally')
 
@@ -57,9 +54,7 @@ load_data <- function(input_csv_path,
                     date = time_col,
                     regnames = region_col,
                     temp = temp_col,
-                    pop_col = population_col) %>%
-      dplyr::mutate(date = as.Date(date)) %>%
-      dplyr::mutate(dependent = ifelse(is.na(dependent), 0, dependent))
+                    pop_col = population_col)
 
   } else if ((is.character(input_csv_path) == TRUE) && (population_col == 'NONE')) {
 
@@ -68,14 +63,17 @@ load_data <- function(input_csv_path,
       dplyr::rename(dependent = dependent_col,
                     date = time_col,
                     regnames = region_col,
-                    temp = temp_col) %>%
-      dplyr::mutate(date = as.Date(date))%>%
-      dplyr::mutate(dependent = ifelse(is.na(dependent), 0, dependent))
+                    temp = temp_col)
 
   } else {
     # Raise an error when the input_csv argument isn't valid
     stop("The value passed for 'input_csv' is invalid.")
   }
+
+  # Reformat data and fill NaNs
+  df <- df %>%
+    dplyr::mutate(date = as.Date(date))%>%
+    dplyr::mutate(dependent = ifelse(is.na(dependent), 0, dependent))
 
   if (output_year == 0) {
 
