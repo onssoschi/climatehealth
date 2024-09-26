@@ -83,17 +83,21 @@ load_data <- function(input_csv_path,
 
   print(max(df$year, na.rm = TRUE))
 
+  # Calculate the RR distribution length if it is 0
   if (RR_distribution_length == 0) {
 
     RR_distribution_length = max(df$year, na.rm = TRUE) - min(df$year, na.rm = TRUE)
 
-  } else if(RR_distribution_length < 5) {
+  }
 
-    stop("Timeseries to calculate the RR is less than 5 years")
+  # Raise an error if the RR distribution length is out of range (5-15)
+  if(RR_distribution_length < 5) {
+
+    stop("Timeseries to calculate the RR is less than 5 years.")
 
   } else if (RR_distribution_length > 15) {
 
-    stop("Timeseries to calculate the RR is more than 15 years")
+    stop("Timeseries to calculate the RR is more than 15 years.")
 
   }
 
