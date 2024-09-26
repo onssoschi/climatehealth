@@ -1063,15 +1063,16 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 #'
 #' @description Write the attributable deaths and temperature for each regions,
 #' with empirical CI estimated using the re-centered bases.
-#' @param df_list An alphabetically-ordered list of dataframes for each region.
-#' @param totdeath A named vector of integers. Total observed mortality per region.
-#' @param arraysim An array (numeric). Total (glob),
-#' cold and heat-attributable deaths per region for 1000 simulations.
-#'   Used to derive confidence intervals.
-#' @param matsim A matrix (numeric). Total (glob),
-#' cold and heat-attributable deaths per region from reduced coefficients.
+#' @param avgtmean_wald The Wald statistic P-value for the average temperature.
+#' @param rangetmean_wald The wald statistic P-value for the temperature range.
 #' @param anregions_bind A dataframe with attributable deaths for each region.
+#' @param antot_bind A matrix of numbers of numbers of deaths attributable to
+#'  temperature, heat, cold, extreme heat and extreme cold (with confidence
+#'  intervals).
 #' @param arregions_bind A dataframe with attributable rates by region.
+#' @param artot_bind A matrix of fractions of all-cause mortality
+#'  attributable to temperature, heat, cold, extreme heat and extreme cold
+#'  (with confidence intervals).
 #' @param output_folder_path Path to folder for storing outputs.
 #'
 #' @export
@@ -1079,16 +1080,16 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 #'
 #' @return
 #' \itemize{
-#'   \item `anregions_bind` A matrix of numbers of deaths attributable to
+#'   \item `wald_publication` A dataframe containing the Wald statistic P-values
+#'   for average temperature and the temperature range.
+#'   \item `anregions_publication` A matrix of numbers of deaths attributable to
 #'   temperature, heat, cold, extreme heat and extreme cold (with confidence
 #'   intervals), disaggregated by region.
 #'   \item `antot_bind` A matrix of numbers of numbers of deaths attributable to
 #'   temperature, heat, cold, extreme heat and extreme cold (with confidence
 #'   intervals).
-#'   \item `arregions_bind` A matrix of fractions of all-cause mortality
-#'   attributable to temperature, heat, cold, extreme heat and extreme cold
-#'   (with confidence intervals), disaggregated by region.
-#'    \item `artot_bind` A matrix of fractions of all-cause mortality
+#'   \item `arregions_publication`
+#'   \item `artot_bind` A matrix of fractions of all-cause mortality
 #'   attributable to temperature, heat, cold, extreme heat and extreme cold
 #'   (with confidence intervals).
 #' }
