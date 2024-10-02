@@ -1827,7 +1827,8 @@ do_analysis <- function(input_csv_path_ = 'NONE',
                         vardegree_ = 2,
                         lag_  = 21,
                         lagnk_ = 3,
-                        dfseas_ = 8
+                        dfseas_ = 8,
+                        nsim__ = 1000,
                         ) {
 
   varper_ <- c(10, 75, 90)
@@ -1903,7 +1904,8 @@ do_analysis <- function(input_csv_path_ = 'NONE',
       vardegree = vardegree_,
       lag = lag_,
       lagnk = lagnk_,
-      dfseas = dfseas_
+      dfseas = dfseas_,
+      nsim_ = nsim__
       )
 
   c(anregions_bind_,antot_bind_, arregions_bind_, artot_bind_) %<-%
