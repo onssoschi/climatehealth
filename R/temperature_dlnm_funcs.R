@@ -1,10 +1,3 @@
-library(dlnm)
-library(mvmeta)
-library(splines)
-library(tsModel)
-library(zeallot)
-library(FluMoDL)
-
 #' Load data for analysis
 #'
 #' @description Loads data and names of regions for analysis from a CSV file.
