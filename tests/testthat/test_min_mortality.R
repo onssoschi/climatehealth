@@ -9,10 +9,10 @@ test_that('Test min_mortality() produces appropriate errors', {
   # df_list not a list
   expect_error(
     calculate_min_mortality_temp(
-      df_list = data.frame(x = c(1, 2, 3), y = c(1, 2, 3)),
+      df_list = "test",
       blup = list(1, 2)
       ),
-    regexp = "Argument 'df_list' must be a list of data frames",
+    regexp = "'df_list' expected a list. Got character",
     fixed = TRUE)
 
   # blup not a list
@@ -50,10 +50,7 @@ test_that('Test min_mortality() returns correct data types', {
 
     c(coef_, vcov_) %<-%
       run_model(df_list = df_list_,
-                independent_col1 = config$independent_col1,
-                independent_col2 = config$independent_col2,
-                independent_col3 = config$independent_col3,
-                independent_col4 = config$independent_col4,
+                independent_cols = config$independent_cols,
                 varfun = config$varfun,
                 varper = varper_,
                 vardegree = config$vardegree,
@@ -86,10 +83,7 @@ test_that('Test min_mortality() returns correct data types', {
     calculate_min_mortality_temp(
       df_list = df_list_,
       blup = blup_,
-      independent_col1 = config$independent_col1,
-      independent_col2 = config$independent_col2,
-      independent_col3 = config$independent_col3,
-      independent_col4 = config$independent_col4,
+      independent_cols = config$independent_cols,
       varfun = config$varfun,
       varper = varper_,
       vardegree = config$vardegree,
