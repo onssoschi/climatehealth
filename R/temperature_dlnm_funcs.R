@@ -33,9 +33,6 @@ load_data <- function(input_csv_path,
                       RR_distribution_length) {
 
   if (is.list(input_csv_path) == TRUE) {
-
-    print('data upload by API')
-
     df <- data.frame(input_csv_path)
 
     df <- df %>%
@@ -46,9 +43,6 @@ load_data <- function(input_csv_path,
                     pop_col = population_col)
 
   } else if ((is.character(input_csv_path) == TRUE) && (!population_col == 'NONE')) {
-
-    print('data upload locally')
-
     df <- read.csv(input_csv_path, row.names = 1) %>%
       dplyr::rename(dependent = dependent_col,
                     date = time_col,
@@ -80,8 +74,6 @@ load_data <- function(input_csv_path,
     output_year <- max(df$year, na.rm = TRUE)
 
   }
-
-  print(max(df$year, na.rm = TRUE))
 
   # Calculate the RR distribution length if it is 0
   if (RR_distribution_length == 0) {
@@ -263,9 +255,6 @@ run_model <- function(df_list,
   names(vcov_) <- names(df_list)
 
   for(i in seq(length(df_list))) {
-
-    cat(i,"")
-
     # Extract data
     data <- df_list[[i]]
 
@@ -372,7 +361,6 @@ run_meta_model <- function(df_list, coef, vcov) {
                vcov,
                data = as.data.frame(names(df_list)), # was data = regions_df
                control = list(showiter = TRUE))
-  print(summary(mv)["AIC"])
 
   # Obtain blups
   blup <- mvmeta::blup(mv, vcov = TRUE)
@@ -503,8 +491,6 @@ calculate_min_mortality_temp <-  function(df_list,
     for(i in seq(length(df_list))) {
 
       data <- df_list[[i]]
-      cat(unique(data[,"regnames"]),"")
-
       predvar <- quantile(data$temp, 1:99 / 100, na.rm = TRUE)
 
       # Redefine the function using all arguments (boundary knots included)
@@ -554,8 +540,6 @@ calculate_min_mortality_temp <-  function(df_list,
 
       # Extract data
       data <- df_list[[i]]
-
-      cat(unique(data[,"regnames"]),"")
 
       c(model, cb) %<-% define_model(dataset = data,
                                      independent_cols = independent_cols,
@@ -613,9 +597,6 @@ calculate_min_mortality_temp <-  function(df_list,
 
   # Country-specific points of minimum mortality
   (minperccountry <- median(minpercregions_))
-
-  # print(minpercregions_)
-  # print(mintempregions_)
 
   return(list(mintempregions = mintempregions_, an_thresholds))
 
@@ -706,9 +687,6 @@ compute_attributable_deaths <- function(df_list,
   }
   # Run the loop
   for(i in seq(df_list)){
-
-    # Print
-    cat(i, "")
 
     # Extract the data
     data <- df_list[[i]]
