@@ -21,10 +21,7 @@ default:
   population_col: pop
 
   # Extra independent variables. Cross-basis, day of the week, and seasonal spline included by default. Use ('NONE' if none).
-  independent_col1: 'dow'
-  independent_col2: 'NONE'
-  independent_col3: 'NONE'
-  independent_col4: 'NONE'
+  independent_cols: NULL
 
   # Number of years for the calculation of RR distribution. Set both as 'NONE' to use full range in data.
   RR_distribution_length: 0
