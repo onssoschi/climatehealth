@@ -124,7 +124,7 @@ load_data <- function(input_csv_path,
 #' Define regression model
 #'
 #' @param dataset dataframe with temp column to be modelled
-#' @param indepedent_cols column name (or list of names) of extra independent
+#' @param independent_cols column name (or list of names) of extra independent
 #' variable to include in regression (excluding temperature). Defaults to NULL.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
@@ -218,7 +218,7 @@ define_model <- function(dataset,
 #' Define and run poisson regression model for each dataframe
 #'
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
-#' @param indepedent_cols column name (or list of names) of extra independent
+#' @param independent_cols column name (or list of names) of extra independent
 #' variable to include in regression (excluding temperature). Defaults to NULL.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
@@ -429,7 +429,7 @@ wald_results <- function(mv) {
 #'
 #' @param df_list An alphabetically-ordered list of dataframes for each region.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
-#' @param indepedent_cols column name (or list of names) of extra independent
+#' @param independent_cols column name (or list of names) of extra independent
 #' variable to include in regression (excluding temperature). Defaults to NULL.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
@@ -633,7 +633,7 @@ calculate_min_mortality_temp <-  function(df_list,
 #' Minimum (optimum) mortality temperature per region.
 #' @param an_thresholds A dataframe with the optimal temperature range and
 #' temperature thresholds for calculation of attributable deaths.
-#' @param indepedent_cols column name (or list of names) of extra independent
+#' @param independent_cols column name (or list of names) of extra independent
 #' variable to include in regression (excluding temperature). Defaults to NULL.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
@@ -1185,8 +1185,7 @@ write_attributable_deaths <- function(avgtmean_wald,
 #' temperature thresholds for calculation of attributable deaths.
 #' @param save_fig Whether to save output figure (Bool)
 #' @param save_csv Whether to save output CSVs (Bool)
-#' @param output_folder_path Path to folder for storing outputs.
-#' @param indepedent_cols column name (or list of names) of extra independent
+#' @param independent_cols column name (or list of names) of extra independent
 #' variable to include in regression (excluding temperature). Defaults to NULL.
 #' @param varfun Exposure function
 #' (see dlnm::crossbasis)
@@ -1770,7 +1769,7 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @param output_year_ Year(s) to calculate output for.
 #' @param dependent_col_ the column name of the
 #' dependent variable of interest e.g. deaths
-#' @param indepedent_cols_ column name (or list of names) of extra independent
+#' @param independent_cols_ column name (or list of names) of extra independent
 #' variable to include in regression (excluding temperature). Defaults to NULL.
 #' @param time_col_ The column name of column containing dates (e.g date, year).
 #' @param region_col_ The column name of the column containing regions.
