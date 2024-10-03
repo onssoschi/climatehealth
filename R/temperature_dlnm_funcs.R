@@ -72,7 +72,8 @@ load_data <- function(input_csv_path,
 
   # Reformat data and fill NaNs
   df <- df %>%
-    dplyr::mutate(date = as.Date(date))%>%
+    dplyr::mutate(date = as.Date(date,
+                                 tryFormats = c("%Y-%m-%d", "%d/%m/%Y"))) %>%
     dplyr::mutate(dependent = ifelse(is.na(dependent), 0, dependent)) %>%
     dplyr::mutate(year = as.numeric(format(date, "%Y")))
 
