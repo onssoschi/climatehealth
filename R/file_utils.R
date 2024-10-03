@@ -2,8 +2,6 @@
 # AUTHOR: charlie.browning@ons.gov.uk
 # DATE CREATED: 03/10/2024
 
-
-
 #' Check that a file exists at a passed path.
 #'
 #' @description Checks the files on disk to assert that the passed file is
