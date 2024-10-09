@@ -9,7 +9,7 @@ test_that('Test data loads correctly', {
   varper_ <- c(10, 75, 90)
 
   c(df_list_) %<-%
-    load_data(
+    load_temperature_data(
       input_csv_path = config$input_csv_path,
       dependent_col = config$dependent_col,
       time_col = config$time_col,
@@ -29,7 +29,8 @@ test_that('Test data loads correctly', {
   df <- unique(df$regnames)
 
   test_list <- vector(mode = "list", length = length(df))
-
+  print(length(test_list))
+  print(length(df_list_))
   expect_equal(length(test_list), length(df_list_))
 
 })
