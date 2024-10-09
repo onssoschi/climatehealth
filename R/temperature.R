@@ -2,9 +2,10 @@
 # AUTHOR: charlie.browning@ons.gov.uk
 # DATE CREATED: 03/10/2024
 filter_on_rr_distribution <- function(df,
-                                      rr_distribution_length=0,
+                                      RR_distribution_length=0,
                                       lower_range=5,
-                                      upper_range=15) {
+                                      upper_range=15,
+                                      output_year = 0) {
   # Set the output year if the user has not passed one.
   if (output_year == 0) {
 
@@ -65,12 +66,12 @@ load_temperature_data <- function(input_csv_path,
                       reformat_date=TRUE,
                       fill_na=c("dependent"),
                       year_from_date=TRUE)
-
   # Filter the data based on RR_distribution_length
-  df <- filter_on_rr_distribution(df, RR_distribution_length)
-
+  df <- filter_on_rr_distribution(df,
+                                  RR_distribution_length,
+                                  output_year = output_year)
   # Split the data by region
-  df <- aggregate_by_column(df, "regnames")
+  df_list <- aggregate_by_column(df, "regnames")
 
   return (list(df_list))
 
