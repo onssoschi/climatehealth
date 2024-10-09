@@ -12,7 +12,7 @@ test_that('Test min_mortality() produces appropriate errors', {
       df_list = "test",
       blup = list(1, 2)
       ),
-    regexp = "'df_list' expected a list. Got character",
+    regexp = "df_list expected a list. Got character",
     fixed = TRUE)
 
   # blup not a list
@@ -35,7 +35,7 @@ test_that('Test min_mortality() returns correct data types', {
   varper_ <- c(10, 75, 90)
 
   c(df_list_) %<-%
-    load_data(
+    load_temperature_data(
       input_csv_path = config$input_csv_path,
       dependent_col = config$dependent_col,
       time_col = config$time_col,

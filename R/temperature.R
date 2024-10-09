@@ -367,18 +367,20 @@ wald_results <- function(mv) {
 #'
 #' @return The optimal temperature range.
 #' @export
-define_and_validate_optimal_temps <- function(optimal_temp_range, prediction) {
-  optimal_temp_range[i,"lower"] <- as.numeric(names(
+define_and_validate_optimal_temps <- function(optimal_temp_range,
+                                              prediction,
+                                              index) {
+  optimal_temp_range[index,"lower"] <- as.numeric(names(
     which.min(which(prediction$allRRfit >= 1 & prediction$allRRfit <= 1.1))))
-  optimal_temp_range[i, "upper"] <- as.numeric(names(
-    which.max(which(prediction$allRRfit >= 1 & prediciton$allRRfit <= 1.1))))
+  optimal_temp_range[index, "upper"] <- as.numeric(names(
+    which.max(which(prediction$allRRfit >= 1 & prediction$allRRfit <= 1.1))))
 
-  below_one <- which(cp$allRRfit < 1)
+  below_one <- which(prediction$allRRfit < 1)
   above_OTR <- which(
-    as.numeric(names(prediction$allRRfit)) > optimal_temp_range[i, "upper"]
+    as.numeric(names(prediction$allRRfit)) > optimal_temp_range[index, "upper"]
   )
   below_OTR <- which(
-    as.numeric(names(prediction$allRRfit))< optimal_temp_range[i, "lower"]
+    as.numeric(names(prediction$allRRfit))< optimal_temp_range[index, "lower"]
   )
   if (length(which((below_one %in% above_OTR) | (below_one %in% below_OTR))) > 0) {
   # TODO: Create a better warning
@@ -487,9 +489,10 @@ calculate_min_mortality_temp <-  function(df_list,
                             to = ranges[i,2])
 
 
-    define_and_validate_optimal_temps(
+    optimal_temp_range <- define_and_validate_optimal_temps(
       optimal_temp_range = optimal_temp_range,
-      prediction = cp
+      prediction = cp,
+      index = i
     )
 
     }
@@ -519,9 +522,10 @@ calculate_min_mortality_temp <-  function(df_list,
       cen_ <- mintempregions_[i]
       pred <- dlnm::crossreduce(cb, model, cen = cen_)
 
-      define_and_validate_optimal_temps(
+      optimal_temp_range <- define_and_validate_optimal_temps(
         optimal_temp_range = optimal_temp_range,
-        prediction = pred
+        prediction = pred,
+        index = i
       )
 
     }
