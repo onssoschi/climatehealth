@@ -37,10 +37,12 @@ check_file_exists <- function(fpath, raise = TRUE) {
 #'
 #' @return Whether or not the passed file has a valid file extension.
 #' @export
-check_file_extension <- function(fpath,
-                                 expected_ext,
-                                 param_nm = "fpath",
-                                raise = TRUE) {
+check_file_extension <- function(
+    fpath,
+    expected_ext,
+    param_nm = "fpath",
+    raise = TRUE
+  ) {
   # obtain and normalise file extensions
   expected_ext <- tolower(gsub("\\.", "", expected_ext))
   found_ext <- tools::file_ext(fpath)
@@ -55,7 +57,8 @@ check_file_extension <- function(fpath,
         "' expected filetype '",
         expected_ext,
         "'. Got ",
-        found_extsep = ""
+        found_ext,
+        sep = ""
       )
     )
   } else {
@@ -63,3 +66,24 @@ check_file_extension <- function(fpath,
   }
 
 }
+
+
+read_input_data <- function(input_csv_path) {
+
+  if (is.list(input_csv_path)) {
+    df <- data.frame(input_csv_path)
+
+  } else if (is.character(input_csv_path)) {
+
+    check_file_extension(input_csv_path, ".csv", "input_csv_path")
+    check_file_exists(input_csv_path, raise=TRUE)
+    df <- read.csv(input_csv_path, row.names = 1)
+  } else {
+
+    # Raise an error when the input_csv argument isn't valid
+    stop(paste("'input_csv' expected a list or a string. Got", typeof(input_csv)))
+  }
+
+  return(df)
+}
+
