@@ -28,7 +28,7 @@ is_list_of_dfs <- function(list_,
   } else {
     invalid <- TRUE
     if (raise) {
-      stop(paste(param_nm, " expected a list. Got ", toString(typeof(item)), sep = ""))
+      stop(paste(param_nm, " expected a list. Got ", toString(typeof(list_)), sep = ""))
     }
       }
   return (invalid)
