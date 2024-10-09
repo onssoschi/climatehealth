@@ -1,10 +1,6 @@
 # Functions to generate analysis for the temperature indicators.
 # AUTHOR: charlie.browning@ons.gov.uk
 # DATE CREATED: 03/10/2024
-source("R/file_utils.R")
-source("R/cleaning_utils.R")
-source("R/defence_utils.R")
-
 filter_on_rr_distribution <- function(df,
                                       rr_distribution_length=0,
                                       lower_range=5,
@@ -995,6 +991,86 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 
   return(list(anregions_bind,antot_bind,arregions_bind,artot_bind))
 }
+
+
+write_attributable_deaths <- function(avgtmean_wald,
+                                      rangetmean_wald,
+                                      anregions_bind,
+                                      antot_bind,
+                                      arregions_bind,
+                                      artot_bind,
+                                      output_folder_path = NULL) {
+
+  ###################################################
+  # Convert data to publication format
+
+  # Wald test results
+  if (!is.null(avgtmean_wald) & !is.null(rangetmean_wald)){
+    wald_publication <- data.frame(cbind(avgtmean_wald,rangetmean_wald))
+    colnames(wald_publication) <- c("region_mean_temp","region_temp_range")
+    rownames(wald_publication) <- "Wald statistic p-value"
+  } else {
+    wald_publication <- NULL
+  }
+
+  # AN_regions (attributable deaths by region)
+  anregions_publication <- anregions_bind %>%
+    t() %>%
+    as.data.frame() %>%
+    dplyr::select(glob_cold, glob_cold_ci_2.5, glob_cold_ci_97.5,
+                  glob_heat, glob_heat_ci_2.5, glob_heat_ci_97.5,
+                  moderate_cold,moderate_cold_ci_2.5,moderate_cold_ci_97.5,
+                  moderate_heat,moderate_heat_ci_2.5,moderate_heat_ci_97.5,
+                  high_cold,high_cold_ci_2.5,high_cold_ci_97.5,
+                  high_heat,high_heat_ci_2.5,high_heat_ci_97.5,
+                  heatwave, heatwave_ci_2.5,heatwave_ci_97.5)
+
+
+  # AR_regions (attributable rates by region)
+  arregions_publication <- arregions_bind %>%
+    t() %>%
+    as.data.frame() %>%
+    dplyr::select(glob_cold, glob_cold_ci_2.5, glob_cold_ci_97.5,
+                  glob_heat, glob_heat_ci_2.5, glob_heat_ci_97.5,
+                  moderate_cold,moderate_cold_ci_2.5,moderate_cold_ci_97.5,
+                  moderate_heat,moderate_heat_ci_2.5,moderate_heat_ci_97.5,
+                  high_cold,high_cold_ci_2.5,high_cold_ci_97.5,
+                  high_heat,high_heat_ci_2.5,high_heat_ci_97.5,
+                  heatwave, heatwave_ci_2.5,heatwave_ci_97.5)
+
+  ####
+
+  # define output_folder_path as CWD if it is null
+  if (is.null(output_folder_path)) {
+    output_folder_path <- ""
+  }
+
+  write.csv(wald_publication,
+            file = paste(output_folder_path,
+                         'wald_test_results.csv',
+                         sep = ""))
+
+  write.csv(anregions_publication,
+            file = paste(output_folder_path,
+                         'attributable_deaths_regions.csv',
+                         sep = ""))
+  write.csv(antot_bind,
+            file = paste(output_folder_path,
+                         'attributable_deaths_total.csv',
+                         sep = ""))
+  write.csv(arregions_publication,
+            file = paste(output_folder_path,
+                         'attributable_rates_regions.csv',
+                         sep = ""))
+  write.csv(artot_bind,
+            file = paste(output_folder_path,
+                         'attributable_rates_total.csv',
+                         sep=""))
+
+  return(list(wald_publication, anregions_publication, antot_bind, arregions_publication, artot_bind))
+
+}
+
 
 
 plot_and_write <- function(
