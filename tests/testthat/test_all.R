@@ -1,13 +1,14 @@
 library(testthat)
 library(climatehealth)
 library(config)
+library(zeallot)
 
 test_that('Test expected outputs have been created and contain data', {
 
   config <- config::get()
 
-  c(output_df, temp_df, anregions_publication, antot_bind, arregions_publication, artot_bind) %<-%
-    climatehealth::do_analysis(input_csv_path_ = config$input_csv_path,
+  (c(output_df, temp_df, anregions_publication, antot_bind, arregions_publication, artot_bind) %<-%
+    climatehealth::heat_and_cold_analysis(input_csv_path_ = config$input_csv_path,
                                output_folder_path_ = config$output_folder_path,
                                save_fig_ = config$save_fig,
                                save_csv_ = config$save_csv,
@@ -27,6 +28,7 @@ test_that('Test expected outputs have been created and contain data', {
                                lagnk_ = config$lagnk,
                                dfseas_ = config$dfseas
     )
+  )
 
   # expected_output <- read.csv('testdata/output_one_region_data_original.csv')
   # actual_output <- read.csv('testdata/output_one_region_data_new.csv')
