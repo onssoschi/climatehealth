@@ -79,7 +79,6 @@ load_temperature_data <- function(input_csv_path,
 
   # Load the input dataset
   df <- read_input_data(input_csv_path)
-
   # Format the population column
   if (is.null(population_col)) {
     df <- df %>%
@@ -187,7 +186,6 @@ define_model <- function(dataset,
   lag <- as.numeric(lag)
   lagnk <- as.numeric(lagnk)
   dfseas <- as.numeric(dfseas)
-
   cb <- dlnm::crossbasis(dataset$temp,
                          lag = lag,
                          argvar = argvar_,
@@ -1795,6 +1793,7 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
   c(df_list_) %<-%
     load_temperature_data(
       input_csv_path = input_csv_path_,
+      dependent_col = dependent_col_,
       time_col = time_col_,
       region_col = region_col_,
       temp_col = temp_col_,
@@ -1890,7 +1889,7 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
         df_list = df_list_,
         output_name = "output_all",
         output_all = TRUE,
-        output_folder_path = "",
+        output_folder_path = output_folder_path_,
         save_fig = TRUE,
         save_csv = TRUE,
         mintempregions = mintempregions_,
@@ -1909,13 +1908,12 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
         df_list = df_list_,
         output_name = "output_all_regions",
         output_all = FALSE,
-        output_folder_path = "",
+        output_folder_path = output_folder_path_,
         blup = blup_,
         mintempregions = mintempregions_,
         an_thresholds = an_thresholds_,
         save_fig = save_fig_,
         save_csv = save_csv_,
-        output_folder_path = output_folder_path_,
         independent_cols = independent_cols_,
         varfun = varfun_,
         varper = varper_,
