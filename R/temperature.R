@@ -1,6 +1,19 @@
 # Functions to generate analysis for the temperature indicators.
 # AUTHOR: charlie.browning@ons.gov.uk
-# DATE CREATED: 03/10/2024
+# DATE CREATED: 03/10/2024#
+
+#' Title
+#'
+#' @param df
+#' @param RR_distribution_length
+#' @param lower_range
+#' @param upper_range
+#' @param output_year
+#'
+#' @return
+#' @export
+#'
+#' @examples
 filter_on_rr_distribution <- function(df,
                                       RR_distribution_length=0,
                                       lower_range=5,
@@ -1168,6 +1181,8 @@ plot_and_write_relative_risk <- function(df_list,
                                          lag,
                                          lagnk,
                                          dfseas) {
+
+  xlab <- expression(paste("Temperature (",vardegree,"C)"))
   no_of_regions <- seq(length(df_list))
 
   for(i in no_of_regions) {
