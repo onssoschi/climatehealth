@@ -2,22 +2,21 @@
 # AUTHOR: charlie.browning@ons.gov.uk
 # DATE CREATED: 03/10/2024#
 
-#' Title
+#' Filter the dataframe based on the relative risk distribution.
 #'
-#' @param df
-#' @param RR_distribution_length
-#' @param lower_range
-#' @param upper_range
-#' @param output_year
+#' @param df The dataframe to filter.
+#' @param RR_distribution_length The RR distribution length. Defaults to 0.
+#' @param lower_range The lower range. Defaults to 5.
+#' @param upper_range The upper range. Defaults to 15.
+#' @param output_year The output year. Defaults to 0.
 #'
-#' @return
+#' @return The filtered dataframe.
 #' @export
 #'
-#' @examples
 filter_on_rr_distribution <- function(df,
-                                      RR_distribution_length=0,
-                                      lower_range=5,
-                                      upper_range=15,
+                                      RR_distribution_length = 0,
+                                      lower_range = 5,
+                                      upper_range = 15,
                                       output_year = 0) {
   # Set the output year if the user has not passed one.
   if (output_year == 0) {
@@ -48,6 +47,26 @@ filter_on_rr_distribution <- function(df,
   & (year <= output_year))
 }
 
+
+#' Load temperature (heat/cold indicator) for analysis.
+#'
+#' @description Loads data and names of regions for analysis from a CSV file.
+#'
+#' @param input_csv_path Path to a CSV containing a
+#' daily time series of death and temperature per region.
+#' @param dependent_col the column name of the
+#' dependent variable of interest e.g. deaths
+#' @param time_col Time column e.g. date
+#' @param region_col The region column over which the data
+#' are spatially aggregated e.g. regnames
+#' @param temp_col The temperature column e.g. tmean
+#' @param population_col The population column e.g. pop
+#' @param output_year_ Year(s) to calculate output for.
+#' @param RR_distribution_length Number of years for the calculation of RR
+#' distribution. Set both as 'NONE' to use full range in data.
+#' @return `df_list` An alphabetically-ordered list of dataframes for each
+#' region comprising dates, deaths, and temperatures.
+#' @export
 
 load_temperature_data <- function(input_csv_path,
                                   dependent_col,
@@ -375,8 +394,9 @@ wald_results <- function(mv) {
 
 #' Define and validate the optimal temperature range from the model predictions.
 #'
-#' @param optimal_temp_range
-#' @param prediction
+#' @param optimal_temp_range An matrix used to store the optimal temperature
+#' ranges.
+#' @param prediction The models prediction
 #'
 #' @return The optimal temperature range.
 #' @export
@@ -1011,6 +1031,41 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 }
 
 
+#' Write outputs to csv
+#'
+#' @description Write the attributable deaths and temperature for each regions,
+#' with empirical CI estimated using the re-centered bases.
+#' @param avgtmean_wald The Wald statistic P-value for the average temperature.
+#' @param rangetmean_wald The wald statistic P-value for the temperature range.
+#' @param anregions_bind A dataframe with attributable deaths for each region.
+#' @param antot_bind A matrix of numbers of numbers of deaths attributable to
+#'  temperature, heat, cold, extreme heat and extreme cold (with confidence
+#'  intervals).
+#' @param arregions_bind A dataframe with attributable rates by region.
+#' @param artot_bind A matrix of fractions of all-cause mortality
+#'  attributable to temperature, heat, cold, extreme heat and extreme cold
+#'  (with confidence intervals).
+#' @param output_folder_path Path to folder for storing outputs.
+#'
+#' @export
+#'
+#'
+#' @return
+#' \itemize{
+#'   \item `wald_publication` A dataframe containing the Wald statistic P-values
+#'   for average temperature and the temperature range.
+#'   \item `anregions_publication` A matrix of numbers of deaths attributable to
+#'   temperature, heat, cold, extreme heat and extreme cold (with confidence
+#'   intervals), disaggregated by region.
+#'   \item `antot_bind` A matrix of numbers of numbers of deaths attributable to
+#'   temperature, heat, cold, extreme heat and extreme cold (with confidence
+#'   intervals).
+#'   \item `arregions_publication`
+#'   \item `artot_bind` A matrix of fractions of all-cause mortality
+#'   attributable to temperature, heat, cold, extreme heat and extreme cold
+#'   (with confidence intervals).
+#' }
+#' @examples output_folder_path = 'myfolder/output/'
 write_attributable_deaths <- function(avgtmean_wald,
                                       rangetmean_wald,
                                       anregions_bind,
@@ -1090,7 +1145,53 @@ write_attributable_deaths <- function(avgtmean_wald,
 }
 
 
-
+#' Plot and write results of analysis
+#'
+#' @param df_list An alphabetically-ordered
+#' list of dataframes for each region.
+#' @param output_name The name of the output file. (.csv and .pdf added
+#' accordingly).
+#' @param output_all Whether or not to output all geographical regions.
+#' @param output_folder_path The directory to output the resultant data/plots to.
+#' @param save_fig Whether to save output figure (Bool)
+#' @param save_csv Whether to save output CSVs (Bool)
+#' @param blup A list of BLUPs (best linear unbiased predictions).
+#' @param mintempregions A named numeric vector.
+#'   Minimum (optimum) mortality temperature per region.
+#' @param an_thresholds A dataframe with the optimal temperature range and
+#' temperature thresholds for calculation of attributable deaths.
+#' @param independent_cols column name (or list of names) of extra independent
+#' variable to include in regression (excluding temperature). Defaults to NULL.
+#' @param varfun Exposure function
+#' (see dlnm::crossbasis)
+#' @param varper Internal knot positions in exposure function
+#' (see dlnm::crossbasis)
+#' @param vardegree Degrees of freedom in exposure function
+#' (see dlnm:crossbasis)
+#' @param lag Lag length in time
+#' (see dlnm::logknots)
+#' @param lagnk Number of knots in lag function
+#' (see dlnm::logknots)
+#' @param dfseas Degrees of freedom for seasonality
+#' @param coef A matrix of coefficients for reduced model.
+#' @param vcov A list. Co-variance matrices for each region for reduced model.
+#' @param dependent_col the column name of the
+#' dependent variable of interest e.g. deaths
+#'
+#' @export
+#'
+#' @return
+#' \itemize{
+#'
+#'   \item A PDF containing a line plot of temperature versus relative risk per
+#'   region, and histogram of temperatures per region.
+#'   \item A CSV of relative risk per temperature per region.
+#'   \item `output_df` A dataframe with relative risk estimates and confidence
+#'   intervals across the temperature range for each region.
+#'   \item `temp_df` A dataframe with daily mean exposure values for each
+#'   region.
+#' }
+#'
 plot_and_write <- function(
     df_list,
     output_name,
@@ -1167,6 +1268,48 @@ plot_and_write <- function(
 }
 
 
+#' Plot and write results of analysis
+#'
+#' @param df_list An alphabetically-ordered
+#' list of dataframes for each region.
+#' @param blup A list of BLUPs (best linear unbiased predictions).
+#' @param mintempregions A named numeric vector.
+#'   Minimum (optimum) mortality temperature per region.
+#' @param an_thresholds A dataframe with the optimal temperature range and
+#' temperature thresholds for calculation of attributable deaths.
+#' @param save_fig Whether to save output figure (Bool)
+#' @param save_csv Whether to save output CSVs (Bool)
+#' @param csv_output_path The path to save the csv to, including file name and
+#' file extensions
+#' @param independent_cols column name (or list of names) of extra independent
+#' variable to include in regression (excluding temperature). Defaults to NULL.
+#' @param varfun Exposure function
+#' (see dlnm::crossbasis)
+#' @param varper Internal knot positions in exposure function
+#' (see dlnm::crossbasis)
+#' @param vardegree Degrees of freedom in exposure function
+#' (see dlnm:crossbasis)
+#' @param lag Lag length in time
+#' (see dlnm::logknots)
+#' @param lagnk Number of knots in lag function
+#' (see dlnm::logknots)
+#' @param dfseas Degrees of freedom for seasonality
+#'
+#' @export
+#'
+#' @return
+#' \itemize{
+#'
+#'   \item A PDF containing a line plot of temperature versus relative risk per
+#'   region, and histogram of temperatures per region.
+#'   \item A CSV of relative risk per temperature per region.
+#'   \item `output_df` A dataframe with relative risk estimates and confidence
+#'   intervals across the temperature range for each region.
+#'   \item `temp_df` A dataframe with daily mean exposure values for each
+#'   region.
+#' }
+#'
+#' @examples csv_output_path = "directory/sub_directory/file_name.csv"
 plot_and_write_relative_risk <- function(df_list,
                                          blup = NULL,
                                          mintempregions,
@@ -1362,6 +1505,41 @@ plot_and_write_relative_risk <- function(df_list,
 }
 }
 
+
+#' Plot and write results of analysis
+#'
+#' @param df_list An alphabetically-ordered
+#' list of dataframes for each region.
+#' @param mintempregions A named numeric vector.
+#'   Minimum (optimum) mortality temperature per region.
+#' @param save_fig Whether to save output figure (Bool)
+#' @param save_csv Whether to save output CSVs (Bool)
+#' @param csv_output_path The path to save the csv to, including file name and
+#' file extensions
+#' @param dependent_col the column name of the
+#' dependent variable of interest e.g. deaths
+#' @param varfun Exposure function
+#' (see dlnm::crossbasis)
+#' @param varper Internal knot positions in exposure function
+#' (see dlnm::crossbasis)
+#' @param vardegree Degrees of freedom in exposure function
+#' (see dlnm:crossbasis)
+#' @param coef A matrix of coefficients for reduced model.
+#' @param vcov A list. Co-variance matrices for each region for reduced model.
+#'
+#' @export
+#' @return
+#' \itemize{
+#'
+#'   \item A PDF containing a line plot of temperature versus relative risk per
+#'   region, and histogram of temperatures per region.
+#'   \item A CSV of relative risk per temperature per region.
+#'   \item `output_df` A dataframe with relative risk estimates and confidence
+#'   intervals across the temperature range for each region.
+#'   \item `temp_df` A dataframe with daily mean exposure values for each
+#'   region.
+#' }
+#' @examples csv_output_path = "directory/sub_directory/file_name.csv"
 plot_and_write_relative_risk_all <- function(df_list,
                                              mintempregions,
                                              save_fig = TRUE,
@@ -1618,6 +1796,7 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
 
   c(df_list_) %<-%
     load_temperature_data(
+
     )
 
   if (meta_analysis_ == TRUE) {
