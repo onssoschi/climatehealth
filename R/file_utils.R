@@ -68,20 +68,29 @@ check_file_extension <- function(
 }
 
 
+#' Read a csv file into memory as a data frame.
+#'
+#' @param input_csv_path The path to the csv to read as a dataframe.
+#'
+#' @return A dataframe containing the data from the csv.
+#' @export
+#'
+#' @examples input_csv_path = "directory/file_name.csv"
 read_input_data <- function(input_csv_path) {
-
   if (is.list(input_csv_path)) {
     df <- data.frame(input_csv_path)
 
-  } else if (is.character(input_csv_path)) {
 
+  } else if (is.character(input_csv_path)) {
     check_file_extension(input_csv_path, ".csv", "input_csv_path")
-    check_file_exists(input_csv_path, raise=TRUE)
+    check_file_exists(input_csv_path, raise = TRUE)
     df <- read.csv(input_csv_path, row.names = 1)
   } else {
-
     # Raise an error when the input_csv argument isn't valid
-    stop(paste("'input_csv' expected a list or a string. Got", typeof(input_csv)))
+    stop(paste(
+      "'input_csv' expected a list or a string. Got",
+      typeof(input_csv)
+    ))
   }
 
   return(df)
