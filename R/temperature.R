@@ -936,7 +936,6 @@ compute_attributable_deaths <- function(df_list,
 
 #' Compute attributable rates
 #'
-#' @description
 #' @param df_list An alphabetically-ordered list of dataframes for each
 #' region comprising dates, deaths, and temperatures.
 #' @param output_year Year(s) to calculate output for.
@@ -956,7 +955,6 @@ compute_attributable_deaths <- function(df_list,
 #'   \item `arregions_bind`
 #'   \item `artot_bind`
 #' }
-#' @examples
 compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 
   ###################################################
