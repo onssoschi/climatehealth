@@ -1796,7 +1796,13 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
 
   c(df_list_) %<-%
     load_temperature_data(
-
+      input_csv_path = input_csv_path_,
+      time_col = time_col_,
+      region_col = region_col_,
+      temp_col = temp_col_,
+      population_col = population_col_,
+      output_year = output_year_,
+      RR_distribution_length = RR_distribution_length_
     )
 
   if (meta_analysis_ == TRUE) {
