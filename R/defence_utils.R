@@ -17,7 +17,7 @@ is_list_of_dfs <- function(list_,
           stop(
             paste(
               param_nm,
-              "expected a list of dataframes. List contains item of type",
+              " expected a list of dataframes. List contains item of type ",
               toString(typeof(item)),
               sep = ""
             )

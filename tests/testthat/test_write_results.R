@@ -15,7 +15,7 @@ test_that('Test output CSVs are written and of correct length', {
   varper_ <- c(10, 75, 90)
 
   c(df_list_) %<-%
-    load_data(
+    load_temperature_data(
       input_csv_path = config$input_csv_path,
       dependent_col = config$dependent_col,
       time_col = config$time_col,
@@ -108,7 +108,9 @@ test_that('Test output CSVs are written and of correct length', {
   if (by_region == FALSE) {
 
     c(output_df, tmean_df) %<-%
-      plot_and_write_relative_risk_all(
+      plot_and_write(
+        output_name = "output_all_regions",
+        output_all = TRUE,
         df_list = df_list_,
         mintempregions = mintempregions_,
         save_fig = config$save_fig,
@@ -125,7 +127,9 @@ test_that('Test output CSVs are written and of correct length', {
   } else {
 
     c(output_df, tmean_df) %<-%
-      plot_and_write_relative_risk(
+      plot_and_write(
+        output_name = "output_all",
+        output_all = FALSE,
         df_list = df_list_,
         blup = blup_,
         mintempregions = mintempregions_,
@@ -145,7 +149,6 @@ test_that('Test output CSVs are written and of correct length', {
   }
 
   actual_output <- read.csv('testdata/attributable_deaths_regions.csv')
-
   expected_output <- data.frame(matrix(NA, nrow = length(names(df_list_))), ncol = 1)
 
   print(expected_output)
