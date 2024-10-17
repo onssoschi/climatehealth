@@ -1668,7 +1668,7 @@ plot_and_write_relative_risk_all <- function(df_list,
   relative_risk_vector <- pred$allRRfit
   upper_vector <- pred$allRRhigh
   lower_vector <- pred$allRRlow
-  region_vector <- append(rep('England', length(pred$predvar))) #TODO: review what if not England data?
+  region_vector <- rep('England', length(pred$predvar)) #TODO: review what if not England data?
   temp_vector <- pred$predvar
   cen_vector <- rep(cen, length(pred$predvar))
   temperature_vector <- data$temp
@@ -1694,9 +1694,7 @@ plot_and_write_relative_risk_all <- function(df_list,
   if (save_csv == TRUE) {
 
     write.csv(output_df,
-              paste(output_folder_path,
-                    csv_output_path,
-                    sep = ''),
+              csv_output_path,
               row.names = FALSE)
 
   }
