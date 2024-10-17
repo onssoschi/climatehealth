@@ -24,7 +24,7 @@ reformat_data <- function(
     df,
     reformat_date=TRUE,
     fill_na=c(),
-    year_from_date=FALSE
+    year_from_date=TRUE
 ) {
   # TODO: Add type checks to all arguments
   # Reformat the date column
