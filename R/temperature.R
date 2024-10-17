@@ -336,7 +336,7 @@ run_meta_model <- function(df_list, coef, vcov) {
   mv <- mvmeta::mvmeta(coef ~ avgtmean + rangetmean,
                        vcov,
                        data = as.data.frame(names(df_list)), # was data = regions_df
-                       control = list(showiter = TRUE))
+                       control = list(showiter = FALSE))
 
   # Obtain blups
   blup <- mvmeta::blup(mv, vcov = TRUE)
@@ -1890,8 +1890,8 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
         output_name = "output_all",
         output_all = TRUE,
         output_folder_path = output_folder_path_,
-        save_fig = TRUE,
-        save_csv = TRUE,
+        save_fig = save_fig_,
+        save_csv = save_csv_,
         mintempregions = mintempregions_,
         varfun = varfun_,
         varper = varper_,
