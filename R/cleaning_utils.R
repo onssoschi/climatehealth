@@ -14,7 +14,7 @@ library(dplyr) # used to load pipe operator
 #' @param df The dataframe to apply cleaning/reformatting to.
 #' @param reformat_date Whether or not to reformat the data to the Date datatype.
 #' @param fill_na A vector of column names to fill NA values in (fills with 0).
-#' @param year_from_date
+#' @param year_from_date Derive a new column 'year' from the date column.
 #'
 #' @return The cleaned/reformatted data frame.
 #' @export
