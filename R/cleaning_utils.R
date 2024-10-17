@@ -24,9 +24,9 @@ library(dplyr) # used to load pipe operator
 #' @examples fill_na = c("col1", "col2")
 reformat_data <- function(
     df,
-    reformat_date=FALSE,
-    fill_na=c(),
-    year_from_date=FALSE
+    reformat_date = FALSE,
+    fill_na = c(),
+    year_from_date = FALSE
 ) {
   # TODO: Add type checks to all arguments
   # Reformat the date column
@@ -38,7 +38,7 @@ reformat_data <- function(
   # Fill Na's
   for (col in fill_na) {
     df <- df %>%
-      dplyr::mutate(col=ifelse(is.na(col), 0, col))
+      dplyr::mutate(col = ifelse(is.na(col), 0, col))
   }
   # Derive the year from the date column
   if (year_from_date) {
@@ -62,7 +62,7 @@ aggregate_by_column <- function(df, column_name) {
   unique_values = sort(as.character(unique(df[[column_name]])))
   aggregated_dfs = lapply(
     unique_values,
-    function(x) df %>% dplyr::filter(!!sym(column_name)==x)
+    function(x) df %>% dplyr::filter(!!sym(column_name) == x)
   )
   names(aggregated_dfs) <- unique_values
 
