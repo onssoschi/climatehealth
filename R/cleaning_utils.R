@@ -28,7 +28,7 @@ reformat_data <- function(
 ) {
   # TODO: Add type checks to all arguments
   # Reformat the date column
-  if (reformat_date) {
+  if (reformat_date == TRUE) {
     df <- df %>%
       dplyr::mutate(date = as.Date(date,
                     try_formats = c("%Y-%m-%d", "%d/%m/%Y")))
