@@ -1,6 +1,4 @@
 # Utility functions related validating user inputs
-# AUTHOR: charlie.browning@ons.gov.uk
-# DATE CREATED: 08/10/2024
 
 # TODO: explore how to make this function more dynamic (take a type as an arg)
 
