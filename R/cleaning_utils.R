@@ -22,7 +22,7 @@ library(dplyr) # used to load pipe operator
 #' @examples fill_na = c("col1", "col2")
 reformat_data <- function(
     df,
-    reformat_date=FALSE,
+    reformat_date=TRUE,
     fill_na=c(),
     year_from_date=FALSE
 ) {
