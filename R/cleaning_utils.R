@@ -47,7 +47,7 @@ reformat_data <- function(
 }
 
 
-#' Aggregate a dataframe into multiple dataframes, based on a columns value.
+#' Split dataframe into multiple dataframes, based on a columns value.
 #'
 #' @param df The dataframe to aggregate.
 #' @param column_name The column to aggregate the data by.
