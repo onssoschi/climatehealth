@@ -1,6 +1,4 @@
 # Functions to help clean and aggregate input data.
-# AUTHOR: charlie.browning@ons.gov.uk
-# DATE CREATED: 04/10/2024
 
 library(dplyr) # used to load pipe operator
 # TODO: consider splitting this up into smaller functions

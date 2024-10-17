@@ -1,6 +1,4 @@
 # Utility functions related to file actions
-# AUTHOR: charlie.browning@ons.gov.uk
-# DATE CREATED: 03/10/2024
 
 #' Check that a file exists at a passed path.
 #'
