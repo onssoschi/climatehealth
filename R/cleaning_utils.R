@@ -22,15 +22,9 @@ library(dplyr) # used to load pipe operator
 #' @examples fill_na = c("col1", "col2")
 reformat_data <- function(
     df,
-<<<<<<< HEAD
     reformat_date=TRUE,
     fill_na=c(),
     year_from_date=TRUE
-=======
-    reformat_date = FALSE,
-    fill_na = c(),
-    year_from_date = FALSE
->>>>>>> 2064667ea38aad791f4c6ae0538b1b38f193d4b5
 ) {
   # TODO: Add type checks to all arguments
   # Reformat the date column
