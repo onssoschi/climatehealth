@@ -1459,7 +1459,7 @@ plot_and_write_relative_risk <- function(df_list,
     cen_vector <- rep(cen, length(pred$predvar))
     temperature_vector <- data$temp
     temperature_region_vector <- rep(names(df_list)[i], length(data$temp))
-
+  }
   if (save_fig == TRUE) {
 
     dev.off()
@@ -1498,7 +1498,6 @@ plot_and_write_relative_risk <- function(df_list,
 
   return (list(output_df, temp_df))
 
-}
 }
 
 
