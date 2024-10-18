@@ -1332,7 +1332,7 @@ plot_and_write_relative_risk <- function(df_list,
                                          lagnk,
                                          dfseas) {
 
-  xlab <- expression(paste("Temperature (",vardegree,"C)"))
+  xlab <- expression(paste("Temperature (",degree,"C)"))
   no_of_regions <- seq(length(df_list))
 
   for(i in no_of_regions) {
