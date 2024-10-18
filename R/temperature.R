@@ -38,11 +38,12 @@ filter_on_rr_distribution <- function(df,
     stop("Timeseries to calculate the RR is more than 15 years.")
 
   }
-
+  print(RR_distribution_length)
+  print(output_year)
   # Filter
   df <- df %>%
-    dplyr::filter(year >= output_year - (RR_distribution_length + 1)
-  & (year <= output_year))
+    dplyr::filter(year >= (output_year - RR_distribution_length + 1)
+  & year <= output_year)
 }
 
 
