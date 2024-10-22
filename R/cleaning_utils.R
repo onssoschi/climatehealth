@@ -30,13 +30,14 @@ reformat_data <- function(
   # Reformat the date column
   if (reformat_date == TRUE) {
     df <- df %>%
-      dplyr::mutate(date = as.Date(date,
-                    try_formats = c("%Y-%m-%d", "%d/%m/%Y")))
+      dplyr::mutate(date =
+        as.Date(date, tryFormats = c("%d/%m/%Y", "%Y-%m-%d"))
+      )
   }
   # Fill Na's
   for (col in fill_na) {
     df <- df %>%
-      dplyr::mutate(col = ifelse(is.na(col), 0, col))
+      dplyr::mutate(!!col := ifelse(is.na(col), 0, col))
   }
   # Derive the year from the date column
   if (year_from_date) {
