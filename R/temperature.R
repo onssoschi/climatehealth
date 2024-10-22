@@ -85,8 +85,8 @@ load_temperature_data <- function(input_csv_path,
   # Format the region column
   if (is.null(region_col)) {
     df <- df %>%
-      dplyr::mutate(regnames = "no_region")
-    region_col = "no_region"
+      dplyr::mutate(regnames = "aggregated")
+    region_col = "regnames"
   }
   # Rename the columns
   df <- df %>%
