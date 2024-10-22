@@ -82,6 +82,12 @@ load_temperature_data <- function(input_csv_path,
       dplyr::mutate(pop_col = "NONE")
     population_col = "pop_col"
   }
+  # Format the region column
+  if (is.null(region_col)) {
+    df <- df %>%
+      dplyr::mutate(regnames = "no_region")
+    region_col = "no_region"
+  }
   # Rename the columns
   df <- df %>%
     dplyr::rename(dependent = dependent_col,
