@@ -1231,43 +1231,43 @@ plot_and_write <- function(
         width = 8, height = 9)
 
     par(mar = c(4, 3.8, 3, 2.4), mgp = c(2.5, 1, 0), las = 1)
-
-    # structure the layout of the pdf to output
-    if (output_all) {
-      layout(matrix(1:1, ncol = 1))
-      return(plot_and_write_relative_risk_all(df_list = df_list,
-                                              mintempregions = mintempregions,
-                                              save_fig = save_fig,
-                                              save_csv = save_csv,
-                                              csv_output_path = data_output_path,
-                                              dependent_col = dependent_col,
-                                              varfun = varfun,
-                                              varper = varper,
-                                              vardegree = vardegree,
-                                              coef = coef,
-                                              vcov = vcov))
-
-    } else {
-      layout(matrix(c(0, 1, 1, 2, 2, 0,
-                      rep(3:8, each = 2), 0, 9, 9, 10, 10, 0),
-                    ncol = 6,
-                    byrow = TRUE))
-      return(plot_and_write_relative_risk(df_list = df_list,
-                                          blup = blup,
-                                          mintempregions = mintempregions,
-                                          an_thresholds = an_thresholds,
-                                          save_fig = save_fig,
-                                          save_csv = save_csv,
-                                          csv_output_path = data_output_path,
-                                          independent_cols = independent_cols,
-                                          varfun = varfun,
-                                          varper = varper,
-                                          vardegree = vardegree,
-                                          lag = lag,
-                                          lagnk = lagnk,
-                                          dfseas = dfseas))
-    }
   }
+  # structure the layout of the pdf to output
+  if (output_all) {
+    layout(matrix(1:1, ncol = 1))
+    return(plot_and_write_relative_risk_all(df_list = df_list,
+                                            mintempregions = mintempregions,
+                                            save_fig = save_fig,
+                                            save_csv = save_csv,
+                                            csv_output_path = data_output_path,
+                                            dependent_col = dependent_col,
+                                            varfun = varfun,
+                                            varper = varper,
+                                            vardegree = vardegree,
+                                            coef = coef,
+                                            vcov = vcov))
+
+  } else {
+    layout(matrix(c(0, 1, 1, 2, 2, 0,
+                    rep(3:8, each = 2), 0, 9, 9, 10, 10, 0),
+                  ncol = 6,
+                  byrow = TRUE))
+    return(plot_and_write_relative_risk(df_list = df_list,
+                                        blup = blup,
+                                        mintempregions = mintempregions,
+                                        an_thresholds = an_thresholds,
+                                        save_fig = save_fig,
+                                        save_csv = save_csv,
+                                        csv_output_path = data_output_path,
+                                        independent_cols = independent_cols,
+                                        varfun = varfun,
+                                        varper = varper,
+                                        vardegree = vardegree,
+                                        lag = lag,
+                                        lagnk = lagnk,
+                                        dfseas = dfseas))
+    }
+
 
 
 }
@@ -1329,6 +1329,16 @@ plot_and_write_relative_risk <- function(df_list,
                                          lag,
                                          lagnk,
                                          dfseas) {
+
+  # create vectors for output data
+  relative_risk_vector <- c()
+  upper_vector <- c()
+  lower_vector <- c()
+  region_vector <- c()
+  temp_vector <- c()
+  cen_vector <- c()
+  temperature_vector <- c()
+  temperature_region_vector <- c()
 
   xlab <- expression(paste("Temperature (",degree,"C)"))
   no_of_regions <- seq(length(df_list))
@@ -1459,20 +1469,22 @@ plot_and_write_relative_risk <- function(df_list,
 
     if (!is.null(blup)) {
 
-      relative_risk_vector <- pred$allRRfit
-      upper_vector <- pred$allRRhigh
-      lower_vector <- pred$allRRlow
+      relative_risk_vector <- append(pred$allRRfit, relative_risk_vector)
+      upper_vector <- append(pred$allRRhigh, upper_vector)
+      lower_vector <- append(pred$allRRlow, lower_vector)
     } else {
 
-      relative_risk_vector <- pred$RRfit
-      upper_vector <- pred$RRhigh
-      lower_vector <- pred$RRlow
+      relative_risk_vector <- append(pred$RRfit, relative_risk_vector)
+      upper_vector <- append(pred$RRhigh, upper_vector)
+      lower_vector <- append(pred$RRlow, lower_vector)
     }
-    region_vector <- rep(names(df_list)[i], length(pred$predvar))
-    temp_vector <- pred$predvar
-    cen_vector <- rep(cen, length(pred$predvar))
-    temperature_vector <- data$temp
-    temperature_region_vector <- rep(names(df_list)[i], length(data$temp))
+    region_vector <- append(rep(names(df_list)[i], length(pred$predvar)), region_vector)
+    temp_vector <- append(pred$predvar, temp_vector)
+    cen_vector <- append(rep(cen, length(pred$predvar)), cen_vector)
+    temperature_vector <- append(temperature_vector, data$temp)
+    temperature_region_vector <- append(
+      rep(names(df_list)[i], length(data$temp)), temperature_region_vector
+    )
   }
   if (save_fig == TRUE) {
 
