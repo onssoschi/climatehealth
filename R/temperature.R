@@ -194,7 +194,6 @@ define_model <- function(dataset,
                          argvar = argvar_,
                          arglag = list(knots = dlnm::logknots(lag,
                                                               lagnk)))
-
   # Run the model and obtain predictions
   model <- glm(formula,
                dataset,
@@ -224,8 +223,11 @@ define_model <- function(dataset,
 #' @param dfseas Degrees of freedom for seasonality
 #' @return
 #' \itemize{
-#'   \item `coef` A matrix of coefficients for reduced model.
-#'   \item `vcov` A list. Co-variance matrices for each region for reduced model.
+#'   \item `coef_` A matrix of coefficients for reduced model.
+#'   \item `vcov_` A list. Co-variance matrices for each region for reduced model.
+#'   \item `cb` Basis matrices for the two dimensions of predictor and lags.
+#'   \item `model` A quasi-poission generalised linear model object.
+#'   See: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/glm
 #'   }
 #' @export
 run_model <- function(df_list,
@@ -255,7 +257,7 @@ run_model <- function(df_list,
     data <- df_list[[i]]
 
     c(model, cb) %<-% define_model(dataset = data,
-                                   independent_cols=independent_cols,
+                                   independent_cols = independent_cols,
                                    varfun = varfun,
                                    varper = varper,
                                    vardegree = vardegree,
@@ -273,8 +275,7 @@ run_model <- function(df_list,
     vcov_[[i]] <- vcov(pred)
 
   }
-
-  return (list(coef_, vcov_))
+  return (list(coef_, vcov_, cb, model))
 }
 
 
@@ -1206,6 +1207,8 @@ plot_and_write <- function(
     output_folder_path = "",
     save_fig = TRUE,
     save_csv = TRUE,
+    cb = NULL,
+    model = NULL,
     blup = NULL,
     mintempregions,
     an_thresholds,
@@ -1216,8 +1219,6 @@ plot_and_write <- function(
     lag = NULL,
     lagnk = NULL,
     dfseas = NULL,
-    vcov = NULL,
-    coef = NULL,
     dependent_col = NULL) {
   # normalize output folder path
   if (!endsWith(output_folder_path, "/")) {
@@ -1246,12 +1247,13 @@ plot_and_write <- function(
                                             save_fig = save_fig,
                                             save_csv = save_csv,
                                             csv_output_path = data_output_path,
+                                            cb = cb,
+                                            model = model,
                                             dependent_col = dependent_col,
                                             varfun = varfun,
                                             varper = varper,
-                                            vardegree = vardegree,
-                                            coef = coef,
-                                            vcov = vcov))
+                                            vardegree = vardegree
+                                            ))
 
   } else {
     layout(matrix(c(0, 1, 1, 2, 2, 0,
@@ -1551,8 +1553,6 @@ plot_and_write_relative_risk <- function(df_list,
 #' (see dlnm::crossbasis)
 #' @param vardegree Degrees of freedom in exposure function
 #' (see dlnm:crossbasis)
-#' @param coef A matrix of coefficients for reduced model.
-#' @param vcov A list. Co-variance matrices for each region for reduced model.
 #'
 #' @export
 #' @return
@@ -1568,6 +1568,8 @@ plot_and_write_relative_risk <- function(df_list,
 #' }
 #' @examples csv_output_path = "directory/sub_directory/file_name.csv"
 plot_and_write_relative_risk_all <- function(df_list,
+                                             cb,
+                                             model,
                                              mintempregions,
                                              save_fig = TRUE,
                                              save_csv = TRUE,
@@ -1575,51 +1577,27 @@ plot_and_write_relative_risk_all <- function(df_list,
                                              dependent_col,
                                              varfun,
                                              varper,
-                                             vardegree,
-                                             coef,
-                                             vcov
+                                             vardegree
 ) {
 
   data <- do.call(rbind, df_list)
 
-  # Estimation method
-  method <- "reml"
-
-  # Overall cumulative summary for main model
-  mvall <- mvmeta::mvmeta(coef ~ 1, vcov, method = method)
-
-  # Exclude extreme temps
-  # predvar <- quantile(data$tmean, 1:99/100, na.rm=T)
-
   # All temps
   predvar <- data$temp
 
-  argvar <- list(x = predvar,
-                 fun = varfun,
-                 degree = vardegree,
-                 knots = quantile(data$temp,
-                                  varper / 100, na.rm = TRUE),
-                 Bound = range(data$temp, na.rm = TRUE))
-
-  bvar <- do.call(dlnm::onebasis, argvar)
-
-  model <- NULL
   cen <- median(mintempregions)
 
-  pred <- dlnm::crosspred(bvar,
-                          coef = coef(mvall),
-                          vcov = vcov(mvall),
-                          model.link = "log",
-                          by = 0.1,
-                          cen = cen)
+  pred <- dlnm::crosspred(basis = cb, model = model, cen = cen)
 
   plot(pred,
+       "overall",
        type = "n",
        ylab = "RR",
        ylim = c(.0, 3),
-       xlim = c(-8, 30),
-       xlab=expression(paste("Temperature (", degree, "C)")),
-       main = dependent_col)
+       xlim = c(min(data$temp), max(data$temp)),
+       xlab = expression(paste("Temperature (", degree, "C)")),
+       main = "All Regions"
+  )
 
   abline(h = 1)
 
@@ -1806,12 +1784,12 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
                                   by_region_ = TRUE,
                                   RR_distribution_length_ = 0,
                                   output_year_ = 0,
-                                  dependent_col_ = 'death',
+                                  dependent_col_,
                                   independent_cols_ = NULL,
-                                  time_col_ = 'date',
-                                  region_col_ = 'regnames',
-                                  temp_col_ = 'tmean',
-                                  population_col_ = 'pop',
+                                  time_col_,
+                                  region_col_,
+                                  temp_col_,
+                                  population_col_,
                                   varfun_ = 'bs',
                                   vardegree_ = 2,
                                   lag_  = 21,
@@ -1834,18 +1812,18 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
       RR_distribution_length = RR_distribution_length_
     )
 
-  if (meta_analysis_ == TRUE) {
+  c(coef_, vcov_, cb_, model_) %<-%
+    run_model(df_list = df_list_,
+              independent_cols = independent_cols_,
+              varfun = varfun_,
+              varper = varper_,
+              vardegree = vardegree_,
+              lag = lag_,
+              lagnk = lagnk_,
+              dfseas = dfseas_
+    )
 
-    c(coef_, vcov_) %<-%
-      run_model(df_list = df_list_,
-                independent_cols = independent_cols_,
-                varfun = varfun_,
-                varper = varper_,
-                vardegree = vardegree_,
-                lag = lag_,
-                lagnk = lagnk_,
-                dfseas = dfseas_
-      )
+  if (meta_analysis_ == TRUE) {
 
     c(mv_, blup_) %<-%
       run_meta_model(
@@ -1925,12 +1903,12 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
         output_folder_path = output_folder_path_,
         save_fig = save_fig_,
         save_csv = save_csv_,
+        cb = cb_,
+        model = model_,
         mintempregions = mintempregions_,
         varfun = varfun_,
         varper = varper_,
         vardegree = vardegree_,
-        vcov = vcov_,
-        coef = coef_,
         dependent_col = dependent_col_
       )
 

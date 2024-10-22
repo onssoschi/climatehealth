@@ -37,7 +37,7 @@ reformat_data <- function(
   # Fill Na's
   for (col in fill_na) {
     df <- df %>%
-      dplyr::mutate(!!col := ifelse(is.na(col), 0, col))
+      dplyr::mutate(!!col := ifelse(is.na(df[[col]]), 0, df[[col]]))
   }
   # Derive the year from the date column
   if (year_from_date) {

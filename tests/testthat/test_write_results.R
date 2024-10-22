@@ -26,19 +26,18 @@ test_that('Test output CSVs are written and of correct length', {
       RR_distribution_length = config$RR_distribution_length
     )
 
+  c(coef_, vcov_, cb_, model_) %<-%
+    run_model(df_list = df_list_,
+              independent_cols = config$independent_cols,
+              varfun = config$varfun,
+              varper = varper_,
+              vardegree = config$vardegree,
+              lag = config$lag,
+              lagnk = config$lagnk,
+              dfseas = config$dfseas
+    )
+
   if (config$meta_analysis == TRUE) {
-
-    c(coef_, vcov_) %<-%
-      run_model(df_list = df_list_,
-                independent_cols = config$independent_cols,
-                varfun = config$varfun,
-                varper = varper_,
-                vardegree = config$vardegree,
-                lag = config$lag,
-                lagnk = config$lagnk,
-                dfseas = config$dfseas
-      )
-
     c(mv_, blup_) %<-%
       run_meta_model(
         df_list = df_list_,
@@ -115,6 +114,8 @@ test_that('Test output CSVs are written and of correct length', {
         mintempregions = mintempregions_,
         save_fig = config$save_fig,
         save_csv = config$save_csv,
+        cb = cb_,
+        model = model_,
         dependent_col = config$dependent_col,
         varfun = config$varfun,
         varper = varper_,
