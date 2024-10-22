@@ -404,18 +404,19 @@ wald_results <- function(mv) {
 #' @export
 define_and_validate_optimal_temps <- function(optimal_temp_range,
                                               prediction,
+                                              RR_fit_col = "allRRfit",
                                               index) {
   optimal_temp_range[index,"lower"] <- as.numeric(names(
-    which.min(which(prediction$allRRfit >= 1 & prediction$allRRfit <= 1.1))))
+    which.min(which(prediction[[RR_fit_col]] >= 1 & prediction[[RR_fit_col]] <= 1.1))))
   optimal_temp_range[index, "upper"] <- as.numeric(names(
-    which.max(which(prediction$allRRfit >= 1 & prediction$allRRfit <= 1.1))))
+    which.max(which(prediction[[RR_fit_col]] >= 1 & prediction[[RR_fit_col]] <= 1.1))))
 
-  below_one <- which(prediction$allRRfit < 1)
+  below_one <- which(prediction[[RR_fit_col]] < 1)
   above_OTR <- which(
-    as.numeric(names(prediction$allRRfit)) > optimal_temp_range[index, "upper"]
+    as.numeric(names(prediction[[RR_fit_col]])) > optimal_temp_range[index, "upper"]
   )
   below_OTR <- which(
-    as.numeric(names(prediction$allRRfit))< optimal_temp_range[index, "lower"]
+    as.numeric(names(prediction[[RR_fit_col]]))< optimal_temp_range[index, "lower"]
   )
   if (length(which((below_one %in% above_OTR) | (below_one %in% below_OTR))) > 0) {
   # TODO: Create a better warning
@@ -524,10 +525,10 @@ calculate_min_mortality_temp <-  function(df_list,
                             to = ranges[i,2])
 
 
-    optimal_temp_range <- define_and_validate_optimal_temps(
-      optimal_temp_range = optimal_temp_range,
-      prediction = cp,
-      index = i
+      optimal_temp_range <- define_and_validate_optimal_temps(
+        optimal_temp_range = optimal_temp_range,
+        prediction = cp,
+        index = i
     )
 
     }
@@ -559,6 +560,7 @@ calculate_min_mortality_temp <-  function(df_list,
 
       optimal_temp_range <- define_and_validate_optimal_temps(
         optimal_temp_range = optimal_temp_range,
+        RR_fit_col = "RRfit",
         prediction = pred,
         index = i
       )
