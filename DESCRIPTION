@@ -23,3 +23,6 @@ Imports:
     lubridate,
     FluMoDL,
     zeallot
+Suggests:
+  testthat,
+  devtools
