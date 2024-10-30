@@ -13,7 +13,7 @@ test_that('Test run_meta_model() produces appropriate errors', {
       coef = as.matrix(1:10),
       vcov = list(as.matrix(1:10),
                   as.matrix(11:20))),
-    regexp = "'df_list' expected a list. Got character",
+    regexp = "df_list expected a list. Got character",
     fixed = TRUE)
 
   # df_list elements not data frames
@@ -24,7 +24,7 @@ test_that('Test run_meta_model() produces appropriate errors', {
       vcov = list(as.matrix(1:10),
                   as.matrix(11:20))),
     regexp = paste(
-      "'df_list' expected a list of dataframes. List contains item of",
+      "df_list expected a list of dataframes. List contains item of",
       "type double"
     ),
     fixed = TRUE)
@@ -90,7 +90,7 @@ test_that('Test run_meta_model() returns correct data types', {
   varper_ <- c(10, 75, 90)
 
   c(df_list_) %<-%
-    load_data(
+    load_temperature_data(
       input_csv_path = config$input_csv_path,
       dependent_col = config$dependent_col,
       time_col = config$time_col,
