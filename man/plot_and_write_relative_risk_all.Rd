@@ -6,6 +6,8 @@
 \usage{
 plot_and_write_relative_risk_all(
   df_list,
+  cb,
+  model,
   mintempregions,
   save_fig = TRUE,
   save_csv = TRUE,
@@ -13,9 +15,7 @@ plot_and_write_relative_risk_all(
   dependent_col,
   varfun,
   varper,
-  vardegree,
-  coef,
-  vcov
+  vardegree
 )
 }
 \arguments{
@@ -43,10 +43,6 @@ dependent variable of interest e.g. deaths}
 
 \item{vardegree}{Degrees of freedom in exposure function
 (see dlnm:crossbasis)}
-
-\item{coef}{A matrix of coefficients for reduced model.}
-
-\item{vcov}{A list. Co-variance matrices for each region for reduced model.}
 }
 \value{
 \itemize{
