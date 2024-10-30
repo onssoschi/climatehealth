@@ -21,18 +21,18 @@ test_that('Test wald_results() returns correct data type', {
       RR_distribution_length = config$RR_distribution_length
     )
 
-  if (config$meta_analysis == TRUE) {
+  c(coef_, vcov_, cb_, model_) %<-%
+    run_model(df_list = df_list_,
+              independent_cols = config$independent_cols,
+              varfun = config$varfun,
+              varper = varper_,
+              vardegree = config$vardegree,
+              lag = config$lag,
+              lagnk = config$lagnk,
+              dfseas = config$dfseas
+    )
 
-    c(coef_, vcov_) %<-%
-      run_model(df_list = df_list_,
-                independent_cols = config$independent_cols,
-                varfun = config$varfun,
-                varper = varper_,
-                vardegree = config$vardegree,
-                lag = config$lag,
-                lagnk = config$lagnk,
-                dfseas = config$dfseas
-      )
+  if (config$meta_analysis == TRUE) {
 
     c(mv_, blup_) %<-%
       run_meta_model(
@@ -75,19 +75,18 @@ test_that('Test wald_results() returns list of correct length', {
       RR_distribution_length = config$RR_distribution_length
     )
 
+  c(coef_, vcov_, cb_, model_) %<-%
+    run_model(df_list = df_list_,
+              independent_cols = config$independent_cols,
+              varfun = config$varfun,
+              varper = varper_,
+              vardegree = config$vardegree,
+              lag = config$lag,
+              lagnk = config$lagnk,
+              dfseas = config$dfseas
+    )
+
   if (config$meta_analysis == TRUE) {
-
-    c(coef_, vcov_) %<-%
-      run_model(df_list = df_list_,
-                independent_cols = config$independent_cols,
-                varfun = config$varfun,
-                varper = varper_,
-                vardegree = config$vardegree,
-                lag = config$lag,
-                lagnk = config$lagnk,
-                dfseas = config$dfseas
-      )
-
     c(mv_, blup_) %<-%
       run_meta_model(
         df_list = df_list_,
