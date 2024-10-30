@@ -2,7 +2,7 @@
 % Please edit documentation in R/cleaning_utils.R
 \name{aggregate_by_column}
 \alias{aggregate_by_column}
-\title{Aggregate a dataframe into multiple dataframes, based on a columns value.}
+\title{Split dataframe into multiple dataframes, based on a columns value.}
 \usage{
 aggregate_by_column(df, column_name)
 }
@@ -15,5 +15,5 @@ aggregate_by_column(df, column_name)
 A list of dataframes, split up based on the value of column_name.
 }
 \description{
-Aggregate a dataframe into multiple dataframes, based on a columns value.
+Split dataframe into multiple dataframes, based on a columns value.
 }

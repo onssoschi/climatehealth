@@ -4,7 +4,7 @@
 \alias{reformat_data}
 \title{Reformat a dataframe using various different cleaning techniques.}
 \usage{
-reformat_data(df, reformat_date = FALSE, fill_na = c(), year_from_date = FALSE)
+reformat_data(df, reformat_date = TRUE, fill_na = c(), year_from_date = TRUE)
 }
 \arguments{
 \item{df}{The dataframe to apply cleaning/reformatting to.}
@@ -13,7 +13,7 @@ reformat_data(df, reformat_date = FALSE, fill_na = c(), year_from_date = FALSE)
 
 \item{fill_na}{A vector of column names to fill NA values in (fills with 0).}
 
-\item{year_from_date}{}
+\item{year_from_date}{Derive a new column 'year' from the date column.}
 }
 \value{
 The cleaned/reformatted data frame.
