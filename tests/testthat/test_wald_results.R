@@ -10,7 +10,7 @@ test_that('Test wald_results() returns correct data type', {
   varper_ <- c(10, 75, 90)
 
   c(df_list_) %<-%
-    load_data(
+    load_temperature_data(
       input_csv_path = config$input_csv_path,
       dependent_col = config$dependent_col,
       time_col = config$time_col,
@@ -64,7 +64,7 @@ test_that('Test wald_results() returns list of correct length', {
   varper_ <- c(10, 75, 90)
 
   c(df_list_) %<-%
-    load_data(
+    load_temperature_data(
       input_csv_path = config$input_csv_path,
       dependent_col = config$dependent_col,
       time_col = config$time_col,
