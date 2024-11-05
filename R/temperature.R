@@ -489,7 +489,6 @@ calculate_min_mortality_temp <-  function(df_list,
 
   ranges <- t(sapply(df_list, function(x)
     range(x$temp,na.rm = TRUE)))
-
   if (!is.null(blup)) {
 
     # Define minimum mortality values: exclude low and very hot temperatures
@@ -1223,6 +1222,9 @@ plot_and_write <- function(
     dfseas = NULL,
     dependent_col = NULL) {
   # normalize output folder path
+  if (is.null(output_folder_path)) {
+    output_folder_path <- ""
+  }
   if (!endsWith(output_folder_path, "/")) {
     output_folder_path <- paste(output_folder_path, "/", sep="")
   }
@@ -1780,10 +1782,10 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @export
 heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
                                   output_folder_path_ = NULL,
-                                  save_fig_ = TRUE,
-                                  save_csv_ = TRUE,
-                                  meta_analysis_ = TRUE,
-                                  by_region_ = TRUE,
+                                  save_fig_ = FALSE,
+                                  save_csv_ = FALSE,
+                                  meta_analysis_ = FALSE,
+                                  by_region_ = FALSE,
                                   RR_distribution_length_ = 0,
                                   output_year_ = 0,
                                   dependent_col_,
@@ -1799,7 +1801,6 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
                                   dfseas_ = 8,
                                   nsim__ = 1000
 ) {
-
   varper_ <- c(10, 75, 90)
 
   c(df_list_) %<-%
@@ -1824,7 +1825,6 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
               lagnk = lagnk_,
               dfseas = dfseas_
     )
-
   if (meta_analysis_ == TRUE) {
 
     c(mv_, blup_) %<-%
