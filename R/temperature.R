@@ -1402,14 +1402,15 @@ plot_and_write_relative_risk <- function(df_list,
       pred <- dlnm::crossreduce(cb, model, cen = cen)
 
     }
-
-    plot(pred, type = "n",
-         ylim = c(0, 3),
-         yaxt = "n",
-         lab = c(6, 5, 7),
-         xlab = xlab,
-         ylab = "RR",
-         main = names(df_list)[i])
+    if (save_fig==TRUE) {
+      plot(pred, type = "n",
+           ylim = c(0, 3),
+           yaxt = "n",
+           lab = c(6, 5, 7),
+           xlab = xlab,
+           ylab = "RR",
+           main = names(df_list)[i])
+    }
 
     ind_a <- pred$predvar <= c(an_thresholds[i,c("high_moderate_cold")])
     ind_b <- pred$predvar >= c(an_thresholds[i,c("high_moderate_cold")]) &
@@ -1420,63 +1421,65 @@ plot_and_write_relative_risk <- function(df_list,
       pred$predvar <= c(an_thresholds[i,c("high_moderate_heat")])
     ind_e <- pred$predvar >= c(an_thresholds[i,c("high_moderate_heat")])
 
-    if (!is.null(blup)) {
+    if (save_fig==TRUE) {
+      if (!is.null(blup)) {
 
-      relative_risk_vals <- pred$allRRfit
+        relative_risk_vals <- pred$allRRfit
 
-    } else {
+      } else {
 
-      relative_risk_vals <- pred$RRfit
+        relative_risk_vals <- pred$RRfit
+      }
+
+      lines(pred$predvar[ind_a],
+            relative_risk_vals[ind_a],
+            col = c("#000FFF"),
+            lwd = 1.5)
+      lines(pred$predvar[ind_b],
+            relative_risk_vals[ind_b],
+            col = c("#ABAFFF"),
+            lwd = 1.5)
+      lines(pred$predvar[ind_c],
+            relative_risk_vals[ind_c],
+            col = c("black"),
+            lwd = 1.5)
+      lines(pred$predvar[ind_d],
+            relative_risk_vals[ind_d],
+            col = c("#FFA7A7"),
+            lwd = 1.5)
+      lines(pred$predvar[ind_e],
+            relative_risk_vals[ind_e],
+            col = c("#FF0000"),
+            lwd = 1.5)
+
+      axis(2, at = 1:5 * 0.5)
+
+      breaks <- c(min(data$temp, na.rm = TRUE) - 1,
+                  seq(pred$predvar[1],
+                      pred$predvar[length(pred$predvar)],
+                      length = 30),
+                  max(data$temp, na.rm = TRUE) + 1)
+
+
+      hist <- hist(data$temp, breaks = breaks, plot = FALSE)
+      hist$density <- hist$density / max(hist$density) * 0.7
+      prop <- max(hist$density) / max(hist$counts)
+      counts <- pretty(hist$count, 3)
+
+      plot(hist,
+           ylim = c(0, max(hist$density) * 3.5),
+           axes = FALSE, ann = FALSE, col = grey(0.95),
+           breaks = breaks, freq = FALSE, add = TRUE)
+
+      axis(4, at = counts * prop, labels = counts, cex.axis = 0.7)
+      mtext("N", 4, line = -0.5, at = mean(counts * prop), cex = 0.5)
+
+      abline(v = mintempregions[i], lty = 1, col = 3)
+      abline(v = c(an_thresholds[i,c("moderate_cold_OTR", "moderate_cold_OTR")]),
+             lty = 2)
+      abline(v = c(an_thresholds[i,c("high_moderate_cold", "high_moderate_heat")]),
+             lty = 3)
     }
-
-    lines(pred$predvar[ind_a],
-          relative_risk_vals[ind_a],
-          col = c("#000FFF"),
-          lwd = 1.5)
-    lines(pred$predvar[ind_b],
-          relative_risk_vals[ind_b],
-          col = c("#ABAFFF"),
-          lwd = 1.5)
-    lines(pred$predvar[ind_c],
-          relative_risk_vals[ind_c],
-          col = c("black"),
-          lwd = 1.5)
-    lines(pred$predvar[ind_d],
-          relative_risk_vals[ind_d],
-          col = c("#FFA7A7"),
-          lwd = 1.5)
-    lines(pred$predvar[ind_e],
-          relative_risk_vals[ind_e],
-          col = c("#FF0000"),
-          lwd = 1.5)
-
-    axis(2, at = 1:5 * 0.5)
-
-    breaks <- c(min(data$temp, na.rm = TRUE) - 1,
-                seq(pred$predvar[1],
-                    pred$predvar[length(pred$predvar)],
-                    length = 30),
-                max(data$temp, na.rm = TRUE) + 1)
-
-
-    hist <- hist(data$temp, breaks = breaks, plot = FALSE)
-    hist$density <- hist$density / max(hist$density) * 0.7
-    prop <- max(hist$density) / max(hist$counts)
-    counts <- pretty(hist$count, 3)
-
-    plot(hist,
-         ylim = c(0, max(hist$density) * 3.5),
-         axes = FALSE, ann = FALSE, col = grey(0.95),
-         breaks = breaks, freq = FALSE, add = TRUE)
-
-    axis(4, at = counts * prop, labels = counts, cex.axis = 0.7)
-    mtext("N", 4, line = -0.5, at = mean(counts * prop), cex = 0.5)
-
-    abline(v = mintempregions[i], lty = 1, col = 3)
-    abline(v = c(an_thresholds[i,c("moderate_cold_OTR", "moderate_cold_OTR")]),
-           lty = 2)
-    abline(v = c(an_thresholds[i,c("high_moderate_cold", "high_moderate_heat")]),
-           lty = 3)
 
 
     if (!is.null(blup)) {
@@ -1593,15 +1596,17 @@ plot_and_write_relative_risk_all <- function(df_list,
 
   pred <- dlnm::crosspred(basis = cb, model = model, cen = cen)
 
-  plot(pred,
-       "overall",
-       type = "n",
-       ylab = "RR",
-       ylim = c(.0, 3),
-       xlim = c(min(data$temp), max(data$temp)),
-       xlab = expression(paste("Temperature (", degree, "C)")),
-       main = "All Regions"
-  )
+  if (save_fig==TRUE) {
+    plot(pred,
+         "overall",
+         type = "n",
+         ylab = "RR",
+         ylim = c(.0, 3),
+         xlim = c(min(data$temp), max(data$temp)),
+         xlab = expression(paste("Temperature (", degree, "C)")),
+         main = "All Regions"
+    )
+  }
 
   abline(h = 1)
 
@@ -1625,60 +1630,62 @@ plot_and_write_relative_risk_all <- function(df_list,
   ind_d <- pred$predvar >= optimal_meta_upper & pred$predvar <= extreme_heat
   ind_e <- pred$predvar >= extreme_heat
 
-  relative_risk_vals <- pred$allRRfit
+  if (save_fig==TRUE) {
+    relative_risk_vals <- pred$allRRfit
 
-  lines(pred$predvar,
-        pred$allRRfit,
-        col = 'black',
-        lwd = 1)
+    lines(pred$predvar,
+          pred$allRRfit,
+          col = 'black',
+          lwd = 1)
 
-  lines(pred$predvar[ind_a],
-        pred$allRRfit[ind_a],
-        col = c("#000FFF"),
-        lwd = 1.5)
-  lines(pred$predvar[ind_b],
-        pred$allRRfit[ind_b],
-        col = c("#ABAFFF"),
-        lwd = 1.5)
-  lines(pred$predvar[ind_c],
-        pred$allRRfit[ind_c],
-        col = c("black"),
-        lwd = 1.5)
-  lines(pred$predvar[ind_d],
-        pred$allRRfit[ind_d],
-        col = c("#FFA7A7"),
-        lwd = 1.5)
-  lines(pred$predvar[ind_e],
-        pred$allRRfit[ind_e],
-        col = c("#FF0000"),
-        lwd = 1.5)
-
-
-  axis(2, at = 1:5 * 0.5)
-
-  breaks <- c(min(data$temp, na.rm = TRUE) - 1,
-              seq(pred$predvar[1],
-                  pred$predvar[length(pred$predvar)],
-                  length = 30),
-              max(data$temp, na.rm = TRUE) + 1)
+    lines(pred$predvar[ind_a],
+          pred$allRRfit[ind_a],
+          col = c("#000FFF"),
+          lwd = 1.5)
+    lines(pred$predvar[ind_b],
+          pred$allRRfit[ind_b],
+          col = c("#ABAFFF"),
+          lwd = 1.5)
+    lines(pred$predvar[ind_c],
+          pred$allRRfit[ind_c],
+          col = c("black"),
+          lwd = 1.5)
+    lines(pred$predvar[ind_d],
+          pred$allRRfit[ind_d],
+          col = c("#FFA7A7"),
+          lwd = 1.5)
+    lines(pred$predvar[ind_e],
+          pred$allRRfit[ind_e],
+          col = c("#FF0000"),
+          lwd = 1.5)
 
 
-  hist <- hist(data$temp, breaks = breaks, plot = FALSE)
-  hist$density <- hist$density / max(hist$density) * 0.7
-  prop <- max(hist$density) / max(hist$counts)
-  counts <- pretty(hist$count, 3)
+    axis(2, at = 1:5 * 0.5)
 
-  plot(hist,
-       ylim = c(0, max(hist$density) * 3.5),
-       axes = FALSE, ann = FALSE, col = grey(0.95),
-       breaks = breaks, freq = FALSE, add = TRUE)
+    breaks <- c(min(data$temp, na.rm = TRUE) - 1,
+                seq(pred$predvar[1],
+                    pred$predvar[length(pred$predvar)],
+                    length = 30),
+                max(data$temp, na.rm = TRUE) + 1)
 
-  axis(4, at = counts * prop, labels = counts, cex.axis = 0.7)
-  mtext("N", 4, line = -0.5, at = mean(counts * prop), cex = 0.5)
 
-  abline(v = cen, lty = 1, col = 3)
-  abline(v = c(optimal_meta_lower, optimal_meta_upper), lty = 2)
-  abline(v = c(extreme_cold, extreme_heat), lty = 3)
+    hist <- hist(data$temp, breaks = breaks, plot = FALSE)
+    hist$density <- hist$density / max(hist$density) * 0.7
+    prop <- max(hist$density) / max(hist$counts)
+    counts <- pretty(hist$count, 3)
+
+    plot(hist,
+         ylim = c(0, max(hist$density) * 3.5),
+         axes = FALSE, ann = FALSE, col = grey(0.95),
+         breaks = breaks, freq = FALSE, add = TRUE)
+
+    axis(4, at = counts * prop, labels = counts, cex.axis = 0.7)
+    mtext("N", 4, line = -0.5, at = mean(counts * prop), cex = 0.5)
+
+    abline(v = cen, lty = 1, col = 3)
+    abline(v = c(optimal_meta_lower, optimal_meta_upper), lty = 2)
+    abline(v = c(extreme_cold, extreme_heat), lty = 3)
+  }
 
   relative_risk_vector <- pred$allRRfit
   upper_vector <- pred$allRRhigh
@@ -1893,7 +1900,7 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
       arregions_bind = arregions_bind_,
       artot_bind = artot_bind_,
       output_folder_path = output_folder_path_
-    )
+  )
 
   if (by_region_ == FALSE) {
 
