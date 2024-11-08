@@ -1,16 +1,26 @@
-# climatehealth
+# climatehealth package (Standards for Official Statistics on Climate-Health Interactions)
 
----
+This project contains an R package for calculating climate-health indicators [beta]. The functions in this package support the production of climate-health statistics in the analysis pipelines in [climatehealth_pipelines](https://gitlab-app-l-01/hapi/climate-and-health-team/climatehealth_pipelines). The function code aligns with the methodologies set out in a statistical framework of climate-health indicators developed as part of our project Standards for Official Statistics on Climate-Health Interactions (SOSCHI).
 
-## Description
+## Layout of the climatehealth repository
 
-A package for calculating climate-health indicators [beta].
+### Top-level files
+`climatehealth.Rproj`: The RStudio project file for this package.
+`README.md`: The markdown file that produces this documentation.
+`CONTRIBUTING.md`: A markdown document with guidance on contributing to this repository.\
+`DESCRIPTION`: Contains package metadata.
+`NAMESPACE`: Specifies which functions are exported from this package. **Do not edit NAMESPACE manually.**\
+`LICENSE`: Gives information on licensing.
 
-First indicator is modified from Gasparrini et al. (2015).
+### Key folders:
+`R`: Contains R scripts with package functions
+`man`: Contains R documentation files for package functions. 
+`tests`: Contains unit tests for package functions
 
-Gasparrini A, Guo Y, Hashizume M, Lavigne E, Zanobetti A, Schwartz J, Tobias A, Tong S, Rocklöv J, Forsberg B, Leone M, De Sario M, Bell ML, Guo YLL, Wu CF, Kan H, Yi SM, de Sousa Zanotti Stagliorio Coelho M, Saldiva PH, Honda Y, Kim H, Armstrong B. Mortality risk attributable to high and low ambient temperature: a multicountry observational study. The Lancet. 2015;386(9991):369-375
+### Other folders:
+`.gitlab`: Contains a template for creating merge requests.\
+`git_filter`: Contains [git-filter-repo](https://github.com/newren/git-filter-repo) - a tool for rewriting git history.
 
-https://github.com/gasparrini/2015_gasparrini_Lancet_Rcodedata
 
 ### Folder description
 
