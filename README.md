@@ -55,7 +55,7 @@ To run unit tests:
 
 #### Heat-related mortality data
 
-We are currently testing the indicator using real heat-related mortality data for England and Wales (``tests/testthat/testdata/regEngWalesPop.csv`). This has been modified from https://github.com/gasparrini/2015_gasparrini_Lancet_Rcodedata, with an additional column of population estimates.
+The heat- and cold-related mortality indicator was tested using real data for England and Wales (`tests/testthat/testdata/regEngWalesPop.csv`). This has been modified from https://github.com/gasparrini/2015_gasparrini_Lancet_Rcodedata, with an additional dummy column of population estimates.
 
 This dataset contains daily number of deaths and minimum, maximum, and mean temperature, disaggregated by region (nine English regions).
 
