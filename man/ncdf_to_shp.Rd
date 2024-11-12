@@ -7,10 +7,7 @@
 ncdf_to_shp(ncdf_path, shapefile_path)
 }
 \arguments{
-\item{ncdf_path}{Path to a NetCDF file containing a daily time series of
-gridded wildfire-related PM2.5 concentration data. We use open-source data
-from the Finnish Meteorological Institute's SILAM-CTM model
-https://doi.org/10.57707/fmi-b2share.d1cac971b3224d438d5304e945e9f16c}
+\item{ncdf_path}{Path to a NetCDF file}
 
 \item{shp_path}{Path to a shapefile .shp of the geographical boundaries for
 which to extract mean values of wildfire-related PM2.5}
@@ -22,4 +19,12 @@ PM2.5 values for each region
 \description{
 Takes a NetCDF file of gridded wildfire data and shapefile for
 geographical regions and extracts mean values for each shapefile region.
+
+Information on NetCDF files:
+https://climatedataguide.ucar.edu/climate-tools/NetCDF#:~:text=An\%20nc4\%20files\%20is\%20a,readily\%20handle\%20netCDF\%2D4\%20files.
+
+We use a daily time series of gridded wildfire-related
+PM2.5 concentration from the Finnish Meteorological Institute's SILAM-CTM
+model. This is available open-source:
+https://doi.org/10.57707/fmi-b2share.d1cac971b3224d438d5304e945e9f16c.
 }
