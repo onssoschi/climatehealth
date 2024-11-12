@@ -21,16 +21,16 @@ Coming soon:
 ## Layout of the climatehealth repository
 
 ### Top-level files
-`climatehealth.Rproj`: The RStudio project file for this package.
-`README.md`: The markdown file that produces this documentation.
+`climatehealth.Rproj`: The RStudio project file for this package.\
+`README.md`: The markdown file that produces this documentation.\
 `CONTRIBUTING.md`: A markdown document with guidance on contributing to this repository.\
-`DESCRIPTION`: Contains package metadata.
+`DESCRIPTION`: Contains package metadata.\
 `NAMESPACE`: Specifies which functions are exported from this package. **Do not edit NAMESPACE manually.**\
 `LICENSE`: Gives information on licensing.
 
 ### Key folders:
-`R`: Contains R scripts with package functions
-`man`: Contains R documentation files for package functions. 
+`R`: Contains R scripts with package functions\
+`man`: Contains R documentation files for package functions.\
 `tests`: Contains unit tests for package functions
 
 ### Other folders:
