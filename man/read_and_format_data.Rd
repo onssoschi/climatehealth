@@ -17,7 +17,7 @@ read_and_format_data(
 for a particular health outcome, which may be disaggregated by region.}
 
 \item{date_col}{Character. Name of the column in the dataframe that contains
-the date.}
+the date. Date column should be in YYYY-MM-DD or YYYY/MM/DD format.}
 
 \item{region_col}{Character. Name of the column in the dataframe that contains
 the region names.}
@@ -34,5 +34,6 @@ Dataframe with formatted and renamed columns
 }
 \description{
 Reads in a CSV file for a daily time series of health data and
-renames columns to standard names
+renames columns to standard names. This function creates day of week, month,
+and year columns derived from the date.
 }
