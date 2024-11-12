@@ -1,12 +1,13 @@
 #' Read in health data and rename columns
 #'
 #' @description Reads in a CSV file for a daily time series of health data and
-#' renames columns to standard names
+#' renames columns to standard names. This function creates day of week, month,
+#' and year columns derived from the date.
 #'
 #' @param health_path Path to a CSV file containing a daily time series of data
 #' for a particular health outcome, which may be disaggregated by region.
 #' @param date_col Character. Name of the column in the dataframe that contains
-#' the date.
+#' the date. Date column should be in YYYY-MM-DD or YYYY/MM/DD format.
 #' @param region_col Character. Name of the column in the dataframe that contains
 #' the region names.
 #' @param mean_temperature_col Character. Name of the column in the dataframe
