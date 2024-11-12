@@ -59,10 +59,15 @@ read_and_format_data <- function(health_path,
 #' @description Takes a NetCDF file of gridded wildfire data and shapefile for
 #' geographical regions and extracts mean values for each shapefile region.
 #'
-#' @param ncdf_path Path to a NetCDF file containing a daily time series of
-#' gridded wildfire-related PM2.5 concentration data. We use open-source data
-#' from the Finnish Meteorological Institute's SILAM-CTM model
-#' https://doi.org/10.57707/fmi-b2share.d1cac971b3224d438d5304e945e9f16c
+#' Information on NetCDF files:
+#' https://climatedataguide.ucar.edu/climate-tools/NetCDF#:~:text=An%20nc4%20files%20is%20a,readily%20handle%20netCDF%2D4%20files.
+#'
+#' We use a daily time series of gridded wildfire-related
+#' PM2.5 concentration from the Finnish Meteorological Institute's SILAM-CTM
+#' model. This is available open-source:
+#' https://doi.org/10.57707/fmi-b2share.d1cac971b3224d438d5304e945e9f16c.
+#'
+#' @param ncdf_path Path to a NetCDF file
 #' @param shp_path Path to a shapefile .shp of the geographical boundaries for
 #' which to extract mean values of wildfire-related PM2.5
 #'
