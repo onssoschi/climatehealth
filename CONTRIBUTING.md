@@ -5,7 +5,7 @@ Contribution guidelines
 
 ## General guidance
 
-* **Do not upload any data to this repository, only code.**
+> **NOTE: Do not upload any data to this repository, only code.**
 * `main` is the production branch and is protected. 
 * `dev` is the development branch and is the default branch. Branch off from `dev` and do changes in the new branch. **Any additions/changes you wish to make to code must be committed on your own branch. When changes are ready to be merged into the `dev` branch (e.g. on completion of a working version of the functions), please follow the [merge request process](#merge-request-process) below.**
 
@@ -13,11 +13,12 @@ Contribution guidelines
 
 Guidance on the process:
 
-* Create a new branch off of `dev`, giving the new branch a clear name (e.g. `vector_borne_disease_functions`). Do changes in this new branch:
+* Create a new branch from `dev`, giving the new branch a clear name (e.g. `vector_borne_disease_functions`). Do changes in this new branch
+* Add scripts containing R functions for your indicator in the `R` folder. 
+* When developing R functions in these scripts:
     * Use logical atomic commits. Keep commit messages short but informative (e.g. "add plot function").
     * Ensure any new functions have unit tests and are properly documented (with roxygen).
-* Add scripts containing R functions for your indicator in the `R` folder.
-  
+
 ## Merge request process
 
 **Merge requests (also called pull requests) must be reviewed by a maintainer before feature branches can be merged into the `dev` branch**
