@@ -37,9 +37,10 @@ Coming soon:
 `.gitlab`: Contains a template for creating merge requests.\
 `git_filter`: Contains [git-filter-repo](https://github.com/newren/git-filter-repo) - a tool for rewriting git history.
 
-## Usage
+## Contributing
+See [CONTRIBUTING](CONTRIBUTING.md) for guidance on contributing to this repository before making changes to the code. This includes guidance on branching, merge requests, and code style. 
 
-See [CONTRIBUTING](CONTRIBUTING.md) for guidance on contributing to this repository before making changes to the code.
+## Usage
 
 Steps to use package:
 
