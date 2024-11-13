@@ -276,11 +276,11 @@ create_lagged_variables <- function(data,
                                     wildfire_lag = 3,
                                     temperature_lag = 1) {
 
-  df <- split(data, f = data$regnames)
+  df_list <- split(data, f = data$regnames)
 
-  for (i in seq(df)) {
+  for (i in seq(df_list)) {
 
-    region_data <- df[[i]]
+    region_data <- df_list[[i]]
 
     for (num in 0:wildfire_lag) {
 
@@ -308,11 +308,11 @@ create_lagged_variables <- function(data,
     region_data[[paste0("l", num, "_tmean")]] <-
       rowMeans(region_data[tmean_cols])
 
-    df[[i]] <- region_data
+    df_list[[i]] <- region_data
 
   }
 
-  df_all <- do.call(rbind, df)
+  df_all <- do.call(rbind, df_list)
   row.names(df_all) <- NULL
 
   return(df_all)
