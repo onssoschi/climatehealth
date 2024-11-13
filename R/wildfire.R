@@ -333,7 +333,7 @@ create_lagged_variables <- function(data,
 
 create_temperature_splines <- function(data,
                                        temperature_column,
-                                       df = 6) {
+                                       degrees_freedom = 6) {
 
   df_list <- split(data, f = data$regnames)
 
@@ -342,7 +342,7 @@ create_temperature_splines <- function(data,
     region_data <- df_list[[i]]
 
     region_data$ns.tmean <- splines::ns(region_data[[temperature_column]],
-                                        df = df)
+                                        df = degrees_freedom)
 
     df_list[[i]] <- region_data
 
@@ -751,7 +751,7 @@ wildfire_do_analysis <- function(health_path,
 
   data <- create_temperature_splines(data = data,
                                      temperature_column = spline_temperature_col,
-                                     df = spline_temperature_df)
+                                     degrees_freedom = spline_temperature_df)
 
   data <- time_stratify(data = data)
 
