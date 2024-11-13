@@ -162,8 +162,6 @@ pair_with_health <- function(climate_data,
 
   df_paired[is.finite(df_paired$mean_PM_FRP), ]
 
-  print(head(df_paired))
-
   df_paired <- df_paired %>%
     dplyr::mutate(mean_PM_FRP = (mean_PM_FRP * 1e9), # convert kg to microgram
                   regnames = as.factor(regnames))
