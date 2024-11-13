@@ -58,7 +58,7 @@ To run unit tests:
 
 The heat- and cold-related mortality indicator was tested using real data for England and Wales (`tests/testthat/testdata/regEngWalesPop.csv`). This has been modified from https://github.com/gasparrini/2015_gasparrini_Lancet_Rcodedata, with an additional dummy column of population estimates.
 
-This dataset contains daily number of deaths and minimum, maximum, and mean temperature, disaggregated by region (nine English regions).
+This dataset contains daily number of deaths and minimum, maximum, and mean temperature. The dataset is also disaggregated by [International Territorial Level (ITL 1, previously known as NUTS 1)](https://www.ons.gov.uk/methodology/geography/ukgeographies/eurostat) regions. The dataset includes data for nine England regions and Wales (i.e. a total of ten ITL 1 regions).
 
 ## Project status
 
