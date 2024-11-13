@@ -25,13 +25,13 @@ Guidance on the process:
 
 Once changes are ready to be merged into `dev`, please follow the following steps:
 
-* Create a new merge request into the `dev` branch. 
-    * Give a succinct, clear summary of the changes made.
-    * Assign a reviewer (see list of maintainers below).
-    * Select "Delete source branch when merge request is accepted".
-    * Do **not** select "Squash commits when merge request is accepted".
-    * Resolve any merge conflicts after creating the request.
-* Implement reviewer suggestions. Once the reviewer is happy with the changes, they will accept the merge request and the feature branch will be merged into `dev`.
+1. Create a new merge request into the `dev` branch. There is a merge request template in `.gitlab/merge_request_templates`.
+    1. Give a succinct, clear summary of the changes made.
+    2. Assign a reviewer (see list of maintainers below).
+    3. Select "Delete source branch when merge request is accepted".
+    4. Do **not** select "Squash commits when merge request is accepted".
+    5. Resolve any merge conflicts after creating the request.
+2. Implement reviewer suggestions. Once the reviewer is happy with the changes, they will accept the merge request and the feature branch will be merged into `dev`.
 
 The Climate and Health Team reviews merge requests on a regular basis.
 
