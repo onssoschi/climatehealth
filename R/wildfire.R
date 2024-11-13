@@ -74,8 +74,8 @@ read_and_format_data <- function(health_path,
 #' @returns Dataframe containing a daily time series with mean wildfire-related
 #' PM2.5 values for each region
 
-ncdf_to_shp <- function(ncdf_path,
-                        shapefile_path) {
+extract_means_for_geography <- function(ncdf_path,
+                                        shapefile_path) {
 
   # Convert NetCDF to raster and get layers (time steps)
   nc <- ncdf4::nc_open(ncdf_path)
@@ -244,8 +244,8 @@ load_wildfire_data <- function(health_path,
 
   else if (join_wildfire_data == TRUE) {
 
-    df_zonal <- ncdf_to_shp(ncdf_path = ncdf_path,
-                            shapefile_path = shp_path)
+    df_zonal <- extract_means_for_geography(ncdf_path = ncdf_path,
+                                            shapefile_path = shp_path)
 
     wildfire_data <- pair_with_health(climate_data = df_zonal,
                                       health_path = health_path,
