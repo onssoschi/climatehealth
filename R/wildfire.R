@@ -90,6 +90,9 @@ extract_means_for_geography <- function(ncdf_path,
   shp <- sf::st_read(shapefile_path)
   shp <- sf::st_transform(shp, raster::crs(nc_raster))
 
+  #TODO: Generalise code below to allow for shapefiles with different column
+  # names
+
   # Extract mean values within shapefile regions from raster
   extracted <- cbind(shp, exactextractr::exact_extract(nc_raster, shp, 'mean'))
   extracted[ , c("RGN23CD", "BNG_E", "BNG_N", "LONG",
