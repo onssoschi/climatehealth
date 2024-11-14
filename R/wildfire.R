@@ -243,19 +243,15 @@ load_wildfire_data <- function(health_path,
 
   }
 
-  else if (join_wildfire_data == TRUE) {
-
-    df_zonal <- extract_means_for_geography(ncdf_path = ncdf_path,
+  df_zonal <- extract_means_for_geography(ncdf_path = ncdf_path,
                                             shapefile_path = shp_path)
 
-    wildfire_data <- pair_with_health(climate_data = df_zonal,
-                                      health_path = health_path,
-                                      date_col = date_col,
-                                      region_col = region_col,
-                                      mean_temperature_col = mean_temperature_col,
-                                      health_outcome_col = health_outcome_col)
-
-  }
+  wildfire_data <- pair_with_health(climate_data = df_zonal,
+                                    health_path = health_path,
+                                    date_col = date_col,
+                                    region_col = region_col,
+                                    mean_temperature_col = mean_temperature_col,
+                                    health_outcome_col = health_outcome_col)
 
   return(wildfire_data)
 }
