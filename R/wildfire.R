@@ -87,6 +87,8 @@ extract_means_for_geography <- function(ncdf_path,
                          tz = "GMT")
   names(nc_raster) <- time_obs
 
+  # Read shapefile and convert to same Coordinate Reference System (CRS) as
+  # raster layer
   shp <- sf::st_read(shapefile_path)
   shp <- sf::st_transform(shp, raster::crs(nc_raster))
 
