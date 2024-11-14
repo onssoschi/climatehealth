@@ -376,7 +376,7 @@ time_stratify <- function(data) {
     df[[i]]$year  <- as.factor(df[[i]]$year)
     df[[i]]$dow   <- as.factor(df[[i]]$dow)
     df[[i]]$reg_name_strata <- as.factor(
-      stringr::str_replace_all(df[[i]]$regnames, " ", "")
+      stringr::str_replace_all(df[[i]]$regnames, " ", "_")
       )
     df[[i]]$stratum <- with(df[[i]],
                               as.factor(reg_name_strata:year:month:dow))
