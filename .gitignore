@@ -25,7 +25,9 @@
 
 # Output Folders
 tests/testthat/testdata/*
+new_tests/testthat/testdata/*
 
 # Test Data Exclusions
 !tests/testthat/config.yml
 !tests/testthat/testdata/regEngWalesPop.csv
+!new_tests/testthat/testdata/temperature_test_data.csv
