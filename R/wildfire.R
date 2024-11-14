@@ -24,9 +24,7 @@ read_and_format_data <- function(health_path,
                                  mean_temperature_col,
                                  health_outcome_col) {
 
-  #TODO: Include file extension function to check health_path is a csv
-
-  df <- read.csv(health_path)
+  df <- climatehealth::read_input_data(health_path)
 
   if (is.null(region_col)) {
 
