@@ -1,13 +1,39 @@
 Contribution guidelines
 =======================
 
-`climatehealth` is maintained and developed by the ONS Climate and Health Team. We welcome contributions from our project partners. 
+`climatehealth` is an R package maintained and developed by the ONS Climate and Health Team. We welcome contributions from our project partners. 
 
 ## General guidance
 
-* **Do not upload any sensitive data to this repository.**
+> **NOTE: Do not upload any data to this repository, only code.**
 * `main` is the production branch and is protected. 
-* `dev` is the development branch and is the default branch. Branch off from `dev` to create feature branches. **Any changes you wish to make to code must be committed on your own feature branch.**
+* `dev` is the development branch and is the default branch. Branch off from `dev` and do changes in the new branch. **Any additions/changes you wish to make to code must be committed on your own branch. When changes are ready to be merged into the `dev` branch (e.g. on completion of a working version of the functions), please follow the [merge request process](#merge-request-process) below.**
+
+## Adding indicator code
+
+Guidance on the process:
+
+* Create a new branch from `dev`, giving the new branch a clear name (e.g. `vector_borne_disease_functions`). Do changes in this new branch
+* Add scripts containing R functions for your indicator in the `R` folder. 
+* When developing R functions in these scripts:
+    * Use logical atomic commits. Keep commit messages short but informative (e.g. "add plot function").
+    * Ensure any new functions have unit tests and are properly documented (with roxygen).
+
+## Merge request process
+
+**Merge requests (also called pull requests) must be reviewed by a maintainer before feature branches can be merged into the `dev` branch**
+
+Once changes are ready to be merged into `dev`, please follow the following steps:
+
+1. Create a new merge request into the `dev` branch. There is a merge request template in `.gitlab/merge_request_templates`.
+    1. Give a succinct, clear summary of the changes made.
+    2. Assign a reviewer (see list of maintainers below).
+    3. Select "Delete source branch when merge request is accepted".
+    4. Do **not** select "Squash commits when merge request is accepted".
+    5. Resolve any merge conflicts after creating the request.
+2. Implement reviewer suggestions. Once the reviewer is happy with the changes, they will accept the merge request and the feature branch will be merged into `dev`.
+
+The Climate and Health Team reviews merge requests on a regular basis.
 
 ## Request a feature or fix
 
@@ -16,34 +42,12 @@ To request a feature or bug fix to be implemented by the Climate and Health Team
 * Be clear whether the issue is a request for a new feature or a bug fix.
 * **If you find a security vulnerability, do NOT open an issue. Email climate.health@ons.gov.uk instead.**
 
-## Merge request process
-
-**Merge requests must be reviewed by a maintainer before feature branches can be merged into dev or main**
-
-To implement a new feature or fix a bug, please follow the process outlined below.
-
-1. Create an issue clearly describing the feature or fix.
-2. Create a feature branch from `dev` and do changes in that branch. 
-    * Use logical atomic commits. Keep commit messages short but informative (e.g. "add plot function").
-    * Ensure any new functions have unit tests and are properly documented (roxygen).
-    * Update the README following any major changes.
-    * Branches are ready to merge once the feature or fix is completed. Avoid pushing broken code or unfinished features / fixes.
-3. Create a new merge request into the `dev` branch. 
-    * Give the merge request a succinct, clear summary of the new feature or fix.
-    * Assign a reviewer (see list of maintainers below).
-    * Select "Delete source branch when merge request is accepted".
-    * Do **not** select "Squash commits when merge request is accepted".
-    * Resolve any merge conflicts after creating the request.
-4. Implement reviewer suggestions. Once the reviewer is happy with the changes, they will accept the merge request and the feature branch will be merged into `dev`.
-
-The Climate and Health Team reviews merge requests on a regular basis.
-
 ## Current maintainers
 
 Please assign one of the following maintainers to review a new merge request:
 
-* Euan Soutter (@soutte)
-* Antony Brown (@browna6)
+* Antony Brown (@antonymbrown on GitHub)
+* Charlie Browning (@CBROWN-ONS on GitHub)
 
 ## Code style
 
@@ -52,7 +56,6 @@ Please follow the coding style for this project.
 * Employ coding best practice to ensure code is clean and readable:
     * [Tidyverse style guide for R](https://style.tidyverse.org/index.html)
     * [Quality assurance of code for analysis and research](https://best-practice-and-impact.github.io/qa-of-code-guidance/readable_code.html)
-    * [PEP8 style guide for Python](https://peps.python.org/pep-0008/)
 * In general, we do not load whole packages using the library() function. We reference the namespace directly e.g. `dplyr::mutate()`.
 * Keep each line of code under 80 characters.
 * Use comments sparingly (e.g. to explain *why* the code does what it does, not *what* the code does).
