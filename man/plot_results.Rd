@@ -13,7 +13,7 @@ each lag of wildfire-related PM2.5}
 \item{save_fig}{Boolean. Whether to save the plot as an output.}
 
 \item{wildfire_lag}{Integer. The maximum number of days for which to plot the
-lags for wildfire PM2.5. Default is three.}
+lags for wildfire PM2.5. Default is 3.}
 
 \item{output_folder_path}{Path to folder where plots should be saved.}
 }
