@@ -638,8 +638,6 @@ plot_results <- function(results,
 #' @param results Dataframe of relative risk and confidence intervals for
 #' each lag of wildfire-related PM2.5
 #' @param output_folder_path Path to folder where results should be saved.
-#'
-#' @returns CSV of analysis results
 
 save_results <- function(results,
                          output_folder_path) {
