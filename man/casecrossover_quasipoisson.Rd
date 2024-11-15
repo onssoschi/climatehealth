@@ -26,7 +26,7 @@ increase in wildfire PM2.5 to give the model estimates and relative risks
 representing impacts of a 10 unit increase in wildfire PM2.5)}
 
 \item{wildfire_lag}{Integer. The maximum number of days for which to calculate
-lagged results for wildfire PM2.5. Default is three.}
+lagged results for wildfire PM2.5. Default is 3.}
 }
 \value{
 Dataframe of relative risk and confidence intervals for
