@@ -487,8 +487,6 @@ check_vif <- function(data, predictors) {
 #'
 #' @param data Dataframe containing a daily time series of climate and health
 #' data from which to fit models.
-#' @param wildfire_lag Integer. The maximum number of days for which to calculate
-#' lagged results for wildfire PM2.5. Default is three.
 #' @param scale_wildfire_pm Boolean. Whether to scale wildfire PM2.5 concentration
 #' variable for alternative interpretation of outputs. Default is TRUE.
 #' @param scale_factor Numeric. If scale_wildfire_pm = TRUE, the value to divide
@@ -496,6 +494,8 @@ check_vif <- function(data, predictors) {
 #' increase in wildfire PM2.5 to give the model estimates and relative risks
 #' (e.g. scale_factor = 10 corresponds to estimates and relative risks
 #' representing impacts of a 10 unit increase in wildfire PM2.5)
+#' @param wildfire_lag Integer. The maximum number of days for which to calculate
+#' lagged results for wildfire PM2.5. Default is 3.
 #'
 #' @returns Dataframe of relative risk and confidence intervals for
 #' each lag of wildfire-related PM2.5
