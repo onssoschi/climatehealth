@@ -642,8 +642,6 @@ plot_results <- function(results,
 save_results <- function(results,
                          output_folder_path) {
 
-  results <- results
-
   if (!is.null(output_folder_path)) {
 
     write.csv(results, file = paste(
