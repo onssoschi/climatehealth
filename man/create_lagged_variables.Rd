@@ -11,10 +11,10 @@ create_lagged_variables(data, wildfire_lag = 3, temperature_lag = 1)
 data}
 
 \item{wildfire_lag}{Integer. The number of days for which to calculate the
-lags for wildfire PM2.5. Default is three.}
+lags for wildfire PM2.5. Default is 3.}
 
 \item{temperature_lag}{Integer. The number of days for which to calculate
-the lags for temperature. Default is one.}
+the lags for temperature. Default is 1.}
 }
 \value{
 Dataframe with added columns for lagged temperature and
