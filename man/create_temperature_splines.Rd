@@ -4,7 +4,7 @@
 \alias{create_temperature_splines}
 \title{Generate splines for temperature variable}
 \usage{
-create_temperature_splines(data, temperature_column, df = 6)
+create_temperature_splines(data, temperature_column, degrees_freedom = 6)
 }
 \arguments{
 \item{data}{Dataframe containing a daily time series of climate and health
