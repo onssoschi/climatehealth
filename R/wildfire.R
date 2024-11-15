@@ -615,7 +615,6 @@ plot_results <- function(results,
     ggplot2::theme_bw() +
     ggplot2::theme(axis.text = ggplot2::element_text(size = 18),
                    axis.title = ggplot2::element_text(size = 18))
-  plot
 
   if (save_fig == TRUE) {
 
