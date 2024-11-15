@@ -2,8 +2,8 @@
 % Please edit documentation in R/wildfire.R
 \name{wildfire_do_analysis}
 \alias{wildfire_do_analysis}
-\title{Run analysis pipeline for indicator of the health impacts of wildfire-related
-PM2.5.}
+\title{Run pipeline to analyse the impact of wildfire-related PM2.5 on a health
+outcome using a time-stratified case-crossover approach.}
 \usage{
 wildfire_do_analysis(
   health_path,
@@ -100,6 +100,6 @@ Dataframe of relative risk and confidence intervals for
 each lag of wildfire-related PM2.5
 }
 \description{
-Runs full analysis pipeline for analysis of impacts of
-wildfire-related PM2.5 on health outcome.
+Runs full analysis pipeline for analysis of the impact of
+wildfire-related PM2.5 on a health outcome.
 }
