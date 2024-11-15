@@ -154,6 +154,7 @@ pair_with_health <- function(climate_data,
                                     by = c('regnames' = 'RGN23NM',
                                            'date' = 'date'))
 
+  #TODO: output print information to a file
   # Joins will fail if CSV has wider date range or regions do not match
   print(paste0("Number of joins: ", sum(!is.na(df_paired_all$mean_PM_FRP))))
   print(paste0("Number of failed joins: ",
@@ -412,7 +413,7 @@ descriptive_stats <- function(data,
                               variables,
                               bin_width = 5,
                               health_outcome_col) {
-
+  #TODO: output plot to a file
   graphics::hist(data[[health_outcome_col]],
                  breaks = seq(0, max(data[[health_outcome_col]]) + bin_width,
                               by = bin_width),
@@ -420,7 +421,7 @@ descriptive_stats <- function(data,
                  xlab = "Health outcome")
 
   for (i in seq_along(variables)) {
-
+    #TODO: output print information to a file
     variable_name <- variables[i]
     print(variable_name)
     print(summary(data[[variable_name]]))
@@ -475,7 +476,7 @@ check_vif <- function(data, predictors) {
 
   model <- lm(formula, data = data)
   vif_mod <- car::vif(model)
-
+  #TODO: output print information to a file
   print("Variance inflation factor:")
   print(vif_mod)
 }
@@ -545,7 +546,7 @@ casecrossover_quasipoisson <- function(data,
                       family = quasipoisson,
                       subset = ind > 0,
                       eliminate = stratum)
-
+    #TODO: output print information to a file
     print(Epi::ci.exp(model, subset = i))
     print(summary(model))
 
@@ -553,6 +554,7 @@ casecrossover_quasipoisson <- function(data,
                 model$deviance / model$df.residual))
 
     devresid <- resid(model, type = "deviance")
+    #TODO: output plot to a file
     plot(devresid ~ model$fitted.values)
 
     coef_pm <- summary(model)$coefficients[i, "Estimate"]
