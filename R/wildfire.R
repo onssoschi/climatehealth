@@ -41,7 +41,7 @@ read_and_format_data <- function(health_path,
   df <- df %>%
     dplyr::rename(date = date_col,
                   tmean = mean_temperature_col,
-                  death = health_outcome_col) %>%
+                  health_outcome = health_outcome_col) %>%
     dplyr::mutate(date = lubridate::ymd(date),
                   year = lubridate::year(date),
                   month = lubridate::month(date),
@@ -381,7 +381,7 @@ time_stratify <- function(data) {
       )
     df[[i]]$stratum <- with(df[[i]],
                               as.factor(reg_name_strata:year:month:dow))
-    df[[i]]$ind <- tapply(df[[i]]$death,
+    df[[i]]$ind <- tapply(df[[i]]$health_outcome,
                           df[[i]]$stratum,
                           sum)[df[[i]]$stratum]
 
@@ -411,11 +411,10 @@ time_stratify <- function(data) {
 
 descriptive_stats <- function(data,
                               variables,
-                              bin_width = 5,
-                              health_outcome_col) {
+                              bin_width = 5) {
   #TODO: output plot to a file
-  graphics::hist(data[[health_outcome_col]],
-                 breaks = seq(0, max(data[[health_outcome_col]]) + bin_width,
+  graphics::hist(data$health_outcome,
+                 breaks = seq(0, max(data$health_outcome) + bin_width,
                               by = bin_width),
                  main = "Health outcome",
                  xlab = "Health outcome")
@@ -472,7 +471,7 @@ check_vif <- function(data, predictors) {
     stop("Please provide at least two predictor variables")
   }
 
-  formula <- paste("death ~", paste(predictors, collapse = "+"))
+  formula <- paste("health_outcome ~", paste(predictors, collapse = "+"))
 
   model <- lm(formula, data = data)
   vif_mod <- car::vif(model)
@@ -539,7 +538,7 @@ casecrossover_quasipoisson <- function(data,
 
     number <- lag_nums[[i]]
 
-    formula <- as.formula(paste("death ~ ns.tmean +", i))
+    formula <- as.formula(paste("health_outcome ~ ns.tmean +", i))
 
     model <- gnm::gnm(formula,
                       data = data,
@@ -756,8 +755,7 @@ wildfire_do_analysis <- function(health_path,
 
   descriptive_stats(data = data,
                     variables = variables_descriptive_stats,
-                    bin_width = bin_width_histogram,
-                    health_outcome_col = health_outcome_col)
+                    bin_width = bin_width_histogram)
 
   check_vif(data = data,
             predictors = predictors_vif)

@@ -4,7 +4,7 @@
 \alias{descriptive_stats}
 \title{Show descriptive statistics}
 \usage{
-descriptive_stats(data, variables, bin_width = 5, health_outcome_col)
+descriptive_stats(data, variables, bin_width = 5)
 }
 \arguments{
 \item{data}{Dataframe containing a daily time series of climate and health
