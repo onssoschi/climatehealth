@@ -12,9 +12,6 @@ each lag of wildfire-related PM2.5}
 
 \item{output_folder_path}{Path to folder where results should be saved.}
 }
-\value{
-CSV of analysis results
-}
 \description{
 Saves a CSV file of relative risk and confidence intervals for
 each lag value of wildfire-related PM2.5
