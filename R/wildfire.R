@@ -690,7 +690,8 @@ save_results <- function(results,
 #' @param spline_temperature_col Character. The name of the temperature column
 #' in the dataframe from which to generate splines. This could be lagged or
 #' non-lagged temperature.
-#' @param spline_temperature_df Integer. Degrees of freedom for the spline(s).
+#' @param spline_temperature_degrees_freedom Integer. Degrees of freedom for the
+#' spline(s).
 #' @param variables_descriptive_stats Character or character vector with
 #' variable to produce summary statistics for. Must include at least 1 variable.
 #' @param bin_width_histogram Integer. Width of each bin in a histogram of the
@@ -724,7 +725,7 @@ wildfire_do_analysis <- function(health_path,
                                  wildfire_lag = 3,
                                  temperature_lag = 1,
                                  spline_temperature_col,
-                                 spline_temperature_df = 6,
+                                 spline_temperature_degrees_freedom = 6,
                                  variables_descriptive_stats,
                                  bin_width_histogram = 10,
                                  predictors_vif,
@@ -749,7 +750,7 @@ wildfire_do_analysis <- function(health_path,
 
   data <- create_temperature_splines(data = data,
                                      temperature_column = spline_temperature_col,
-                                     degrees_freedom = spline_temperature_df)
+                                     degrees_freedom = spline_temperature_degrees_freedom)
 
   data <- time_stratify(data = data)
 
