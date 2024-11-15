@@ -265,9 +265,9 @@ load_wildfire_data <- function(health_path,
 #' @param data Dataframe containing a daily time series of climate and health
 #' data
 #' @param wildfire_lag Integer. The number of days for which to calculate the
-#' lags for wildfire PM2.5. Default is three.
+#' lags for wildfire PM2.5. Default is 3.
 #' @param temperature_lag Integer. The number of days for which to calculate
-#' the lags for temperature. Default is one.
+#' the lags for temperature. Default is 1.
 #'
 #' @returns Dataframe with added columns for lagged temperature and
 #' wildfire-related PM2.5 concentration
@@ -584,7 +584,7 @@ casecrossover_quasipoisson <- function(data,
 #' each lag of wildfire-related PM2.5
 #' @param save_fig Boolean. Whether to save the plot as an output.
 #' @param wildfire_lag Integer. The maximum number of days for which to plot the
-#' lags for wildfire PM2.5. Default is three.
+#' lags for wildfire PM2.5. Default is 3.
 #' @param output_folder_path Path to folder where plots should be saved.
 #'
 #' @returns Plot of relative risk and confidence intervals for each lag of
@@ -687,9 +687,9 @@ save_results <- function(results,
 #' contains the health outcome count column (e.g. number of deaths, hospital
 #' admissions)
 #' @param wildfire_lag Integer. The number of days for which to calculate the
-#' lags for wildfire PM2.5. Default is three.
+#' lags for wildfire PM2.5. Default is 3.
 #' @param temperature_lag Integer. The number of days for which to calculate
-#' the lags for temperature. Default is one.
+#' the lags for temperature. Default is 1.
 #' @param spline_temperature_col Character. The name of the temperature column
 #' in the dataframe from which to generate splines. This could be lagged or
 #' non-lagged temperature.

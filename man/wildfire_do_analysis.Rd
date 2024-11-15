@@ -58,10 +58,10 @@ contains the health outcome count column (e.g. number of deaths, hospital
 admissions)}
 
 \item{wildfire_lag}{Integer. The number of days for which to calculate the
-lags for wildfire PM2.5. Default is three.}
+lags for wildfire PM2.5. Default is 3.}
 
 \item{temperature_lag}{Integer. The number of days for which to calculate
-the lags for temperature. Default is one.}
+the lags for temperature. Default is 1.}
 
 \item{spline_temperature_col}{Character. The name of the temperature column
 in the dataframe from which to generate splines. This could be lagged or
