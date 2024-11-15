@@ -621,8 +621,9 @@ plot_results <- function(results,
     if (!is.null(output_folder_path)) {
       pdf(paste(output_folder_path, "wildfire_plot.pdf", sep = ""),
           width = 8, height = 8)
-      print(plot)
+      print(plot) # NOTE: this print() is required to produce the plot pdf
       dev.off()
+      #TODO: could use check_file_exists() function here
     }
 
   }
