@@ -627,7 +627,7 @@ plot_results <- function(results,
     }
 
   }
-
+  return(plot)
 }
 
 #' Save results of analysis
