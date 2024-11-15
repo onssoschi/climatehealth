@@ -623,7 +623,8 @@ plot_results <- function(results,
           width = 8, height = 8)
       print(plot) # NOTE: this print() is required to produce the plot pdf
       dev.off()
-      #TODO: could use check_file_exists() function here
+      climatehealth::check_file_exists(paste(
+        output_folder_path, "wildfire_plot.pdf", sep = ""))
     }
 
   }
@@ -647,6 +648,8 @@ save_results <- function(results,
     write.csv(results, file = paste(
       output_folder_path, "wildfire_results.csv", sep = "")
       )
+    climatehealth::check_file_exists(paste(
+      output_folder_path, "wildfire_results.csv", sep = ""))
 
   } else {
 
