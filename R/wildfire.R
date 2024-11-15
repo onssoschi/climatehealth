@@ -658,11 +658,11 @@ save_results <- function(results,
   }
 }
 
-#' Run analysis pipeline for indicator of the health impacts of wildfire-related
-#' PM2.5.
+#' Run pipeline to analyse the impact of wildfire-related PM2.5 on a health
+#' outcome using a time-stratified case-crossover approach.
 #'
-#' @description Runs full analysis pipeline for analysis of impacts of
-#' wildfire-related PM2.5 on health outcome.
+#' @description Runs full analysis pipeline for analysis of the impact of
+#' wildfire-related PM2.5 on a health outcome.
 #'
 #' @param health_path Path to a CSV file containing a daily time series of data
 #' for a particular health outcome, which may be disaggregated by region. If
