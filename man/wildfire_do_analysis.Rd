@@ -16,8 +16,8 @@ wildfire_do_analysis(
   health_outcome_col,
   wildfire_lag = 3,
   temperature_lag = 1,
-  spline_temperature_col,
-  spline_temperature_df = 6,
+  spline_temperature_lag = 0,
+  spline_temperature_degrees_freedom = 6,
   variables_descriptive_stats,
   bin_width_histogram = 10,
   predictors_vif,
@@ -63,11 +63,12 @@ lags for wildfire PM2.5. Default is 3.}
 \item{temperature_lag}{Integer. The number of days for which to calculate
 the lags for temperature. Default is 1.}
 
-\item{spline_temperature_col}{Character. The name of the temperature column
-in the dataframe from which to generate splines. This could be lagged or
-non-lagged temperature.}
+\item{spline_temperature_lag}{Integer. The number of days of lag in the
+temperature variable from which to generate splines. Default is 0 (unlagged
+temperature variable).}
 
-\item{spline_temperature_df}{Integer. Degrees of freedom for the spline(s).}
+\item{spline_temperature_degrees_freedom}{Integer. Degrees of freedom for the
+spline(s).}
 
 \item{variables_descriptive_stats}{Character or character vector with
 variable to produce summary statistics for. Must include at least 1 variable.}

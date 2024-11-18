@@ -289,7 +289,7 @@ create_lagged_variables <- function(data,
 
     }
 
-    for(num in 1:wildfire_lag) {
+    for(num in 0:wildfire_lag) {
 
       wildfire_cols <- paste0("wildfire_pm_l", 0:num)
       region_data[[paste0("l", num, "_mean_wildfire_pm")]] <-
@@ -304,9 +304,13 @@ create_lagged_variables <- function(data,
 
     }
 
-    tmean_cols <- paste0("tmean_l", 0:temperature_lag)
+    for(num in 0:temperature_lag) {
+
+    tmean_cols <- paste0("tmean_l", 0:num)
     region_data[[paste0("l", num, "_tmean")]] <-
       rowMeans(region_data[tmean_cols])
+
+    }
 
     df_list[[i]] <- region_data
 
@@ -324,16 +328,18 @@ create_lagged_variables <- function(data,
 #'
 #' @param data Dataframe containing a daily time series of climate and health
 #' data
-#' @param temperature_column Character. The name of the temperature column in
-#' the dataframe from which to generate splines. This could be lagged or
-#' non-lagged temperature.
+#' @param temperature_lag Integer. The number of days of lag in the temperature
+#' variable from which to generate splines. Default is 0 (unlagged temperature
+#' variable).
 #' @param df Integer. Degrees of freedom for the spline(s).
 #'
 #' @returns Dataframe with additional columns for temperature spline
 
 create_temperature_splines <- function(data,
-                                       temperature_column,
+                                       temperature_lag = 0,
                                        degrees_freedom = 6) {
+
+  temperature_column <- paste0("l", temperature_lag, "_tmean")
 
   df_list <- split(data, f = data$regnames)
 
@@ -687,9 +693,9 @@ save_results <- function(results,
 #' lags for wildfire PM2.5. Default is 3.
 #' @param temperature_lag Integer. The number of days for which to calculate
 #' the lags for temperature. Default is 1.
-#' @param spline_temperature_col Character. The name of the temperature column
-#' in the dataframe from which to generate splines. This could be lagged or
-#' non-lagged temperature.
+#' @param spline_temperature_lag Integer. The number of days of lag in the
+#' temperature variable from which to generate splines. Default is 0 (unlagged
+#' temperature variable).
 #' @param spline_temperature_degrees_freedom Integer. Degrees of freedom for the
 #' spline(s).
 #' @param variables_descriptive_stats Character or character vector with
@@ -724,7 +730,7 @@ wildfire_do_analysis <- function(health_path,
                                  health_outcome_col,
                                  wildfire_lag = 3,
                                  temperature_lag = 1,
-                                 spline_temperature_col,
+                                 spline_temperature_lag = 0,
                                  spline_temperature_degrees_freedom = 6,
                                  variables_descriptive_stats,
                                  bin_width_histogram = 10,
@@ -749,7 +755,7 @@ wildfire_do_analysis <- function(health_path,
                                   temperature_lag = temperature_lag)
 
   data <- create_temperature_splines(data = data,
-                                     temperature_column = spline_temperature_col,
+                                     temperature_lag = spline_temperature_lag,
                                      degrees_freedom = spline_temperature_degrees_freedom)
 
   data <- time_stratify(data = data)
