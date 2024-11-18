@@ -4,15 +4,15 @@
 \alias{create_temperature_splines}
 \title{Generate splines for temperature variable}
 \usage{
-create_temperature_splines(data, temperature_column, degrees_freedom = 6)
+create_temperature_splines(data, temperature_lag = 0, degrees_freedom = 6)
 }
 \arguments{
 \item{data}{Dataframe containing a daily time series of climate and health
 data}
 
-\item{temperature_column}{Character. The name of the temperature column in
-the dataframe from which to generate splines. This could be lagged or
-non-lagged temperature.}
+\item{temperature_lag}{Integer. The number of days of lag in the temperature
+variable from which to generate splines. Default is 0 (unlagged temperature
+variable).}
 
 \item{df}{Integer. Degrees of freedom for the spline(s).}
 }
