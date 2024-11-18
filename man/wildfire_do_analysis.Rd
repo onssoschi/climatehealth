@@ -9,7 +9,7 @@ wildfire_do_analysis(
   health_path,
   join_wildfire_data = FALSE,
   ncdf_path = NULL,
-  shp_path,
+  shp_path = NULL,
   date_col,
   region_col,
   mean_temperature_col,
@@ -24,7 +24,7 @@ wildfire_do_analysis(
   scale_factor_wildfire_pm = 10,
   save_fig = FALSE,
   save_csv = FALSE,
-  output_folder_path
+  output_folder_path = NULL
 )
 }
 \arguments{
