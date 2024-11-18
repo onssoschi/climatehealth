@@ -5,25 +5,18 @@
 \title{Fit quasipoisson regression models for different lags using a time-stratified
 case-crossover approach.}
 \usage{
-casecrossover_quasipoisson(
-  data,
-  scale_wildfire_pm = TRUE,
-  scale_factor = 10,
-  wildfire_lag = 3
-)
+casecrossover_quasipoisson(data, scale_factor = 10, wildfire_lag = 3)
 }
 \arguments{
 \item{data}{Dataframe containing a daily time series of climate and health
 data from which to fit models.}
 
-\item{scale_wildfire_pm}{Boolean. Whether to scale wildfire PM2.5 concentration
-variable for alternative interpretation of outputs. Default is TRUE.}
-
-\item{scale_factor}{Numeric. If scale_wildfire_pm = TRUE, the value to divide
-the wildfire PM2.5 concentration variables by. Corresponds to the unit
-increase in wildfire PM2.5 to give the model estimates and relative risks
-(e.g. scale_factor = 10 corresponds to estimates and relative risks
-representing impacts of a 10 unit increase in wildfire PM2.5)}
+\item{scale_factor}{Numeric. The value to divide the wildfire PM2.5
+concentration variables by for alternative interpretation of outputs.
+Corresponds to the unit increase in wildfire PM2.5 to give the model
+estimates and relative risks (e.g. scale_factor = 10 corresponds to estimates
+and relative risks representing impacts of a 10 unit increase in wildfire PM2.5)
+Setting this parameter to 0 or 1 leaves the variable unscaled.}
 
 \item{wildfire_lag}{Integer. The maximum number of days for which to calculate
 lagged results for wildfire PM2.5. Default is 3.}
