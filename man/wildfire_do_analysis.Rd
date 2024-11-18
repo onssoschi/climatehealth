@@ -11,7 +11,7 @@ wildfire_do_analysis(
   ncdf_path,
   shp_path,
   date_col,
-  region_col = region_col,
+  region_col,
   mean_temperature_col,
   health_outcome_col,
   wildfire_lag = 3,
