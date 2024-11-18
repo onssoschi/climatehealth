@@ -493,13 +493,12 @@ check_vif <- function(data, predictors) {
 #'
 #' @param data Dataframe containing a daily time series of climate and health
 #' data from which to fit models.
-#' @param scale_wildfire_pm Boolean. Whether to scale wildfire PM2.5 concentration
-#' variable for alternative interpretation of outputs. Default is TRUE.
-#' @param scale_factor Numeric. If scale_wildfire_pm = TRUE, the value to divide
-#' the wildfire PM2.5 concentration variables by. Corresponds to the unit
-#' increase in wildfire PM2.5 to give the model estimates and relative risks
-#' (e.g. scale_factor = 10 corresponds to estimates and relative risks
-#' representing impacts of a 10 unit increase in wildfire PM2.5)
+#' @param scale_factor Numeric. The value to divide the wildfire PM2.5
+#' concentration variables by for alternative interpretation of outputs.
+#' Corresponds to the unit increase in wildfire PM2.5 to give the model
+#' estimates and relative risks (e.g. scale_factor = 10 corresponds to estimates
+#' and relative risks representing impacts of a 10 unit increase in wildfire PM2.5)
+#' Setting this parameter to 0 or 1 leaves the variable unscaled.
 #' @param wildfire_lag Integer. The maximum number of days for which to calculate
 #' lagged results for wildfire PM2.5. Default is 3.
 #'
@@ -507,11 +506,10 @@ check_vif <- function(data, predictors) {
 #' each lag of wildfire-related PM2.5
 
 casecrossover_quasipoisson <- function(data,
-                                       scale_wildfire_pm = TRUE,
                                        scale_factor = 10,
                                        wildfire_lag = 3) {
 
-  if (scale_wildfire_pm == TRUE) {
+  if (scale_factor > 0) {
     data <- data %>%
       dplyr::mutate(
         dplyr::across(
@@ -704,14 +702,12 @@ save_results <- function(results,
 #' outcome variable. Default is 5.
 #' @param predictors_vif Character vector with each of the predictors to
 #' include in the model. Must contain at least 2 variables.
-#' @param scale_wildfire_pm Boolean. Whether to scale wildfire PM2.5
-#' concentration variable for alternative interpretation of outputs. Default is
-#' TRUE.
-#' @param scale_factor_wildfire_pm Numeric. If scale_wildfire_pm = TRUE, the
-#' value to divide the wildfire PM2.5 concentration variables by. Corresponds to
-#' the unit increase in wildfire PM2.5 to give the model estimates and relative
-#' risks (e.g. scale_factor = 10 corresponds to estimates and relative risks
-#' representing impacts of a 10 unit increase in wildfire PM2.5)
+#' @param scale_factor_wildfire_pm Numeric. The value to divide the wildfire
+#' PM2.5 concentration variables by for alternative interpretation of outputs.
+#' Corresponds to the unit increase in wildfire PM2.5 to give the model
+#' estimates and relative risks (e.g. scale_factor = 10 corresponds to estimates
+#' and relative risks representing impacts of a 10 unit increase in wildfire
+#' PM2.5). Setting this parameter to 0 or 1 leaves the variable unscaled.
 #' @param save_fig Boolean. Whether to save the plot as an output.
 #' @param save_csv Boolean. Whether to save the results as a CSV
 #' @param output_folder_path Path to folder where plots and/or CSV should be
@@ -735,7 +731,6 @@ wildfire_do_analysis <- function(health_path,
                                  variables_descriptive_stats,
                                  bin_width_histogram = 10,
                                  predictors_vif,
-                                 scale_wildfire_pm = TRUE,
                                  scale_factor_wildfire_pm = 10,
                                  save_fig = TRUE,
                                  save_csv = TRUE,
@@ -768,7 +763,6 @@ wildfire_do_analysis <- function(health_path,
             predictors = predictors_vif)
 
   results <- casecrossover_quasipoisson(data = data,
-                                        scale_wildfire_pm = scale_wildfire_pm,
                                         scale_factor = scale_factor_wildfire_pm,
                                         wildfire_lag = wildfire_lag)
 

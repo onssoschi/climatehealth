@@ -21,7 +21,6 @@ wildfire_do_analysis(
   variables_descriptive_stats,
   bin_width_histogram = 10,
   predictors_vif,
-  scale_wildfire_pm = TRUE,
   scale_factor_wildfire_pm = 10,
   save_fig = TRUE,
   save_csv = TRUE,
@@ -79,15 +78,12 @@ outcome variable. Default is 5.}
 \item{predictors_vif}{Character vector with each of the predictors to
 include in the model. Must contain at least 2 variables.}
 
-\item{scale_wildfire_pm}{Boolean. Whether to scale wildfire PM2.5
-concentration variable for alternative interpretation of outputs. Default is
-TRUE.}
-
-\item{scale_factor_wildfire_pm}{Numeric. If scale_wildfire_pm = TRUE, the
-value to divide the wildfire PM2.5 concentration variables by. Corresponds to
-the unit increase in wildfire PM2.5 to give the model estimates and relative
-risks (e.g. scale_factor = 10 corresponds to estimates and relative risks
-representing impacts of a 10 unit increase in wildfire PM2.5)}
+\item{scale_factor_wildfire_pm}{Numeric. The value to divide the wildfire
+PM2.5 concentration variables by for alternative interpretation of outputs.
+Corresponds to the unit increase in wildfire PM2.5 to give the model
+estimates and relative risks (e.g. scale_factor = 10 corresponds to estimates
+and relative risks representing impacts of a 10 unit increase in wildfire
+PM2.5). Setting this parameter to 0 or 1 leaves the variable unscaled.}
 
 \item{save_fig}{Boolean. Whether to save the plot as an output.}
 
