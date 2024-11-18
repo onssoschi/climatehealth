@@ -245,7 +245,7 @@ load_wildfire_data <- function(health_path,
   }
 
   df_zonal <- extract_means_for_geography(ncdf_path = ncdf_path,
-                                            shapefile_path = shp_path)
+                                          shapefile_path = shp_path)
 
   wildfire_data <- pair_with_health(climate_data = df_zonal,
                                     health_path = health_path,
@@ -717,8 +717,8 @@ save_results <- function(results,
 #' each lag of wildfire-related PM2.5
 
 wildfire_do_analysis <- function(health_path,
-                                 join_wildfire_data,
-                                 ncdf_path,
+                                 join_wildfire_data = FALSE,
+                                 ncdf_path = NULL,
                                  shp_path,
                                  date_col,
                                  region_col,
@@ -732,8 +732,8 @@ wildfire_do_analysis <- function(health_path,
                                  bin_width_histogram = 10,
                                  predictors_vif,
                                  scale_factor_wildfire_pm = 10,
-                                 save_fig = TRUE,
-                                 save_csv = TRUE,
+                                 save_fig = FALSE,
+                                 save_csv = FALSE,
                                  output_folder_path) {
 
   data <- load_wildfire_data(health_path = health_path,

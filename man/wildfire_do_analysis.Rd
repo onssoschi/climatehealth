@@ -7,8 +7,8 @@ outcome using a time-stratified case-crossover approach.}
 \usage{
 wildfire_do_analysis(
   health_path,
-  join_wildfire_data,
-  ncdf_path,
+  join_wildfire_data = FALSE,
+  ncdf_path = NULL,
   shp_path,
   date_col,
   region_col,
@@ -22,8 +22,8 @@ wildfire_do_analysis(
   bin_width_histogram = 10,
   predictors_vif,
   scale_factor_wildfire_pm = 10,
-  save_fig = TRUE,
-  save_csv = TRUE,
+  save_fig = FALSE,
+  save_csv = FALSE,
   output_folder_path
 )
 }
