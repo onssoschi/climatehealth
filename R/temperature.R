@@ -42,6 +42,8 @@ filter_on_rr_distribution <- function(df,
   df <- df %>%
     dplyr::filter(year >= (output_year - RR_distribution_length + 1)
   & year <= output_year)
+
+  return(df)
 }
 
 
