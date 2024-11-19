@@ -1080,12 +1080,10 @@ write_attributable_deaths <- function(avgtmean_wald,
                                       antot_bind,
                                       arregions_bind,
                                       artot_bind,
+                                      save_csv = FALSE,
                                       output_folder_path = NULL) {
-
-  ###################################################
-  # Convert data to publication format
-
-  # Wald test results
+  # convert data to publication format
+  # wald test results
   if (!is.null(avgtmean_wald) & !is.null(rangetmean_wald)){
     wald_publication <- data.frame(cbind(avgtmean_wald,rangetmean_wald))
     colnames(wald_publication) <- c("region_mean_temp","region_temp_range")
@@ -1119,35 +1117,38 @@ write_attributable_deaths <- function(avgtmean_wald,
                   high_heat, high_heat_ci_2.5, high_heat_ci_97.5,
                   heatwave, heatwave_ci_2.5, heatwave_ci_97.5)
 
-  ####
+  if (save_csv==TRUE) {
+    # define output_folder_path as CWD if it is null
+    if (is.null(output_folder_path)) {
+      output_folder_path <- "/"
+    }
+    # normalise outputs paths
+    else if (!endsWith(output_folder_path, "/")) {
+      output_folder_path <- paste(output_folder_path, "/", sep="")
+    }
 
-  # define output_folder_path as CWD if it is null
-  if (is.null(output_folder_path)) {
-    output_folder_path <- ""
+    write.csv(wald_publication,
+              file = paste(output_folder_path,
+                           'wald_test_results.csv',
+                           sep = ""))
+
+    write.csv(anregions_publication,
+              file = paste(output_folder_path,
+                           'attributable_deaths_regions.csv',
+                           sep = ""))
+    write.csv(antot_bind,
+              file = paste(output_folder_path,
+                           'attributable_deaths_total.csv',
+                           sep = ""))
+    write.csv(arregions_publication,
+              file = paste(output_folder_path,
+                           'attributable_rates_regions.csv',
+                           sep = ""))
+    write.csv(artot_bind,
+              file = paste(output_folder_path,
+                           'attributable_rates_total.csv',
+                           sep=""))
   }
-
-  write.csv(wald_publication,
-            file = paste(output_folder_path,
-                         'wald_test_results.csv',
-                         sep = ""))
-
-  write.csv(anregions_publication,
-            file = paste(output_folder_path,
-                         'attributable_deaths_regions.csv',
-                         sep = ""))
-  write.csv(antot_bind,
-            file = paste(output_folder_path,
-                         'attributable_deaths_total.csv',
-                         sep = ""))
-  write.csv(arregions_publication,
-            file = paste(output_folder_path,
-                         'attributable_rates_regions.csv',
-                         sep = ""))
-  write.csv(artot_bind,
-            file = paste(output_folder_path,
-                         'attributable_rates_total.csv',
-                         sep=""))
-
   return(list(wald_publication, anregions_publication, antot_bind,
               arregions_publication, artot_bind))
 
@@ -1690,12 +1691,12 @@ plot_and_write_relative_risk_all <- function(df_list,
   relative_risk_vector <- pred$allRRfit
   upper_vector <- pred$allRRhigh
   lower_vector <- pred$allRRlow
-  region_vector <- rep('England', length(pred$predvar)) #TODO: review what if not England data?
+  region_vector <- rep('all_regions', length(pred$predvar)) #TODO: review what if not England data?
   temp_vector <- pred$predvar
   cen_vector <- rep(cen, length(pred$predvar))
   temperature_vector <- data$temp
 
-  temperature_region_vector <- rep('England', length(data$temp))
+  temperature_region_vector <- rep('all_regions', length(data$temp))
 
   if (save_fig == TRUE) {
 
@@ -1899,6 +1900,7 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
       antot_bind = antot_bind_,
       arregions_bind = arregions_bind_,
       artot_bind = artot_bind_,
+      save_csv = save_csv_,
       output_folder_path = output_folder_path_
   )
 
