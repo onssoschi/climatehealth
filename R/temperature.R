@@ -31,11 +31,11 @@ filter_on_rr_distribution <- function(df,
   # Raise an error if the RR distribution length is out of range (5-15)
   if(RR_distribution_length < lower_range) {
 
-    stop("Timeseries to calculate the RR is less than 5 years.")
+    stop(paste0("Timeseries to calculate the RR is less than ", lower_range, " years."))
 
   } else if (RR_distribution_length > upper_range) {
 
-    stop("Timeseries to calculate the RR is more than 15 years.")
+    stop(paste0("Timeseries to calculate the RR is more than ", upper_range, " years."))
 
   }
   # Filter
