@@ -151,6 +151,8 @@ define_model <- function(dataset,
     'splines::ns(date, df = dfseas * length(unique(year)))'
   )
 
+  #TODO: add type check for independent_cols
+
   if (!is.null(independent_cols)) {
 
     # normalize type
@@ -162,9 +164,9 @@ define_model <- function(dataset,
     for (col in independent_cols){
       if (!is.character(col)){
         stop(
-          cat(
+          paste0(
             "'independent_cols' expected a vector of strings or a string. Got",
-            typeof(i)
+            typeof(col)
           )
         )
       }
