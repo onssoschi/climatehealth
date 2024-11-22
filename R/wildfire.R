@@ -156,9 +156,9 @@ pair_with_health <- function(climate_data,
 
   #TODO: output print information to a file
   # Joins will fail if CSV has wider date range or regions do not match
-  print(paste0("Number of joins: ", sum(!is.na(df_paired_all$mean_PM_FRP))))
-  print(paste0("Number of failed joins: ",
-               sum(is.na(df_paired_all$mean_PM_FRP))))
+  # print(paste0("Number of joins: ", sum(!is.na(df_paired_all$mean_PM_FRP))))
+  # print(paste0("Number of failed joins: ",
+  #              sum(is.na(df_paired_all$mean_PM_FRP))))
 
   # Remove failed joins
   df_paired <- df_paired_all %>%
@@ -622,7 +622,7 @@ plot_results <- function(results,
   if (save_fig == TRUE) {
 
     if (!is.null(output_folder_path)) {
-      pdf(paste(output_folder_path, "wildfire_plot.pdf", sep = ""),
+      pdf(file.path(output_folder_path, "wildfire_plot.pdf"),
           width = 8, height = 8)
       print(plot) # NOTE: this print() is required to produce the plot pdf
       dev.off()
@@ -648,11 +648,11 @@ save_results <- function(results,
 
   if (!is.null(output_folder_path)) {
 
-    write.csv(results, file = paste(
-      output_folder_path, "wildfire_results.csv", sep = "")
+    write.csv(results, file = file.path(
+      output_folder_path, "wildfire_results.csv")
       )
-    climatehealth::check_file_exists(paste(
-      output_folder_path, "wildfire_results.csv", sep = ""))
+    climatehealth::check_file_exists(file.path(
+      output_folder_path, "wildfire_results.csv"))
 
   } else {
 
