@@ -112,7 +112,7 @@ test_that(
 
 # Tests for define_model
 
-get_define_model_input <- function(path) {
+get_test_input_data <- function(path) {
   data <- load_temperature_data(
     path,
     "death",
@@ -123,14 +123,15 @@ get_define_model_input <- function(path) {
     0,
     0
   )
-  return(data[[1]][1][[1]])
+  return(data)
 }
 
 test_that(
   "Test that define_model returns a list of 2 items - model+crossbasis",
   {
+    data <- get_test_input_data(TEST_DATA_PATH)[[1]][1][[1]]
     returned <- define_model(
-      get_define_model_input(TEST_DATA_PATH),
+      data,
       independent_cols = NULL,
       varfun = "bs",
       varper = c(10, 75, 90),
@@ -149,8 +150,9 @@ test_that(
 test_that(
   "Test that 'model' has the expected attributes.",
   {
+    data <- get_test_input_data(TEST_DATA_PATH)[[1]][1][[1]]
     model <- define_model(
-      get_define_model_input(TEST_DATA_PATH),
+      data,
       independent_cols = NULL,
       varfun = "bs",
       varper = c(10, 75, 90),
@@ -173,8 +175,9 @@ test_that(
 test_that(
   "Test that 'crossbasis' has the expected attributes",
   {
+    data <- get_test_input_data(TEST_DATA_PATH)[[1]][1][[1]]
     cb <- define_model(
-      get_define_model_input(TEST_DATA_PATH),
+      data,
       independent_cols = NULL,
       varfun = "bs",
       varper = c(10, 75, 90),
@@ -198,9 +201,10 @@ test_that(
 test_that(
   "Test that define_model raises an error when a vector of non-strings is passed.",
   {
+    data <- get_test_input_data(TEST_DATA_PATH)[[1]][1][[1]]
     expect_error(
-        cb <- define_model(
-          get_define_model_input(TEST_DATA_PATH),
+      define_model(
+          data,
           independent_cols = c(1, 2, 3),
           varfun = "bs",
           varper = c(10, 75, 90),
@@ -213,3 +217,39 @@ test_that(
     )
   }
 )
+
+# Tests for run_model
+
+test_that(
+  "Test that run_model returns the expected data.",
+  {
+    # load input data
+    data <- get_test_input_data(TEST_DATA_PATH)[[1]]
+    # use run_model func to obtain results
+    returned <- run_model(df_list = data,
+                          independent_cols = NULL,
+                          varfun = "bs",
+                          varper = c(10, 75, 90),
+                          vardegree = 2,
+                          lag = 21,
+                          lagnk = 3,
+                          dfseas = 8
+                          )
+    # assert return type is correct
+    add_info <- paste("run_model expected to return 4 items. Got", length(returned))
+    expect_equal(length(returned), 4, info = add_info)
+    # return 1 - coef
+    expect_type(returned[1], "list")
+    exp_coef_names <- c("North East", "Wales")
+    exp_coef <- c(-1.152, -0.642)
+    expect_equal(names(returned[[1]][,1]), exp_coef_names)
+    expect_equal(round(as.vector(returned[[1]][,1]), 3), exp_coef)
+    # return 2 - vcov
+    expect_type(returned[2], "list")
+    exp_wal_vcov <- c(0.0848, 0.0621, 0.0792)
+    expect_equal(round(returned[2][[1]]$Wales[1:3], 4), exp_wal_vcov)
+    # return 3 and 4 not tested since it is the same return as define_model
+  }
+)
+
+
