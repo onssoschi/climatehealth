@@ -109,3 +109,107 @@ test_that(
   }
 )
 
+
+# Tests for define_model
+
+get_define_model_input <- function(path) {
+  data <- load_temperature_data(
+    path,
+    "death",
+    "date",
+    "regnames",
+    "tmean",
+    "pop",
+    0,
+    0
+  )
+  return(data[[1]][1][[1]])
+}
+
+test_that(
+  "Test that define_model returns a list of 2 items - model+crossbasis",
+  {
+    returned <- define_model(
+      get_define_model_input(TEST_DATA_PATH),
+      independent_cols = NULL,
+      varfun = "bs",
+      varper = c(10, 75, 90),
+      vardegree = 2,
+      lag = 21,
+      lagnk = 3,
+      dfseas = 8
+    )
+    expect_type(returned, "list")
+    expect_equal(length(returned), 2, info = "define_model expected to return a list of 2 items.")
+    expect_type(returned[[1]], "list")
+    expect_type(returned[[2]], "double")
+  }
+)
+
+test_that(
+  "Test that 'model' has the expected attributes.",
+  {
+    model <- define_model(
+      get_define_model_input(TEST_DATA_PATH),
+      independent_cols = NULL,
+      varfun = "bs",
+      varper = c(10, 75, 90),
+      vardegree = 2,
+      lag = 21,
+      lagnk = 3,
+      dfseas = 8
+    )[[1]]
+    exp_family <- "quasipoisson"
+    exp_rank <- 130
+    exp_method <- "glm.fit"
+    exp_y_50 <- 71
+    expect_equal(exp_family, model$family$family)
+    expect_equal(exp_rank, model$rank)
+    expect_equal(exp_method, model$method)
+    expect_equal(exp_y_50, model$y[[50]])
+  }
+)
+
+test_that(
+  "Test that 'crossbasis' has the expected attributes",
+  {
+    cb <- define_model(
+      get_define_model_input(TEST_DATA_PATH),
+      independent_cols = NULL,
+      varfun = "bs",
+      varper = c(10, 75, 90),
+      vardegree = 2,
+      lag = 21,
+      lagnk = 3,
+      dfseas = 8
+    )[[2]]
+    exp_class_1 <- "crossbasis"
+    exp_class_2 <- "matrix"
+    exp_fun <- "ns"
+    exp_knots <-  c(1.011, 2.779, 7.640)
+    expect_equal(attr(cb, "class")[[1]], exp_class_1)
+    expect_equal(attr(cb, "class")[[2]], exp_class_2)
+    arglag <- attr(cb, "arglag")
+    expect_equal(arglag$fun, exp_fun)
+    expect_equal(round(arglag$knots[1:3], 3), exp_knots)
+  }
+)
+
+test_that(
+  "Test that define_model raises an error when a vector of non-strings is passed.",
+  {
+    expect_error(
+        cb <- define_model(
+          get_define_model_input(TEST_DATA_PATH),
+          independent_cols = c(1, 2, 3),
+          varfun = "bs",
+          varper = c(10, 75, 90),
+          vardegree = 2,
+          lag = 21,
+          lagnk = 3,
+          dfseas = 8
+      ),
+      regexp = ".*independent_cols.*expected a vector of strings"
+    )
+  }
+)
