@@ -13,12 +13,12 @@ heat_and_cold_analysis(
   by_region_ = TRUE,
   RR_distribution_length_ = 0,
   output_year_ = 0,
-  dependent_col_ = "death",
+  dependent_col_,
   independent_cols_ = NULL,
-  time_col_ = "date",
-  region_col_ = "regnames",
-  temp_col_ = "tmean",
-  population_col_ = "pop",
+  time_col_,
+  region_col_,
+  temp_col_,
+  population_col_,
   varfun_ = "bs",
   vardegree_ = 2,
   lag_ = 21,
@@ -73,7 +73,8 @@ meta-analysis. Must be TRUE if by_region argument is FALSE.}
 \item{by_region}{Boolean (TRUE or FALSE). Whether to disaggregate by region.
 Must be TRUE if meta-analysis is FALSE.}
 
-\item{RR_distribution_length}{Number of years for the calculation of RR distribution. Set both as 'NONE' to use full range in data.}
+\item{RR_distribution_length}{Number of years for the calculation of RR
+distribution. Set both as 'NONE' to use full range in data.}
 }
 \value{
 \itemize{
