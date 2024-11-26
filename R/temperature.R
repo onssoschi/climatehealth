@@ -370,8 +370,12 @@ fwald <- function(model, var) {
   }
 
   ind <- grep(var, names(coef(model)))
+  print(var)
+  print(names(coef(model)))
   coef <- coef(model)[ind]
+  print(coef)
   vcov <- vcov(model)[ind, ind]
+  print(vcov)
   waldstat <- coef %*% solve(vcov) %*% coef
   df <- length(coef)
 
