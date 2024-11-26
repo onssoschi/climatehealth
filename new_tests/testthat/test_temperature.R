@@ -1,4 +1,5 @@
 # Tests for temperature.R
+library(zeallot)
 
 # Tests for filter_on_rr_distribution
 
@@ -251,5 +252,67 @@ test_that(
     # return 3 and 4 not tested since it is the same return as define_model
   }
 )
+
+# Tests for run_meta_model (meta-analysis)
+
+test_that(
+  "Test that run_meta_model raises when coef is not a numeric matrix.",
+  {
+    dummy_df_list <- list(data.frame(), data.frame())
+    error_msg <- "Argument .*coef.* must be a numeric matrix"
+    expect_error(run_meta_model(dummy_df_list, 2L, matrix(0, 3, 3)), regexp = error_msg)
+    expect_error(run_meta_model(dummy_df_list, matrix("T", 3, 3), matrix(0, 3, 3)), regexp = error_msg)
+  }
+)
+
+test_that(
+  "Test that run_meta_model raises when vcov is not a list of matrices.",
+  {
+    dummy_df_list <- list(data.frame(), data.frame())
+    not_list_msg <- ".*vcov.* expected a list. Got.*double.*"
+    expect_error(run_meta_model(dummy_df_list, matrix(0, 3, 3), 2L, regexp = not_list_msg))
+    not_matrix_msg <- ".*vcov.* expected a list of matrices. List contains item.*"
+    expect_error(run_meta_model(dummy_df_list, matrix(0, 3, 3), list(3, 3, "a")), regexp = not_matrix_msg)
+  }
+)
+
+# TODO: Solve error 'the leading minor of order 3 is not positive'
+# Related info: https://stackoverflow.com/questions/51064686/error-in-chol-defaultcxx-the-leading-minor-of-order-is-not-positive-definite
+'test_that(
+  "Test that run_meta_model has the correct return values (using test data).",
+  {
+    data <- get_test_input_data(TEST_DATA_PATH)[[1]]
+    c(coef_, vcov_, cb_, model_) %<-%
+      run_model(df_list = data,
+                independent_cols = NULL,
+                varfun = "bs",
+                varper = c(10, 75, 90),
+                vardegree = 2,
+                lag = 21,
+                lagnk = 3,
+                dfseas = 8)
+    returned <- run_meta_model(data, coef_, vcov_)
+  }
+)'
+
+# test fwald
+
+test_that(
+  "fwald raises an error when 'var' is not of type character.",
+  {
+    error_msg <- "Argument .*var.* must be a character"
+    expect_error(fwald(2L, 2L), regexp = error_msg)
+  }
+)
+
+test_that(
+  "fwald calculates p-values for the explanatory variable.",
+  {
+
+  }
+)
+
+
+
 
 
