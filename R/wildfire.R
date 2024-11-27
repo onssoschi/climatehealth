@@ -212,12 +212,6 @@ load_wildfire_data <- function(health_path,
                                mean_temperature_col,
                                health_outcome_col) {
 
-  if (!file.exists(health_path)) {
-
-    stop("Health CSV file does not exist:", health_path)
-
-  }
-
   wildfire_data <- tryCatch(
 
     {
