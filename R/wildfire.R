@@ -154,12 +154,6 @@ pair_with_health <- function(climate_data,
                                     by = c('regnames' = 'RGN23NM',
                                            'date' = 'date'))
 
-  #TODO: output print information to a file
-  # Joins will fail if CSV has wider date range or regions do not match
-  # print(paste0("Number of joins: ", sum(!is.na(df_paired_all$mean_PM_FRP))))
-  # print(paste0("Number of failed joins: ",
-  #              sum(is.na(df_paired_all$mean_PM_FRP))))
-
   # Remove failed joins
   df_paired <- df_paired_all %>%
     dplyr::filter(!is.na(mean_PM_FRP))
@@ -458,10 +452,12 @@ plot_variables <- function(data, xvar, yvar) {
 #' data.
 #' @param predictors Character vector with each of the predictors to include
 #' in the model. Must contain at least 2 variables.
+#' @param print_vif Bool, whether or not to print VIF for each predictor.
+#' Defaults to FALSE.
 #'
 #' @returns Prints variance inflation factors for each predictor variable.
 
-check_vif <- function(data, predictors) {
+check_vif <- function(data, predictors, print_vif = FALSE) {
 
   if (!is.character(predictors)) {
     stop("Please provide predictor variable names as a character vector")
@@ -475,9 +471,17 @@ check_vif <- function(data, predictors) {
 
   model <- lm(formula, data = data)
   vif_mod <- car::vif(model)
-  #TODO: output print information to a file
-  print("Variance inflation factor:")
-  print(vif_mod)
+  if (print_vif) {
+    print("Variance inflation factor:")
+    print(vif_mod)
+  }
+  for (var in names(vif_mod)) {
+    if (vif_mod[[var]] >= 2) {
+      warning(paste0(
+        "Variance inflation factor for ", var, " is >= 2. Investigation is suggested."
+      ))
+    }
+  }
 }
 
 #' Fit quasipoisson regression models for different lags using a time-stratified
@@ -495,13 +499,21 @@ check_vif <- function(data, predictors) {
 #' Setting this parameter to 0 or 1 leaves the variable unscaled.
 #' @param wildfire_lag Integer. The maximum number of days for which to calculate
 #' lagged results for wildfire PM2.5. Default is 3.
+#' @param save_fig Bool. Whether or not to save a figure showing residuals vs
+#' fitted values for each lag. Defaults to FALSE.
+#' @param output_folder_path String. Where to save the figure. Defaults to NULL.
+#' @param print_model_summaries Bool. Whether to print the model summaries to
+#' console. Defaults to FALSE.
 #'
 #' @returns Dataframe of relative risk and confidence intervals for
 #' each lag of wildfire-related PM2.5
 
 casecrossover_quasipoisson <- function(data,
                                        scale_factor = 10,
-                                       wildfire_lag = 3) {
+                                       wildfire_lag = 3,
+                                       save_fig = FALSE,
+                                       output_folder_path = NULL,
+                                       print_model_summaries = FALSE) {
 
   if (scale_factor > 0) {
     data <- data %>%
@@ -532,6 +544,26 @@ casecrossover_quasipoisson <- function(data,
 
   results <- list()
 
+  if (save_fig==T) {
+    # create grid dynamically
+    est <- sqrt(length(lags))
+    if (est==floor(est)){
+      x <- y <- est
+    } else {
+      base <- est - floor(est)
+      if (base < 0.5){
+        y <- floor(est)
+      }
+      else {
+        y <- floor(est) + 1
+      }
+      x <- floor(est) + 1
+    }
+    output_path <- file.path(output_folder_path, "residuals_vs_fit_plot.pdf")
+    pdf(output_path, width=floor(est)*4, height=floor(est)*4)
+    par(mfrow=c(x,  y))
+  }
+
   for (i in lags) {
 
     number <- lag_nums[[i]]
@@ -543,17 +575,19 @@ casecrossover_quasipoisson <- function(data,
                       family = quasipoisson,
                       subset = ind > 0,
                       eliminate = stratum)
-    #TODO: output print information to a file
-    print(Epi::ci.exp(model, subset = i))
-    print(summary(model))
 
-    print(paste("Ratio of residual deviance to degrees of freedom:",
-                model$deviance / model$df.residual))
+    if (print_model_summaries) {
+      print(Epi::ci.exp(model, subset = i))
+      print(summary(model))
+
+      print(paste("Ratio of residual deviance to degrees of freedom:",
+                  model$deviance / model$df.residual))
+    }
 
     devresid <- resid(model, type = "deviance")
-    #TODO: output plot to a file
-    plot(devresid ~ model$fitted.values)
-
+    if (save_fig==T) {
+      plot(devresid ~ model$fitted.values, main = i, col="#f25574")
+    }
     coef_pm <- summary(model)$coefficients[i, "Estimate"]
     se_pm <- summary(model)$coefficients[i, "Std. Error"]
 
@@ -565,6 +599,9 @@ casecrossover_quasipoisson <- function(data,
                       ci_lower = ci_lower, ci_upper = ci_upper)
   }
 
+  if (save_fig==T) {
+    dev.off()
+  }
   results <- as.data.frame(do.call(rbind, results))
   rownames(results) <- NULL
 
@@ -706,6 +743,8 @@ save_results <- function(results,
 #' @param save_csv Boolean. Whether to save the results as a CSV
 #' @param output_folder_path Path to folder where plots and/or CSV should be
 #' saved.
+#' @param print_model_summaries Bool. Whether to print the model summaries to
+#' console. Defaults to FALSE.
 #'
 #' @returns Dataframe of relative risk and confidence intervals for
 #' each lag of wildfire-related PM2.5
@@ -728,7 +767,10 @@ wildfire_do_analysis <- function(health_path,
                                  scale_factor_wildfire_pm = 10,
                                  save_fig = FALSE,
                                  save_csv = FALSE,
-                                 output_folder_path = NULL) {
+                                 output_folder_path = NULL,
+                                 print_vif = FALSE,
+                                 print_model_summaries = FALSE
+                                 ) {
 
   data <- load_wildfire_data(health_path = health_path,
                              join_wildfire_data = join_wildfire_data,
@@ -749,16 +791,16 @@ wildfire_do_analysis <- function(health_path,
 
   data <- time_stratify(data = data)
 
-  descriptive_stats(data = data,
-                    variables = variables_descriptive_stats,
-                    bin_width = bin_width_histogram)
-
   check_vif(data = data,
-            predictors = predictors_vif)
+            predictors = predictors_vif,
+            print_vif = print_vif)
 
   results <- casecrossover_quasipoisson(data = data,
                                         scale_factor = scale_factor_wildfire_pm,
-                                        wildfire_lag = wildfire_lag)
+                                        wildfire_lag = wildfire_lag,
+                                        output_folder_path = output_folder_path,
+                                        save_fig = save_fig,
+                                        print_model_summaries = print_model_summaries)
 
   plot_results(results = results,
                output_folder_path = output_folder_path,
