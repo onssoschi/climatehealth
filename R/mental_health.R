@@ -109,10 +109,12 @@ create_crossbasis <- function(data,
 #'
 #' @param data Dataframe containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
+#' @param cb_list List of cross_basis matrices from create_crossbasis function.
 #'
 #' @returns List containing models by region
 
-casecrossover_dlnm <- function(data) {
+casecrossover_dlnm <- function(data,
+                               cb_list) {
 
   data <- split(data, f = data$region)
   model_list <- list()
@@ -138,12 +140,17 @@ casecrossover_dlnm <- function(data) {
 #'
 #' @param data Dataframe containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
+#' @param cb_list List of cross_basis matrices from create_crossbasis function.
+#' @param model_list List of models produced from case-crossover and DLNM
+#' analysis.
 #' @param save_fig Boolean. Whether to save the plot as an output.
 #' @param output_folder_path Path to folder where plots should be saved.
 #'
 #' @returns Plots of cumulative lag exposure-response function for each region
 
 plot_results <- function(data,
+                         cb_list,
+                         model_list,
                          save_fig,
                          output_folder_path) {
 
@@ -162,15 +169,15 @@ plot_results <- function(data,
     if (save_fig == TRUE) {
 
       if (!is.null(output_folder_path)) {
-        pdf(file.path(output_folder_path, paste0("suicides_plot_", str_replace_all(reg,' ','_'), ".pdf")),
+        pdf(file.path(output_folder_path, paste0("suicides_plot_", stringr::str_replace_all(reg,' ','_'), ".pdf")),
             width = 8, height = 8)
-        dlnm::plot(pred,
-              "overall",
-              xlab = expression(paste("Temperature (", degree, "C)")),
-              ylab = "RR",
-              ylim = c(0,3),
-              xlim = xlim,
-              main = reg) # NOTE: this print() is required to produce the plot pdf
+        plot(pred,
+            "overall",
+            xlab = expression(paste("Temperature (", degree, "C)")),
+            ylab = "RR",
+            ylim = c(0,3),
+            xlim = xlim,
+            main = reg) # NOTE: this print() is required to produce the plot pdf
         dev.off()
       }
 
@@ -178,13 +185,13 @@ plot_results <- function(data,
     }
     else{
 
-      dlnm::plot(pred,
-              "overall",
-              xlab = expression(paste("Temperature (", degree, "C)")),
-              ylab = "RR",
-              ylim = c(0,3),
-              xlim = xlim,
-              main = reg)
+      plot(pred,
+            "overall",
+            xlab = expression(paste("Temperature (", degree, "C)")),
+            ylab = "RR",
+            ylim = c(0,3),
+            xlim = xlim,
+            main = reg)
 
     }
 
@@ -200,11 +207,16 @@ plot_results <- function(data,
 #'
 #' @param data Dataframe containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
+#' @param cb_list List of cross_basis matrices from create_crossbasis function.
+#' @param model_list List of models produced from case-crossover and DLNM
+#' analysis.
 #'
 #' @returns Dataframe containing cumulative relative risk and confidence
 #' intervals from analysis.
 
-produce_results <- function(data) {
+produce_results <- function(data,
+                            cb_list,
+                            model_list) {
 
     data <- split(data, f = data$region)
     results <- data.frame()
@@ -323,7 +335,7 @@ suicides_heat_do_analysis <- function(data_path,
                              region_col = region_col,
                              temperature_col = temperature_col,
                              health_outcome_col = health_outcome_col)
-
+print(df)
 
   cb_list <- create_crossbasis(data = df,
                                var_fun = var_fun,
@@ -332,13 +344,22 @@ suicides_heat_do_analysis <- function(data_path,
                                lag_dof = lag_dof,
                                lag_days = lag_days)
 
-  model_list <- casecrossover_dlnm(data = df)
+print(cb_list)
+
+  model_list <- casecrossover_dlnm(data = df,
+                                   cb_list = cb_list)
+
+print(model_list)
 
   plot_results(data = df,
+               cb_list = cb_list,
+               model_list = model_list,
                save_fig = save_fig,
                output_folder_path = output_folder_path)
 
-  results <- produce_results(data = df)
+  results <- produce_results(data = df,
+                             cb_list = cb_list,
+                             model_list = model_list)
 
   if (save_csv == TRUE) {
 
