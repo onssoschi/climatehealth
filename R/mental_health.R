@@ -26,7 +26,9 @@ read_and_format_data <- function(data_path,
 
   #TODO: Include file extension function to check data_path is a csv
 
-  df <- climatehealth::read_input_data(data_path)
+  df <- read.csv(data_path)
+
+  #TODO use read_input_data (check row.names argument)
 
   if(is.null(region_col)) {
 
