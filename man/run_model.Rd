@@ -40,8 +40,11 @@ variable to include in regression (excluding temperature). Defaults to NULL.}
 }
 \value{
 \itemize{
-\item \code{coef} A matrix of coefficients for reduced model.
-\item \code{vcov} A list. Co-variance matrices for each region for reduced model.
+\item \code{coef_} A matrix of coefficients for reduced model.
+\item \code{vcov_} A list. Co-variance matrices for each region for reduced model.
+\item \code{cb} Basis matrices for the two dimensions of predictor and lags.
+\item \code{model} A quasi-poission generalised linear model object.
+See: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/glm
 }
 }
 \description{

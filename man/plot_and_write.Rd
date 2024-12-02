@@ -11,6 +11,8 @@ plot_and_write(
   output_folder_path = "",
   save_fig = TRUE,
   save_csv = TRUE,
+  cb = NULL,
+  model = NULL,
   blup = NULL,
   mintempregions,
   an_thresholds,
@@ -21,8 +23,6 @@ plot_and_write(
   lag = NULL,
   lagnk = NULL,
   dfseas = NULL,
-  vcov = NULL,
-  coef = NULL,
   dependent_col = NULL
 )
 }
@@ -69,12 +69,12 @@ variable to include in regression (excluding temperature). Defaults to NULL.}
 
 \item{dfseas}{Degrees of freedom for seasonality}
 
-\item{vcov}{A list. Co-variance matrices for each region for reduced model.}
+\item{dependent_col}{the column name of the
+dependent variable of interest e.g. deaths}
 
 \item{coef}{A matrix of coefficients for reduced model.}
 
-\item{dependent_col}{the column name of the
-dependent variable of interest e.g. deaths}
+\item{vcov}{A list. Co-variance matrices for each region for reduced model.}
 }
 \value{
 \itemize{
