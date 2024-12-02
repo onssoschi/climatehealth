@@ -4,7 +4,12 @@
 \alias{define_and_validate_optimal_temps}
 \title{Define and validate the optimal temperature range from the model predictions.}
 \usage{
-define_and_validate_optimal_temps(optimal_temp_range, prediction, index)
+define_and_validate_optimal_temps(
+  optimal_temp_range,
+  prediction,
+  RR_fit_col = "allRRfit",
+  index
+)
 }
 \arguments{
 \item{optimal_temp_range}{An matrix used to store the optimal temperature
