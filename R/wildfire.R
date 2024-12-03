@@ -727,12 +727,8 @@ save_results <- function(results,
 #' temperature variable).
 #' @param spline_temperature_degrees_freedom Integer. Degrees of freedom for the
 #' spline(s).
-#' @param variables_descriptive_stats Character or character vector with
-#' variable to produce summary statistics for. Must include at least 1 variable.
-#' @param bin_width_histogram Integer. Width of each bin in a histogram of the
-#' outcome variable. Default is 5.
 #' @param predictors_vif Character vector with each of the predictors to
-#' include in the model. Must contain at least 2 variables.
+#' include in the model. Must contain at least 2 variables. Defaults to NULL.
 #' @param scale_factor_wildfire_pm Numeric. The value to divide the wildfire
 #' PM2.5 concentration variables by for alternative interpretation of outputs.
 #' Corresponds to the unit increase in wildfire PM2.5 to give the model
@@ -761,9 +757,7 @@ wildfire_do_analysis <- function(health_path,
                                  temperature_lag = 1,
                                  spline_temperature_lag = 0,
                                  spline_temperature_degrees_freedom = 6,
-                                 variables_descriptive_stats,
-                                 bin_width_histogram = 10,
-                                 predictors_vif,
+                                 predictors_vif = NULL,
                                  scale_factor_wildfire_pm = 10,
                                  save_fig = FALSE,
                                  save_csv = FALSE,
@@ -791,9 +785,11 @@ wildfire_do_analysis <- function(health_path,
 
   data <- time_stratify(data = data)
 
-  check_vif(data = data,
-            predictors = predictors_vif,
-            print_vif = print_vif)
+  if (!is.null(predictors_vif)) {
+    check_vif(data = data,
+              predictors = predictors_vif,
+              print_vif = print_vif)
+  }
 
   results <- casecrossover_quasipoisson(data = data,
                                         scale_factor = scale_factor_wildfire_pm,
