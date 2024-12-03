@@ -1,4 +1,4 @@
-#' Read in and format data
+#' Read in and format data - Mental Health
 #'
 #' @description Reads in a CSV file for a daily time series of health and climate
 #' data, renames columns and creates stratum for case-crossover analysis.
@@ -18,7 +18,7 @@
 #'
 #' @returns Dataframe with formatted and renamed columns.
 
-read_and_format_data <- function(data_path,
+mh_read_and_format_data <- function(data_path,
                                  date_col,
                                  region_col,
                                  temperature_col,
@@ -134,7 +134,7 @@ casecrossover_dlnm <- function(data,
 }
 
 
-#' Plot results of analysis
+#' Plot results of analysis - Mental Health
 #'
 #' @description Plots cumulative lag exposure-response function for each region
 #'
@@ -148,7 +148,7 @@ casecrossover_dlnm <- function(data,
 #'
 #' @returns Plots of cumulative lag exposure-response function for each region
 
-plot_results <- function(data,
+mh_plot_results <- function(data,
                          cb_list,
                          model_list,
                          save_fig,
@@ -256,7 +256,7 @@ produce_results <- function(data,
 }
 
 
-#' Save results of analysis
+#' Save results of analysis - Mental Health
 #'
 #' @description Saves a CSV file of cumulative relative risk and
 #' confidence intervals.
@@ -265,7 +265,7 @@ produce_results <- function(data,
 #' intervals from analysis.
 #' @param output_folder_path Path to folder where results should be saved.
 
-save_results <- function(results,
+mh_save_results <- function(results,
                          output_folder_path) {
 
   if (!is.null(output_folder_path)) {
@@ -330,13 +330,11 @@ suicides_heat_do_analysis <- function(data_path,
                                       save_csv = FALSE,
                                       output_folder_path) {
 
-  df <- read_and_format_data(data_path = data_path,
+  df <- mh_read_and_format_data(data_path = data_path,
                              date_col = date_col,
                              region_col = region_col,
                              temperature_col = temperature_col,
                              health_outcome_col = health_outcome_col)
-print(df)
-
   cb_list <- create_crossbasis(data = df,
                                var_fun = var_fun,
                                var_dof = var_dof,
@@ -344,14 +342,10 @@ print(df)
                                lag_dof = lag_dof,
                                lag_days = lag_days)
 
-print(cb_list)
-
   model_list <- casecrossover_dlnm(data = df,
                                    cb_list = cb_list)
 
-print(model_list)
-
-  plot_results(data = df,
+  mh_plot_results(data = df,
                cb_list = cb_list,
                model_list = model_list,
                save_fig = save_fig,
@@ -363,7 +357,7 @@ print(model_list)
 
   if (save_csv == TRUE) {
 
-    save_results(results = results,
+    mh_save_results(results = results,
                output_folder_path = output_folder_path)
 
   }
