@@ -328,7 +328,7 @@ suicides_heat_do_analysis <- function(data_path,
                                       lag_days = 3,
                                       save_fig = FALSE,
                                       save_csv = FALSE,
-                                      output_folder_path) {
+                                      output_folder_path = NULL) {
 
   df <- mh_read_and_format_data(data_path = data_path,
                              date_col = date_col,
