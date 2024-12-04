@@ -559,7 +559,8 @@ casecrossover_quasipoisson <- function(data,
       }
       x <- floor(est) + 1
     }
-    output_path <- file.path(output_folder_path, "residuals_vs_fit_plot.pdf")
+    output_path <- file.path(output_folder_path,
+                             "wildfires_residuals_vs_fit_plot.pdf")
     pdf(output_path, width=floor(est)*4, height=floor(est)*4)
     par(mfrow=c(x,  y))
   }
@@ -737,8 +738,10 @@ save_results <- function(results,
 #' PM2.5). Setting this parameter to 0 or 1 leaves the variable unscaled.
 #' @param save_fig Boolean. Whether to save the plot as an output.
 #' @param save_csv Boolean. Whether to save the results as a CSV
-#' @param output_folder_path Path to folder where plots and/or CSV should be
-#' saved.
+#' @param output_folder_path Path. Path to folder where plots and/or CSV should
+#' be saved.
+#' @param print_vif Bool, whether or not to print VIF (variance inflation factor)
+#' for each predictor. Defaults to FALSE.
 #' @param print_model_summaries Bool. Whether to print the model summaries to
 #' console. Defaults to FALSE.
 #'
