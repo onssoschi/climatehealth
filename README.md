@@ -1,68 +1,74 @@
-# climatehealth
+# Climate and Health Package (Standards for Official Statistics on Climate-Health Interactions): climatehealth 
 
----
+This project contains an R package for calculating climate-health indicators [beta]. The functions in this package support the production of climate-health statistics in the analysis pipelines in [climatehealth_pipelines](https://gitlab-app-l-01/hapi/climate-and-health-team/climatehealth_pipelines). The function code aligns with the methodologies set out in a statistical framework of climate-health indicators developed as part of our project _Standards for Official Statistics on Climate-Health Interactions (SOSCHI)_.
 
-## Description
+## Indicators
 
-A package for calculating climate-health indicators [beta].
+This repository currently contains R functions for the following topics in the SOSCHI framework:
 
-First indicator is modified from Gasparrini et al. (2015).
+- Heat- and cold-related mortality (ONS)
+- Injury and mortality from extreme weather events: Wildfires (ONS)
 
-Gasparrini A, Guo Y, Hashizume M, Lavigne E, Zanobetti A, Schwartz J, Tobias A, Tong S, Rocklöv J, Forsberg B, Leone M, De Sario M, Bell ML, Guo YLL, Wu CF, Kan H, Yi SM, de Sousa Zanotti Stagliorio Coelho M, Saldiva PH, Honda Y, Kim H, Armstrong B. Mortality risk attributable to high and low ambient temperature: a multicountry observational study. The Lancet. 2015;386(9991):369-375
+Coming soon:
+- Mental health (ONS)
 
-https://github.com/gasparrini/2015_gasparrini_Lancet_Rcodedata
+## Requirements
 
-### Folder description
+1. RStudio (or an equivalent way of running R scripts).
 
-- `temperature_dlnm_main.R`: Runs distributed lag non-linear model (dlnm) to estimate the mortality risk attributable to non-optimal outdoor temperature (modified from Gasparrini et al. 2015)
-- `R`:               Contains packaged R code for each the indicators
-- `data`:            Folder for storing data
-- `archive`:         Archived scripts
-- `api`:             Contains scripts to run API
-- `man`:             Automatically generated package documentation from roxygen2 comments (do not edit manually)
-- `output`:          Stores outputs from scripts
-- `tests`:           Unit tests and test data
-- `data_template`:   Template of input data structure and column names
-- `git_filter`:      Contains git-filter-repo file for filtering git history
+2. A git installation (**optional, recommended**).
 
----
+## Layout of the climatehealth repository
+
+### Top-level files
+`climatehealth.Rproj`: The RStudio project file for this package.\
+`README.md`: The markdown file that produces this documentation.\
+`CONTRIBUTING.md`: A markdown document with guidance on contributing to this repository.\
+`DESCRIPTION`: Contains package metadata.\
+`NAMESPACE`: Specifies which functions are exported from this package. **Do not edit NAMESPACE manually.**\
+`LICENSE`: Gives information on licensing.
+
+### Key folders:
+`R`: Contains R scripts with package functions\
+`man`: Contains R documentation files for package functions.\
+`tests`: Contains unit tests for package functions
+
+### Other folders:
+`.gitlab`: Contains a template for creating merge requests.\
+`git_filter`: Contains [git-filter-repo](https://github.com/newren/git-filter-repo) - a tool for rewriting git history.
+
+## Contributing
+See [CONTRIBUTING](CONTRIBUTING.md) for guidance on contributing to this repository before making changes to the code. This includes guidance on branching, merge requests, and code style. 
 
 ## Usage
 
-See [CONTRIBUTING](CONTRIBUTING.md) for guidance on contributing to this repository before making changes to the code.
+Steps to use package:
 
-Steps to calculate indicator:
+1. Clone the repository 
 
-1. Change `input_csv_path` field in `config.yaml` to your input dataset (daily mortality and temperature measurements per region). 
-
-2. Change the column titles (under "Define columns" in `config.yml`) to reflect those in the data template `data_template/regEngWales_data_template.csv` (modified from Gasparrini et al. 2015). [beta solution; can be made generalisable in function & platform]
-
-3. Run `temperature_dlnm_main.R` to run full analysis **OR** run `devtools:load_all()` to load climatehealth package and run individual functions (individual functions located in `R/`)
+2. Use `devtools::load_all()` to load the package
 
 To run unit tests:
 
-  * Run `devtools::test()` in the console. Tests in `tests/testthat/`. 
+  * Run `devtools::test()` in the console. Tests in `tests/testthat/`
 
 ## Data
 
 #### Heat-related mortality data
 
-We are currently testing the indicator using real heat-related mortality data for England and Wales (``tests/testthat/testdata/regEngWalesPop.csv`). This has been modified from https://github.com/gasparrini/2015_gasparrini_Lancet_Rcodedata, with an additional column of population estimates.
+The heat- and cold-related mortality indicator was tested using real data for England and Wales (`tests/testthat/testdata/regEngWalesPop.csv`). This has been modified from https://github.com/gasparrini/2015_gasparrini_Lancet_Rcodedata, with an additional dummy column of population estimates.
 
-This dataset contains daily number of deaths and minimum, maximum, and mean temperature, disaggregated by region (nine English regions).
-
+This dataset contains daily number of deaths and minimum, maximum, and mean temperature. The dataset is also disaggregated by [International Territorial Level (ITL 1, previously known as NUTS 1)](https://www.ons.gov.uk/methodology/geography/ukgeographies/eurostat) regions. The dataset includes data for nine England regions and Wales (i.e. a total of ten ITL 1 regions).
 
 ## Project status
 
 * Integrating functions into online platform.
 * Development of functions for other indicators
 
----
-
 ## Authors
 
-Climate and Health, Epidemiology and Global Health Analysis, Office for National Statistics  
+Climate and Health Team, Health and International Partnerships, Office for National Statistics  
 
-[Euan Soutter, Antony Brown, Layli Semple, Vijendra Ingole]
+[Antony Brown, Charlie Browning, Layli Semple, Euan Soutter]
 
 
