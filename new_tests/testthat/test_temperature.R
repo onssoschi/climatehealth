@@ -1,5 +1,6 @@
 # Tests for temperature.R
 library(zeallot)
+library(patrick)
 
 # Tests for filter_on_rr_distribution
 
@@ -65,7 +66,7 @@ test_that(
 
 # Tests for load_temperature_data
 
-TEST_DATA_PATH <- "testdata/temperature_sample_data.csv"
+TEST_DATA_PATH <- "testdata/temperature_test_data.csv"
 
 test_that(
   "Test that the dataframe is returned as expected (using testdata).",
@@ -83,7 +84,7 @@ test_that(
     # check shape of first df
     rows <- dim(resultant[1][[1]])[1]
     cols <- dim(resultant[1][[1]])[2]
-    expect_equal(rows, 2374, info  = "load_temperature_data expected to return y rows")
+    expect_equal(rows, 4748, info  = "load_temperature_data expected to return y rows")
     expect_equal(cols, 18, info  = "load_temperature_data expected to return x column")
     # check colnames are correct - checks renaming functionality
     expected_columns<-c("X.1","X","date","year","month","day","time",
@@ -165,7 +166,7 @@ test_that(
     exp_family <- "quasipoisson"
     exp_rank <- 130
     exp_method <- "glm.fit"
-    exp_y_50 <- 71
+    exp_y_50 <- 217
     expect_equal(exp_family, model$family$family)
     expect_equal(exp_rank, model$rank)
     expect_equal(exp_method, model$method)
@@ -241,13 +242,13 @@ test_that(
     expect_equal(length(returned), 4, info = add_info)
     # return 1 - coef
     expect_type(returned[1], "list")
-    exp_coef_names <- c("North East", "Wales")
-    exp_coef <- c(-1.152, -0.642)
+    exp_coef_names <- c("North West", "South East", "Wales")
+    exp_coef <- c(-0.863, -0.863, -0.669)
     expect_equal(names(returned[[1]][,1]), exp_coef_names)
     expect_equal(round(as.vector(returned[[1]][,1]), 3), exp_coef)
     # return 2 - vcov
     expect_type(returned[2], "list")
-    exp_wal_vcov <- c(0.0848, 0.0621, 0.0792)
+    exp_wal_vcov <- c(0.0109, 0.0083, 0.0099)
     expect_equal(round(returned[2][[1]]$Wales[1:3], 4), exp_wal_vcov)
     # return 3 and 4 not tested since it is the same return as define_model
   }
@@ -276,9 +277,7 @@ test_that(
   }
 )
 
-# TODO: Solve error 'the leading minor of order 3 is not positive'
-# Related info: https://stackoverflow.com/questions/51064686/error-in-chol-defaultcxx-the-leading-minor-of-order-is-not-positive-definite
-'test_that(
+test_that(
   "Test that run_meta_model has the correct return values (using test data).",
   {
     data <- get_test_input_data(TEST_DATA_PATH)[[1]]
@@ -292,8 +291,22 @@ test_that(
                 lagnk = 3,
                 dfseas = 8)
     returned <- run_meta_model(data, coef_, vcov_)
+    expect_true(is.list(returned))
+    expect_equal(length(returned), 2)
+    # mv
+    mv <- returned[[1]]
+    exp_wales_fitted_vals <- c(-0.669, -0.722, -0.862, -0.789, -0.680)
+    expect_equal(
+      round(as.vector(mv$fitted.values["Wales",]), 3), exp_wales_fitted_vals
+    )
+    # blup
+    blup <- returned[[2]]
+    exp_blup <- c(-0.863, -0.837, -0.988, -0.938, -0.693)
+    expect_equal(
+      round(as.vector(blup[[1]]$blup), 3), exp_blup
+    )
   }
-)'
+)
 
 # test fwald
 
@@ -308,11 +321,51 @@ test_that(
 test_that(
   "fwald calculates p-values for the explanatory variable.",
   {
-
+    data <- get_test_input_data(TEST_DATA_PATH)[[1]]
+    c(coef_, vcov_, cb_, model_) %<-%
+      run_model(df_list = data,
+                independent_cols = NULL,
+                varfun = "bs",
+                varper = c(10, 75, 90),
+                vardegree = 2,
+                lag = 21,
+                lagnk = 3,
+                dfseas = 8)
+    returned <- run_meta_model(data, coef_, vcov_)
+    results <- fwald(returned[[1]], "avgtmean")
+    exp_fwald <- 0.498
+    expect_equal(round(results[1], 4), exp_fwald, tolerance = 1e-04)
   }
 )
 
+# wald_results tests skipped since the function only utilises fwald
 
+# test define_and_validate_optimal_tempts
+
+optimal_temps_dummy = c(1.01, 1.045, 1.09, 1.1, 1.034)
+names(optimal_temps_dummy) <- c("10", "11", "12", "13", "14")
+optimal_temps_dummy <- list("allRRfit"=optimal_temps_dummy)
+
+test_that(
+  "define_and_validate_optimal_temps works as intended.",
+  {
+    OTR <- data.frame(lower = NA, upper = NA, row.names = "aggregated")
+    exp_OTR <- data.frame(lower = 10, upper = 14, row.names = "aggregated")
+    returned <- define_and_validate_optimal_temps(OTR, optimal_temps_dummy, index="aggregated")
+    expect_equal(returned, exp_OTR)
+  }
+)
+
+# Test for warnings
+test_that(
+  "define_and_validate_optimal_temps raises the correct warning (below 0).",
+  {
+    pred <- optimal_temps_dummy
+    pred$allRRfit[["15"]] <- 0.9
+    OTR <- data.frame(lower = NA, upper = NA, row.names = "aggregated")
+    expect_warning(define_and_validate_optimal_temps(OTR, pred, index="aggregated"))
+  }
+)
 
 
 

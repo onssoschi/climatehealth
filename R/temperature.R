@@ -370,12 +370,8 @@ fwald <- function(model, var) {
   }
 
   ind <- grep(var, names(coef(model)))
-  print(var)
-  print(names(coef(model)))
   coef <- coef(model)[ind]
-  print(coef)
   vcov <- vcov(model)[ind, ind]
-  print(vcov)
   waldstat <- coef %*% solve(vcov) %*% coef
   df <- length(coef)
 
@@ -414,11 +410,11 @@ define_and_validate_optimal_temps <- function(optimal_temp_range,
                                               prediction,
                                               RR_fit_col = "allRRfit",
                                               index) {
+  print(prediction)
   optimal_temp_range[index,"lower"] <- as.numeric(names(
     which.min(which(prediction[[RR_fit_col]] >= 1 & prediction[[RR_fit_col]] <= 1.1))))
   optimal_temp_range[index, "upper"] <- as.numeric(names(
     which.max(which(prediction[[RR_fit_col]] >= 1 & prediction[[RR_fit_col]] <= 1.1))))
-
   below_one <- which(prediction[[RR_fit_col]] < 1)
   above_OTR <- which(
     as.numeric(names(prediction[[RR_fit_col]])) > optimal_temp_range[index, "upper"]
