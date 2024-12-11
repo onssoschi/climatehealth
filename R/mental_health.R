@@ -9,7 +9,7 @@
 #' @param date_col Character. Name of the column in the dataframe that contains
 #' the date.
 #' @param region_col Character. Name of the column in the dataframe that contains
-#' the region names.
+#' the region names. Defaults to NULL.
 #' @param temperature_col Character. Name of the column in the dataframe that
 #' contains the temperature column.
 #' @param health_outcome_col Character. Name of the column in the dataframe that
@@ -20,7 +20,7 @@
 
 mh_read_and_format_data <- function(data_path,
                                  date_col,
-                                 region_col,
+                                 region_col = NULL,
                                  temperature_col,
                                  health_outcome_col) {
 
@@ -33,13 +33,8 @@ mh_read_and_format_data <- function(data_path,
   if(is.null(region_col)) {
 
     df <- df %>%
-      dplyr::rename(region = "no_region")
-
-  } else {
-
-    df <- df %>%
-      dplyr::rename(region = region_col)
-
+      dplyr::mutate(region = "aggregated")
+      region_col = "region"
   }
 
   df <- df %>%
@@ -49,13 +44,14 @@ mh_read_and_format_data <- function(data_path,
     dplyr::mutate(date = lubridate::ymd(date),
                   year = as.factor(lubridate::year(date)),
                   month = as.factor(lubridate::month(date)),
-                  day = as.factor(lubridate::day(date)),
                   dow = as.factor(lubridate::wday(date, label = TRUE)),
                   region = as.factor(region),
                   stratum = as.factor(region:year:month:dow),
                   ind = tapply(suicides, stratum, sum)[stratum])
 
-  return(df)
+  df_list <- aggregate_by_column(df, "region")
+
+  return(df_list)
 }
 
 
@@ -65,27 +61,26 @@ mh_read_and_format_data <- function(data_path,
 #'
 #' @param data Dataframe containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
-#' @param var_fun Character. Exposure function
-#' (see dlnm::crossbasis).
-#' @param var_dof Integer. Degrees of freedom in exposure function
-#' (see dlnm:crossbasis).
-#' @param lag_fun Character. Exposure function
-#' (see dlnm::crossbasis).
-#' @param lag_dof Integer. Degrees of freedom in exposure function
-#' (see dlnm:crossbasis).
-#' @param lag_days Integer. Maximum lag
+#' @param var_fun Character. Exposure function for argvar
+#' (see dlnm::crossbasis). Defaults to 'ns'.
+#' @param var_dof Integer. Degrees of freedom in exposure function for argvar
+#' (see dlnm:crossbasis). Defaults to 4.
+#' @param lag_fun Character. Exposure function for arglag
+#' (see dlnm::crossbasis). Defaults to 'ns'.
+#' @param lag_dof Integer. Degrees of freedom in exposure function for arglag
+#' (see dlnm:crossbasis). Defaults to 4.
+#' @param lag_days Integer. Maximum lag. Defaults to 3.
 #' (see dlnm:crossbasis).
 #'
-#' @returns Large list of cross-basis matrices by region
+#' @returns A list of cross-basis matrices by region
 
-create_crossbasis <- function(data,
-                              var_fun,
-                              var_dof,
-                              lag_fun,
-                              lag_dof,
-                              lag_days) {
+mh_create_crossbasis <- function(data,
+                              var_fun = "ns",
+                              var_dof = 4,
+                              lag_fun = "ns",
+                              lag_dof = 4,
+                              lag_days = 3) {
 
-  data <- split(data, f = data$region)
   cb_list <- list()
 
   for(reg in names(data)){
@@ -93,7 +88,7 @@ create_crossbasis <- function(data,
     region_data <- data[[reg]]
     argvar <- list(fun = var_fun, df = var_dof)
     arglag <- list(fun = lag_fun, df = lag_dof)
-    cb <- dlnm::crossbasis(region_data$temp, lag = lag_days, argvar = argvar, arglag =arglag)
+    cb <- dlnm::crossbasis(region_data$temp, lag = lag_days, argvar = argvar, arglag = arglag)
 
     cb_list[[reg]] <- cb
   }
@@ -113,10 +108,9 @@ create_crossbasis <- function(data,
 #'
 #' @returns List containing models by region
 
-casecrossover_dlnm <- function(data,
+mh_casecrossover_dlnm <- function(data,
                                cb_list) {
 
-  data <- split(data, f = data$region)
   model_list <- list()
 
   for(reg in names(data)){
@@ -134,28 +128,23 @@ casecrossover_dlnm <- function(data,
 }
 
 
-#' Plot results of analysis - Mental Health
+#' Run predictions from model
 #'
-#' @description Plots cumulative lag exposure-response function for each region
+#' @description Use model to run predictions
 #'
 #' @param data Dataframe containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
 #' @param cb_list List of cross_basis matrices from create_crossbasis function.
 #' @param model_list List of models produced from case-crossover and DLNM
 #' analysis.
-#' @param save_fig Boolean. Whether to save the plot as an output.
-#' @param output_folder_path Path to folder where plots should be saved.
 #'
-#' @returns Plots of cumulative lag exposure-response function for each region
+#' @returns A list containing predictions by region
 
-mh_plot_results <- function(data,
-                         cb_list,
-                         model_list,
-                         save_fig,
-                         output_folder_path) {
+mh_predict <- function(data,
+                       cb_list,
+                       model_list) {
 
-  xlim <- c(min(data$temp), max(data$temp))
-  data <- split(data, f = data$region)
+  pred_list <- list()
 
   for(reg in names(data)){
 
@@ -163,41 +152,79 @@ mh_plot_results <- function(data,
     cb <- cb_list[[reg]]
     cen <- mean(region_data$temp, na.rm = T)
     pred <- dlnm::crosspred(cb, model_list[[reg]], cen = cen,
-                      from = min(region_data$temp, na.rm = TRUE),
-                      to = max(region_data$temp, na.rm = TRUE), by = 1)
-
-    if (save_fig == TRUE) {
-
-      if (!is.null(output_folder_path)) {
-        pdf(file.path(output_folder_path, paste0("suicides_plot_", stringr::str_replace_all(reg,' ','_'), ".pdf")),
-            width = 8, height = 8)
-        plot(pred,
-            "overall",
-            xlab = expression(paste("Temperature (", degree, "C)")),
-            ylab = "RR",
-            ylim = c(0,3),
-            xlim = xlim,
-            main = reg) # NOTE: this print() is required to produce the plot pdf
-        dev.off()
-      }
-
-
-    }
-    else{
-
-      plot(pred,
-            "overall",
-            xlab = expression(paste("Temperature (", degree, "C)")),
-            ylab = "RR",
-            ylim = c(0,3),
-            xlim = xlim,
-            main = reg)
-
-    }
+                            from = min(region_data$temp, na.rm = TRUE),
+                            to = max(region_data$temp, na.rm = TRUE), by = 1)
+    pred_list[[reg]] <- pred
 
   }
 
+  return(pred_list)
+
 }
+
+
+#' Plot results of analysis - Mental Health
+#'
+#' @description Plots cumulative lag exposure-response function for each region
+#'
+#' @param pred_list A list containing predictions from the model by region.
+#' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
+#' FALSE.
+#' @param output_folder_path Path to folder where plots should be saved.
+#' Defaults to NULL.
+#'
+#' @returns Plots of cumulative lag exposure-response function for each region
+
+mh_plot_results <- function(pred_list,
+                            save_fig = FALSE,
+                            output_folder_path = NULL) {
+
+  xlim <- c(min(sapply(pred_list, function(x) min(x$predvar, na.rm = TRUE))),
+            max(sapply(pred_list, function(x) max(x$predvar, na.rm = TRUE))))
+
+  if (save_fig==T) {
+    # create grid dynamically
+    est <- sqrt(length(pred_list))
+    if (est==floor(est)){
+      x <- y <- est
+    } else {
+      base <- est - floor(est)
+      if (base < 0.5){
+        y <- floor(est)
+      }
+      else {
+        y <- floor(est) + 1
+      }
+      x <- floor(est) + 1
+    }
+    output_path <- file.path(output_folder_path,
+                             "suicides_plot.pdf")
+    pdf(output_path, width=floor(est)*4, height=floor(est)*4)
+    par(mfrow=c(x,  y))
+  }
+
+  for(reg in names(pred_list)){
+
+    region_pred <- pred_list[[reg]]
+
+    plot(region_pred,
+         "overall",
+         xlab = expression(paste("Temperature (", degree, "C)")),
+         ylab = "RR",
+         ylim = c(0,3),
+         xlim = xlim,
+         main = reg,
+         col = "#f25574")
+
+  }
+
+  if (save_fig == TRUE) {
+
+    dev.off()
+
+    }
+
+    }
 
 
 #' Produce cumulative relative risk results of analysis
@@ -205,49 +232,34 @@ mh_plot_results <- function(data,
 #' @description Produces cumulative relative risk and confidence intervals
 #' from analysis.
 #'
-#' @param data Dataframe containing daily timeseries data for a health outcome
-#' and climate variables which may be disaggregated by a particular region.
-#' @param cb_list List of cross_basis matrices from create_crossbasis function.
-#' @param model_list List of models produced from case-crossover and DLNM
-#' analysis.
+#' @param pred_list A list containing predictions from the model by region.
 #'
 #' @returns Dataframe containing cumulative relative risk and confidence
 #' intervals from analysis.
 
-produce_results <- function(data,
-                            cb_list,
-                            model_list) {
+produce_results <- function(pred_list) {
 
-    data <- split(data, f = data$region)
     results <- data.frame()
 
-    for (reg in names(data)) {
-      region_data <- data[[reg]]
-      cb <- cb_list[[reg]]
-      cen <- mean(region_data$temp, na.rm = TRUE)
-      pred <- dlnm::crossreduce(cb, model_list[[reg]], cen = cen,
-                          from = min(region_data$temp, na.rm = TRUE),
-                          to = max(region_data$temp, na.rm = TRUE), by = 1)
+    for (reg in names(pred_list)) {
 
-      rrfit <- paste0("RRfit_", gsub(' ', '_', reg))
-      rrlow <- paste0("RRlow_", gsub(' ', '_', reg))
-      rrhigh <- paste0("RRhigh_", gsub(' ', '_', reg))
+      region_pred <- pred_list[[reg]]
+
+      regname <- tolower(gsub(' ', '_', reg))
+      rrfit <- paste0("RRfit_", regname)
+      rrlow <- paste0("RRlow_", regname)
+      rrhigh <- paste0("RRhigh_", regname)
+
+      results_add <- data.frame(
+        Temperature = region_pred$predvar,
+        setNames(list(region_pred$allRRfit), rrfit),
+        setNames(list(region_pred$allRRlow), rrlow),
+        setNames(list(region_pred$allRRhigh), rrhigh))
 
       if (nrow(results) == 0) {
-        results <- data.frame(
-          Temperature = pred$predvar,
-          setNames(list(pred$RRfit), rrfit),
-          setNames(list(pred$RRlow), rrlow),
-          setNames(list(pred$RRhigh), rrhigh)
-        )
+        results <- results_add
       } else {
-        results_add <- data.frame(
-          Temperature = pred$predvar,
-          setNames(list(pred$RRfit), rrfit),
-          setNames(list(pred$RRlow), rrlow),
-          setNames(list(pred$RRhigh), rrhigh)
-        )
-        results <- merge(results, results_add, by = "Temperature", all = TRUE)
+          results <- merge(results, results_add, by = "Temperature", all = TRUE)
       }
     }
 
@@ -264,11 +276,14 @@ produce_results <- function(data,
 #' @param results Dataframe containing cumulative relative risk and confidence
 #' intervals from analysis.
 #' @param output_folder_path Path to folder where results should be saved.
+#' Defaults to NULL.
 
 mh_save_results <- function(results,
-                         output_folder_path) {
+                         output_folder_path = NULL) {
 
   if (!is.null(output_folder_path)) {
+
+    climatehealth::check_file_exists(file.path(output_folder_path))
 
     write.csv(results, file = file.path(
       output_folder_path, "suicides_results.csv"), row.names = FALSE)
@@ -295,23 +310,27 @@ mh_save_results <- function(results,
 #' @param date_col Character. Name of the column in the dataframe that contains
 #' the date.
 #' @param region_col Character. Name of the column in the dataframe that contains
-#' the region names.
+#' the region names. Defaults to NULL.
 #' @param temperature_col Character. Name of the column in the dataframe that
 #' contains the temperature column.
 #' @param health_outcome_col Character. Name of the column in the dataframe that
 #' contains the health outcome count column (e.g. number of deaths, hospital
 #' admissions).
-#' @param var_fun Character. Exposure function (see dlnm::crossbasis).
+#' @param var_fun Character. Exposure function (see dlnm::crossbasis). Defaults
+#' to 'ns'.
 #' @param var_dof Integer. Degrees of freedom in exposure function
-#' (see dlnm:crossbasis).
-#' @param lag_fun Character. Exposure function (see dlnm::crossbasis).
+#' (see dlnm:crossbasis). Defaults to 4.
+#' @param lag_fun Character. Exposure function (see dlnm::crossbasis). Defaults
+#' to 'ns'.
 #' @param lag_dof Integer. Degrees of freedom in exposure function
-#' (see dlnm:crossbasis).
-#' @param lag_days Integer. Maximum lag (see dlnm:crossbasis).
-#' @param save_fig Boolean. Whether to save the plot as an output.
-#' @param save_csv Boolean. Whether to save the results as a CSV.
+#' (see dlnm:crossbasis). Defaults to 4.
+#' @param lag_days Integer. Maximum lag (see dlnm:crossbasis). Defaults to 3.
+#' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
+#' FALSE.
+#' @param save_csv Boolean. Whether to save the results as a CSV. Defaults to
+#' FALSE.
 #' @param output_folder_path Path to folder where plots and/or CSV should be
-#' saved.
+#' saved. Defaults to NULL.
 #'
 #' @returns Dataframe containing cumulative relative risk and confidence
 #' intervals from analysis.
@@ -330,28 +349,28 @@ suicides_heat_do_analysis <- function(data_path,
                                       save_csv = FALSE,
                                       output_folder_path = NULL) {
 
-  df <- mh_read_and_format_data(data_path = data_path,
+  df_list <- mh_read_and_format_data(data_path = data_path,
                              date_col = date_col,
                              region_col = region_col,
                              temperature_col = temperature_col,
                              health_outcome_col = health_outcome_col)
-  cb_list <- create_crossbasis(data = df,
+  cb_list <- mh_create_crossbasis(data = df_list,
                                var_fun = var_fun,
                                var_dof = var_dof,
                                lag_fun = lag_fun,
                                lag_dof = lag_dof,
                                lag_days = lag_days)
 
-  model_list <- casecrossover_dlnm(data = df,
+  model_list <- mh_casecrossover_dlnm(data = df_list,
                                    cb_list = cb_list)
 
-  mh_plot_results(data = df,
+  mh_plot_results(data = df_list,
                cb_list = cb_list,
                model_list = model_list,
                save_fig = save_fig,
                output_folder_path = output_folder_path)
 
-  results <- produce_results(data = df,
+  results <- produce_results(data = df_list,
                              cb_list = cb_list,
                              model_list = model_list)
 
