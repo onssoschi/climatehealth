@@ -367,5 +367,25 @@ test_that(
   }
 )
 
+# Tests for calculate_min_mortality_temp
+test_that(
+  "Test that an error is raised when blup is not a list.",
+  {
+    expect_error(
+      calculate_min_mortality_temp(
+        df_list = list(data.frame()),
+        blup = 2,
+        independent_cols = NULL,
+        varfun = NULL,
+        varper = NULL,
+        vardegree = NULL,
+        lag = NULL,
+        lagnk = NULL,
+        dfseas = NULL
+      ), regexp = "Argument 'blup' must be a list"
+    )
+  }
+)
+
 
 
