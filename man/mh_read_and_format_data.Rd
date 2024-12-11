@@ -7,7 +7,7 @@
 mh_read_and_format_data(
   data_path,
   date_col,
-  region_col,
+  region_col = NULL,
   temperature_col,
   health_outcome_col
 )
@@ -21,7 +21,7 @@ disaggregated by region.}
 the date.}
 
 \item{region_col}{Character. Name of the column in the dataframe that contains
-the region names.}
+the region names. Defaults to NULL.}
 
 \item{temperature_col}{Character. Name of the column in the dataframe that
 contains the temperature column.}

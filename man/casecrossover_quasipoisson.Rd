@@ -5,7 +5,14 @@
 \title{Fit quasipoisson regression models for different lags using a time-stratified
 case-crossover approach.}
 \usage{
-casecrossover_quasipoisson(data, scale_factor = 10, wildfire_lag = 3)
+casecrossover_quasipoisson(
+  data,
+  scale_factor = 10,
+  wildfire_lag = 3,
+  save_fig = FALSE,
+  output_folder_path = NULL,
+  print_model_summaries = FALSE
+)
 }
 \arguments{
 \item{data}{Dataframe containing a daily time series of climate and health
@@ -20,6 +27,14 @@ Setting this parameter to 0 or 1 leaves the variable unscaled.}
 
 \item{wildfire_lag}{Integer. The maximum number of days for which to calculate
 lagged results for wildfire PM2.5. Default is 3.}
+
+\item{save_fig}{Bool. Whether or not to save a figure showing residuals vs
+fitted values for each lag. Defaults to FALSE.}
+
+\item{output_folder_path}{String. Where to save the figure. Defaults to NULL.}
+
+\item{print_model_summaries}{Bool. Whether to print the model summaries to
+console. Defaults to FALSE.}
 }
 \value{
 Dataframe of relative risk and confidence intervals for
