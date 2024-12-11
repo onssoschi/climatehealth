@@ -410,7 +410,6 @@ define_and_validate_optimal_temps <- function(optimal_temp_range,
                                               prediction,
                                               RR_fit_col = "allRRfit",
                                               index) {
-  print(prediction)
   optimal_temp_range[index,"lower"] <- as.numeric(names(
     which.min(which(prediction[[RR_fit_col]] >= 1 & prediction[[RR_fit_col]] <= 1.1))))
   optimal_temp_range[index, "upper"] <- as.numeric(names(
@@ -424,7 +423,7 @@ define_and_validate_optimal_temps <- function(optimal_temp_range,
   )
   if (length(which((below_one %in% above_OTR) | (below_one %in% below_OTR))) > 0) {
   # TODO: Create a better warning
-    print(warning("Predicted RR goes below 1 in the ends"))
+    warning("Predicted RR goes below 1 in the ends")
   }
 
   return (optimal_temp_range)
