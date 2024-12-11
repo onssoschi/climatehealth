@@ -4,13 +4,14 @@
 \alias{mh_save_results}
 \title{Save results of analysis - Mental Health}
 \usage{
-mh_save_results(results, output_folder_path)
+mh_save_results(results, output_folder_path = NULL)
 }
 \arguments{
 \item{results}{Dataframe containing cumulative relative risk and confidence
 intervals from analysis.}
 
-\item{output_folder_path}{Path to folder where results should be saved.}
+\item{output_folder_path}{Path to folder where results should be saved.
+Defaults to NULL.}
 }
 \description{
 Saves a CSV file of cumulative relative risk and

@@ -18,7 +18,7 @@ suicides_heat_do_analysis(
   lag_days = 3,
   save_fig = FALSE,
   save_csv = FALSE,
-  output_folder_path
+  output_folder_path = NULL
 )
 }
 \arguments{
@@ -30,7 +30,7 @@ disaggregated by region.}
 the date.}
 
 \item{region_col}{Character. Name of the column in the dataframe that contains
-the region names.}
+the region names. Defaults to NULL.}
 
 \item{temperature_col}{Character. Name of the column in the dataframe that
 contains the temperature column.}
@@ -39,24 +39,28 @@ contains the temperature column.}
 contains the health outcome count column (e.g. number of deaths, hospital
 admissions).}
 
-\item{var_fun}{Character. Exposure function (see dlnm::crossbasis).}
+\item{var_fun}{Character. Exposure function (see dlnm::crossbasis). Defaults
+to 'ns'.}
 
 \item{var_dof}{Integer. Degrees of freedom in exposure function
-(see dlnm:crossbasis).}
+(see dlnm:crossbasis). Defaults to 4.}
 
-\item{lag_fun}{Character. Exposure function (see dlnm::crossbasis).}
+\item{lag_fun}{Character. Exposure function (see dlnm::crossbasis). Defaults
+to 'ns'.}
 
 \item{lag_dof}{Integer. Degrees of freedom in exposure function
-(see dlnm:crossbasis).}
+(see dlnm:crossbasis). Defaults to 4.}
 
-\item{lag_days}{Integer. Maximum lag (see dlnm:crossbasis).}
+\item{lag_days}{Integer. Maximum lag (see dlnm:crossbasis). Defaults to 3.}
 
-\item{save_fig}{Boolean. Whether to save the plot as an output.}
+\item{save_fig}{Boolean. Whether to save the plot as an output. Defaults to
+FALSE.}
 
-\item{save_csv}{Boolean. Whether to save the results as a CSV.}
+\item{save_csv}{Boolean. Whether to save the results as a CSV. Defaults to
+FALSE.}
 
 \item{output_folder_path}{Path to folder where plots and/or CSV should be
-saved.}
+saved. Defaults to NULL.}
 }
 \value{
 Dataframe containing cumulative relative risk and confidence
