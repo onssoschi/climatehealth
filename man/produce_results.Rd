@@ -4,16 +4,10 @@
 \alias{produce_results}
 \title{Produce cumulative relative risk results of analysis}
 \usage{
-produce_results(data, cb_list, model_list)
+produce_results(pred_list)
 }
 \arguments{
-\item{data}{Dataframe containing daily timeseries data for a health outcome
-and climate variables which may be disaggregated by a particular region.}
-
-\item{cb_list}{List of cross_basis matrices from create_crossbasis function.}
-
-\item{model_list}{List of models produced from case-crossover and DLNM
-analysis.}
+\item{pred_list}{A list containing predictions from the model by region.}
 }
 \value{
 Dataframe containing cumulative relative risk and confidence

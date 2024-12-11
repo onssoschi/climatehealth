@@ -4,20 +4,16 @@
 \alias{mh_plot_results}
 \title{Plot results of analysis - Mental Health}
 \usage{
-mh_plot_results(data, cb_list, model_list, save_fig, output_folder_path)
+mh_plot_results(pred_list, save_fig = FALSE, output_folder_path = NULL)
 }
 \arguments{
-\item{data}{Dataframe containing daily timeseries data for a health outcome
-and climate variables which may be disaggregated by a particular region.}
+\item{pred_list}{A list containing predictions from the model by region.}
 
-\item{cb_list}{List of cross_basis matrices from create_crossbasis function.}
+\item{save_fig}{Boolean. Whether to save the plot as an output. Defaults to
+FALSE.}
 
-\item{model_list}{List of models produced from case-crossover and DLNM
-analysis.}
-
-\item{save_fig}{Boolean. Whether to save the plot as an output.}
-
-\item{output_folder_path}{Path to folder where plots should be saved.}
+\item{output_folder_path}{Path to folder where plots should be saved.
+Defaults to NULL.}
 }
 \value{
 Plots of cumulative lag exposure-response function for each region
