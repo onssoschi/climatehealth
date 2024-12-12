@@ -545,24 +545,11 @@ casecrossover_quasipoisson <- function(data,
   results <- list()
 
   if (save_fig==T) {
-    # create grid dynamically
-    est <- sqrt(length(lags))
-    if (est==floor(est)){
-      x <- y <- est
-    } else {
-      base <- est - floor(est)
-      if (base < 0.5){
-        y <- floor(est)
-      }
-      else {
-        y <- floor(est) + 1
-      }
-      x <- floor(est) + 1
-    }
+    grid <- create_grid(length(lags))
     output_path <- file.path(output_folder_path,
                              "wildfires_residuals_vs_fit_plot.pdf")
-    pdf(output_path, width=floor(est)*4, height=floor(est)*4)
-    par(mfrow=c(x,  y))
+    pdf(output_path, width=grid[1]*4, height=grid[2]*4)
+    par(mfrow=c(grid[1],  grid[2]))
   }
 
   for (i in lags) {
