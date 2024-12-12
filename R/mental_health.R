@@ -16,7 +16,7 @@
 #' contains the health outcome count column (e.g. number of deaths, hospital
 #' admissions).
 #'
-#' @returns Dataframe with formatted and renamed columns.
+#' @returns A list of dataframes with formatted and renamed columns.
 
 mh_read_and_format_data <- function(data_path,
                                  date_col,
@@ -59,7 +59,7 @@ mh_read_and_format_data <- function(data_path,
 #'
 #' @description Creates a cross-basis matrix for each region
 #'
-#' @param data Dataframe containing daily timeseries data for a health outcome
+#' @param data A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
 #' @param var_fun Character. Exposure function for argvar
 #' (see dlnm::crossbasis). Defaults to 'ns'.
@@ -102,7 +102,7 @@ mh_create_crossbasis <- function(data,
 #' @description Fits a quasi-Poisson case-crossover with a distributed lag
 #' non-linear model
 #'
-#' @param data Dataframe containing daily timeseries data for a health outcome
+#' @param data A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
 #' @param cb_list List of cross_basis matrices from create_crossbasis function.
 #'
@@ -132,7 +132,7 @@ mh_casecrossover_dlnm <- function(data,
 #'
 #' @description Use model to run predictions
 #'
-#' @param data Dataframe containing daily timeseries data for a health outcome
+#' @param data A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
 #' @param cb_list List of cross_basis matrices from create_crossbasis function.
 #' @param model_list List of models produced from case-crossover and DLNM
