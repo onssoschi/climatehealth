@@ -31,7 +31,7 @@ contains the health outcome count column (e.g. number of deaths, hospital
 admissions).}
 }
 \value{
-Dataframe with formatted and renamed columns.
+A list of dataframes with formatted and renamed columns.
 }
 \description{
 Reads in a CSV file for a daily time series of health and climate
