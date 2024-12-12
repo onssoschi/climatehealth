@@ -14,7 +14,7 @@ mh_create_crossbasis(
 )
 }
 \arguments{
-\item{data}{Dataframe containing daily timeseries data for a health outcome
+\item{data}{A list of dataframes containing daily timeseries data for a health outcome
 and climate variables which may be disaggregated by a particular region.}
 
 \item{var_fun}{Character. Exposure function for argvar
