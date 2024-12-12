@@ -7,7 +7,7 @@
 mh_predict(data, cb_list, model_list)
 }
 \arguments{
-\item{data}{Dataframe containing daily timeseries data for a health outcome
+\item{data}{A list of dataframes containing daily timeseries data for a health outcome
 and climate variables which may be disaggregated by a particular region.}
 
 \item{cb_list}{List of cross_basis matrices from create_crossbasis function.}
