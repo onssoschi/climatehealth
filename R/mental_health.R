@@ -184,23 +184,11 @@ mh_plot_results <- function(pred_list,
 
   if (save_fig==T) {
     # create grid dynamically
-    est <- sqrt(length(pred_list))
-    if (est==floor(est)){
-      x <- y <- est
-    } else {
-      base <- est - floor(est)
-      if (base < 0.5){
-        y <- floor(est)
-      }
-      else {
-        y <- floor(est) + 1
-      }
-      x <- floor(est) + 1
-    }
+    grid <- create_grid(length(pred_list))
     output_path <- file.path(output_folder_path,
                              "suicides_plot.pdf")
-    pdf(output_path, width=floor(est)*4, height=floor(est)*4)
-    par(mfrow=c(x,  y))
+    pdf(output_path, width=grid[1]*4, height=grid[2]*4)
+    par(mfrow=c(grid[1],  grid[2]))
   }
 
   for(reg in names(pred_list)){
