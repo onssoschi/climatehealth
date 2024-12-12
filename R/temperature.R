@@ -1238,15 +1238,14 @@ plot_and_write <- function(
     )
   # create pdf object
   if (save_fig == TRUE) {
-    pdf(paste(pdf_output_path,
-              sep = ''),
-        width = 8, height = 9)
+    grid <- create_grid(length(df_list))
+    pdf(paste(pdf_output_path, sep = ''),
+        width=grid[1]*4, height=grid[2]*4)
 
-    par(mar = c(4, 3.8, 3, 2.4), mgp = c(2.5, 1, 0), las = 1)
+    par(mfrow=c(grid[1],  grid[2]))
   }
   # structure the layout of the pdf to output
   if (output_all) {
-    layout(matrix(1:1, ncol = 1))
     return(plot_and_write_relative_risk_all(df_list = df_list,
                                             mintempregions = mintempregions,
                                             save_fig = save_fig,
@@ -1261,10 +1260,6 @@ plot_and_write <- function(
                                             ))
 
   } else {
-    layout(matrix(c(0, 1, 1, 2, 2, 0,
-                    rep(3:8, each = 2), 0, 9, 9, 10, 10, 0),
-                  ncol = 6,
-                  byrow = TRUE))
     return(plot_and_write_relative_risk(df_list = df_list,
                                         blup = blup,
                                         mintempregions = mintempregions,
