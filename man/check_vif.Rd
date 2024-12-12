@@ -4,7 +4,7 @@
 \alias{check_vif}
 \title{Check variance inflation factors of predictor variables using a linear model}
 \usage{
-check_vif(data, predictors)
+check_vif(data, predictors, print_vif = FALSE)
 }
 \arguments{
 \item{data}{Dataframe containing a daily time series of climate and health
@@ -12,6 +12,9 @@ data.}
 
 \item{predictors}{Character vector with each of the predictors to include
 in the model. Must contain at least 2 variables.}
+
+\item{print_vif}{Bool, whether or not to print VIF for each predictor.
+Defaults to FALSE.}
 }
 \value{
 Prints variance inflation factors for each predictor variable.
