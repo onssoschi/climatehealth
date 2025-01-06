@@ -455,5 +455,60 @@ test_that(
   }
 )
 
+# Tests for compute_attributable_deaths
+
+test_that(
+  "Test that compute_attributable_deaths calculates attributate deaths correctly.",
+  {
+    # read in test data
+    data <- get_test_input_data(TEST_DATA_PATH)[[1]]
+    # get mintempregions and an_threshold from already tested function
+    min_mort <- calculate_min_mortality_temp(
+      df_list = data,
+      blup = NULL,
+      independent_cols = NULL,
+      varfun = "bs",
+      varper = c(10, 75, 90),
+      vardegree = 2L,
+      lag = 21L,
+      lagnk = 3L,
+      dfseas = 8L
+    )
+    mintempregions <- min_mort[[1]]
+    an_thresholds <- min_mort[[2]]
+    # compute attributable deaths
+    returned <- compute_attributable_deaths(
+      df_list = data,
+      output_year = 0,
+      blup = NULL,
+      mintempregions = mintempregions,
+      an_thresholds = an_thresholds,
+      independent_cols = NULL,
+      varfun = "bs",
+      varper = c(10, 75, 90),
+      vardegree = 2L,
+      lag = 21L,
+      lagnk = 3L,
+      dfseas = 8L
+    )
+    # ensure results are as expected
+    expected <- data.frame(
+      data.frame(
+        glob_cold = c(3904.249, 4630.847, 1976.084),
+        glob_heat = c(252.89348, 400.58944, 61.04349),
+        moderate_cold = c(3561.018, 4110.731, 1702.230),
+        moderate_heat = c(0, 0, 0),
+        high_cold = c(343.2308, 520.1164, 273.8540),
+        high_heat = c(252.89348, 400.58944, 61.04349),
+        heatwave = c(198.7234, 380.7245, 53.8494)
+      )
+    )
+    rownames(expected) <- c("North West", "South East", "Wales")
+    print(expected)
+    print(returned[[2]])
+    expect_equal(data.frame(expected), data.frame(returned[[2]]), tolerance=1e-6)
+  }
+)
+
 
 
