@@ -470,7 +470,6 @@ calculate_min_mortality_temp <-  function(df_list,
                                           lag,
                                           lagnk,
                                           dfseas) {
-
   # Assert that df_list is a list of dataframes
   is_list_of_dfs(list_ = df_list)
 

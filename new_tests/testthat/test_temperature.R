@@ -85,9 +85,9 @@ test_that(
     rows <- dim(resultant[1][[1]])[1]
     cols <- dim(resultant[1][[1]])[2]
     expect_equal(rows, 4748, info  = "load_temperature_data expected to return y rows")
-    expect_equal(cols, 18, info  = "load_temperature_data expected to return x column")
+    expect_equal(cols, 19, info  = "load_temperature_data expected to return x column")
     # check colnames are correct - checks renaming functionality
-    expected_columns<-c("X.1","X","date","year","month","day","time",
+    expected_columns<-c("X.2", "X.1","X","date","year","month","day","time",
                     "yday","dow","region","regnames","temp","tmin","tmax",
                     "dewp","rh","dependent","pop_col")
     expect_equal(colnames(resultant[1][[1]]), expected_columns)
@@ -369,7 +369,7 @@ test_that(
 
 # Tests for calculate_min_mortality_temp
 test_that(
-  "Test that an error is raised when blup is not a list.",
+  "Test that calculate_min_mortality_temp returns an error when blup is not a list.",
   {
     expect_error(
       calculate_min_mortality_temp(
@@ -384,6 +384,74 @@ test_that(
         dfseas = NULL
       ), regexp = "Argument 'blup' must be a list"
     )
+  }
+)
+
+test_that(
+  "Test for calculate_min_mortality_temp when blup=NULL.",
+  {
+    # define my expected values
+    expected_thresholds <- data.frame(
+      min_high_cold = c(-100, -100, -100),
+      high_moderate_cold = c(1.070975, 1.090602, 1.497259),
+      moderate_cold_OTR = c(10.5, 11.0, 10.5),
+      moderate_heat_OTR = c(20.5, 21.0, 21.0),
+      high_moderate_heat = c(20.5, 21.0, 21.0),
+      max_high_heat = c(100, 100, 100)
+    )
+    rownames(expected_thresholds) <- c("North West", "South East", "Wales")
+    expected_mintempregions <- c("North West" = 16, "South East" = 18, "Wales" = 16)
+    # obtain my results
+    data <- get_test_input_data(TEST_DATA_PATH)[[1]]
+    test_blup = readRDS("testdata/temperature_blup.rds")
+    returned <- calculate_min_mortality_temp(
+      df_list = data,
+      blup = NULL,
+      independent_cols = NULL,
+      varfun = "bs",
+      varper = c(10, 75, 90),
+      vardegree = 2L,
+      lag = 21L,
+      lagnk = 3L,
+      dfseas = 8L
+    )
+    # test that the returned results are correct
+    expect_equal(returned[[1]], expected_mintempregions, tolerance = 1e-6)
+    expect_equal(returned[[2]], expected_thresholds, tolerance = 1e-6)
+  }
+)
+
+test_that(
+  "Test for calculate_min_mortality_temp when blup is not NULL.",
+  {
+    # define my expected values
+    expected_thresholds <- data.frame(
+      min_high_cold = c(-100, -100, -100),
+      high_moderate_cold = c(1.070975, 1.090602, 1.497259),
+      moderate_cold_OTR = c(10.2, 10.7, 10.2),
+      moderate_heat_OTR = c(20.9, 21.3, 21.3),
+      high_moderate_heat = c(20.9, 21.3, 21.3),
+      max_high_heat = c(100, 100, 100)
+    )
+    rownames(expected_thresholds) <- c("North West", "South East", "Wales")
+    expected_mintempregions <- c("North West" = 16.10869, "South East" = 17.79293, "Wales" = 15.79192)
+    # obtain my results
+    data <- get_test_input_data(TEST_DATA_PATH)[[1]]
+    test_blup = readRDS("testdata/temperature_blup.rds")
+    returned <- calculate_min_mortality_temp(
+      df_list = data,
+      blup = test_blup,
+      independent_cols = NULL,
+      varfun = "bs",
+      varper = c(10, 75, 90),
+      vardegree = 2L,
+      lag = 21L,
+      lagnk = 3L,
+      dfseas = 8L
+    )
+    # test that the returned results are correct
+    expect_equal(returned[[1]], expected_mintempregions, tolerance = 1e-6)
+    expect_equal(returned[[2]], expected_thresholds, tolerance = 1e-6)
   }
 )
 
