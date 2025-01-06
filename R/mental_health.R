@@ -24,11 +24,12 @@ mh_read_and_format_data <- function(data_path,
                                  temperature_col,
                                  health_outcome_col) {
 
-  #TODO: Include file extension function to check data_path is a csv
-
-  df <- read.csv(data_path)
-
-  #TODO use read_input_data (check row.names argument)
+  # make sure data_path is a csv if a path is passed
+  if(is.character(data_path)) {
+    check_file_extension(data_path, ".csv", "data_path")
+  }
+  # read data
+  df <- read_input_data(data_path)
 
   if(is.null(region_col)) {
 
