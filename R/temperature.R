@@ -976,11 +976,7 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 
     output_year = max(df_list[[1]]$year)
 
-  } else {
-
-    output_year = output_year
   }
-
   # Regions-specific
   anregions <- matsim
   anregionslow <- apply(arraysim, c(1,2), quantile, 0.025)
