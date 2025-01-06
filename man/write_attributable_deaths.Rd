@@ -11,6 +11,7 @@ write_attributable_deaths(
   antot_bind,
   arregions_bind,
   artot_bind,
+  save_csv = FALSE,
   output_folder_path = NULL
 )
 }
