@@ -504,8 +504,6 @@ test_that(
       )
     )
     rownames(expected) <- c("North West", "South East", "Wales")
-    print(expected)
-    print(returned[[2]])
     expect_equal(data.frame(expected), data.frame(returned[[2]]), tolerance=1e-6)
   }
 )
