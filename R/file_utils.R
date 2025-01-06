@@ -82,7 +82,7 @@ read_input_data <- function(input_csv_path) {
   } else if (is.character(input_csv_path)) {
     check_file_extension(input_csv_path, ".csv", "input_csv_path")
     check_file_exists(input_csv_path, raise = TRUE)
-    df <- read.csv(input_csv_path, row.names = 1)
+    df <- read.csv(input_csv_path)
   } else {
     # Raise an error when the input_csv argument isn't valid
     stop(paste(
