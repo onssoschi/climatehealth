@@ -509,4 +509,76 @@ test_that(
 )
 
 
+test_that(
+  "Test that compute_attributable_rates produces the correct results.",
+  {
+    # read in test data
+    data <- get_test_input_data(TEST_DATA_PATH)[[1]]
+    attr_deaths <- readRDS("testdata/temperature_attributable_deaths.rds")
+    arraysim <- attr_deaths[[1]]
+    matsim <- attr_deaths[[2]]
+    # compute rates
+    returned <- compute_attributable_rates(data, 0, matsim, arraysim)
+    # test return size
+    expect_equal(
+      length(returned),
+      4,
+      info = "compute_attributable_rates returned an unexpected number of items"
+    )
+    anregions <- returned[[1]]
+    antot <- returned[[2]]
+    arregions <- returned[[3]]
+    artot <- returned[[4]]
+    # test anregions values
+    expect_equal(dim(anregions), c(21, 3), info = "The size of anregions is not as expected")
+    exp_anregions <- data.frame(
+      `North West` = c(3904.2489, 252.8935),
+      `South East` = c(4630.8474, 400.5894),
+      `Wales` = c(1976.08402, 61.04349)
+    )
+    rownames(exp_anregions) <- c("glob_cold", "glob_heat")
+    inf = "anregions from compute_attributable_rates not as expected"
+    expect_equal(data.frame(exp_anregions), data.frame(anregions[1:2, ]), tolerance = 1e-7, info = inf)
+    # test antot values
+    expect_equal(dim(antot), c(3, 7), info = "The size of antot is not as expected")
+    exp_antot <- data.frame(
+      glob_cold = c(10511.180, 9452.679, 13070.127),
+      glob_heat = c(714.5264, 549.7275, 973.8396),
+      moderate_cold = c(9373.979, 8193.062, 11702.196),
+      moderate_heat = c(0, 0, 0),
+      high_cold = c(1137.201, 1103.108, 1328.867),
+      high_heat = c(714.5264, 550.9789, 961.6515),
+      heatwave = c(633.2973, 486.1243, 841.5280)
+    )
+    rownames(exp_antot) <- c("antot", "antotlow", "antothigh")
+    inf = "antot from compute_attributable_rates not as expected"
+    expect_equal(data.frame(exp_antot), data.frame(antot), tolerance = 1e-6, info = inf)
+    # test arregions values
+    expect_equal(dim(arregions), c(21, 3), info = "The size of arregions is not as expected")
+    exp_arregions <- data.frame(
+      `North West` = c(260.28326, 16.85957),
+      `South East` = c(308.72316, 26.70596),
+      `Wales` = c(131.738935, 4.069566)
+    )
+    rownames(exp_arregions) <- c("glob_cold", "glob_heat")
+    inf = "arregions from compute_attributable_rates not as expected"
+    expect_equal(data.frame(exp_arregions), data.frame(arregions[1:2, ]), tolerance = 1e-7, info = inf)
+    # test artot values
+    expect_equal(dim(artot), c(3, 7), info = "The size of artot is not as expected")
+    exp_artot <- data.frame(
+      glob_cold = c(233.5818, 210.0595, 290.4473),
+      glob_heat = c(15.87836, 12.21617, 21.64088),
+      moderate_cold = c(208.3106, 182.0681, 260.0488),
+      moderate_heat = c(0, 0, 0),
+      high_cold = c(25.27114, 24.51352, 29.53038),
+      high_heat = c(15.87836, 12.24398, 21.37003),
+      heatwave = c(14.07327, 10.80276, 18.70062)
+    )
+    rownames(exp_artot) <- c("artot", "artotlow", "artothigh")
+    inf = "artot from compute_attributable_rates not as expected"
+    expect_equal(data.frame(exp_artot), data.frame(artot), tolerance = 1e-6, info = inf)
+  }
+)
+
+
 
