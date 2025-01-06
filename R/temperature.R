@@ -1129,24 +1129,24 @@ write_attributable_deaths <- function(avgtmean_wald,
 
     write.csv(wald_publication,
               file = paste(output_folder_path,
-                           'wald_test_results.csv',
+                           'heat_and_cold_wald_test_results.csv',
                            sep = ""))
 
     write.csv(anregions_publication,
               file = paste(output_folder_path,
-                           'attributable_deaths_regions.csv',
+                           'heat_and_cold_attributable_deaths_regions.csv',
                            sep = ""))
     write.csv(antot_bind,
               file = paste(output_folder_path,
-                           'attributable_deaths_total.csv',
+                           'heat_and_cold_attributable_deaths_total.csv',
                            sep = ""))
     write.csv(arregions_publication,
               file = paste(output_folder_path,
-                           'attributable_rates_regions.csv',
+                           'heat_and_cold_attributable_rates_regions.csv',
                            sep = ""))
     write.csv(artot_bind,
               file = paste(output_folder_path,
-                           'attributable_rates_total.csv',
+                           'heat_and_cold_attributable_rates_total.csv',
                            sep=""))
   }
   return(list(wald_publication, anregions_publication, antot_bind,
@@ -1161,7 +1161,7 @@ write_attributable_deaths <- function(avgtmean_wald,
 #' list of dataframes for each region.
 #' @param output_name The name of the output file. (.csv and .pdf added
 #' accordingly).
-#' @param output_all Whether or not to output all geographical regions.
+#' @param aggregate_outputs Whether or not to output all geographical regions.
 #' @param output_folder_path The directory to output the resultant data/plots to.
 #' @param save_fig Whether to save output figure (Bool)
 #' @param save_csv Whether to save output CSVs (Bool)
@@ -1205,7 +1205,7 @@ write_attributable_deaths <- function(avgtmean_wald,
 plot_and_write <- function(
     df_list,
     output_name,
-    output_all = TRUE,
+    aggregate_outputs = FALSE,
     output_folder_path = "",
     save_fig = TRUE,
     save_csv = TRUE,
@@ -1245,7 +1245,7 @@ plot_and_write <- function(
     par(mfrow=c(grid[1],  grid[2]))
   }
   # structure the layout of the pdf to output
-  if (output_all) {
+  if (aggregate_outputs) {
     return(plot_and_write_relative_risk_all(df_list = df_list,
                                             mintempregions = mintempregions,
                                             save_fig = save_fig,
@@ -1904,8 +1904,8 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
     c(output_df, temp_df) %<-%
       plot_and_write(
         df_list = df_list_,
-        output_name = "output_all",
-        output_all = TRUE,
+        output_name = "heat_and_cold",
+        aggregate_outputs = TRUE,
         output_folder_path = output_folder_path_,
         save_fig = save_fig_,
         save_csv = save_csv_,
@@ -1923,8 +1923,8 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
     c(output_df, temp_df) %<-%
       plot_and_write(
         df_list = df_list_,
-        output_name = "output_all_regions",
-        output_all = FALSE,
+        output_name = "heat_and_cold",
+        aggregate_outputs = FALSE,
         output_folder_path = output_folder_path_,
         blup = blup_,
         mintempregions = mintempregions_,
