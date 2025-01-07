@@ -508,17 +508,23 @@ test_that(
   }
 )
 
+compute_rates <- function(data, o_year){
+  # get attributable deaths
+  attr_deaths <- readRDS("testdata/temperature_attributable_deaths.rds")
+  arraysim <- attr_deaths[[1]]
+  matsim <- attr_deaths[[2]]
+  # compute rates
+  returned <- compute_attributable_rates(data, o_year, matsim, arraysim)
+  return(returned)
+}
 
 test_that(
   "Test that compute_attributable_rates produces the correct results.",
   {
     # read in test data
     data <- get_test_input_data(TEST_DATA_PATH)[[1]]
-    attr_deaths <- readRDS("testdata/temperature_attributable_deaths.rds")
-    arraysim <- attr_deaths[[1]]
-    matsim <- attr_deaths[[2]]
     # compute rates
-    returned <- compute_attributable_rates(data, 0, matsim, arraysim)
+    returned <- compute_rates(data, 0)
     # test return size
     expect_equal(
       length(returned),
@@ -580,5 +586,48 @@ test_that(
   }
 )
 
+# Tests for write_attributable_deaths
+
+test_that(
+  "Test that write_attributable_deaths writes to file correctly.",
+  {
+    # setup a temp directory for outputs
+    temp_dir = base::tempdir()
+    # load data
+    data <- get_test_input_data(TEST_DATA_PATH)[[1]]
+    rates <- compute_rates(data, 0)
+    # write results
+    write_attributable_deaths(
+      avgtmean_wald = NULL,
+      rangetmean_wald = NULL,
+      anregions_bind = rates[[1]],
+      antot_bind = rates[[2]],
+      arregions_bind = rates[[3]],
+      artot_bind = rates[[4]],
+      save_csv = TRUE,
+      output_folder_path = temp_dir
+    )
+    # assert files were correctly written
+    filenames <- c(
+      "heat_and_cold_attributable_deaths_regions.csv",
+      "heat_and_cold_attributable_deaths_total.csv",
+      "heat_and_cold_attributable_rates_regions.csv",
+      "heat_and_cold_attributable_rates_total.csv",
+      "heat_and_cold_wald_test_results.csv"
+    )
+    sizes <- list(c(3, 22), c(3, 8), c(3, 22), c(3, 8), c())
+    for (i in 1:5){
+      fpath <- file.path(temp_dir, filenames[i])
+      expect_true(file.exists(fpath), info = paste(fpath, "does not exist"))
+      if (i==5){
+        # empty wald file
+        invisible()
+      } else {
+        expect_equal(dim(read.csv(fpath)), sizes[[i]], info = "Outputted csv file not as expected")
+      }
+    }
+
+  }
+)
 
 
