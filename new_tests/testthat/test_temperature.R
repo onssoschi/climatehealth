@@ -630,4 +630,176 @@ test_that(
   }
 )
 
+# Tests for plot_and_write_relative_risk_all
 
+get_plot_dummy_data <- function(){
+  df_list <- get_test_input_data(TEST_DATA_PATH)[[1]]
+  cb <- readRDS("testdata/temperature_cb.rds")
+  model <- readRDS("testdata/temperature_model.rds")
+  mintempregions <- c("North West" = 16.10869, "South East" = 17.79293, "Wales" = 15.79192)
+  varfun <- "bs"
+  varper <- c(10, 75, 90)
+  vardegree <- 2L
+  data <- list(df_list, cb, model, mintempregions, varfun, varper, vardegree)
+  return(data)
+}
+
+test_that(
+  "Test that plot_and_write_relative_risk_all behaves as expected when nothing is saved.",
+  {
+    # create temp save directory
+    temp_dir = tempdir()
+    data <- get_plot_dummy_data()
+    plot_and_write_relative_risk_all(
+      df_list = data[[1]],
+      cb = data[[2]],
+      model = data[[3]],
+      mintempregions = data[[4]],
+      save_fig = FALSE,
+      save_csv = FALSE,
+      csv_output_path = file.path(temp_dir, "temperature_test.csv"),
+      dependent_col = "death",
+      varfun = data[[5]],
+      varper = data[[6]],
+      vardegree = data[[7]]
+    )
+    # assert nothing is saved
+    expect_false(file.exists(file.path(temp_dir, "temperature_test.csv")), info = "file saved unexpectedly")
+    # clear dir
+    unlink(paste0(temp_dir, "/*"), recursive = TRUE)
+  }
+)
+
+
+test_that(
+  "Test that plot_and_write_relative_risk_all behaves as expected when data/figures are saved.",
+  {
+    # get data
+    data <- get_plot_dummy_data()
+    df_list <- data[[1]]
+    temp_dir = tempdir()
+    # setup figure
+    grid <- create_grid(length(df_list))
+    fig_fpath <- file.path(temp_dir, "temperature_fig.pdf")
+    pdf(paste(fig_fpath, sep = ''),
+        width=grid[1]*4, height=grid[2]*4)
+
+    par(mfrow=c(grid[1],  grid[2]))
+    # write plots and csv's
+    plot_and_write_relative_risk_all(
+      df_list = data[[1]],
+      cb = data[[2]],
+      model = data[[3]],
+      mintempregions = data[[4]],
+      save_fig = TRUE,
+      save_csv = TRUE,
+      csv_output_path = file.path(temp_dir, "temperature_test.csv"),
+      dependent_col = "death",
+      varfun = data[[5]],
+      varper = data[[6]],
+      vardegree = data[[7]]
+    )
+    # assert that the data is saved
+    expect_true(file.exists(file.path(temp_dir, "temperature_test.csv")), info = "csv file was not saved")
+    expect_true(file.exists(fig_fpath), info = "plots were not saved")
+    unlink(paste0(temp_dir, "/*"), recursive = TRUE)
+  }
+)
+
+# Tests for plot_and_write_relative_risk
+
+get_plot_dummy_data <- function(){
+  # dataset
+  df_list <- get_test_input_data(TEST_DATA_PATH)[[1]]
+  # model vars
+  varfun <- "bs"
+  varper <- c(10, 75, 90)
+  vardegree <- 2L
+  lag <- 21L
+  lagnk <- 3
+  dfseas <- 8L
+  # calculated variables
+  min_mortality_temp <- calculate_min_mortality_temp(
+    df_list = df_list,
+    blup = NULL,
+    independent_cols = NULL,
+    varfun = varfun,
+    varper = varper,
+    vardegree = vardegree,
+    lag = lag,
+    lagnk = lagnk,
+    dfseas = dfseas
+  )
+  mintempregions <- min_mortality_temp[[1]]
+  an_thresholds <- min_mortality_temp[[2]]
+  data <- list(df_list, varfun, varper, vardegree, lag, lagnk, dfseas, mintempregions, an_thresholds)
+  return(data)
+}
+
+test_that(
+  "Test that plot_and_write_relative_risk behaves as expected when nothing is saved.",
+  {
+    # create temp save directory
+    temp_dir = tempdir()
+    data <- get_plot_dummy_data()
+    plot_and_write_relative_risk(
+      df_list = data[[1]],
+      blup = NULL,
+      mintempregions = data[[8]],
+      an_thresholds = data[[9]],
+      save_fig = FALSE,
+      save_csv = FALSE,
+      csv_output_path = file.path(temp_dir, "temperature_test_2.csv"),
+      independent_cols = NULL,
+      varfun = data[[2]],
+      varper = data[[3]],
+      vardegree = data[[4]],
+      lag = data[[5]],
+      lagnk = data[[6]],
+      dfseas = data[[7]]
+    )
+    # assert nothing is saved
+    expect_false(file.exists(file.path(temp_dir, "temperature_test_2.csv")), info = "file saved unexpectedly")
+    # clear dir
+    unlink(paste0(temp_dir, "/*"), recursive = TRUE)
+  }
+)
+
+
+test_that(
+  "Test that plot_and_write_relative_risk behaves as expected when data/figures are saved.",
+  {
+    # get data
+    data <- get_plot_dummy_data()
+    df_list <- data[[1]]
+    temp_dir = tempdir()
+    # setup figure
+    grid <- create_grid(length(df_list))
+    fig_fpath <- file.path(temp_dir, "temperature_fig_2.pdf")
+    pdf(paste(fig_fpath, sep = ''),
+        width=grid[1]*4, height=grid[2]*4)
+
+    par(mfrow=c(grid[1],  grid[2]))
+    # write plots and csv's
+    plot_and_write_relative_risk(
+      df_list = data[[1]],
+      blup = NULL,
+      mintempregions = data[[8]],
+      an_thresholds = data[[9]],
+      save_fig = TRUE,
+      save_csv = TRUE,
+      csv_output_path = file.path(temp_dir, "temperature_test_2.csv"),
+      independent_cols = NULL,
+      varfun = data[[2]],
+      varper = data[[3]],
+      vardegree = data[[4]],
+      lag = data[[5]],
+      lagnk = data[[6]],
+      dfseas = data[[7]]
+    )
+    # assert that the data is saved
+    expect_true(file.exists(file.path(temp_dir, "temperature_test_2.csv")), info = "csv file was not saved")
+    expect_true(file.exists(fig_fpath), info = "plots were not saved")
+    unlink(paste0(temp_dir, "/*"), recursive = TRUE)
+  }
+)

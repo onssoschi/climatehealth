@@ -1600,9 +1600,9 @@ plot_and_write_relative_risk_all <- function(df_list,
          xlab = expression(paste("Temperature (", degree, "C)")),
          main = "All Regions"
     )
+    abline(h = 1)
   }
 
-  abline(h = 1)
 
   optimal_meta_lower <- as.numeric(names(
     which.min(which(pred$allRRfit >= 1 & pred$allRRfit <= 1.1))))
@@ -1684,7 +1684,7 @@ plot_and_write_relative_risk_all <- function(df_list,
   relative_risk_vector <- pred$allRRfit
   upper_vector <- pred$allRRhigh
   lower_vector <- pred$allRRlow
-  region_vector <- rep('all_regions', length(pred$predvar)) #TODO: review what if not England data?
+  region_vector <- rep('all_regions', length(pred$predvar))
   temp_vector <- pred$predvar
   cen_vector <- rep(cen, length(pred$predvar))
   temperature_vector <- data$temp
