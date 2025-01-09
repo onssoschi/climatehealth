@@ -31,17 +31,19 @@ filter_on_rr_distribution <- function(df,
   # Raise an error if the RR distribution length is out of range (5-15)
   if(RR_distribution_length < lower_range) {
 
-    stop("Timeseries to calculate the RR is less than 5 years.")
+    stop(paste0("Timeseries to calculate the RR is less than ", lower_range, " years."))
 
   } else if (RR_distribution_length > upper_range) {
 
-    stop("Timeseries to calculate the RR is more than 15 years.")
+    stop(paste0("Timeseries to calculate the RR is more than ", upper_range, " years."))
 
   }
   # Filter
   df <- df %>%
     dplyr::filter(year >= (output_year - RR_distribution_length + 1)
   & year <= output_year)
+
+  return(df)
 }
 
 
@@ -149,6 +151,8 @@ define_model <- function(dataset,
     'splines::ns(date, df = dfseas * length(unique(year)))'
   )
 
+  #TODO: add type check for independent_cols
+
   if (!is.null(independent_cols)) {
 
     # normalize type
@@ -160,9 +164,9 @@ define_model <- function(dataset,
     for (col in independent_cols){
       if (!is.character(col)){
         stop(
-          cat(
+          paste0(
             "'independent_cols' expected a vector of strings or a string. Got",
-            typeof(i)
+            typeof(col)
           )
         )
       }
@@ -410,7 +414,6 @@ define_and_validate_optimal_temps <- function(optimal_temp_range,
     which.min(which(prediction[[RR_fit_col]] >= 1 & prediction[[RR_fit_col]] <= 1.1))))
   optimal_temp_range[index, "upper"] <- as.numeric(names(
     which.max(which(prediction[[RR_fit_col]] >= 1 & prediction[[RR_fit_col]] <= 1.1))))
-
   below_one <- which(prediction[[RR_fit_col]] < 1)
   above_OTR <- which(
     as.numeric(names(prediction[[RR_fit_col]])) > optimal_temp_range[index, "upper"]
@@ -420,7 +423,7 @@ define_and_validate_optimal_temps <- function(optimal_temp_range,
   )
   if (length(which((below_one %in% above_OTR) | (below_one %in% below_OTR))) > 0) {
   # TODO: Create a better warning
-    print(warning("Predicted RR goes below 1 in the ends"))
+    warning("Predicted RR goes below 1 in the ends")
   }
 
   return (optimal_temp_range)
@@ -467,7 +470,6 @@ calculate_min_mortality_temp <-  function(df_list,
                                           lag,
                                           lagnk,
                                           dfseas) {
-
   # Assert that df_list is a list of dataframes
   is_list_of_dfs(list_ = df_list)
 
@@ -974,11 +976,7 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 
     output_year = max(df_list[[1]]$year)
 
-  } else {
-
-    output_year = output_year
   }
-
   # Regions-specific
   anregions <- matsim
   anregionslow <- apply(arraysim, c(1,2), quantile, 0.025)
@@ -1602,9 +1600,9 @@ plot_and_write_relative_risk_all <- function(df_list,
          xlab = expression(paste("Temperature (", degree, "C)")),
          main = "All Regions"
     )
+    abline(h = 1)
   }
 
-  abline(h = 1)
 
   optimal_meta_lower <- as.numeric(names(
     which.min(which(pred$allRRfit >= 1 & pred$allRRfit <= 1.1))))
@@ -1686,7 +1684,7 @@ plot_and_write_relative_risk_all <- function(df_list,
   relative_risk_vector <- pred$allRRfit
   upper_vector <- pred$allRRhigh
   lower_vector <- pred$allRRlow
-  region_vector <- rep('all_regions', length(pred$predvar)) #TODO: review what if not England data?
+  region_vector <- rep('all_regions', length(pred$predvar))
   temp_vector <- pred$predvar
   cen_vector <- rep(cen, length(pred$predvar))
   temperature_vector <- data$temp
