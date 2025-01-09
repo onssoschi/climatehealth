@@ -16,11 +16,11 @@
 is_list_of_dfs <- function(list_,
                            raise = TRUE,
                            param_nm = "df_list") {
-  invalid <- FALSE
+  valid <- TRUE
   if (is.list(list_)) {
     for (item in list_) {
       if (!is.data.frame(item)) {
-        invalid <- TRUE
+        valid <- FALSE
         if (raise) {
           stop(
             paste(
@@ -31,14 +31,15 @@ is_list_of_dfs <- function(list_,
             )
           )
         }
+        break
       }
     }
   } else {
-    invalid <- TRUE
+    valid <- FALSE
     if (raise) {
       stop(paste(param_nm, " expected a list. Got ", toString(typeof(list_)),
                  sep = ""))
     }
   }
-  return (invalid)
+  return (valid)
 }
