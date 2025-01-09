@@ -10,7 +10,7 @@ test_that(
     test_df2 <- data.frame(row1 = c(4, 5, 6), row2 = c("d", "e", "f"))
     test_list <- list(test_df1, test_df2)
     valid <- expect_no_error(is_list_of_dfs(test_list))
-    expect_true(valid, info = "is_list_of_dfs was expected to return T. Got F")
+    expect_true(valid, info = "is_list_of_dfs was expected to return T. Got F.")
   }
 )
 
