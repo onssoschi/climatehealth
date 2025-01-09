@@ -11,7 +11,7 @@ test_that(
     )
     expect_true(
       exists,
-      info = "check_file_exists() was expected to return TRUE. Got FALSE"
+      info = "check_file_exists() was expected to return TRUE. Got FALSE."
     )
   }
 )
@@ -42,7 +42,7 @@ with_parameters_test_that(
   "Passing tests for check_file_extension().",
   {
     valid <- expect_no_error(check_file_extension(fpath, exp_ext))
-    expect_true(valid, info = "check_file_extension() was expected to return TRUE. Got FALSE")
+    expect_true(valid, info = "check_file_extension() was expected to return TRUE. Got FALSE.")
   },
   fpath = c("test/test.csv",  "tester.csv"),
   exp_ext = c(".csv", "csv"),

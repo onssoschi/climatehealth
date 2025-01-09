@@ -25,7 +25,6 @@
 
 # Output Folders
 tests/testthat/testdata/*
-new_tests/testthat/testdata/*
 
 # Test Data Exclusions
 !tests/testthat/config.yml
