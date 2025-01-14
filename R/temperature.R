@@ -1237,6 +1237,9 @@ plot_and_write <- function(
   # create pdf object
   if (save_fig == TRUE) {
     grid <- create_grid(length(df_list))
+    if (aggregate_outputs) {
+      grid <- c(1, 1)
+    }
     pdf(paste(pdf_output_path, sep = ''),
         width=grid[1]*4, height=grid[2]*4)
 
