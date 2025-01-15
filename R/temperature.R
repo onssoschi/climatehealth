@@ -592,6 +592,7 @@ calculate_min_mortality_temp <-  function(df_list,
   # Country-specific points of minimum mortality
   (minperccountry <- median(minpercregions_))
 
+
   return(list(mintempregions = mintempregions_, an_thresholds))
 
 }
@@ -1863,6 +1864,14 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
       lagnk = lagnk_,
       dfseas = dfseas_
     )
+
+  if (save_csv_) {
+    thresholds_fpath <- file.path(
+      output_folder_path_,
+      "heat_and_cold_an_thresholds.csv"
+    )
+    write.csv(an_thresholds_, thresholds_fpath)
+  }
 
   c(arraysim_, matsim_) %<-%
     compute_attributable_deaths(
