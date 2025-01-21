@@ -14,7 +14,7 @@
 filter_on_rr_distribution <- function(df,
                                       RR_distribution_length = 0,
                                       lower_range = 5,
-                                      upper_range = 15,
+                                      upper_range = 200,
                                       output_year = 0) {
   # Set the output year if the user has not passed one.
   if (output_year == 0) {
