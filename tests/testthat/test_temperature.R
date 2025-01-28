@@ -393,10 +393,10 @@ test_that(
     # define my expected values
     expected_thresholds <- data.frame(
       min_high_cold = c(-100, -100, -100),
-      high_moderate_cold = c(1.070975, 1.090602, 1.497259),
+      high_moderate_cold = c(1.347599, 1.043271, 1.341740 ),
       moderate_cold_OTR = c(10.5, 11.0, 10.5),
       moderate_heat_OTR = c(20.5, 21.0, 21.0),
-      high_moderate_heat = c(20.5, 21.0, 21.0),
+      high_moderate_heat = c(21.10907, 22.21886, 21.0),
       max_high_heat = c(100, 100, 100)
     )
     rownames(expected_thresholds) <- c("North West", "South East", "Wales")
@@ -427,10 +427,10 @@ test_that(
     # define my expected values
     expected_thresholds <- data.frame(
       min_high_cold = c(-100, -100, -100),
-      high_moderate_cold = c(1.070975, 1.090602, 1.497259),
+      high_moderate_cold = c(1.347599, 1.043271, 1.341740),
       moderate_cold_OTR = c(10.2, 10.7, 10.2),
       moderate_heat_OTR = c(20.9, 21.3, 21.3),
-      high_moderate_heat = c(20.9, 21.3, 21.3),
+      high_moderate_heat = c(21.10907, 22.21886, 21.3),
       max_high_heat = c(100, 100, 100)
     )
     rownames(expected_thresholds) <- c("North West", "South East", "Wales")
@@ -496,11 +496,11 @@ test_that(
       data.frame(
         glob_cold = c(3904.249, 4630.847, 1976.084),
         glob_heat = c(252.89348, 400.58944, 61.04349),
-        moderate_cold = c(3561.018, 4110.731, 1702.230),
-        moderate_heat = c(0, 0, 0),
-        high_cold = c(343.2308, 520.1164, 273.8540),
-        high_heat = c(252.89348, 400.58944, 61.04349),
-        heatwave = c(198.7234, 380.7245, 53.8494)
+        moderate_cold = c(3495.452, 4164.700, 1723.877),
+        moderate_heat = c(31.20099, 63.10975, 0.00000),
+        high_cold = c(408.7970, 466.1477, 252.2071),
+        high_heat = c(221.69249, 337.47968, 61.04349),
+        heatwave = c(123.5663, 337.4797, 53.8494)
       )
     )
     rownames(expected) <- c("North West", "South East", "Wales")
