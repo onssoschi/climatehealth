@@ -572,8 +572,7 @@ calculate_min_mortality_temp <-  function(df_list,
   # get only values for output year
   target_year_df <- bind_rows(df_list) %>%
     filter(year==max(year))
-  target_year_df_list <<- aggregate_by_column(target_year_df, "regnames")
-  df_list <- df_list
+  target_year_df_list <- aggregate_by_column(target_year_df, "regnames")
   # calculate percentiles
   per <- t(sapply(target_year_df_list, function(x)
     quantile(x$temp, c(2.5, 97.5) / 100, na.rm = TRUE)))
