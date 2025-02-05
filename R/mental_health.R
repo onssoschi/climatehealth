@@ -63,32 +63,37 @@ mh_read_and_format_data <- function(data_path,
 #' @param data A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
 #' @param var_fun Character. Exposure function for argvar
-#' (see dlnm::crossbasis). Defaults to 'ns'.
+#' (see dlnm::crossbasis). Defaults to 'bs'.
+#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
+#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
 #' @param var_dof Integer. Degrees of freedom in exposure function for argvar
-#' (see dlnm:crossbasis). Defaults to 4.
+#' (see dlnm::crossbasis). Defaults to 5.
 #' @param lag_fun Character. Exposure function for arglag
-#' (see dlnm::crossbasis). Defaults to 'ns'.
-#' @param lag_dof Integer. Degrees of freedom in exposure function for arglag
-#' (see dlnm:crossbasis). Defaults to 4.
-#' @param lag_days Integer. Maximum lag. Defaults to 3.
-#' (see dlnm:crossbasis).
+#' (see dlnm::crossbasis). Defaults to 'strata'.
+#' @param lag_breaks Integer. Internal cut-off point defining the strata for arglag
+#' (see dlnm::crossbasis). Defaults to 1.
+#' @param lag_days Integer. Maximum lag. Defaults to 2.
+#' (see dlnm::crossbasis).
 #'
 #' @returns A list of cross-basis matrices by region
 
 mh_create_crossbasis <- function(data,
-                              var_fun = "ns",
-                              var_dof = 4,
-                              lag_fun = "ns",
-                              lag_dof = 4,
-                              lag_days = 3) {
+                              var_fun = "bs",
+                              var_degree = 2,
+                              var_dof = 5,
+                              lag_fun = "strata",
+                              lag_breaks = 1,
+                              lag_days = 2) {
 
   cb_list <- list()
 
   for(reg in names(data)){
 
     region_data <- data[[reg]]
-    argvar <- list(fun = var_fun, df = var_dof)
-    arglag <- list(fun = lag_fun, df = lag_dof)
+    argvar <- list(fun = var_fun,
+                   degree = var_degree,
+                   df = var_dof)
+    arglag <- list(fun = lag_fun, breaks = lag_breaks)
     cb <- dlnm::crossbasis(region_data$temp, lag = lag_days, argvar = argvar, arglag = arglag)
 
     cb_list[[reg]] <- cb
@@ -305,15 +310,18 @@ mh_save_results <- function(results,
 #' @param health_outcome_col Character. Name of the column in the dataframe that
 #' contains the health outcome count column (e.g. number of deaths, hospital
 #' admissions).
-#' @param var_fun Character. Exposure function (see dlnm::crossbasis). Defaults
-#' to 'ns'.
+#' @param var_fun Character. Exposure function for argvar
+#' (see dlnm::crossbasis). Defaults to 'bs'.
+#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
+#' (see dlnm:crossbasis). Defaults to 2 (quadratic).
 #' @param var_dof Integer. Degrees of freedom in exposure function
-#' (see dlnm:crossbasis). Defaults to 4.
-#' @param lag_fun Character. Exposure function (see dlnm::crossbasis). Defaults
-#' to 'ns'.
-#' @param lag_dof Integer. Degrees of freedom in exposure function
-#' (see dlnm:crossbasis). Defaults to 4.
-#' @param lag_days Integer. Maximum lag (see dlnm:crossbasis). Defaults to 3.
+#' (see dlnm::crossbasis). Defaults to 5.
+#' @param lag_fun Character. Exposure function for arglag
+#' (see dlnm::crossbasis). Defaults to 'strata'.
+#' @param lag_breaks Integer. Internal cut-off point defining the strata for arglag
+#' (see dlnm:crossbasis). Defaults to 1.
+#' @param lag_days Integer. Maximum lag. Defaults to 2.
+#' (see dlnm:crossbasis).
 #' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
 #' FALSE.
 #' @param save_csv Boolean. Whether to save the results as a CSV. Defaults to
@@ -329,11 +337,12 @@ suicides_heat_do_analysis <- function(data_path,
                                       region_col = NULL,
                                       temperature_col,
                                       health_outcome_col,
-                                      var_fun = "ns",
-                                      var_dof = 4,
-                                      lag_fun = "ns",
-                                      lag_dof = 4,
-                                      lag_days = 3,
+                                      var_fun = "bs",
+                                      var_degree = 2,
+                                      var_dof = 5,
+                                      lag_fun = "strata",
+                                      lag_breaks = 1,
+                                      lag_days = 2,
                                       save_fig = FALSE,
                                       save_csv = FALSE,
                                       output_folder_path = NULL) {
@@ -345,9 +354,10 @@ suicides_heat_do_analysis <- function(data_path,
                              health_outcome_col = health_outcome_col)
   cb_list <- mh_create_crossbasis(data = df_list,
                                var_fun = var_fun,
+                               var_degree = var_degree,
                                var_dof = var_dof,
                                lag_fun = lag_fun,
-                               lag_dof = lag_dof,
+                               lag_breaks = lag_breaks,
                                lag_days = lag_days)
 
   model_list <- mh_casecrossover_dlnm(data = df_list,
@@ -373,6 +383,3 @@ suicides_heat_do_analysis <- function(data_path,
   return(results)
 
 }
-
-
-
