@@ -59,7 +59,7 @@ load_stunted_data <- function(file_path) {
 # ===========================================
 
 # Define file path
-file_path <- "C:/Users/23350/Downloads/prof Eric2 R/prof Eric R/Malnutrition-RIPS GHANA/Stunting_FINAL_DATA.csv"
+file_path <- "C:/Users/23350/Documents/GitHub/climatehealth/climatehealth/Malnutrition RIPS Ghana/Stunted_FINAL_Imputed.csv"
 
 # Load the dataset
 df <- load_stunted_data(file_path)
@@ -437,6 +437,7 @@ evaluate_logistic_model <- function(model, test_data, target_col) {
 # ===========================================
 # ========== Execute Model Evaluation =======
 # ===========================================
+
 
 evaluate_logistic_model(logistic_model, test_set, target_column)
 

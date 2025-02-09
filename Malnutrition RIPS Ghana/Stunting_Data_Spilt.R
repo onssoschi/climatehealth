@@ -47,7 +47,7 @@ process_data <- function(file_path, target_col = "child_Stunted", test_size = 0.
 
 # ======================= USAGE ==========================
 # Run the function with your dataset file path
-data_splits <- process_data("C:/Users/kobby/Downloads/prof Eric R/Peter-Stunnting/Stunted_FINAL_Imputed_Scaled.csv")
+data_splits <- process_data("C:/Users/23350/Documents/GitHub/climatehealth/climatehealth/Malnutrition RIPS Ghana/Stunted_FINAL_Imputed.csv")
 
 # Extract training and testing sets
 train_set <- data_splits$train

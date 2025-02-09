@@ -83,5 +83,5 @@ perform_stat_analysis <- function(data) {
   ))
 }
 
-df <- read_csv("C:/Users/kobby/Downloads/prof Eric R/Peter-Stunnting/Stunted_FINAL_Imputed_Scaled.csv")
+df <- read_csv("C:/Users/23350/Documents/GitHub/climatehealth/climatehealth/Malnutrition RIPS Ghana/Stunted_FINAL_Imputed.csv")
 stats <- perform_stat_analysis(df)

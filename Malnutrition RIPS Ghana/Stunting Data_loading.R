@@ -32,4 +32,4 @@ load_stunted_data <- function(file_path) {
   })
 }
 
-df <- load_stunted_data("C:/Users/kobby/Downloads/prof Eric R/Peter-Stunnting/Stunted_FINAL_Imputed_Scaled.csv")
+df <- load_stunted_data("C:/Users/23350/Documents/GitHub/climatehealth/climatehealth/Malnutrition RIPS Ghana/Stunted_FINAL_Imputed.csv")
