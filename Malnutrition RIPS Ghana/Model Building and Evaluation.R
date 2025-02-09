@@ -93,8 +93,4 @@ logistic_results <- train_logistic_model(train_set, test_set)
 
 # 2. Train model with selected variables
 logistic_results <- train_logistic_model(train_set, test_set, 
-                                         include_vars = c("Child_age", "householdsize", "rainfall_2020"))
-
-# 3. Train model excluding specific variables
-logistic_results <- train_logistic_model(train_set, test_set, 
-                                         exclude_vars = c("div_cat", "Use_net", "Mother_workstatus", "Child_age"))
+                                         include_vars = c("Child_age", "mean_temperature_2020","Sex_child","Mother_workstatus","Age_mother","Household_location","Child_fever","Child_diarr","mother_education","Household_wealth"))
