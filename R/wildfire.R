@@ -680,6 +680,82 @@ save_results <- function(results,
   }
 }
 
+#' Splits data by region if relative_risk_by_region config option is TRUE
+#'
+#' @description Splits data by region if relative_risk_by_region config option is 
+#' TRUE. If true data for each individual region is passed to casecrossover_quasipoisson
+#' to calculate RR by region. If false RR is calculated for the entire dataset.
+#'
+#' @param data Dataframe containing a daily time series of climate and health
+#' data from which to fit models.
+#' @param scale_factor Numeric. The value to divide the wildfire PM2.5
+#' concentration variables by for alternative interpretation of outputs.
+#' Corresponds to the unit increase in wildfire PM2.5 to give the model
+#' estimates and relative risks (e.g. scale_factor = 10 corresponds to estimates
+#' and relative risks representing impacts of a 10 unit increase in wildfire PM2.5)
+#' Setting this parameter to 0 or 1 leaves the variable unscaled.
+#' @param wildfire_lag Integer. The maximum number of days for which to calculate
+#' lagged results for wildfire PM2.5. Default is 3.
+#' @param relative_risk_by_region Bool. Whether to calculate Relative Risk by region.
+#' Default: FALSE
+#' @param save_fig Bool. Whether or not to save a figure showing residuals vs
+#' fitted values for each lag. Defaults to FALSE.
+#' @param output_folder_path String. Where to save the figure. Defaults to NULL.
+#' @param print_model_summaries Bool. Whether to print the model summaries to
+#' console. Defaults to FALSE.
+#'
+#' @returns Dataframe of relative risk and confidence intervals for
+#' each lag of wildfire-related PM2.5. Split by region if set in config.
+
+relative_risk_by_region <- function(data,
+                                    scale_factor = 10,
+                                    wildfire_lag = 3,
+                                    relative_risk_by_region = FALSE,
+                                    save_fig = FALSE,
+                                    output_folder_path = NULL,
+                                    print_model_summaries = FALSE){
+  if(relative_risk_by_region){
+    
+    df_list <- split(data, f = data$regnames)
+    
+    results_list <- list()
+    
+    for (i in seq(df_list)) {
+      
+      region_data <- df_list[[i]]
+      region_name <- names(df_list)[i] # Get region name
+      
+      region_results <- casecrossover_quasipoisson(data = region_data,
+                                                   scale_factor = scale_factor,
+                                                   wildfire_lag = wildfire_lag,
+                                                   output_folder_path = output_folder_path,
+                                                   save_fig = save_fig,
+                                                   print_model_summaries = print_model_summaries)
+      
+      region_results$region_name <- region_name
+      
+      results_list[[i]] <- region_results
+      
+    }
+    
+    results_all <- do.call(rbind, results_list)
+    row.names(results_all) <- NULL
+    
+    return(results_all)
+    
+  } else {
+    results <- casecrossover_quasipoisson(data = data,
+                                          scale_factor = scale_factor,
+                                          wildfire_lag = wildfire_lag,
+                                          output_folder_path = output_folder_path,
+                                          save_fig = save_fig,
+                                          print_model_summaries = print_model_summaries)
+    
+    return(results)
+  }
+  
+}
+
 #' Run pipeline to analyse the impact of wildfire-related PM2.5 on a health
 #' outcome using a time-stratified case-crossover approach.
 #'
