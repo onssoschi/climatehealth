@@ -31,7 +31,7 @@ create_correlation_matrix <- function(
   return (corr_df)
 }
 
-create_columns_summaries <- function(
+create_column_summaries <- function(
     df,
     columns = NULL
 ) {
@@ -62,3 +62,29 @@ create_columns_summaries <- function(
   sums[, "IQR"] <- (sums[, '3rd Qu.'] - sums[, '1st Qu.'])
   return(sums)
 }
+
+create_na_summary <- function(
+    df,
+    columns = NULL
+) {
+  # use all columns if columns=NULL
+  if (is.null(columns)) {
+    columns <- colnames(df)
+  }
+  # assert columns is a vector
+  if (!is.vector(columns)) {
+    stop("'columns' expected a vector of column names.")
+  }
+  # assert columns exist in the dataset
+  for (col in columns) {
+    if (!(col %in% colnames(df))) {
+      stop(paste0("Column ", col, " not in dataset."))
+    }
+  }
+  na_counts <- sapply(df_list[[1]], function(y) sum(length(which(is.na(y)))))
+  na_counts <- data.frame(na_counts)
+  colnames(na_counts) <- c("na_count")
+  return(na_counts)
+}
+
+

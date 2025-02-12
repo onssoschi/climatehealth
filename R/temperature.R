@@ -1723,6 +1723,137 @@ plot_and_write_relative_risk_all <- function(df_list,
 
 }
 
+heat_and_cold_descriptive_stats_core <- function(
+    df,
+    output_path,
+    title,
+    correlation_method = "pearson",
+    dist_columns = c("temp"),
+    ma_days = 100,
+    ma_sides = 2,
+    dependent_col = "dependent",
+    independent_cols = c("temp")
+) {
+  # get numeric columns
+  numeric_cols <- colnames(select_if(df, is.numeric))
+  # get dataframe summary
+  full_summary <- create_column_summaries(df, numeric_cols)
+  # plot correlation matrixe
+  full_corr <- create_correlation_matrix(df, numeric_cols, correlation_method)
+  corr_path <- file.path(output_path, "correlation_matrix.png")
+  plot_correlation_matrix(
+    full_corr,
+    paste0("Correlation Matrix for the Temperature Dataset \n(", title, ")"),
+    corr_path
+  )
+  # Column distributions
+  dist_path <- file.path(output_path, "column_distributions.pdf")
+  plot_distributions(
+    df,
+    dist_columns,
+    paste0("Column Distributions for the Temperature dataset \n(", title, ")"),
+    T,
+    dist_path
+  )
+  # Count NAs and visualise
+  na_counts_path <- file.path(output_path, "na_counts.pdf")
+  na_counts <- create_na_summary(df)
+  pdf(na_counts_path)
+  barplot(
+    height=na_counts$na_count,
+    names.arg=rownames(na_counts),
+    xlab="NA Count",
+    ylab="Column Name",
+    main=paste0("NA Counts for Columns in the Temperature Dataset \n(", title, ")")
+  )
+  dev.off()
+  # Dependent vs independent variables
+  scatter_path <- file.path(output_path, "dependent_vs_independents.pdf")
+  plot_scatter_grid(
+    df,
+    dependent_col,
+    independent_cols,
+    paste0("Dependent vs Independent Column(s) \n(", title, ")"),
+    T,
+    scatter_path
+  )
+  # Save analysis
+  summary_path <- file.path(output_path, "dataset_summary.csv")
+  write.csv(full_summary, summary_path)
+}
+
+heat_and_cold_descriptive_stats <- function(
+    df_list,
+    use_individual_dfs,
+    output_path,
+    correlation_method = "pearson",
+    dist_columns,
+    ma_days = 100,
+    ma_sides = 2,
+    dependent_col,
+    independent_cols
+) {
+  # validate output path
+  check_file_exists(output_path)
+  output_path <- file.path(output_path, "temperature_descriptive_stats")
+  if (!check_file_exists(output_path, raise=F)) {
+    dir.create(output_path)
+  }
+  # combine all smaller df's into one
+  combined_df <- do.call(rbind, df_list)
+  # obtain desc. stats
+  heat_and_cold_descriptive_stats_core(
+    df = combined_df,
+    output_path = output_path,
+    title = "Full Dataset",
+    dist_columns = dist_columns,
+    correlation_method = correlation_method,
+    ma_days = ma_days,
+    ma_sides = ma_sides,
+    dependent_col = dependent_col,
+    independent_cols = independent_cols
+  )
+
+  if (use_individual_dfs) {
+    # plot moving average for each region
+    pdf(file.path(output_path, "deaths_moving_average.pdf"))
+    for (i in 1:length(df_list)) {
+      plot_moving_average(
+        df_list[[i]],
+        "date",
+        "dependent",
+        ma_days,
+        ma_sides,
+        paste0("Moving average for the Temperature Dataset \n(", names(df_list)[i], ")")
+      )
+    }
+    dev.off()
+    # create summary, corr. and dist. for each df
+    # DEV NOTE: creating a new for loop to avoid calling dev.off early.
+    for (i in 1:length(df_list)) {
+      # create a new subdir
+      df_name <- names(df_list)[i]
+      sub_df_path <- file.path(output_path, gsub(" ", "_", tolower(df_name)))
+      if (!check_file_exists(sub_df_path, raise=FALSE)) {
+        dir.create(sub_df_path)
+      }
+      # save out statistics
+      heat_and_cold_descriptive_stats_core(
+        df = df_list[[i]],
+        output_path = sub_df_path,
+        title = df_name,
+        correlation_method = correlation_method,
+        dist_columns = dist_columns,
+        ma_days = ma_days,
+        ma_sides = ma_sides,
+        dependent_col = dependent_col,
+        independent_cols = independent_cols
+      )
+    }
+  }
+
+}
+
 
 #' Do full DLNM analysis
 #'
