@@ -923,10 +923,11 @@ wildfire_do_analysis <- function(health_path,
                                     save_fig = save_fig,
                                     print_model_summaries = print_model_summaries)
 
-  plot_results(results = results,
-               output_folder_path = output_folder_path,
-               wildfire_lag = wildfire_lag,
-               save_fig = save_fig)
+  plot_results_by_region(results = results,
+                         output_folder_path = output_folder_path,
+                         wildfire_lag = wildfire_lag,
+                         relative_risk_by_region = relative_risk_by_region,
+                         save_fig = save_fig)
 
   if (save_csv == TRUE) {
     save_results(results = results,
