@@ -793,6 +793,8 @@ relative_risk_by_region <- function(data,
 #' spline(s).
 #' @param predictors_vif Character vector with each of the predictors to
 #' include in the model. Must contain at least 2 variables. Defaults to NULL.
+#' @param relative_risk_by_region Bool. Whether to calculate Relative Risk by region.
+#' Default: FALSE
 #' @param scale_factor_wildfire_pm Numeric. The value to divide the wildfire
 #' PM2.5 concentration variables by for alternative interpretation of outputs.
 #' Corresponds to the unit increase in wildfire PM2.5 to give the model
@@ -824,6 +826,7 @@ wildfire_do_analysis <- function(health_path,
                                  spline_temperature_lag = 0,
                                  spline_temperature_degrees_freedom = 6,
                                  predictors_vif = NULL,
+                                 relative_risk_by_region = FALSE,
                                  scale_factor_wildfire_pm = 10,
                                  save_fig = FALSE,
                                  save_csv = FALSE,
@@ -857,12 +860,13 @@ wildfire_do_analysis <- function(health_path,
               print_vif = print_vif)
   }
 
-  results <- casecrossover_quasipoisson(data = data,
-                                        scale_factor = scale_factor_wildfire_pm,
-                                        wildfire_lag = wildfire_lag,
-                                        output_folder_path = output_folder_path,
-                                        save_fig = save_fig,
-                                        print_model_summaries = print_model_summaries)
+  results <- relative_risk_by_region(data = data,
+                                    scale_factor = scale_factor_wildfire_pm,
+                                    wildfire_lag = wildfire_lag,
+                                    relative_risk_by_region = relative_risk_by_region,
+                                    output_folder_path = output_folder_path,
+                                    save_fig = save_fig,
+                                    print_model_summaries = print_model_summaries)
 
   plot_results(results = results,
                output_folder_path = output_folder_path,
