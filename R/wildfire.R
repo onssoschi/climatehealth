@@ -597,6 +597,59 @@ casecrossover_quasipoisson <- function(data,
 
 }
 
+#' Plot results by region
+#'
+#' @description If RR by region is true, plots results by region. If false plots
+#' overall RR
+#'
+#' @param results Dataframe of relative risk and confidence intervals for
+#' each lag of wildfire-related PM2.5
+#' @param save_fig Boolean. Whether to save the plot as an output. Default TRUE.
+#' @param wildfire_lag Integer. The maximum number of days for which to plot the
+#' lags for wildfire PM2.5. Default is 3.
+#' @param relative_risk_by_region Bool. Whether to calculate Relative Risk by region.
+#' Default: FALSE
+#' @param output_folder_path Path to folder where plots should be saved.
+#'
+#' @returns Plot of relative risk and confidence intervals for each lag of
+#' wildfire-related PM2.5
+
+plot_results_by_region <- function(results,
+                                   save_fig = TRUE,
+                                   wildfire_lag = 3,
+                                   relative_risk_by_region = FALSE,
+                                   output_folder_path){
+  if(relative_risk_by_region){
+    
+    df_list <- split(results, f = results$region_name)
+    plots_list <- list()
+    
+    for (i in seq(df_list)) {
+      
+      region_results <- df_list[[i]]
+      region_name <- region_results$region_name[1]
+      
+      region_plot <- plot_results(results = region_results,
+                                  output_folder_path = output_folder_path,
+                                  wildfire_lag = wildfire_lag,
+                                  save_fig = save_fig,
+                                  region_name = region_name)
+      
+      plots_list[[i]] <- region_plot
+    }
+    
+    return(plots_list)
+    
+  } else {
+    plot <- plot_results(results = results,
+            output_folder_path = path_config$output_folder_path,
+            wildfire_lag = model_config$wildfire_lag,
+            save_fig = output_config$save_fig)
+    
+    return(plot)
+  }
+}
+
 #' Plot results of analysis
 #'
 #' @description Plots relative risk and confidence intervals for each lag value
@@ -608,6 +661,7 @@ casecrossover_quasipoisson <- function(data,
 #' @param wildfire_lag Integer. The maximum number of days for which to plot the
 #' lags for wildfire PM2.5. Default is 3.
 #' @param output_folder_path Path to folder where plots should be saved.
+#' @param region_name Character. The name of the region. Default is 'All regions'.
 #'
 #' @returns Plot of relative risk and confidence intervals for each lag of
 #' wildfire-related PM2.5
@@ -615,40 +669,41 @@ casecrossover_quasipoisson <- function(data,
 plot_results <- function(results,
                          save_fig,
                          wildfire_lag = 3,
-                         output_folder_path) {
-
+                         output_folder_path,
+                         region_name = "All regions") {
+  
   labels <- c("0 days")
-
+  
   if (wildfire_lag > 0) {
     additional_labels <- sapply(1:wildfire_lag,
                                 function(lag) paste("0-", lag, " days", sep = ""))
     labels <- c(labels, additional_labels)
-    }
-
+  }
+  
   plot <- ggplot2::ggplot(data = results, ggplot2::aes(x = lag, y = relative_risk,
-                                      ymin = ci_lower, ymax = ci_upper)) +
+                                                       ymin = ci_lower, ymax = ci_upper)) +
     ggplot2::geom_point(size = 3) +
     ggplot2::geom_errorbar(width = 0.5, size = 1) +
     ggplot2::geom_hline(yintercept = 1, lty = 2) +
     ggplot2::xlab("Lag") +
     ggplot2::ylab("Relative risk") +
-    ggplot2::ggtitle("Wildfire PM2.5") +
+    ggplot2::ggtitle(paste("Wildfire PM2.5: ", region_name, sep = "")) +
     ggplot2::scale_x_continuous(breaks = seq(0, wildfire_lag, 1), labels = labels) +
     ggplot2::theme_bw() +
     ggplot2::theme(axis.text = ggplot2::element_text(size = 18),
                    axis.title = ggplot2::element_text(size = 18))
-
+  
   if (save_fig == TRUE) {
-
+    
     if (!is.null(output_folder_path)) {
-      pdf(file.path(output_folder_path, "wildfire_plot.pdf"),
+      file_name <- paste("wildfire_plot_", region_name, ".pdf", sep = "")
+      pdf(file.path(output_folder_path, file_name),
           width = 8, height = 8)
       print(plot) # NOTE: this print() is required to produce the plot pdf
       dev.off()
-      climatehealth::check_file_exists(paste(
-        output_folder_path, "wildfire_plot.pdf", sep = ""))
+      climatehealth::check_file_exists(file.path(output_folder_path, file_name))
     }
-
+    
   }
   return(plot)
 }
