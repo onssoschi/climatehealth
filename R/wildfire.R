@@ -936,6 +936,8 @@ summarise_AF_AN <- function(data){
 #' include in the model. Must contain at least 2 variables. Defaults to NULL.
 #' @param relative_risk_by_region Bool. Whether to calculate Relative Risk by region.
 #' Default: FALSE
+#' @param output_AF_AN Bool. Whether to create attributable fraction and 
+#' attributable number output. Only works id relative_risk_by_region = TRUE.
 #' @param scale_factor_wildfire_pm Numeric. The value to divide the wildfire
 #' PM2.5 concentration variables by for alternative interpretation of outputs.
 #' Corresponds to the unit increase in wildfire PM2.5 to give the model
@@ -968,6 +970,7 @@ wildfire_do_analysis <- function(health_path,
                                  spline_temperature_degrees_freedom = 6,
                                  predictors_vif = NULL,
                                  relative_risk_by_region = FALSE,
+                                 output_AF_AN = FALSE,
                                  scale_factor_wildfire_pm = 10,
                                  save_fig = FALSE,
                                  save_csv = FALSE,
@@ -976,6 +979,10 @@ wildfire_do_analysis <- function(health_path,
                                  print_model_summaries = FALSE
                                  ) {
 
+  if(relative_risk_by_region == FALSE && output_AF_AN == TRUE){
+    output_AF_AN <- FALSE
+  }
+  
   data <- load_wildfire_data(health_path = health_path,
                              join_wildfire_data = join_wildfire_data,
                              ncdf_path = ncdf_path,
@@ -1001,22 +1008,29 @@ wildfire_do_analysis <- function(health_path,
               print_vif = print_vif)
   }
 
-  results <- relative_risk_by_region(data = data,
-                                    scale_factor = scale_factor_wildfire_pm,
-                                    wildfire_lag = wildfire_lag,
-                                    relative_risk_by_region = relative_risk_by_region,
-                                    output_folder_path = output_folder_path,
-                                    save_fig = save_fig,
-                                    print_model_summaries = print_model_summaries)
+  rr_results <- relative_risk_by_region(data = data,
+                                        scale_factor = scale_factor_wildfire_pm,
+                                        wildfire_lag = wildfire_lag,
+                                        relative_risk_by_region = relative_risk_by_region,
+                                        output_folder_path = output_folder_path,
+                                        save_fig = save_fig,
+                                        print_model_summaries = print_model_summaries)
 
-  plot_results_by_region(results = results,
+  if(output_AF_AN){
+    data <- calculate_daily_AF_AN(data = data,
+                                  rr_data = rr_results)
+    af_an_results <- summarise_AF_AN(data = data)
+    
+  }
+  
+  plot_results_by_region(results = rr_results,
                          output_folder_path = output_folder_path,
                          wildfire_lag = wildfire_lag,
                          relative_risk_by_region = relative_risk_by_region,
                          save_fig = save_fig)
 
   if (save_csv == TRUE) {
-    save_results(results = results,
+    save_results(results = rr_results,
                  output_folder_path = output_folder_path)
   }
 
