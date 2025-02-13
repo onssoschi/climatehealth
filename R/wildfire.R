@@ -874,6 +874,29 @@ calculate_daily_AF_AN <- function(data,
   return(df_all)
 }
 
+#' Summarise AF and AN numbers by region and year
+#' 
+#' @description Takes daily data with attributable fraction and attributable number
+#' and summarises by year and region
+#' 
+#' @param data Dataframe containing daily data including calculated AF and AN.
+#'
+#' @returns Dataframe containing summarised AF and AN data, by year and region
+
+summarise_AF_AN <- function(data){
+  
+  yearly_summary <- data %>%
+    group_by(regnames, year) %>%
+    summarise(
+      population = mean(pop, na.rm = TRUE),
+      total_attributable_number = sum(attributable_number, na.rm = TRUE),
+      average_attributable_fraction = mean(attributable_fraction, na.rm = TRUE)
+    ) %>%
+    mutate(deaths_per_100k = (total_attributable_number / population) * 100000)
+  
+  return(yearly_summary)
+}
+
 #' Run pipeline to analyse the impact of wildfire-related PM2.5 on a health
 #' outcome using a time-stratified case-crossover approach.
 #'
