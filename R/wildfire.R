@@ -811,6 +811,69 @@ relative_risk_by_region <- function(data,
   
 }
 
+#' Use the Lag 1 RR and upper and lower confidence intervals to calculate the
+#' attributable fraction and attributable number of a given health outcome
+#' for each day in the input data. 
+#' 
+#' @description takes a calculated RR and upper and lower CIs, and applies these
+#' to the input data to calculate attributable fraction and attributable number,
+#' along with upper and lower CIs, for each day in the input data.
+#' 
+#' @param data Dataframe containing a daily time series of climate and health
+#' data from which to fit models.
+#' @param rr_data Dataframe containing calculated relative risk and confidence
+#' intervals, calculated from input data.
+#' 
+#' @returns Time series dataframe with daily AF and AN, and AF and AN upper and
+#' lower CIs
+
+calculate_daily_AF_AN <- function(data,
+                                  rr_data){
+
+  df_list <- split(data, f = data$regnames)
+  
+  for (i in seq(df_list)) {
+    region_data <- df_list[[i]]
+    region_name <- names(df_list)[i]
+    
+    RR_value <- rr_data %>%
+      filter(lag == 0, regname == region_name) %>%
+      pull(relative_risk)
+    
+    RR_CI_lower <- rr_data %>%
+      filter(lag == 0, regname == region_name) %>%
+      pull(ci_lower)
+    
+    RR_CI_upper <- rr_data %>%
+      filter(lag == 0, regname == region_name) %>%
+      pull(ci_upper)
+    
+    # Calculate daily rescaled_RR, attributable fraction and attributable number.
+    # Repeat for upper and lower confidence intervals
+    region_data <- region_data %>%
+      mutate(rescaled_RR = exp((log(RR_value) / 10) * mean_PM_FRP),
+             attributable_fraction = (rescaled_RR - 1) / rescaled_RR,
+             attributable_number = attributable_fraction * health_outcome)
+    
+    region_data <- region_data %>%
+      mutate(rescaled_CI_upper = exp((log(RR_CI_upper) / 10) * mean_PM_FRP),
+             attributable_fraction_upper = (rescaled_CI_upper - 1) / rescaled_CI_upper,
+             attributable_number_upper = attributable_fraction_upper * health_outcome)
+    
+    region_data <- region_data %>%
+      mutate(rescaled_CI_lower = exp((log(RR_CI_lower) / 10) * mean_PM_FRP),
+             attributable_fraction_lower = (rescaled_CI_lower - 1) / rescaled_CI_lower,
+             attributable_number_lower = attributable_fraction_lower * health_outcome)
+    
+    df_list[[i]] <- region_data
+  }
+  
+  df_all <- do.call(rbind, df_list)
+  row.names(df_all) <- NULL
+  
+  return(df_all)
+}
+
 #' Run pipeline to analyse the impact of wildfire-related PM2.5 on a health
 #' outcome using a time-stratified case-crossover approach.
 #'
