@@ -196,6 +196,8 @@ pair_with_health <- function(climate_data,
 #'
 #' @returns Dataframe containing a daily time series of
 #' climate and health data.
+#'
+#' @export
 
 load_wildfire_data <- function(health_path,
                                join_wildfire_data,

@@ -323,6 +323,8 @@ mh_save_results <- function(results,
 #'
 #' @returns Dataframe containing cumulative relative risk and confidence
 #' intervals from analysis.
+#'
+#' @export
 
 suicides_heat_do_analysis <- function(data_path,
                                       date_col,
