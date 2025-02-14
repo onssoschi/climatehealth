@@ -1738,7 +1738,7 @@ heat_and_cold_descriptive_stats_core <- function(
   numeric_cols <- colnames(select_if(df, is.numeric))
   # get dataframe summary
   full_summary <- create_column_summaries(df, numeric_cols)
-  # plot correlation matrixe
+  # plot correlation matrix
   full_corr <- create_correlation_matrix(df, numeric_cols, correlation_method)
   corr_path <- file.path(output_path, "correlation_matrix.png")
   plot_correlation_matrix(
