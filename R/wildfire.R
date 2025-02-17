@@ -621,13 +621,13 @@ plot_results_by_region <- function(results,
                                    output_folder_path){
   if(relative_risk_by_region){
     
-    df_list <- split(results, f = results$region_name)
+    df_list <- split(results, f = results$regnames)
     plots_list <- list()
     
     for (i in seq(df_list)) {
       
       region_results <- df_list[[i]]
-      region_name <- region_results$region_name[1]
+      region_name <- region_results$regnames[1]
       
       region_plot <- plot_results(results = region_results,
                                   output_folder_path = output_folder_path,
