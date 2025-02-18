@@ -61,7 +61,7 @@ aggregate_by_column <- function(df, column_name) {
   unique_values <- sort(as.character(unique(df[[column_name]])))
   aggregated_dfs <- lapply(
     unique_values,
-    function(x) df %>% dplyr::filter(!!sym(column_name) == x)
+    function(x) df %>% dplyr::filter(!!rlang::sym(column_name) == x)
   )
   names(aggregated_dfs) <- unique_values
 
