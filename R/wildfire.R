@@ -736,6 +736,9 @@ save_results <- function(results,
 #'
 #' @returns Dataframe of relative risk and confidence intervals for
 #' each lag of wildfire-related PM2.5
+#'
+#' @export
+                                
 
 wildfire_do_analysis <- function(health_path,
                                  join_wildfire_data = FALSE,
