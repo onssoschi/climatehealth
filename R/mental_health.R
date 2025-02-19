@@ -343,6 +343,7 @@ suicides_heat_do_analysis <- function(data_path,
                              region_col = region_col,
                              temperature_col = temperature_col,
                              health_outcome_col = health_outcome_col)
+
   cb_list <- mh_create_crossbasis(data = df_list,
                                var_fun = var_fun,
                                var_dof = var_dof,
@@ -353,9 +354,12 @@ suicides_heat_do_analysis <- function(data_path,
   model_list <- mh_casecrossover_dlnm(data = df_list,
                                    cb_list = cb_list)
 
-  mh_plot_results(data = df_list,
-               cb_list = cb_list,
-               model_list = model_list,
+  pred_list <- mh_predict(data = df_list,
+                          cb_list = cb_list,
+                          model_list = model_list)
+
+
+  mh_plot_results(pred_list = pred_list,
                save_fig = save_fig,
                output_folder_path = output_folder_path)
 
