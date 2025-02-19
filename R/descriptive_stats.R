@@ -1,5 +1,13 @@
 # Utilities to allow for statistics to be derived from datasets
 
+#' Create a correlation matrix for columns in a dataframe.
+#'
+#' @param df Dataframe. The dataframe to use to create a correlation matrix.
+#' @param columns vector. The columns to calculate correlation between.
+#' @param correlation_method string. The method to use for correlation calculations.
+#'
+#' @return Matrix. Correlation matrix for selected columns in the input dataset.
+#' @export
 create_correlation_matrix <- function(
     df,
     columns = NULL,
@@ -31,6 +39,13 @@ create_correlation_matrix <- function(
   return (corr_df)
 }
 
+#' Create statistical summaries of columns in a dataframe.
+#'
+#' @param df Datarame. Input data.
+#' @param columns vector. The columns to create summaries for.
+#'
+#' @return Dataframe. Column summaries
+#' @export
 create_column_summaries <- function(
     df,
     columns = NULL
@@ -63,6 +78,13 @@ create_column_summaries <- function(
   return(sums)
 }
 
+#' Create a summary of all NA values in a dataset.
+#'
+#' @param df Dataframe. The input dataset.
+#' @param columns vector. The columns to summaries NA counts for.
+#'
+#' @return Dataframe. A summary of NA values in the dataset.
+#' @export
 create_na_summary <- function(
     df,
     columns = NULL

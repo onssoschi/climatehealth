@@ -1723,6 +1723,19 @@ plot_and_write_relative_risk_all <- function(df_list,
 
 }
 
+#' The core functionality for producing descriptive stats
+#'
+#' @param df DataFrame. Input data for descriptive stats/
+#' @param output_path string. The path to write outputs to.
+#' @param title string. title used for the plots in the ds.
+#' @param correlation_method string. The correlation method used in ds.
+#' @param dist_columns vector. The columns to plot distributions for.
+#' @param ma_days int. The number of days to use for a moving average.
+#' @param ma_sides int. The number of sides to use for a moving average (1 or 2).
+#' @param dependent_col str. The column in the data containing the dependent var.
+#' @param independent_cols str. The column in the data containing the independent var.
+#'
+#' @export
 heat_and_cold_descriptive_stats_core <- function(
     df,
     output_path,
@@ -1782,6 +1795,20 @@ heat_and_cold_descriptive_stats_core <- function(
   write.csv(full_summary, summary_path)
 }
 
+#' The wrapper function to compute descriptive stats for the heat and cold indicator.
+#'
+#' @param df_list list(dataframe) A list of input dataframes.
+#' @param output_path string. The path to write outputs to.
+#' @param use_individual_dfs bool. Whether or not to use all dfs or concat them into one.
+#' @param title string. title used for the plots in the ds.
+#' @param correlation_method string. The correlation method used in ds.
+#' @param dist_columns vector. The columns to plot distributions for.
+#' @param ma_days int. The number of days to use for a moving average.
+#' @param ma_sides int. The number of sides to use for a moving average (1 or 2).
+#' @param dependent_col str. The column in the data containing the dependent var.
+#' @param independent_cols str. The column in the data containing the independent var.
+#'
+#' @export
 heat_and_cold_descriptive_stats <- function(
     df_list,
     use_individual_dfs,
