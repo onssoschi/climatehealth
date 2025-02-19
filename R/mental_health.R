@@ -331,6 +331,8 @@ mh_save_results <- function(results,
 #'
 #' @returns Dataframe containing cumulative relative risk and confidence
 #' intervals from analysis.
+#'
+#' @export
 
 suicides_heat_do_analysis <- function(data_path,
                                       date_col,
@@ -352,6 +354,7 @@ suicides_heat_do_analysis <- function(data_path,
                              region_col = region_col,
                              temperature_col = temperature_col,
                              health_outcome_col = health_outcome_col)
+
   cb_list <- mh_create_crossbasis(data = df_list,
                                var_fun = var_fun,
                                var_degree = var_degree,
@@ -363,15 +366,16 @@ suicides_heat_do_analysis <- function(data_path,
   model_list <- mh_casecrossover_dlnm(data = df_list,
                                    cb_list = cb_list)
 
-  mh_plot_results(data = df_list,
-               cb_list = cb_list,
-               model_list = model_list,
+  pred_list <- mh_predict(data = df_list,
+                          cb_list = cb_list,
+                          model_list = model_list)
+
+
+  mh_plot_results(pred_list = pred_list,
                save_fig = save_fig,
                output_folder_path = output_folder_path)
 
-  results <- produce_results(data = df_list,
-                             cb_list = cb_list,
-                             model_list = model_list)
+  results <- produce_results(pred_list)
 
   if (save_csv == TRUE) {
 
