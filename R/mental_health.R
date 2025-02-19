@@ -66,8 +66,8 @@ mh_read_and_format_data <- function(data_path,
 #' (see dlnm::crossbasis). Defaults to 'bs'.
 #' @param var_degree Integer. Degree of the piecewise polynomial for argvar
 #' (see dlnm::crossbasis). Defaults to 2 (quadratic).
-#' @param var_dof Integer. Degrees of freedom in exposure function for argvar
-#' (see dlnm::crossbasis). Defaults to 5.
+#' @param var_per Vector. Internal knot positions for argvar
+#' (see dlnm::crossbasis). Defaults to c(25,50,75).
 #' @param lag_fun Character. Exposure function for arglag
 #' (see dlnm::crossbasis). Defaults to 'strata'.
 #' @param lag_breaks Integer. Internal cut-off point defining the strata for arglag
@@ -80,7 +80,7 @@ mh_read_and_format_data <- function(data_path,
 mh_create_crossbasis <- function(data,
                               var_fun = "bs",
                               var_degree = 2,
-                              var_dof = 5,
+                              var_per = c(25,50,75),
                               lag_fun = "strata",
                               lag_breaks = 1,
                               lag_days = 2) {
@@ -91,8 +91,8 @@ mh_create_crossbasis <- function(data,
 
     region_data <- data[[reg]]
     argvar <- list(fun = var_fun,
-                   degree = var_degree,
-                   df = var_dof)
+                   knots = quantile(region_data$temp, var_per/100, na.rm = T),
+                   degree = var_degree)
     arglag <- list(fun = lag_fun, breaks = lag_breaks)
     cb <- dlnm::crossbasis(region_data$temp, lag = lag_days, argvar = argvar, arglag = arglag)
 
@@ -314,8 +314,8 @@ mh_save_results <- function(results,
 #' (see dlnm::crossbasis). Defaults to 'bs'.
 #' @param var_degree Integer. Degree of the piecewise polynomial for argvar
 #' (see dlnm:crossbasis). Defaults to 2 (quadratic).
-#' @param var_dof Integer. Degrees of freedom in exposure function
-#' (see dlnm::crossbasis). Defaults to 5.
+#' @param var_per Vector. Internal knot positions for argvar
+#' (see dlnm::crossbasis). Defaults to c(25,50,75).
 #' @param lag_fun Character. Exposure function for arglag
 #' (see dlnm::crossbasis). Defaults to 'strata'.
 #' @param lag_breaks Integer. Internal cut-off point defining the strata for arglag
@@ -339,7 +339,7 @@ suicides_heat_do_analysis <- function(data_path,
                                       health_outcome_col,
                                       var_fun = "bs",
                                       var_degree = 2,
-                                      var_dof = 5,
+                                      var_per = c(25,50,75),
                                       lag_fun = "strata",
                                       lag_breaks = 1,
                                       lag_days = 2,
@@ -355,7 +355,7 @@ suicides_heat_do_analysis <- function(data_path,
   cb_list <- mh_create_crossbasis(data = df_list,
                                var_fun = var_fun,
                                var_degree = var_degree,
-                               var_dof = var_dof,
+                               var_per = var_per,
                                lag_fun = lag_fun,
                                lag_breaks = lag_breaks,
                                lag_days = lag_days)
