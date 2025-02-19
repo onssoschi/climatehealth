@@ -365,9 +365,7 @@ suicides_heat_do_analysis <- function(data_path,
                save_fig = save_fig,
                output_folder_path = output_folder_path)
 
-  results <- produce_results(data = df_list,
-                             cb_list = cb_list,
-                             model_list = model_list)
+  results <- produce_results(pred_list)
 
   if (save_csv == TRUE) {
 
