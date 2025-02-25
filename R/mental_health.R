@@ -325,7 +325,6 @@ mh_save_results <- function(results,
 #' intervals from analysis.
 #'
 #' @export
-
 suicides_heat_do_analysis <- function(data_path,
                                       date_col,
                                       region_col = NULL,
