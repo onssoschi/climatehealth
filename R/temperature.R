@@ -1723,6 +1723,164 @@ plot_and_write_relative_risk_all <- function(df_list,
 
 }
 
+#' The core functionality for producing descriptive stats
+#'
+#' @param df DataFrame. Input data for descriptive stats/
+#' @param output_path string. The path to write outputs to.
+#' @param title string. title used for the plots in the ds.
+#' @param correlation_method string. The correlation method used in ds.
+#' @param dist_columns vector. The columns to plot distributions for.
+#' @param ma_days int. The number of days to use for a moving average.
+#' @param ma_sides int. The number of sides to use for a moving average (1 or 2).
+#' @param dependent_col str. The column in the data containing the dependent var.
+#' @param independent_cols str. The column in the data containing the independent var.
+#'
+#' @export
+heat_and_cold_descriptive_stats_core <- function(
+    df,
+    output_path,
+    title,
+    correlation_method = "pearson",
+    dist_columns = c("temp"),
+    ma_days = 100,
+    ma_sides = 2,
+    dependent_col = "dependent",
+    independent_cols = c("temp")
+) {
+  # get numeric columns
+  numeric_cols <- colnames(select_if(df, is.numeric))
+  # get dataframe summary
+  full_summary <- create_column_summaries(df, numeric_cols)
+  # plot correlation matrix
+  full_corr <- create_correlation_matrix(df, numeric_cols, correlation_method)
+  corr_path <- file.path(output_path, "correlation_matrix.png")
+  plot_correlation_matrix(
+    full_corr,
+    paste0("Correlation Matrix for the Temperature Dataset \n(", title, ")"),
+    corr_path
+  )
+  # Column distributions
+  dist_path <- file.path(output_path, "column_distributions.pdf")
+  plot_distributions(
+    df,
+    dist_columns,
+    paste0("Column Distributions for the Temperature dataset \n(", title, ")"),
+    T,
+    dist_path
+  )
+  # Count NAs and visualise
+  na_counts_path <- file.path(output_path, "na_counts.pdf")
+  na_counts <- create_na_summary(df)
+  pdf(na_counts_path)
+  barplot(
+    height=na_counts$na_count,
+    names.arg=rownames(na_counts),
+    xlab="NA Count",
+    ylab="Column Name",
+    main=paste0("NA Counts for Columns in the Temperature Dataset \n(", title, ")")
+  )
+  dev.off()
+  # Dependent vs independent variables
+  scatter_path <- file.path(output_path, "dependent_vs_independents.pdf")
+  plot_scatter_grid(
+    df,
+    dependent_col,
+    independent_cols,
+    paste0("Dependent vs Independent Column(s) \n(", title, ")"),
+    T,
+    scatter_path
+  )
+  # Save analysis
+  summary_path <- file.path(output_path, "dataset_summary.csv")
+  write.csv(full_summary, summary_path)
+}
+
+#' The wrapper function to compute descriptive stats for the heat and cold indicator.
+#'
+#' @param df_list list(dataframe) A list of input dataframes.
+#' @param output_path string. The path to write outputs to.
+#' @param use_individual_dfs bool. Whether or not to use all dfs or concat them into one.
+#' @param title string. title used for the plots in the ds.
+#' @param correlation_method string. The correlation method used in ds.
+#' @param dist_columns vector. The columns to plot distributions for.
+#' @param ma_days int. The number of days to use for a moving average.
+#' @param ma_sides int. The number of sides to use for a moving average (1 or 2).
+#' @param dependent_col str. The column in the data containing the dependent var.
+#' @param independent_cols str. The column in the data containing the independent var.
+#'
+#' @export
+heat_and_cold_descriptive_stats <- function(
+    df_list,
+    use_individual_dfs,
+    output_path,
+    correlation_method = "pearson",
+    dist_columns,
+    ma_days = 100,
+    ma_sides = 2,
+    dependent_col,
+    independent_cols
+) {
+  # validate output path
+  check_file_exists(output_path)
+  output_path <- file.path(output_path, "temperature_descriptive_stats")
+  if (!check_file_exists(output_path, raise=F)) {
+    dir.create(output_path)
+  }
+  # combine all smaller df's into one
+  combined_df <- do.call(rbind, df_list)
+  # obtain desc. stats
+  heat_and_cold_descriptive_stats_core(
+    df = combined_df,
+    output_path = output_path,
+    title = "Full Dataset",
+    dist_columns = dist_columns,
+    correlation_method = correlation_method,
+    ma_days = ma_days,
+    ma_sides = ma_sides,
+    dependent_col = dependent_col,
+    independent_cols = independent_cols
+  )
+
+  if (use_individual_dfs) {
+    # plot moving average for each region
+    pdf(file.path(output_path, "deaths_moving_average.pdf"))
+    for (i in 1:length(df_list)) {
+      plot_moving_average(
+        df_list[[i]],
+        "date",
+        "dependent",
+        ma_days,
+        ma_sides,
+        paste0("Moving average for the Temperature Dataset \n(", names(df_list)[i], ")")
+      )
+    }
+    dev.off()
+    # create summary, corr. and dist. for each df
+    # DEV NOTE: creating a new for loop to avoid calling dev.off early.
+    for (i in 1:length(df_list)) {
+      # create a new subdir
+      df_name <- names(df_list)[i]
+      sub_df_path <- file.path(output_path, gsub(" ", "_", tolower(df_name)))
+      if (!check_file_exists(sub_df_path, raise=FALSE)) {
+        dir.create(sub_df_path)
+      }
+      # save out statistics
+      heat_and_cold_descriptive_stats_core(
+        df = df_list[[i]],
+        output_path = sub_df_path,
+        title = df_name,
+        correlation_method = correlation_method,
+        dist_columns = dist_columns,
+        ma_days = ma_days,
+        ma_sides = ma_sides,
+        dependent_col = dependent_col,
+        independent_cols = independent_cols
+      )
+    }
+  }
+
+}
+
 
 #' Do full DLNM analysis
 #'
@@ -1744,8 +1902,7 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @param RR_distribution_length Number of years for the calculation of RR
 #' distribution. Set both as 'NONE' to use full range in data.
 #' @param output_year_ Year(s) to calculate output for.
-#' @param dependent_col_ the column name of the
-#' dependent variable of interest e.g. deaths
+#' @param dependent_col_ the column name of the  dependent variable of interest e.g. deaths
 #' @param independent_cols_ column name (or list of names) of extra independent
 #' variable to include in regression (excluding temperature). Defaults to NULL.
 #' @param time_col_ The column name of column containing dates (e.g date, year).
@@ -1761,6 +1918,16 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @param lagnk_ Number of knots in lag function
 #' (see dlnm::logknots)
 #' @param dfseas_ Degrees of freedom for seasonality
+#' @param descriptive_stats Bool. Whether or not to compute descriptive stats.
+#' Defaults to FALSE.
+#' @param ds_correlation_method character. The correlation method used in correlation matrices.
+#' Defaults to 'pearson'.
+#' @param ds_dist_columns character vector. The names of columns to plot distributions for.
+#' Defaults to c().
+#' @param ds_ma_days integer. How many days to use for moving average calculations.
+#' Defaults to 100.
+#' @param ds_ma_sides integer. How many sides to use for moving average calculations (1 or 2).
+#' Defaults to 2.
 #'
 #' @return
 #' \itemize{
@@ -1804,7 +1971,12 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
                                   lag_  = 21,
                                   lagnk_ = 3,
                                   dfseas_ = 8,
-                                  nsim__ = 1000
+                                  nsim__ = 1000,
+                                  descriptive_stats = FALSE,
+                                  ds_correlation_method = "pearson",
+                                  ds_dist_columns = c(),
+                                  ds_ma_days = 100,
+                                  ds_ma_sides = 2
 ) {
   varper_ <- c(10, 75, 90)
 
@@ -1819,6 +1991,21 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
       output_year = output_year_,
       RR_distribution_length = RR_distribution_length_
     )
+
+  # descriptive stats
+  if (descriptive_stats==TRUE) {
+    heat_and_cold_descriptive_stats(
+      df_list = df_list_,
+      use_individual_dfs = T,
+      output_path = output_folder_path_,
+      correlation_method = ds_correlation_method,
+      dist_columns = ds_dist_columns,
+      ma_days = ds_ma_days,
+      ma_sides = ds_ma_sides,
+      dependent_col = dependent_col_,
+      independent_cols = independent_cols_
+    )
+  }
 
   c(coef_, vcov_, cb_, model_) %<-%
     run_model(df_list = df_list_,
