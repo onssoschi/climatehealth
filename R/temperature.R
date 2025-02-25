@@ -183,8 +183,6 @@ define_model <- function(dataset,
                               paste(independent_cols,
                                     collapse = " + ")))
 
-  dlnm::logknots(lag,
-                 lagnk)
   # Define crossbasis
   argvar_ <- list(fun = varfun,
                   knots = quantile(dataset$temp,
