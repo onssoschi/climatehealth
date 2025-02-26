@@ -2002,7 +2002,7 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
       dist_columns = ds_dist_columns,
       ma_days = ds_ma_days,
       ma_sides = ds_ma_sides,
-      dependent_col = dependent_col_,
+      dependent_col = "dependent", # col has been renamed
       independent_cols = independent_cols_
     )
   }
