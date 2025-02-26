@@ -188,6 +188,7 @@ plot_scatter_grid <- function(
 ) {
   # filter the dataframe to required columns
   all_columns <- c(main_col, comparison_cols)
+  if (length(all_columns) < 2) {return()};
   df <- df %>%
     select(all_of(all_columns))
   # obtain the needed grid size for plotting
