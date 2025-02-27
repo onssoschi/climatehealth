@@ -20,19 +20,19 @@ library(rlang) # used to load sym function
 #' @return The cleaned/reformatted data frame.
 #' @export
 #'
-#' @examples fill_na = c("col1", "col2")
+#' @examples fill_na <- c("col1", "col2")
 reformat_data <- function(
     df,
-    reformat_date=TRUE,
-    fill_na=c(),
-    year_from_date=TRUE
-) {
+    reformat_date = TRUE,
+    fill_na = c(),
+    year_from_date = TRUE) {
   # TODO: Add type checks to all arguments
   # Reformat the date column
   if (reformat_date == TRUE) {
     df <- df %>%
-      dplyr::mutate(date =
-        as.Date(date, tryFormats = c("%d/%m/%Y", "%Y-%m-%d"))
+      dplyr::mutate(
+        date =
+          as.Date(date, tryFormats = c("%d/%m/%Y", "%Y-%m-%d"))
       )
   }
   # Fill Na's
@@ -45,7 +45,7 @@ reformat_data <- function(
     df <- df %>%
       dplyr::mutate(year = as.numeric(format(date, "%Y")))
   }
-  return (df)
+  return(df)
 }
 
 
@@ -58,13 +58,12 @@ reformat_data <- function(
 #' @export
 #'
 aggregate_by_column <- function(df, column_name) {
-
-  unique_values = sort(as.character(unique(df[[column_name]])))
-  aggregated_dfs = lapply(
+  unique_values <- sort(as.character(unique(df[[column_name]])))
+  aggregated_dfs <- lapply(
     unique_values,
     function(x) df %>% dplyr::filter(!!rlang::sym(column_name) == x)
   )
   names(aggregated_dfs) <- unique_values
 
-  return (aggregated_dfs)
+  return(aggregated_dfs)
 }
