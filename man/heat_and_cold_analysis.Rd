@@ -24,7 +24,12 @@ heat_and_cold_analysis(
   lag_ = 21,
   lagnk_ = 3,
   dfseas_ = 8,
-  nsim__ = 1000
+  nsim__ = 1000,
+  descriptive_stats = FALSE,
+  ds_correlation_method = "pearson",
+  ds_dist_columns = c(),
+  ds_ma_days = 100,
+  ds_ma_sides = 2
 )
 }
 \arguments{
@@ -39,8 +44,7 @@ daily time series of death and temperature per region.}
 
 \item{output_year_}{Year(s) to calculate output for.}
 
-\item{dependent_col_}{the column name of the
-dependent variable of interest e.g. deaths}
+\item{dependent_col_}{the column name of the  dependent variable of interest e.g. deaths}
 
 \item{independent_cols_}{column name (or list of names) of extra independent
 variable to include in regression (excluding temperature). Defaults to NULL.}
@@ -66,6 +70,21 @@ variable to include in regression (excluding temperature). Defaults to NULL.}
 (see dlnm::logknots)}
 
 \item{dfseas_}{Degrees of freedom for seasonality}
+
+\item{descriptive_stats}{Bool. Whether or not to compute descriptive stats.
+Defaults to FALSE.}
+
+\item{ds_correlation_method}{character. The correlation method used in correlation matrices.
+Defaults to 'pearson'.}
+
+\item{ds_dist_columns}{character vector. The names of columns to plot distributions for.
+Defaults to c().}
+
+\item{ds_ma_days}{integer. How many days to use for moving average calculations.
+Defaults to 100.}
+
+\item{ds_ma_sides}{integer. How many sides to use for moving average calculations (1 or 2).
+Defaults to 2.}
 
 \item{meta_analysis}{Boolean (TRUE or FALSE). Whether to include
 meta-analysis. Must be TRUE if by_region argument is FALSE.}
