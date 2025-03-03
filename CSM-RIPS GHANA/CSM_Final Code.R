@@ -17,7 +17,6 @@ load_stunted_data <- function(file_path) {
   return(data)
 }
 
-df <- load_stunted_data("/Users/e.afful-dadzie/Desktop/CSM.xlsx")
 
 # ===================================================
 # ============== Descriptive Statistics =============
@@ -93,34 +92,34 @@ ggplot(df, aes(x = Region, y = CSM_cases)) +
 # ===================================================
 
 # Fit Quasi-Poisson Model with Average Rainfall
-quasi_poisson_model <- glm(CSM_cases ~ Maximum_Temperature + Average_Temperature + Average_Rainfall, 
+quasi_poisson_model <- glm(CSM_cases ~ Maximum_Temperature + Average_Temperature + Average_Rainfall,
                            family = quasipoisson, data = df)
 print(summary(quasi_poisson_model))
 
 # Function to apply DLNM for lagged effects of temperature
 apply_dlnm <- function(data, response, predictor, lag_max = 30) {
   print("Fitting DLNM model...")
-  
+
   # Convert time variable to Date format
   data$Date <- as.Date(data$Date)
-  
+
   # Define cross-basis function for the predictor (e.g., temperature)
   cb <- crossbasis(data[[predictor]], lag = c(0, lag_max),
                    argvar = list(fun = "ns", df = 3),
                    arglag = list(fun = "ns", df = 3))
-  
+
   # Fit the DLNM model
   dlnm_model <- glm(data[[response]] ~ cb, family = quasipoisson(), data = data)
-  
+
   print("DLNM Model Summary:")
   print(summary(dlnm_model))
-  
+
   # Predict effects
   pred <- crosspred(cb, dlnm_model, at = seq(min(data[[predictor]]), max(data[[predictor]]), length = 100))
-  
+
   # Plot DLNM predictions
   plot(pred, xlab = predictor, zlab = "Relative Risk", main = "DLNM Prediction")
-  
+
   return(dlnm_model)
 }
 
@@ -131,17 +130,17 @@ dlnm_model <- apply_dlnm(df, response = "CSM_cases", predictor = "Average_Temper
 test_lag_effects <- function(data, response, predictor, lag_ranges) {
   for (lags in lag_ranges) {
     cat("\nTesting lag range:", lags, "\n")
-    
+
     cb <- crossbasis(data[[predictor]], lag = lags,
                      argvar = list(fun = "ns", df = 3),
                      arglag = list(fun = "ns", df = 3))
-    
+
     model <- glm(data[[response]] ~ cb, family = quasipoisson(), data = data)
     print(summary(model))
-    
+
     pred <- crosspred(cb, model, at = seq(min(data[[predictor]]),
                                           max(data[[predictor]]), length = 100))
-    
+
     plot(pred, xlab = predictor, zlab = "Relative Risk", main = paste("Lag", lags[1], "-", lags[2]))
   }
 }
