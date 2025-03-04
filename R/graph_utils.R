@@ -31,6 +31,13 @@ create_grid <- function(plot_count) {
 }
 
 
+#' Plot a correlation matrix include a heatmap.
+#'
+#' @param matrix_ The matrix to plot.
+#' @param title The title for the correlation matrix.
+#' @param output_path The path to output the plot to.
+#'
+#' @export
 plot_correlation_matrix <- function(matrix_, title, output_path) {
   # validate output path
   if (!endsWith(output_path, ".png")) {
@@ -48,6 +55,15 @@ plot_correlation_matrix <- function(matrix_, title, output_path) {
 }
 
 
+#' Plot histograms of column distributions.
+#'
+#' @param df The dataframe containing the data.
+#' @param columns The columns to plot distributions for.
+#' @param title The title of your plot.
+#' @param save_hists Whether to save the histograms to file.
+#' @param output_path The path to save your distributions to.
+#'
+#' @export
 plot_distributions <- function(df, columns, title, save_hists = FALSE, output_path = NULL) {
   # create a pdf if a save is selected
   if (save_hists == T) {
@@ -84,7 +100,13 @@ plot_distributions <- function(df, columns, title, save_hists = FALSE, output_pa
   }
 }
 
-# alter the alpha value for a hex colour (returns rgb)
+#' Generate and RGB colour value with alpha from a hex value.
+#'
+#' @param hex The hex code of the colour to convert.
+#' @param alpha The alpha of the converted colour (ranging from 0-1).
+#'
+#' @return The converted RGB colour.
+#' @export
 get_alpha_colour <- function(hex, alpha) {
   rgb_vals <- col2rgb(hex)
   alpha_colour <- rgb(rgb_vals[1, ] / 255, rgb_vals[2, ] / 255, rgb_vals[3, ] /
@@ -93,6 +115,18 @@ get_alpha_colour <- function(hex, alpha) {
 }
 
 
+#' Plot the moving average of a column.
+#'
+#' @param df The dataframe containing the raw data.
+#' @param time_col The column name of the column containing the timeseries.
+#' @param value_col The column name of the column containing the value.
+#' @param ma_days The number of days to use for MA calculations.
+#' @param ma_sides The number of sides to use for MA calculations (1 or 2).
+#' @param title The title for your plot.
+#' @param save_plot Whether or not to save the plot.
+#' @param output_path The path to output the plot to.
+#'
+#' @export
 plot_moving_average <- function(df,
                                 time_col,
                                 value_col,
@@ -178,6 +212,16 @@ plot_moving_average <- function(df,
 }
 
 
+#' Plot a grid of scatter graphs comparing one column to various others.
+#'
+#' @param df The dataframe containing the raw data.
+#' @param main_col The main column to compare with all other columns.
+#' @param comparison_cols The columns to compare with.
+#' @param title The title of your plot.
+#' @param save_scatters Whether or not to save the plot.
+#' @param output_path The path to output the plot to.
+#'
+#' @export
 plot_scatter_grid <- function(
     df,
     main_col,
