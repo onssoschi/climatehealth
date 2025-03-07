@@ -1805,6 +1805,7 @@ heat_and_cold_descriptive_stats_core <- function(
 #' @param dist_columns vector. The columns to plot distributions for.
 #' @param ma_days int. The number of days to use for a moving average.
 #' @param ma_sides int. The number of sides to use for a moving average (1 or 2).
+#' @param ma_columns vector. Additional columns to plot moving average for. Dependent done by default.
 #' @param dependent_col str. The column in the data containing the dependent var.
 #' @param independent_cols str. The column in the data containing the independent var.
 #'
@@ -1817,6 +1818,7 @@ heat_and_cold_descriptive_stats <- function(
     dist_columns,
     ma_days = 100,
     ma_sides = 2,
+    ma_columns = c(),
     dependent_col,
     independent_cols
 ) {
@@ -1840,21 +1842,24 @@ heat_and_cold_descriptive_stats <- function(
     dependent_col = dependent_col,
     independent_cols = independent_cols
   )
-
   if (use_individual_dfs) {
-    # plot moving average for each region
-    pdf(file.path(output_path, "deaths_moving_average.pdf"))
-    for (i in 1:length(df_list)) {
-      plot_moving_average(
-        df_list[[i]],
-        "date",
-        "dependent",
-        ma_days,
-        ma_sides,
-        paste0("Moving average for the Temperature Dataset \n(", names(df_list)[i], ")")
-      )
+    ma_vars = c(ma_columns, dependent_col)
+    # plot moving average for each region (and each var)
+    for (col_i in 1:length(ma_vars)) {
+      fname <- paste0(ma_vars[[col_i]], "_moving_average.pdf")
+      pdf(file.path(output_path, fname))
+      for (i in 1:length(df_list)) {
+        plot_moving_average(
+          df_list[[i]],
+          "date",
+          ma_vars[[col_i]],
+          ma_days,
+          ma_sides,
+          paste0("Moving average for the Temperature Dataset \n(", names(df_list)[i], ")")
+        )
+      }
+      dev.off()
     }
-    dev.off()
     # create summary, corr. and dist. for each df
     # DEV NOTE: creating a new for loop to avoid calling dev.off early.
     for (i in 1:length(df_list)) {
