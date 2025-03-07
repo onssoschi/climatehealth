@@ -1887,7 +1887,7 @@ heat_and_cold_descriptive_stats <- function(
 }
 
 
-#' Do full DLNM analysis
+#' Do full DLNM analysis.
 #'
 #' @description Runs a sequence of functions to carry out
 #' heat-related mortality analysis.
