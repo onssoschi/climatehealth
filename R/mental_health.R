@@ -326,6 +326,16 @@ mh_save_results <- function(results,
 #' FALSE.
 #' @param save_csv Boolean. Whether to save the results as a CSV. Defaults to
 #' FALSE.
+#' @param descriptive_stats Boolean. Whether to calculate descriptive stats.
+#' @param ds_correlation_method character. The correlation method used in correlation matrices.
+#' Defaults to 'pearson'.
+#' @param ds_dist_columns character vector. The names of columns to plot distributions for.
+#' Defaults to c().
+#' @param ds_ma_days integer. How many days to use for moving average calculations.
+#' Defaults to 100.
+#' @param ds_ma_sides integer. How many sides to use for moving average calculations (1 or 2).
+#' Defaults to 2.
+#' @param ds_ma_columns character vector. The names of columns to plot moving average for.
 #' @param output_folder_path Path to folder where plots and/or CSV should be
 #' saved. Defaults to NULL.
 #'
@@ -333,7 +343,6 @@ mh_save_results <- function(results,
 #' intervals from analysis.
 #'
 #' @export
-
 suicides_heat_do_analysis <- function(data_path,
                                       date_col,
                                       region_col = NULL,
@@ -347,6 +356,12 @@ suicides_heat_do_analysis <- function(data_path,
                                       lag_days = 2,
                                       save_fig = FALSE,
                                       save_csv = FALSE,
+                                      descriptive_stats = FALSE,
+                                      ds_correlation_method = "pearson",
+                                      ds_dist_columns = c(),
+                                      ds_ma_days = 100,
+                                      ds_ma_sides = 2,
+                                      ds_ma_columns = c(),
                                       output_folder_path = NULL) {
 
   df_list <- mh_read_and_format_data(data_path = data_path,
@@ -354,6 +369,22 @@ suicides_heat_do_analysis <- function(data_path,
                              region_col = region_col,
                              temperature_col = temperature_col,
                              health_outcome_col = health_outcome_col)
+
+  if(descriptive_stats) {
+    common_descriptive_stats(
+      dataset_title = "mental health",
+      df_list = df_list,
+      use_individual_dfs = stats_config$use_individual_dfs,
+      output_path = path_config$output_folder_path,
+      correlation_method = ds_correlation_method,
+      dist_columns =  ds_dist_columns,
+      ma_days = ds_ma_days,
+      ma_sides = ds_ma_sides,
+      ma_columns = ds_ma_column,
+      dependent_col = "suicides", # col is renamed in data
+      independent_cols = c()
+    )
+  }
 
   cb_list <- mh_create_crossbasis(data = df_list,
                                var_fun = var_fun,
