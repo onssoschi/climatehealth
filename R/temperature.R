@@ -1723,8 +1723,7 @@ plot_and_write_relative_risk_all <- function(df_list,
 
 }
 
-
-#' Do full DLNM analysis
+#' Do full DLNM analysis.
 #'
 #' @description Runs a sequence of functions to carry out
 #' heat-related mortality analysis.
@@ -1744,8 +1743,7 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @param RR_distribution_length Number of years for the calculation of RR
 #' distribution. Set both as 'NONE' to use full range in data.
 #' @param output_year_ Year(s) to calculate output for.
-#' @param dependent_col_ the column name of the
-#' dependent variable of interest e.g. deaths
+#' @param dependent_col_ the column name of the  dependent variable of interest e.g. deaths
 #' @param independent_cols_ column name (or list of names) of extra independent
 #' variable to include in regression (excluding temperature). Defaults to NULL.
 #' @param time_col_ The column name of column containing dates (e.g date, year).
@@ -1761,6 +1759,17 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @param lagnk_ Number of knots in lag function
 #' (see dlnm::logknots)
 #' @param dfseas_ Degrees of freedom for seasonality
+#' @param descriptive_stats Bool. Whether or not to compute descriptive stats.
+#' Defaults to FALSE.
+#' @param ds_correlation_method character. The correlation method used in correlation matrices.
+#' Defaults to 'pearson'.
+#' @param ds_dist_columns character vector. The names of columns to plot distributions for.
+#' Defaults to c().
+#' @param ds_ma_days integer. How many days to use for moving average calculations.
+#' Defaults to 100.
+#' @param ds_ma_sides integer. How many sides to use for moving average calculations (1 or 2).
+#' Defaults to 2.
+#' @param ds_ma_columns character vector. The names of columns to plot moving average for.
 #'
 #' @return
 #' \itemize{
@@ -1804,7 +1813,13 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
                                   lag_  = 21,
                                   lagnk_ = 3,
                                   dfseas_ = 8,
-                                  nsim__ = 1000
+                                  nsim__ = 1000,
+                                  descriptive_stats = FALSE,
+                                  ds_correlation_method = "pearson",
+                                  ds_dist_columns = c(),
+                                  ds_ma_days = 100,
+                                  ds_ma_sides = 2,
+                                  ds_ma_columns = c()
 ) {
   varper_ <- c(10, 75, 90)
 
@@ -1819,6 +1834,22 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
       output_year = output_year_,
       RR_distribution_length = RR_distribution_length_
     )
+
+  # descriptive stats
+  if (descriptive_stats==TRUE) {
+    common_descriptive_stats(
+      df_list = df_list_,
+      use_individual_dfs = T,
+      output_path = output_folder_path_,
+      correlation_method = ds_correlation_method,
+      dist_columns = ds_dist_columns,
+      ma_days = ds_ma_days,
+      ma_sides = ds_ma_sides,
+      ma_columns = ds_ma_columns,
+      dependent_col = "dependent", # col has been renamed
+      independent_cols = independent_cols_
+    )
+  }
 
   c(coef_, vcov_, cb_, model_) %<-%
     run_model(df_list = df_list_,
