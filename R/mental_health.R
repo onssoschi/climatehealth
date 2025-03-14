@@ -279,7 +279,7 @@ mh_save_results <- function(results,
 
   if (!is.null(output_folder_path)) {
 
-    climatehealth::check_file_exists(file.path(output_folder_path))
+    check_file_exists(file.path(output_folder_path))
 
     write.csv(results, file = file.path(
       output_folder_path, "suicides_results.csv"), row.names = FALSE)
@@ -418,6 +418,3 @@ suicides_heat_do_analysis <- function(data_path,
   return(results)
 
 }
-
-
-
