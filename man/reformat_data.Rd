@@ -24,4 +24,5 @@ to prepare the data for use with a climate indicator.
 }
 \examples{
 fill_na = c("col1", "col2")
+
 }

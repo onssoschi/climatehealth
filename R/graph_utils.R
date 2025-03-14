@@ -11,8 +11,8 @@ library(gplots)
 #' @param plot_count The number of plots required for the grid.
 #'
 #' @return A vector containing [1] x value and [2] y value for the grid.
-#' @export
 #'
+#' @export
 create_grid <- function(plot_count) {
   est <- sqrt(plot_count)
   if (est==floor(est)){
