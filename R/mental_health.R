@@ -17,7 +17,8 @@
 #' admissions).
 #'
 #' @returns A list of dataframes with formatted and renamed columns.
-
+#'
+#' @exports
 mh_read_and_format_data <- function(data_path,
                                  date_col,
                                  region_col = NULL,
@@ -74,7 +75,8 @@ mh_read_and_format_data <- function(data_path,
 #' (see dlnm:crossbasis).
 #'
 #' @returns A list of cross-basis matrices by region
-
+#'
+#' @exports
 mh_create_crossbasis <- function(data,
                               var_fun = "ns",
                               var_dof = 4,
@@ -108,7 +110,8 @@ mh_create_crossbasis <- function(data,
 #' @param cb_list List of cross_basis matrices from create_crossbasis function.
 #'
 #' @returns List containing models by region
-
+#'
+#' @exports
 mh_casecrossover_dlnm <- function(data,
                                cb_list) {
 
@@ -140,7 +143,8 @@ mh_casecrossover_dlnm <- function(data,
 #' analysis.
 #'
 #' @returns A list containing predictions by region
-
+#'
+#' @exports
 mh_predict <- function(data,
                        cb_list,
                        model_list) {
@@ -175,7 +179,8 @@ mh_predict <- function(data,
 #' Defaults to NULL.
 #'
 #' @returns Plots of cumulative lag exposure-response function for each region
-
+#'
+#' @exports
 mh_plot_results <- function(pred_list,
                             save_fig = FALSE,
                             output_folder_path = NULL) {
@@ -225,7 +230,8 @@ mh_plot_results <- function(pred_list,
 #'
 #' @returns Dataframe containing cumulative relative risk and confidence
 #' intervals from analysis.
-
+#'
+#' @exports
 produce_results <- function(pred_list) {
 
     results <- data.frame()
@@ -266,7 +272,8 @@ produce_results <- function(pred_list) {
 #' intervals from analysis.
 #' @param output_folder_path Path to folder where results should be saved.
 #' Defaults to NULL.
-
+#'
+#' @exports
 mh_save_results <- function(results,
                          output_folder_path = NULL) {
 
