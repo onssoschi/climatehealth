@@ -10,6 +10,7 @@
 #'    Default: TRUE
 #'
 #' @return 'exists'. Whether or not the file exists on disk.
+#'
 #' @export
 check_file_exists <- function(fpath, raise = TRUE) {
   # assert if the file exists
@@ -34,6 +35,7 @@ check_file_exists <- function(fpath, raise = TRUE) {
 #' @param raise Whether or not to raise an error, Default: TRUE
 #'
 #' @return Whether or not the passed file has a valid file extension.
+#'
 #' @export
 check_file_extension <- function(
     fpath,
@@ -74,6 +76,8 @@ check_file_extension <- function(
 #' @export
 #'
 #' @examples input_csv_path = "directory/file_name.csv"
+#'
+#' @export
 read_input_data <- function(input_csv_path) {
   if (is.list(input_csv_path)) {
     df <- data.frame(input_csv_path)
