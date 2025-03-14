@@ -2,7 +2,7 @@
 % Please edit documentation in R/temperature.R
 \name{heat_and_cold_analysis}
 \alias{heat_and_cold_analysis}
-\title{Do full DLNM analysis}
+\title{Do full DLNM analysis.}
 \usage{
 heat_and_cold_analysis(
   input_csv_path_ = "NONE",
@@ -29,7 +29,8 @@ heat_and_cold_analysis(
   ds_correlation_method = "pearson",
   ds_dist_columns = c(),
   ds_ma_days = 100,
-  ds_ma_sides = 2
+  ds_ma_sides = 2,
+  ds_ma_columns = c()
 )
 }
 \arguments{
@@ -85,6 +86,8 @@ Defaults to 100.}
 
 \item{ds_ma_sides}{integer. How many sides to use for moving average calculations (1 or 2).
 Defaults to 2.}
+
+\item{ds_ma_columns}{character vector. The names of columns to plot moving average for.}
 
 \item{meta_analysis}{Boolean (TRUE or FALSE). Whether to include
 meta-analysis. Must be TRUE if by_region argument is FALSE.}
