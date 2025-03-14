@@ -344,7 +344,7 @@ mh_minmax_suicide_temp <- function(data,
 #' @param data A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
 #' @param bvar_list List containing onebasis of exposure variable for each region.
-#' @param minpercreg Vector. Percentile of minimum suicide temperature for each region.
+#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
 #' @param blup A list. BLUP (best linear unbiased predictions) from the
 #' meta-analysis model for each region.
 #'
@@ -354,7 +354,7 @@ mh_minmax_suicide_temp <- function(data,
 mh_predict <- function(data,
                        bvar_list,
                        minpercreg,
-                       blup) {
+                       blup){
 
   pred_list <- list()
 
@@ -492,7 +492,7 @@ mh_save_results <- function(results,
 
   if (!is.null(output_folder_path)) {
 
-    climatehealth::check_file_exists(file.path(output_folder_path))
+    check_file_exists(file.path(output_folder_path))
 
     write.csv(results, file = file.path(
       output_folder_path, "suicides_results.csv"), row.names = FALSE)
@@ -537,8 +537,6 @@ mh_save_results <- function(results,
 #' (see dlnm:crossbasis). Defaults to 1.
 #' @param lag_days Integer. Maximum lag. Defaults to 2.
 #' (see dlnm:crossbasis).
-#' @param cenper Integer. Value for the percentile in calculating the centering
-#' value 0-100. Defaults to 50.
 #' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
 #' FALSE.
 #' @param save_csv Boolean. Whether to save the results as a CSV. Defaults to
@@ -546,6 +544,8 @@ mh_save_results <- function(results,
 #' @param descriptive_stats Boolean. Whether to calculate descriptive stats.
 #' @param ds_correlation_method character. The correlation method used in correlation matrices.
 #' Defaults to 'pearson'.
+#' @param ds_use_individual_dfs Boolean. Whether to calculate descriptive stats for each individual
+#' df in df_list. Default to TRUE.
 #' @param ds_dist_columns character vector. The names of columns to plot distributions for.
 #' Defaults to c().
 #' @param ds_ma_days integer. How many days to use for moving average calculations.
@@ -571,11 +571,12 @@ suicides_heat_do_analysis <- function(data_path,
                                       lag_fun = "strata",
                                       lag_breaks = 1,
                                       lag_days = 2,
-                                      cenper = 50,
                                       save_fig = FALSE,
                                       save_csv = FALSE,
+                                      cenper = 50,
                                       descriptive_stats = FALSE,
                                       ds_correlation_method = "pearson",
+                                      ds_use_individual_dfs = TRUE,
                                       ds_dist_columns = c(),
                                       ds_ma_days = 100,
                                       ds_ma_sides = 2,
@@ -592,7 +593,7 @@ suicides_heat_do_analysis <- function(data_path,
     common_descriptive_stats(
       dataset_title = "mental health",
       df_list = df_list,
-      use_individual_dfs = TRUE,
+      use_individual_dfs = ds_use_individual_dfs,
       output_path = output_folder_path,
       correlation_method = ds_correlation_method,
       dist_columns =  ds_dist_columns,
@@ -639,7 +640,6 @@ suicides_heat_do_analysis <- function(data_path,
                           bvar_list = bvar_list,
                           minpercreg = minpercreg,
                           blup = blup)
-
 
   mh_plot_results(pred_list = pred_list,
                save_fig = save_fig,
