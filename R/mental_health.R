@@ -134,32 +134,237 @@ mh_casecrossover_dlnm <- function(data,
 }
 
 
+#' Reduce to overall cumulative
+#'
+#' @description Reduce model to the overall cumulative association
+#'
+#' @param data A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param var_per Vector. Internal knot positions for argvar
+#' (see dlnm::crossbasis). Defaults to c(25,50,75).
+#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
+#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
+#' @param cenper Integer. Value for the percentile in calculating the centering
+#' value 0-100. Defaults to 50.
+#' @param cb_list List of cross_basis matrices from create_crossbasis function.
+#' @param model_list List of models produced from case-crossover and DLNM
+#' analysis.
+#'
+#' @return
+#'  \itemize{
+#'   \item `coef_` A matrix of coefficients for the reduced model.
+#'   \item `vcov_` A list. Covariance matrices for each region for the reduced model.
+#'   }
+
+
+mh_reduce_cumulative <- function(data,
+                                 var_per = c(25,50,75),
+                                 var_degree = 2,
+                                 cenper = 50,
+                                 cb_list,
+                                 model_list) {
+
+  coef_ <- matrix(data = NA,
+                  nrow = length(names(data)),
+                  ncol = length(var_per) + var_degree,
+                  dimnames = list(names(data)))
+  vcov_ <- vector("list", length(names(data)))
+  names(vcov_) <- names(data)
+
+  for(reg in names(data)){
+
+    region_data <- data[[reg]]
+    cb <- cb_list[[reg]]
+
+
+    red <- dlnm::crossreduce(cb, model_list[[reg]], cen = quantile(region_data$temp, cenper/100, na.rm = T))
+
+    coef_[reg,] <- coef(red)
+    vcov_[[reg]] <- vcov(red)
+
+  }
+
+  return(list(coef_, vcov_))
+
+}
+
+
+#' Meta-analysis and BLUPs
+#'
+#' @description Run meta-analysis using temperature average and range as meta
+#' predictors. Then create the best linear unbiased predictions (BLUPs).
+#'
+#' @param data A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param coef_ A matrix of coefficients for the reduced model.
+#' @param vcov_ A list. Covariance matrices for each region for the reduced model.
+#'
+#' @return
+#' \itemize{
+#'   \item `mm` A model object. A multivariate meta-analysis model.
+#'   \item `blup` A list. BLUP (best linear unbiased predictions) from the
+#'   meta-analysis model for each region.
+#'   }
+
+mh_meta_analysis <- function(data,
+                             coef_,
+                             vcov_){
+
+  # Create temperature average and range as meta predictors
+
+  temp_avg <- sapply(df_list, function(x) mean(x$temp, na.rm = TRUE))
+  temp_range <- sapply(df_list, function(x) diff(range(x$temp, na.rm = TRUE)))
+
+  # Meta-analysis
+
+  mm <- mixmeta::mixmeta(formula = coef_ ~ temp_avg + temp_range,
+                         S = vcov_,
+                         data = as.data.frame(names(df_list)),
+                         method = "reml")
+  #TODO potentially add random effects random = ~ 1 | region (I think already covered by reml)
+
+  # BLUP
+
+  blup <- mixmeta::blup(object = mm,
+                        vcov = TRUE)
+
+  names(blup) <- names(df_list)
+
+  return(list(mm, blup))
+
+}
+
+
+#' Redefine function ahead of predictions
+#'
+#' @description Redefine the function including boundary knots ahead of running
+#' predictions from the model
+#'
+#' @param data A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param var_fun Character. Exposure function for argvar
+#' (see dlnm::crossbasis). Defaults to 'bs'.
+#' @param var_per Vector. Internal knot positions for argvar
+#' (see dlnm::crossbasis). Defaults to c(25,50,75).
+#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
+#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
+#'
+#' @return List containing onebasis of exposure variable for each region.
+
+mh_redefine_function_reg <- function(data,
+                                     var_fun = "bs",
+                                     var_per = c(25,50,75),
+                                     var_degree = 2){
+
+  bvar_list <- list()
+
+  for(reg in names(data)){
+
+    region_data <- data[[reg]]
+    predvar <- quantile(region_data$temp, 1:99/100, na.rm = TRUE)
+
+    # Redefine the function using all arguments (boundary knots included)
+
+    argvar <- list(x = predvar,
+                   fun = var_fun,
+                   knots = quantile(region_data$temp, var_per/100, na.rm = TRUE),
+                   degree = var_degree,
+                   Boundary.knots = range(region_data$temp, na.rm = TRUE))
+
+    bvar <- do.call(dlnm::onebasis, argvar)
+
+    bvar_list[[reg]] <- bvar
+
+  }
+
+  return(bvar_list)
+
+}
+
+
+#' Define min and max suicide values
+#'
+#' @description Define the minimum (between 1st and 50th percentiles) and
+#' maximum (between 51st and 99th percentiles) suicide temperature values
+#'
+#' @param data A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param bvar_list List containing onebasis of exposure variable for each region.
+#' @param blup A list. BLUP (best linear unbiased predictions) from the
+#' meta-analysis model for each region.
+#'
+#' @return
+#' \itemize{
+#'   \item `minpercreg` Vector. Percentile of minimum suicide temperature for each region.
+#'   \item `maxpercreg` Vector. Percentile of maximum suicide temperature for each region.
+#'   \item `minpercnat` Integer. Percentile of minimum suicide temperature for country.
+#'   \item `maxpercnat` Integer. Percentile of maximum suicide temperature for country.
+#'   }
+
+mh_minmax_suicide_temp <- function(data,
+                                   bvar_list,
+                                   blup) {
+
+  # Generate matrix for storing results
+
+  minpercreg <- mintempreg <- maxpercreg <- maxtempreg <- rep(NA, length(data))
+  names(minpercreg) <- names(mintempreg) <- names(maxpercreg) <- names(maxtempreg) <- names(data)
+
+  # Define min and max suicide values: exclude low and very hot temperature
+
+  for(reg in names(data)){
+
+    region_data <- data[[reg]]
+
+    minpercreg[reg] <- (1:50)[which.min((bvar_list[[reg]]%*%blup[[reg]]$blup)[1:50,])]
+    maxpercreg[reg] <- (51:99)[which.max((bvar_list[[reg]]%*%blup[[reg]]$blup)[51:99,])]
+
+  }
+
+  # National level points of min and max suicide temperature
+
+  minpercnat <- median(minpercreg)
+  maxpercnat <- median(maxpercreg)
+
+  return(list(minpercreg, maxpercreg, minpercnat, maxpercnat))
+
+}
+
+
 #' Run predictions from model
 #'
 #' @description Use model to run predictions
 #'
 #' @param data A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
-#' @param cb_list List of cross_basis matrices from create_crossbasis function.
-#' @param model_list List of models produced from case-crossover and DLNM
-#' analysis.
+#' @param bvar_list List containing onebasis of exposure variable for each region.
+#' @param minpercreg Vector. Percentile of minimum suicide temperature for each region.
+#' @param blup A list. BLUP (best linear unbiased predictions) from the
+#' meta-analysis model for each region.
 #'
 #' @returns A list containing predictions by region
 
 mh_predict <- function(data,
-                       cb_list,
-                       model_list) {
+                       bvar_list,
+                       minpercreg,
+                       blup) {
 
   pred_list <- list()
 
   for(reg in names(data)){
 
     region_data <- data[[reg]]
-    cb <- cb_list[[reg]]
-    cen <- mean(region_data$temp, na.rm = T)
-    pred <- dlnm::crosspred(cb, model_list[[reg]], cen = cen,
+    cen <- quantile(region_data$temp, minpercreg[reg]/100, na.rm = TRUE)
+
+    pred <- dlnm::crosspred(bvar_list[[reg]],
+                            coef = blup[[reg]]$blup,
+                            vcov = blup[[reg]]$vcov,
+                            model.link = "log",
+                            by = 0.1,
+                            cen = cen,
                             from = min(region_data$temp, na.rm = TRUE),
-                            to = max(region_data$temp, na.rm = TRUE), by = 1)
+                            to = max(region_data$temp, na.rm = TRUE))
+
     pred_list[[reg]] <- pred
 
   }
@@ -322,6 +527,8 @@ mh_save_results <- function(results,
 #' (see dlnm:crossbasis). Defaults to 1.
 #' @param lag_days Integer. Maximum lag. Defaults to 2.
 #' (see dlnm:crossbasis).
+#' @param cenper Integer. Value for the percentile in calculating the centering
+#' value 0-100. Defaults to 50.
 #' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
 #' FALSE.
 #' @param save_csv Boolean. Whether to save the results as a CSV. Defaults to
@@ -354,6 +561,7 @@ suicides_heat_do_analysis <- function(data_path,
                                       lag_fun = "strata",
                                       lag_breaks = 1,
                                       lag_days = 2,
+                                      cenper = 50,
                                       save_fig = FALSE,
                                       save_csv = FALSE,
                                       descriptive_stats = FALSE,
@@ -397,9 +605,30 @@ suicides_heat_do_analysis <- function(data_path,
   model_list <- mh_casecrossover_dlnm(data = df_list,
                                    cb_list = cb_list)
 
+  c(coef_, vcov_) %<-% mh_reduce_cumulative(data = df_list,
+                                            var_per = var_per,
+                                            var_degree = var_degree,
+                                            cenper = cenper, #TODO Add to config file
+                                            cb_list = cb_list,
+                                            model_list = model_list)
+
+  c(mm, blup) %<-% mh_meta_analysis(data = df_list,
+                                    coef_ = coef_,
+                                    vcov_ = vcov_)
+
+  bvar_list <- mh_redefine_function(data = df_list,
+                                    var_fun = var_fun,
+                                    var_per = var_per,
+                                    var_degree = var_degree)
+
+  c(minpercreg, maxpercreg, minpercnat, maxpercnat) %<-% mh_minmax_suicide_temp(data = df_list,
+                                                                                bvar_list = bvar_list,
+                                                                                blup = blup)
+
   pred_list <- mh_predict(data = df_list,
-                          cb_list = cb_list,
-                          model_list = model_list)
+                          bvar_list = bvar_list,
+                          mintempreg = mintempreg,
+                          blup = blup)
 
 
   mh_plot_results(pred_list = pred_list,
