@@ -158,8 +158,8 @@ mh_casecrossover_dlnm <- function(data,
 #'   \item `coef_` A matrix of coefficients for the reduced model.
 #'   \item `vcov_` A list. Covariance matrices for each region for the reduced model.
 #'   }
-
-
+#'
+#' @exports
 mh_reduce_cumulative <- function(data,
                                  var_per = c(25,50,75),
                                  var_degree = 2,
@@ -208,21 +208,22 @@ mh_reduce_cumulative <- function(data,
 #'   \item `blup` A list. BLUP (best linear unbiased predictions) from the
 #'   meta-analysis model for each region.
 #'   }
-
+#'
+#' @exports
 mh_meta_analysis <- function(data,
                              coef_,
                              vcov_){
 
   # Create temperature average and range as meta predictors
 
-  temp_avg <- sapply(df_list, function(x) mean(x$temp, na.rm = TRUE))
-  temp_range <- sapply(df_list, function(x) diff(range(x$temp, na.rm = TRUE)))
+  temp_avg <- sapply(data, function(x) mean(x$temp, na.rm = TRUE))
+  temp_range <- sapply(data, function(x) diff(range(x$temp, na.rm = TRUE)))
 
   # Meta-analysis
 
   mm <- mixmeta::mixmeta(formula = coef_ ~ temp_avg + temp_range,
                          S = vcov_,
-                         data = as.data.frame(names(df_list)),
+                         data = as.data.frame(names(data)),
                          method = "reml")
   #TODO potentially add random effects random = ~ 1 | region (I think already covered by reml)
 
@@ -231,7 +232,7 @@ mh_meta_analysis <- function(data,
   blup <- mixmeta::blup(object = mm,
                         vcov = TRUE)
 
-  names(blup) <- names(df_list)
+  names(blup) <- names(data)
 
   return(list(mm, blup))
 
@@ -253,7 +254,8 @@ mh_meta_analysis <- function(data,
 #' (see dlnm::crossbasis). Defaults to 2 (quadratic).
 #'
 #' @return List containing onebasis of exposure variable for each region.
-
+#'
+#' @exports
 mh_redefine_function_reg <- function(data,
                                      var_fun = "bs",
                                      var_per = c(25,50,75),
@@ -303,7 +305,8 @@ mh_redefine_function_reg <- function(data,
 #'   \item `minpercnat` Integer. Percentile of minimum suicide temperature for country.
 #'   \item `maxpercnat` Integer. Percentile of maximum suicide temperature for country.
 #'   }
-
+#'
+#' @exports
 mh_minmax_suicide_temp <- function(data,
                                    bvar_list,
                                    blup) {
@@ -589,13 +592,13 @@ suicides_heat_do_analysis <- function(data_path,
     common_descriptive_stats(
       dataset_title = "mental health",
       df_list = df_list,
-      use_individual_dfs = stats_config$use_individual_dfs,
-      output_path = path_config$output_folder_path,
+      use_individual_dfs = TRUE,
+      output_path = output_folder_path,
       correlation_method = ds_correlation_method,
       dist_columns =  ds_dist_columns,
       ma_days = ds_ma_days,
       ma_sides = ds_ma_sides,
-      ma_columns = ds_ma_column,
+      ma_columns = ds_ma_columns,
       dependent_col = "suicides", # col is renamed in data
       independent_cols = c()
     )
@@ -623,7 +626,7 @@ suicides_heat_do_analysis <- function(data_path,
                                     coef_ = coef_,
                                     vcov_ = vcov_)
 
-  bvar_list <- mh_redefine_function(data = df_list,
+  bvar_list <- mh_redefine_function_reg(data = df_list,
                                     var_fun = var_fun,
                                     var_per = var_per,
                                     var_degree = var_degree)
@@ -634,7 +637,7 @@ suicides_heat_do_analysis <- function(data_path,
 
   pred_list <- mh_predict(data = df_list,
                           bvar_list = bvar_list,
-                          mintempreg = mintempreg,
+                          minpercreg = minpercreg,
                           blup = blup)
 
 
