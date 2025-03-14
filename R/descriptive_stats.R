@@ -7,6 +7,7 @@
 #' @param correlation_method string. The method to use for correlation calculations.
 #'
 #' @return Matrix. Correlation matrix for selected columns in the input dataset.
+#'
 #' @export
 create_correlation_matrix <- function(
     df,
@@ -45,6 +46,7 @@ create_correlation_matrix <- function(
 #' @param columns vector. The columns to create summaries for.
 #'
 #' @return Dataframe. Column summaries
+#'
 #' @export
 create_column_summaries <- function(
     df,
