@@ -105,7 +105,7 @@ create_na_summary <- function(
       stop(paste0("Column ", col, " not in dataset."))
     }
   }
-  na_counts <- sapply(df[[1]], function(y) sum(length(which(is.na(y)))))
+  na_counts <- sapply(df, function(y) sum(length(which(is.na(y)))))
   na_counts <- data.frame(na_counts)
   colnames(na_counts) <- c("na_count")
   return(na_counts)
