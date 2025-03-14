@@ -328,6 +328,8 @@ mh_save_results <- function(results,
 #' @param descriptive_stats Boolean. Whether to calculate descriptive stats.
 #' @param ds_correlation_method character. The correlation method used in correlation matrices.
 #' Defaults to 'pearson'.
+#' @param ds_use_individual_dfs Boolean. Whether to calculate descriptive stats for each individual
+#' df in df_list. Default to TRUE.
 #' @param ds_dist_columns character vector. The names of columns to plot distributions for.
 #' Defaults to c().
 #' @param ds_ma_days integer. How many days to use for moving average calculations.
@@ -356,6 +358,7 @@ suicides_heat_do_analysis <- function(data_path,
                                       save_csv = FALSE,
                                       descriptive_stats = FALSE,
                                       ds_correlation_method = "pearson",
+                                      ds_use_individual_dfs = TRUE,
                                       ds_dist_columns = c(),
                                       ds_ma_days = 100,
                                       ds_ma_sides = 2,
@@ -372,13 +375,13 @@ suicides_heat_do_analysis <- function(data_path,
     common_descriptive_stats(
       dataset_title = "mental health",
       df_list = df_list,
-      use_individual_dfs = stats_config$use_individual_dfs,
-      output_path = path_config$output_folder_path,
+      use_individual_dfs = ds_use_individual_dfs,
+      output_path = output_folder_path,
       correlation_method = ds_correlation_method,
       dist_columns =  ds_dist_columns,
       ma_days = ds_ma_days,
       ma_sides = ds_ma_sides,
-      ma_columns = ds_ma_column,
+      ma_columns = ds_ma_columns,
       dependent_col = "suicides", # col is renamed in data
       independent_cols = c()
     )
