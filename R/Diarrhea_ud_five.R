@@ -392,8 +392,8 @@ fit_inla_model <- function(data, formula, family = "poisson", config = FALSE) {
 #' DIC (Deviance Information Criterion), and identifies the best-fitting model.
 #'
 #' @param data is the dataframe set for INLA model.
-#' @param precision_prior A hyperparameter that defines the prior distribution
-#' for the precision (inverse variance) of the random effects in the INLA model.
+#' @param basis_matrices_choices is a list of parameter
+#' c("tmax", "tmin","rainfall", "r_humidity").
 #' @param output_dir is the path to save model output
 #' @param graph_output_path is the path to save output graph
 #' @param save_csv Boolean. Whether to save the results as a CSV. Defaults to
@@ -404,8 +404,9 @@ fit_inla_model <- function(data, formula, family = "poisson", config = FALSE) {
 
 run_inla_models <- function(data,
                             output_dir,
+                            basis_matrices_choices,
                             graph_output_path,
-                            save_csv= FALSE) {
+                            save_csv = FALSE) {
 
   # Ensure output directory exists
   if (!dir.exists(output_dir)) {
@@ -418,7 +419,7 @@ run_inla_models <- function(data,
   precision_prior <- list(prec = list(prior = "pc.prec", param = c(0.5, 0.01)))
 
   # Define baseline model formula
-  baseformula <- Diarrhea ~ 1 + spi + r_humidity + tmin +
+  baseformula <- Diarrhea ~ 1 +
     f(Month, replicate = region_index, model = "rw1", cyclic = TRUE, constr = TRUE,
       scale.model = TRUE, hyper = precision_prior) +
     f(district_index, model = "bym2", replicate = year_index,
@@ -429,49 +430,28 @@ run_inla_models <- function(data,
   basis_matrices <- set_cross_basis(data)
 
   # Define extended formulas
-  formula0.1 <- update.formula(baseformula, ~ . + basis_matrices$tmax)
-  formula0.2 <- update.formula(baseformula, ~ . + basis_matrices$rainfall)
-  formula0.3 <- update.formula(baseformula, ~ . + basis_matrices$tmax + basis_matrices$rainfall)
-
-  # List of formulas and corresponding labels
-  formulas <- list(baseformula, formula0.1, formula0.2, formula0.3)
-  names(formulas) <- c("basemodel", "model0.1", "model0.2", "model0.3")
+  formula <- update.formula(baseformula,
+                            as.formula(paste0("~ . + ",
+                                              paste0("basis_matrices$",
+                                                     basis_matrices_choices,
+                                                     collapse = " + "))))
 
   # Fit models and save results
-  models <- lapply(seq_along(formulas), function(i) {
-    model <- fit_inla_model(formulas[[i]], data = as.data.frame(data))
-    save(model, file = file.path(output_dir, paste0(labels[i], ".csv")))
-    return(model)
-  })
+  model_name <- paste0("model_with_",
+                       paste0(basis_matrices_choices, collapse = "_"), ".csv")
+  model <- fit_inla_model(formula, data = as.data.frame(data))
+  save(model, file = file.path(output_dir, model_name))
+
 
   # Create a table to store DIC values
-  table0 <- data.table(Model = c("base", "tmax", "rainfall", "tmax + rainfall"),
+  table0 <- data.table(Model = paste0(basis_matrices_choices, collapse = " + "),
                        DIC = NA, logscore = NA)
 
   # Populate DIC values from saved models
-  for (i in seq_along(labels)) {
-    file_path <- file.path(output_dir, paste0(labels[i], ".csv"))
-    if (file.exists(file_path)) {
-      load(file_path)
-      if (!is.null(model$dic$dic)) {
-        table0$DIC[i] <- round(model$dic$dic, 0)
-        table0$logscore[i] <- round(-mean(log(model$cpo$cpo), na.rm = TRUE), 3)
-      }
-    }
-  }
+  table0$DIC <- round(model$dic$dic, 0)
+  table0$logscore <- round(-mean(log(model$cpo$cpo), na.rm = TRUE), 3)
 
-  # Identify the best fitting model
-  best_fit <- which.min(table0$DIC)
-
-  files_names <- paste0(output_dir, paste0(labels, ".csv"))
-  best_model_file <- files_names[best_fit]
-  # rename the file name of the best model
-  file.copy(best_model_file, file.path(output_dir, "best_model.csv"), overwrite = TRUE)
-
-  models = models[c(1, best_fit)]
-  names(models) <- c("basemodel", "bestmodel")
-
-  return(list(models = models, dic_table = table0, best_fit = best_fit))
+  return(list(models = model, dic_table = table0, best_fit = model_name))
 }
 
 
@@ -483,6 +463,7 @@ run_inla_models <- function(data,
 #' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
 #' FALSE.
 #' @param output_dir is the path to save model output
+#' @param param_model_name is the path to model name
 #' @param output_file Path to save monthly random effect plot
 #' @param graph_output_path is the path to save output graph
 #'
@@ -490,6 +471,7 @@ run_inla_models <- function(data,
 
 plot_monthly_random_effects <- function(save_fig = FALSE,
                                         output_dir,
+                                        param_model_name,
                                         output_file,
                                         graph_output_path) {
   combined_data <- combine_health_climate_data()
@@ -498,7 +480,7 @@ plot_monthly_random_effects <- function(save_fig = FALSE,
   map <- combined_data$map
 
   if ("model" %in% ls()) rm(model)
-  load(file.path(output_dir, "best_model.csv"))
+  load(file.path(output_dir, param_model_name))
 
   # Create data frame for monthly random effects per region
   month_effects <- data.frame(region_code = rep(unique(data$region_code), each = 12),
@@ -542,6 +524,7 @@ plot_monthly_random_effects <- function(save_fig = FALSE,
 #' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
 #' FALSE.
 #' @param output_dir Path to save model output
+#' @param param_model_name is the path to model name
 #' @param graph_output_path Path to save output graph
 #' @param output_file Path to save yearly space random effect plot
 #'
@@ -550,6 +533,7 @@ plot_monthly_random_effects <- function(save_fig = FALSE,
 yearly_spatial_random_effect <- function(save_fig = FALSE,
                                          output_file,
                                          output_dir,
+                                         param_model_name,
                                          graph_output_path){
   # make maps of spatial random effects per year (Appendix Fig S8)
   # extract posterior mean estimates for combined unstructured and structured random effects
@@ -559,12 +543,13 @@ yearly_spatial_random_effect <- function(save_fig = FALSE,
   map <- combined_data$map
 
   if ("model" %in% ls()) rm(model)
-  load(file.path(out))
+  load(file.path(output_dir, param_model_name))
 
   ntime <- length(unique(data$time))       # Total number of months
   nyear <- length(unique(data$Year))       # Total number of years
   ndistrict <- length(unique(data$district_code))  # Total number of districts
   nregion <- length(unique(data$region_code))  # Total number of regions
+
 
   space <- data.table(model$summary.random$district_index)
   space$Year <- rep(min(data$Year):max(data$Year), each = 2*ndistrict)
@@ -606,6 +591,7 @@ yearly_spatial_random_effect <- function(save_fig = FALSE,
 #' @param data is the dataframe set for INLA model
 #' @param param_terms A list containing parameter term "tmax" and "rainfall".
 #' Default to tmax.
+#' @param param_model_name is the path to model name
 #' @param level A list of space disagraggation containing "country", "Region",
 #' and "District". Default to "country".
 #'
@@ -613,13 +599,14 @@ yearly_spatial_random_effect <- function(save_fig = FALSE,
 #' District level.
 
 get_predictions <- function(data,
-                            param_terms = "tmax",
+                            param_terms,
+                            param_model_name,
                             level = "country"){
 
   # loading the best model
   data <- create_inla_indices(data)
   if ("model" %in% ls()) rm(model)
-  load(file.path(output_dir, "best_model.csv"))
+  load(file.path(output_dir, param_model_name))
 
   # getting basis matrices
   basis_matrices <- set_cross_basis(data)
@@ -678,7 +665,6 @@ get_predictions <- function(data,
   return(predt)
 }
 
-
 #' read in contour plot at country, Region, District level.
 #'
 #' @description: Generates a contour plot showing the lag exposure effect  of
@@ -686,6 +672,7 @@ get_predictions <- function(data,
 #'
 #' @param param_terms A list containing parameter term "tmax" and "rainfall".
 #' Default to tmax.
+#' @param param_model_name is the path to model name
 #' @param level A list of space disagraggation containing "country", "Region",
 #' and "District". Default to country.
 #' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
@@ -697,16 +684,18 @@ get_predictions <- function(data,
 
 contour_plot <- function(data,
                          param_terms = "tmax",
+                         param_model_name,
                          level = "country",
                          save_fig = FALSE,
                          output_dir,
-                         graph_output_path) {
+                         graph_output_path
+                         ) {
   # customize the output name
   output_file = paste0("contour_plot_", param_terms, "_", level, ".pdf")
   # getting the best model
   data <- create_inla_indices(data)
   if ("model" %in% ls()) rm(model)
-  load(file.path(output_dir, "best_model.csv"))
+  load(file.path(output_dir, param_model_name))
 
   # Extract full coefficients and covariance matrix
   coef <- model$summary.fixed$mean
