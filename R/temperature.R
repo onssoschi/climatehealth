@@ -1845,6 +1845,7 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
   # descriptive stats
   if (descriptive_stats==TRUE) {
     common_descriptive_stats(
+      dataset_title = "temperature",
       df_list = df_list_,
       use_individual_dfs = T,
       output_path = output_folder_path_,
