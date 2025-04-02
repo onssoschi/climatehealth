@@ -204,6 +204,8 @@ mh_reduce_cumulative <- function(data,
 #'
 #' @return
 #' \itemize{
+#'   \item `temp_avg` Vector. Average temperature for each region.
+#'   \item `temp_range` Vector. Range of temperature for each region.
 #'   \item `mm` A model object. A multivariate meta-analysis model.
 #'   \item `blup` A list. BLUP (best linear unbiased predictions) from the
 #'   meta-analysis model for each region.
@@ -234,7 +236,7 @@ mh_meta_analysis <- function(data,
 
   names(blup) <- names(data)
 
-  return(list(mm, blup))
+  return(list(temp_avg, temp_range, mm, blup))
 
 }
 
@@ -337,9 +339,9 @@ mh_minmax_suicide_temp <- function(data,
 }
 
 
-#' Run predictions from model
+#' Run regional predictions from model
 #'
-#' @description Use model to run predictions
+#' @description Use model to run regional predictions
 #'
 #' @param data A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
@@ -351,7 +353,7 @@ mh_minmax_suicide_temp <- function(data,
 #' @returns A list containing predictions by region
 #'
 #' @exports
-mh_predict <- function(data,
+mh_predict_reg <- function(data,
                        bvar_list,
                        minpercreg,
                        blup){
@@ -375,6 +377,75 @@ mh_predict <- function(data,
     pred_list[[reg]] <- pred
 
   }
+
+  return(pred_list)
+
+}
+
+
+#' Run national predictions from meta analysis
+#'
+#' @description Use the meta analysis to create national level predictions
+#'
+#' @param data A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param var_fun Character. Exposure function for argvar
+#' (see dlnm::crossbasis). Defaults to 'bs'.
+#' @param var_per Vector. Internal knot positions for argvar
+#' (see dlnm::crossbasis). Defaults to c(25,50,75).
+#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
+#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
+#' @param minpercnat Integer. Percentile of minimum suicide temperature for country.
+#' @param temp_avg Vector. Average temperature for each region.
+#' @param temp_range Vector. Range of temperature for each region.
+#' @param mm A model object. A multivariate meta-analysis model.
+#' @param pred_list A list containing predictions from the model by region.
+#' @param country Character. Name of country for national level estimates.
+#'
+#' @returns A list containing predictions by region.
+#'
+#' @exports
+mh_predict_nat <- function(data,
+                           var_fun = "bs",
+                           var_per = c(25,50,75),
+                           var_degree = 2,
+                           minpercnat,
+                           temp_avg,
+                           temp_range,
+                           mm,
+                           pred_list,
+                           country = "National"){
+
+  national_data <- as.data.frame(do.call(rbind, data))
+
+  predvar <- quantile(national_data$temp, 1:99/100, na.rm = TRUE)
+
+  argvar <- list(x = predvar,
+                 fun = var_fun,
+                 knots = quantile(national_data$temp, var_per/100, na.rm = TRUE),
+                 degree = var_degree,
+                 Boundary.knots = range(national_data$temp, na.rm = TRUE))
+
+  bvar <- do.call(dlnm::onebasis, argvar)
+
+  cen <- quantile(national_data$temp,minpercnat/100,na.rm=T)
+
+  datanew <- data.frame(
+    temp_avg=mean(temp_avg),
+    temp_range=mean(temp_range) )
+
+  mmpredall <- predict(mm,datanew,vcov=T,format="list")
+
+  pred_nat <- dlnm::crosspred(bvar,
+                              coef=mmpredall$fit,
+                              vcov=mmpredall$vcov,
+                              cen=cen,
+                              model.link="log",
+                              by=0.1,
+                              from = min(national_data$temp, na.rm = TRUE),
+                              to = max(national_data$temp, na.rm = TRUE))
+
+  pred_list[[country]] <- pred_nat
 
   return(pred_list)
 
@@ -541,6 +612,9 @@ mh_save_results <- function(results,
 #' FALSE.
 #' @param save_csv Boolean. Whether to save the results as a CSV. Defaults to
 #' FALSE.
+#' @param cenper Integer. Value for the percentile in calculating the centering
+#' value 0-100. Defaults to 50.
+#' @param country Character. Name of country for national level estimates.
 #' @param descriptive_stats Boolean. Whether to calculate descriptive stats.
 #' @param ds_correlation_method character. The correlation method used in correlation matrices.
 #' Defaults to 'pearson'.
@@ -574,6 +648,7 @@ suicides_heat_do_analysis <- function(data_path,
                                       save_fig = FALSE,
                                       save_csv = FALSE,
                                       cenper = 50,
+                                      country = "England",
                                       descriptive_stats = FALSE,
                                       ds_correlation_method = "pearson",
                                       ds_use_individual_dfs = TRUE,
@@ -623,9 +698,9 @@ suicides_heat_do_analysis <- function(data_path,
                                             cb_list = cb_list,
                                             model_list = model_list)
 
-  c(mm, blup) %<-% mh_meta_analysis(data = df_list,
-                                    coef_ = coef_,
-                                    vcov_ = vcov_)
+  c(temp_avg, temp_range, mm, blup) %<-% mh_meta_analysis(data = df_list,
+                                                          coef_ = coef_,
+                                                          vcov_ = vcov_)
 
   bvar_list <- mh_redefine_function_reg(data = df_list,
                                     var_fun = var_fun,
@@ -636,10 +711,21 @@ suicides_heat_do_analysis <- function(data_path,
                                                                                 bvar_list = bvar_list,
                                                                                 blup = blup)
 
-  pred_list <- mh_predict(data = df_list,
-                          bvar_list = bvar_list,
-                          minpercreg = minpercreg,
-                          blup = blup)
+  pred_list <- mh_predict_reg(data = df_list,
+                              bvar_list = bvar_list,
+                              minpercreg = minpercreg,
+                              blup = blup)
+
+  pred_list <- mh_predict_nat(data = df_list,
+                              var_fun = var_fun,
+                              var_per = var_per,
+                              var_degree = var_degree,
+                              minpercnat = minpercnat,
+                              temp_avg = temp_avg,
+                              temp_range = temp_range,
+                              mm = mm,
+                              pred_list = pred_list,
+                              country = country)
 
   mh_plot_results(pred_list = pred_list,
                save_fig = save_fig,
