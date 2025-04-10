@@ -7,7 +7,7 @@
 plot_and_write(
   df_list,
   output_name,
-  output_all = TRUE,
+  aggregate_outputs = FALSE,
   output_folder_path = "",
   save_fig = TRUE,
   save_csv = TRUE,
@@ -33,7 +33,7 @@ list of dataframes for each region.}
 \item{output_name}{The name of the output file. (.csv and .pdf added
 accordingly).}
 
-\item{output_all}{Whether or not to output all geographical regions.}
+\item{aggregate_outputs}{Whether or not to output all geographical regions.}
 
 \item{output_folder_path}{The directory to output the resultant data/plots to.}
 
