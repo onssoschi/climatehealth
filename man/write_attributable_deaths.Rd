@@ -56,4 +56,5 @@ with empirical CI estimated using the re-centered bases.
 }
 \examples{
 output_folder_path = 'myfolder/output/'
+
 }

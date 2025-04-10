@@ -9,12 +9,12 @@
 #' @param output_year The output year. Defaults to 0.
 #'
 #' @return The filtered dataframe.
-#' @export
 #'
+#' @export
 filter_on_rr_distribution <- function(df,
                                       RR_distribution_length = 0,
                                       lower_range = 5,
-                                      upper_range = 15,
+                                      upper_range = 200,
                                       output_year = 0) {
   # Set the output year if the user has not passed one.
   if (output_year == 0) {
@@ -31,17 +31,19 @@ filter_on_rr_distribution <- function(df,
   # Raise an error if the RR distribution length is out of range (5-15)
   if(RR_distribution_length < lower_range) {
 
-    stop("Timeseries to calculate the RR is less than 5 years.")
+    stop(paste0("Timeseries to calculate the RR is less than ", lower_range, " years."))
 
   } else if (RR_distribution_length > upper_range) {
 
-    stop("Timeseries to calculate the RR is more than 15 years.")
+    stop(paste0("Timeseries to calculate the RR is more than ", upper_range, " years."))
 
   }
   # Filter
   df <- df %>%
     dplyr::filter(year >= (output_year - RR_distribution_length + 1)
   & year <= output_year)
+
+  return(df)
 }
 
 
@@ -61,10 +63,11 @@ filter_on_rr_distribution <- function(df,
 #' @param output_year_ Year(s) to calculate output for.
 #' @param RR_distribution_length Number of years for the calculation of RR
 #' distribution. Set both as 'NONE' to use full range in data.
+#'
 #' @return `df_list` An alphabetically-ordered list of dataframes for each
 #' region comprising dates, deaths, and temperatures.
+#'
 #' @export
-
 load_temperature_data <- function(input_csv_path,
                                   dependent_col,
                                   time_col,
@@ -128,12 +131,14 @@ load_temperature_data <- function(input_csv_path,
 #' @param lagnk Number of knots in lag function
 #' (see dlnm::logknots)
 #' @param dfseas Degrees of freedom for seasonality
+#'
 #' @return
 #' \itemize{
 #'   \item `model` A quasi-poission generalised linear model object.
 #'   See: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/glm
 #'   \item `cb` Basis matrices for the two dimensions of predictor and lags.
 #'   }
+#'
 #' @export
 define_model <- function(dataset,
                          independent_cols = NULL,
@@ -149,6 +154,8 @@ define_model <- function(dataset,
     'splines::ns(date, df = dfseas * length(unique(year)))'
   )
 
+  #TODO: add type check for independent_cols
+
   if (!is.null(independent_cols)) {
 
     # normalize type
@@ -160,9 +167,9 @@ define_model <- function(dataset,
     for (col in independent_cols){
       if (!is.character(col)){
         stop(
-          cat(
+          paste0(
             "'independent_cols' expected a vector of strings or a string. Got",
-            typeof(i)
+            typeof(col)
           )
         )
       }
@@ -221,6 +228,7 @@ define_model <- function(dataset,
 #' @param lagnk Number of knots in lag function
 #' (see dlnm::logknots)
 #' @param dfseas Degrees of freedom for seasonality
+#'
 #' @return
 #' \itemize{
 #'   \item `coef_` A matrix of coefficients for reduced model.
@@ -229,6 +237,7 @@ define_model <- function(dataset,
 #'   \item `model` A quasi-poission generalised linear model object.
 #'   See: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/glm
 #'   }
+#'
 #' @export
 run_model <- function(df_list,
                       independent_cols = NULL,
@@ -382,6 +391,7 @@ fwald <- function(model, var) {
 #'
 #' @return P-values for average and range of temperatures
 #' (avgtmean_wald, rangetmean_wald).
+#'
 #' @export
 wald_results <- function(mv) {
 
@@ -410,7 +420,6 @@ define_and_validate_optimal_temps <- function(optimal_temp_range,
     which.min(which(prediction[[RR_fit_col]] >= 1 & prediction[[RR_fit_col]] <= 1.1))))
   optimal_temp_range[index, "upper"] <- as.numeric(names(
     which.max(which(prediction[[RR_fit_col]] >= 1 & prediction[[RR_fit_col]] <= 1.1))))
-
   below_one <- which(prediction[[RR_fit_col]] < 1)
   above_OTR <- which(
     as.numeric(names(prediction[[RR_fit_col]])) > optimal_temp_range[index, "upper"]
@@ -420,7 +429,7 @@ define_and_validate_optimal_temps <- function(optimal_temp_range,
   )
   if (length(which((below_one %in% above_OTR) | (below_one %in% below_OTR))) > 0) {
   # TODO: Create a better warning
-    print(warning("Predicted RR goes below 1 in the ends"))
+    warning("Predicted RR goes below 1 in the ends")
   }
 
   return (optimal_temp_range)
@@ -467,7 +476,6 @@ calculate_min_mortality_temp <-  function(df_list,
                                           lag,
                                           lagnk,
                                           dfseas) {
-
   # Assert that df_list is a list of dataframes
   is_list_of_dfs(list_ = df_list)
 
@@ -567,7 +575,7 @@ calculate_min_mortality_temp <-  function(df_list,
     }
 
   }
-
+  # calculate percentiles
   per <- t(sapply(df_list, function(x)
     quantile(x$temp, c(2.5, 97.5) / 100, na.rm = TRUE)))
 
@@ -589,6 +597,7 @@ calculate_min_mortality_temp <-  function(df_list,
 
   # Country-specific points of minimum mortality
   (minperccountry <- median(minpercregions_))
+
 
   return(list(mintempregions = mintempregions_, an_thresholds))
 
@@ -635,6 +644,7 @@ calculate_min_mortality_temp <-  function(df_list,
 #'    \item `attrdl_yr_all` a dataframe containing attributable deaths by year
 #'    for each region.
 #' }
+#'
 #' @export
 compute_attributable_deaths <- function(df_list,
                                         output_year,
@@ -953,10 +963,7 @@ compute_attributable_deaths <- function(df_list,
 #'  Used to derive confidence intervals.
 #' @param matsim A matrix (numeric). Total (glob),
 #' cold and heat-attributable deaths per region from reduced coefficients.
-#'
-#' @export
-#'
-#'
+
 #' @return
 #' \itemize{
 #'   \item `anregions_bind`
@@ -964,6 +971,8 @@ compute_attributable_deaths <- function(df_list,
 #'   \item `arregions_bind`
 #'   \item `artot_bind`
 #' }
+#'
+#' @export
 compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 
   ###################################################
@@ -974,11 +983,7 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 
     output_year = max(df_list[[1]]$year)
 
-  } else {
-
-    output_year = output_year
   }
-
   # Regions-specific
   anregions <- matsim
   anregionslow <- apply(arraysim, c(1,2), quantile, 0.025)
@@ -1055,9 +1060,6 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 #'  (with confidence intervals).
 #' @param output_folder_path Path to folder for storing outputs.
 #'
-#' @export
-#'
-#'
 #' @return
 #' \itemize{
 #'   \item `wald_publication` A dataframe containing the Wald statistic P-values
@@ -1073,7 +1075,10 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 #'   attributable to temperature, heat, cold, extreme heat and extreme cold
 #'   (with confidence intervals).
 #' }
+#'
 #' @examples output_folder_path = 'myfolder/output/'
+#'
+#' @export
 write_attributable_deaths <- function(avgtmean_wald,
                                       rangetmean_wald,
                                       anregions_bind,
@@ -1129,24 +1134,24 @@ write_attributable_deaths <- function(avgtmean_wald,
 
     write.csv(wald_publication,
               file = paste(output_folder_path,
-                           'wald_test_results.csv',
+                           'heat_and_cold_wald_test_results.csv',
                            sep = ""))
 
     write.csv(anregions_publication,
               file = paste(output_folder_path,
-                           'attributable_deaths_regions.csv',
+                           'heat_and_cold_attributable_deaths_regions.csv',
                            sep = ""))
     write.csv(antot_bind,
               file = paste(output_folder_path,
-                           'attributable_deaths_total.csv',
+                           'heat_and_cold_attributable_deaths_total.csv',
                            sep = ""))
     write.csv(arregions_publication,
               file = paste(output_folder_path,
-                           'attributable_rates_regions.csv',
+                           'heat_and_cold_attributable_rates_regions.csv',
                            sep = ""))
     write.csv(artot_bind,
               file = paste(output_folder_path,
-                           'attributable_rates_total.csv',
+                           'heat_and_cold_attributable_rates_total.csv',
                            sep=""))
   }
   return(list(wald_publication, anregions_publication, antot_bind,
@@ -1161,7 +1166,7 @@ write_attributable_deaths <- function(avgtmean_wald,
 #' list of dataframes for each region.
 #' @param output_name The name of the output file. (.csv and .pdf added
 #' accordingly).
-#' @param output_all Whether or not to output all geographical regions.
+#' @param aggregate_outputs Whether or not to output all geographical regions.
 #' @param output_folder_path The directory to output the resultant data/plots to.
 #' @param save_fig Whether to save output figure (Bool)
 #' @param save_csv Whether to save output CSVs (Bool)
@@ -1188,8 +1193,6 @@ write_attributable_deaths <- function(avgtmean_wald,
 #' @param dependent_col the column name of the
 #' dependent variable of interest e.g. deaths
 #'
-#' @export
-#'
 #' @return
 #' \itemize{
 #'
@@ -1202,10 +1205,11 @@ write_attributable_deaths <- function(avgtmean_wald,
 #'   region.
 #' }
 #'
+#' @export
 plot_and_write <- function(
     df_list,
     output_name,
-    output_all = TRUE,
+    aggregate_outputs = FALSE,
     output_folder_path = "",
     save_fig = TRUE,
     save_csv = TRUE,
@@ -1239,13 +1243,16 @@ plot_and_write <- function(
   # create pdf object
   if (save_fig == TRUE) {
     grid <- create_grid(length(df_list))
+    if (aggregate_outputs) {
+      grid <- c(1, 1)
+    }
     pdf(paste(pdf_output_path, sep = ''),
         width=grid[1]*4, height=grid[2]*4)
 
     par(mfrow=c(grid[1],  grid[2]))
   }
   # structure the layout of the pdf to output
-  if (output_all) {
+  if (aggregate_outputs) {
     return(plot_and_write_relative_risk_all(df_list = df_list,
                                             mintempregions = mintempregions,
                                             save_fig = save_fig,
@@ -1308,8 +1315,6 @@ plot_and_write <- function(
 #' (see dlnm::logknots)
 #' @param dfseas Degrees of freedom for seasonality
 #'
-#' @export
-#'
 #' @return
 #' \itemize{
 #'
@@ -1323,6 +1328,8 @@ plot_and_write <- function(
 #' }
 #'
 #' @examples csv_output_path = "directory/sub_directory/file_name.csv"
+#'
+#' @export
 plot_and_write_relative_risk <- function(df_list,
                                          blup = NULL,
                                          mintempregions,
@@ -1557,7 +1564,6 @@ plot_and_write_relative_risk <- function(df_list,
 #' @param vardegree Degrees of freedom in exposure function
 #' (see dlnm:crossbasis)
 #'
-#' @export
 #' @return
 #' \itemize{
 #'
@@ -1569,7 +1575,10 @@ plot_and_write_relative_risk <- function(df_list,
 #'   \item `temp_df` A dataframe with daily mean exposure values for each
 #'   region.
 #' }
+#'
 #' @examples csv_output_path = "directory/sub_directory/file_name.csv"
+#'
+#' @export
 plot_and_write_relative_risk_all <- function(df_list,
                                              cb,
                                              model,
@@ -1602,9 +1611,9 @@ plot_and_write_relative_risk_all <- function(df_list,
          xlab = expression(paste("Temperature (", degree, "C)")),
          main = "All Regions"
     )
+    abline(h = 1)
   }
 
-  abline(h = 1)
 
   optimal_meta_lower <- as.numeric(names(
     which.min(which(pred$allRRfit >= 1 & pred$allRRfit <= 1.1))))
@@ -1686,7 +1695,7 @@ plot_and_write_relative_risk_all <- function(df_list,
   relative_risk_vector <- pred$allRRfit
   upper_vector <- pred$allRRhigh
   lower_vector <- pred$allRRlow
-  region_vector <- rep('all_regions', length(pred$predvar)) #TODO: review what if not England data?
+  region_vector <- rep('all_regions', length(pred$predvar))
   temp_vector <- pred$predvar
   cen_vector <- rep(cen, length(pred$predvar))
   temperature_vector <- data$temp
@@ -1721,8 +1730,7 @@ plot_and_write_relative_risk_all <- function(df_list,
 
 }
 
-
-#' Do full DLNM analysis
+#' Do full DLNM analysis.
 #'
 #' @description Runs a sequence of functions to carry out
 #' heat-related mortality analysis.
@@ -1742,8 +1750,7 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @param RR_distribution_length Number of years for the calculation of RR
 #' distribution. Set both as 'NONE' to use full range in data.
 #' @param output_year_ Year(s) to calculate output for.
-#' @param dependent_col_ the column name of the
-#' dependent variable of interest e.g. deaths
+#' @param dependent_col_ the column name of the  dependent variable of interest e.g. deaths
 #' @param independent_cols_ column name (or list of names) of extra independent
 #' variable to include in regression (excluding temperature). Defaults to NULL.
 #' @param time_col_ The column name of column containing dates (e.g date, year).
@@ -1759,6 +1766,17 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @param lagnk_ Number of knots in lag function
 #' (see dlnm::logknots)
 #' @param dfseas_ Degrees of freedom for seasonality
+#' @param descriptive_stats Bool. Whether or not to compute descriptive stats.
+#' Defaults to FALSE.
+#' @param ds_correlation_method character. The correlation method used in correlation matrices.
+#' Defaults to 'pearson'.
+#' @param ds_dist_columns character vector. The names of columns to plot distributions for.
+#' Defaults to c().
+#' @param ds_ma_days integer. How many days to use for moving average calculations.
+#' Defaults to 100.
+#' @param ds_ma_sides integer. How many sides to use for moving average calculations (1 or 2).
+#' Defaults to 2.
+#' @param ds_ma_columns character vector. The names of columns to plot moving average for.
 #'
 #' @return
 #' \itemize{
@@ -1802,7 +1820,13 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
                                   lag_  = 21,
                                   lagnk_ = 3,
                                   dfseas_ = 8,
-                                  nsim__ = 1000
+                                  nsim__ = 1000,
+                                  descriptive_stats = FALSE,
+                                  ds_correlation_method = "pearson",
+                                  ds_dist_columns = c(),
+                                  ds_ma_days = 100,
+                                  ds_ma_sides = 2,
+                                  ds_ma_columns = c()
 ) {
   varper_ <- c(10, 75, 90)
 
@@ -1817,6 +1841,23 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
       output_year = output_year_,
       RR_distribution_length = RR_distribution_length_
     )
+
+  # descriptive stats
+  if (descriptive_stats==TRUE) {
+    common_descriptive_stats(
+      dataset_title = "temperature",
+      df_list = df_list_,
+      use_individual_dfs = T,
+      output_path = output_folder_path_,
+      correlation_method = ds_correlation_method,
+      dist_columns = ds_dist_columns,
+      ma_days = ds_ma_days,
+      ma_sides = ds_ma_sides,
+      ma_columns = ds_ma_columns,
+      dependent_col = "dependent", # col has been renamed
+      independent_cols = independent_cols_
+    )
+  }
 
   c(coef_, vcov_, cb_, model_) %<-%
     run_model(df_list = df_list_,
@@ -1863,6 +1904,14 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
       dfseas = dfseas_
     )
 
+  if (save_csv_) {
+    thresholds_fpath <- file.path(
+      output_folder_path_,
+      "heat_and_cold_an_thresholds.csv"
+    )
+    write.csv(an_thresholds_, thresholds_fpath)
+  }
+
   c(arraysim_, matsim_) %<-%
     compute_attributable_deaths(
       df_list = df_list_,
@@ -1904,8 +1953,8 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
     c(output_df, temp_df) %<-%
       plot_and_write(
         df_list = df_list_,
-        output_name = "output_all",
-        output_all = TRUE,
+        output_name = "heat_and_cold",
+        aggregate_outputs = TRUE,
         output_folder_path = output_folder_path_,
         save_fig = save_fig_,
         save_csv = save_csv_,
@@ -1923,8 +1972,8 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
     c(output_df, temp_df) %<-%
       plot_and_write(
         df_list = df_list_,
-        output_name = "output_all_regions",
-        output_all = FALSE,
+        output_name = "heat_and_cold",
+        aggregate_outputs = FALSE,
         output_folder_path = output_folder_path_,
         blup = blup_,
         mintempregions = mintempregions_,
