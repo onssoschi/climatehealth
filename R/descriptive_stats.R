@@ -218,7 +218,8 @@ common_descriptive_stats <- function(
 ) {
   # validate output path
   check_file_exists(output_path)
-  output_path <- file.path(output_path, paste0(tolower(dataset_title), "_descriptive_stats"))
+  normalised_title = tolower(gsub(" ", "_", dataset_title))
+  output_path <- file.path(output_path, paste0(normalised_title, "_descriptive_stats"))
   if (!check_file_exists(output_path, raise=F)) {
     dir.create(output_path)
   }

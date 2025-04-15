@@ -373,7 +373,7 @@ suicides_heat_do_analysis <- function(data_path,
 
   if(descriptive_stats) {
     common_descriptive_stats(
-      dataset_title = "mental health",
+      dataset_title = "Mental Health",
       df_list = df_list,
       use_individual_dfs = ds_use_individual_dfs,
       output_path = output_folder_path,
