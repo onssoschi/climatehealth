@@ -608,18 +608,19 @@ casecrossover_quasipoisson <- function(data,
 
 }
 
-#' Plot results by region
+#' Plot relative risk results.
 #'
-#' @description If RR by region is true, plots results by region. If false plots
-#' overall RR
+#' @description Plots relative risk and confidence intervals for each lag value
+#' of wildfire-related PM2.5. If RR by region is true, plots RR results by region. 
+#' If false plots overall RR.
 #'
 #' @param results Dataframe of relative risk and confidence intervals for
 #' each lag of wildfire-related PM2.5
-#' @param save_fig Boolean. Whether to save the plot as an output. Default TRUE.
+#' @param save_fig Boolean. Whether to save the plot as an output. Defaults to FALSE.
 #' @param wildfire_lag Integer. The maximum number of days for which to plot the
-#' lags for wildfire PM2.5. Default is 3.
+#' lags for wildfire PM2.5. Defaults to 3.
 #' @param relative_risk_by_region Bool. Whether to calculate Relative Risk by region.
-#' Default: FALSE
+#' Defaults to FALSE
 #' @param output_folder_path Path to folder where plots should be saved.
 #'
 #' @returns Plot of relative risk and confidence intervals for each lag of
