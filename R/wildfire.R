@@ -625,11 +625,11 @@ casecrossover_quasipoisson <- function(data,
 #' @returns Plot of relative risk and confidence intervals for each lag of
 #' wildfire-related PM2.5
 
-plot_results_by_region <- function(results,
-                                   save_fig = FALSE,
-                                   wildfire_lag = 3,
-                                   relative_risk_by_region = FALSE,
-                                   output_folder_path){
+plot_RR_by_region <- function(results,
+                              save_fig = FALSE,
+                              wildfire_lag = 3,
+                              relative_risk_by_region = FALSE,
+                              output_folder_path){
   if(relative_risk_by_region){
     
     df_list <- split(results, f = results$region_name)
@@ -640,11 +640,11 @@ plot_results_by_region <- function(results,
       region_results <- df_list[[i]]
       region_name <- region_results$region_name[1]
       
-      region_plot <- plot_results(results = region_results,
-                                  output_folder_path = output_folder_path,
-                                  wildfire_lag = wildfire_lag,
-                                  save_fig = save_fig,
-                                  region_name = region_name)
+      region_plot <- plot_RR(results = region_results,
+                             output_folder_path = output_folder_path,
+                             wildfire_lag = wildfire_lag,
+                             save_fig = save_fig,
+                             region_name = region_name)
       
       plots_list[[i]] <- region_plot
     }
@@ -652,16 +652,16 @@ plot_results_by_region <- function(results,
     return(plots_list)
     
   } else {
-    plot <- plot_results(results = results,
-            output_folder_path = path_config$output_folder_path,
-            wildfire_lag = model_config$wildfire_lag,
-            save_fig = output_config$save_fig)
+    plot <- plot_RR(results = results,
+                    output_folder_path = path_config$output_folder_path,
+                    wildfire_lag = model_config$wildfire_lag,
+                    save_fig = output_config$save_fig)
     
     return(plot)
   }
 }
 
-#' Plot results of analysis
+#' Plot results of relative risk analysis
 #'
 #' @description Plots relative risk and confidence intervals for each lag value
 #' of wildfire-related PM2.5
@@ -678,11 +678,11 @@ plot_results_by_region <- function(results,
 #' wildfire-related PM2.5
 #'
 #' @export
-plot_results <- function(results,
-                         save_fig,
-                         wildfire_lag = 3,
-                         output_folder_path,
-                         region_name = "All regions") {
+plot_RR <- function(results,
+                    save_fig,
+                    wildfire_lag = 3,
+                    output_folder_path,
+                    region_name = "All regions") {
   
   labels <- c("0 days")
   
@@ -937,10 +937,10 @@ wildfire_do_analysis <- function(health_path,
                                     save_fig = save_fig,
                                     print_model_summaries = print_model_summaries)
 
-  plot_results(results = results,
-               output_folder_path = output_folder_path,
-               wildfire_lag = wildfire_lag,
-               save_fig = save_fig)
+  plot_RR(results = results,
+          output_folder_path = output_folder_path,
+          wildfire_lag = wildfire_lag,
+          save_fig = save_fig)
 
   if (save_csv == TRUE) {
     save_results(results = results,
