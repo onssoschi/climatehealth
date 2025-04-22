@@ -773,7 +773,8 @@ save_results <- function(results,
 #' console. Defaults to FALSE.
 #'
 #' @returns Dataframe of relative risk and confidence intervals for
-#' each lag of wildfire-related PM2.5. Split by region if set in config.
+#' each lag of wildfire-related PM2.5. Split by region if relative_risk_by_region
+#' set to TRUE.
 
 relative_risk_by_region <- function(data,
                                     scale_factor = 10,
