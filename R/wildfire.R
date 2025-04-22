@@ -626,7 +626,7 @@ casecrossover_quasipoisson <- function(data,
 #' wildfire-related PM2.5
 
 plot_results_by_region <- function(results,
-                                   save_fig = TRUE,
+                                   save_fig = FALSE,
                                    wildfire_lag = 3,
                                    relative_risk_by_region = FALSE,
                                    output_folder_path){
