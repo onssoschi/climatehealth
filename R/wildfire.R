@@ -709,7 +709,8 @@ plot_RR <- function(results,
   if (save_fig == TRUE) {
     
     if (!is.null(output_folder_path)) {
-      file_name <- paste("wildfire_plot_", region_name, ".pdf", sep = "")
+      formatted_region_name <- gsub(" ", "_", tolower(region_name))
+      file_name <- paste("wildfire_plot_", formatted_region_name, ".pdf", sep = "")
       pdf(file.path(output_folder_path, file_name),
           width = 8, height = 8)
       print(plot) # NOTE: this print() is required to produce the plot pdf
