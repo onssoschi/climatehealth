@@ -749,7 +749,7 @@ save_results <- function(results,
   }
 }
 
-#' Splits data by region if relative_risk_by_region config option is TRUE
+#' Passes data to casecrossover_quasipoisson to calculate RR.
 #'
 #' @description Splits data by region if relative_risk_by_region config option is 
 #' TRUE. If true data for each individual region is passed to casecrossover_quasipoisson
