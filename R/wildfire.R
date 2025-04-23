@@ -652,14 +652,13 @@ plot_RR_by_region <- function(results,
     
     return(plots_list)
     
-  } else {
-    plot <- plot_RR(results = results,
-                    output_folder_path = path_config$output_folder_path,
-                    wildfire_lag = model_config$wildfire_lag,
-                    save_fig = output_config$save_fig)
-    
-    return(plot)
   }
+  plot <- plot_RR(results = results,
+                  output_folder_path = path_config$output_folder_path,
+                  wildfire_lag = model_config$wildfire_lag,
+                  save_fig = output_config$save_fig)
+    
+  return(plot)
 }
 
 #' Plot results of relative risk analysis
@@ -814,16 +813,15 @@ relative_risk_by_region <- function(data,
     
     return(results_all)
     
-  } else {
-    results <- casecrossover_quasipoisson(data = data,
-                                          scale_factor = scale_factor,
-                                          wildfire_lag = wildfire_lag,
-                                          output_folder_path = output_folder_path,
-                                          save_fig = save_fig,
-                                          print_model_summaries = print_model_summaries)
-    
-    return(results)
   }
+  results <- casecrossover_quasipoisson(data = data,
+                                        scale_factor = scale_factor,
+                                        wildfire_lag = wildfire_lag,
+                                        output_folder_path = output_folder_path,
+                                        save_fig = save_fig,
+                                        print_model_summaries = print_model_summaries)
+    
+  return(results)
   
 }
 
