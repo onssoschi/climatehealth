@@ -18,7 +18,7 @@
 #'
 #' @returns A list of dataframes with formatted and renamed columns.
 #'
-#' @exports
+#' @export
 mh_read_and_format_data <- function(data_path,
                                  date_col,
                                  region_col = NULL,
@@ -76,7 +76,7 @@ mh_read_and_format_data <- function(data_path,
 #'
 #' @returns A list of cross-basis matrices by region
 #'
-#' @exports
+#' @export
 mh_create_crossbasis <- function(data,
                               var_fun = "ns",
                               var_dof = 4,
@@ -111,7 +111,7 @@ mh_create_crossbasis <- function(data,
 #'
 #' @returns List containing models by region
 #'
-#' @exports
+#' @export
 mh_casecrossover_dlnm <- function(data,
                                cb_list) {
 
@@ -144,7 +144,7 @@ mh_casecrossover_dlnm <- function(data,
 #'
 #' @returns A list containing predictions by region
 #'
-#' @exports
+#' @export
 mh_predict <- function(data,
                        cb_list,
                        model_list) {
@@ -180,7 +180,7 @@ mh_predict <- function(data,
 #'
 #' @returns Plots of cumulative lag exposure-response function for each region
 #'
-#' @exports
+#' @export
 mh_plot_results <- function(pred_list,
                             save_fig = FALSE,
                             output_folder_path = NULL) {
@@ -231,7 +231,7 @@ mh_plot_results <- function(pred_list,
 #' @returns Dataframe containing cumulative relative risk and confidence
 #' intervals from analysis.
 #'
-#' @exports
+#' @export
 produce_results <- function(pred_list) {
 
     results <- data.frame()
@@ -273,7 +273,7 @@ produce_results <- function(pred_list) {
 #' @param output_folder_path Path to folder where results should be saved.
 #' Defaults to NULL.
 #'
-#' @exports
+#' @export
 mh_save_results <- function(results,
                          output_folder_path = NULL) {
 
