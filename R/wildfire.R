@@ -19,7 +19,6 @@
 #' @returns Dataframe with formatted and renamed columns
 #'
 #' @export
-
 read_and_format_data <- function(health_path,
                                  date_col,
                                  region_col = NULL,
@@ -751,7 +750,7 @@ save_results <- function(results,
   }
 }
 
-#' Splits data by region if relative_risk_by_region config option is TRUE
+#' Passes data to casecrossover_quasipoisson to calculate RR.
 #'
 #' @description Splits data by region if relative_risk_by_region config option is 
 #' TRUE. If true data for each individual region is passed to casecrossover_quasipoisson
@@ -776,7 +775,8 @@ save_results <- function(results,
 #' console. Defaults to FALSE.
 #'
 #' @returns Dataframe of relative risk and confidence intervals for
-#' each lag of wildfire-related PM2.5. Split by region if set in config.
+#' each lag of wildfire-related PM2.5. Split by region if relative_risk_by_region
+#' set to TRUE.
 #'
 #' @export
 relative_risk_by_region <- function(data,
@@ -804,7 +804,7 @@ relative_risk_by_region <- function(data,
                                                    save_fig = save_fig,
                                                    print_model_summaries = print_model_summaries)
       
-      region_results$regnames <- region_name
+      region_results$region_name <- region_name
       
       results_list[[i]] <- region_results
       
@@ -815,16 +815,15 @@ relative_risk_by_region <- function(data,
     
     return(results_all)
     
-  } else {
-    results <- casecrossover_quasipoisson(data = data,
-                                          scale_factor = scale_factor,
-                                          wildfire_lag = wildfire_lag,
-                                          output_folder_path = output_folder_path,
-                                          save_fig = save_fig,
-                                          print_model_summaries = print_model_summaries)
-    
-    return(results)
   }
+  results <- casecrossover_quasipoisson(data = data,
+                                        scale_factor = scale_factor,
+                                        wildfire_lag = wildfire_lag,
+                                        output_folder_path = output_folder_path,
+                                        save_fig = save_fig,
+                                        print_model_summaries = print_model_summaries)
+  
+  return(results)
   
 }
 
@@ -1043,11 +1042,11 @@ wildfire_do_analysis <- function(health_path,
     
   }
   
-  plot_results_by_region(results = rr_results,
-                         output_folder_path = output_folder_path,
-                         wildfire_lag = wildfire_lag,
-                         relative_risk_by_region = relative_risk_by_region,
-                         save_fig = save_fig)
+  plot_RR_by_region(results = rr_results,
+                    output_folder_path = output_folder_path,
+                    wildfire_lag = wildfire_lag,
+                    relative_risk_by_region = relative_risk_by_region,
+                    save_fig = save_fig)
 
   if (save_csv == TRUE) {
     save_results(results = rr_results,
