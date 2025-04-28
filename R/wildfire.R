@@ -854,15 +854,15 @@ calculate_daily_AF_AN <- function(data,
     region_name <- names(df_list)[i]
     
     RR_value <- rr_data %>%
-      filter(lag == 0, regnames == region_name) %>%
+      filter(lag == 0, region_name == region_name) %>%
       pull(relative_risk)
     
     RR_CI_lower <- rr_data %>%
-      filter(lag == 0, regnames == region_name) %>%
+      filter(lag == 0, region_name == region_name) %>%
       pull(ci_lower)
     
     RR_CI_upper <- rr_data %>%
-      filter(lag == 0, regnames == region_name) %>%
+      filter(lag == 0, region_name == region_name) %>%
       pull(ci_upper)
     
     # Calculate daily rescaled_RR, attributable fraction and attributable number.
