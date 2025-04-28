@@ -908,9 +908,17 @@ summarise_AF_AN <- function(data){
     summarise(
       population = mean(pop, na.rm = TRUE),
       total_attributable_number = sum(attributable_number, na.rm = TRUE),
-      average_attributable_fraction = mean(attributable_fraction, na.rm = TRUE)
+      lower_ci_attributable_number = sum(attributable_number_lower, na.rm = TRUE),
+      upper_ci_attributable_number = sum(attributable_number_upper, na.rm = TRUE),
+      average_attributable_fraction = mean(attributable_fraction, na.rm = TRUE),
+      lower_ci_attributable_fraction = mean(attributable_fraction_lower, na.rm = TRUE),
+      upper_ci_attributable_fraction = mean(attributable_fraction_upper, na.rn = TRUE)
     ) %>%
-    mutate(deaths_per_100k = (total_attributable_number / population) * 100000)
+    mutate(
+      deaths_per_100k = (total_attributable_number / population) * 100000,
+      lower_ci_deaths_per_100k = (lower_ci_attributable_number / population) * 100000,
+      upper_ci_deaths_per_100k = (upper_ci_attributable_number / population) * 100000
+    )
   
   return(yearly_summary)
 }
