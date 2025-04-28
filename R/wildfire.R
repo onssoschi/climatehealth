@@ -663,7 +663,7 @@ plot_RR_by_region <- function(results,
   return(plot)
 }
 
-#' Plot results of analysis
+#' Plot results of relative risk analysis
 #'
 #' @description Plots relative risk and confidence intervals for each lag value
 #' of wildfire-related PM2.5
@@ -680,11 +680,11 @@ plot_RR_by_region <- function(results,
 #' wildfire-related PM2.5
 #'
 #' @export
-plot_results <- function(results,
-                         save_fig,
-                         wildfire_lag = 3,
-                         output_folder_path,
-                         region_name = "All regions") {
+plot_RR <- function(results,
+                    save_fig,
+                    wildfire_lag = 3,
+                    output_folder_path,
+                    region_name = "All regions") {
   
   labels <- c("0 days")
   
@@ -710,7 +710,8 @@ plot_results <- function(results,
   if (save_fig == TRUE) {
     
     if (!is.null(output_folder_path)) {
-      file_name <- paste("wildfire_plot_", region_name, ".pdf", sep = "")
+      formatted_region_name <- gsub(" ", "_", tolower(region_name))
+      file_name <- paste("wildfire_plot_", formatted_region_name, ".pdf", sep = "")
       pdf(file.path(output_folder_path, file_name),
           width = 8, height = 8)
       print(plot) # NOTE: this print() is required to produce the plot pdf
