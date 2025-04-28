@@ -609,58 +609,58 @@ casecrossover_quasipoisson <- function(data,
 
 }
 
-#' Plot results by region
+#' Plot relative risk results.
 #'
-#' @description If RR by region is true, plots results by region. If false plots
-#' overall RR
+#' @description Plots relative risk and confidence intervals for each lag value
+#' of wildfire-related PM2.5. If RR by region is true, plots RR results by region. 
+#' If false plots overall RR.
 #'
 #' @param results Dataframe of relative risk and confidence intervals for
 #' each lag of wildfire-related PM2.5
-#' @param save_fig Boolean. Whether to save the plot as an output. Default TRUE.
+#' @param save_fig Boolean. Whether to save the plot as an output. Defaults to FALSE.
 #' @param wildfire_lag Integer. The maximum number of days for which to plot the
-#' lags for wildfire PM2.5. Default is 3.
+#' lags for wildfire PM2.5. Defaults to 3.
 #' @param relative_risk_by_region Bool. Whether to calculate Relative Risk by region.
-#' Default: FALSE
+#' Defaults to FALSE
 #' @param output_folder_path Path to folder where plots should be saved.
 #'
 #' @returns Plot of relative risk and confidence intervals for each lag of
 #' wildfire-related PM2.5
 #'
 #' @export
-plot_results_by_region <- function(results,
-                                   save_fig = TRUE,
-                                   wildfire_lag = 3,
-                                   relative_risk_by_region = FALSE,
-                                   output_folder_path){
+plot_RR_by_region <- function(results,
+                              save_fig = FALSE,
+                              wildfire_lag = 3,
+                              relative_risk_by_region = FALSE,
+                              output_folder_path){
   if(relative_risk_by_region){
     
-    df_list <- split(results, f = results$regnames)
+    df_list <- split(results, f = results$region_name)
     plots_list <- list()
     
     for (i in seq(df_list)) {
       
       region_results <- df_list[[i]]
-      region_name <- region_results$regnames[1]
+      region_name <- region_results$region_name[1]
       
-      region_plot <- plot_results(results = region_results,
-                                  output_folder_path = output_folder_path,
-                                  wildfire_lag = wildfire_lag,
-                                  save_fig = save_fig,
-                                  region_name = region_name)
+      region_plot <- plot_RR(results = region_results,
+                             output_folder_path = output_folder_path,
+                             wildfire_lag = wildfire_lag,
+                             save_fig = save_fig,
+                             region_name = region_name)
       
       plots_list[[i]] <- region_plot
     }
     
     return(plots_list)
     
-  } else {
-    plot <- plot_results(results = results,
-            output_folder_path = path_config$output_folder_path,
-            wildfire_lag = model_config$wildfire_lag,
-            save_fig = output_config$save_fig)
-    
-    return(plot)
   }
+  plot <- plot_RR(results = results,
+                  output_folder_path = path_config$output_folder_path,
+                  wildfire_lag = model_config$wildfire_lag,
+                  save_fig = output_config$save_fig)
+  
+  return(plot)
 }
 
 #' Plot results of analysis
