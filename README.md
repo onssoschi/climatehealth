@@ -4,13 +4,19 @@ This project contains an R package for calculating climate-health indicators [be
 
 ## Indicators
 
-This repository currently contains R functions for the following topics in the SOSCHI framework:
+This repository currently contains analysis pipelines for the following topics in the SOSCHI framework:
 
 - Heat- and cold-related mortality (ONS)
 - Injury and mortality from extreme weather events: Wildfires (ONS)
+- Mental health (ONS)
 
 Coming soon:
-- Mental health (ONS)
+- Malaria (AIMS/RIPS)
+- Waterborne (AIMS)
+- Malnutrition (RIPS)
+- Flooding (AIMS)
+- Air Pollution (AIMS)
+- CSM (RIPS)
 
 ## Requirements
 

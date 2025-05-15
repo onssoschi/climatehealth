@@ -611,7 +611,7 @@ casecrossover_quasipoisson <- function(data,
 #' Plot relative risk results.
 #'
 #' @description Plots relative risk and confidence intervals for each lag value
-#' of wildfire-related PM2.5. If RR by region is true, plots RR results by region. 
+#' of wildfire-related PM2.5. If RR by region is true, plots RR results by region.
 #' If false plots overall RR.
 #'
 #' @param results Dataframe of relative risk and confidence intervals for
@@ -627,38 +627,38 @@ casecrossover_quasipoisson <- function(data,
 #' wildfire-related PM2.5
 #'
 #' @export
+
 plot_RR_by_region <- function(results,
                               save_fig = FALSE,
                               wildfire_lag = 3,
                               relative_risk_by_region = FALSE,
                               output_folder_path){
   if(relative_risk_by_region){
-    
+
     df_list <- split(results, f = results$region_name)
     plots_list <- list()
-    
+
     for (i in seq(df_list)) {
-      
+
       region_results <- df_list[[i]]
       region_name <- region_results$region_name[1]
-      
+
       region_plot <- plot_RR(results = region_results,
                              output_folder_path = output_folder_path,
                              wildfire_lag = wildfire_lag,
                              save_fig = save_fig,
                              region_name = region_name)
-      
+
       plots_list[[i]] <- region_plot
     }
-    
+
     return(plots_list)
-    
+
   }
   plot <- plot_RR(results = results,
                   output_folder_path = path_config$output_folder_path,
                   wildfire_lag = model_config$wildfire_lag,
                   save_fig = output_config$save_fig)
-  
   return(plot)
 }
 
@@ -684,15 +684,15 @@ plot_RR <- function(results,
                     wildfire_lag = 3,
                     output_folder_path,
                     region_name = "All regions") {
-  
+
   labels <- c("0 days")
-  
+
   if (wildfire_lag > 0) {
     additional_labels <- sapply(1:wildfire_lag,
                                 function(lag) paste("0-", lag, " days", sep = ""))
     labels <- c(labels, additional_labels)
   }
-  
+
   plot <- ggplot2::ggplot(data = results, ggplot2::aes(x = lag, y = relative_risk,
                                                        ymin = ci_lower, ymax = ci_upper)) +
     ggplot2::geom_point(size = 3) +
@@ -705,9 +705,9 @@ plot_RR <- function(results,
     ggplot2::theme_bw() +
     ggplot2::theme(axis.text = ggplot2::element_text(size = 18),
                    axis.title = ggplot2::element_text(size = 18))
-  
+
   if (save_fig == TRUE) {
-    
+
     if (!is.null(output_folder_path)) {
       formatted_region_name <- gsub(" ", "_", tolower(region_name))
       file_name <- paste("wildfire_plot_", formatted_region_name, ".pdf", sep = "")
@@ -717,7 +717,7 @@ plot_RR <- function(results,
       dev.off()
       climatehealth::check_file_exists(file.path(output_folder_path, file_name))
     }
-    
+
   }
   return(plot)
 }
@@ -752,7 +752,7 @@ save_results <- function(results,
 
 #' Passes data to casecrossover_quasipoisson to calculate RR.
 #'
-#' @description Splits data by region if relative_risk_by_region config option is 
+#' @description Splits data by region if relative_risk_by_region config option is
 #' TRUE. If true data for each individual region is passed to casecrossover_quasipoisson
 #' to calculate RR by region. If false RR is calculated for the entire dataset.
 #'
@@ -779,6 +779,7 @@ save_results <- function(results,
 #' set to TRUE.
 #'
 #' @export
+
 relative_risk_by_region <- function(data,
                                     scale_factor = 10,
                                     wildfire_lag = 3,
@@ -787,34 +788,34 @@ relative_risk_by_region <- function(data,
                                     output_folder_path = NULL,
                                     print_model_summaries = FALSE){
   if(relative_risk_by_region){
-    
+
     df_list <- split(data, f = data$regnames)
-    
+
     results_list <- list()
-    
+
     for (i in seq(df_list)) {
-      
+
       region_data <- df_list[[i]]
       region_name <- names(df_list)[i] # Get region name
-      
+
       region_results <- casecrossover_quasipoisson(data = region_data,
                                                    scale_factor = scale_factor,
                                                    wildfire_lag = wildfire_lag,
                                                    output_folder_path = output_folder_path,
                                                    save_fig = save_fig,
                                                    print_model_summaries = print_model_summaries)
-      
+
       region_results$region_name <- region_name
-      
+
       results_list[[i]] <- region_results
-      
+
     }
-    
+
     results_all <- do.call(rbind, results_list)
     row.names(results_all) <- NULL
-    
+
     return(results_all)
-    
+
   }
   results <- casecrossover_quasipoisson(data = data,
                                         scale_factor = scale_factor,
@@ -822,24 +823,24 @@ relative_risk_by_region <- function(data,
                                         output_folder_path = output_folder_path,
                                         save_fig = save_fig,
                                         print_model_summaries = print_model_summaries)
-  
+
   return(results)
-  
+
 }
 
 #' Use the Lag 1 RR and upper and lower confidence intervals to calculate the
 #' attributable fraction and attributable number of a given health outcome
-#' for each day in the input data. 
-#' 
+#' for each day in the input data.
+#'
 #' @description takes a calculated RR and upper and lower CIs, and applies these
 #' to the input data to calculate attributable fraction and attributable number,
 #' along with upper and lower CIs, for each day in the input data.
-#' 
+#'
 #' @param data Dataframe containing a daily time series of climate and health
 #' data from which to fit models.
 #' @param rr_data Dataframe containing calculated relative risk and confidence
 #' intervals, calculated from input data.
-#' 
+#'
 #' @returns Time series dataframe with daily AF and AN, and AF and AN upper and
 #' lower CIs
 #'
@@ -848,61 +849,61 @@ calculate_daily_AF_AN <- function(data,
                                   rr_data){
 
   df_list <- split(data, f = data$regnames)
-  
+
   for (i in seq(df_list)) {
     region_data <- df_list[[i]]
     region_name <- names(df_list)[i]
-    
+
     RR_value <- rr_data %>%
       filter(lag == 0, region_name == region_name) %>%
       pull(relative_risk)
-    
+
     RR_CI_lower <- rr_data %>%
       filter(lag == 0, region_name == region_name) %>%
       pull(ci_lower)
-    
+
     RR_CI_upper <- rr_data %>%
       filter(lag == 0, region_name == region_name) %>%
       pull(ci_upper)
-    
+
     # Calculate daily rescaled_RR, attributable fraction and attributable number.
     # Repeat for upper and lower confidence intervals
     region_data <- region_data %>%
       mutate(rescaled_RR = exp((log(RR_value) / 10) * mean_PM_FRP),
              attributable_fraction = (rescaled_RR - 1) / rescaled_RR,
              attributable_number = attributable_fraction * health_outcome)
-    
+
     region_data <- region_data %>%
       mutate(rescaled_CI_upper = exp((log(RR_CI_upper) / 10) * mean_PM_FRP),
              attributable_fraction_upper = (rescaled_CI_upper - 1) / rescaled_CI_upper,
              attributable_number_upper = attributable_fraction_upper * health_outcome)
-    
+
     region_data <- region_data %>%
       mutate(rescaled_CI_lower = exp((log(RR_CI_lower) / 10) * mean_PM_FRP),
              attributable_fraction_lower = (rescaled_CI_lower - 1) / rescaled_CI_lower,
              attributable_number_lower = attributable_fraction_lower * health_outcome)
-    
+
     df_list[[i]] <- region_data
   }
-  
+
   df_all <- do.call(rbind, df_list)
   row.names(df_all) <- NULL
-  
+
   return(df_all)
 }
 
 #' Summarise AF and AN numbers by region and year
-#' 
+#'
 #' @description Takes daily data with attributable fraction and attributable number
 #' and summarises by year and region
-#' 
+#'
 #' @param data Dataframe containing daily data including calculated AF and AN.
 #'
 #' @returns Dataframe containing summarised AF and AN data, by year and region
 #'
 #' @export
 summarise_AF_AN <- function(data){
-  
+
   yearly_summary <- data %>%
     group_by(regnames, year) %>%
     summarise(
@@ -919,7 +920,7 @@ summarise_AF_AN <- function(data){
       lower_ci_deaths_per_100k = (lower_ci_attributable_number / population) * 100000,
       upper_ci_deaths_per_100k = (upper_ci_attributable_number / population) * 100000
     )
-  
+
   return(yearly_summary)
 }
 
@@ -962,7 +963,7 @@ summarise_AF_AN <- function(data){
 #' include in the model. Must contain at least 2 variables. Defaults to NULL.
 #' @param relative_risk_by_region Bool. Whether to calculate Relative Risk by region.
 #' Default: FALSE
-#' @param output_AF_AN Bool. Whether to create attributable fraction and 
+#' @param output_AF_AN Bool. Whether to create attributable fraction and
 #' attributable number output. Only works id relative_risk_by_region = TRUE.
 #' @param scale_factor_wildfire_pm Numeric. The value to divide the wildfire
 #' PM2.5 concentration variables by for alternative interpretation of outputs.
@@ -1009,7 +1010,7 @@ wildfire_do_analysis <- function(health_path,
   if(relative_risk_by_region == FALSE && output_AF_AN == TRUE){
     output_AF_AN <- FALSE
   }
-  
+
   data <- load_wildfire_data(health_path = health_path,
                              join_wildfire_data = join_wildfire_data,
                              ncdf_path = ncdf_path,
@@ -1047,9 +1048,9 @@ wildfire_do_analysis <- function(health_path,
     data <- calculate_daily_AF_AN(data = data,
                                   rr_data = rr_results)
     af_an_results <- summarise_AF_AN(data = data)
-    
+
   }
-  
+
   plot_RR_by_region(results = rr_results,
                     output_folder_path = output_folder_path,
                     wildfire_lag = wildfire_lag,

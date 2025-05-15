@@ -19,6 +19,7 @@ wildfire_do_analysis(
   spline_temperature_lag = 0,
   spline_temperature_degrees_freedom = 6,
   predictors_vif = NULL,
+  relative_risk_by_region = FALSE,
   scale_factor_wildfire_pm = 10,
   save_fig = FALSE,
   save_csv = FALSE,
@@ -71,6 +72,9 @@ spline(s).}
 
 \item{predictors_vif}{Character vector with each of the predictors to
 include in the model. Must contain at least 2 variables. Defaults to NULL.}
+
+\item{relative_risk_by_region}{Bool. Whether to calculate Relative Risk by region.
+Default: FALSE}
 
 \item{scale_factor_wildfire_pm}{Numeric. The value to divide the wildfire
 PM2.5 concentration variables by for alternative interpretation of outputs.
