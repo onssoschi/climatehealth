@@ -14,12 +14,13 @@ wildfire_do_analysis(
   region_col,
   mean_temperature_col,
   health_outcome_col,
+  pm_2_5_col = NULL,
   wildfire_lag = 3,
   temperature_lag = 1,
   spline_temperature_lag = 0,
   spline_temperature_degrees_freedom = 6,
   predictors_vif = NULL,
-  relative_risk_by_region = FALSE,
+  calc_relative_risk_by_region = FALSE,
   scale_factor_wildfire_pm = 10,
   save_fig = FALSE,
   save_csv = FALSE,
@@ -57,6 +58,9 @@ that contains the mean temperature column.}
 contains the health outcome count column (e.g. number of deaths, hospital
 admissions)}
 
+\item{pm_2_5_col}{Character. The name of the column containing PM2.5 values
+in micrograms. Thsi is only required if health data isn't joined. Defaults to NULL.}
+
 \item{wildfire_lag}{Integer. The number of days for which to calculate the
 lags for wildfire PM2.5. Default is 3.}
 
@@ -73,7 +77,7 @@ spline(s).}
 \item{predictors_vif}{Character vector with each of the predictors to
 include in the model. Must contain at least 2 variables. Defaults to NULL.}
 
-\item{relative_risk_by_region}{Bool. Whether to calculate Relative Risk by region.
+\item{calc_relative_risk_by_region}{Bool. Whether to calculate Relative Risk by region.
 Default: FALSE}
 
 \item{scale_factor_wildfire_pm}{Numeric. The value to divide the wildfire
@@ -95,10 +99,20 @@ for each predictor. Defaults to FALSE.}
 
 \item{print_model_summaries}{Bool. Whether to print the model summaries to
 console. Defaults to FALSE.}
+
+\item{output_AF_AN}{Bool. Whether to create attributable fraction and
+attributable number output. Only works id relative_risk_by_region = TRUE.}
 }
 \value{
 Dataframe of relative risk and confidence intervals for
 each lag of wildfire-related PM2.5
+
+rr_results, af_an_results
+\itemize{
+\item \code{rr_results} A dataframe with relative risk estimates and confidence
+intervals for each region.
+\item \code{af_an_results} A dataframe containing attributable fractions and numbers for each region
+}
 }
 \description{
 Runs full analysis pipeline for analysis of the impact of
