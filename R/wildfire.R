@@ -637,12 +637,18 @@ plot_RR_by_region <- function(results,
                               save_fig = FALSE,
                               wildfire_lag = 3,
                               relative_risk_by_region = FALSE,
-                              output_folder_path){
+                              output_folder_path = NULL){
+  if (save_fig && is.null(output_folder_path)) {
+    save_fig = FALSE
+    warning("Unable to output wildfire RR plots as no output folder path was specified.")
+  }
   if(relative_risk_by_region){
-
     df_list <- split(results, f = results$region_name)
     plots_list <- list()
-
+    if (save_fig) {
+      pdf(file.path(output_folder_path, "wildfire_rr_by_region.pdf"),
+          width = 8, height = 8)
+    }
     for (i in seq(df_list)) {
 
       region_results <- df_list[[i]]
@@ -651,19 +657,20 @@ plot_RR_by_region <- function(results,
       region_plot <- plot_RR(results = region_results,
                              output_folder_path = output_folder_path,
                              wildfire_lag = wildfire_lag,
-                             save_fig = save_fig,
+                             save_fig = FALSE,
                              region_name = region_name)
 
       plots_list[[i]] <- region_plot
+      print(region_plot)
     }
-
+    dev.off()
     return(plots_list)
 
   }
   plot <- plot_RR(results = results,
-                  output_folder_path = path_config$output_folder_path,
-                  wildfire_lag = model_config$wildfire_lag,
-                  save_fig = output_config$save_fig)
+                  output_folder_path = output_folder_path,
+                  wildfire_lag = wildfire_lag,
+                  save_fig = save_fig)
   return(plot)
 }
 
@@ -715,7 +722,7 @@ plot_RR <- function(results,
 
     if (!is.null(output_folder_path)) {
       formatted_region_name <- gsub(" ", "_", tolower(region_name))
-      file_name <- paste("wildfire_plot_", formatted_region_name, ".pdf", sep = "")
+      file_name <- paste("wildfire_rr_", formatted_region_name, ".pdf", sep = "")
       pdf(file.path(output_folder_path, file_name),
           width = 8, height = 8)
       print(plot) # NOTE: this print() is required to produce the plot pdf
@@ -738,22 +745,25 @@ plot_RR <- function(results,
 #'
 #' @export
 save_results <- function(rr_results,
-                         an_ar_results,
+                         output_AN_AR = TRUE,
+                         an_ar_results = NULL,
                          output_folder_path) {
 
   if (!is.null(output_folder_path)) {
-
+    # RR
     write.csv(rr_results, file = file.path(
       output_folder_path, "wildfire_rr.csv")
       )
     climatehealth::check_file_exists(file.path(
       output_folder_path, "wildfire_rr.csv"))
-
-    write.csv(an_ar_results, file = file.path(
-      output_folder_path, "wildfire_an_ar.csv")
-    )
-    climatehealth::check_file_exists(file.path(
-      output_folder_path, "wildfire_an_ar.csv"))
+    # AN/AF
+    if (output_AN_AR) {
+      write.csv(an_ar_results, file = file.path(
+        output_folder_path, "wildfire_an_ar.csv")
+      )
+      climatehealth::check_file_exists(file.path(
+        output_folder_path, "wildfire_an_ar.csv"))
+    }
 
   } else {
 
@@ -778,7 +788,7 @@ save_results <- function(rr_results,
 #' Setting this parameter to 0 or 1 leaves the variable unscaled.
 #' @param wildfire_lag Integer. The maximum number of days for which to calculate
 #' lagged results for wildfire PM2.5. Default is 3.
-#' @param relative_risk_by_region Bool. Whether to calculate Relative Risk by region.
+#' @param calc_relative_risk_by_region Bool. Whether to calculate Relative Risk by region.
 #' Default: FALSE
 #' @param save_fig Bool. Whether or not to save a figure showing residuals vs
 #' fitted values for each lag. Defaults to FALSE.
@@ -787,7 +797,7 @@ save_results <- function(rr_results,
 #' console. Defaults to FALSE.
 #'
 #' @returns Dataframe of relative risk and confidence intervals for
-#' each lag of wildfire-related PM2.5. Split by region if relative_risk_by_region
+#' each lag of wildfire-related PM2.5. Split by region if calc_relative_risk_by_region
 #' set to TRUE.
 #'
 #' @export
@@ -795,11 +805,11 @@ save_results <- function(rr_results,
 relative_risk_by_region <- function(data,
                                     scale_factor = 10,
                                     wildfire_lag = 3,
-                                    relative_risk_by_region = FALSE,
+                                    calc_relative_risk_by_region = FALSE,
                                     save_fig = FALSE,
                                     output_folder_path = NULL,
                                     print_model_summaries = FALSE){
-  if(relative_risk_by_region){
+  if(calc_relative_risk_by_region){
 
     df_list <- split(data, f = data$regnames)
 
@@ -975,7 +985,7 @@ summarise_AF_AN <- function(data){
 #' spline(s).
 #' @param predictors_vif Character vector with each of the predictors to
 #' include in the model. Must contain at least 2 variables. Defaults to NULL.
-#' @param relative_risk_by_region Bool. Whether to calculate Relative Risk by region.
+#' @param calc_relative_risk_by_region Bool. Whether to calculate Relative Risk by region.
 #' Default: FALSE
 #' @param output_AF_AN Bool. Whether to create attributable fraction and
 #' attributable number output. Only works id relative_risk_by_region = TRUE.
@@ -1019,7 +1029,7 @@ wildfire_do_analysis <- function(health_path,
                                  spline_temperature_lag = 0,
                                  spline_temperature_degrees_freedom = 6,
                                  predictors_vif = NULL,
-                                 relative_risk_by_region = FALSE,
+                                 calc_relative_risk_by_region = FALSE,
                                  scale_factor_wildfire_pm = 10,
                                  save_fig = FALSE,
                                  save_csv = FALSE,
@@ -1027,10 +1037,6 @@ wildfire_do_analysis <- function(health_path,
                                  print_vif = FALSE,
                                  print_model_summaries = FALSE
                                  ) {
-
-  if(relative_risk_by_region == FALSE && output_AF_AN == TRUE){
-    output_AF_AN <- FALSE
-  }
 
   data <- load_wildfire_data(health_path = health_path,
                              join_wildfire_data = join_wildfire_data,
@@ -1061,23 +1067,26 @@ wildfire_do_analysis <- function(health_path,
   rr_results <- relative_risk_by_region(data = data,
                                         scale_factor = scale_factor_wildfire_pm,
                                         wildfire_lag = wildfire_lag,
-                                        relative_risk_by_region = relative_risk_by_region,
+                                        calc_relative_risk_by_region = calc_relative_risk_by_region,
                                         output_folder_path = output_folder_path,
                                         save_fig = save_fig,
                                         print_model_summaries = print_model_summaries)
 
-
-  daily_AF_AN <- calculate_daily_AF_AN(data = data, rr_data = rr_results)
-  af_an_results <- summarise_AF_AN(data = daily_AF_AN)
+  af_an_results = NULL
+  if (calc_relative_risk_by_region) {
+    daily_AF_AN <- calculate_daily_AF_AN(data = data, rr_data = rr_results)
+    af_an_results <- summarise_AF_AN(data = daily_AF_AN)
+  }
 
   plot_RR_by_region(results = rr_results,
                     output_folder_path = output_folder_path,
                     wildfire_lag = wildfire_lag,
-                    relative_risk_by_region = relative_risk_by_region,
+                    relative_risk_by_region = calc_relative_risk_by_region,
                     save_fig = save_fig)
 
   if (save_csv == TRUE) {
     save_results(rr_results = rr_results,
+                 output_AN_AR = calc_relative_risk_by_region,
                  an_ar_results = af_an_results,
                  output_folder_path = output_folder_path)
   }
