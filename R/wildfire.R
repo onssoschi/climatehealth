@@ -38,17 +38,21 @@ read_and_format_data <- function(health_path,
       dplyr::rename(regnames = region_col)
 
   }
-
+  # Date format identification
+  date_function <- lubridate::ymd
+  if (grepl("^\\d{2}/\\d{2}/\\d{4}$", df[[date_col]][1])) {
+    date_function <- lubridate::dmy
+  }
+  # Data set pre processing
   df <- df %>%
     dplyr::rename(date = date_col,
                   tmean = mean_temperature_col,
                   health_outcome = health_outcome_col) %>%
-    dplyr::mutate(date = lubridate::ymd(date),
+    dplyr::mutate(date = date_function(date),
                   year = lubridate::year(date),
                   month = lubridate::month(date),
                   day = lubridate::day(date),
                   dow = as.character(lubridate::wday(date, label = TRUE)))
-
   return(df)
 
 }
@@ -141,19 +145,13 @@ extract_means_for_geography <- function(ncdf_path,
 #'
 #' @export
 pair_with_health <- function(climate_data,
-                             health_path,
+                             health_data,
                              date_col,
                              region_col = NULL,
                              mean_temperature_col,
                              health_outcome_col) {
 
-  df <- read_and_format_data(health_path = health_path,
-                             date_col = date_col,
-                             region_col = region_col,
-                             mean_temperature_col = mean_temperature_col,
-                             health_outcome_col = health_outcome_col)
-
-  df_paired_all <- dplyr::left_join(df, climate_data,
+  df_paired_all <- dplyr::left_join(health_data, climate_data,
                                     by = c('regnames' = 'RGN23NM',
                                            'date' = 'date'))
 
@@ -196,6 +194,8 @@ pair_with_health <- function(climate_data,
 #' @param health_outcome_col Character. Name of the column in the dataframe that
 #' contains the health outcome count column (e.g. number of deaths, hospital
 #' admissions)
+#' @param pm_2_5_col Character. The name of the column containing PM2.5 values
+#' in micrograms. Thsi is only required if health data isn't joined. Defaults to NULL.
 #'
 #' @returns Dataframe containing a daily time series of
 #' climate and health data.
@@ -205,10 +205,11 @@ load_wildfire_data <- function(health_path,
                                join_wildfire_data,
                                ncdf_path,
                                shp_path,
-                               date_col = date_col,
+                               date_col,
                                region_col = NULL,
                                mean_temperature_col,
-                               health_outcome_col) {
+                               health_outcome_col,
+                               pm_2_5_col = NULL) {
 
   wildfire_data <- tryCatch(
 
@@ -231,7 +232,11 @@ load_wildfire_data <- function(health_path,
   )
 
   if (join_wildfire_data == FALSE) {
-
+    if (is.null(pm_2_5_col)) {
+      stop("PM2.5 column missing.")
+    }
+    wildfire_data <- wildfire_data %>%
+      dplyr::rename(mean_PM_FRP = pm_2_5_col)
     return(wildfire_data)
 
   }
@@ -240,7 +245,7 @@ load_wildfire_data <- function(health_path,
                                           shapefile_path = shp_path)
 
   wildfire_data <- pair_with_health(climate_data = df_zonal,
-                                    health_path = health_path,
+                                    health_data = wildfire_data,
                                     date_col = date_col,
                                     region_col = region_col,
                                     mean_temperature_col = mean_temperature_col,
@@ -732,16 +737,23 @@ plot_RR <- function(results,
 #' @param output_folder_path Path to folder where results should be saved.
 #'
 #' @export
-save_results <- function(results,
+save_results <- function(rr_results,
+                         an_ar_results,
                          output_folder_path) {
 
   if (!is.null(output_folder_path)) {
 
-    write.csv(results, file = file.path(
-      output_folder_path, "wildfire_results.csv")
+    write.csv(rr_results, file = file.path(
+      output_folder_path, "wildfire_rr.csv")
       )
     climatehealth::check_file_exists(file.path(
-      output_folder_path, "wildfire_results.csv"))
+      output_folder_path, "wildfire_rr.csv"))
+
+    write.csv(an_ar_results, file = file.path(
+      output_folder_path, "wildfire_an_ar.csv")
+    )
+    climatehealth::check_file_exists(file.path(
+      output_folder_path, "wildfire_an_ar.csv"))
 
   } else {
 
@@ -950,6 +962,8 @@ summarise_AF_AN <- function(data){
 #' @param health_outcome_col Character. Name of the column in the dataframe that
 #' contains the health outcome count column (e.g. number of deaths, hospital
 #' admissions)
+#' @param pm_2_5_col Character. The name of the column containing PM2.5 values
+#' in micrograms. Thsi is only required if health data isn't joined. Defaults to NULL.
 #' @param wildfire_lag Integer. The number of days for which to calculate the
 #' lags for wildfire PM2.5. Default is 3.
 #' @param temperature_lag Integer. The number of days for which to calculate
@@ -983,6 +997,13 @@ summarise_AF_AN <- function(data){
 #' @returns Dataframe of relative risk and confidence intervals for
 #' each lag of wildfire-related PM2.5
 #'
+#' @return rr_results, af_an_results
+#' \itemize{
+#'   \item `rr_results` A dataframe with relative risk estimates and confidence
+#'   intervals for each region.
+#'   \item `af_an_results` A dataframe containing attributable fractions and numbers for each region
+#' }
+#'
 #' @export
 wildfire_do_analysis <- function(health_path,
                                  join_wildfire_data = FALSE,
@@ -992,13 +1013,13 @@ wildfire_do_analysis <- function(health_path,
                                  region_col,
                                  mean_temperature_col,
                                  health_outcome_col,
+                                 pm_2_5_col = NULL,
                                  wildfire_lag = 3,
                                  temperature_lag = 1,
                                  spline_temperature_lag = 0,
                                  spline_temperature_degrees_freedom = 6,
                                  predictors_vif = NULL,
                                  relative_risk_by_region = FALSE,
-                                 output_AF_AN = FALSE,
                                  scale_factor_wildfire_pm = 10,
                                  save_fig = FALSE,
                                  save_csv = FALSE,
@@ -1018,7 +1039,8 @@ wildfire_do_analysis <- function(health_path,
                              date_col = date_col,
                              region_col = region_col,
                              mean_temperature_col = mean_temperature_col,
-                             health_outcome_col = health_outcome_col)
+                             health_outcome_col = health_outcome_col,
+                             pm_2_5_col = pm_2_5_col)
 
   data <- create_lagged_variables(data = data,
                                   wildfire_lag = wildfire_lag,
@@ -1044,12 +1066,9 @@ wildfire_do_analysis <- function(health_path,
                                         save_fig = save_fig,
                                         print_model_summaries = print_model_summaries)
 
-  if(output_AF_AN){
-    data <- calculate_daily_AF_AN(data = data,
-                                  rr_data = rr_results)
-    af_an_results <- summarise_AF_AN(data = data)
 
-  }
+  daily_AF_AN <- calculate_daily_AF_AN(data = data, rr_data = rr_results)
+  af_an_results <- summarise_AF_AN(data = daily_AF_AN)
 
   plot_RR_by_region(results = rr_results,
                     output_folder_path = output_folder_path,
@@ -1058,9 +1077,10 @@ wildfire_do_analysis <- function(health_path,
                     save_fig = save_fig)
 
   if (save_csv == TRUE) {
-    save_results(results = rr_results,
+    save_results(rr_results = rr_results,
+                 an_ar_results = af_an_results,
                  output_folder_path = output_folder_path)
   }
 
-  return(results)
+  return(list(rr_results, af_an_results))
 }
