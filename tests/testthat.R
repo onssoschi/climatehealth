@@ -1,5 +1,4 @@
 library(testthat)
-library(indicatorfunctions)
+library(climatehealth)
 
-test_check("indicatorfunctions")
-
+test_check("climatehealth")
