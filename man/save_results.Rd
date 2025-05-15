@@ -4,13 +4,18 @@
 \alias{save_results}
 \title{Save results of analysis}
 \usage{
-save_results(results, output_folder_path)
+save_results(
+  rr_results,
+  output_AN_AR = TRUE,
+  an_ar_results = NULL,
+  output_folder_path
+)
 }
 \arguments{
+\item{output_folder_path}{Path to folder where results should be saved.}
+
 \item{results}{Dataframe of relative risk and confidence intervals for
 each lag of wildfire-related PM2.5}
-
-\item{output_folder_path}{Path to folder where results should be saved.}
 }
 \description{
 Saves a CSV file of relative risk and confidence intervals for
