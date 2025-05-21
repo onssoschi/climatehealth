@@ -23,7 +23,8 @@ mh_read_and_format_data <- function(data_path,
                                  date_col,
                                  region_col = NULL,
                                  temperature_col,
-                                 health_outcome_col) {
+                                 health_outcome_col,
+                                 population_col) {
 
   # make sure data_path is a csv if a path is passed
   if(is.character(data_path)) {
@@ -36,13 +37,14 @@ mh_read_and_format_data <- function(data_path,
 
     df <- df %>%
       dplyr::mutate(region = "aggregated")
-      region_col = "region"
   }
 
   df <- df %>%
     dplyr::rename(date = date_col,
+                  region = region_col,
                   temp = temperature_col,
-                  suicides = health_outcome_col) %>%
+                  suicides = health_outcome_col,
+                  population = population_col) %>%
     dplyr::mutate(date = lubridate::ymd(date),
                   year = as.factor(lubridate::year(date)),
                   month = as.factor(lubridate::month(date)),
@@ -54,6 +56,33 @@ mh_read_and_format_data <- function(data_path,
   df_list <- aggregate_by_column(df, "region")
 
   return(df_list)
+}
+
+
+#' Create population totals
+#'
+#' @description Creates a list of population totals by year and region for use
+#' in the attributable rate calculations.
+#'
+#' @param data A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param country Character. Name of country for national level estimates.
+#'
+#' @returns List of population totals by year and region
+#'
+#' @exports
+mh_pop_totals <- function(df_list,
+                          country = "National"){
+
+  pop_list <- lapply(df_list, function(x) aggregate(population ~ year, data = x, mean))
+
+  tot_pop <- do.call(rbind, pop_list)
+  tot_pop <- aggregate(population ~ year, data = tot_pop, sum)
+
+  pop_list[[country]] <- tot_pop
+
+  return(pop_list)
+
 }
 
 
@@ -350,7 +379,7 @@ mh_minmax_suicide_temp <- function(data,
 #' @param blup A list. BLUP (best linear unbiased predictions) from the
 #' meta-analysis model for each region.
 #'
-#' @returns A list containing predictions by region
+#' @return A list containing predictions by region
 #'
 #' @exports
 mh_predict_reg <- function(data,
@@ -402,7 +431,7 @@ mh_predict_reg <- function(data,
 #' @param pred_list A list containing predictions from the model by region.
 #' @param country Character. Name of country for national level estimates.
 #'
-#' @returns A list containing predictions by region.
+#' @return A list containing predictions by region.
 #'
 #' @exports
 mh_predict_nat <- function(data,
@@ -410,6 +439,7 @@ mh_predict_nat <- function(data,
                            var_per = c(25,50,75),
                            var_degree = 2,
                            minpercnat,
+                           maxpercnat,
                            temp_avg,
                            temp_range,
                            mm,
@@ -452,11 +482,86 @@ mh_predict_nat <- function(data,
 }
 
 
-#' Plot results of analysis - Mental Health
+#' Process data for national analysis
+#'
+#' @description Aggregate to national data and run crossbasis
+#'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param var_fun Character. Exposure function for argvar
+#' (see dlnm::crossbasis). Defaults to 'bs'.
+#' @param var_per Vector. Internal knot positions for argvar
+#' (see dlnm::crossbasis). Defaults to c(25,50,75).
+#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
+#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
+#' @param lag_fun Character. Exposure function for arglag
+#' (see dlnm::crossbasis). Defaults to 'strata'.
+#' @param lag_breaks Integer. Internal cut-off point defining the strata for arglag
+#' (see dlnm::crossbasis). Defaults to 1.
+#' @param lag_days Integer. Maximum lag. Defaults to 2.
+#' (see dlnm::crossbasis).
+#' @param country Character. Name of country for national level estimates.
+#' @param cb_list A list of cross-basis matrices by region.
+#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
+#' @param minpercnat Integer. Percentile of minimum suicide temperature for country.
+#' @param maxpercreg Vector. Percentile of maximum suicide temperature for each region.
+#' @param maxpercnat Integer. Percentile of maximum suicide temperature for country.
+#'
+#' @return
+#' \itemize{
+#'   \item `df_list` List. A list of data frames for each region and nation.
+#'   \item `cb_list` List. A list of cross-basis matrices by region and nation.
+#'   \item `minpercreg` Vector. Percentile of minimum suicide temperature for each region and nation.
+#'   \item `maxpercreg` Vector. Percentile of maximum suicide temperature for each region and nation.
+#'
+#' @exports
+mh_add_national_data <- function(df_list,
+                                 var_fun = "bs",
+                                 var_per = c(25,50,75),
+                                 var_degree = 2,
+                                 lag_fun = "strata",
+                                 lag_breaks = 1,
+                                 lag_days = 2,
+                                 country = "National",
+                                 cb_list,
+                                 minpercreg,
+                                 minpercnat,
+                                 maxpercreg,
+                                 maxpercnat){
+
+  # Aggregate national level data
+
+  national_data <- as.data.frame(do.call(rbind, df_list)) #TODO Check if this should sum deaths and average temp etc.
+  df_list[[country]] <- national_data
+
+  # Create cross basis for national data
+
+  argvar <- list(fun = var_fun,
+                 knots = quantile(national_data$temp, var_per/100, na.rm = T),
+                 degree = var_degree)
+  arglag <- list(fun = lag_fun, breaks = lag_breaks)
+
+  cb_list[[country]] <- dlnm::crossbasis(national_data$temp, lag = lag_days, argvar = argvar, arglag = arglag)
+
+  # Add national min and max suicide temperatures
+
+  minpercreg[country] <- minpercnat
+  maxpercreg[country] <- maxpercnat
+
+  return(list(df_list, cb_list, minpercreg, maxpercreg))
+
+}
+
+
+#' Plot results of relative risk analysis - Mental Health
 #'
 #' @description Plots cumulative lag exposure-response function for each region
 #'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
 #' @param pred_list A list containing predictions from the model by region.
+#' @param minpercreg Vector. Percentile of minimum suicide temperature for each area.
+#' @param maxpercreg Vector. Percentile of maximum suicide temperature for each area.
 #' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
 #' FALSE.
 #' @param output_folder_path Path to folder where plots should be saved.
@@ -465,9 +570,12 @@ mh_predict_nat <- function(data,
 #' @returns Plots of cumulative lag exposure-response function for each region
 #'
 #' @exports
-mh_plot_results <- function(pred_list,
-                            save_fig = FALSE,
-                            output_folder_path = NULL) {
+mh_plot_rr <- function(df_list,
+                       pred_list,
+                       maxpercreg,
+                       minpercreg,
+                       save_fig = FALSE,
+                       output_folder_path = NULL) {
 
   xlim <- c(min(sapply(pred_list, function(x) min(x$predvar, na.rm = TRUE))),
             max(sapply(pred_list, function(x) max(x$predvar, na.rm = TRUE))))
@@ -476,7 +584,7 @@ mh_plot_results <- function(pred_list,
     # create grid dynamically
     grid <- create_grid(length(pred_list))
     output_path <- file.path(output_folder_path,
-                             "suicides_plot.pdf")
+                             "suicides_rr_plot.pdf")
     pdf(output_path, width=grid[1]*4, height=grid[2]*4)
     par(mfrow=c(grid[1],  grid[2]))
   }
@@ -494,15 +602,29 @@ mh_plot_results <- function(pred_list,
          main = reg,
          col = "#f25574")
 
+    vline_pos_max <- quantile(df_list[[reg]]$temp, maxpercreg[reg]/100, na.rm = TRUE)
+    vline_lab_max <- paste0("Max ST\n", round(vline_pos_max, 2), intToUtf8(176), "C (p", round(maxpercreg[reg], 2), ")")
+
+    abline(v = vline_pos_max, col = "black", lty = 2)
+
+    text(x = vline_pos_max, y = 2.5, labels = vline_lab_max, pos = 4, col = "black", cex = 0.8)
+
+    vline_pos_min <- quantile(df_list[[reg]]$temp, minpercreg[reg]/100, na.rm = TRUE)
+    vline_lab_min <- paste0("Min ST\n", round(vline_pos_min, 2), intToUtf8(176), "C (p", round(minpercreg[reg], 2), ")")
+
+    abline(v = vline_pos_min, col = "black", lty = 2)
+
+    text(x = vline_pos_min, y = 0.5, labels = vline_lab_min, pos = 4, col = "black", cex = 0.8)
+
   }
 
   if (save_fig == TRUE) {
 
     dev.off()
 
-    }
+  }
 
-    }
+}
 
 
 #' Produce cumulative relative risk results of analysis
@@ -516,7 +638,7 @@ mh_plot_results <- function(pred_list,
 #' intervals from analysis.
 #'
 #' @exports
-produce_results <- function(pred_list) {
+mh_rr_results <- function(pred_list) {
 
     results <- data.frame()
 
@@ -547,6 +669,640 @@ produce_results <- function(pred_list) {
 }
 
 
+#' Produce total attributable numbers and rates
+#'
+#' @description Create matrix of total attributable fractions, numbers and rates
+#' for each area over the whole time series, with confidence intervals.
+#'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param cb_list List of cross_basis matrices from create_crossbasis function.
+#' @param minpercreg Vector. Percentile of minimum suicide temperature for each area.
+#' @param maxpercreg Vector. Percentile of maximum suicide temperature for each area.
+#' @param pred_list A list containing predictions from the model by region.
+#' @param pop_list List of population totals by year and region.
+#'
+#' @return Matrix containing total attributable fractions, numbers and rates for each
+#' area over the whole time series.
+#'
+#' @exports
+mh_an_ar_totals <- function(df_list,
+                            cb_list,
+                            minpercreg,
+                            maxpercreg,
+                            pred_list,
+                            pop_list){
+
+  res_an_ar_tot <- matrix(NA, length(names(df_list)), 11,
+                          dimnames = list(names(df_list),
+                                    c("MaxST", "af", "af_lower_ci", "af_upper_ci",
+                                      "an", "an_lower_ci", "an_upper_ci", "population",
+                                      "ar", "ar_lower_ci", "ar_upper_ci")))
+
+for (reg in names(df_list)){
+
+  region_data <- df_list[[reg]]
+  cb <- cb_list[[reg]]
+  minperc <- minpercreg[reg]
+  maxperc <- maxpercreg[reg]
+  pred <- pred_list[[reg]]
+  pop <- pop_list[[reg]]
+
+  pop_mean <- mean(pop$population)
+
+  cen <- quantile(region_data$temp, minperc/100, na.rm = TRUE)
+  min_range <- quantile(region_data$temp, maxperc/100, na.rm = TRUE)
+  max_range <- max(region_data$temp, na.rm = TRUE)
+
+  res_an_ar_tot[reg, "MaxST"] <- min_range
+
+  res_an_ar_tot[reg, "af"] <- FluMoDL::attrdl(x = region_data$temp,
+                                          basis = cb,
+                                          cases = region_data$suicides,
+                                          coef = pred$coefficients,
+                                          vcov = pred$vcov,
+                                          type = "af",
+                                          dir = "forw",
+                                          cen = cen,
+                                          range = c(min_range, max_range),
+                                          tot = TRUE)
+
+  res_an_ar_tot[reg, "af_lower_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
+                                                            basis = cb,
+                                                            cases = region_data$suicides,
+                                                            coef = pred$coefficients,
+                                                            vcov = pred$vcov,
+                                                            type = "af",
+                                                            dir = "forw",
+                                                            cen = cen,
+                                                            range = c(min_range, max_range),
+                                                            tot = TRUE,
+                                                            sim = TRUE,
+                                                            nsim = 1000), 0.025)
+
+  res_an_ar_tot[reg, "af_upper_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
+                                                            basis = cb,
+                                                            cases = region_data$suicides,
+                                                            coef = pred$coefficients,
+                                                            vcov = pred$vcov,
+                                                            type = "af",
+                                                            dir = "forw",
+                                                            cen = cen,
+                                                            range = c(min_range, max_range),
+                                                            tot = TRUE,
+                                                            sim = TRUE,
+                                                            nsim = 1000), 0.975)
+
+  res_an_ar_tot[reg, "an"] <- FluMoDL::attrdl(x = region_data$temp,
+                                          basis = cb,
+                                          cases = region_data$suicides,
+                                          coef = pred$coefficients,
+                                          vcov = pred$vcov,
+                                          type = "an",
+                                          dir = "forw",
+                                          cen = cen,
+                                          range = c(min_range, max_range),
+                                          tot = TRUE)
+
+  res_an_ar_tot[reg, "an_lower_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
+                                                            basis = cb,
+                                                            cases = region_data$suicides,
+                                                            coef = pred$coefficients,
+                                                            vcov = pred$vcov,
+                                                            type = "an",
+                                                            dir = "forw",
+                                                            cen = cen,
+                                                            range = c(min_range, max_range),
+                                                            tot = TRUE,
+                                                            sim = TRUE,
+                                                            nsim = 1000), 0.025)
+
+  res_an_ar_tot[reg, "an_upper_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
+                                                            basis = cb,
+                                                            cases = region_data$suicides,
+                                                            coef = pred$coefficients,
+                                                            vcov = pred$vcov,
+                                                            type = "an",
+                                                            dir = "forw",
+                                                            cen = cen,
+                                                            range = c(min_range, max_range),
+                                                            tot = TRUE,
+                                                            sim = TRUE,
+                                                            nsim = 1000), 0.975)
+
+  res_an_ar_tot[reg, "population"] <- pop_mean
+
+  res_an_ar_tot[reg, "ar"] <- (res_an_ar_tot[reg, "an"] / res_an_ar_tot[reg, "population"]) * 100000
+
+  res_an_ar_tot[reg, "ar_lower_ci"] <- (res_an_ar_tot[reg, "an_lower_ci"] / res_an_ar_tot[reg, "population"]) * 100000
+
+  res_an_ar_tot[reg, "ar_upper_ci"] <- (res_an_ar_tot[reg, "an_upper_ci"] / res_an_ar_tot[reg, "population"]) * 100000
+
+}
+
+  return(res_an_ar_tot)
+
+}
+
+
+#' Plot total attributable rates
+#'
+#' @description Plot total attributable rates over the whole time series by area
+#' including data tables of both rates and numbers with confidence intervals
+#'
+#' @param res_an_ar_tot Matrix containing total attributable fractions, numbers and rates for each
+#' area over the whole time series.
+#' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
+#' FALSE.
+#' @param output_folder_path Path to folder where plots should be saved.
+#' Defaults to NULL.
+#'
+#' @return Plot of total attributable rates with tables of rates, numbers and
+#' confidence intervals by area
+#'
+#' @exports
+mh_plot_ar_totals <- function(res_an_ar_tot,
+                              save_fig = FALSE,
+                              output_folder_path = NULL){
+
+  if (save_fig == TRUE){
+
+  grid <- create_grid(1)
+  output_path <- file.path(output_folder_path, "suicides_AR_plot_total.pdf")
+  pdf(output_path, width = grid[1]*6, height = grid[2]*6)
+
+  # Set up layout with two rows
+  layout(matrix(c(1, 2), nrow = 2), heights = c(3, 1))
+
+  # Set up plotting area for the bar chart
+  par(mar = c(5, 5, 4, 2) + 0.1)
+
+  }
+
+  # Shorten the labels to a fixed length
+  short_labels <- sapply(rownames(res_an_ar_tot), function(x) {
+    if (nchar(x)-3 > 10) {
+      paste0(substr(x, 1, 10), "...")
+    } else {
+      x
+    }
+  })
+
+  barplot(names.arg = short_labels,
+          height = res_an_ar_tot[,"ar"],
+          ylab = "AR",
+          main = "Attributable Rates of Suicides by Area",
+          col = "#f25574",
+          las = 2)
+
+  if (save_fig == TRUE){
+
+  # Set up plotting area for the AR table
+  par(mar = c(0, 0, 0, 0))
+
+  # Create the table data for AR
+  table_data_ar <- data.frame(
+    Area = rownames(res_an_ar_tot),
+    AR = round(as.numeric(res_an_ar_tot[, "ar"]), 2),
+    Lower_CI = round(as.numeric(res_an_ar_tot[, "ar_lower_ci"]), 2),
+    Upper_CI = round(as.numeric(res_an_ar_tot[, "ar_upper_ci"]), 2)
+  )
+
+  # Plot the table using grid.table
+  grid::grid.newpage()
+  gridExtra::grid.table(table_data_ar)
+
+  # Create the table data for AN
+  table_data_an <- data.frame(
+    Area = rownames(res_an_ar_tot),
+    AN = round(as.numeric(res_an_ar_tot[, "an"]), 2),
+    Lower_CI = round(as.numeric(res_an_ar_tot[, "an_lower_ci"]), 2),
+    Upper_CI = round(as.numeric(res_an_ar_tot[, "an_upper_ci"]), 2)
+  )
+
+  # Plot the table using grid.table
+  grid::grid.newpage()
+  gridExtra::grid.table(table_data_an)
+
+  dev.off()
+
+  }
+
+}
+
+
+#' Produce total attributable numbers and rates
+#'
+#' #' @description Create list of matrices of yearly attributable fractions,
+#' numbers and rates for each area with confidence intervals.
+#'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param cb_list List of cross_basis matrices from create_crossbasis function.
+#' @param minpercreg Vector. Percentile of minimum suicide temperature for each area.
+#' @param maxpercreg Vector. Percentile of maximum suicide temperature for each area.
+#' @param pred_list A list containing predictions from the model by region.
+#' @param pop_list List of population totals by year and region.
+#'
+#' @return A list of matrices containing yearly estimates of attributable
+#' fractions, numbers and rates by area
+#'
+#' @exports
+mh_an_ar_yearly <- function(df_list,
+                            cb_list,
+                            minpercreg,
+                            maxpercreg,
+                            pred_list,
+                            pop_list){
+
+  year_list <- unique(unlist(lapply(df_list, function(x) x$year)))
+
+  an_ar_yr_list <- list()
+
+  for (reg in names(df_list)){
+
+    mat_an_ar <- matrix(NA, length(year_list), 12,
+                        dimnames = list(year_list,
+                                        c("year", "MaxST", "af", "af_lower_ci", "af_upper_ci",
+                                          "an", "an_lower_ci", "an_upper_ci", "population",
+                                          "ar", "ar_lower_ci", "ar_upper_ci")))
+    region_data_all <- df_list[[reg]]
+    cb <- cb_list[[reg]]
+    minperc <- minpercreg[reg]
+    maxperc <- maxpercreg[reg]
+    pred <- pred_list[[reg]]
+    pop <- pop_list[[reg]]
+
+    for (yr in year_list){
+
+      region_data <- filter(region_data_all, year == yr)
+      cen <- quantile(region_data$temp, minperc/100, na.rm = TRUE) # TODO Check if for each year or whole timeseries
+      min_range <- quantile(region_data$temp, maxperc/100, na.rm = TRUE) # TODO Check if for each year or whole timeseries
+      max_range <- max(region_data$temp, na.rm = TRUE) # TODO Check if for each year or whole timeseries
+
+      mat_an_ar[yr, "year"] <- as.numeric(as.character(yr))
+
+      mat_an_ar[yr, "MaxST"] <- min_range
+
+      mat_an_ar[yr, "af"] <- FluMoDL::attrdl(x = region_data$temp,
+                                             basis = cb,
+                                             cases = region_data$suicides,
+                                             coef = pred$coefficients,
+                                             vcov = pred$vcov,
+                                             type = "af",
+                                             dir = "forw",
+                                             cen = cen,
+                                             range = c(min_range, max_range),
+                                             tot = TRUE)
+
+      mat_an_ar[yr, "af_lower_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
+                                                               basis = cb,
+                                                               cases = region_data$suicides,
+                                                               coef = pred$coefficients,
+                                                               vcov = pred$vcov,
+                                                               type = "af",
+                                                               dir = "forw",
+                                                               cen = cen,
+                                                               range = c(min_range, max_range),
+                                                               tot = TRUE,
+                                                               sim = TRUE,
+                                                               nsim = 1000), 0.025)
+
+      mat_an_ar[yr, "af_upper_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
+                                                               basis = cb,
+                                                               cases = region_data$suicides,
+                                                               coef = pred$coefficients,
+                                                               vcov = pred$vcov,
+                                                               type = "af",
+                                                               dir = "forw",
+                                                               cen = cen,
+                                                               range = c(min_range, max_range),
+                                                               tot = TRUE,
+                                                               sim = TRUE,
+                                                               nsim = 1000), 0.975)
+
+      mat_an_ar[yr, "an"] <- FluMoDL::attrdl(x = region_data$temp,
+                                             basis = cb,
+                                             cases = region_data$suicides,
+                                             coef = pred$coefficients,
+                                             vcov = pred$vcov,
+                                             type = "an",
+                                             dir = "forw",
+                                             cen = cen,
+                                             range = c(min_range, max_range),
+                                             tot = TRUE)
+
+      mat_an_ar[yr, "an_lower_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
+                                                               basis = cb,
+                                                               cases = region_data$suicides,
+                                                               coef = pred$coefficients,
+                                                               vcov = pred$vcov,
+                                                               type = "an",
+                                                               dir = "forw",
+                                                               cen = cen,
+                                                               range = c(min_range, max_range),
+                                                               tot = TRUE,
+                                                               sim = TRUE,
+                                                               nsim = 1000), 0.025)
+
+      mat_an_ar[yr, "an_upper_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
+                                                               basis = cb,
+                                                               cases = region_data$suicides,
+                                                               coef = pred$coefficients,
+                                                               vcov = pred$vcov,
+                                                               type = "an",
+                                                               dir = "forw",
+                                                               cen = cen,
+                                                               range = c(min_range, max_range),
+                                                               tot = TRUE,
+                                                               sim = TRUE,
+                                                               nsim = 1000), 0.975)
+
+      mat_an_ar[yr, "population"] <- pop$population[pop$year == yr]
+
+      mat_an_ar[yr, "ar"] <- (mat_an_ar[yr, "an"] / mat_an_ar[yr, "population"]) * 100000
+
+      mat_an_ar[yr, "ar_lower_ci"] <- (mat_an_ar[yr, "an_lower_ci"] / mat_an_ar[yr, "population"]) * 100000
+
+      mat_an_ar[yr, "ar_upper_ci"] <- (mat_an_ar[yr, "an_upper_ci"] / mat_an_ar[yr, "population"]) * 100000
+
+    }
+
+    row.names(mat_an_ar) <- NULL
+    an_ar_yr_list[[reg]] <- mat_an_ar
+
+  }
+
+  return(an_ar_yr_list)
+
+}
+
+
+#' Plot attributable numbers by year
+#'
+#' @description Plot attributable numbers by year and area with confidence intervals
+#'
+#' @param an_ar_yr_list A list of matrices containing yearly estimates of attributable
+#' fractions, numbers and rates by area
+#' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
+#' FALSE.
+#' @param output_folder_path Path to folder where plots should be saved.
+#' Defaults to NULL.
+#'
+#' @return Plots of yearly attributable numbers per area
+#'
+#' @exports
+mh_plot_an_yearly <- function(an_ar_yr_list,
+                              save_fig = FALSE,
+                              output_folder_path = NULL){
+
+  if (save_fig == TRUE){
+
+    grid <- create_grid(length(an_ar_yr_list))
+    output_path <- file.path(output_folder_path, "suicides_an_timeseries.pdf")
+    pdf(output_path, width = grid[1]*4, height = grid[2]*4)
+    par(mfrow=c(grid[1], grid[2]))
+
+  }
+
+  for (reg in names(an_ar_yr_list)){
+
+    region_an <- as.data.frame(an_ar_yr_list[[reg]])
+    ylim <- c(min(c(0, min(region_an$an_lower_ci))), max(region_an$an_upper_ci))
+
+    plot(x = region_an$year,
+         y = region_an$an,
+         ylim = ylim,
+         xlab = "Year",
+         ylab = "AN",
+         main = reg,
+         col = "#f25574")
+
+    arrows(x0 = region_an$year,
+           y0 = region_an$an_lower_ci,
+           x1 = region_an$year,
+           y1 = region_an$an_upper_ci,
+           angle = 90,
+           code = 3,
+           length = 0.02,
+           col = "gray40")
+
+    abline(h = 0,
+      col = "black",
+      lty = 2)
+
+  }
+
+  if (save_fig == TRUE){
+
+  dev.off()
+
+  }
+
+}
+
+
+#' Plot attributable rates by year
+#'
+#' @description Plot attributable rates by year and area with confidence intervals
+#'
+#' @param an_ar_yr_list A list of matrices containing yearly estimates of attributable
+#' fractions, numbers and rates by area
+#' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
+#' FALSE.
+#' @param output_folder_path Path to folder where plots should be saved.
+#' Defaults to NULL.
+#'
+#' @return Plots of yearly attributable rates per area
+#'
+#' @exports
+mh_plot_ar_yearly <- function(an_ar_yr_list,
+                              save_fig = FALSE,
+                              output_folder_path = NULL){
+
+  if (save_fig == TRUE){
+
+    grid <- create_grid(length(an_ar_yr_list))
+    output_path <- file.path(output_folder_path, "suicides_ar_timeseries.pdf")
+    pdf(output_path, width = grid[1]*4, height = grid[2]*4)
+    par(mfrow=c(grid[1], grid[2]))
+
+  }
+
+  for (reg in names(an_ar_yr_list)){
+
+    region_ar <- as.data.frame(an_ar_yr_list[[reg]])
+    ylim <- c(min(c(0, min(region_ar$ar_lower_ci))), max(region_ar$ar_upper_ci))
+
+    plot(x = region_ar$year,
+         y = region_ar$ar,
+         ylim = ylim,
+         xlab = "Year",
+         ylab = "AR",
+         main = reg,
+         col = "#f25574")
+
+    arrows(x0 = region_ar$year,
+           y0 = region_ar$ar_lower_ci,
+           x1 = region_ar$year,
+           y1 = region_ar$ar_upper_ci,
+           angle = 90,
+           code = 3,
+           length = 0.02,
+           col = "gray40")
+
+    abline(h = 0,
+           col = "black",
+           lty = 2)
+
+  }
+
+  if (save_fig == TRUE) {
+
+    dev.off()
+
+  }
+
+}
+
+
+#' Produce total attributable numbers and rates by calendar month
+#'
+#' @description Create list of data frames containing total attributable numbers
+#' and rates by calendar month over the whole time series.
+#'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param cb_list List of cross_basis matrices from create_crossbasis function.
+#' @param minpercreg Vector. Percentile of minimum suicide temperature for each area.
+#' @param maxpercreg Vector. Percentile of maximum suicide temperature for each area.
+#' @param pred_list A list containing predictions from the model by region.
+#' @param pop_list List of population totals by year and region.
+#'
+#' @return A list of data frames containing total attributable numbers and rates by
+#' calendar month and area
+#'
+#' @exports
+mh_an_ar_month <- function(df_list,
+                           cb_list,
+                           minpercreg,
+                           maxpercreg,
+                           pred_list,
+                           pop_list){
+
+  month_list <- unique(unlist(lapply(df_list, function(x) x$month)))
+
+  an_ar_mth_list <- list()
+
+  for (reg in names(df_list)){
+
+    region_data <- df_list[[reg]]
+    cb <- cb_list[[reg]]
+    minperc <- minpercreg[reg]
+    maxperc <- maxpercreg[reg]
+    pred <- pred_list[[reg]]
+    pop <- pop_list[[reg]]
+
+    df_an_ar <- data.frame(date = region_data$date,
+                            year = region_data$year,
+                            month = region_data$month)
+
+    cen <- quantile(region_data$temp, minperc/100, na.rm = TRUE)
+    min_range <- quantile(region_data$temp, maxperc/100, na.rm = TRUE)
+    max_range <- max(region_data$temp, na.rm = TRUE)
+
+    df_an_ar["Region"] <- reg
+
+    df_an_ar["MaxST"] <- min_range
+
+    df_an_ar["AF"]  <- FluMoDL::attrdl(x = region_data$temp,
+                                        basis = cb,
+                                        cases = region_data$suicides,
+                                        coef = pred$coefficients,
+                                        vcov = pred$vcov,
+                                        type = "af",
+                                        dir = "forw",
+                                        cen = cen,
+                                        range = c(min_range, max_range),
+                                        tot = FALSE)
+
+    df_an_ar["AN"] <- FluMoDL::attrdl(x = region_data$temp,
+                                       basis = cb,
+                                       cases = region_data$suicides,
+                                       coef = pred$coefficients,
+                                       vcov = pred$vcov,
+                                       type = "an",
+                                       dir = "forw",
+                                       cen = cen,
+                                       range = c(min_range, max_range),
+                                       tot = FALSE)
+
+    df_an_ar <- left_join(df_an_ar, pop, by = "year")
+
+    df_an_ar["AR"] <- (df_an_ar["AN"] / df_an_ar["population"]) * 100000
+
+    mth_an_ar <- df_an_ar %>%
+      group_by(month) %>%
+      summarise(an_mth_tot = sum(AN),
+                ar_mth_tot = sum(AR))
+
+    an_ar_mth_list[[reg]] <- mth_an_ar
+
+  }
+
+  return(an_ar_mth_list)
+
+}
+
+
+#' Plot attributable rates by calendar month
+#'
+#' @descripton Plot attributable rates grouped over the whole time series by
+#' calendar month to explore seasonality.
+#'
+#' @param an_ar_mth_list A list of data frames containing total attributable
+#' numbers and rates by calendar month and area.
+#' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
+#' FALSE.
+#' @param output_folder_path Path to folder where plots should be saved.
+#' Defaults to NULL.
+#'
+#' @return Plots of attributable rates by calendar month per area
+#'
+#' @exports
+mh_plot_ar_monthly <- function(an_ar_mth_list,
+                               save_fig = FALSE,
+                               output_folder_path = NULL){
+
+  if (save_fig == TRUE){
+
+    grid <- create_grid(length(an_ar_mth_list))
+    output_path <- file.path(output_folder_path, "suicides_seasonal_plot.pdf")
+    pdf(output_path, width = grid[1]*4, height = grid[2]*4)
+    par(mfrow=c(grid[1], grid[2]))
+
+  }
+
+  for (reg in names(an_ar_mth_list)){
+
+    region_ar <- an_ar_mth_list[[reg]]
+    ylim <- c(0, 0.4)
+
+    barplot(names.arg = region_ar$month,
+            height = region_ar$ar_mth_tot,
+            ylim = ylim,
+            xlab = "Month",
+            ylab = "AR",
+            main = reg,
+            col = "#f25574")
+
+  }
+
+  dev.off()
+
+}
+
+
 #' Save results of analysis - Mental Health
 #'
 #' @description Saves a CSV file of cumulative relative risk and
@@ -558,15 +1314,30 @@ produce_results <- function(pred_list) {
 #' Defaults to NULL.
 #'
 #' @exports
-mh_save_results <- function(results,
+mh_save_results <- function(rr_results,
+                            res_an_ar_tot,
+                            res_an_ar_yr,
                          output_folder_path = NULL) {
 
   if (!is.null(output_folder_path)) {
 
     check_file_exists(file.path(output_folder_path))
 
-    write.csv(results, file = file.path(
-      output_folder_path, "suicides_results.csv"), row.names = FALSE)
+    write.csv(rr_results, file = file.path(
+      output_folder_path, "suicides_rr_results.csv"), row.names = FALSE)
+
+    write.csv(res_an_ar_tot, file = file.path(
+      output_folder_path, "suicides_an_ar_tot_results.csv"), row.names = TRUE)
+
+    res_an_ar_yr <- bind_rows(lapply(names(an_ar_yr_list), function(x) {
+      df <- as.data.frame(an_ar_yr_list[[x]])
+      df$region <- x
+      df <- df[, c("region", setdiff(names(df), "region"))]
+      df
+    }))
+
+    write.csv(res_an_ar_yr, file = file.path(
+      output_folder_path, "suicides_an_ar_yr_results.csv"), row.names = FALSE)
 
     #TODO also in wildfire functions, generalise and put in files.utils
 
@@ -639,6 +1410,7 @@ suicides_heat_do_analysis <- function(data_path,
                                       region_col = NULL,
                                       temperature_col,
                                       health_outcome_col,
+                                      population_col,
                                       var_fun = "bs",
                                       var_degree = 2,
                                       var_per = c(25,50,75),
@@ -648,7 +1420,7 @@ suicides_heat_do_analysis <- function(data_path,
                                       save_fig = FALSE,
                                       save_csv = FALSE,
                                       cenper = 50,
-                                      country = "England",
+                                      country = "National",
                                       descriptive_stats = FALSE,
                                       ds_correlation_method = "pearson",
                                       ds_use_individual_dfs = TRUE,
@@ -662,7 +1434,8 @@ suicides_heat_do_analysis <- function(data_path,
                              date_col = date_col,
                              region_col = region_col,
                              temperature_col = temperature_col,
-                             health_outcome_col = health_outcome_col)
+                             health_outcome_col = health_outcome_col,
+                             population_col = population_col)
 
   if(descriptive_stats) {
     common_descriptive_stats(
@@ -679,6 +1452,9 @@ suicides_heat_do_analysis <- function(data_path,
       independent_cols = c()
     )
   }
+
+  pop_list <- mh_pop_totals(data = df_list,
+                            country = country)
 
   cb_list <- mh_create_crossbasis(data = df_list,
                                var_fun = var_fun,
@@ -721,21 +1497,78 @@ suicides_heat_do_analysis <- function(data_path,
                               var_per = var_per,
                               var_degree = var_degree,
                               minpercnat = minpercnat,
+                              maxpercnat = maxpercnat,
                               temp_avg = temp_avg,
                               temp_range = temp_range,
                               mm = mm,
                               pred_list = pred_list,
                               country = country)
 
-  mh_plot_results(pred_list = pred_list,
-               save_fig = save_fig,
-               output_folder_path = output_folder_path)
+  c(df_list, cb_list, minpercreg, maxpercreg) %<-% mh_add_national_data(df_list = df_list,
+                                                                        var_fun = var_fun,
+                                                                        var_per = var_per,
+                                                                        var_degree = var_degree,
+                                                                        lag_fun = lag_fun,
+                                                                        lag_breaks = lag_breaks,
+                                                                        lag_days = lag_days,
+                                                                        country = country,
+                                                                        cb_list = cb_list,
+                                                                        minpercreg = minpercreg,
+                                                                        minpercnat = minpercnat,
+                                                                        maxpercreg = maxpercreg,
+                                                                        maxpercnat = maxpercnat)
 
-  results <- produce_results(pred_list)
+  mh_plot_rr(df_list = df_list,
+             pred_list = pred_list,
+             maxpercreg = maxpercreg,
+             minpercreg = minpercreg,
+             save_fig = save_fig,
+             output_folder_path = output_folder_path)
+
+  rr_results <- mh_rr_results(pred_list)
+
+  res_an_ar_tot <- mh_an_ar_totals(df_list = df_list,
+                                   cb_list = cb_list,
+                                   minpercreg = minpercreg,
+                                   maxpercreg = maxpercreg,
+                                   pred_list = pred_list,
+                                   pop_list = pop_list)
+
+  mh_plot_ar_totals(res_an_ar_tot = res_an_ar_tot,
+                    save_fig = save_fig,
+                    output_folder_path = output_folder_path)
+
+  an_ar_yr_list <- mh_an_ar_yearly(df_list = df_list,
+                                   cb_list = cb_list,
+                                   minpercreg = minpercreg,
+                                   maxpercreg = maxpercreg,
+                                   pred_list = pred_list,
+                                   pop_list = pop_list)
+
+  mh_plot_an_yearly(an_ar_yr_list = an_ar_yr_list,
+                    save_fig = save_fig,
+                    output_folder_path = output_folder_path)
+
+  mh_plot_ar_yearly(an_ar_yr_list = an_ar_yr_list,
+                    save_fig = save_fig,
+                    output_folder_path = output_folder_path)
+
+  an_ar_mth_list <- mh_an_ar_month(df_list = df_list,
+                                   cb_list = cb_list,
+                                   minpercreg = minpercreg,
+                                   maxpercreg = maxpercreg,
+                                   pred_list = pred_list,
+                                   pop_list = pop_list)
+
+  mh_plot_ar_monthly(an_ar_mth_list = an_ar_mth_list,
+                     save_fig = save_fig,
+                     output_folder_path = output_folder_path)
 
   if (save_csv == TRUE) {
 
-    mh_save_results(results = results,
+    mh_save_results(rr_results = rr_results,
+                    res_an_ar_tot = res_an_ar_tot,
+                    res_an_ar_yr = res_an_ar_yr,
                output_folder_path = output_folder_path)
 
   }
