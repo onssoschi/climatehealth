@@ -34,9 +34,12 @@ load_and_process_map <- function(map_path,
            District = District_col,
            geometry = geometry_col)
 
+  # make valid geomtry
+  map$geometry <- st_make_valid(map$geometry)
+
   # Create adjacency matrix
   if (!file.exists(file.path(output_dir, "nbfile"))){
-    nb.map <- poly2nb(as_Spatial(map$geometry))
+    nb.map <- poly2nb(as_Spatial(map$geometry), snap =1e-4)
     write.nb.gal(nb.map, file = file.path(output_dir, "nbfile"))
   } else {
     nb.map <- read.gal(file.path(output_dir, "nbfile"))
@@ -547,8 +550,6 @@ plot_monthly_random_effects <- function(combined_data,
   grid_data <- combined_data$grid_data
   map <- combined_data$map
 
-  model <- model$model
-
   # Create data frame for monthly random effects per region
   month_effects <- data.frame(region_code = rep(unique(data$region_code), each = 12),
                               Month = model$summary.random$Month)
@@ -609,8 +610,6 @@ yearly_spatial_random_effect <- function(combined_data,
   data <- create_inla_indices(combined_data$data)
   grid_data <- combined_data$grid_data
   map <- combined_data$map
-
-  model <- model$model
 
   ntime <- length(unique(data$time))       # Total number of months
   nyear <- length(unique(data$Year))       # Total number of years
@@ -673,7 +672,6 @@ get_predictions <- function(data,
 
   # loading the best model
   data <- create_inla_indices(data)
-  model <- model$model
 
   # getting basis matrices
   basis_matrices <- set_cross_basis(data)
