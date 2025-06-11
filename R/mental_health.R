@@ -233,8 +233,6 @@ mh_reduce_cumulative <- function(data,
 #'
 #' @return
 #' \itemize{
-#'   \item `temp_avg` Vector. Average temperature for each region.
-#'   \item `temp_range` Vector. Range of temperature for each region.
 #'   \item `mm` A model object. A multivariate meta-analysis model.
 #'   \item `blup` A list. BLUP (best linear unbiased predictions) from the
 #'   meta-analysis model for each region.
@@ -265,55 +263,7 @@ mh_meta_analysis <- function(data,
 
   names(blup) <- names(data)
 
-  return(list(temp_avg, temp_range, mm, blup))
-
-}
-
-
-#' Redefine function ahead of predictions
-#'
-#' @description Redefine the function including boundary knots ahead of running
-#' predictions from the model
-#'
-#' @param data A list of dataframes containing daily timeseries data for a health outcome
-#' and climate variables which may be disaggregated by a particular region.
-#' @param var_fun Character. Exposure function for argvar
-#' (see dlnm::crossbasis). Defaults to 'bs'.
-#' @param var_per Vector. Internal knot positions for argvar
-#' (see dlnm::crossbasis). Defaults to c(25,50,75).
-#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
-#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
-#'
-#' @return List containing onebasis of exposure variable for each region.
-#'
-#' @exports
-mh_redefine_function_reg <- function(data,
-                                     var_fun = "bs",
-                                     var_per = c(25,50,75),
-                                     var_degree = 2){
-
-  bvar_list <- list()
-
-  for(reg in names(data)){
-
-    region_data <- data[[reg]]
-    predvar <- quantile(region_data$temp, 1:99/100, na.rm = TRUE)
-
-    # Redefine the function using all arguments (boundary knots included)
-
-    argvar <- list(x = predvar,
-                   fun = var_fun,
-                   knots = quantile(region_data$temp, var_per/100, na.rm = TRUE),
-                   degree = var_degree,
-                   Boundary.knots = range(region_data$temp, na.rm = TRUE))
-
-    bvar <- do.call(dlnm::onebasis, argvar)
-
-    bvar_list[[reg]] <- bvar
-
-  }
-
-  return(bvar_list)
+  return(list(mm, blup))
 
 }
 
@@ -325,7 +275,12 @@ mh_redefine_function_reg <- function(data,
 #'
 #' @param data A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
-#' @param bvar_list List containing onebasis of exposure variable for each region.
+#' @param var_fun Character. Exposure function for argvar
+#' (see dlnm::crossbasis). Defaults to 'bs'.
+#' @param var_per Vector. Internal knot positions for argvar
+#' (see dlnm::crossbasis). Defaults to c(25,50,75).
+#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
+#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
 #' @param blup A list. BLUP (best linear unbiased predictions) from the
 #' meta-analysis model for each region.
 #'
@@ -333,13 +288,13 @@ mh_redefine_function_reg <- function(data,
 #' \itemize{
 #'   \item `minpercreg` Vector. Percentile of minimum suicide temperature for each region.
 #'   \item `maxpercreg` Vector. Percentile of maximum suicide temperature for each region.
-#'   \item `minpercnat` Integer. Percentile of minimum suicide temperature for country.
-#'   \item `maxpercnat` Integer. Percentile of maximum suicide temperature for country.
 #'   }
 #'
 #' @exports
 mh_minmax_suicide_temp <- function(data,
-                                   bvar_list,
+                                   var_fun = "bs",
+                                   var_per = c(25,50,75),
+                                   var_degree = 2,
                                    blup) {
 
   # Generate matrix for storing results
@@ -353,17 +308,24 @@ mh_minmax_suicide_temp <- function(data,
 
     region_data <- data[[reg]]
 
-    minpercreg[reg] <- (1:50)[which.min((bvar_list[[reg]]%*%blup[[reg]]$blup)[1:50,])]
-    maxpercreg[reg] <- (51:99)[which.max((bvar_list[[reg]]%*%blup[[reg]]$blup)[51:99,])]
+    predvar <- quantile(region_data$temp, 1:99/100, na.rm = TRUE)
+
+    # Redefine the function using all arguments (boundary knots included)
+
+    argvar <- list(x = predvar,
+                   fun = var_fun,
+                   knots = quantile(region_data$temp, var_per/100, na.rm = TRUE),
+                   degree = var_degree,
+                   Boundary.knots = range(region_data$temp, na.rm = TRUE))
+
+    bvar <- do.call(dlnm::onebasis, argvar)
+
+    minpercreg[reg] <- (1:50)[which.min((bvar%*%blup[[reg]]$blup)[1:50,])]
+    maxpercreg[reg] <- (51:99)[which.max((bvar%*%blup[[reg]]$blup)[51:99,])]
 
   }
 
-  # National level points of min and max suicide temperature
-
-  minpercnat <- median(minpercreg)
-  maxpercnat <- median(maxpercreg)
-
-  return(list(minpercreg, maxpercreg, minpercnat, maxpercnat))
+  return(list(minpercreg, maxpercreg))
 
 }
 
@@ -374,7 +336,12 @@ mh_minmax_suicide_temp <- function(data,
 #'
 #' @param data A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
-#' @param bvar_list List containing onebasis of exposure variable for each region.
+#' @param var_fun Character. Exposure function for argvar
+#' (see dlnm::crossbasis). Defaults to 'bs'.
+#' @param var_per Vector. Internal knot positions for argvar
+#' (see dlnm::crossbasis). Defaults to c(25,50,75).
+#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
+#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
 #' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
 #' @param blup A list. BLUP (best linear unbiased predictions) from the
 #' meta-analysis model for each region.
@@ -383,18 +350,28 @@ mh_minmax_suicide_temp <- function(data,
 #'
 #' @exports
 mh_predict_reg <- function(data,
-                       bvar_list,
-                       minpercreg,
-                       blup){
+                           var_fun = "bs",
+                           var_per = c(25,50,75),
+                           var_degree = 2,
+                           minpercreg,
+                           blup){
 
   pred_list <- list()
 
   for(reg in names(data)){
 
     region_data <- data[[reg]]
+
+    argvar <- list(x = region_data$temp,
+                   fun = var_fun,
+                   knots = quantile(region_data$temp, var_per/100, na.rm = TRUE),
+                   degree = var_degree)
+
+    bvar <- do.call(dlnm::onebasis, argvar)
+
     cen <- quantile(region_data$temp, minpercreg[reg]/100, na.rm = TRUE)
 
-    pred <- dlnm::crosspred(bvar_list[[reg]],
+    pred <- dlnm::crosspred(bvar,
                             coef = blup[[reg]]$blup,
                             vcov = blup[[reg]]$vcov,
                             model.link = "log",
@@ -412,6 +389,117 @@ mh_predict_reg <- function(data,
 }
 
 
+#' Process data for national analysis
+#'
+#' @description Aggregate to national data and run crossbasis
+#'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param pop_list List of population totals by year and region.
+#' @param var_fun Character. Exposure function for argvar
+#' (see dlnm::crossbasis). Defaults to 'bs'.
+#' @param var_per Vector. Internal knot positions for argvar
+#' (see dlnm::crossbasis). Defaults to c(25,50,75).
+#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
+#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
+#' @param lag_fun Character. Exposure function for arglag
+#' (see dlnm::crossbasis). Defaults to 'strata'.
+#' @param lag_breaks Integer. Internal cut-off point defining the strata for arglag
+#' (see dlnm::crossbasis). Defaults to 1.
+#' @param lag_days Integer. Maximum lag. Defaults to 2.
+#' (see dlnm::crossbasis).
+#' @param country Character. Name of country for national level estimates.
+#' @param cb_list A list of cross-basis matrices by region.
+#' @param mm A model object. A multivariate meta-analysis model.
+#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
+#' @param maxpercreg Vector. Percentile of maximum suicide temperature for each region.
+#'
+#' @return
+#' \itemize{
+#'   \item `df_list` List. A list of data frames for each region and nation.
+#'   \item `cb_list` List. A list of cross-basis matrices by region and nation.
+#'   \item `minpercreg` Vector. Percentile of minimum suicide temperature for each region and nation.
+#'   \item `maxpercreg` Vector. Percentile of maximum suicide temperature for each region and nation.
+#'   \item `mmpredall` List. A list of national coefficients and covariance matrices.
+#'   }
+#'
+#' @exports
+mh_add_national_data <- function(df_list,
+                                 pop_list,
+                                 var_fun = "bs",
+                                 var_per = c(25,50,75),
+                                 var_degree = 2,
+                                 lag_fun = "strata",
+                                 lag_breaks = 1,
+                                 lag_days = 2,
+                                 country = "National",
+                                 cb_list,
+                                 mm,
+                                 minpercreg,
+                                 maxpercreg){
+
+  # Aggregate national level data
+
+  national_data <- as.data.frame(do.call(rbind, df_list))
+
+  nat_pop <- pop_list[[country]] %>%
+    rename(nat_population = population)
+
+  national_data <- national_data %>%
+    left_join(nat_pop, by = "year") %>%
+    mutate(weight = population / nat_population,
+           weighted_temp = temp * weight) %>%
+    group_by(date) %>%
+    summarise(#temp = round(mean(temp, na.rm = TRUE), 1))#, #TODO Remove if happy with weighted mean
+              temp = round(sum(weighted_temp, na.rm = TRUE), 1),
+              suicides = sum(suicides, na.rm = TRUE)) %>%
+    mutate(year = as.factor(lubridate::year(date)),
+           month = as.factor(lubridate::month(date)))
+
+  df_list[[country]] <- as.data.frame(national_data)
+
+  # Create cross basis for national data
+
+  argvar <- list(fun = var_fun,
+                 knots = quantile(national_data$temp, var_per/100, na.rm = T),
+                 degree = var_degree)
+  arglag <- list(fun = lag_fun, breaks = lag_breaks)
+
+  cb_list[[country]] <- dlnm::crossbasis(national_data$temp, lag = lag_days, argvar = argvar, arglag = arglag)
+
+  # Add national min and max suicide temperatures
+
+  predvar <- quantile(national_data$temp, 1:99/100, na.rm = TRUE)
+
+  argvar <- list(x = predvar,
+                 fun = var_fun,
+                 knots = quantile(national_data$temp, var_per/100, na.rm = TRUE),
+                 degree = var_degree,
+                 Boundary.knots = range(national_data$temp, na.rm = TRUE))
+
+  bvar <- do.call(dlnm::onebasis, argvar)
+
+  datanew <- data.frame(
+    temp_avg = mean(national_data$temp),
+    temp_range = diff(range(national_data$temp, na.rm = TRUE)))
+
+  mmpredall <- predict(mm,datanew,vcov=T,format="list")
+
+  minpercnat <- (1:50)[which.min((bvar%*%mmpredall$fit)[1:50,])]
+  maxpercnat <- (51:99)[which.max((bvar%*%mmpredall$fit)[51:99,])]
+
+  #minpercnat <- median(minpercreg)
+  #maxpercnat <- median(maxpercreg)
+
+  minpercreg[country] <- minpercnat
+  maxpercreg[country] <- maxpercnat
+
+  return(list(df_list, cb_list, minpercreg, maxpercreg, mmpredall))
+
+}
+
+
+
 #' Run national predictions from meta analysis
 #'
 #' @description Use the meta analysis to create national level predictions
@@ -424,47 +512,33 @@ mh_predict_reg <- function(data,
 #' (see dlnm::crossbasis). Defaults to c(25,50,75).
 #' @param var_degree Integer. Degree of the piecewise polynomial for argvar
 #' (see dlnm::crossbasis). Defaults to 2 (quadratic).
-#' @param minpercnat Integer. Percentile of minimum suicide temperature for country.
-#' @param temp_avg Vector. Average temperature for each region.
-#' @param temp_range Vector. Range of temperature for each region.
-#' @param mm A model object. A multivariate meta-analysis model.
+#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
+#' @param mmpredall List of national coefficients and covariance matrices for the crosspred.
 #' @param pred_list A list containing predictions from the model by region.
 #' @param country Character. Name of country for national level estimates.
 #'
 #' @return A list containing predictions by region.
 #'
 #' @exports
-mh_predict_nat <- function(data,
+mh_predict_nat <- function(df_list,
                            var_fun = "bs",
                            var_per = c(25,50,75),
                            var_degree = 2,
-                           minpercnat,
-                           maxpercnat,
-                           temp_avg,
-                           temp_range,
-                           mm,
+                           minpercreg,
+                           mmpredall,
                            pred_list,
                            country = "National"){
 
-  national_data <- as.data.frame(do.call(rbind, data))
+  national_data <- df_list[[country]]
 
-  predvar <- quantile(national_data$temp, 1:99/100, na.rm = TRUE)
-
-  argvar <- list(x = predvar,
+  argvar <- list(x = national_data$temp,
                  fun = var_fun,
                  knots = quantile(national_data$temp, var_per/100, na.rm = TRUE),
-                 degree = var_degree,
-                 Boundary.knots = range(national_data$temp, na.rm = TRUE))
+                 degree = var_degree)
 
   bvar <- do.call(dlnm::onebasis, argvar)
 
-  cen <- quantile(national_data$temp,minpercnat/100,na.rm=T)
-
-  datanew <- data.frame(
-    temp_avg=mean(temp_avg),
-    temp_range=mean(temp_range) )
-
-  mmpredall <- predict(mm,datanew,vcov=T,format="list")
+  cen <- quantile(national_data$temp, minpercreg[country]/100,na.rm=T)
 
   pred_nat <- dlnm::crosspred(bvar,
                               coef=mmpredall$fit,
@@ -482,73 +556,39 @@ mh_predict_nat <- function(data,
 }
 
 
-#' Process data for national analysis
+#' Produce cumulative relative risk results of analysis
 #'
-#' @description Aggregate to national data and run crossbasis
+#' @description Produces cumulative relative risk and confidence intervals
+#' from analysis.
 #'
-#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
-#' and climate variables which may be disaggregated by a particular region.
-#' @param var_fun Character. Exposure function for argvar
-#' (see dlnm::crossbasis). Defaults to 'bs'.
-#' @param var_per Vector. Internal knot positions for argvar
-#' (see dlnm::crossbasis). Defaults to c(25,50,75).
-#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
-#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
-#' @param lag_fun Character. Exposure function for arglag
-#' (see dlnm::crossbasis). Defaults to 'strata'.
-#' @param lag_breaks Integer. Internal cut-off point defining the strata for arglag
-#' (see dlnm::crossbasis). Defaults to 1.
-#' @param lag_days Integer. Maximum lag. Defaults to 2.
-#' (see dlnm::crossbasis).
-#' @param country Character. Name of country for national level estimates.
-#' @param cb_list A list of cross-basis matrices by region.
-#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
-#' @param minpercnat Integer. Percentile of minimum suicide temperature for country.
-#' @param maxpercreg Vector. Percentile of maximum suicide temperature for each region.
-#' @param maxpercnat Integer. Percentile of maximum suicide temperature for country.
+#' @param pred_list A list containing predictions from the model by region.
 #'
-#' @return
-#' \itemize{
-#'   \item `df_list` List. A list of data frames for each region and nation.
-#'   \item `cb_list` List. A list of cross-basis matrices by region and nation.
-#'   \item `minpercreg` Vector. Percentile of minimum suicide temperature for each region and nation.
-#'   \item `maxpercreg` Vector. Percentile of maximum suicide temperature for each region and nation.
+#' @returns Dataframe containing cumulative relative risk and confidence
+#' intervals from analysis.
 #'
 #' @exports
-mh_add_national_data <- function(df_list,
-                                 var_fun = "bs",
-                                 var_per = c(25,50,75),
-                                 var_degree = 2,
-                                 lag_fun = "strata",
-                                 lag_breaks = 1,
-                                 lag_days = 2,
-                                 country = "National",
-                                 cb_list,
-                                 minpercreg,
-                                 minpercnat,
-                                 maxpercreg,
-                                 maxpercnat){
+mh_rr_results <- function(pred_list) {
 
-  # Aggregate national level data
+  rr_results <- bind_rows(lapply(names(pred_list), function(region_name) {
 
-  national_data <- as.data.frame(do.call(rbind, df_list)) #TODO Check if this should sum deaths and average temp etc.
-  df_list[[country]] <- national_data
+    reg_pred <- pred_list[[region_name]]
 
-  # Create cross basis for national data
+    df <- data.frame(
+      Area = region_name,
+      Temperature = reg_pred$predvar,
+      RR = reg_pred$allRRfit,
+      RR_lower_CI = reg_pred$allRRlow,
+      RR_upper_CI = reg_pred$allRRhigh
+    )
 
-  argvar <- list(fun = var_fun,
-                 knots = quantile(national_data$temp, var_per/100, na.rm = T),
-                 degree = var_degree)
-  arglag <- list(fun = lag_fun, breaks = lag_breaks)
+    return(df)
 
-  cb_list[[country]] <- dlnm::crossbasis(national_data$temp, lag = lag_days, argvar = argvar, arglag = arglag)
+  })
+  )
 
-  # Add national min and max suicide temperatures
+  rownames(rr_results) <- NULL
 
-  minpercreg[country] <- minpercnat
-  maxpercreg[country] <- maxpercnat
-
-  return(list(df_list, cb_list, minpercreg, maxpercreg))
+  return(rr_results)
 
 }
 
@@ -580,6 +620,9 @@ mh_plot_rr <- function(df_list,
   xlim <- c(min(sapply(pred_list, function(x) min(x$predvar, na.rm = TRUE))),
             max(sapply(pred_list, function(x) max(x$predvar, na.rm = TRUE))))
 
+  ylim <- c(min(c(min(sapply(pred_list, function(x) min(x$allRRfit, na.rm = TRUE))) - 0.1, 0.4)),
+            max(c(max(sapply(pred_list, function(x) max(x$allRRfit, na.rm = TRUE))) + 0.5, 2.1)))
+
   if (save_fig==T) {
     # create grid dynamically
     grid <- create_grid(length(pred_list))
@@ -597,17 +640,18 @@ mh_plot_rr <- function(df_list,
          "overall",
          xlab = expression(paste("Temperature (", degree, "C)")),
          ylab = "RR",
-         ylim = c(0,3),
+         ylim = ylim,
          xlim = xlim,
          main = reg,
          col = "#f25574")
 
-    vline_pos_max <- quantile(df_list[[reg]]$temp, maxpercreg[reg]/100, na.rm = TRUE)
-    vline_lab_max <- paste0("Max ST\n", round(vline_pos_max, 2), intToUtf8(176), "C (p", round(maxpercreg[reg], 2), ")")
+    vline_pos_max_x <- quantile(df_list[[reg]]$temp, maxpercreg[reg]/100, na.rm = TRUE)
+    vline_pos_max_y <- max(pred_list[[reg]]$allRRfit, na.rm = TRUE) + 0.3
+    vline_lab_max <- paste0("Max ST\n", round(vline_pos_max_x, 2), intToUtf8(176), "C (p", round(maxpercreg[reg], 2), ")")
 
-    abline(v = vline_pos_max, col = "black", lty = 2)
+    abline(v = vline_pos_max_x, col = "black", lty = 2)
 
-    text(x = vline_pos_max, y = 2.5, labels = vline_lab_max, pos = 4, col = "black", cex = 0.8)
+    text(x = vline_pos_max_x, y = vline_pos_max_y, labels = vline_lab_max, pos = 2, col = "black", cex = 0.8)
 
     vline_pos_min <- quantile(df_list[[reg]]$temp, minpercreg[reg]/100, na.rm = TRUE)
     vline_lab_min <- paste0("Min ST\n", round(vline_pos_min, 2), intToUtf8(176), "C (p", round(minpercreg[reg], 2), ")")
@@ -623,48 +667,6 @@ mh_plot_rr <- function(df_list,
     dev.off()
 
   }
-
-}
-
-
-#' Produce cumulative relative risk results of analysis
-#'
-#' @description Produces cumulative relative risk and confidence intervals
-#' from analysis.
-#'
-#' @param pred_list A list containing predictions from the model by region.
-#'
-#' @returns Dataframe containing cumulative relative risk and confidence
-#' intervals from analysis.
-#'
-#' @exports
-mh_rr_results <- function(pred_list) {
-
-    results <- data.frame()
-
-    for (reg in names(pred_list)) {
-
-      region_pred <- pred_list[[reg]]
-
-      regname <- tolower(gsub(' ', '_', reg))
-      rrfit <- paste0("RRfit_", regname)
-      rrlow <- paste0("RRlow_", regname)
-      rrhigh <- paste0("RRhigh_", regname)
-
-      results_add <- data.frame(
-        Temperature = region_pred$predvar,
-        setNames(list(region_pred$allRRfit), rrfit),
-        setNames(list(region_pred$allRRlow), rrlow),
-        setNames(list(region_pred$allRRhigh), rrhigh))
-
-      if (nrow(results) == 0) {
-        results <- results_add
-      } else {
-          results <- merge(results, results_add, by = "Temperature", all = TRUE)
-      }
-    }
-
-   return(results)
 
 }
 
@@ -693,11 +695,11 @@ mh_an_ar_totals <- function(df_list,
                             pred_list,
                             pop_list){
 
-  res_an_ar_tot <- matrix(NA, length(names(df_list)), 11,
+  res_an_ar_tot <- matrix(NA, length(names(df_list)), 12,
                           dimnames = list(names(df_list),
-                                    c("MaxST", "af", "af_lower_ci", "af_upper_ci",
-                                      "an", "an_lower_ci", "an_upper_ci", "population",
-                                      "ar", "ar_lower_ci", "ar_upper_ci")))
+                                    c("Population", "MaxST", "Suicides", "AF", "AF_lower_ci", "AF_upper_ci",
+                                      "AN", "AN_lower_ci", "AN_upper_ci",
+                                      "AR", "AR_lower_ci", "AR_upper_ci")))
 
 for (reg in names(df_list)){
 
@@ -708,52 +710,21 @@ for (reg in names(df_list)){
   pred <- pred_list[[reg]]
   pop <- pop_list[[reg]]
 
-  pop_mean <- mean(pop$population)
+  pop_mean <- round(mean(pop$population), 0)
+
+  tot_suicides <- sum(region_data$suicides)
 
   cen <- quantile(region_data$temp, minperc/100, na.rm = TRUE)
   min_range <- quantile(region_data$temp, maxperc/100, na.rm = TRUE)
   max_range <- max(region_data$temp, na.rm = TRUE)
 
-  res_an_ar_tot[reg, "MaxST"] <- min_range
+  res_an_ar_tot[reg, "Population"] <- pop_mean
 
-  res_an_ar_tot[reg, "af"] <- FluMoDL::attrdl(x = region_data$temp,
-                                          basis = cb,
-                                          cases = region_data$suicides,
-                                          coef = pred$coefficients,
-                                          vcov = pred$vcov,
-                                          type = "af",
-                                          dir = "forw",
-                                          cen = cen,
-                                          range = c(min_range, max_range),
-                                          tot = TRUE)
+  res_an_ar_tot[reg, "MaxST"] <- round(min_range, 1)
 
-  res_an_ar_tot[reg, "af_lower_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
-                                                            basis = cb,
-                                                            cases = region_data$suicides,
-                                                            coef = pred$coefficients,
-                                                            vcov = pred$vcov,
-                                                            type = "af",
-                                                            dir = "forw",
-                                                            cen = cen,
-                                                            range = c(min_range, max_range),
-                                                            tot = TRUE,
-                                                            sim = TRUE,
-                                                            nsim = 1000), 0.025)
+  res_an_ar_tot[reg, "Suicides"] <- tot_suicides
 
-  res_an_ar_tot[reg, "af_upper_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
-                                                            basis = cb,
-                                                            cases = region_data$suicides,
-                                                            coef = pred$coefficients,
-                                                            vcov = pred$vcov,
-                                                            type = "af",
-                                                            dir = "forw",
-                                                            cen = cen,
-                                                            range = c(min_range, max_range),
-                                                            tot = TRUE,
-                                                            sim = TRUE,
-                                                            nsim = 1000), 0.975)
-
-  res_an_ar_tot[reg, "an"] <- FluMoDL::attrdl(x = region_data$temp,
+  res_an_ar_tot[reg, "AN"] <- FluMoDL::attrdl(x = region_data$temp,
                                           basis = cb,
                                           cases = region_data$suicides,
                                           coef = pred$coefficients,
@@ -764,7 +735,7 @@ for (reg in names(df_list)){
                                           range = c(min_range, max_range),
                                           tot = TRUE)
 
-  res_an_ar_tot[reg, "an_lower_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
+  res_an_ar_tot[reg, "AN_lower_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
                                                             basis = cb,
                                                             cases = region_data$suicides,
                                                             coef = pred$coefficients,
@@ -777,7 +748,7 @@ for (reg in names(df_list)){
                                                             sim = TRUE,
                                                             nsim = 1000), 0.025)
 
-  res_an_ar_tot[reg, "an_upper_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
+  res_an_ar_tot[reg, "AN_upper_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
                                                             basis = cb,
                                                             cases = region_data$suicides,
                                                             coef = pred$coefficients,
@@ -790,13 +761,23 @@ for (reg in names(df_list)){
                                                             sim = TRUE,
                                                             nsim = 1000), 0.975)
 
-  res_an_ar_tot[reg, "population"] <- pop_mean
+  res_an_ar_tot[reg, "AF"] <- signif((res_an_ar_tot[reg, "AN"] / res_an_ar_tot[reg, "Suicides"]), 2)
 
-  res_an_ar_tot[reg, "ar"] <- (res_an_ar_tot[reg, "an"] / res_an_ar_tot[reg, "population"]) * 100000
+  res_an_ar_tot[reg, "AF_lower_ci"] <- signif((res_an_ar_tot[reg, "AN_lower_ci"] / res_an_ar_tot[reg, "Suicides"]), 2)
 
-  res_an_ar_tot[reg, "ar_lower_ci"] <- (res_an_ar_tot[reg, "an_lower_ci"] / res_an_ar_tot[reg, "population"]) * 100000
+  res_an_ar_tot[reg, "AF_upper_ci"] <- signif((res_an_ar_tot[reg, "AN_upper_ci"] / res_an_ar_tot[reg, "Suicides"]), 2)
 
-  res_an_ar_tot[reg, "ar_upper_ci"] <- (res_an_ar_tot[reg, "an_upper_ci"] / res_an_ar_tot[reg, "population"]) * 100000
+  res_an_ar_tot[reg, "AR"] <- round((res_an_ar_tot[reg, "AN"] / res_an_ar_tot[reg, "Population"]) * 100000, 2)
+
+  res_an_ar_tot[reg, "AR_lower_ci"] <- round((res_an_ar_tot[reg, "AN_lower_ci"] / res_an_ar_tot[reg, "Population"]) * 100000, 2)
+
+  res_an_ar_tot[reg, "AR_upper_ci"] <- round((res_an_ar_tot[reg, "AN_upper_ci"] / res_an_ar_tot[reg, "Population"]) * 100000, 2)
+
+  res_an_ar_tot[reg, "AN"] <- round(res_an_ar_tot[reg, "AN"], 2)
+
+  res_an_ar_tot[reg, "AN_lower_ci"] <- round(res_an_ar_tot[reg, "AN_lower_ci"], 2)
+
+  res_an_ar_tot[reg, "AN_upper_ci"] <- round(res_an_ar_tot[reg, "AN_upper_ci"], 2)
 
 }
 
@@ -821,18 +802,29 @@ for (reg in names(df_list)){
 #' confidence intervals by area
 #'
 #' @exports
-mh_plot_ar_totals <- function(res_an_ar_tot,
+mh_plot_ar_totals <- function(df_list,
+                              res_an_ar_tot,
                               save_fig = FALSE,
                               output_folder_path = NULL){
 
   if (save_fig == TRUE){
 
-  grid <- create_grid(1)
-  output_path <- file.path(output_folder_path, "suicides_AR_plot_total.pdf")
-  pdf(output_path, width = grid[1]*6, height = grid[2]*6)
 
-  # Set up layout with two rows
-  layout(matrix(c(1, 2), nrow = 2), heights = c(3, 1))
+  num_regions <- nrow(res_an_ar_tot)
+
+  # Dynamically adjust height based on number of regions
+  chart_height <- 8
+  chart_width <- 0.3 * num_regions
+  table_height <- 0.2 * num_regions # adjust as needed
+  total_height <- max(15, table_height)
+  total_width <- max(6, chart_width)
+
+  output_path <- file.path(output_folder_path, "suicides_AR_plot_total.pdf")
+  pdf(output_path, width = total_width, height = total_height)
+
+  # Set up layout: 1 row for barplot and 1 row for table
+  layout(matrix(c(1, 2), nrow = 2), heights = c(chart_height, (total_height - chart_height)))
+
 
   # Set up plotting area for the bar chart
   par(mar = c(5, 5, 4, 2) + 0.1)
@@ -848,41 +840,52 @@ mh_plot_ar_totals <- function(res_an_ar_tot,
     }
   })
 
+  names(short_labels) <- NULL
+
+  year_range <- paste0("(",
+                       min(sapply(df_list, function(x) min(lubridate::year(x$date), na.rm = TRUE))),
+                       "-",
+                       max(sapply(df_list, function(x) max(lubridate::year(x$date), na.rm = TRUE))),
+                       ")")
+
   barplot(names.arg = short_labels,
-          height = res_an_ar_tot[,"ar"],
-          ylab = "AR",
-          main = "Attributable Rates of Suicides by Area",
+          height = res_an_ar_tot[,"AR"],
+          ylab = "AR (per 100,000 population)",
+          main = paste0("Total Attributable Rates of Suicides by Area ", year_range),
           col = "#f25574",
           las = 2)
 
   if (save_fig == TRUE){
 
-  # Set up plotting area for the AR table
   par(mar = c(0, 0, 0, 0))
+  plot.new()
 
-  # Create the table data for AR
-  table_data_ar <- data.frame(
-    Area = rownames(res_an_ar_tot),
-    AR = round(as.numeric(res_an_ar_tot[, "ar"]), 2),
-    Lower_CI = round(as.numeric(res_an_ar_tot[, "ar_lower_ci"]), 2),
-    Upper_CI = round(as.numeric(res_an_ar_tot[, "ar_upper_ci"]), 2)
+
+  # Get the figure region dimensions
+  usr <- par("usr")
+  x_right <- usr[2]
+  y_bottom <- usr[3]
+
+  # Add annotation text in the bottom right
+  text(x = x_right - 0.05, y = y_bottom + 0.05, # adjust y offset as needed
+       labels = "AN = Attributable Number, AR = Attributable Rate (per 100,000 population)",
+       adj = c(1, 0), # right-bottom alignment
+       cex = 0.9, font = 3)
+
+  # Create the table data
+  table_data <- data.frame(
+    Area = short_labels,
+    AN = as.numeric(res_an_ar_tot[, "AN"]),
+    AN_Lower_CI = as.numeric(res_an_ar_tot[, "AN_lower_ci"]),
+    AN_Upper_CI = as.numeric(res_an_ar_tot[, "AN_upper_ci"]),
+    AR = as.numeric(res_an_ar_tot[, "AR"]),
+    AR_Lower_CI = as.numeric(res_an_ar_tot[, "AR_lower_ci"]),
+    AR_Upper_CI = as.numeric(res_an_ar_tot[, "AR_upper_ci"])
   )
 
   # Plot the table using grid.table
   grid::grid.newpage()
-  gridExtra::grid.table(table_data_ar)
-
-  # Create the table data for AN
-  table_data_an <- data.frame(
-    Area = rownames(res_an_ar_tot),
-    AN = round(as.numeric(res_an_ar_tot[, "an"]), 2),
-    Lower_CI = round(as.numeric(res_an_ar_tot[, "an_lower_ci"]), 2),
-    Upper_CI = round(as.numeric(res_an_ar_tot[, "an_upper_ci"]), 2)
-  )
-
-  # Plot the table using grid.table
-  grid::grid.newpage()
-  gridExtra::grid.table(table_data_an)
+  gridExtra::grid.table(table_data)
 
   dev.off()
 
@@ -915,17 +918,10 @@ mh_an_ar_yearly <- function(df_list,
                             pred_list,
                             pop_list){
 
-  year_list <- unique(unlist(lapply(df_list, function(x) x$year)))
-
   an_ar_yr_list <- list()
 
   for (reg in names(df_list)){
 
-    mat_an_ar <- matrix(NA, length(year_list), 12,
-                        dimnames = list(year_list,
-                                        c("year", "MaxST", "af", "af_lower_ci", "af_upper_ci",
-                                          "an", "an_lower_ci", "an_upper_ci", "population",
-                                          "ar", "ar_lower_ci", "ar_upper_ci")))
     region_data_all <- df_list[[reg]]
     cb <- cb_list[[reg]]
     minperc <- minpercreg[reg]
@@ -933,55 +929,33 @@ mh_an_ar_yearly <- function(df_list,
     pred <- pred_list[[reg]]
     pop <- pop_list[[reg]]
 
+    cen <- quantile(region_data_all$temp, minperc/100, na.rm = TRUE) # TODO Check if for each year or whole timeseries
+    min_range <- quantile(region_data_all$temp, maxperc/100, na.rm = TRUE) # TODO Check if for each year or whole timeseries
+    max_range <- max(region_data_all$temp, na.rm = TRUE) # TODO Check if for each year or whole timeseries
+
+    year_list <- unique(region_data_all$year)
+
+    mat_an_ar <- matrix(NA, length(year_list), 13,
+                        dimnames = list(year_list,
+                                        c("Year", "Population", "Suicides", "MaxST", "AF", "AF_lower_ci", "AF_upper_ci",
+                                          "AN", "AN_lower_ci", "AN_upper_ci",
+                                          "AR", "AR_lower_ci", "AR_upper_ci")))
+
     for (yr in year_list){
 
       region_data <- filter(region_data_all, year == yr)
-      cen <- quantile(region_data$temp, minperc/100, na.rm = TRUE) # TODO Check if for each year or whole timeseries
-      min_range <- quantile(region_data$temp, maxperc/100, na.rm = TRUE) # TODO Check if for each year or whole timeseries
-      max_range <- max(region_data$temp, na.rm = TRUE) # TODO Check if for each year or whole timeseries
 
-      mat_an_ar[yr, "year"] <- as.numeric(as.character(yr))
+      tot_suicides <- sum(region_data$suicides)
+
+      mat_an_ar[yr, "Year"] <- as.numeric(as.character(yr))
+
+      mat_an_ar[yr, "Population"] <- pop$population[pop$year == yr]
+
+      mat_an_ar[yr, "Suicides"] <- tot_suicides
 
       mat_an_ar[yr, "MaxST"] <- min_range
 
-      mat_an_ar[yr, "af"] <- FluMoDL::attrdl(x = region_data$temp,
-                                             basis = cb,
-                                             cases = region_data$suicides,
-                                             coef = pred$coefficients,
-                                             vcov = pred$vcov,
-                                             type = "af",
-                                             dir = "forw",
-                                             cen = cen,
-                                             range = c(min_range, max_range),
-                                             tot = TRUE)
-
-      mat_an_ar[yr, "af_lower_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
-                                                               basis = cb,
-                                                               cases = region_data$suicides,
-                                                               coef = pred$coefficients,
-                                                               vcov = pred$vcov,
-                                                               type = "af",
-                                                               dir = "forw",
-                                                               cen = cen,
-                                                               range = c(min_range, max_range),
-                                                               tot = TRUE,
-                                                               sim = TRUE,
-                                                               nsim = 1000), 0.025)
-
-      mat_an_ar[yr, "af_upper_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
-                                                               basis = cb,
-                                                               cases = region_data$suicides,
-                                                               coef = pred$coefficients,
-                                                               vcov = pred$vcov,
-                                                               type = "af",
-                                                               dir = "forw",
-                                                               cen = cen,
-                                                               range = c(min_range, max_range),
-                                                               tot = TRUE,
-                                                               sim = TRUE,
-                                                               nsim = 1000), 0.975)
-
-      mat_an_ar[yr, "an"] <- FluMoDL::attrdl(x = region_data$temp,
+      mat_an_ar[yr, "AN"] <- FluMoDL::attrdl(x = region_data$temp,
                                              basis = cb,
                                              cases = region_data$suicides,
                                              coef = pred$coefficients,
@@ -992,7 +966,7 @@ mh_an_ar_yearly <- function(df_list,
                                              range = c(min_range, max_range),
                                              tot = TRUE)
 
-      mat_an_ar[yr, "an_lower_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
+      mat_an_ar[yr, "AN_lower_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
                                                                basis = cb,
                                                                cases = region_data$suicides,
                                                                coef = pred$coefficients,
@@ -1005,7 +979,7 @@ mh_an_ar_yearly <- function(df_list,
                                                                sim = TRUE,
                                                                nsim = 1000), 0.025)
 
-      mat_an_ar[yr, "an_upper_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
+      mat_an_ar[yr, "AN_upper_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
                                                                basis = cb,
                                                                cases = region_data$suicides,
                                                                coef = pred$coefficients,
@@ -1018,13 +992,23 @@ mh_an_ar_yearly <- function(df_list,
                                                                sim = TRUE,
                                                                nsim = 1000), 0.975)
 
-      mat_an_ar[yr, "population"] <- pop$population[pop$year == yr]
+      mat_an_ar[yr, "AF"] <- signif((mat_an_ar[yr, "AN"] / mat_an_ar[yr, "Suicides"]), 2)
 
-      mat_an_ar[yr, "ar"] <- (mat_an_ar[yr, "an"] / mat_an_ar[yr, "population"]) * 100000
+      mat_an_ar[yr, "AF_lower_ci"] <- signif((mat_an_ar[yr, "AN_lower_ci"] / mat_an_ar[yr, "Suicides"]), 2)
 
-      mat_an_ar[yr, "ar_lower_ci"] <- (mat_an_ar[yr, "an_lower_ci"] / mat_an_ar[yr, "population"]) * 100000
+      mat_an_ar[yr, "AF_upper_ci"] <- signif((mat_an_ar[yr, "AN_upper_ci"] / mat_an_ar[yr, "Suicides"]), 2)
 
-      mat_an_ar[yr, "ar_upper_ci"] <- (mat_an_ar[yr, "an_upper_ci"] / mat_an_ar[yr, "population"]) * 100000
+      mat_an_ar[yr, "AR"] <- round((mat_an_ar[yr, "AN"] / mat_an_ar[yr, "Population"]) * 100000, 2)
+
+      mat_an_ar[yr, "AR_lower_ci"] <- round((mat_an_ar[yr, "AN_lower_ci"] / mat_an_ar[yr, "Population"]) * 100000, 2)
+
+      mat_an_ar[yr, "AR_upper_ci"] <- round((mat_an_ar[yr, "AN_upper_ci"] / mat_an_ar[yr, "Population"]) * 100000, 2)
+
+      mat_an_ar[yr, "AN"] <- round(mat_an_ar[yr, "AN"], 2)
+
+      mat_an_ar[yr, "AN_lower_ci"] <- round(mat_an_ar[yr, "AN_lower_ci"], 2)
+
+      mat_an_ar[yr, "AN_upper_ci"] <- round(mat_an_ar[yr, "AN_upper_ci"], 2)
 
     }
 
@@ -1065,23 +1049,31 @@ mh_plot_an_yearly <- function(an_ar_yr_list,
 
   }
 
+  year_min <- min(sapply(an_ar_yr_list, function(x) min(x[, "Year"], na.rm = TRUE)))
+  year_max <- max(sapply(an_ar_yr_list, function(x) max(x[, "Year"], na.rm = TRUE)))
+
   for (reg in names(an_ar_yr_list)){
 
     region_an <- as.data.frame(an_ar_yr_list[[reg]])
-    ylim <- c(min(c(0, min(region_an$an_lower_ci))), max(region_an$an_upper_ci))
+    ylim <- c(min(c(0, min(region_an$AN_lower_ci))), max(region_an$AN_upper_ci))
 
-    plot(x = region_an$year,
-         y = region_an$an,
+    plot(x = region_an$Year,
+         y = region_an$AN,
+         xlim = c(year_min, year_max),
          ylim = ylim,
          xlab = "Year",
          ylab = "AN",
          main = reg,
          col = "#f25574")
 
-    arrows(x0 = region_an$year,
-           y0 = region_an$an_lower_ci,
-           x1 = region_an$year,
-           y1 = region_an$an_upper_ci,
+    # Identify rows where the CI range is non-zero
+    valid_ci <- region_an$AN_lower_ci != region_an$AN_upper_ci
+
+    # Draw arrows only for those rows
+    arrows(x0 = region_an$Year[valid_ci],
+           y0 = region_an$AN_lower_ci[valid_ci],
+           x1 = region_an$Year[valid_ci],
+           y1 = region_an$AN_upper_ci[valid_ci],
            angle = 90,
            code = 3,
            length = 0.02,
@@ -1129,23 +1121,31 @@ mh_plot_ar_yearly <- function(an_ar_yr_list,
 
   }
 
+  year_min <- min(sapply(an_ar_yr_list, function(x) min(x[, "Year"], na.rm = TRUE)))
+  year_max <- max(sapply(an_ar_yr_list, function(x) max(x[, "Year"], na.rm = TRUE)))
+
   for (reg in names(an_ar_yr_list)){
 
     region_ar <- as.data.frame(an_ar_yr_list[[reg]])
-    ylim <- c(min(c(0, min(region_ar$ar_lower_ci))), max(region_ar$ar_upper_ci))
+    ylim <- c(min(c(0, min(region_ar$AR_lower_ci))), max(region_ar$AR_upper_ci))
 
-    plot(x = region_ar$year,
-         y = region_ar$ar,
+    plot(x = region_ar$Year,
+         y = region_ar$AR,
+         xlim = c(year_min, year_max),
          ylim = ylim,
          xlab = "Year",
          ylab = "AR",
          main = reg,
          col = "#f25574")
 
-    arrows(x0 = region_ar$year,
-           y0 = region_ar$ar_lower_ci,
-           x1 = region_ar$year,
-           y1 = region_ar$ar_upper_ci,
+    # Identify rows where the CI range is non-zero
+    valid_ci <- region_ar$AR_lower_ci != region_ar$AR_upper_ci
+
+    # Draw arrows only for those rows
+    arrows(x0 = region_ar$Year[valid_ci],
+           y0 = region_ar$AR_lower_ci[valid_ci],
+           x1 = region_ar$Year[valid_ci],
+           y1 = region_ar$AR_upper_ci[valid_ci],
            angle = 90,
            code = 3,
            length = 0.02,
@@ -1204,8 +1204,9 @@ mh_an_ar_month <- function(df_list,
     pop <- pop_list[[reg]]
 
     df_an_ar <- data.frame(date = region_data$date,
-                            year = region_data$year,
-                            month = region_data$month)
+                           year = region_data$year,
+                           month = region_data$month,
+                           suicides = region_data$suicides)
 
     cen <- quantile(region_data$temp, minperc/100, na.rm = TRUE)
     min_range <- quantile(region_data$temp, maxperc/100, na.rm = TRUE)
@@ -1226,16 +1227,7 @@ mh_an_ar_month <- function(df_list,
                                         range = c(min_range, max_range),
                                         tot = FALSE)
 
-    df_an_ar["AN"] <- FluMoDL::attrdl(x = region_data$temp,
-                                       basis = cb,
-                                       cases = region_data$suicides,
-                                       coef = pred$coefficients,
-                                       vcov = pred$vcov,
-                                       type = "an",
-                                       dir = "forw",
-                                       cen = cen,
-                                       range = c(min_range, max_range),
-                                       tot = FALSE)
+    df_an_ar["AN"] <- df_an_ar["AF"] * df_an_ar["suicides"]
 
     df_an_ar <- left_join(df_an_ar, pop, by = "year")
 
@@ -1243,8 +1235,11 @@ mh_an_ar_month <- function(df_list,
 
     mth_an_ar <- df_an_ar %>%
       group_by(month) %>%
-      summarise(an_mth_tot = sum(AN),
-                ar_mth_tot = sum(AR))
+      summarise(an_mth_tot = sum(AN, na.rm = TRUE),
+                ar_mth_tot = sum(AR, na.rm = TRUE)) %>%
+      mutate(month = month.name[month],
+             an_mth_tot = ifelse(abs(an_mth_tot) < 1, signif(an_mth_tot, 2), round(an_mth_tot, 2)),
+             ar_mth_tot = ifelse(abs(ar_mth_tot) < 1, signif(ar_mth_tot, 2), round(ar_mth_tot, 2)))
 
     an_ar_mth_list[[reg]] <- mth_an_ar
 
@@ -1271,6 +1266,8 @@ mh_an_ar_month <- function(df_list,
 #'
 #' @exports
 mh_plot_ar_monthly <- function(an_ar_mth_list,
+                               df_list,
+                               country = "National",
                                save_fig = FALSE,
                                output_folder_path = NULL){
 
@@ -1279,22 +1276,39 @@ mh_plot_ar_monthly <- function(an_ar_mth_list,
     grid <- create_grid(length(an_ar_mth_list))
     output_path <- file.path(output_folder_path, "suicides_seasonal_plot.pdf")
     pdf(output_path, width = grid[1]*4, height = grid[2]*4)
-    par(mfrow=c(grid[1], grid[2]))
+    par(mfrow=c(grid[1], grid[2]), oma = c(0, 0, 6, 0))
 
   }
+
+  ylim_max <- max(sapply(an_ar_mth_list, function(x) max(x$ar_mth_tot, na.rm = TRUE)))
 
   for (reg in names(an_ar_mth_list)){
 
     region_ar <- an_ar_mth_list[[reg]]
-    ylim <- c(0, 0.4)
+    ylim <- c(0, ylim_max)
 
-    barplot(names.arg = region_ar$month,
+    barplot(names.arg = substr(region_ar$month, 1, 1),
             height = region_ar$ar_mth_tot,
             ylim = ylim,
             xlab = "Month",
-            ylab = "AR",
+            ylab = "AR (per 100,000 population)",
             main = reg,
             col = "#f25574")
+
+  }
+
+  if (save_fig == TRUE) {
+
+    mtext("Attributable Rates of Suicide to Extreme Heat by Calendar Month and Area (per 100,000 population)",
+          outer = TRUE, cex = 1.5, line = 3)
+
+    year_range <- paste0("(",
+                         min(sapply(df_list, function(x) min(lubridate::year(x$date), na.rm = TRUE))),
+                         "-",
+                         max(sapply(df_list, function(x) max(lubridate::year(x$date), na.rm = TRUE))),
+                         ")")
+
+    mtext(paste0(country, " ", year_range), outer = TRUE, cex = 1.2, line = 1)
 
   }
 
@@ -1316,7 +1330,8 @@ mh_plot_ar_monthly <- function(an_ar_mth_list,
 #' @exports
 mh_save_results <- function(rr_results,
                             res_an_ar_tot,
-                            res_an_ar_yr,
+                            an_ar_yr_list,
+                            an_ar_mth_list,
                          output_folder_path = NULL) {
 
   if (!is.null(output_folder_path)) {
@@ -1338,6 +1353,16 @@ mh_save_results <- function(rr_results,
 
     write.csv(res_an_ar_yr, file = file.path(
       output_folder_path, "suicides_an_ar_yr_results.csv"), row.names = FALSE)
+
+    res_an_ar_mth <- bind_rows(lapply(names(an_ar_mth_list), function(x) {
+      df <- as.data.frame(an_ar_mth_list[[x]])
+      df$region <- x
+      df <- df[, c("region", setdiff(names(df), "region"))]
+      df
+    }))
+
+    write.csv(res_an_ar_mth, file = file.path(
+      output_folder_path, "suicides_an_ar_mth_results.csv"), row.names = FALSE)
 
     #TODO also in wildfire functions, generalise and put in files.utils
 
@@ -1474,49 +1499,45 @@ suicides_heat_do_analysis <- function(data_path,
                                             cb_list = cb_list,
                                             model_list = model_list)
 
-  c(temp_avg, temp_range, mm, blup) %<-% mh_meta_analysis(data = df_list,
-                                                          coef_ = coef_,
-                                                          vcov_ = vcov_)
+  c(mm, blup) %<-% mh_meta_analysis(data = df_list,
+                                           coef_ = coef_,
+                                           vcov_ = vcov_)
 
-  bvar_list <- mh_redefine_function_reg(data = df_list,
-                                    var_fun = var_fun,
-                                    var_per = var_per,
-                                    var_degree = var_degree)
-
-  c(minpercreg, maxpercreg, minpercnat, maxpercnat) %<-% mh_minmax_suicide_temp(data = df_list,
-                                                                                bvar_list = bvar_list,
-                                                                                blup = blup)
+  c(minpercreg, maxpercreg) %<-% mh_minmax_suicide_temp(data = df_list,
+                                                        var_fun = var_fun,
+                                                        var_per = var_per,
+                                                        var_degree = var_degree,
+                                                        blup = blup)
 
   pred_list <- mh_predict_reg(data = df_list,
-                              bvar_list = bvar_list,
-                              minpercreg = minpercreg,
-                              blup = blup)
-
-  pred_list <- mh_predict_nat(data = df_list,
                               var_fun = var_fun,
                               var_per = var_per,
                               var_degree = var_degree,
-                              minpercnat = minpercnat,
-                              maxpercnat = maxpercnat,
-                              temp_avg = temp_avg,
-                              temp_range = temp_range,
-                              mm = mm,
+                              minpercreg = minpercreg,
+                              blup = blup)
+
+  c(df_list, cb_list, minpercreg, maxpercreg, mmpredall) %<-% mh_add_national_data(df_list = df_list,
+                                                                                   pop_list = pop_list,
+                                                                                   var_fun = var_fun,
+                                                                                   var_per = var_per,
+                                                                                   var_degree = var_degree,
+                                                                                   lag_fun = lag_fun,
+                                                                                   lag_breaks = lag_breaks,
+                                                                                   lag_days = lag_days,
+                                                                                   country = country,
+                                                                                   cb_list = cb_list,
+                                                                                   mm = mm,
+                                                                                   minpercreg = minpercreg,
+                                                                                   maxpercreg = maxpercreg)
+
+  pred_list <- mh_predict_nat(df_list = df_list,
+                              var_fun = var_fun,
+                              var_per = var_per,
+                              var_degree = var_degree,
+                              minpercreg = minpercreg,
+                              mmpredall = mmpredall,
                               pred_list = pred_list,
                               country = country)
-
-  c(df_list, cb_list, minpercreg, maxpercreg) %<-% mh_add_national_data(df_list = df_list,
-                                                                        var_fun = var_fun,
-                                                                        var_per = var_per,
-                                                                        var_degree = var_degree,
-                                                                        lag_fun = lag_fun,
-                                                                        lag_breaks = lag_breaks,
-                                                                        lag_days = lag_days,
-                                                                        country = country,
-                                                                        cb_list = cb_list,
-                                                                        minpercreg = minpercreg,
-                                                                        minpercnat = minpercnat,
-                                                                        maxpercreg = maxpercreg,
-                                                                        maxpercnat = maxpercnat)
 
   mh_plot_rr(df_list = df_list,
              pred_list = pred_list,
@@ -1534,7 +1555,8 @@ suicides_heat_do_analysis <- function(data_path,
                                    pred_list = pred_list,
                                    pop_list = pop_list)
 
-  mh_plot_ar_totals(res_an_ar_tot = res_an_ar_tot,
+  mh_plot_ar_totals(df_list = df_list,
+                    res_an_ar_tot = res_an_ar_tot,
                     save_fig = save_fig,
                     output_folder_path = output_folder_path)
 
@@ -1561,6 +1583,8 @@ suicides_heat_do_analysis <- function(data_path,
                                    pop_list = pop_list)
 
   mh_plot_ar_monthly(an_ar_mth_list = an_ar_mth_list,
+                     df_list = df_list,
+                     country = country,
                      save_fig = save_fig,
                      output_folder_path = output_folder_path)
 
@@ -1568,7 +1592,8 @@ suicides_heat_do_analysis <- function(data_path,
 
     mh_save_results(rr_results = rr_results,
                     res_an_ar_tot = res_an_ar_tot,
-                    res_an_ar_yr = res_an_ar_yr,
+                    an_ar_yr_list = an_ar_yr_list,
+                    an_ar_mth_list = an_ar_mth_list,
                output_folder_path = output_folder_path)
 
   }
