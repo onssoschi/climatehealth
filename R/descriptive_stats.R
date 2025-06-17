@@ -298,6 +298,7 @@ common_descriptive_stats <- function(
       )
     }
   }
+  return (output_path)
 
 }
 
@@ -307,6 +308,29 @@ raise_if_null <- function(param_nm, value) {
   }
 }
 
+#' The function used to create desciprtive stats via an API endpoint
+#'
+#' @param data The dataset used for descriptive stats (as a vector)
+#' @param aggregation_column The column to use for aggregating the dataset into smaller subsets
+#' @param dataset_title The datasets title used for outputs
+#' @param dependent_col The dependent column
+#' @param independent_cols A vector of independent columns
+#' @param plot_correlation Whether to plot a correlation matrix
+#' @param plot_dist_hists Whether to plot histograms showing column distributions
+#' @param plot_ma Whether to plot moving averages over a timeseries
+#' @param plot_na_counts Whether to plot counts of NAs in each column
+#' @param plot_scatter Whether to plot the dependent column against the independent columns
+#' @param correlation_method The correlation method. One of 'pearson', 'spearman', 'kendall'
+#' @param dist_columns The columns to plot distributions for
+#' @param ma_days The number of days to use in moving average calculations
+#' @param ma_sides The number of sides to use in moving average calculations (1 or2)
+#' @param ma_columns A vector of columns to plot moving average for
+#' @param timeseries_col The column used as the timerseries for moving averages
+#' @param output_path The path to save outputs to
+#'
+#' @return The full directory path that the descriptive stats are saved to.
+#' @export
+#'
 common_descriptive_stats_api <- function(
   data,
   aggregation_column = NULL,
@@ -368,7 +392,7 @@ common_descriptive_stats_api <- function(
     df_list <- aggregate_by_column(df_list, aggregation_column)
   }
   # Create descriptive stats
-  common_descriptive_stats(
+  final_path <- common_descriptive_stats(
     dataset_title = dataset_title,
     df_list = df_list,
     output_path = output_path,
@@ -386,4 +410,5 @@ common_descriptive_stats_api <- function(
     plot_na_counts = plot_na_counts,
     plot_scatter = plot_scatter
   )
+  return (final_path)
 }
