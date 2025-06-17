@@ -435,7 +435,8 @@ create_inla_indices <- function(data) {
   nregion <- length(unique(data$region_code))  # Total number of regions
 
   # define the offset variable based on the population data
-  data$E <- data$tot_pop/10^5
+  data$Ep <- data$tot_pop/10^5
+  data$E<- (sum(data$Malaria) / sum(data$tot_pop))*(data$tot_pop) # Expected counts
   data$SIR <- data$Malaria / data$E  # Standardized Incidence Ratio
 
   # Create district index
