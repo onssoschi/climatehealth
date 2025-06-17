@@ -1821,12 +1821,6 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
                                   lagnk_ = 3,
                                   dfseas_ = 8,
                                   nsim__ = 1000,
-                                  descriptive_stats = FALSE,
-                                  ds_correlation_method = "pearson",
-                                  ds_dist_columns = c(),
-                                  ds_ma_days = 100,
-                                  ds_ma_sides = 2,
-                                  ds_ma_columns = c()
 ) {
   varper_ <- c(10, 75, 90)
 
@@ -1841,23 +1835,6 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
       output_year = output_year_,
       RR_distribution_length = RR_distribution_length_
     )
-
-  # descriptive stats
-  if (descriptive_stats==TRUE) {
-    common_descriptive_stats(
-      dataset_title = "temperature",
-      df_list = df_list_,
-      use_individual_dfs = T,
-      output_path = output_folder_path_,
-      correlation_method = ds_correlation_method,
-      dist_columns = ds_dist_columns,
-      ma_days = ds_ma_days,
-      ma_sides = ds_ma_sides,
-      ma_columns = ds_ma_columns,
-      dependent_col = "dependent", # col has been renamed
-      independent_cols = independent_cols_
-    )
-  }
 
   c(coef_, vcov_, cb_, model_) %<-%
     run_model(df_list = df_list_,
