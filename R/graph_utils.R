@@ -144,11 +144,9 @@ plot_moving_average <- function(df,
     }
     pdf(output_path)
   }
-
   # select data
-  df %>%
+  df <- df %>%
     select(all_of(c(time_col, value_col)))
-
   # format plot
   par(bg = "white",
       mfrow = c(1, 1),
@@ -171,7 +169,7 @@ plot_moving_average <- function(df,
     xlab = time_col,
     ylab = value_col,
     col = line_colour,
-    ylim = c(min(df[[value_col]]), max(df[[value_col]]))
+    ylim = c(min(df[[value_col]]), max(df[[value_col]])),
   )
 
   # create moving average column
@@ -205,7 +203,6 @@ plot_moving_average <- function(df,
     font = 2,
     col = "black"
   )
-
   if (save_plot == TRUE) {
     dev.off()
   }
