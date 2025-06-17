@@ -356,13 +356,6 @@ suicides_heat_do_analysis <- function(data_path,
                                       lag_days = 3,
                                       save_fig = FALSE,
                                       save_csv = FALSE,
-                                      descriptive_stats = FALSE,
-                                      ds_correlation_method = "pearson",
-                                      ds_use_individual_dfs = TRUE,
-                                      ds_dist_columns = c(),
-                                      ds_ma_days = 100,
-                                      ds_ma_sides = 2,
-                                      ds_ma_columns = c(),
                                       output_folder_path = NULL) {
 
   df_list <- mh_read_and_format_data(data_path = data_path,
@@ -370,22 +363,6 @@ suicides_heat_do_analysis <- function(data_path,
                              region_col = region_col,
                              temperature_col = temperature_col,
                              health_outcome_col = health_outcome_col)
-
-  if(descriptive_stats) {
-    common_descriptive_stats(
-      dataset_title = "Mental Health",
-      df_list = df_list,
-      use_individual_dfs = ds_use_individual_dfs,
-      output_path = output_folder_path,
-      correlation_method = ds_correlation_method,
-      dist_columns =  ds_dist_columns,
-      ma_days = ds_ma_days,
-      ma_sides = ds_ma_sides,
-      ma_columns = ds_ma_columns,
-      dependent_col = "suicides", # col is renamed in data
-      independent_cols = c()
-    )
-  }
 
   cb_list <- mh_create_crossbasis(data = df_list,
                                var_fun = var_fun,
