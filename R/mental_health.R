@@ -735,31 +735,22 @@ for (reg in names(df_list)){
                                           range = c(min_range, max_range),
                                           tot = TRUE)
 
-  res_an_ar_tot[reg, "AN_lower_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
-                                                            basis = cb,
-                                                            cases = region_data$suicides,
-                                                            coef = pred$coefficients,
-                                                            vcov = pred$vcov,
-                                                            type = "an",
-                                                            dir = "forw",
-                                                            cen = cen,
-                                                            range = c(min_range, max_range),
-                                                            tot = TRUE,
-                                                            sim = TRUE,
-                                                            nsim = 1000), 0.025)
+  an_sim <- FluMoDL::attrdl(x = region_data$temp,
+                            basis = cb,
+                            cases = region_data$suicides,
+                            coef = pred$coefficients,
+                            vcov = pred$vcov,
+                            type = "an",
+                            dir = "forw",
+                            cen = cen,
+                            range = c(min_range, max_range),
+                            tot = TRUE,
+                            sim = TRUE,
+                            nsim = 1000)
 
-  res_an_ar_tot[reg, "AN_upper_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
-                                                            basis = cb,
-                                                            cases = region_data$suicides,
-                                                            coef = pred$coefficients,
-                                                            vcov = pred$vcov,
-                                                            type = "an",
-                                                            dir = "forw",
-                                                            cen = cen,
-                                                            range = c(min_range, max_range),
-                                                            tot = TRUE,
-                                                            sim = TRUE,
-                                                            nsim = 1000), 0.975)
+  res_an_ar_tot[reg, "AN_lower_ci"] <- quantile(an_sim, 0.025)
+
+  res_an_ar_tot[reg, "AN_upper_ci"] <- quantile(an_sim, 0.975)
 
   res_an_ar_tot[reg, "AF"] <- signif((res_an_ar_tot[reg, "AN"] / res_an_ar_tot[reg, "Suicides"]), 2)
 
@@ -813,18 +804,17 @@ mh_plot_ar_totals <- function(df_list,
   num_regions <- nrow(res_an_ar_tot)
 
   # Dynamically adjust height based on number of regions
-  chart_height <- 8
+  chart_height <- 6
   chart_width <- 0.3 * num_regions
-  table_height <- 0.2 * num_regions # adjust as needed
-  total_height <- max(15, table_height)
-  total_width <- max(6, chart_width)
+  table_height <- 0.3 * num_regions # adjust as needed
+  total_height <- max(8, table_height)
+  total_width <- max(10, chart_width)
 
   output_path <- file.path(output_folder_path, "suicides_AR_plot_total.pdf")
   pdf(output_path, width = total_width, height = total_height)
 
   # Set up layout: 1 row for barplot and 1 row for table
   layout(matrix(c(1, 2), nrow = 2), heights = c(chart_height, (total_height - chart_height)))
-
 
   # Set up plotting area for the bar chart
   par(mar = c(5, 5, 4, 2) + 0.1)
@@ -966,31 +956,22 @@ mh_an_ar_yearly <- function(df_list,
                                              range = c(min_range, max_range),
                                              tot = TRUE)
 
-      mat_an_ar[yr, "AN_lower_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
-                                                               basis = cb,
-                                                               cases = region_data$suicides,
-                                                               coef = pred$coefficients,
-                                                               vcov = pred$vcov,
-                                                               type = "an",
-                                                               dir = "forw",
-                                                               cen = cen,
-                                                               range = c(min_range, max_range),
-                                                               tot = TRUE,
-                                                               sim = TRUE,
-                                                               nsim = 1000), 0.025)
+      an_sim <- FluMoDL::attrdl(x = region_data$temp,
+                                basis = cb,
+                                cases = region_data$suicides,
+                                coef = pred$coefficients,
+                                vcov = pred$vcov,
+                                type = "an",
+                                dir = "forw",
+                                cen = cen,
+                                range = c(min_range, max_range),
+                                tot = TRUE,
+                                sim = TRUE,
+                                nsim = 1000)
 
-      mat_an_ar[yr, "AN_upper_ci"] <- quantile(FluMoDL::attrdl(x = region_data$temp,
-                                                               basis = cb,
-                                                               cases = region_data$suicides,
-                                                               coef = pred$coefficients,
-                                                               vcov = pred$vcov,
-                                                               type = "an",
-                                                               dir = "forw",
-                                                               cen = cen,
-                                                               range = c(min_range, max_range),
-                                                               tot = TRUE,
-                                                               sim = TRUE,
-                                                               nsim = 1000), 0.975)
+      mat_an_ar[yr, "AN_lower_ci"] <- quantile(an_sim, 0.025)
+
+      mat_an_ar[yr, "AN_upper_ci"] <- quantile(an_sim, 0.975)
 
       mat_an_ar[yr, "AF"] <- signif((mat_an_ar[yr, "AN"] / mat_an_ar[yr, "Suicides"]), 2)
 
