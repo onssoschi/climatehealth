@@ -272,33 +272,33 @@ common_descriptive_stats <- function(
       }
       dev.off()
     }
-    # create summary, corr. and dist. for each df
-    # DEV NOTE: creating a new for loop to avoid calling dev.off early.
-    for (i in 1:length(df_list)) {
-      # create a new subdir
-      df_name <- names(df_list)[i]
-      sub_df_path <- file.path(output_path, gsub(" ", "_", tolower(df_name)))
-      if (!check_file_exists(sub_df_path, raise=FALSE)) {
-        dir.create(sub_df_path)
-      }
-      # save out statistics
-      common_descriptive_stats_core(
-        dataset_title = dataset_title,
-        df = df_list[[i]],
-        output_path = sub_df_path,
-        title = df_name,
-        plot_corr_matrix = plot_corr_matrix,
-        correlation_method = correlation_method,
-        plot_dist = plot_dist,
-        dist_columns = dist_columns,
-        dependent_col = dependent_col,
-        independent_cols = independent_cols,
-        plot_na_counts = plot_na_counts,
-        plot_scatter = plot_scatter
-      )
-    }
   }
-  return (output_path)
+  # create summary, corr. and dist. for each df
+  # DEV NOTE: creating a new for loop to avoid calling dev.off early.
+  for (i in 1:length(df_list)) {
+    # create a new subdir
+    df_name <- names(df_list)[i]
+    sub_df_path <- file.path(output_path, gsub(" ", "_", tolower(df_name)))
+    if (!check_file_exists(sub_df_path, raise=FALSE)) {
+      dir.create(sub_df_path)
+    }
+    # save out statistics
+    common_descriptive_stats_core(
+      dataset_title = dataset_title,
+      df = df_list[[i]],
+      output_path = sub_df_path,
+      title = df_name,
+      plot_corr_matrix = plot_corr_matrix,
+      correlation_method = correlation_method,
+      plot_dist = plot_dist,
+      dist_columns = dist_columns,
+      dependent_col = dependent_col,
+      independent_cols = independent_cols,
+      plot_na_counts = plot_na_counts,
+      plot_scatter = plot_scatter
+    )
+  }
+  return (c(output_path, paste0(normalised_title, "_descriptive_stats")))
 
 }
 
@@ -352,8 +352,8 @@ common_descriptive_stats_api <- function(
 ) {
   # Parameter Checks
   if(plot_ma) {
-    raise_if_null("ma_days", ma_columns)
-    raise_if_null("ma_sides", ma_columns)
+    raise_if_null("ma_days", ma_days)
+    raise_if_null("ma_sides", ma_sides)
     raise_if_null("ma_columns", ma_columns)
     raise_if_null("timerseries_col", timeseries_col)
   }
@@ -367,11 +367,8 @@ common_descriptive_stats_api <- function(
   df <- read_input_data(data)
   # Check columns
   exp_columns = c(
-    aggregation_column,
     dependent_col,
-    independent_cols,
-    dist_columns,
-    timeseries_col
+    independent_cols
   )
   for (col in 1:length(exp_columns)) {
     if (!(exp_columns[col] %in% colnames(df))) {
@@ -392,7 +389,7 @@ common_descriptive_stats_api <- function(
     df_list <- aggregate_by_column(df_list, aggregation_column)
   }
   # Create descriptive stats
-  final_path <- common_descriptive_stats(
+  final_paths <- common_descriptive_stats(
     dataset_title = dataset_title,
     df_list = df_list,
     output_path = output_path,
@@ -410,5 +407,5 @@ common_descriptive_stats_api <- function(
     plot_na_counts = plot_na_counts,
     plot_scatter = plot_scatter
   )
-  return (final_path)
+  return (final_paths)
 }
