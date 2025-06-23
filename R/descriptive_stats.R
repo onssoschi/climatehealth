@@ -261,6 +261,9 @@ common_descriptive_stats <- function(
       fname <- paste0(ma_vars[[col_i]], "_moving_average.pdf")
       pdf(file.path(output_path, fname))
       for (i in 1:length(df_list)) {
+        print(ma_days)
+        print(ma_sides)
+        print(ma_vars[[col_i]])
         plot_moving_average(
           df_list[[i]],
           timeseries_col,
@@ -356,6 +359,8 @@ common_descriptive_stats_api <- function(
     raise_if_null("ma_sides", ma_sides)
     raise_if_null("ma_columns", ma_columns)
     raise_if_null("timerseries_col", timeseries_col)
+    ma_days <- as.numeric(ma_days)
+    ma_sides <- as.numeric(ma_sides)
   }
   if(plot_correlation) {
     raise_if_null("correlation_method", correlation_method)
