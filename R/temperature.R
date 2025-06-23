@@ -1820,8 +1820,7 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
                                   lag_  = 21,
                                   lagnk_ = 3,
                                   dfseas_ = 8,
-                                  nsim__ = 1000,
-) {
+                                  nsim__ = 1000) {
   varper_ <- c(10, 75, 90)
 
   c(df_list_) %<-%
