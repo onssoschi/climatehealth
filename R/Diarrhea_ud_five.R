@@ -96,7 +96,7 @@ load_and_process_data <- function(data_path,
                                   tot_pop_col
 ) {
   # Load health and climate data
-  data <- read_xlsx(data_path)
+  data <- read_csv(data_path)
 
   # check if the column of dates exists otherwise check for year and months
   if (!is.null(Date_col)){
@@ -168,7 +168,7 @@ load_and_process_climatedata <- function(data_path,
                                          spi_col = NULL,
                                          max_lag = 2){
 
-  climate_data <- read_xlsx(data_path) %>%
+  climate_data <- read_csv(data_path) %>%
     select(District = District_col,
            Year = Year_col, Month = Month_col, tmin = tmin_col, tmean = tmean_col,
            tmax = tmax_col, rainfall = rainfall_col, r_humidity = r_humidity_col,
