@@ -391,8 +391,7 @@ time_stratify <- function(data) {
                           df[[i]]$stratum,
                           sum)[df[[i]]$stratum]
 
-    df[[i]] <- df[[i]] %>%
-      dplyr::select(-X)
+    df[[i]] <- df[[i]]
   }
 
   df_all <- do.call(rbind, df)
