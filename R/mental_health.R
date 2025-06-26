@@ -595,7 +595,8 @@ mh_rr_results <- function(pred_list) {
 
 #' Plot results of relative risk analysis - Mental Health
 #'
-#' @description Plots cumulative lag exposure-response function for each region
+#' @description Plots cumulative lag exposure-response function with histogram of
+#' temperature distribution for each region
 #'
 #' @param df_list A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
@@ -607,7 +608,8 @@ mh_rr_results <- function(pred_list) {
 #' @param output_folder_path Path to folder where plots should be saved.
 #' Defaults to NULL.
 #'
-#' @returns Plots of cumulative lag exposure-response function for each region
+#' @returns Plots of cumulative lag exposure-response function with histogram of
+#' temperature distribution for each region
 #'
 #' @exports
 mh_plot_rr <- function(df_list,
@@ -620,21 +622,34 @@ mh_plot_rr <- function(df_list,
   xlim <- c(min(sapply(pred_list, function(x) min(x$predvar, na.rm = TRUE))),
             max(sapply(pred_list, function(x) max(x$predvar, na.rm = TRUE))))
 
-  ylim <- c(min(c(min(sapply(pred_list, function(x) min(x$allRRfit, na.rm = TRUE))) - 0.1, 0.4)),
+  ylim <- c(min(c(min(sapply(pred_list, function(x) min(x$allRRfit, na.rm = TRUE))) - 0.5, 0.4)),
             max(c(max(sapply(pred_list, function(x) max(x$allRRfit, na.rm = TRUE))) + 0.5, 2.1)))
 
+  hist_max <- max(sapply(df_list, function(x) {
+    hist(x$temp, breaks = seq(floor(xlim[1]), ceiling(xlim[2]), by = 1), plot = FALSE)$counts
+  }), na.rm = TRUE)
+
+
   if (save_fig==T) {
-    # create grid dynamically
-    grid <- create_grid(length(pred_list))
-    output_path <- file.path(output_folder_path,
-                             "suicides_rr_plot.pdf")
+
+    grid <- c(4, ceiling(length(pred_list) / 4))
+
+    output_path <- file.path(path_config$output_folder_path, "suicides_rr_plot.pdf")
     pdf(output_path, width=grid[1]*4, height=grid[2]*4)
-    par(mfrow=c(grid[1],  grid[2]))
+
+    layout_matrix <- matrix(1:length(pred_list), nrow = grid[2], ncol = grid[1], byrow = TRUE)
+    layout(layout_matrix, heights = rep(1, grid[2]), widths = rep(1, grid[1]))
+
+    par(oma = c(0,1,0,1))
+
   }
 
   for(reg in names(pred_list)){
 
     region_pred <- pred_list[[reg]]
+    region_temp <- df_list[[reg]]$temp
+
+    par(mar = c(5, 4, 4, 4) + 0.1)
 
     plot(region_pred,
          "overall",
@@ -645,28 +660,43 @@ mh_plot_rr <- function(df_list,
          main = reg,
          col = "#f25574")
 
-    vline_pos_max_x <- quantile(df_list[[reg]]$temp, maxpercreg[reg]/100, na.rm = TRUE)
-    vline_pos_max_y <- max(pred_list[[reg]]$allRRfit, na.rm = TRUE) + 0.3
+    vline_pos_max_x <- quantile(region_temp, maxpercreg[reg]/100, na.rm = TRUE)
+    vline_pos_max_y <- max(region_pred$allRRfit, na.rm = TRUE) + 0.3
     vline_lab_max <- paste0("Max ST\n", round(vline_pos_max_x, 2), intToUtf8(176), "C (p", round(maxpercreg[reg], 2), ")")
 
     abline(v = vline_pos_max_x, col = "black", lty = 2)
-
     text(x = vline_pos_max_x, y = vline_pos_max_y, labels = vline_lab_max, pos = 2, col = "black", cex = 0.8)
 
-    vline_pos_min <- quantile(df_list[[reg]]$temp, minpercreg[reg]/100, na.rm = TRUE)
-    vline_lab_min <- paste0("Min ST\n", round(vline_pos_min, 2), intToUtf8(176), "C (p", round(minpercreg[reg], 2), ")")
+    vline_pos_min_x <- quantile(region_temp, minpercreg[reg]/100, na.rm = TRUE)
+    vline_pos_min_y <- min(region_pred$allRRfit, na.rm = TRUE) - 0.1
+    vline_lab_min <- paste0("Min ST\n", round(vline_pos_min_x, 2), intToUtf8(176), "C (p", round(minpercreg[reg], 2), ")")
 
-    abline(v = vline_pos_min, col = "black", lty = 2)
+    abline(v = vline_pos_min_x, col = "black", lty = 2)
+    text(x = vline_pos_min_x, y = vline_pos_min_y, labels = vline_lab_min, pos = 4, col = "black", cex = 0.8)
 
-    text(x = vline_pos_min, y = 0.5, labels = vline_lab_min, pos = 4, col = "black", cex = 0.8)
+    hist_data <- hist(region_temp,
+                      breaks = seq(floor(xlim[1]), ceiling(xlim[2]), by = 1),
+                      plot = FALSE)
+
+    hist_scale <- (0.3) / hist_max
+    scaled_counts <- hist_data$counts * hist_scale
+
+    for (i in seq_along(hist_data$counts)) {
+      rect(xleft = hist_data$breaks[i],
+           xright = hist_data$breaks[i + 1],
+           ybottom = ylim[1],
+           ytop = ylim[1] + scaled_counts[i],
+           col = rgb(0, 0, 1, 0.3),
+           border = "blue")
+    }
+
+    axis_labels <- pretty(c(0, hist_max), n = 2)
+    axis_scaled <- c(ylim[1], ylim[1] + (c(axis_labels[-1]) * hist_scale))
+    axis(side = 4, at = axis_scaled, labels = axis_labels, las = 1)
 
   }
 
-  if (save_fig == TRUE) {
-
-    dev.off()
-
-  }
+  dev.off()
 
 }
 
