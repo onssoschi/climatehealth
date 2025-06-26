@@ -43,14 +43,17 @@ mh_read_and_format_data <- function(data_path,
     dplyr::rename(date = date_col,
                   temp = temperature_col,
                   suicides = health_outcome_col) %>%
-    dplyr::mutate(date = lubridate::ymd(date),
-                  year = as.factor(lubridate::year(date)),
+    dplyr::mutate(
+      date =
+        as.Date(date, tryFormats = c("%d/%m/%Y", "%Y-%m-%d"))
+    ) %>%
+    dplyr::mutate(year = as.factor(lubridate::year(date)),
                   month = as.factor(lubridate::month(date)),
                   dow = as.factor(lubridate::wday(date, label = TRUE)),
                   region = as.factor(region),
                   stratum = as.factor(region:year:month:dow),
                   ind = tapply(suicides, stratum, sum)[stratum])
-
+  df_test <<- df
   df_list <- aggregate_by_column(df, "region")
 
   return(df_list)
