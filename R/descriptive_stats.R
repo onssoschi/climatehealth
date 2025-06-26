@@ -261,9 +261,6 @@ common_descriptive_stats <- function(
       fname <- paste0(ma_vars[[col_i]], "_moving_average.pdf")
       pdf(file.path(output_path, fname))
       for (i in 1:length(df_list)) {
-        print(ma_days)
-        print(ma_sides)
-        print(ma_vars[[col_i]])
         plot_moving_average(
           df_list[[i]],
           timeseries_col,
@@ -377,7 +374,7 @@ common_descriptive_stats_api <- function(
   )
   for (col in 1:length(exp_columns)) {
     if (!(exp_columns[col] %in% colnames(df))) {
-      stop(paste0("Column '", col, "' not in passed dataset."))
+      stop(paste0("Column '", exp_columns[col], "' not in passed dataset."))
     }
   }
   # Reformat Date
@@ -389,9 +386,11 @@ common_descriptive_stats_api <- function(
       )
   }
   # Dis aggregate if needed
-  df_list <- df
+  df_list <- list(df)
+  names(df_list) <- c("All")
+  print("aggregation_column")
   if (!is.null(aggregation_column)) {
-    df_list <- aggregate_by_column(df_list, aggregation_column)
+    df_list <- aggregate_by_column(df, aggregation_column)
   }
   # Create descriptive stats
   final_paths <- common_descriptive_stats(
