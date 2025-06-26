@@ -7,23 +7,25 @@
 common_descriptive_stats(
   dataset_title,
   df_list,
-  use_individual_dfs,
   output_path,
+  plot_corr_matrix = F,
   correlation_method = "pearson",
-  dist_columns,
+  plot_dist = F,
+  dist_columns = c(),
+  plot_ma = F,
   ma_days = 100,
   ma_sides = 2,
   ma_columns = c(),
   dependent_col,
-  independent_cols
+  independent_cols,
+  plot_na_counts = F,
+  plot_scatter = F
 )
 }
 \arguments{
 \item{dataset_title}{String. The title for the dataset being used.}
 
 \item{df_list}{list(dataframe) A list of input dataframes.}
-
-\item{use_individual_dfs}{bool. Whether or not to use all dfs or concat them into one.}
 
 \item{output_path}{string. The path to write outputs to.}
 
@@ -40,6 +42,8 @@ common_descriptive_stats(
 \item{dependent_col}{str. The column in the data containing the dependent var.}
 
 \item{independent_cols}{str. The column in the data containing the independent var.}
+
+\item{use_individual_dfs}{bool. Whether or not to use all dfs or concat them into one.}
 
 \item{title}{string. title used for the plots in the ds.}
 }
