@@ -1,12 +1,12 @@
 #-------------------------------------------------------------------------------
-#' @title R-code for Diarrhea disease cases attributable to extreme precipitation
+#' @title R-code for Malaria cases attributable to extreme precipitation
 #' and extreme temperature
 #'
 #' You will need to load the following package under R for the code to work:
 #'
 required_packages <- c("tidyverse", "INLA", "stats", "data.table", "here",
 "sf", "sp", "spdep", "dlnm", "tsModel", "hydroGOF", "RColorBrewer", "openxlsx",
- "readxl", "splines", "geofacet", "patchwork", "tools")
+"readxl", "splines", "geofacet", "patchwork", "tools")
 #-------------------------------------------------------------------------------
 
 
@@ -25,11 +25,13 @@ required_packages <- c("tidyverse", "INLA", "stats", "data.table", "here",
 #'
 #' @return list includes processed map, and the adjacent matrix created.
 
+
 load_and_process_map <- function(map_path,
                                  Region_col,
                                  District_col,
                                  geometry_col,
-                                 output_dir = NULL){
+                                 output_dir = NULL,
+                                 save_map = FALSE) {
   # Load and process map
   map <- read_sf(map_path) %>%
     select(Region = !!sym(Region_col),
@@ -57,14 +59,14 @@ load_and_process_map <- function(map_path,
 }
 
 
-#' Read in and format health data - Diarrhea diseases case
+#' Read in and format health data - Malaria cases
 #'
 #' @description Read in a csv file of monthly time series of health and the
 #' population data, rename columns and create time variables for spatiotemporal
 #' analysis
 #'
-#' @param health_data_path Path to a csv file containing a monthly time series of data
-#' for Diarrhea outcome, which may be disaggregated by sex (under five case or
+#' @param data_path Path to a csv file containing a monthly time series of data
+#' for Malaria cases, which may be disaggregated by sex (under five case or
 #' above five case), and by Region and District.
 #' @param Region_col Character. Name of the column in the dataframe that contains
 #' the region names.
@@ -76,12 +78,13 @@ load_and_process_map <- function(map_path,
 #' the Year.
 #' @param Month_col Character. Name of the column in the dataframe that contains
 #' the Month.
-#' @param Diarrhea_case_col Character. Name of the column in the dataframe
-#' that contains the Diarrhea cases to be considered.
+#' @param Malaria_case_col Character. Name of the column in the dataframe
+#' that contains the Malaria cases to be considered.
 #' @param tot_pop_col Character. Name of the column in the dataframe that contains
 #' the total population.
 #'
 #' @return A dataframe with formatted and renamed columns.
+
 
 load_and_process_data <- function(health_data_path,
                                   Region_col,
@@ -89,10 +92,11 @@ load_and_process_data <- function(health_data_path,
                                   Date_col = NULL,
                                   Year_col,
                                   Month_col,
-                                  Diarrhea_case_col,
+                                  Malaria_case_col,
                                   tot_pop_col) {
-  # Load health and climate data
+  # Detect file extension
   ext <- tolower(file_ext(health_data_path))
+
   # Load data based on file extension
   data <- switch(ext,
                  "rds" = read_rds(health_data_path),
@@ -115,10 +119,8 @@ load_and_process_data <- function(health_data_path,
   }
 
   data <- data %>%
-    select(Region = Region_col, District = District_col, Year, Month,
-           Diarrhea = Diarrhea_case_col,
-           tot_pop = tot_pop_col
-    )
+    select(Region = Region_col, District = District_col, Year= Year_col,
+           Month= Month_col,Malaria = Malaria_case_col,tot_pop = tot_pop_col)
   return(data)
 }
 
@@ -130,7 +132,7 @@ load_and_process_data <- function(health_data_path,
 #' climate data should start a Year before a start year in the health data to
 #' allow the lag variables calculation.
 #'
-#' @param climate_data_path Path to a csv file containing a monthly time series of data
+#' @param data_path Path to a csv file containing a monthly time series of data
 #' for climate variables, which may be disaggregated by district.
 #' @param District_col Character. Name of the column in the dataframe that
 #' contains the region names.
@@ -150,13 +152,17 @@ load_and_process_data <- function(health_data_path,
 #' contains the relative humidity.
 #' @param runoff_col Character. Name of the column in the dataframe that
 #' contains the monthly runoff water data. Defaults to NULL.
+#' @param cvh_col Character. Name of the column in the dataframe that
+#' contains the vegetation index. This can be the Normalized Difference
+#' Vegetation Index (NDVI). Defaults to NULL.
 #' @param spi_col Character. Name of the column in the dataframe that
 #' contains the standardized precipitation index. Defaults to NULL.
-#' @param max_lag Character. Number corresponding to the maximum lag to be
-#' considered for the delay effect. It should be between 2 an 4. Defaults to 2
+#' @param maxlag Character. Number corresponding to the maximum lag to be
+#' considered for the delay effect. It should be between 3 to 6. Defaults to 4
 #'
 #' @return climate dataframe with formatted and renamed columns, and the lag
 #' variables
+
 
 load_and_process_climatedata <- function(climate_data_path,
                                          District_col,
@@ -167,10 +173,10 @@ load_and_process_climatedata <- function(climate_data_path,
                                          tmax_col,
                                          rainfall_col,
                                          r_humidity_col,
-                                         runoff_col= NULL,
+                                         runoff_col = NULL,
+                                         cvh_col = NULL,
                                          spi_col = NULL,
-                                         max_lag = 2){
-
+                                         max_lag = 4) {
   # Detect file extension
   ext <- tolower(file_ext(climate_data_path))
 
@@ -181,48 +187,41 @@ load_and_process_climatedata <- function(climate_data_path,
                  "xlsx" = read_excel(climate_data_path),
                  stop("Unsupported file type: must be .rds, .csv, or .xlsx")
   )
-
-
-  climate_data <- data %>%
-    select(District = District_col,
-           Year = Year_col, Month = Month_col, tmin = tmin_col, tmean = tmean_col,
-           tmax = tmax_col, rainfall = rainfall_col, r_humidity = r_humidity_col,
-           !!!(if (!is.null(spi_col))
-             rlang::set_names(list(spi_col), "spi") else NULL),
-           !!!(if (!is.null(runoff_col))
-             rlang::set_names(list(runoff_col), "runoff") else NULL)
-           )
-
-  # lagged data
-  tmin_data <- climate_data %>% select(tmin)
-  tmean_data <- climate_data %>% select(tmean)
-  tmax_data <- climate_data %>% select(tmax)
-  rf_data <- climate_data %>% select(rainfall)
-  rh_data <- climate_data %>% select(r_humidity)
-  if (!is.null(spi_col)) spi_data <- climate_data %>% select(spi)
-  if (!is.null(runoff_col)) runoff_data <- climate_data %>% select(runoff)
-
-  for (i in 1:max_lag) {
-    tmin_data[[paste0("tmin_lag", i)]] <- lag(tmin_data$tmin, n = i, default = NA)
-    tmean_data[[paste0("tmean_lag", i)]] <- lag(tmean_data$tmean, n = i, default = NA)
-    tmax_data[[paste0("tmax_lag", i)]] <- lag(tmax_data$tmax, n = i, default = NA)
-    rf_data[[paste0("rf_lag", i)]] <- lag(rf_data$rainfall, n = i, default = NA)
-    rh_data[[paste0("rh_lag", i)]] <- lag(rh_data$r_humidity, n = i, default = NA)
-    if (!is.null(spi_col))
-      spi_data[[paste0("spi_lag", i)]] <- lag(spi_data$spi, n = i, default = NA)
-    if (!is.null(runoff_col))
-      runoff_data[[paste0("runoff_lag", i)]] <- lag(runoff_data$runoff, n = i,
-                                                    default = NA)
-  }
-
-  climate_data <- bind_cols(
-    climate_data %>% select(District, Year, Month),
-    tmin_data, tmean_data, tmax_data, rf_data, rh_data,
-    if (!is.null(spi_col)) spi_data else NULL,
-    if (!is.null(runoff_col)) runoff_data else NULL
+   # Core and optional variables
+  var_map <- list(
+    District = District_col, Year = Year_col, Month = Month_col,
+    tmin = tmin_col, tmean = tmean_col, tmax = tmax_col,
+    rainfall = rainfall_col, r_humidity = r_humidity_col,
+    runoff = runoff_col, cvh = cvh_col, spi = spi_col
   )
 
-  return(climate_data)
+  # Remove NULLs and build vectors
+  var_map <- var_map[!sapply(var_map, is.null)]
+  selected_cols <- as.character(var_map)        # Fix: convert to character vector
+  rename_vec <- setNames(selected_cols, names(var_map))
+  # Read and rename
+  climate_data <- data %>%
+    dplyr::select(all_of(selected_cols)) %>%
+    dplyr::rename(!!!rename_vec)
+
+  # Helper to create lagged vars
+  create_lags <- function(df, var, max_lag) {
+    for (i in 1:max_lag) {
+      df[[paste0(var, "_lag", i)]] <- dplyr::lag(df[[var]], i)
+    }
+    df
+  }
+
+  # Apply lags to relevant variables
+  vars_to_lag <- intersect(names(rename_vec),
+                           c("tmin", "tmean", "tmax", "rainfall", "r_humidity",
+                             "runoff", "cvh", "spi"))
+  lagged_data <- lapply(vars_to_lag, function(var) create_lags(climate_data[var],
+                                                               var, max_lag))
+
+  # Combine all
+  final_data <- bind_cols(climate_data[c("District", "Year", "Month")], lagged_data)
+  return(final_data)
 }
 
 
@@ -244,8 +243,8 @@ load_and_process_climatedata <- function(climate_data_path,
 #' the Year.
 #' @param Month_col Character. Name of the column in the dataframe that contains
 #' the Month.
-#' @param Diarrhea_case_col Character. Name of the column in the dataframe
-#' that contains the Diarrhea cases to be considered.
+#' @param Malaria_case_col Character. Name of the column in the dataframe
+#' that contains the Malaria cases to be considered.
 #' @param tot_pop_col Character. Name of the column in the dataframe that
 #' contains the total population.
 #' @param tmin_col Character. Name of the column in the dataframe that
@@ -260,10 +259,13 @@ load_and_process_climatedata <- function(climate_data_path,
 #' contains the relative humidity.
 #' @param runoff_col Character. Name of the column in the dataframe that
 #' contains the monthly runoff water data. Defaults to NULL.
+#' @param cvh_col Character. Name of the column in the dataframe that
+#' contains the vegetation index. This can be the Normalized Difference
+#' Vegetation Index (NDVI). Defaults to NULL.
 #' @param spi_col Character. Name of the column in the dataframe that
 #' contains the standardized precipitation index. Defaults to NULL.
-#' @param max_lag Character. Number corresponding to the maximum lag to be
-#' considered for the delay effect. It should be between 2 an 4. Defaults to 2
+#' @param maxlag Character. Number corresponding to the maximum lag to be
+#' considered for the delay effect. It should be between 3 to 6. Defaults to 4
 #' @param geometry_col is the Name of the geometry column in the shapefile
 #' (usually "geometry").
 #' @param output_dir Path to folder where the process map data should be
@@ -271,80 +273,98 @@ load_and_process_climatedata <- function(climate_data_path,
 #'
 #' @returns list of dataframes for the map, nb.map, data, grid_data, summary
 
+
 combine_health_climate_data <- function(health_data_path,
                                         climate_data_path,
                                         map_path,
                                         Region_col,
                                         District_col,
-                                        Date_col,
+                                        Date_col = NULL,
                                         Year_col,
                                         Month_col,
-                                        Diarrhea_case_col,
+                                        Malaria_case_col,
                                         tot_pop_col,
                                         tmin_col,
                                         tmean_col,
                                         tmax_col,
                                         rainfall_col,
                                         r_humidity_col,
-                                        runoff_col=NULL,
+                                        runoff_col = NULL,
+                                        cvh_col = NULL,
                                         spi_col = NULL,
-                                        max_lag = 2,
+                                        max_lag = 4,
                                         geometry_col,
-                                        output_dir = NULL){
+                                        output_dir = NULL,
+                                        save_map= NULL) {
 
-  # Load data
-  health_data <- load_and_process_health_data(health_data_path, Region_col,
-                                              District_col,Date_col, Year_col,
-                                              Month_col, Diarrhea_case_col,
-                                              tot_pop_col)
+  health_data <- load_and_process_data(health_data_path,
+                                       Region_col = Region_col,
+                                       District_col = District_col,
+                                       Date_col = Date_col,
+                                       Year_col = Year_col,
+                                       Month_col = Month_col,
+                                       Malaria_case_col = Malaria_case_col,
+                                       tot_pop_col = tot_pop_col)
 
-  climate_data <- load_and_process_climatedata(climate_data_path, District_col,
-                                               Year_col, Month_col, tmin_col,
-                                               tmean_col, tmax_col, rainfall_col,
-                                               r_humidity_col, runoff_col,
-                                               spi_col, max_lag)
+  climate_data <- load_and_process_climatedata(climate_data_path,
+                                               District_col = District_col,
+                                               Year_col = Year_col,
+                                               Month_col = Month_col,
+                                               tmin_col = tmin_col,
+                                               tmean_col = tmean_col,
+                                               tmax_col = tmax_col,
+                                               rainfall_col = rainfall_col,
+                                               r_humidity_col = r_humidity_col,
+                                               runoff_col = runoff_col,
+                                               cvh_col = cvh_col,
+                                               spi = spi_col,
+                                               max_lag = max_lag)
 
-  map_data <- load_and_process_map(map_path, Region_col, District_col,
-                                   geometry_col, output_dir)
+  map_data <- load_and_process_map(map_path = map_path,
+                                   Region_col = Region_col,
+                                   District_col = District_col,
+                                   geometry_col = geometry_col,
+                                   output_dir = output_dir,
+                                   save_map = save_map)
 
-  # Merge health + climate
   data <- health_data %>%
     left_join(climate_data, by = join_by(District, Year, Month)) %>%
-    distinct() %>%
     group_by(Region, District) %>%
+    unique() %>%
     mutate(time = (Year - min(Year)) * 12 + Month) %>%
     ungroup()
 
-  # Build grid codes
   grid_data <- data %>%
     select(Region, District) %>%
     distinct() %>%
     group_by(Region) %>%
     mutate(region_code = cur_group_id(),
            district_number = row_number(),
-           district_code = as.integer(paste0(region_code, district_number))) %>%
+           district_code = sprintf("%d%01d", region_code, district_number)) %>%
     ungroup()
 
-  # Attach codes
-  data <- left_join(data, grid_data, by = c("Region", "District")) %>%
+  data <- data %>%
+    left_join(grid_data, by = c("Region", "District")) %>%
     arrange(region_code, district_code)
 
-  map <- left_join(map_data$map, grid_data, by = c("Region", "District")) %>%
+  map <- map_data$map %>%
+    left_join(grid_data, by = c("Region", "District")) %>%
     arrange(region_code, district_code)
 
-  grid_data <- rename(grid_data, name = Region, Code_num = region_code)
+  grid_data <- grid_data %>%
+    rename(name = Region, Code_num = region_code)
 
-  # Summary stats
   summary_stats <- list(tmin = summary(data$tmin),
                         tmax = summary(data$tmax),
                         rainfall = summary(data$rainfall),
                         rhumidity = summary(data$r_humidity)
                         )
 
-  # Return combined
-  return(list(map = map, nb.map = map_data$nb.map,
+  return(list(map = map,
+              nb.map = map_data$nb.map,
               graph_file = map_data$graph_file,
-              data = data, grid_data = grid_data,
+              data = data,
+              grid_data = grid_data,
               summary = summary_stats))
 }
 
@@ -358,7 +378,7 @@ combine_health_climate_data <- function(health_data_path,
 #'
 #' @param data A data frame containing the combined health and climate data.
 #' @param param_terms A character vector specifying variables to plot (tmax,
-#' tmean, tmin, Diarrhea). Use "all" to include all available variables.
+#' tmean, tmin, Malaria). Use "all" to include all available variables.
 #' @param level Aggregation level: one of "country", "region", or "district".
 #' @param year Optional numeric vector to filter data by year(s).
 #' @param save_fig Logical. Whether to save the figure as a PDF.
@@ -373,7 +393,7 @@ plot_health_climate_timeseries <- function(data,
                                            save_fig = TRUE,
                                            output_dir = NULL) {
 
-  vars_all <- c("Diarrhea", "tmin", "tmean", "tmax", "rainfall")
+  vars_all <- c("Malaria", "tmin", "tmean", "tmax", "rainfall")
   vars_to_plot <- if (param_terms == "all") vars_all else param_terms
 
   if (!is.null(year)) data <- data %>% filter(Year %in% year)
@@ -394,8 +414,8 @@ plot_health_climate_timeseries <- function(data,
   agg <- data %>%
     group_by(across(all_of(group_cols))) %>%
     summarise(across(all_of(vars_to_plot),
-                     ~ if (level == "country" && "Diarrhea" %in% cur_column()) {
-                       if (cur_column() == "Diarrhea") sum(.x, na.rm = TRUE) else mean(.x, na.rm = TRUE)
+                     ~ if (level == "country" && "Malaria" %in% cur_column()) {
+                       if (cur_column() == "Malaria") sum(.x, na.rm = TRUE) else mean(.x, na.rm = TRUE)
                      } else {
                        mean(.x, na.rm = TRUE)
                      }),
@@ -422,8 +442,7 @@ plot_health_climate_timeseries <- function(data,
           axis.text.x = element_text(angle = 45, hjust = 1))
 
   if (save_fig) {
-    fname <- paste0("timeseries_",
-                    paste(vars_to_plot, collapse = "_"), "_", level, ".pdf")
+    fname <- paste0("timeseries_", paste(vars_to_plot, collapse = "_"), "_", level, ".pdf")
     ggsave(file.path(output_dir, fname), p, width = 12, height = 7)
   }
 
@@ -438,22 +457,23 @@ plot_health_climate_timeseries <- function(data,
 #' @param data is the dataset containing district_code, region_code, and Year
 #' columns from the combine_health_climate_data() function.
 #'
-#' @return list of cross-basis matrices including the basis matrix for maximum
-#' temperature, minimun temperature, cumulative rainfall, and relative humidity.
-
+#' @return list of cross-basis matrices of the climate variables.
 
 set_cross_basis <- function(data) {
+  nlag <- ncol(dplyr::select(data, dplyr::starts_with("tmax_lag")))
 
-  nlag <- ncol(dplyr::select(data, all_of(grep("^tmax_lag", names(data),
-                                               value = TRUE))))
-  var_defs <- list( tmax = "tmax_lag", tmin = "tmin_lag", tmean = "tmean_lag",
-    rainfall = "rf_lag", r_humidity = "rh_lag",
-    runoff = "runoff_lag", spi = "spi_lag")
+  var_defs <- list(
+    tmax = "tmax_lag", tmin = "tmin_lag", tmean = "tmean_lag",
+    rainfall = "rainfall_lag", r_humidity = "r_humidity_lag",
+    runoff = "runoff_lag", cvh = "cvh_lag", spi = "spi_lag"
+    )
 
   vars <- lapply(names(var_defs), function(var) {
-    cols <- c(var, paste0(var_defs[[var]], 1:nlag))
-    if (all(cols %in% names(data))) dplyr::select(data, all_of(cols)) else NULL
-  })
+    base <- var
+    lags <- paste0(var_defs[[var]], 1:nlag)
+    cols <- c(base, lags)
+    if (all(cols %in% names(data))) data[, cols, drop = FALSE] else NULL
+    })
   names(vars) <- names(var_defs)
   vars <- vars[!sapply(vars, is.null)]
 
@@ -468,10 +488,10 @@ set_cross_basis <- function(data) {
     )
     colnames(cb) <- paste0("basis_", var, ".", colnames(cb))
     cb
-  })
+    })
 
   names(basis_matrices) <- names(vars)
-  basis_matrices
+  return(basis_matrices)
 }
 
 
@@ -494,9 +514,9 @@ create_inla_indices <- function(data) {
   nregion <- length(unique(data$region_code))  # Total number of regions
 
   # define the offset variable based on the population data
-  overall_rate <- sum(data$Diarrhea, na.rm = TRUE) / sum(data$tot_pop, na.rm = TRUE)
+  overall_rate <- sum(data$Malaria, na.rm = TRUE) / sum(data$tot_pop, na.rm = TRUE)
   data$E <- overall_rate * data$tot_pop # Expected counts
-  data$SIR <- data$Diarrhea / data$E  # Standardized Incidence Ratio
+  data$SIR <- data$Malaria / data$E  # Standardized Incidence Ratio
 
   # Create district index
   data$district_index <- rep(1:ndistrict, length.out = nrow(data))  # Ensure correct length
@@ -530,7 +550,7 @@ create_inla_indices <- function(data) {
 #' Laplace Approximation) models to the dataset, evaluates them using
 #' DIC (Deviance Information Criterion), and identifies the best-fitting model.
 #'
-#' @param combined_data is the dataset coming from combine_health_climate_data() function.
+#' @param data is the dataset coming from combine_health_climate_data() function.
 #' @param basis_matrices_choices A character vector specifying the basis matrix
 #' parameters to be included in the model. Possible values are "tmax", "tmin",
 #' "rainfall", "r_humidity", and "spi".  Default to "tmax", and users can select
@@ -551,8 +571,7 @@ run_inla_models <- function(combined_data,
                             save_csv = FALSE,
                             family = "poisson",
                             config = FALSE) {
-  if (save_csv && is.null(output_dir))
-    stop("output_dir must be provided if save_csv = TRUE")
+  if (save_csv && is.null(output_dir)) stop("output_dir must be provided if save_csv = TRUE")
 
   data <- create_inla_indices(combined_data$data)
   basis <- set_cross_basis(combined_data$data)
@@ -560,21 +579,19 @@ run_inla_models <- function(combined_data,
 
   prior <- list(prec = list(prior = "pc.prec", param = c(0.5 / 0.31, 0.01)))
 
-  base_formula <- Diarrhea ~ 1 +
+  base_formula <- Malaria ~ 1 +
     f(Month, replicate = region_index, model = "rw1", cyclic = TRUE,
       constr = TRUE, scale.model = TRUE, hyper = prior) +
     f(district_index, model = "bym2", replicate = year_index,
       graph = graph_file, scale.model = TRUE, hyper = prior)
 
   # Filter out basis_matrices_choices elements that don't exist or are NULL in basis
-  valid_choices <- Filter(function(x)
-    !is.null(basis[[x]]), basis_matrices_choices)
+  valid_choices <- Filter(function(x) !is.null(basis[[x]]), basis_matrices_choices)
 
   if (length(valid_choices) > 0) {
-    full_formula <- update(base_formula,
-                           as.formula(paste("~ . +",
-                                            paste0("basis$", valid_choices,
-                                                   collapse = " + "))))
+    full_formula <- update(
+      base_formula, as.formula(paste("~ . +",
+                                     paste0("basis$", valid_choices, collapse = " + "))))
   } else {
     full_formula <- base_formula
   }
@@ -607,10 +624,21 @@ run_inla_models <- function(combined_data,
 }
 
 
-#' Visualise monthly random effects for selected INLA model
+#' Visualise Monthly Random Effects from INLA Model by Region
 #'
-#' @description generates and saves a plot of monthly random effects for different
-#' regions, visualizing their contribution to Diarrhea Incidence Rate.
+#' @description
+#' Generates and optionally saves a faceted line plot of monthly random effects
+#' from a fitted INLA model, showing each region's temporal contribution to the
+#' log-transformed Malaria Incidence Rate (log(MIR)).
+#'
+#' The plot illustrates seasonal variations in disease risk across regions.
+#' - Positive values indicate months with above-average contribution to log(MIR).
+#' - Negative values indicate months with below-average risk.
+#'
+#' This visualization helps identify:
+#' - Peak malaria transmission periods by region
+#' - Regional differences in seasonality strength
+#' - Temporal targeting opportunities for interventions.
 #'
 #' @param combined_data Data list from combine_health_climate_data() function.
 #' @param model The fitted model object
@@ -661,64 +689,90 @@ plot_monthly_random_effects <- function(combined_data,
 
   # Save plot
   if (save_fig){
-    ggsave(file.path(output_dir, "monthly_random_effects.pdf"), plot = p, height = 30, width = 25, units = "cm")
+    ggsave(file.path(output_dir, "monthly_random_effects.pdf"),
+           plot = p, height = 30, width = 25, units = "cm")
   }
   return(p)
 }
 
 
-#' Visualize yearly spatial random effect
+#' Visualize Yearly Spatial Structured Random Effects
 #'
-#' @description generates and saves plots of yearly spatial random effect at
-#' District level.
+#' @description
+#' Generates and optionally saves maps of the yearly **structured spatial random effects**
+#' from a Bayesian spatial-temporal model fitted using INLA. These maps show the
+#' district-level contributions to the log of malaria incidence rates (log(MIR))
+#' after adjusting for observed covariates. Each district's effect reflects residual
+#' spatial variation attributable to spatial dependence (structured effect),
+#' helping identify persistent hotspots or areas with unexpectedly high or low risk.
 #'
-#' @param combined_data Data list from combine_health_climate_data() function.
-#' @param model The fitted model from run_inla_models() function.
-#' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
-#' FALSE.
-#' @param output_dir Path to save model output
+#' The output is a faceted map by year, allowing visual comparison of spatial patterns
+#' and trends across time.
 #'
-#' @return yearly space random effect plot
+#' @param combined_data A list returned by the \code{combine_health_climate_data()} function,
+#' containing spatial (map), modeling, and covariate data.
+#' @param model A fitted INLA model object from the \code{run_inla_models()} function.
+#' @param save_fig Logical. If \code{TRUE}, saves the generated plot to
+#' the specified directory.
+#' @param output_dir A character string specifying the path where the plot
+#' should be saved if \code{save_fig = TRUE}.
+#'
+#' @return A \code{ggplot} object showing yearly district-level structured
+#' spatial random effects. Red indicates districts with higher-than-expected
+#' malaria incidence; green indicates lower-than-expected incidence,
+#' relative to model predictions.
 
-yearly_spatial_random_effect <- function(combined_data ,
+yearly_spatial_random_effect <- function(combined_data,
                                          model,
                                          save_fig = FALSE,
                                          output_dir = NULL) {
-  # Validate output_dir if saving
   if (save_fig && is.null(output_dir)) {
     stop("output_dir must be provided if save_fig = TRUE")
   }
-  # Prepare data
+  # Extract necessary components
   data <- create_inla_indices(combined_data$data)
   grid_data <- combined_data$grid_data
   map <- combined_data$map
-  ntime <- length(unique(data$time))
+
   nyear <- length(unique(data$Year))
   ndistrict <- length(unique(data$district_code))
-  # Extract spatial random effects
+
+  # Extract spatial random effects (unstructured + structured)
   space <- data.table(model$summary.random$district_index)
   space$Year <- rep(min(data$Year):max(data$Year), each = 2 * ndistrict)
   space$re <- rep(c(rep(1, ndistrict), rep(2, ndistrict)), nyear)
   space <- space[space$re == 1, ]
   space$District_code <- rep(unique(data$district_code), nyear)
-  # Merge with spatial map
-  space <- left_join(map, space, by = c("district_code" = "District_code"))
-  # Plot
-  space_effects <- ggplot() +
-    geom_sf(data = space, aes(fill = mean), color = "black", size = 0.1) +
-    scale_fill_gradient2(
-      low = "green", mid = "white", high = "purple",
-      midpoint = 0,
-      limits = c(min(space$mean, na.rm = TRUE), max(space$mean, na.rm = TRUE)),
-      name = "Contribution to\nlog(DIR)"
-    ) +
-    theme_void() +
-    facet_wrap(~Year, ncol = 5)
 
-  # Save if required
+  # Merge with spatial data
+  space <- left_join(map, space, by = c("district_code" = "District_code"))
+
+  # Define color scale limits symmetrically
+  lim <- max(abs(space$mean), na.rm = TRUE)
+
+  # Create map
+  space_effects <- ggplot() +
+    geom_sf(data = space, aes(fill = mean), lwd = 0.1, color = "grey60") +
+    scale_fill_gradient2(
+      name = "Contribution to\nlog(MIR)",
+      low = "darkgreen", mid = "white", high = "darkred",
+      midpoint = 0, limits = c(-lim, lim), breaks = c(-lim, 0, lim)
+    ) +
+    facet_wrap(~Year, ncol = 5) +
+    theme_void(base_size = 12) +
+    theme(
+      strip.text = element_text(size = 12, face = "bold"),
+      legend.title = element_text(size = 10),
+      legend.text = element_text(size = 9),
+      legend.position = "right"
+    )
+
+  # Save figure
   if (save_fig) {
-    ggsave(file.path(output_dir, "spatial_random_effects_per_year.pdf"),
-           plot = space_effects, height = 30, width = 25, units = "cm")
+    ggsave(
+      file.path(output_dir, "Yearly_random_effects_improved.pdf"),
+      plot = space_effects, height = 30, width = 25, units = "cm", dpi = 300
+    )
   }
 
   return(space_effects)
@@ -730,95 +784,95 @@ yearly_spatial_random_effect <- function(combined_data ,
 #-------------------------------------------------------------------------------
 
 
-#' Create function to predict relative risk at Country, Region, and District level
+#' Generate Exposure-Lag-Response Predictions at Country, Region, or District Level
 #'
-#' @description Produces cumulative relative risk at country, region and
-#' district level from analysis.
+#' @description
+#' Computes cumulative relative risk predictions from a distributed lag nonlinear
+#' model (DLNM) fitted using INLA. The function uses exposure-lag-response
+#' relationships (e.g., for climate variables like temperature or rainfall)
+#' to estimate the effect of an exposure variable on the outcome (e.g., malaria
+#' incidence) across time lags.
 #'
-#' @param data Data list from combine_health_climate_data() function.
-#' @param param_terms A character vector or list containing parameter terms such
-#' as "tmax" (maximum temperature) and "rainfall" (precipitation).
-#' @param model The fitted model from run_inla_models() function.
-#' @param level A character vector specifying the spatial disaggregation level.
-#' Can take one of the following values: "country", "Region", or "District".
+#' Predictions are generated using the fitted model coefficients and the DLNM
+#' cross-basis, and can be produced at different geographic aggregation levels:
+#' national, regional, or district. This allows comparison of how exposure-response
+#' relationships vary across spatial units.
 #'
-#' @return Dataframe containing cumulative relative risk at country, Region, or
-#' District level.
+#' @param data A dataset returned by the \code{combine_health_climate_data()} function,
+#' containing health, climate, and geographic data.
+#' @param param_terms A character string specifying the name of the exposure variable
+#' (e.g., "tmax" for maximum temperature or "rainfall" for precipitation). Default is "tmax".
+#' @param model A fitted INLA model object containing DLNM terms, typically returned
+#' from the \code{run_inla_models()} function.
+#' @param level A character string specifying the spatial level at which predictions should be made.
+#' Can be one of: \code{"country"} (default), \code{"Region"}, or \code{"District"}.
+#'
+#' @return A \code{crosspred} object (if \code{level = "country"}) or a named list of
+#' \code{crosspred} objects (if \code{level = "Region"} or \code{"District"}), each containing:
+#' \itemize{
+#'   \item Estimated relative risks across values of the exposure and lag periods
+#'   \item Centering at the mean exposure for the respective unit
+#'   \item Can be used for plotting and interpretation of cumulative and lag-specific effects
+#' }
 
 get_predictions <- function(data,
                             param_terms,
                             model,
-                            level){
-  # loading the best model
+                            level) {
+
   data <- create_inla_indices(data)
-
-  # getting basis matrices
-  basis_matrices <- set_cross_basis(data)
-
-  # Extract full coef and vcov for the region
+  basis <- set_cross_basis(data)[[param_terms]]
   coef <- model$summary.fixed$mean
   vcov <- model$misc$lincomb.derived.covariance.matrix
+  indt <- grep(paste0("basis_", param_terms), model$names.fixed)
 
-  # Find positions of terms associated with tmax crossbasis
-  indt <- grep(paste("basis", param_terms, sep = "_"), model$names.fixed)
-
-  if (level == "country"){
-    # Extract predictions from the tmax DLNM centered on overall mean Tmax
-    predt <- crosspred(basis_matrices[[param_terms]], coef = coef[indt],
-                       vcov = vcov[indt, indt], model.link = "log",
-                       bylag = 0.25, cen = round(mean(data[[param_terms]],
-                                                      na.rm = TRUE), 0))
-
-  } else if (level == "Region"){
-    # Iterate over unique regions
-    regions <- unique(data$Region)
-    predt <- regions %>%
-      lapply(function(region){
-        region_data <- subset(data, Region == region)
-        # Extract predictions from the tmax DLNM centered on overall mean Tmax
-        mean_param <- round(mean(region_data[[param_terms]], na.rm = TRUE), 0)
-        predt <- crosspred(basis_matrices[[param_terms]], coef = coef[indt],
-                           vcov = vcov[indt, indt],
-                           model.link = "log", bylag = 0.25, cen = mean_param)
-        return(predt)
-      })
-    names(predt) <- regions
-  } else if (level == "District"){
-    # Iterate over unique districts
-    districts <- unique(data$District)
-    predt <- districts %>%
-      lapply(function(district){
-        # Filter data for the current district
-        district_data <- subset(data, District == district)
-        # Extract predictions from the tmax DLNM centered on overall mean Tmax
-        mean_param <- round(mean(district_data[[param_terms]], na.rm = TRUE), 0)
-        predt <- crosspred(basis_matrices[[param_terms]], coef = coef[indt],
-                           vcov = vcov[indt, indt],
-                           model.link = "log", bylag = 0.25, cen = mean_param)
-      })
-    names(predt) <- districts
+  compute_pred <- function(sub_data) {
+    cen_val <- round(mean(sub_data[[param_terms]], na.rm = TRUE), 0)
+    crosspred(basis, coef = coef[indt], vcov = vcov[indt, indt],
+              model.link = "log", bylag = 0.25, cen = cen_val)
   }
-  return(predt)
+
+  if (level == "country") {
+    return(compute_pred(data))
+  }
+
+  group_var <- switch(level,
+                      "Region" = "Region",
+                      "District" = "District",
+                      stop("Invalid level. Choose from 'country', 'Region', or 'District'"))
+
+  groups <- unique(data[[group_var]])
+  preds <- lapply(groups, function(g) compute_pred(subset(data, data[[group_var]] == g)))
+  names(preds) <- groups
+  return(preds)
 }
 
 
-#' read in contour plot at country, Region, District level.
+#' Generate Contour Plots of Lagged Climate Effects on Health Outcomes
 #'
-#' @description: Generates a contour plot showing the lag exposure effect  of
-#' maximum temperature (tmax) and cumulative rainfall on diarrhea cases.
+#' @description Produces contour plots showing the joint lagged and exposure effects
+#' of climate variables (e.g., maximum temperature or cumulative rainfall) on health outcomes
+#' (e.g., Malaria or malaria cases) using distributed lag nonlinear models (DLNMs).
+#' The plots can be generated at the country, region, or district level and illustrate
+#' how relative risk varies over different exposure levels and time lags.
 #'
-#' @param data Data list from combine_health_climate_data() function.
-#' @param param_terms A character vector or list containing parameter terms such
-#' as "tmax" (maximum temperature) and "rainfall" (precipitation).
-#' Default to "tmax"
-#' @param model The fitted model from run_inla_models() function.
-#' @param level A character vector specifying the spatial disaggregation level.
-#' Can take one of the following values: "country", "Region", or "District".
-#' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
-#' FALSE.
-#' @param output_dir Path to save model output. Default to NULL
+#' @param data A dataframe of merged health and climate data, typically output from
+#' `combine_health_climate_data()`.
+#' @param param_terms A character string specifying the climate parameter to analyze,
+#' such as `"tmax"` for maximum temperature or `"rainfall"` for precipitation.
+#' @param model A fitted INLA model object from `run_inla_models()` containing
+#' DLNM terms for the specified climate variable.
+#' @param level A character string specifying the spatial level of analysis:
+#' `"country"`, `"Region"`, or `"District"`. Defaults to `"country"`.
+#' @param save_fig Logical. If `TRUE`, saves the resulting contour plot(s) to the specified directory.
+#' Defaults to `TRUE`.
+#' @param nlag An integer specifying the maximum number of lag months to include in the plot.
+#' Defaults to 4.
+#' @param output_dir A character string specifying the directory path where output plots
+#' should be saved. Required if `save_fig = TRUE`.
 #'
-#' @return contour plot at country, Region and District level
+#' @return Saves and/or returns contour plots of the relative risk associated with the selected
+#' climate variable over lags and exposure levels, stratified by spatial level.
 
 contour_plot <- function(data,
                          param_terms,
@@ -892,7 +946,7 @@ contour_plot <- function(data,
 #' Plot Relative Risk Map at District or Region Level
 #'
 #' @description
-#' Generates a map of the relative risk of diarrhea cases associated with climate
+#' Generates a map of the relative risk of Malaria cases associated with climate
 #' hazards, including extreme temperature and cumulative rainfall, at a specified
 #' spatial level (District or Region).
 #'
@@ -915,7 +969,7 @@ contour_plot <- function(data,
 
 plot_rr_map <- function(combined_data,
                         model,
-                        param_terms = "tmax",
+                        param_terms,
                         level = "District",
                         year = NULL,
                         output_dir = NULL,
@@ -955,14 +1009,16 @@ plot_rr_map <- function(combined_data,
         midpoint = 1, limits = rr_range, na.value = "grey80", name = "RR"
       ) +
       theme_minimal() +
-      labs(title = paste("Year:", years[i]), subtitle = paste("Exposure:", param_terms)) +
-      theme(axis.text = element_blank(), axis.ticks = element_blank(), panel.grid = element_blank())
+      labs(title = paste("Year:", years[i]),
+           subtitle = paste("Exposure:", param_terms)) +
+      theme(axis.text = element_blank(), axis.ticks = element_blank(),
+            panel.grid = element_blank())
   })
 
   # Combine all plots
   combined_plot <- wrap_plots(plots) +
     plot_annotation(
-      title = paste("Relative Risk of Diarrhea by", level),
+      title = paste("Relative Risk of Malaria by", level),
       subtitle = paste("Exposure:", param_terms),
       theme = theme(plot.title = element_text(size = 16, face = "bold"))
     )
@@ -978,62 +1034,68 @@ plot_rr_map <- function(combined_data,
 }
 
 
-#' Read in Relative Risk plot at country, Region, and District level
+#' Plot Relative Risk of Malaria by Climate Exposure
 #'
-#' @description Plots the relative risk of diarrhea cases by the maximum
-#' temperature and cumulative rainfall at country, Region and District level
+#' @description
+#' Generates and optionally saves relative risk plots of malaria cases as a function
+#' of exposure to maximum temperature (`tmax`) or cumulative rainfall (`rainfall`)
+#' across different spatial levels: country, Region, or District. The function visualizes
+#' the estimated relative risks and their 95% confidence intervals derived from the
+#' fitted INLA model.
 #'
-#' @param data Data list from combine_health_climate_data() function.
-#' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
-#' FALSE.
-#' @param param_terms A character vector or list containing parameter terms such
-#' as "tmax" (maximum temperature) and "rainfall" (precipitation).
-#' Default to "tmax".
-#' @param model The fitted model from run_inla_models() function.
-#' @param level A character vector specifying the spatial disaggregation level.
-#' Can take one of the following values: "country", "Region", or "District".
-#' Default to "country".
-#' @param year A character string specifying the year for which the map should be generated.
-#' Defaults to NULL.
-#' @param output_dir is the path where the pdf file will be saved. Default to NULL
+#' @param data A data frame or list returned from the `combine_health_climate_data()` function,
+#' containing harmonized health and climate data.
+#' @param save_fig Logical. Whether to save the plots to PDF. Defaults to `FALSE`.
+#' @param param_terms A character string specifying the climate exposure variable to plot.
+#' Accepts `"tmax"` for maximum temperature or `"rainfall"` for cumulative rainfall.
+#' @param model The fitted model object returned from the `run_inla_models()` function,
+#' containing posterior estimates used to compute relative risks.
+#' @param level A character string specifying the spatial level for plotting.
+#' Acceptable values are `"country"`, `"Region"`, or `"District"`. Defaults to `"country"`.
+#' @param output_dir A character string specifying the path where the output PDF file
+#' should be saved. Required if `save_fig = TRUE`. Defaults to `NULL`.
 #'
-#' @return relative risk plot at country, Region, and District level.
+#' @return A line plot (or set of plots) showing the estimated relative risk of malaria
+#' across the range of the specified climate variable. If `save_fig = TRUE`, the plots
+#' are saved as PDF files in the specified `output_dir`.
 
 plot_relative_risk <- function(data,
                                model,
                                param_terms,
-                               level = "country",
+                               level,
                                year = NULL,
                                output_dir = NULL,
                                save_fig = FALSE) {
 
   if (!"Year" %in% names(data)) stop("'Year' column not found in data.")
   if (is.null(year)) year <- sort(unique(data$Year))
+
   if (save_fig) {
-    if (is.null(output_dir)) stop("output_dir must be provided if save_fig = TRUE")
+    if (is.null(output_dir)) stop("output_dir must be specified if save_fig is TRUE.")
     if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
   }
 
-  output_pdf <- if (save_fig)
-    file.path(output_dir, paste0("RR_", param_terms, "_",
-                                 tolower(level), "_all_plots.pdf")) else NULL
+  output_pdf <- if (!is.null(output_dir)) {
+    file.path(output_dir, paste0("RR_", param_terms, "_", tolower(level), "_all_plots.pdf"))
+  } else {
+    NULL
+  }
 
   build_plot <- function(pred, yr) {
     if (anyNA(pred$allRRfit)) return(NULL)
-    ggplot(tibble(x = pred$predvar, y = pred$allRRfit, ymin = pred$allRRlow,
-                  ymax = pred$allRRhigh), aes(x, y)) +
+    ggplot(tibble(x = pred$predvar, y = pred$allRRfit,
+                  ymin = pred$allRRlow, ymax = pred$allRRhigh),
+           aes(x, y)) +
       geom_line(color = "red", linewidth = 1) +
       geom_ribbon(aes(ymin = ymin, ymax = ymax), fill = "red", alpha = 0.3) +
-      geom_hline(yintercept = 1, linetype = "dashed", color = "gray",
-                 linewidth = 0.5) +
+      geom_hline(yintercept = 1, linetype = "dashed", color = "gray", linewidth = 0.5) +
       labs(title = yr, x = param_terms, y = "Relative Risk") +
       theme_minimal() + theme(plot.title = element_text(size = 9))
   }
 
   if (level == "country") {
     plots <- lapply(year, function(yr) {
-      build_plot(get_predictions(filter(data, Year == yr), param_terms,
-                                 model, level), yr)
+      build_plot(get_predictions(filter(data, Year == yr), param_terms, model, level), yr)
     }) %>% Filter(Negate(is.null), .)
 
     if (save_fig) {
@@ -1043,12 +1105,12 @@ plot_relative_risk <- function(data,
     }
 
     return(wrap_plots(plots) + plot_annotation(
-      title = "Exposure-Response Curves by Country",
+      title = paste("Exposure-Response Curves by Country"),
       subtitle = paste(param_terms, "Years:", paste(year, collapse = ", "))
     ))
   }
 
-  # Region or District
+  # Region/District: gather plots per group per year
   group_plots <- list()
   for (yr in year) {
     preds <- get_predictions(filter(data, Year == yr), param_terms, model, level)
@@ -1069,33 +1131,51 @@ plot_relative_risk <- function(data,
     dev.off()
   }
 
+  # Return the list of plots grouped by region/district
   return(group_plots)
 }
 
 
-#-------------------------------------------------------------------------------
-# Attributable number and fraction calculation
-#-------------------------------------------------------------------------------
-
-#' attribution calculation for maximum temperature
+#' Attribution Calculation for Climate Parameters
 #'
-#' @description the attribution calculation request the attrdl function from
-#' Gasparini and DNLM package
+#' @description
+#' Computes the Minimum Risk Temperature (MRT), high-risk exposure range, and
+#' attributable risk (number and fraction) for a given climate parameter
+#' (e.g., maximum temperature, minimum temperature, or precipitation).
+#' This function uses the crossbasis approach and distributed lag non-linear models (DLNM),
+#' requiring the `attrdl` function from Gasparrini's DLNM framework.
 #'
-#' @param data Data list from combine_health_climate_data() function.
-#' @param param_terms A character vector or list containing parameter terms such
-#' as "tmax" (maximum temperature) and "rainfall" (precipitation).
-#' Default to "tmax"
-#' @param model The fitted model from run_inla_models() function.
-#' @param attrdl_path is the path to the attrdl function.
-#' @param param_threshold Numeric. Threshold above which exposure is considered,
-#' "attributable". Default is 1. can take decimal value.
-#' @param level A character vector specifying the spatial disaggregation level.
-#' Can take one of the following values: "country", "Region", or "District".
-#' @param year A character string specifying the year for which the map should
-#' be generated. Defaults to NULL.
-#' @return results which contain the attribution number and fraction at country,
-#'  region and district level.
+#' @param data A data frame or list containing the merged health and climate data.
+#' @param param_terms Character string specifying the climate variable of interest,
+#' such as \code{"tmax"}, \code{"tmin"}, or \code{"rainfall"}. Default is \code{"tmax"}.
+#' @param model The fitted INLA model output from \code{run_inla_models()},
+#' which includes fixed effect estimates and the crossbasis structure.
+#' @param attrdl_path Character string specifying the path to the custom
+#' \code{attrdl.R} file. This file should define the \code{attrdl()} function
+#' used to compute attributable risk.
+#' @param param_threshold Numeric value specifying the threshold for relative risk (RR)
+#' above which exposure is considered harmful (attributable). Default is \code{1},
+#' but can accept decimal values such as \code{1.1}.
+#' @param level Character string specifying the spatial level of analysis.
+#' Can take one of the following values: \code{"country"}, or \code{"Region"}.
+#' @param nlag Integer. Number of lags used in constructing the crossbasis matrix.
+#' Used to validate the lag structure. Default is \code{4}.
+#'
+#' @return
+#' If \code{level = "country"}, returns a named list containing:
+#' \itemize{
+#'   \item \code{MRT}: Minimum Risk Temperature (or value for the given parameter).
+#'   \item \code{MRT_CI}: Confidence interval for MRT based on predicted RR.
+#'   \item \code{High_pt_Range}: Range of values where RR > threshold.
+#'   \item \code{Attributable_Risk_Number}: Number of cases attributable to exposure above threshold.
+#'   \item \code{Attributable_Risk_Fraction}: Fraction (%) of cases attributable.
+#' }
+#' If \code{level = "Region"} (or similar finer levels), returns a \code{data.frame} with the following columns:
+#' \itemize{
+#'   \item \code{Region}, \code{Year}
+#'   \item \code{MRT}, \code{High_Temperature_Lower}, \code{High_Temperature_Upper}
+#'   \item \code{Attributable_Risk_Number}, \code{Attributable_Risk_Fraction}
+#' }
 
 attribution_calculation <- function(data,
                                     param_terms,
@@ -1131,10 +1211,10 @@ attribution_calculation <- function(data,
     bounds <- range(high_vals)
     ref_temp <- pred$predvar[which.min(pred$allRRfit)]
 
-    an_num <- round(attrdl(df[[param_terms]], basis, df$Diarrhea,
+    an_num <- round(attrdl(df[[param_terms]], basis, df$Malaria,
                            coef = coef[indt], vcov = vcov[indt, indt],
                            type = "an", cen = ref_temp, dir = "forw", range = bounds))
-    an_frac <- round(attrdl(df[[param_terms]], basis, df$Diarrhea,
+    an_frac <- round(attrdl(df[[param_terms]], basis, df$Malaria,
                             coef = coef[indt], vcov = vcov[indt, indt],
                             type = "af", cen = ref_temp, dir = "forw", range = bounds) * 100, 2)
     pop <- sum(df$tot_pop, na.rm = TRUE)
@@ -1164,93 +1244,99 @@ attribution_calculation <- function(data,
 }
 
 
-################################################################################
+#' Read in the Combine function for doing all the analysis once
+#'
+#' @description the function Malaria_do_analysis() combine all functions
+#' previously sated.
 
-#' Run Full Diarrhea-Climate Analysis Pipeline
-#'
-#' @description
-#' The `diarrhea_do_analysis()` function runs the complete analysis workflow
-#' by combining multiple functions to analyze the association between diarrhea
-#' cases and climate variables. It processes health, climate, and spatial data,
-#' fits models, generates plots, and calculates attributable risk.
-#'
-#' @param health_data_path Data frame containing the processed health data.
-#' @param climate_data_path Data frame containing the processed climate data.
-#' @param map_path Data frame containing the spatial map data (shapefile or equivalent).
-#' @param Region_col Character. Name of the column containing region names.
-#' @param District_col Character. Name of the column containing district names.
-#' @param Date_col Character. Name of the column containing the date. Defaults to NULL.
-#' @param Year_col Character. Name of the column containing the year.
-#' @param Month_col Character. Name of the column containing the month.
-#' @param Diarrhea_case_col Character. Name of the column containing diarrhea case counts.
-#' @param tot_pop_col Character. Name of the column containing total population.
-#' @param tmin_col Character. Name of the column containing minimum temperature.
-#' @param tmean_col Character. Name of the column containing mean temperature.
-#' @param tmax_col Character. Name of the column containing maximum temperature.
-#' @param rainfall_col Character. Name of the column containing cumulative
-#' monthly rainfall.
-#' @param r_humidity_col Character. Name of the column containing relative humidity.
-#' @param runoff_col Character. Name of the column containing monthly runoff
-#' data. Defaults to NULL.
-#' @param spi_col Character. Name of the column containing the Standardized
-#' Precipitation Index. Defaults to NULL.
-#' @param max_lag Numeric. Maximum lag to consider in the model
-#' (typically 2 to 4). Defaults to 2.
-#' @param geometry_col Character. Name of the geometry column in the shapefile
+#' @param health_data_path A data frame containing the processed health data
+#' @param climate_data_path A data frame containing the processed climate data
+#' @param map_path A data frame containing the processed map data
+#' @param Region_col Character. Name of the column in the dataframe that contains
+#' the region names.
+#' @param District_col Character. Name of the column in the dataframe that
+#' contains the region names.
+#' @param Date_col Character. Name of the column in the dataframe that contains
+#' the date. Defaults to NULL.
+#' @param Year_col Character. Name of the column in the dataframe that contains
+#' the Year.
+#' @param Month_col Character. Name of the column in the dataframe that contains
+#' the Month.
+#' @param Malaria_case_col Character. Name of the column in the dataframe
+#' that contains the Malaria cases to be considered.
+#' @param tot_pop_col Character. Name of the column in the dataframe that
+#' contains the total population.
+#' @param tmin_col Character. Name of the column in the dataframe that
+#' contains the minimum temperature data.
+#' @param tmean_col Character. Name of the column in the dataframe that
+#' contains the average temperature.
+#' @param tmax_col Character. Name of the column in the dataframe that
+#' contains the maximum temperature.
+#' @param rainfall_col Character. Name of the column in the dataframe that
+#' contains the cumulative monthly rainfall.
+#' @param r_humidity_col Character. Name of the column in the dataframe that
+#' contains the relative humidity.
+#' @param runoff_col Character. Name of the column in the dataframe that
+#' contains the monthly runoff water data. Defaults to NULL.
+#' @param cvh_col Character. Name of the column in the dataframe that
+#' contains the vegetation index. This can be the Normalized Difference
+#' Vegetation Index (NDVI). Defaults to NULL.
+#' @param spi_col Character. Name of the column in the dataframe that
+#' contains the standardized precipitation index. Defaults to NULL.
+#' @param maxlag Character. Number corresponding to the maximum lag to be
+#' considered for the delay effect. It should be between 2 an 4. Defaults to 2
+#' @param geometry_col is the Name of the geometry column in the shapefile
 #' (usually "geometry").
-#' @param basis_matrices_choices Character vector specifying basis matrix
-#' parameters to include in the model (e.g., "tmax", "tmin", "rainfall",
-#' "r_humidity", "spi"). Defaults to "tmax".
-#' @param param_terms Character vector specifying the exposure variables of interest
-#' (e.g., "tmax", "rainfall"). Defaults to "tmax".
-#' @param level Character. Spatial disaggregation level: "country", "Region", or "District".
-#' Defaults to "country".
-#' @param save_fig Logical. If TRUE, saves the generated plots. Defaults to FALSE.
-#' @param param_threshold Numeric. Exposure threshold above which risk is
-#' considered attributable. Defaults to 1. Can be a decimal value.
-#' @param year Character. The year for which the analysis is performed. Defaults to NULL.
-#' @param output_dir String. Path to the directory where outputs (e.g., plots, maps) should be saved.
-#'
-#' @return A list containing:
-#' \itemize{
-#'   \item Model output from INLA
-#'   \item Monthly random effects plot
-#'   \item Yearly random effects plot
-#'   \item Contour plot
-#'   \item Relative risk map
-#'   \item Relative risk plot
-#'   \item Attributable fraction and number summary
-#' }
+#' @param basis_matrices_choices A character vector specifying the basis matrix
+#' parameters to be included in the model. Possible values are "tmax", "tmin",
+#' "rainfall", "r_humidity", and "spi".  Default to "tmax", and users can select
+#' one or more of these parameters for inclusion in the model.
+#' @param param_terms A character vector or list containing parameter terms such
+#' as "tmax" (maximum temperature) and "rainfall" (precipitation).
+#' Default to "tmax"
+#' @param level A character vector specifying the spatial disaggregation level.
+#' Can take one of the following values: "country", "Region", or "District".
+#' Default value is "country".
+#' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
+#' FALSE.
+#' @param param_threshold Numeric. Threshold above which exposure is considered,
+#' "attributable". Default is 1. can take decimal value.
+#' @param output_dir Path to folder where the process map data should be
+#' saved.
 
-diarrhea_do_analysis <- function(health_data_path,
-                                 climate_data_path,
-                                 map_path,
-                                 Region_col,
-                                 District_col,
-                                 Date_col,
-                                 Year_col,
-                                 Month_col,
-                                 Diarrhea_case_col,
-                                 tot_pop_col,
-                                 tmin_col,
-                                 tmean_col,
-                                 tmax_col,
-                                 rainfall_col,
-                                 r_humidity_col,
-                                 runoff_col,
-                                 spi_col = NULL,
-                                 max_lag = 2,
-                                 geometry_col,
-                                 basis_matrices_choices,
-                                 param_terms,
-                                 level,
-                                 save_fig = FALSE,
-                                 param_threshold = 1,
-                                 year= NULL,
-                                 family = "poisson",
-                                 config = FALSE,
-                                 save_csv = FALSE,
-                                 output_dir = NULL){
+#' @return list of results including the monthly random effect, yearly random
+#' effect, relative risk plot the attributable number and fraction.
+
+Malaria_do_analysis <- function(health_data_path,
+                                climate_data_path,
+                                map_path,
+                                Region_col,
+                                District_col,
+                                Date_col = NULL,
+                                Year_col,
+                                Month_col,
+                                Malaria_case_col,
+                                tot_pop_col,
+                                tmin_col,
+                                tmean_col,
+                                tmax_col,
+                                rainfall_col,
+                                r_humidity_col,
+                                runoff_col = NULL,
+                                cvh_col = NULL,
+                                spi_col = NULL,
+                                max_lag = 4,
+                                geometry_col,
+                                basis_matrices_choices,
+                                param_terms,
+                                level,
+                                save_fig = FALSE,
+                                param_threshold = 1,
+                                year= NULL,
+                                family = "poisson",
+                                config = FALSE,
+                                save_csv = FALSE,
+                                output_dir = NULL){
 
   # get combined data
   combined_data <- combine_health_climate_data(health_data_path,
@@ -1261,7 +1347,7 @@ diarrhea_do_analysis <- function(health_data_path,
                                                Date_col,
                                                Year_col,
                                                Month_col,
-                                               Diarrhea_case_col,
+                                               Malaria_case_col,
                                                tot_pop_col,
                                                tmin_col,
                                                tmean_col,
@@ -1269,6 +1355,7 @@ diarrhea_do_analysis <- function(health_data_path,
                                                rainfall_col,
                                                r_humidity_col,
                                                runoff_col,
+                                               cvh_col,
                                                spi_col,
                                                max_lag,
                                                geometry_col,
@@ -1281,6 +1368,13 @@ diarrhea_do_analysis <- function(health_data_path,
 
   a <- run_inla_models(combined_data, basis_matrices_choices,output_dir = output_dir,
                        save_csv= save_csv, family = family, config =config )
+
+  #
+  timeseries_plot<- plot_health_climate_timeseries(data= combined_data$data,
+                                                   param_terms = param_terms,
+                                                   level = level ,year = year,
+                                                   save_fig = save_fig,
+                                                   output_dir = output_dir)
 
   #
   reff_plot_monthly <- plot_monthly_random_effects(combined_data, model = a$model,
@@ -1311,8 +1405,8 @@ diarrhea_do_analysis <- function(health_data_path,
                                            param_threshold = param_threshold,
                                            level = level, year=year)
 
-  res <- list(a, reff_plot_monthly, reff_plot_yearly, Contour_plot, rr_map_plot,
-              rr_plot, attr_frac_num)
+  res <- list(a,timeseries_plot, reff_plot_monthly, reff_plot_yearly,
+              Contour_plot, rr_map_plot, rr_plot, attr_frac_num)
 
   return(res)
 }
