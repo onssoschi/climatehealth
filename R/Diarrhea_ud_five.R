@@ -167,63 +167,59 @@ load_and_process_climatedata <- function(climate_data_path,
                                          tmax_col,
                                          rainfall_col,
                                          r_humidity_col,
-                                         runoff_col= NULL,
+                                         runoff_col = NULL,
                                          spi_col = NULL,
-                                         max_lag = 2){
-
+                                         max_lag = 4) {
   # Detect file extension
-  ext <- tolower(file_ext(climate_data_path))
+  ext <- tolower(tools::file_ext(climate_data_path))
 
-  # Read and rename
+  # Read file
   data <- switch(ext,
-                 "rds" = read_rds(climate_data_path),
-                 "csv" = read_csv(climate_data_path, show_col_types = FALSE),
-                 "xlsx" = read_excel(climate_data_path),
+                 "rds" = readr::read_rds(climate_data_path),
+                 "csv" = readr::read_csv(climate_data_path, show_col_types = FALSE),
+                 "xlsx" = readxl::read_excel(climate_data_path),
                  stop("Unsupported file type: must be .rds, .csv, or .xlsx")
-  )
+                 )
 
+  # Map columns to standard names, excluding NULLs
+  var_map <- list(District = District_col, Year = Year_col, Month = Month_col,
+                  tmin = tmin_col, tmean = tmean_col, tmax = tmax_col,
+                  rainfall = rainfall_col, r_humidity = r_humidity_col,
+                  runoff = runoff_col, spi = spi_col)
 
+  var_map <- var_map[!sapply(var_map, is.null)]
+  selected_cols <- as.character(var_map)
+  rename_vec <- setNames(selected_cols, names(var_map))
+
+  # Select and rename
   climate_data <- data %>%
-    select(District = District_col,
-           Year = Year_col, Month = Month_col, tmin = tmin_col, tmean = tmean_col,
-           tmax = tmax_col, rainfall = rainfall_col, r_humidity = r_humidity_col,
-           !!!(if (!is.null(spi_col))
-             rlang::set_names(list(spi_col), "spi") else NULL),
-           !!!(if (!is.null(runoff_col))
-             rlang::set_names(list(runoff_col), "runoff") else NULL)
-           )
+    dplyr::select(all_of(selected_cols)) %>%
+    dplyr::rename(!!!rename_vec)
 
-  # lagged data
-  tmin_data <- climate_data %>% select(tmin)
-  tmean_data <- climate_data %>% select(tmean)
-  tmax_data <- climate_data %>% select(tmax)
-  rf_data <- climate_data %>% select(rainfall)
-  rh_data <- climate_data %>% select(r_humidity)
-  if (!is.null(spi_col)) spi_data <- climate_data %>% select(spi)
-  if (!is.null(runoff_col)) runoff_data <- climate_data %>% select(runoff)
-
-  for (i in 1:max_lag) {
-    tmin_data[[paste0("tmin_lag", i)]] <- lag(tmin_data$tmin, n = i, default = NA)
-    tmean_data[[paste0("tmean_lag", i)]] <- lag(tmean_data$tmean, n = i, default = NA)
-    tmax_data[[paste0("tmax_lag", i)]] <- lag(tmax_data$tmax, n = i, default = NA)
-    rf_data[[paste0("rf_lag", i)]] <- lag(rf_data$rainfall, n = i, default = NA)
-    rh_data[[paste0("rh_lag", i)]] <- lag(rh_data$r_humidity, n = i, default = NA)
-    if (!is.null(spi_col))
-      spi_data[[paste0("spi_lag", i)]] <- lag(spi_data$spi, n = i, default = NA)
-    if (!is.null(runoff_col))
-      runoff_data[[paste0("runoff_lag", i)]] <- lag(runoff_data$runoff, n = i,
-                                                    default = NA)
+  # Function to create lagged variables
+  create_lags <- function(df, var, max_lag) {
+    for (i in 1:max_lag) {
+      df[[paste0(var, "_lag", i)]] <- dplyr::lag(df[[var]], i)
+    }
+    return(df)
   }
 
-  climate_data <- bind_cols(
-    climate_data %>% select(District, Year, Month),
-    tmin_data, tmean_data, tmax_data, rf_data, rh_data,
-    if (!is.null(spi_col)) spi_data else NULL,
-    if (!is.null(runoff_col)) runoff_data else NULL
-  )
+  # Determine variables to lag
+  vars_to_lag <- intersect(names(rename_vec),
+                           c("tmin", "tmean", "tmax", "rainfall",
+                             "r_humidity", "runoff", "spi"))
 
-  return(climate_data)
+  # Create lagged data
+  lagged_data <- lapply(vars_to_lag,
+                        function(var) create_lags(climate_data[var], var, max_lag))
+
+  # Bind all
+  final_data <- dplyr::bind_cols(climate_data[c("District", "Year", "Month")],
+                                 lagged_data)
+
+  return(final_data)
 }
+
 
 
 #' Read in combine climate and health data
