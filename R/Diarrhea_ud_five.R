@@ -10,24 +10,28 @@ required_packages <- c("tidyverse", "INLA", "stats", "data.table", "here",
 #-------------------------------------------------------------------------------
 
 
-#' Read in and format country Map data
+#' Read in and format country map data
 #'
-#' @description: Read in a map shape file data, rename columns and create the
+#' @description: Read in a shape file, rename columns and create the
 #' adjacency matrix for spatiotemporal analysis.
 #'
-#' @param map_path is the path to the country's map shape file "sf" data
-#' @param Region_col is the region column in the country's map shape file data
-#' @param District_col is the district column in the map data
-#' @param geometry_col is the Name of the geometry column in the shapefile
-#' (usually "geometry").
-#' @param output_dir Path to folder where the process map data should be
-#' saved.
+#' @param map_path The path to the country's shape file "sf" data.
+#' @param region_col The region column in the dataset.
+#' @param district_col The district column in the dataset.
+#' @param geometry_col The geometry column in the dataset.
+#' @param output_dir The path to output the processed map data to.
 #'
-#' @return list includes processed map, and the adjacent matrix created.
-
+#' @return
+#' \itemize{
+#'  \item 'map' The processed map
+#'  \item 'nb.map'
+#'  \item 'graph_file'
+#'  }
+#'
+#' @export
 load_and_process_map <- function(map_path,
-                                 Region_col,
-                                 District_col,
+                                 region_col,
+                                 district_col,
                                  geometry_col,
                                  output_dir = NULL){
   # Load and process map
