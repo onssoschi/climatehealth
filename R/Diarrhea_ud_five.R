@@ -77,7 +77,8 @@ load_and_process_map <- function(map_path,
 #' the total population.
 #'
 #' @return A dataframe with formatted and renamed columns.
-
+#'
+#' @export
 load_and_process_data <- function(health_data_path,
                                   region_col,
                                   district_col,
@@ -120,19 +121,19 @@ load_and_process_data <- function(health_data_path,
 
 #' Read in and format climate data
 #'
-#' @description Read in a csv file of monthly time series of climate data, rename
+#' @description Read in a monthly time series of climate data, rename
 #' columns and create lag variable for spatiotemporal and DLNM analysis. The
-#' climate data should start a Year before a start year in the health data to
+#' climate data should start a year before a start year in the health data to
 #' allow the lag variables calculation.
 #'
 #' @param climate_data_path Path to a csv file containing a monthly time series of data
 #' for climate variables, which may be disaggregated by district.
-#' @param District_col Character. Name of the column in the dataframe that
+#' @param district_col Character. Name of the column in the dataframe that
 #' contains the region names.
-#' @param Year_col Character. Name of the column in the dataframe that
+#' @param year_col Character. Name of the column in the dataframe that
 #' contains the Year.
-#' @param Month_col Character. Name of the column in the dataframe that
-#' contains the Month.
+#' @param month_col Character. Name of the column in the dataframe that
+#' contains the month.
 #' @param tmin_col Character. Name of the column in the dataframe that
 #' contains the minimum temperature data.
 #' @param tmean_col Character. Name of the column in the dataframe that
@@ -152,11 +153,12 @@ load_and_process_data <- function(health_data_path,
 #'
 #' @return climate dataframe with formatted and renamed columns, and the lag
 #' variables
-
+#'
+#' @export
 load_and_process_climatedata <- function(climate_data_path,
-                                         District_col,
-                                         Year_col,
-                                         Month_col,
+                                         district_col,
+                                         year_col,
+                                         month_col,
                                          tmin_col,
                                          tmean_col,
                                          tmax_col,
@@ -179,8 +181,8 @@ load_and_process_climatedata <- function(climate_data_path,
 
 
   climate_data <- data %>%
-    select(District = District_col,
-           Year = Year_col, Month = Month_col, tmin = tmin_col, tmean = tmean_col,
+    select(district = district_col,
+           year = year_col, month = month_col, tmin = tmin_col, tmean = tmean_col,
            tmax = tmax_col, rainfall = rainfall_col, r_humidity = r_humidity_col,
            !!!(if (!is.null(spi_col))
              rlang::set_names(list(spi_col), "spi") else NULL),
@@ -211,7 +213,7 @@ load_and_process_climatedata <- function(climate_data_path,
   }
 
   climate_data <- bind_cols(
-    climate_data %>% select(District, Year, Month),
+    climate_data %>% select(district, year, month),
     tmin_data, tmean_data, tmax_data, rf_data, rh_data,
     if (!is.null(spi_col)) spi_data else NULL,
     if (!is.null(runoff_col)) runoff_data else NULL
@@ -221,25 +223,25 @@ load_and_process_climatedata <- function(climate_data_path,
 }
 
 
-#' Read in combine climate and health data
+#' Read in and combine climate and health data
 #'
-#' @description Read in a combine climate and health data prepared for the
+#' @description Read and combine climate and health data prepared for the
 #' spatiotemporal and DLNM analysis.
 #'
 #' @param health_data_path A data frame containing the processed health data
 #' @param climate_data_path A data frame containing the processed climate data
 #' @param map_path A data frame containing the processed map data
-#' @param Region_col Character. Name of the column in the dataframe that contains
+#' @param region_col Character. Name of the column in the dataframe that contains
 #' the region names.
-#' @param District_col Character. Name of the column in the dataframe that
+#' @param district_col Character. Name of the column in the dataframe that
 #' contains the region names.
-#' @param Date_col Character. Name of the column in the dataframe that contains
+#' @param date_col Character. Name of the column in the dataframe that contains
 #' the date. Defaults to NULL.
-#' @param Year_col Character. Name of the column in the dataframe that contains
+#' @param year_col Character. Name of the column in the dataframe that contains
 #' the Year.
-#' @param Month_col Character. Name of the column in the dataframe that contains
+#' @param month_col Character. Name of the column in the dataframe that contains
 #' the Month.
-#' @param Diarrhea_case_col Character. Name of the column in the dataframe
+#' @param diarrhea_case_col Character. Name of the column in the dataframe
 #' that contains the Diarrhea cases to be considered.
 #' @param tot_pop_col Character. Name of the column in the dataframe that
 #' contains the total population.
@@ -265,16 +267,17 @@ load_and_process_climatedata <- function(climate_data_path,
 #' saved.
 #'
 #' @returns list of dataframes for the map, nb.map, data, grid_data, summary
-
+#'
+#' @export
 combine_health_climate_data <- function(health_data_path,
                                         climate_data_path,
                                         map_path,
-                                        Region_col,
-                                        District_col,
-                                        Date_col,
-                                        Year_col,
-                                        Month_col,
-                                        Diarrhea_case_col,
+                                        region_col,
+                                        district_col,
+                                        date_col,
+                                        year_col,
+                                        month_col,
+                                        diarrhea_case_col,
                                         tot_pop_col,
                                         tmin_col,
                                         tmean_col,
@@ -288,46 +291,46 @@ combine_health_climate_data <- function(health_data_path,
                                         output_dir = NULL){
 
   # Load data
-  health_data <- load_and_process_health_data(health_data_path, Region_col,
-                                              District_col,Date_col, Year_col,
-                                              Month_col, Diarrhea_case_col,
+  health_data <- load_and_process_health_data(health_data_path, region_col,
+                                              district_col, date_col, year_col,
+                                              month_col, diarrhea_case_col,
                                               tot_pop_col)
 
-  climate_data <- load_and_process_climatedata(climate_data_path, District_col,
-                                               Year_col, Month_col, tmin_col,
+  climate_data <- load_and_process_climatedata(climate_data_path, district_col,
+                                               year_col, Month_col, tmin_col,
                                                tmean_col, tmax_col, rainfall_col,
                                                r_humidity_col, runoff_col,
                                                spi_col, max_lag)
 
-  map_data <- load_and_process_map(map_path, Region_col, District_col,
+  map_data <- load_and_process_map(map_path, region_col, district_col,
                                    geometry_col, output_dir)
 
   # Merge health + climate
   data <- health_data %>%
-    left_join(climate_data, by = join_by(District, Year, Month)) %>%
+    left_join(climate_data, by = join_by(district, year, month)) %>%
     distinct() %>%
-    group_by(Region, District) %>%
-    mutate(time = (Year - min(Year)) * 12 + Month) %>%
+    group_by(region, district) %>%
+    mutate(time = (year - min(year)) * 12 + month) %>%
     ungroup()
 
   # Build grid codes
   grid_data <- data %>%
-    select(Region, District) %>%
+    select(region, district) %>%
     distinct() %>%
-    group_by(Region) %>%
+    group_by(region) %>%
     mutate(region_code = cur_group_id(),
            district_number = row_number(),
            district_code = as.integer(paste0(region_code, district_number))) %>%
     ungroup()
 
   # Attach codes
-  data <- left_join(data, grid_data, by = c("Region", "District")) %>%
+  data <- left_join(data, grid_data, by = c("region", "district")) %>%
     arrange(region_code, district_code)
 
-  map <- left_join(map_data$map, grid_data, by = c("Region", "District")) %>%
+  map <- left_join(map_data$map, grid_data, by = c("region", "district")) %>%
     arrange(region_code, district_code)
 
-  grid_data <- rename(grid_data, name = Region, Code_num = region_code)
+  grid_data <- rename(grid_data, name = region, code_num = region_code)
 
   # Summary stats
   summary_stats <- list(tmin = summary(data$tmin),
@@ -360,44 +363,45 @@ combine_health_climate_data <- function(health_data_path,
 #' @param output_dir Directory path to save the figure. Default to NULL
 #'
 #' @return A ggplot object.
-
+#'
+#' @export
 plot_health_climate_timeseries <- function(data,
                                            param_terms,
                                            level = "country",
-                                           year = NULL,
+                                           filter_year = NULL,
                                            save_fig = TRUE,
                                            output_dir = NULL) {
 
-  vars_all <- c("Diarrhea", "tmin", "tmean", "tmax", "rainfall")
+  vars_all <- c("diarrhea", "tmin", "tmean", "tmax", "rainfall")
   vars_to_plot <- if (param_terms == "all") vars_all else param_terms
 
-  if (!is.null(year)) data <- data %>% filter(Year %in% year)
+  if (!is.null(filter_year)) data <- data %>% filter(year %in% filter_year)
 
-  data <- data %>% mutate(Date = as.Date(paste(Year, Month, 1, sep = "-")))
+  data <- data %>% mutate(date = as.Date(paste(year, month, 1, sep = "-")))
 
   missing <- setdiff(vars_to_plot, names(data))
   if (length(missing)) stop("Missing columns: ", paste(missing, collapse = ", "))
 
   group_var <- switch(tolower(level),
                       country = NULL,
-                      region = "Region",
-                      district = "District",
+                      region = "region",
+                      district = "district",
                       stop("Invalid level"))
 
-  group_cols <- c("Date", group_var)
+  group_cols <- c("date", group_var)
 
   agg <- data %>%
     group_by(across(all_of(group_cols))) %>%
     summarise(across(all_of(vars_to_plot),
-                     ~ if (level == "country" && "Diarrhea" %in% cur_column()) {
-                       if (cur_column() == "Diarrhea") sum(.x, na.rm = TRUE) else mean(.x, na.rm = TRUE)
+                     ~ if (level == "country" && "diarrhea" %in% cur_column()) {
+                       if (cur_column() == "diarrhea") sum(.x, na.rm = TRUE) else mean(.x, na.rm = TRUE)
                      } else {
                        mean(.x, na.rm = TRUE)
                      }),
               .groups = "drop") %>%
     pivot_longer(cols = all_of(vars_to_plot), names_to = "variable", values_to = "value")
 
-  if (!is.null(group_var)) agg <- agg %>% rename(Group = all_of(group_var))
+  if (!is.null(group_var)) agg <- agg %>% rename(group = all_of(group_var))
 
   title_text <- if (length(vars_to_plot) == 1) {
     paste("Time Series of", vars_to_plot)
@@ -408,10 +412,10 @@ plot_health_climate_timeseries <- function(data,
   }
 
   p <- ggplot(agg, aes(x = Date, y = value)) +
-    geom_line(aes(color = if (!is.null(group_var)) Group), linewidth = 1) +
+    geom_line(aes(color = if (!is.null(group_var)) group), linewidth = 1) +
     facet_wrap(~variable, scales = "free_y", ncol = 1) +
     scale_x_date(date_breaks = "6 month", date_labels = "%Y-%m") +
-    labs(title = title_text, x = "Date", y = "Value") +
+    labs(title = title_text, x = "date", y = "Value") +
     theme_minimal() +
     theme(legend.title = element_blank(),
           axis.text.x = element_text(angle = 45, hjust = 1))
@@ -435,8 +439,8 @@ plot_health_climate_timeseries <- function(data,
 #'
 #' @return list of cross-basis matrices including the basis matrix for maximum
 #' temperature, minimun temperature, cumulative rainfall, and relative humidity.
-
-
+#'
+#' @export
 set_cross_basis <- function(data) {
 
   nlag <- ncol(dplyr::select(data, all_of(grep("^tmax_lag", names(data),
@@ -480,7 +484,8 @@ set_cross_basis <- function(data) {
 #' columns from the combine_health_climate_data() function.
 #'
 #' @returns the modified data with the created indices
-
+#'
+#' @export
 create_inla_indices <- function(data) {
 
   ntime <- length(unique(data$time))       # Total number of months
@@ -489,9 +494,9 @@ create_inla_indices <- function(data) {
   nregion <- length(unique(data$region_code))  # Total number of regions
 
   # define the offset variable based on the population data
-  overall_rate <- sum(data$Diarrhea, na.rm = TRUE) / sum(data$tot_pop, na.rm = TRUE)
+  overall_rate <- sum(data$diarrhea, na.rm = TRUE) / sum(data$tot_pop, na.rm = TRUE)
   data$E <- overall_rate * data$tot_pop # Expected counts
-  data$SIR <- data$Diarrhea / data$E  # Standardized Incidence Ratio
+  data$SIR <- data$diarrhea / data$E  # Standardized Incidence Ratio
 
   # Create district index
   data$district_index <- rep(1:ndistrict, length.out = nrow(data))  # Ensure correct length
@@ -512,7 +517,7 @@ create_inla_indices <- function(data) {
   }
 
   # Create year index (first_year is the First year in the data set, is set to 1)
-  data$year_index <- data$Year - (min(data$Year)-1)
+  data$year_index <- data$year - (min(data$year)-1)
 
   return(data)
 }
@@ -539,7 +544,8 @@ create_inla_indices <- function(data) {
 #' @param config is a Boolean flag to enable additional model configurations.
 #'
 #' @returns list of the model, the baseline_model, and the dic_table.
-
+#'
+#' @export
 run_inla_models <- function(combined_data,
                             basis_matrices_choices,
                             output_dir= NULL,
@@ -556,7 +562,7 @@ run_inla_models <- function(combined_data,
   prior <- list(prec = list(prior = "pc.prec", param = c(0.5 / 0.31, 0.01)))
 
   base_formula <- Diarrhea ~ 1 +
-    f(Month, replicate = region_index, model = "rw1", cyclic = TRUE,
+    f(month, replicate = region_index, model = "rw1", cyclic = TRUE,
       constr = TRUE, scale.model = TRUE, hyper = prior) +
     f(district_index, model = "bym2", replicate = year_index,
       graph = graph_file, scale.model = TRUE, hyper = prior)
@@ -614,7 +620,8 @@ run_inla_models <- function(combined_data,
 #' @param output_dir is the path to save model output.
 #'
 #' @return monthly random effects plot.
-
+#'
+#' @export
 plot_monthly_random_effects <- function(combined_data,
                                         save_fig = FALSE,
                                         model,
@@ -630,29 +637,29 @@ plot_monthly_random_effects <- function(combined_data,
 
   # Create data frame for monthly random effects per region
   month_effects <- data.frame(region_code = rep(unique(data$region_code), each = 12),
-                              Month = model$summary.random$Month)
+                              month = model$summary.random$month)
 
   # Merge with predefined state grid
   month_effects <- month_effects %>%
-    left_join(grid_data %>% select(-District, -district_code) %>% unique(),
+    left_join(grid_data %>% select(-district, -district_code) %>% unique(),
               by = c("region_code" = "Code_num"))
 
-  month_effects <- map %>% select(-District) %>% unique() %>%
-    left_join(month_effects, by = c("Region" = "name"))
+  month_effects <- map %>% select(-district) %>% unique() %>%
+    left_join(month_effects, by = c("region" = "name"))
 
   # Generate plot
   p <- month_effects %>%
     ggplot() +
-    geom_ribbon(aes(x = Month.ID, ymin = `Month.0.025quant`, ymax = `Month.0.975quant`),
+    geom_ribbon(aes(x = month.ID, ymin = `month.0.025quant`, ymax = `month.0.975quant`),
                 fill = "cadetblue4", alpha = 0.5) +
-    geom_line(aes(x = Month.ID, y = Month.mean), col = "cadetblue4") +
+    geom_line(aes(x = month.ID, y = month.mean), col = "cadetblue4") +
     geom_hline(yintercept = 0, linetype = "dashed", color = "grey70") +
     xlab("Month") +
     ylab("Contribution to log(DIR)") +
     scale_y_continuous() +
     scale_x_continuous(breaks = c(1,4,7,10), labels = c("Jan", "Apr", "Jul", "Oct")) +
     theme_bw() +
-    facet_wrap(~Region)
+    facet_wrap(~region)
 
   # Save plot
   if (save_fig){
@@ -674,7 +681,8 @@ plot_monthly_random_effects <- function(combined_data,
 #' @param output_dir Path to save model output
 #'
 #' @return yearly space random effect plot
-
+#'
+#' @export
 yearly_spatial_random_effect <- function(combined_data ,
                                          model,
                                          save_fig = FALSE,
@@ -688,16 +696,16 @@ yearly_spatial_random_effect <- function(combined_data ,
   grid_data <- combined_data$grid_data
   map <- combined_data$map
   ntime <- length(unique(data$time))
-  nyear <- length(unique(data$Year))
+  nyear <- length(unique(data$year))
   ndistrict <- length(unique(data$district_code))
   # Extract spatial random effects
   space <- data.table(model$summary.random$district_index)
-  space$Year <- rep(min(data$Year):max(data$Year), each = 2 * ndistrict)
+  space$Year <- rep(min(data$year):max(data$year), each = 2 * ndistrict)
   space$re <- rep(c(rep(1, ndistrict), rep(2, ndistrict)), nyear)
   space <- space[space$re == 1, ]
   space$District_code <- rep(unique(data$district_code), nyear)
   # Merge with spatial map
-  space <- left_join(map, space, by = c("district_code" = "District_code"))
+  space <- left_join(map, space, by = c("district_code" = "district_code"))
   # Plot
   space_effects <- ggplot() +
     geom_sf(data = space, aes(fill = mean), color = "black", size = 0.1) +
@@ -739,7 +747,8 @@ yearly_spatial_random_effect <- function(combined_data ,
 #'
 #' @return Dataframe containing cumulative relative risk at country, Region, or
 #' District level.
-
+#'
+#' @export
 get_predictions <- function(data,
                             param_terms,
                             model,
@@ -764,9 +773,9 @@ get_predictions <- function(data,
                        bylag = 0.25, cen = round(mean(data[[param_terms]],
                                                       na.rm = TRUE), 0))
 
-  } else if (level == "Region"){
+  } else if (tolower(level) == "region"){
     # Iterate over unique regions
-    regions <- unique(data$Region)
+    regions <- unique(data$region)
     predt <- regions %>%
       lapply(function(region){
         region_data <- subset(data, Region == region)
@@ -778,13 +787,13 @@ get_predictions <- function(data,
         return(predt)
       })
     names(predt) <- regions
-  } else if (level == "District"){
+  } else if (tolower(level) == "district"){
     # Iterate over unique districts
-    districts <- unique(data$District)
+    districts <- unique(data$district)
     predt <- districts %>%
       lapply(function(district){
         # Filter data for the current district
-        district_data <- subset(data, District == district)
+        district_data <- subset(data, district == district)
         # Extract predictions from the tmax DLNM centered on overall mean Tmax
         mean_param <- round(mean(district_data[[param_terms]], na.rm = TRUE), 0)
         predt <- crosspred(basis_matrices[[param_terms]], coef = coef[indt],
@@ -797,7 +806,7 @@ get_predictions <- function(data,
 }
 
 
-#' read in contour plot at country, Region, District level.
+#' Create contour plot at country, region or district level.
 #'
 #' @description: Generates a contour plot showing the lag exposure effect  of
 #' maximum temperature (tmax) and cumulative rainfall on diarrhea cases.
@@ -814,22 +823,23 @@ get_predictions <- function(data,
 #' @param output_dir Path to save model output. Default to NULL
 #'
 #' @return contour plot at country, Region and District level
-
+#'
+#' @export
 contour_plot <- function(data,
                          param_terms,
                          model,
                          level,
-                         year = NULL,
+                         filter_year = NULL,
                          save_fig = FALSE,
                          output_dir = NULL) {
 
   if (save_fig && is.null(output_dir)) {
-    stop("output_dir must be provided if save_fig = TRUE")
+    stop("'output_dir' must be provided if save_fig = TRUE")
   }
 
-  if (!is.null(year)) {
-    if (!"Year" %in% names(data)) stop("'Year' column not found in data.")
-    data <- filter(data, Year %in% year)
+  if (!is.null(filter_year)) {
+    if (!"year" %in% names(data)) stop("'year' column not found in data.")
+    data <- filter(data, year %in% filter_year)
   }
 
   data <- create_inla_indices(data)
@@ -865,15 +875,15 @@ contour_plot <- function(data,
     output_file <- file.path(
       output_dir,
       paste0("contour_plot_", param_terms, "_", level,
-             if (!is.null(year)) paste0("_", paste(year, collapse = "_")), ".pdf")
+             if (!is.null(filter_year)) paste0("_", paste(filter_year, collapse = "_")), ".pdf")
     )
     pdf(output_file, width = 8, height = 8)
   }
 
-  if (level == "country") {
+  if (tolower(level) == "country") {
     plot_contour(lag_seq, predt$predvar, t(predt$matRRfit), title = "Contour Plot for Country")
   } else {
-    groups <- if (level == "Region") unique(data$Region) else unique(data$District)
+    groups <- if (tolower(level) == "region") unique(data$region) else unique(data$district)
     for (grp in groups) {
       plot_contour(lag_seq, predt[[grp]]$predvar, t(predt[[grp]]$matRRfit),
                    title = paste("Contour Plot for", grp))
@@ -907,12 +917,13 @@ contour_plot <- function(data,
 #' Defaults to FALSE.
 #'
 #' @return relative risk map at District level.
-
+#'
+#' @export
 plot_rr_map <- function(combined_data,
                         model,
                         param_terms = "tmax",
                         level = "District",
-                        year = NULL,
+                        filter_year = NULL,
                         output_dir = NULL,
                         save_fig = FALSE) {
   data <- combined_data$data
@@ -923,12 +934,13 @@ plot_rr_map <- function(combined_data,
     stop("output_dir must be provided if save_fig = TRUE")
   }
 
-  years <- if (is.null(year)) sort(unique(data$Year)) else year
-  grouping_var <- ifelse(level == "District", "District", "Region")
+  leveel <- tolower(level)
+  years <- if (is.null(filter_year)) sort(unique(data$year)) else filter_year
+  grouping_var <- ifelse(level == "district", "district", "region")
 
   # Get RR data for each year
   get_rr_df <- function(yr) {
-    pred <- get_predictions(filter(data, Year == yr), param_terms, model, level)
+    pred <- get_predictions(filter(data, year == yr), param_terms, model, level)
     map_dfr(names(pred), function(name) {
       vals <- pred[[name]]
       if (anyNA(vals$allRRfit)) return(NULL)
@@ -993,21 +1005,23 @@ plot_rr_map <- function(combined_data,
 #' @param output_dir is the path where the pdf file will be saved. Default to NULL
 #'
 #' @return relative risk plot at country, Region, and District level.
-
+#'
+#' @export
 plot_relative_risk <- function(data,
                                model,
                                param_terms,
                                level = "country",
-                               year = NULL,
+                               filter_year = NULL,
                                output_dir = NULL,
                                save_fig = FALSE) {
 
-  if (!"Year" %in% names(data)) stop("'Year' column not found in data.")
-  if (is.null(year)) year <- sort(unique(data$Year))
+  if (!"year" %in% names(data)) stop("'year' column not found in data.")
+  if (is.null(filter_year)) filter_year <- sort(unique(data$year))
   if (save_fig) {
     if (is.null(output_dir)) stop("output_dir must be provided if save_fig = TRUE")
     if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
   }
+  level <- tolower(level)
 
   output_pdf <- if (save_fig)
     file.path(output_dir, paste0("RR_", param_terms, "_",
@@ -1027,7 +1041,7 @@ plot_relative_risk <- function(data,
 
   if (level == "country") {
     plots <- lapply(year, function(yr) {
-      build_plot(get_predictions(filter(data, Year == yr), param_terms,
+      build_plot(get_predictions(filter(data, year == yr), param_terms,
                                  model, level), yr)
     }) %>% Filter(Negate(is.null), .)
 
@@ -1046,7 +1060,7 @@ plot_relative_risk <- function(data,
   # Region or District
   group_plots <- list()
   for (yr in year) {
-    preds <- get_predictions(filter(data, Year == yr), param_terms, model, level)
+    preds <- get_predictions(filter(data, year == yr), param_terms, model, level)
     for (grp in names(preds)) {
       p <- build_plot(preds[[grp]], yr)
       if (!is.null(p)) group_plots[[grp]] <- c(group_plots[[grp]], list(p))
@@ -1089,26 +1103,28 @@ plot_relative_risk <- function(data,
 #' Can take one of the following values: "country", "Region", or "District".
 #' @param year A character string specifying the year for which the map should
 #' be generated. Defaults to NULL.
+#'
 #' @return results which contain the attribution number and fraction at country,
 #'  region and district level.
-
+#'
+#'  @export
 attribution_calculation <- function(data,
                                     param_terms,
                                     model,
                                     param_threshold = 1,
                                     attrdl_path = "attrdl.R",
                                     level,
-                                    year = NULL) {
+                                    filter_year = NULL) {
   source(attrdl_path)
-
+  level <- tolower(level)
   coef <- model$summary.fixed$mean
   vcov <- model$misc$lincomb.derived.covariance.matrix
   indt <- grep(paste0("basis_", param_terms), model$names.fixed)
   if (length(indt) == 0) stop("No terms for 'basis_", param_terms, "' found in model.")
 
-  if (!is.null(year)) {
-    stopifnot("Year" %in% names(data), all(year %in% unique(data$Year)))
-    data <- dplyr::filter(data, Year %in% year)
+  if (!is.null(filter_year)) {
+    stopifnot("Year" %in% names(data), all(filter_year %in% unique(data$year)))
+    data <- dplyr::filter(data, year %in% filter_year)
   }
 
   compute_metrics <- function(df) {
@@ -1126,10 +1142,10 @@ attribution_calculation <- function(data,
     bounds <- range(high_vals)
     ref_temp <- pred$predvar[which.min(pred$allRRfit)]
 
-    an_num <- round(attrdl(df[[param_terms]], basis, df$Diarrhea,
+    an_num <- round(attrdl(df[[param_terms]], basis, df$diarrhea,
                            coef = coef[indt], vcov = vcov[indt, indt],
                            type = "an", cen = ref_temp, dir = "forw", range = bounds))
-    an_frac <- round(attrdl(df[[param_terms]], basis, df$Diarrhea,
+    an_frac <- round(attrdl(df[[param_terms]], basis, df$diarrhea,
                             coef = coef[indt], vcov = vcov[indt, indt],
                             type = "af", cen = ref_temp, dir = "forw", range = bounds) * 100, 2)
     pop <- sum(df$tot_pop, na.rm = TRUE)
@@ -1153,9 +1169,9 @@ attribution_calculation <- function(data,
 
   switch(level,
          "country" = compute_metrics(data),
-         "Region" = group_and_compute(c("Region", "Year")),
-         "District" = group_and_compute(c("Region", "District", "Year")),
-         stop("Invalid level. Choose 'country', 'Region', or 'District'."))
+         "region" = group_and_compute(c("region", "year")),
+         "district" = group_and_compute(c("region", "district", "year")),
+         stop("Invalid level. Choose 'country', 'region', or 'district'."))
 }
 
 
@@ -1216,16 +1232,17 @@ attribution_calculation <- function(data,
 #'   \item Relative risk plot
 #'   \item Attributable fraction and number summary
 #' }
-
+#'
+#' @export
 diarrhea_do_analysis <- function(health_data_path,
                                  climate_data_path,
                                  map_path,
-                                 Region_col,
-                                 District_col,
-                                 Date_col,
-                                 Year_col,
-                                 Month_col,
-                                 Diarrhea_case_col,
+                                 region_col,
+                                 district_col,
+                                 date_col,
+                                 year_col,
+                                 month_col,
+                                 diarrhea_case_col,
                                  tot_pop_col,
                                  tmin_col,
                                  tmean_col,
@@ -1251,12 +1268,12 @@ diarrhea_do_analysis <- function(health_data_path,
   combined_data <- combine_health_climate_data(health_data_path,
                                                climate_data_path,
                                                map_path,
-                                               Region_col,
-                                               District_col,
-                                               Date_col,
-                                               Year_col,
-                                               Month_col,
-                                               Diarrhea_case_col,
+                                               region_col,
+                                               district_col,
+                                               date_col,
+                                               year_col,
+                                               month_col,
+                                               diarrhea_case_col,
                                                tot_pop_col,
                                                tmin_col,
                                                tmean_col,
@@ -1274,37 +1291,70 @@ diarrhea_do_analysis <- function(health_data_path,
 
   # fitting the model
 
-  a <- run_inla_models(combined_data, basis_matrices_choices,output_dir = output_dir,
-                       save_csv= save_csv, family = family, config =config )
+  a <- run_inla_models(
+    combined_data,
+    basis_matrices_choices,
+    output_dir=output_dir,
+    save_csv=save_csv,
+    family=family,
+    config=config
+  )
 
   #
-  reff_plot_monthly <- plot_monthly_random_effects(combined_data, model = a$model,
-                                                   output_dir = output_dir)
+  reff_plot_monthly <- plot_monthly_random_effects(
+    combined_data,
+    model=a$model,
+    output_dir=output_dir
+  )
 
   #
-  reff_plot_yearly <- yearly_spatial_random_effect(combined_data, model = a$model,
-                                                   output_dir = output_dir)
+  reff_plot_yearly <- yearly_spatial_random_effect(
+    combined_data,
+    model=a$model,
+    output_dir=output_dir
+  )
 
   # contour plots
-  Contour_plot <- contour_plot(combined_data$data, param_terms, model=a$model,
-                               level = level, output_dir = output_dir,
-                               save_fig=save_fig, year=year)
+  Contour_plot <- contour_plot(
+    combined_data$data,
+    param_terms,
+    model=a$model,
+    level=level,
+    output_dir=output_dir,
+    save_fig=save_fig,
+    year=year
+  )
+
   # rr map plots
-  rr_map_plot <- plot_rr_map(combined_data, param_terms, model=a$model,
-                             level = "District", year=year, output_dir = output_dir,
-                             save_fig=save_fig)
+  rr_map_plot <- plot_rr_map(
+    combined_data,
+    param_terms,
+    model=a$model,
+    evel = "district",
+    year=year,
+    output_dir=output_dir,
+    save_fig=save_fig
+  )
 
   # relative ristk plot
-  rr_plot <- plot_relative_risk(combined_data$data, param_terms = param_terms,
-                                model = a$model,level = level, year=year,
-                                output_dir = output_dir, save_fig = save_fig)
+  rr_plot <- plot_relative_risk(
+    combined_data$data,
+    param_terms=param_terms,
+    model=a$model,
+    level=level,
+    year=year,
+    output_dir=output_dir,
+    save_fig=save_fig
+  )
 
   # attribution fraction and number
-  attr_frac_num <- attribution_calculation(combined_data$data,
-                                           param_terms = param_terms,
-                                           model = a$model,
-                                           param_threshold = param_threshold,
-                                           level = level, year=year)
+  attr_frac_num <- attribution_calculation(
+    combined_data$data,
+    param_terms=param_terms,
+    model=a$model,
+    param_threshold=param_threshold,
+    level=level,
+    year=year)
 
   res <- list(a, reff_plot_monthly, reff_plot_yearly, Contour_plot, rr_map_plot,
               rr_plot, attr_frac_num)
