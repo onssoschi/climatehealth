@@ -1,14 +1,5 @@
-#-------------------------------------------------------------------------------
-#' @title R-code for Diarrhea disease cases attributable to extreme precipitation
+#' R-code for Diarrhea disease cases attributable to extreme precipitation
 #' and extreme temperature
-#'
-#' You will need to load the following package under R for the code to work:
-#'
-required_packages <- c("tidyverse", "INLA", "stats", "data.table", "here",
-"sf", "sp", "spdep", "dlnm", "tsModel", "hydroGOF", "RColorBrewer", "openxlsx",
- "readxl", "splines", "geofacet", "patchwork", "tools")
-#-------------------------------------------------------------------------------
-
 
 #' Read in and format country map data
 #'
@@ -36,8 +27,8 @@ load_and_process_map <- function(map_path,
                                  output_dir = NULL){
   # Load and process map
   map <- read_sf(map_path) %>%
-    select(Region = !!sym(Region_col),
-           District = !!sym(District_col),
+    select(region = !!sym(region_col),
+           district = !!sym(district_col),
            geometry = !!sym(geometry_col)) %>%
     mutate(geometry = st_make_valid(geometry))
 
@@ -63,24 +54,24 @@ load_and_process_map <- function(map_path,
 
 #' Read in and format health data - Diarrhea diseases case
 #'
-#' @description Read in a csv file of monthly time series of health and the
-#' population data, rename columns and create time variables for spatiotemporal
-#' analysis
+#' @description Reads in a csv file containing a monthly time series of health
+#' outcomes and population data. Renames columns and creates time variables for
+#' spatiotemporal analysis.
 #'
 #' @param health_data_path Path to a csv file containing a monthly time series of data
 #' for Diarrhea outcome, which may be disaggregated by sex (under five case or
 #' above five case), and by Region and District.
-#' @param Region_col Character. Name of the column in the dataframe that contains
+#' @param region_col Character. Name of the column in the dataframe that contains
 #' the region names.
-#' @param District_col Character. Name of the column in the dataframe that
-#' contains the region names.
-#' @param Date_col Character. Name of the column in the dataframe that contains
+#' @param district_col Character. Name of the column in the dataframe that
+#' contains the district names.
+#' @param date_col Character. Name of the column in the dataframe that contains
 #' the date. Defaults to NULL.
-#' @param Year_col Character. Name of the column in the dataframe that contains
-#' the Year.
-#' @param Month_col Character. Name of the column in the dataframe that contains
-#' the Month.
-#' @param Diarrhea_case_col Character. Name of the column in the dataframe
+#' @param year_col Character. Name of the column in the dataframe that contains
+#' the year.
+#' @param month_col Character. Name of the column in the dataframe that contains
+#' the month.
+#' @param diarrhea_case_col Character. Name of the column in the dataframe
 #' that contains the Diarrhea cases to be considered.
 #' @param tot_pop_col Character. Name of the column in the dataframe that contains
 #' the total population.
@@ -88,12 +79,12 @@ load_and_process_map <- function(map_path,
 #' @return A dataframe with formatted and renamed columns.
 
 load_and_process_data <- function(health_data_path,
-                                  Region_col,
-                                  District_col,
-                                  Date_col = NULL,
-                                  Year_col,
-                                  Month_col,
-                                  Diarrhea_case_col,
+                                  region_col,
+                                  district_col,
+                                  date_col = NULL,
+                                  year_col,
+                                  month_col,
+                                  diarrhea_case_col,
                                   tot_pop_col) {
   # Load health and climate data
   ext <- tolower(file_ext(health_data_path))
@@ -106,21 +97,21 @@ load_and_process_data <- function(health_data_path,
                  )
 
   # check if the column of dates exists otherwise check for year and months
-  if (!is.null(Date_col)){
-    if (!"Year" %in% names(data)){
+  if (!is.null(date_col)){
+    if (!"year" %in% names(data)){
       data  <- data %>%
-        mutate(Year = year(Date_col))
-    } else if (!"Month" %in% names(data)){
+        mutate(year = year(date_col))
+    } else if (!"month" %in% names(data)){
       data  <- data %>%
-        mutate(Month = month(Date_col))
+        mutate(month = month(date_col))
     } else {
-      stop("Neither the Date_col, Month_col and Year_col do not exist in the data.")
+      stop("Neither the date_col, month_col and year_col exist in the data.")
     }
   }
 
   data <- data %>%
-    select(Region = Region_col, District = District_col, Year, Month,
-           Diarrhea = Diarrhea_case_col,
+    select(region = region_col, district = district_col, year, month,
+           diarrhea = diarrhea_case_col,
            tot_pop = tot_pop_col
     )
   return(data)
