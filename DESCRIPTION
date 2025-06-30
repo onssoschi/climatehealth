@@ -2,11 +2,7 @@ Package: climatehealth
 Title: Package for calculating climate-health indicators
 Version: 0.0.0.9000
 Authors@R: 
-    c(person("Cerys", "Hopkins", , "Cerys.Hopkins@ons.gov.uk", role = c("aut", "cre")),
-      person("Antony", "Brown", , "Antony.Brown@ons.gov.uk", role = c("aut")),
-      person("Euan", "Soutter", , "Euan.Soutter@ons.gov.uk", role = c("aut")),
-      person("Charlie", "Browning", , "charlie.browning@ons.gov.uk", role = c("aut"))
-           )
+    c(person("Charlie", "Browning", , "charlie.browning@ons.gov.uk", role = c("aut")))
 Description: This package contains code allowing users to calculate climate-health
   indicators for an online platform using R.
 License: MIT + file LICENSE
@@ -18,9 +14,21 @@ Imports:
     dplyr,
     dlnm,
     Epi,
+    geofacet,
     gnm,
+    here,
+    hydroGOF,
     mvmeta,
+    openxlsx,
+    patchwork,
+    RColorBrewer,
+    readxl,
+    sf,
+    sp,
     splines,
+    stats,
+    tidyverse,
+    tools,
     tsModel,
     config,
     zeallot,
