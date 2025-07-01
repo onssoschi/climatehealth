@@ -1820,14 +1820,7 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
                                   lag_  = 21,
                                   lagnk_ = 3,
                                   dfseas_ = 8,
-                                  nsim__ = 1000,
-                                  descriptive_stats = FALSE,
-                                  ds_correlation_method = "pearson",
-                                  ds_dist_columns = c(),
-                                  ds_ma_days = 100,
-                                  ds_ma_sides = 2,
-                                  ds_ma_columns = c()
-) {
+                                  nsim__ = 1000) {
   varper_ <- c(10, 75, 90)
   print(output_folder_path_)
   c(df_list_) %<-%
@@ -1842,6 +1835,7 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
       RR_distribution_length = RR_distribution_length_
     )
 
+<<<<<<< HEAD
   # descriptive stats
   if (descriptive_stats==TRUE) {
     common_descriptive_stats(
@@ -1859,6 +1853,8 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
     )
   }
 
+=======
+>>>>>>> dev
   c(coef_, vcov_, cb_, model_) %<-%
     run_model(df_list = df_list_,
               independent_cols = independent_cols_,
