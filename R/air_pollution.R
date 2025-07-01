@@ -2,11 +2,15 @@
 #' @title R-code for I1: All-cause mortality attributable to Outdoor PM2.5.
 #-------------------------------------------------------------------------------
 
-
-# # Load required libraries
-#
-# library(tidyverse), library(dlnm), library(splines), library(metafor), library(lubridate)
-# library(gridExtra), library(mgcv), library(tools), library(patchwork)
+library(tidyverse)
+library(dlnm)
+library(splines)
+library(metafor)
+library(lubridate)
+library(gridExtra)
+library(mgcv)
+library(tools)
+library(patchwork)
 
 
 #' Read in climate, environmental and Health data and rename columns
@@ -40,18 +44,18 @@
 #' @return Dataframe with formatted and renamed with standardized column names.
 #' 
 #' @export
-load_pollution_data <- function(data_path,
-                                date_col = "date",
-                                region_col = "province", 
-                                pm25_col = "pm25",
-                                deaths_col = "deaths",
-                                humidity_col = "humidity",
-                                precipitation_col = "precipitation",
-                                tmax_col = "tmax",
-                                population_col = NULL, 
-                                age_col = NULL,
-                                sex_col = NULL,
-                                urbanisation_col = NULL) {
+load_air_pollution_data <- function(data_path,
+                                    date_col = "date",
+                                    region_col = "province", 
+                                    pm25_col = "pm25",
+                                    deaths_col = "deaths",
+                                    humidity_col = "humidity",
+                                    precipitation_col = "precipitation",
+                                    tmax_col = "tmax",
+                                    population_col = NULL, 
+                                    age_col = NULL,
+                                    sex_col = NULL,
+                                    urbanisation_col = NULL) {
   
   data <- if(is.character(data_path)) read.csv(data_path) else data_path
   
@@ -142,8 +146,8 @@ load_pollution_data <- function(data_path,
 #' @return Dataframe with added columns for lagged PM2.5 concentration.
 #' 
 #' @export
-create_lags <- function(data, 
-                        max_lag = 2) {
+create_air_pollution_lags <- function(data, 
+                                      max_lag = 2) {
   
   data_with_lags <- data %>%
     group_by(region) %>%
@@ -186,11 +190,11 @@ create_lags <- function(data,
 #' @returns Prints summary statistics and a histogram of the outcome variable
 #'
 #' @export
-descriptive_stats <- function(data,
-                              variables,
-                              bin_width = 1,
-                              output_dir = NULL,
-                              save_outputs = FALSE) {
+air_pollution_descriptive_stats <- function(data,
+                                            variables,
+                                            bin_width = 1,
+                                            output_dir = NULL,
+                                            save_outputs = FALSE) {
   
   # Display histogram
   graphics::hist(data$deaths,
@@ -255,13 +259,13 @@ descriptive_stats <- function(data,
 #' @returns Prints a ggplot2 scatterplot of x versus y
 #'
 #' @export
-plot_variables <- function(data, 
-                           xvar, 
-                           yvar,
-                           output_dir = NULL,
-                           save_plot = FALSE) {
+plot_air_pollution_variables <- function(data, 
+                                         xvar, 
+                                         yvar,
+                                         output_dir = NULL,
+                                         save_plot = FALSE) {
   
-  p <- ggplot2::ggplot(data = data, ggplot2::aes(x = {{xvar}}, y = {{yvar}})) +
+  p <- ggplot2::ggplot(data = data, ggplot2::aes(x = .data[[xvar]], y = .data[[yvar]])) +
     ggplot2::geom_point() +
     ggplot2::geom_smooth() +
     ggplot2::theme_bw()
@@ -270,7 +274,7 @@ plot_variables <- function(data,
   
   if (save_plot && !is.null(output_dir)) {
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-    filename <- paste0(deparse(substitute(xvar)), "_vs_", deparse(substitute(yvar)), ".png")
+    filename <- paste0(xvar, "_vs_", yvar, ".png")
     ggplot2::ggsave(file.path(output_dir, filename), p, width = 8, height = 6, dpi = 150)
     cat("Plot saved to:", file.path(output_dir, filename), "\n")
   }
@@ -297,9 +301,9 @@ plot_variables <- function(data,
 #' @return GAM model object or NULL if failed
 #' 
 #' @export
-fit_gam_model <- function(data, 
-                          var_name = "pm25", 
-                          family = "quasipoisson") {
+fit_air_pollution_gam <- function(data, 
+                                  var_name = "pm25", 
+                                  family = "quasipoisson") {
   
   if(nrow(data) < 500) {
     warning("Insufficient data: only ", nrow(data), " observations")
@@ -331,8 +335,8 @@ fit_gam_model <- function(data,
 #' @return List with coefficient and standard error.
 #' 
 #' @export
-extract_coef_se <- function(model, 
-                            var_name = "pm25") {
+extract_air_pollution_coef <- function(model, 
+                                       var_name = "pm25") {
   
   if(is.null(model)) {
     return(list(coef = NA, se = NA))
@@ -368,9 +372,9 @@ extract_coef_se <- function(model,
 #' @return List with meta-analysis results including AF and AN
 #' 
 #' @export
-meta_analysis_with_af <- function(data, 
-                                  var_name = "pm25", 
-                                  family = "quasipoisson") {
+air_pollution_meta_analysis <- function(data, 
+                                        var_name = "pm25", 
+                                        family = "quasipoisson") {
   
   cat("Stage 1: Fitting regional models...\n")
   
@@ -382,7 +386,7 @@ meta_analysis_with_af <- function(data,
       total_deaths = map_dbl(data, ~sum(.x$deaths, na.rm = TRUE)),
       model = map2(data, region, ~{
         cat("  Fitting:", .y, "\n")
-        fit_gam_model(.x, var_name, family)
+        fit_air_pollution_gam(.x, var_name, family)
       })
     ) %>%
     ungroup()
@@ -390,7 +394,7 @@ meta_analysis_with_af <- function(data,
   cat("Extracting coefficients and se, and calculating AF/AN...\n")
   region_results <- region_results %>%
     mutate(
-      coef_results = map(model, ~extract_coef_se(.x, var_name)),
+      coef_results = map(model, ~extract_air_pollution_coef(.x, var_name)),
       coef_pm25 = map_dbl(coef_results, ~.x$coef),
       se_pm25 = map_dbl(coef_results, ~.x$se),
       
@@ -448,9 +452,9 @@ meta_analysis_with_af <- function(data,
 #' @return Dataframe with lag-specific results including AF and AN
 #' 
 #' @export
-analyze_lags_with_af <- function(data, 
-                                 max_lag = 2, 
-                                 family = "quasipoisson") {
+analyze_air_pollution_lags <- function(data, 
+                                       max_lag = 2, 
+                                       family = "quasipoisson") {
   
   lag_vars <- c("pm25", paste0("pm25_lag", 1:max_lag), paste0("pm25_lag0_", max_lag))
   lag_labels <- c("Lag 0", paste0("Lag ", 1:max_lag), paste0("Lag 0–", max_lag))
@@ -458,7 +462,7 @@ analyze_lags_with_af <- function(data,
   map2_dfr(lag_vars, lag_labels, ~{
     cat("Analyzing", .y, "...\n")
     result <- tryCatch({
-      meta_analysis_with_af(data, .x, family)
+      air_pollution_meta_analysis(data, .x, family)
     }, error = function(e) {
       warning("Failed to analyze ", .y, ": ", e$message)
       return(NULL)
@@ -504,15 +508,15 @@ analyze_lags_with_af <- function(data,
 #' @return NULL (saves plot to file)
 #' 
 #' @export
-save_plot <- function(plot_object,
-                      output_dir,
-                      filename,
-                      width_per_panel = 4,
-                      height_per_panel = 4,
-                      grid_dims = NULL,
-                      dpi = 150,
-                      single_plot_width = 10,
-                      single_plot_height = 8) {
+save_air_pollution_plot <- function(plot_object,
+                                    output_dir,
+                                    filename,
+                                    width_per_panel = 4,
+                                    height_per_panel = 4,
+                                    grid_dims = NULL,
+                                    dpi = 150,
+                                    single_plot_width = 10,
+                                    single_plot_height = 8) {
   
   # Create output directory
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
@@ -552,16 +556,15 @@ save_plot <- function(plot_object,
 #' @return ggplot object
 #' 
 #' @export
-plot_forest_with_af <- function(meta_results, 
-                                title = "PM2.5 Effects by Region",
-                                output_dir = NULL,
-                                save_plot = FALSE) {
+plot_air_pollution_forest <- function(meta_results, 
+                                      title = "PM2.5 Effects by Region",
+                                      output_dir = NULL,
+                                      save_plot = FALSE) {
   
   region_data <- meta_results$region_results %>%
     select(region, rr_10ug, ci_lower, ci_upper, af_10ug, an_10ug) %>%
     mutate(type = "Region",
-           label = sprintf("RR: %.3f (AF: %.1f%%, AN: %.0f)", 
-                           rr_10ug, af_10ug * 100, an_10ug))
+           label = sprintf("RR: %.3f", rr_10ug))
   
   overall_data <- data.frame(
     region = "Overall",
@@ -571,10 +574,7 @@ plot_forest_with_af <- function(meta_results,
     af_10ug = meta_results$overall_af,
     an_10ug = meta_results$overall_an,
     type = "Overall",
-    label = sprintf("RR: %.3f (AF: %.1f%%, AN: %.0f)", 
-                    meta_results$overall_rr, 
-                    meta_results$overall_af * 100, 
-                    meta_results$overall_an)
+    label = sprintf("RR: %.3f", meta_results$overall_rr) 
   )
   
   plot_data <- bind_rows(region_data, overall_data) %>%
@@ -606,7 +606,7 @@ plot_forest_with_af <- function(meta_results,
   
   # Use unified save_plot function
   if (save_plot && !is.null(output_dir)) {
-    save_plot(
+    save_air_pollution_plot(
       plot_object = forest_plot,
       output_dir = output_dir,
       filename = "forest_plot",
@@ -629,10 +629,10 @@ plot_forest_with_af <- function(meta_results,
 #' @return ggplot object
 #' 
 #' @export
-plot_lags_with_af <- function(lag_results, 
-                              max_lag = 2,
-                              output_dir = NULL,
-                              save_plot = FALSE) {
+plot_air_pollution_lags <- function(lag_results, 
+                                    max_lag = 2,
+                                    output_dir = NULL,
+                                    save_plot = FALSE) {
   
   lag_results_clean <- lag_results %>% filter(!is.na(rr))
   
@@ -645,13 +645,12 @@ plot_lags_with_af <- function(lag_results,
                                   levels = lag_labels)
   
   lag_results_clean <- lag_results_clean %>%
-    mutate(label = sprintf("AF: %.1f%%\nAN: %.0f", af * 100, an))
+    mutate(label = "")
   
   lag_plot <- ggplot(lag_results_clean, aes(x = lag, y = rr)) +
     geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), 
                   width = 0.2, color = "darkblue", linewidth = 0.8) +
     geom_point(size = 3, color = "blue") +
-    geom_text(aes(label = label), vjust = -2, size = 3) +
     geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
     labs(
       x = "Lag Structure", y = "Health Relative Risk",
@@ -663,7 +662,7 @@ plot_lags_with_af <- function(lag_results,
   
   # Use unified save_plot function
   if (save_plot && !is.null(output_dir)) {
-    save_plot(
+    save_air_pollution_plot(
       plot_object = lag_plot,
       output_dir = output_dir,
       filename = "lag_results",
@@ -695,7 +694,7 @@ plot_lags_with_af <- function(lag_results,
 #' Consider whether such large grids are appropriate for your visualization needs.
 #' 
 #' @export
-calculate_grid_dims <- function(n_plots) {
+calculate_air_pollution_grid_dims <- function(n_plots) {
   if (!is.numeric(n_plots) || length(n_plots) != 1) {
     stop("n_plots must be a single numeric value")
   }
@@ -739,12 +738,12 @@ calculate_grid_dims <- function(n_plots) {
 #' @return List with AF and AN
 #' 
 #' @export
-calculate_af_an_for_reference <- function(data, 
+calculate_air_pollution_af_an <- function(data, 
                                           reference = 15, 
                                           var_name = "pm25",
                                           family = "quasipoisson") {
-  model <- fit_gam_model(data, var_name, family)
-  coef_extract <- extract_coef_se(model, var_name)
+  model <- fit_air_pollution_gam(data, var_name, family)
+  coef_extract <- extract_air_pollution_coef(model, var_name)
   beta <- coef_extract$coef
   
   pm_values <- data[[var_name]]
@@ -778,10 +777,10 @@ calculate_af_an_for_reference <- function(data,
 #' @return List with region-specific and meta-analysis results including AF/AN
 #' 
 #' @export
-analyze_region_distributed_lags_with_af <- function(data, 
-                                                    reference = 15,
-                                                    max_lag = 2, 
-                                                    family = "quasipoisson") {
+analyze_air_pollution_dlm <- function(data, 
+                                      reference = 15,
+                                      max_lag = 2, 
+                                      family = "quasipoisson") {
   regions <- unique(data$region)
   all_vars <- c("pm25", paste0("pm25_lag", 1:max_lag), paste0("pm25_lag0_", max_lag))
   all_labels <- c("0", paste0("", 1:max_lag), paste0("0–", max_lag))
@@ -808,10 +807,10 @@ analyze_region_distributed_lags_with_af <- function(data,
     for (i in seq_along(all_vars)) {
       var_name <- all_vars[i]
       model <- tryCatch({
-        fit_gam_model(prov_data, var_name, family)
+        fit_air_pollution_gam(prov_data, var_name, family)
       }, error = function(e) NULL)
       if (!is.null(model)) {
-        coef_result <- extract_coef_se(model, var_name)
+        coef_result <- extract_air_pollution_coef(model, var_name)
         if (!is.na(coef_result$coef) && !is.na(coef_result$se)) {
           
           beta <- coef_result$coef
@@ -901,7 +900,7 @@ analyze_region_distributed_lags_with_af <- function(data,
 #' 
 #' @description Create distributed lag plots for national and regions
 #' 
-#' @param dlm_results Results from analyze_region_distributed_lags_with_af
+#' @param dlm_results Results from analyze_air_pollution_dlm
 #' @param output_dir String. Directory to save plots. Default to NULL
 #' @param max_lag Integer. Maximum lag days. Defuault to 2
 #' @param width_per_panel Integer. Width per panel for saving. Defuault to 2
@@ -910,11 +909,11 @@ analyze_region_distributed_lags_with_af <- function(data,
 #' @return List of ggplot objects
 #' 
 #' @export
-plot_distributed_lags_adaptive <- function(dlm_results, 
-                                           output_dir = NULL, 
-                                           max_lag = 2,
-                                           width_per_panel = 4,
-                                           height_per_panel = 4) {
+plot_air_pollution_dlm <- function(dlm_results, 
+                                   output_dir = NULL, 
+                                   max_lag = 2,
+                                   width_per_panel = 4,
+                                   height_per_panel = 4) {
   
   region_results <- dlm_results$region_results
   meta_results <- dlm_results$meta_results
@@ -931,8 +930,6 @@ plot_distributed_lags_adaptive <- function(dlm_results,
     geom_errorbar(aes(ymin = LB, ymax = UB), width = 0.2, color = "darkred") +
     geom_point(size = 2, color = "red") +
     geom_hline(yintercept = 1, linetype = "dashed", color = "red", size = 1) +
-    geom_text(aes(label = sprintf("AF: %.1f%%\nAN: %.0f", AF * 100, AN)), 
-              vjust = -1.5, size = 2.5) +
     labs(x = "Lag (days)", y = "RR", title = "Countrywide") +
     ylim(0.98, max(meta_plot_data$UB) * 1.05) +
     theme_bw() +
@@ -960,8 +957,6 @@ plot_distributed_lags_adaptive <- function(dlm_results,
       geom_errorbar(aes(ymin = LB, ymax = UB), width = 0.2, color = "darkblue") +
       geom_point(size = 2, color = "blue") +
       geom_hline(yintercept = 1, linetype = "dashed", color = "red", size = 1) +
-      geom_text(aes(label = sprintf("AF: %.1f%%\nAN: %.0f", AF * 100, AN)), 
-                vjust = -1.5, size = 2.5) +
       labs(x = "Lag (days)", y = "RR", title = prov) +
       ylim(0.98, max(prov_data$UB) * 1.05) +
       theme_bw() +
@@ -977,7 +972,7 @@ plot_distributed_lags_adaptive <- function(dlm_results,
   
   # Calculate grid and create combined plot
   n_plots <- length(plots_list)
-  grid_dims <- calculate_grid_dims(n_plots)
+  grid_dims <- calculate_air_pollution_grid_dims(n_plots)
   
   combined_plot <- gridExtra::grid.arrange(
     grobs = plots_list,
@@ -987,7 +982,7 @@ plot_distributed_lags_adaptive <- function(dlm_results,
   
   # Use unified save_plot function
   if (!is.null(output_dir)) {
-    save_plot(
+    save_air_pollution_plot(
       plot_object = combined_plot,
       output_dir = output_dir,
       filename = "distributed_lag_plots",
@@ -1035,22 +1030,22 @@ plot_distributed_lags_adaptive <- function(dlm_results,
 #' @return List containing predictions, meta model, and AF/AN values
 #' 
 #' @export
-create_exposure_response_plots_adaptive <- function(data_with_lags,
-                                                    meta_results,
-                                                    reference_pm25,
-                                                    reference_name = "Reference",
-                                                    tlag = 2,
-                                                    vardf = 3,
-                                                    dfseas = 4,
-                                                    max_ylim = 2.0,
-                                                    output_file = NULL,
-                                                    plot_width_per_panel = 4,
-                                                    plot_height_per_panel = 3.5,
-                                                    res = 150,
-                                                    include_af_an = TRUE,
-                                                    var_name = "pm25",
-                                                    max_lag = 2,
-                                                    family = "quasipoisson") {
+create_air_pollution_exposure_plots <- function(data_with_lags,
+                                                meta_results,
+                                                reference_pm25,
+                                                reference_name = "Reference",
+                                                tlag = 2,
+                                                vardf = 3,
+                                                dfseas = 4,
+                                                max_ylim = 2.0,
+                                                output_file = NULL,
+                                                plot_width_per_panel = 4,
+                                                plot_height_per_panel = 3.5,
+                                                res = 150,
+                                                include_af_an = TRUE,
+                                                var_name = "pm25",
+                                                max_lag = 2,
+                                                family = "quasipoisson") {
   
   if (!require(mixmeta, quietly = TRUE)) {
     stop("Package 'mixmeta' is required for meta-analysis")
@@ -1161,13 +1156,13 @@ create_exposure_response_plots_adaptive <- function(data_with_lags,
     prov_data <- data_with_lags %>% filter(region == prov[j])
     
     simple_model <- tryCatch({
-      fit_gam_model(prov_data, var_name, family)
+      fit_air_pollution_gam(prov_data, var_name, family)
     }, error = function(e) NULL)
     
     if (!is.null(simple_model)) {
-      coef_info <- extract_coef_se(simple_model, var_name)
+      coef_info <- extract_air_pollution_coef(simple_model, var_name)
       if (!is.na(coef_info$coef)) {
-        af_an_ref <- calculate_af_an_for_reference(prov_data, reference_pm25,
+        af_an_ref <- calculate_air_pollution_af_an(prov_data, reference_pm25,
                                                    var_name, family)
         region_af_an[[prov[j]]] <- af_an_ref
       }
@@ -1205,13 +1200,13 @@ create_exposure_response_plots_adaptive <- function(data_with_lags,
   if (!is.null(meta_results)) {
     overall_beta <- log(meta_results$overall_rr) / 10
     all_data <- data_with_lags
-    national_af_an <- calculate_af_an_for_reference(all_data, reference_pm25,
+    national_af_an <- calculate_air_pollution_af_an(all_data, reference_pm25,
                                                     var_name, family)
   }
   
   n_regions <- length(valid_rows)
   n_plots <- n_regions + 1
-  grid_dims <- calculate_grid_dims(n_plots)
+  grid_dims <- calculate_air_pollution_grid_dims(n_plots)
   
   cat("Creating", grid_dims$nrow, "x", grid_dims$ncol, "grid for", n_plots, 
       "plots\n")
@@ -1262,11 +1257,6 @@ create_exposure_response_plots_adaptive <- function(data_with_lags,
   abline(v = reference_pm25, col = "red", lty = 2, lwd = 2)
   abline(v = quantile(t1, c(0.05, 0.95)), col = grey(0.5), lty = 3, lwd = 1.5)
   
-  if (include_af_an) {
-    mtext(sprintf("AF: %.1f%%, AN: %.0f",  national_af_an$af * 100, 
-                  national_af_an$an), side = 3, line = -1.5, cex = 0.8)
-  }
-  
   predictions[["Nationwide"]] <- pred_national
   
   valid_regions <- prov[valid_rows]
@@ -1316,14 +1306,6 @@ create_exposure_response_plots_adaptive <- function(data_with_lags,
     abline(v = reference_pm25, col = "red", lty = 2, lwd = 2)
     abline(v = quantile(var1, c(0.05, 0.95)), col = grey(0.5), lty = 3, lwd = 1.5)
     
-    if (include_af_an && region_name %in% names(region_af_an)) {
-      af_an_prov <- region_af_an[[region_name]]
-      mtext(sprintf("AF: %.1f%%, AN: %.0f", 
-                    af_an_prov$af * 100, 
-                    af_an_prov$an), 
-            side = 3, line = -1.5, cex = 0.8)
-    }
-    
     predictions[[region_name]] <- cp
     rm(argvar, bvar, cp, var1)
   }
@@ -1352,21 +1334,14 @@ create_exposure_response_plots_adaptive <- function(data_with_lags,
     legend_items <- c("RR curve", "95% CI", 
                       paste0("Reference (", reference_pm25, " μg/m³)"), 
                       "5th/95th percentile")
-    if (include_af_an) {
-      legend_items <- c(legend_items, 
-                        "AF: Attributable Fraction", 
-                        "AN: Attributable Number",
-                        "(Values specific to reference level)")
-    }
     
     legend("center", 
            legend = legend_items,
-           col = c("red", rgb(0, 0, 1, 0.2), "red", grey(0.5), 
-                   "black", "black", "black"), 
-           lty = c(1, NA, 2, 3, NA, NA, NA),
-           pch = c(NA, 15, NA, NA, NA, NA, NA),
-           pt.bg = c(NA, rgb(0, 0, 1, 0.2), NA, NA, NA, NA, NA),
-           pt.cex = c(NA, 2, NA, NA, NA, NA, NA),
+           col = c("red", rgb(0, 0, 1, 0.2), "red", grey(0.5)), 
+           lty = c(1, NA, 2, 3),
+           pch = c(NA, 15, NA, NA),
+           pt.bg = c(NA, rgb(0, 0, 1, 0.2), NA, NA),
+           pt.cex = c(NA, 2, NA, NA),
            cex = 0.9,
            bg = "white",
            box.lty = 1)
@@ -1389,10 +1364,10 @@ create_exposure_response_plots_adaptive <- function(data_with_lags,
 }
 
 
-#' PM2.5 Mortality Analysis 
+#' PM2.5 Mortality Analysis with Enhanced Features
 #'
-#' @description This function performs analysis of the relationship between
-#' PM2.5 and all-cause mortality using GAM models. It includes meta-analysis, 
+#' @description This function performs comprehensive analysis of the relationship
+#' between PM2.5 and all-cause mortality using GAM models. It includes meta-analysis, 
 #' lag analysis, distributed lag modeling, and exposure-response plots with 
 #' attributable fraction (AF) and attributable number (AN) calculations for 
 #' multiple reference standards.
@@ -1433,47 +1408,47 @@ create_exposure_response_plots_adaptive <- function(data_with_lags,
 #' }
 #'
 #' @export
-pm25_analysis <- function(data_path, 
-                          date_col,
-                          region_col,
-                          pm25_col,
-                          deaths_col,
-                          humidity_col,
-                          precipitation_col,
-                          tmax_col,
-                          population_col,
-                          max_lag = 2,
-                          var_name = "pm25",
-                          family = "quasipoisson",
-                          reference = 15,
-                          output_dir = NULL,
-                          save_outputs = FALSE,
-                          include_distributed_lags = TRUE,
-                          create_plots = TRUE,
-                          reference_standards = list(
-                            list(value = 15, name = "WHO"),
-                            list(value = 50, name = "Rwanda")
-                          )) {
+air_pollution_pm25_analysis <- function(data_path, 
+                                        date_col,
+                                        region_col,
+                                        pm25_col,
+                                        deaths_col,
+                                        humidity_col,
+                                        precipitation_col,
+                                        tmax_col,
+                                        population_col,
+                                        max_lag = 2,
+                                        var_name = "pm25",
+                                        family = "quasipoisson",
+                                        reference = 15,
+                                        output_dir = NULL,
+                                        save_outputs = FALSE,
+                                        include_distributed_lags = TRUE,
+                                        create_plots = TRUE,
+                                        reference_standards = list(
+                                          list(value = 15, name = "WHO"),
+                                          list(value = 50, name = "Rwanda")
+                                        )) {
   
   cat("=== COMPREHENSIVE PM2.5 MORTALITY ANALYSIS ===\n")
   
   cat("\n--- Loading and processing data ---\n")
-  data <- load_pollution_data(data_path = data_path,
-                              date_col = date_col,
-                              region_col = region_col,
-                              pm25_col = pm25_col,
-                              deaths_col = deaths_col,
-                              humidity_col = humidity_col,
-                              precipitation_col = precipitation_col,
-                              tmax_col = tmax_col,
-                              population_col = population_col)
+  data <- load_air_pollution_data(data_path = data_path,
+                                  date_col = date_col,
+                                  region_col = region_col,
+                                  pm25_col = pm25_col,
+                                  deaths_col = deaths_col,
+                                  humidity_col = humidity_col,
+                                  precipitation_col = precipitation_col,
+                                  tmax_col = tmax_col,
+                                  population_col = population_col)
   
-  data_with_lags <- create_lags(data, max_lag)
+  data_with_lags <- create_air_pollution_lags(data, max_lag)
   
   # Display descriptive statistics
   cat("\n--- Descriptive Statistics ---\n")
   key_variables <- c(deaths_col, pm25_col, tmax_col, humidity_col, population_col)
-  desc_stats <- descriptive_stats(
+  desc_stats <- air_pollution_descriptive_stats(
     data_with_lags, 
     variables = key_variables,
     output_dir = output_dir,
@@ -1483,25 +1458,25 @@ pm25_analysis <- function(data_path,
   # Create scatterplots of key relationships
   if (save_outputs || create_plots) {
     cat("\n--- Creating scatterplots ---\n")
-    plot_variables(data_with_lags, pm25, deaths, output_dir, save_outputs)
-    plot_variables(data_with_lags, tmax, deaths, output_dir, save_outputs)
-    plot_variables(data_with_lags, humidity, deaths, output_dir, save_outputs)
-    plot_variables(data_with_lags, precipitation, deaths, output_dir, save_outputs)
+    plot_air_pollution_variables(data_with_lags, "pm25", "deaths", output_dir, save_outputs)
+    plot_air_pollution_variables(data_with_lags, "tmax", "deaths", output_dir, save_outputs)
+    plot_air_pollution_variables(data_with_lags, "humidity", "deaths", output_dir, save_outputs)
+    plot_air_pollution_variables(data_with_lags, "precipitation", "deaths", output_dir, save_outputs)
   }
   
   cat("\n--- Running meta-analysis ---\n")
-  meta_results <- meta_analysis_with_af(data_with_lags, var_name, family)
+  meta_results <- air_pollution_meta_analysis(data_with_lags, var_name, family)
   
   cat("\n--- Analyzing lag effects ---\n")
-  lag_results <- analyze_lags_with_af(data_with_lags, max_lag, family)
+  lag_results <- analyze_air_pollution_lags(data_with_lags, max_lag, family)
   
   cat("\n--- Creating basic plots ---\n")
-  forest_plot <- plot_forest_with_af(
+  forest_plot <- plot_air_pollution_forest(
     meta_results, 
     output_dir = output_dir,
     save_plot = save_outputs
   )
-  lag_plot <- plot_lags_with_af(
+  lag_plot <- plot_air_pollution_lags(
     lag_results, 
     max_lag,
     output_dir = output_dir,
@@ -1513,9 +1488,9 @@ pm25_analysis <- function(data_path,
   
   if (include_distributed_lags) {
     cat("\n--- Running distributed lag analysis ---\n")
-    dlm_results <- analyze_region_distributed_lags_with_af(data_with_lags, 
-                                                           reference, max_lag, family)
-    dlm_plots <- plot_distributed_lags_adaptive(dlm_results, output_dir, max_lag)
+    dlm_results <- analyze_air_pollution_dlm(data_with_lags, 
+                                             reference, max_lag, family)
+    dlm_plots <- plot_air_pollution_dlm(dlm_results, output_dir, max_lag)
   }
   
   exposure_response_plots <- NULL
@@ -1531,7 +1506,7 @@ pm25_analysis <- function(data_path,
       cat("\nProcessing", ref_std$name, "reference standard (", ref_std$value, 
           "μg/m³)...\n")
       
-      ref_af_an <- analyze_region_distributed_lags_with_af(
+      ref_af_an <- analyze_air_pollution_dlm(
         data_with_lags, reference = ref_std$value, max_lag, family
       )
       
@@ -1548,7 +1523,7 @@ pm25_analysis <- function(data_path,
             round(meta_summary$AN, 0), "deaths\n")
       }
       
-      plot_results <- create_exposure_response_plots_adaptive(
+      plot_results <- create_air_pollution_exposure_plots(
         data_with_lags = data_with_lags,
         meta_results = meta_results,
         reference_pm25 = ref_std$value,
