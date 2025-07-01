@@ -1835,7 +1835,6 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
       RR_distribution_length = RR_distribution_length_
     )
 
-<<<<<<< HEAD
   # descriptive stats
   if (descriptive_stats==TRUE) {
     common_descriptive_stats(
@@ -1853,8 +1852,6 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
     )
   }
 
-=======
->>>>>>> dev
   c(coef_, vcov_, cb_, model_) %<-%
     run_model(df_list = df_list_,
               independent_cols = independent_cols_,
