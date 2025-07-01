@@ -9,12 +9,14 @@ common_descriptive_stats_core(
   df,
   output_path,
   title,
+  plot_corr_matrix = F,
   correlation_method = "pearson",
+  plot_dist = F,
   dist_columns = c("temp"),
-  ma_days = 100,
-  ma_sides = 2,
   dependent_col = "dependent",
-  independent_cols = c("temp")
+  independent_cols = c("temp"),
+  plot_na_counts = F,
+  plot_scatter = F
 )
 }
 \arguments{
@@ -29,10 +31,6 @@ common_descriptive_stats_core(
 \item{correlation_method}{string. The correlation method used in ds.}
 
 \item{dist_columns}{vector. The columns to plot distributions for.}
-
-\item{ma_days}{int. The number of days to use for a moving average.}
-
-\item{ma_sides}{int. The number of sides to use for a moving average (1 or 2).}
 
 \item{dependent_col}{str. The column in the data containing the dependent var.}
 

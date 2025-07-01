@@ -6,7 +6,7 @@
 \usage{
 pair_with_health(
   climate_data,
-  health_path,
+  health_data,
   date_col,
   region_col = NULL,
   mean_temperature_col,
@@ -16,10 +16,6 @@ pair_with_health(
 \arguments{
 \item{climate_data}{Dataframe containing a daily time series of climate data,
 which may be disaggregated by region.}
-
-\item{health_path}{Path to a CSV file containing a
-daily time series of data for a particular health outcome, which may be
-disaggregated by region.}
 
 \item{date_col}{Character. Name of the column in the dataframe that contains
 the date.}
@@ -33,6 +29,10 @@ that contains the mean temperature column.}
 \item{health_outcome_col}{Character. Name of the column in the dataframe that
 contains the health outcome count column (e.g. number of deaths, hospital
 admissions)}
+
+\item{health_path}{Path to a CSV file containing a
+daily time series of data for a particular health outcome, which may be
+disaggregated by region.}
 }
 \value{
 Dataframe containing a daily time series of the joined

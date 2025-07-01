@@ -20,6 +20,7 @@ suicides_heat_do_analysis(
   save_csv = FALSE,
   descriptive_stats = FALSE,
   ds_correlation_method = "pearson",
+  ds_use_individual_dfs = TRUE,
   ds_dist_columns = c(),
   ds_ma_days = 100,
   ds_ma_sides = 2,
@@ -69,6 +70,9 @@ FALSE.}
 
 \item{ds_correlation_method}{character. The correlation method used in correlation matrices.
 Defaults to 'pearson'.}
+
+\item{ds_use_individual_dfs}{Boolean. Whether to calculate descriptive stats for each individual
+df in df_list. Default to TRUE.}
 
 \item{ds_dist_columns}{character vector. The names of columns to plot distributions for.
 Defaults to c().}
