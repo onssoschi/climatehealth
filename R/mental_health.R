@@ -17,7 +17,8 @@
 #' admissions).
 #'
 #' @returns A list of dataframes with formatted and renamed columns.
-
+#'
+#' @export
 mh_read_and_format_data <- function(data_path,
                                  date_col,
                                  region_col = NULL,
@@ -42,14 +43,17 @@ mh_read_and_format_data <- function(data_path,
     dplyr::rename(date = date_col,
                   temp = temperature_col,
                   suicides = health_outcome_col) %>%
-    dplyr::mutate(date = lubridate::ymd(date),
-                  year = as.factor(lubridate::year(date)),
+    dplyr::mutate(
+      date =
+        as.Date(date, tryFormats = c("%d/%m/%Y", "%Y-%m-%d"))
+    ) %>%
+    dplyr::mutate(year = as.factor(lubridate::year(date)),
                   month = as.factor(lubridate::month(date)),
                   dow = as.factor(lubridate::wday(date, label = TRUE)),
                   region = as.factor(region),
                   stratum = as.factor(region:year:month:dow),
                   ind = tapply(suicides, stratum, sum)[stratum])
-
+  df_test <<- df
   df_list <- aggregate_by_column(df, "region")
 
   return(df_list)
@@ -74,7 +78,8 @@ mh_read_and_format_data <- function(data_path,
 #' (see dlnm:crossbasis).
 #'
 #' @returns A list of cross-basis matrices by region
-
+#'
+#' @export
 mh_create_crossbasis <- function(data,
                               var_fun = "ns",
                               var_dof = 4,
@@ -108,7 +113,8 @@ mh_create_crossbasis <- function(data,
 #' @param cb_list List of cross_basis matrices from create_crossbasis function.
 #'
 #' @returns List containing models by region
-
+#'
+#' @export
 mh_casecrossover_dlnm <- function(data,
                                cb_list) {
 
@@ -140,7 +146,8 @@ mh_casecrossover_dlnm <- function(data,
 #' analysis.
 #'
 #' @returns A list containing predictions by region
-
+#'
+#' @export
 mh_predict <- function(data,
                        cb_list,
                        model_list) {
@@ -175,7 +182,8 @@ mh_predict <- function(data,
 #' Defaults to NULL.
 #'
 #' @returns Plots of cumulative lag exposure-response function for each region
-
+#'
+#' @export
 mh_plot_results <- function(pred_list,
                             save_fig = FALSE,
                             output_folder_path = NULL) {
@@ -225,7 +233,8 @@ mh_plot_results <- function(pred_list,
 #'
 #' @returns Dataframe containing cumulative relative risk and confidence
 #' intervals from analysis.
-
+#'
+#' @export
 produce_results <- function(pred_list) {
 
     results <- data.frame()
@@ -266,13 +275,14 @@ produce_results <- function(pred_list) {
 #' intervals from analysis.
 #' @param output_folder_path Path to folder where results should be saved.
 #' Defaults to NULL.
-
+#'
+#' @export
 mh_save_results <- function(results,
                          output_folder_path = NULL) {
 
   if (!is.null(output_folder_path)) {
 
-    climatehealth::check_file_exists(file.path(output_folder_path))
+    check_file_exists(file.path(output_folder_path))
 
     write.csv(results, file = file.path(
       output_folder_path, "suicides_results.csv"), row.names = FALSE)
@@ -318,12 +328,25 @@ mh_save_results <- function(results,
 #' FALSE.
 #' @param save_csv Boolean. Whether to save the results as a CSV. Defaults to
 #' FALSE.
+#' @param descriptive_stats Boolean. Whether to calculate descriptive stats.
+#' @param ds_correlation_method character. The correlation method used in correlation matrices.
+#' Defaults to 'pearson'.
+#' @param ds_use_individual_dfs Boolean. Whether to calculate descriptive stats for each individual
+#' df in df_list. Default to TRUE.
+#' @param ds_dist_columns character vector. The names of columns to plot distributions for.
+#' Defaults to c().
+#' @param ds_ma_days integer. How many days to use for moving average calculations.
+#' Defaults to 100.
+#' @param ds_ma_sides integer. How many sides to use for moving average calculations (1 or 2).
+#' Defaults to 2.
+#' @param ds_ma_columns character vector. The names of columns to plot moving average for.
 #' @param output_folder_path Path to folder where plots and/or CSV should be
 #' saved. Defaults to NULL.
 #'
 #' @returns Dataframe containing cumulative relative risk and confidence
 #' intervals from analysis.
-
+#'
+#' @export
 suicides_heat_do_analysis <- function(data_path,
                                       date_col,
                                       region_col = NULL,
@@ -343,6 +366,7 @@ suicides_heat_do_analysis <- function(data_path,
                              region_col = region_col,
                              temperature_col = temperature_col,
                              health_outcome_col = health_outcome_col)
+
   cb_list <- mh_create_crossbasis(data = df_list,
                                var_fun = var_fun,
                                var_dof = var_dof,
@@ -353,15 +377,16 @@ suicides_heat_do_analysis <- function(data_path,
   model_list <- mh_casecrossover_dlnm(data = df_list,
                                    cb_list = cb_list)
 
-  mh_plot_results(data = df_list,
-               cb_list = cb_list,
-               model_list = model_list,
+  pred_list <- mh_predict(data = df_list,
+                          cb_list = cb_list,
+                          model_list = model_list)
+
+
+  mh_plot_results(pred_list = pred_list,
                save_fig = save_fig,
                output_folder_path = output_folder_path)
 
-  results <- produce_results(data = df_list,
-                             cb_list = cb_list,
-                             model_list = model_list)
+  results <- produce_results(pred_list)
 
   if (save_csv == TRUE) {
 
@@ -373,6 +398,3 @@ suicides_heat_do_analysis <- function(data_path,
   return(results)
 
 }
-
-
-

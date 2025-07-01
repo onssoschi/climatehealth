@@ -61,4 +61,5 @@ Plot and write results of analysis
 }
 \examples{
 csv_output_path = "directory/sub_directory/file_name.csv"
+
 }
