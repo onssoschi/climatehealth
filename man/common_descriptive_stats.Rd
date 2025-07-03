@@ -16,6 +16,7 @@ common_descriptive_stats(
   ma_days = 100,
   ma_sides = 2,
   ma_columns = c(),
+  timeseries_col = NULL,
   dependent_col,
   independent_cols,
   plot_na_counts = F,

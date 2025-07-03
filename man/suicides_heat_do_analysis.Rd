@@ -18,13 +18,6 @@ suicides_heat_do_analysis(
   lag_days = 3,
   save_fig = FALSE,
   save_csv = FALSE,
-  descriptive_stats = FALSE,
-  ds_correlation_method = "pearson",
-  ds_use_individual_dfs = TRUE,
-  ds_dist_columns = c(),
-  ds_ma_days = 100,
-  ds_ma_sides = 2,
-  ds_ma_columns = c(),
   output_folder_path = NULL
 )
 }
@@ -66,6 +59,9 @@ FALSE.}
 \item{save_csv}{Boolean. Whether to save the results as a CSV. Defaults to
 FALSE.}
 
+\item{output_folder_path}{Path to folder where plots and/or CSV should be
+saved. Defaults to NULL.}
+
 \item{descriptive_stats}{Boolean. Whether to calculate descriptive stats.}
 
 \item{ds_correlation_method}{character. The correlation method used in correlation matrices.
@@ -84,9 +80,6 @@ Defaults to 100.}
 Defaults to 2.}
 
 \item{ds_ma_columns}{character vector. The names of columns to plot moving average for.}
-
-\item{output_folder_path}{Path to folder where plots and/or CSV should be
-saved. Defaults to NULL.}
 }
 \value{
 Dataframe containing cumulative relative risk and confidence
