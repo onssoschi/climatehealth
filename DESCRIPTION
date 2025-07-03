@@ -46,5 +46,5 @@ Imports:
     xfun,
     zeallot (>= 0.1.0)
 Suggests:
-  testthat (== 3.2.1.1),
-  patrick
+    testthat (== 3.2.1.1),
+    patrick

@@ -58,7 +58,7 @@
 #' @param sim IF SIMULATION SAMPLES SHOULD BE RETURNED. ONLY FOR tot=TRUE
 #' @param nsim NUMBER OF SIMULATION SAMPLES
 #'
-#' @return
+#' @return Attributable Numbers and Fractions
 #'
 #' @export
 attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
