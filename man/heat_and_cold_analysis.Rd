@@ -24,13 +24,7 @@ heat_and_cold_analysis(
   lag_ = 21,
   lagnk_ = 3,
   dfseas_ = 8,
-  nsim__ = 1000,
-  descriptive_stats = FALSE,
-  ds_correlation_method = "pearson",
-  ds_dist_columns = c(),
-  ds_ma_days = 100,
-  ds_ma_sides = 2,
-  ds_ma_columns = c()
+  nsim__ = 1000
 )
 }
 \arguments{
@@ -72,6 +66,15 @@ variable to include in regression (excluding temperature). Defaults to NULL.}
 
 \item{dfseas_}{Degrees of freedom for seasonality}
 
+\item{meta_analysis}{Boolean (TRUE or FALSE). Whether to include
+meta-analysis. Must be TRUE if by_region argument is FALSE.}
+
+\item{by_region}{Boolean (TRUE or FALSE). Whether to disaggregate by region.
+Must be TRUE if meta-analysis is FALSE.}
+
+\item{RR_distribution_length}{Number of years for the calculation of RR
+distribution. Set both as 'NONE' to use full range in data.}
+
 \item{descriptive_stats}{Bool. Whether or not to compute descriptive stats.
 Defaults to FALSE.}
 
@@ -88,15 +91,6 @@ Defaults to 100.}
 Defaults to 2.}
 
 \item{ds_ma_columns}{character vector. The names of columns to plot moving average for.}
-
-\item{meta_analysis}{Boolean (TRUE or FALSE). Whether to include
-meta-analysis. Must be TRUE if by_region argument is FALSE.}
-
-\item{by_region}{Boolean (TRUE or FALSE). Whether to disaggregate by region.
-Must be TRUE if meta-analysis is FALSE.}
-
-\item{RR_distribution_length}{Number of years for the calculation of RR
-distribution. Set both as 'NONE' to use full range in data.}
 }
 \value{
 \itemize{
