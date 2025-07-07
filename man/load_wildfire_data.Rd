@@ -9,10 +9,11 @@ load_wildfire_data(
   join_wildfire_data,
   ncdf_path,
   shp_path,
-  date_col = date_col,
+  date_col,
   region_col = NULL,
   mean_temperature_col,
-  health_outcome_col
+  health_outcome_col,
+  pm_2_5_col = NULL
 )
 }
 \arguments{
@@ -43,6 +44,9 @@ that contains the mean temperature column.}
 \item{health_outcome_col}{Character. Name of the column in the dataframe that
 contains the health outcome count column (e.g. number of deaths, hospital
 admissions)}
+
+\item{pm_2_5_col}{Character. The name of the column containing PM2.5 values
+in micrograms. Thsi is only required if health data isn't joined. Defaults to NULL.}
 }
 \value{
 Dataframe containing a daily time series of
