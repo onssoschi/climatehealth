@@ -9,12 +9,12 @@
 #' @param output_year The output year. Defaults to 0.
 #'
 #' @return The filtered dataframe.
-#' @export
 #'
+#' @export
 filter_on_rr_distribution <- function(df,
                                       RR_distribution_length = 0,
                                       lower_range = 5,
-                                      upper_range = 15,
+                                      upper_range = 200,
                                       output_year = 0) {
   # Set the output year if the user has not passed one.
   if (output_year == 0) {
@@ -63,10 +63,11 @@ filter_on_rr_distribution <- function(df,
 #' @param output_year_ Year(s) to calculate output for.
 #' @param RR_distribution_length Number of years for the calculation of RR
 #' distribution. Set both as 'NONE' to use full range in data.
+#'
 #' @return `df_list` An alphabetically-ordered list of dataframes for each
 #' region comprising dates, deaths, and temperatures.
+#'
 #' @export
-
 load_temperature_data <- function(input_csv_path,
                                   dependent_col,
                                   time_col,
@@ -130,12 +131,14 @@ load_temperature_data <- function(input_csv_path,
 #' @param lagnk Number of knots in lag function
 #' (see dlnm::logknots)
 #' @param dfseas Degrees of freedom for seasonality
+#'
 #' @return
 #' \itemize{
 #'   \item `model` A quasi-poission generalised linear model object.
 #'   See: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/glm
 #'   \item `cb` Basis matrices for the two dimensions of predictor and lags.
 #'   }
+#'
 #' @export
 define_model <- function(dataset,
                          independent_cols = NULL,
@@ -225,6 +228,7 @@ define_model <- function(dataset,
 #' @param lagnk Number of knots in lag function
 #' (see dlnm::logknots)
 #' @param dfseas Degrees of freedom for seasonality
+#'
 #' @return
 #' \itemize{
 #'   \item `coef_` A matrix of coefficients for reduced model.
@@ -233,6 +237,7 @@ define_model <- function(dataset,
 #'   \item `model` A quasi-poission generalised linear model object.
 #'   See: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/glm
 #'   }
+#'
 #' @export
 run_model <- function(df_list,
                       independent_cols = NULL,
@@ -386,6 +391,7 @@ fwald <- function(model, var) {
 #'
 #' @return P-values for average and range of temperatures
 #' (avgtmean_wald, rangetmean_wald).
+#'
 #' @export
 wald_results <- function(mv) {
 
@@ -569,7 +575,7 @@ calculate_min_mortality_temp <-  function(df_list,
     }
 
   }
-
+  # calculate percentiles
   per <- t(sapply(df_list, function(x)
     quantile(x$temp, c(2.5, 97.5) / 100, na.rm = TRUE)))
 
@@ -591,6 +597,7 @@ calculate_min_mortality_temp <-  function(df_list,
 
   # Country-specific points of minimum mortality
   (minperccountry <- median(minpercregions_))
+
 
   return(list(mintempregions = mintempregions_, an_thresholds))
 
@@ -637,6 +644,7 @@ calculate_min_mortality_temp <-  function(df_list,
 #'    \item `attrdl_yr_all` a dataframe containing attributable deaths by year
 #'    for each region.
 #' }
+#'
 #' @export
 compute_attributable_deaths <- function(df_list,
                                         output_year,
@@ -955,10 +963,7 @@ compute_attributable_deaths <- function(df_list,
 #'  Used to derive confidence intervals.
 #' @param matsim A matrix (numeric). Total (glob),
 #' cold and heat-attributable deaths per region from reduced coefficients.
-#'
-#' @export
-#'
-#'
+
 #' @return
 #' \itemize{
 #'   \item `anregions_bind`
@@ -966,6 +971,8 @@ compute_attributable_deaths <- function(df_list,
 #'   \item `arregions_bind`
 #'   \item `artot_bind`
 #' }
+#'
+#' @export
 compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 
   ###################################################
@@ -1053,9 +1060,6 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 #'  (with confidence intervals).
 #' @param output_folder_path Path to folder for storing outputs.
 #'
-#' @export
-#'
-#'
 #' @return
 #' \itemize{
 #'   \item `wald_publication` A dataframe containing the Wald statistic P-values
@@ -1071,7 +1075,10 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 #'   attributable to temperature, heat, cold, extreme heat and extreme cold
 #'   (with confidence intervals).
 #' }
+#'
 #' @examples output_folder_path = 'myfolder/output/'
+#'
+#' @export
 write_attributable_deaths <- function(avgtmean_wald,
                                       rangetmean_wald,
                                       anregions_bind,
@@ -1186,8 +1193,6 @@ write_attributable_deaths <- function(avgtmean_wald,
 #' @param dependent_col the column name of the
 #' dependent variable of interest e.g. deaths
 #'
-#' @export
-#'
 #' @return
 #' \itemize{
 #'
@@ -1200,6 +1205,7 @@ write_attributable_deaths <- function(avgtmean_wald,
 #'   region.
 #' }
 #'
+#' @export
 plot_and_write <- function(
     df_list,
     output_name,
@@ -1237,6 +1243,9 @@ plot_and_write <- function(
   # create pdf object
   if (save_fig == TRUE) {
     grid <- create_grid(length(df_list))
+    if (aggregate_outputs) {
+      grid <- c(1, 1)
+    }
     pdf(paste(pdf_output_path, sep = ''),
         width=grid[1]*4, height=grid[2]*4)
 
@@ -1306,8 +1315,6 @@ plot_and_write <- function(
 #' (see dlnm::logknots)
 #' @param dfseas Degrees of freedom for seasonality
 #'
-#' @export
-#'
 #' @return
 #' \itemize{
 #'
@@ -1321,6 +1328,8 @@ plot_and_write <- function(
 #' }
 #'
 #' @examples csv_output_path = "directory/sub_directory/file_name.csv"
+#'
+#' @export
 plot_and_write_relative_risk <- function(df_list,
                                          blup = NULL,
                                          mintempregions,
@@ -1555,7 +1564,6 @@ plot_and_write_relative_risk <- function(df_list,
 #' @param vardegree Degrees of freedom in exposure function
 #' (see dlnm:crossbasis)
 #'
-#' @export
 #' @return
 #' \itemize{
 #'
@@ -1567,7 +1575,10 @@ plot_and_write_relative_risk <- function(df_list,
 #'   \item `temp_df` A dataframe with daily mean exposure values for each
 #'   region.
 #' }
+#'
 #' @examples csv_output_path = "directory/sub_directory/file_name.csv"
+#'
+#' @export
 plot_and_write_relative_risk_all <- function(df_list,
                                              cb,
                                              model,
@@ -1719,8 +1730,7 @@ plot_and_write_relative_risk_all <- function(df_list,
 
 }
 
-
-#' Do full DLNM analysis
+#' Do full DLNM analysis.
 #'
 #' @description Runs a sequence of functions to carry out
 #' heat-related mortality analysis.
@@ -1740,8 +1750,7 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @param RR_distribution_length Number of years for the calculation of RR
 #' distribution. Set both as 'NONE' to use full range in data.
 #' @param output_year_ Year(s) to calculate output for.
-#' @param dependent_col_ the column name of the
-#' dependent variable of interest e.g. deaths
+#' @param dependent_col_ the column name of the  dependent variable of interest e.g. deaths
 #' @param independent_cols_ column name (or list of names) of extra independent
 #' variable to include in regression (excluding temperature). Defaults to NULL.
 #' @param time_col_ The column name of column containing dates (e.g date, year).
@@ -1757,6 +1766,17 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @param lagnk_ Number of knots in lag function
 #' (see dlnm::logknots)
 #' @param dfseas_ Degrees of freedom for seasonality
+#' @param descriptive_stats Bool. Whether or not to compute descriptive stats.
+#' Defaults to FALSE.
+#' @param ds_correlation_method character. The correlation method used in correlation matrices.
+#' Defaults to 'pearson'.
+#' @param ds_dist_columns character vector. The names of columns to plot distributions for.
+#' Defaults to c().
+#' @param ds_ma_days integer. How many days to use for moving average calculations.
+#' Defaults to 100.
+#' @param ds_ma_sides integer. How many sides to use for moving average calculations (1 or 2).
+#' Defaults to 2.
+#' @param ds_ma_columns character vector. The names of columns to plot moving average for.
 #'
 #' @return
 #' \itemize{
@@ -1800,8 +1820,7 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
                                   lag_  = 21,
                                   lagnk_ = 3,
                                   dfseas_ = 8,
-                                  nsim__ = 1000
-) {
+                                  nsim__ = 1000) {
   varper_ <- c(10, 75, 90)
 
   c(df_list_) %<-%
@@ -1860,6 +1879,14 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
       lagnk = lagnk_,
       dfseas = dfseas_
     )
+
+  if (save_csv_) {
+    thresholds_fpath <- file.path(
+      output_folder_path_,
+      "heat_and_cold_an_thresholds.csv"
+    )
+    write.csv(an_thresholds_, thresholds_fpath)
+  }
 
   c(arraysim_, matsim_) %<-%
     compute_attributable_deaths(

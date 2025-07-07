@@ -800,8 +800,18 @@ get_predictions <- function(data,
     # Iterate over unique regions
     regions <- unique(data$region)
     predt <- regions %>%
+<<<<<<< HEAD
       lapply(function(regi){
         region_data <- subset(data, region == regi)
+=======
+<<<<<<< HEAD
+      lapply(function(regi){
+        region_data <- subset(data, region == regi)
+=======
+      lapply(function(region){
+        region_data <- subset(data, Region == region)
+>>>>>>> ef6226e8d7cfa0f4e30dae7ad9ffcb4c6e94344a
+>>>>>>> dev
         # Extract predictions from the tmax DLNM centered on overall mean Tmax
         mean_param <- round(mean(region_data[[param_term]], na.rm = TRUE), 0)
         predt <- dlnm::crosspred(basis_matrices[[param_term]], coef = coef[indt],
@@ -814,9 +824,21 @@ get_predictions <- function(data,
     # Iterate over unique districts
     districts <- unique(data$district)
     predt <- districts %>%
+<<<<<<< HEAD
       lapply(function(dist){
         # Filter data for the current district
         district_data <- subset(data, district == dist)
+=======
+<<<<<<< HEAD
+      lapply(function(dist){
+        # Filter data for the current district
+        district_data <- subset(data, district == dist)
+=======
+      lapply(function(district){
+        # Filter data for the current district
+        district_data <- subset(data, district == district)
+>>>>>>> ef6226e8d7cfa0f4e30dae7ad9ffcb4c6e94344a
+>>>>>>> dev
         # Extract predictions from the tmax DLNM centered on overall mean Tmax
         mean_param <- round(mean(district_data[[param_term]], na.rm = TRUE), 0)
         predt <- dlnm::crosspred(basis_matrices[[param_term]], coef = coef[indt],
@@ -1039,15 +1061,31 @@ plot_relative_risk <- function(data,
                                output_dir = NULL,
                                save_csv = FALSE,
                                save_fig = FALSE) {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> dev
   if (!"year" %in% names(data)) stop("'year' column not found in data.")
   if (is.null(filter_year)) filter_year <- sort(unique(data$year))
   
   level <- tolower(level)
   
+<<<<<<< HEAD
+=======
+=======
+
+  if (!"year" %in% names(data)) stop("'year' column not found in data.")
+  if (is.null(filter_year)) filter_year <- sort(unique(data$year))
+>>>>>>> ef6226e8d7cfa0f4e30dae7ad9ffcb4c6e94344a
+>>>>>>> dev
   if (save_fig) {
     if (is.null(output_dir)) stop("output_dir must be provided if save_fig = TRUE")
     if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
   }
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> dev
   
   output_pdf <- if (save_fig) {
     file.path(output_dir, paste0("RR_", param_term, "_", level, "_all_plots.pdf"))
@@ -1167,6 +1205,109 @@ plot_relative_risk <- function(data,
   return(list(plots = group_plots,RR = all_predictions))
 }
 
+<<<<<<< HEAD
+=======
+=======
+  level <- tolower(level)
+
+  output_pdf <- if (save_fig)
+    file.path(output_dir, paste0("RR_", param_term, "_",
+                                 tolower(level), "_all_plots.pdf")) else NULL
+
+  if (save_csv) {
+    csv_path <- file.path(output_dir, paste0("RR_", param_term, "_by_", tolower(level), ".csv"))
+  }
+  csv_output_path <- file.path(output_dir, paste0("RR_", param_term, "_", tolower(level), "_all_plots.csv"))
+
+  build_plot <- function(pred, yr) {
+    if (anyNA(pred$allRRfit)) return(NULL)
+    ggplot2::ggplot(tibble(x = pred$predvar, y = pred$allRRfit, ymin = pred$allRRlow,
+                  ymax = pred$allRRhigh), ggplot2::aes(x, y)) +
+      ggplot2::geom_line(color = "red", linewidth = 1) +
+      ggplot2::geom_ribbon(ggplot2::aes(ymin = ymin, ymax = ymax), fill = "red", alpha = 0.3) +
+      ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "gray",
+                 linewidth = 0.5) +
+      ggplot2::labs(title = yr, x = param_term, y = "Relative Risk") +
+      ggplot2::theme_minimal() + ggplot2::theme(plot.title = ggplot2::element_text(size = 9))
+  }
+
+
+  all_predictions <- list()
+
+  if (level == "country") {
+    plots <- lapply(filter_year, function(yr) {
+      pred <- get_predictions(filter(data, year == yr), param_term, model, level)
+      all_predictions[[as.character(yr)]] <- pred
+      build_plot(pred, yr)
+    }) %>% filter(Negate(is.null), .)
+
+    if (save_fig) {
+      pdf(output_pdf, width = 14, height = 10)
+      walk(plots, print)
+      dev.off()
+    }
+
+    if (save_csv) {
+      flat_df <- bind_rows(lapply(names(all_predictions), function(yr) {
+        df <- all_predictions[[yr]]
+        tibble(year = yr, predvar = df$predvar,
+               allRRfit = df$allRRfit,
+               allRRlow = df$allRRlow,
+               allRRhigh = df$allRRhigh)
+      }))
+      write.csv(flat_df, csv_output_path, row.names = FALSE)
+    }
+
+    return(list(
+      plots = patchwork::wrap_plots(plots) + patchwork::plot_annotation(
+        title = "Exposure-Response Curves by Country",
+        subtitle = paste(param_term, "Years:", paste(filter_year, collapse = ", "))
+      ),
+      RR = all_predictions
+    )
+    )
+  }
+
+  # Region or District
+  group_plots <- list()
+  for (yr in filter_year) {
+    preds <- get_predictions(filter(data, year == yr), param_term, model, level)
+    all_predictions[[as.character(yr)]] <- preds
+    for (grp in names(preds)) {
+      p <- build_plot(preds[[grp]], yr)
+      if (!is.null(p)) group_plots[[grp]] <- c(group_plots[[grp]], list(p))
+    }
+  }
+
+  if (save_fig) {
+    pdf(output_pdf, width = 10, height = 8)
+    for (grp in names(group_plots)) {
+      print(patchwork::wrap_plots(group_plots[[grp]]) + patchwork::plot_annotation(
+        title = paste("Exposure-Response Curves:", grp),
+        subtitle = paste(param_term, "Years:", paste(filter_year, collapse = ", "))
+      ))
+    }
+    dev.off()
+  }
+
+  if (save_csv) {
+    flat_df <- bind_rows(lapply(names(all_predictions), function(yr) {
+      preds <- all_predictions[[yr]]
+      bind_rows(lapply(names(preds), function(grp) {
+        df <- preds[[grp]]
+        tibble(year = yr, group = grp, predvar = df$predvar,
+               allRRfit = df$allRRfit,
+               allRRlow = df$allRRlow,
+               allRRhigh = df$allRRhigh)
+      }))
+    }))
+    write.csv(flat_df, csv_output_path, row.names = FALSE)
+  }
+
+  return(list(plots=group_plots, RR=all_predictions))
+}
+>>>>>>> ef6226e8d7cfa0f4e30dae7ad9ffcb4c6e94344a
+>>>>>>> dev
 
 #' Attribution calculation for maximum temperature
 #'

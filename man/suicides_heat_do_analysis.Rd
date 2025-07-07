@@ -61,6 +61,25 @@ FALSE.}
 
 \item{output_folder_path}{Path to folder where plots and/or CSV should be
 saved. Defaults to NULL.}
+
+\item{descriptive_stats}{Boolean. Whether to calculate descriptive stats.}
+
+\item{ds_correlation_method}{character. The correlation method used in correlation matrices.
+Defaults to 'pearson'.}
+
+\item{ds_use_individual_dfs}{Boolean. Whether to calculate descriptive stats for each individual
+df in df_list. Default to TRUE.}
+
+\item{ds_dist_columns}{character vector. The names of columns to plot distributions for.
+Defaults to c().}
+
+\item{ds_ma_days}{integer. How many days to use for moving average calculations.
+Defaults to 100.}
+
+\item{ds_ma_sides}{integer. How many sides to use for moving average calculations (1 or 2).
+Defaults to 2.}
+
+\item{ds_ma_columns}{character vector. The names of columns to plot moving average for.}
 }
 \value{
 Dataframe containing cumulative relative risk and confidence

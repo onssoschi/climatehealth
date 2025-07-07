@@ -2,7 +2,7 @@
 % Please edit documentation in R/temperature.R
 \name{heat_and_cold_analysis}
 \alias{heat_and_cold_analysis}
-\title{Do full DLNM analysis}
+\title{Do full DLNM analysis.}
 \usage{
 heat_and_cold_analysis(
   input_csv_path_ = "NONE",
@@ -39,8 +39,7 @@ daily time series of death and temperature per region.}
 
 \item{output_year_}{Year(s) to calculate output for.}
 
-\item{dependent_col_}{the column name of the
-dependent variable of interest e.g. deaths}
+\item{dependent_col_}{the column name of the  dependent variable of interest e.g. deaths}
 
 \item{independent_cols_}{column name (or list of names) of extra independent
 variable to include in regression (excluding temperature). Defaults to NULL.}
@@ -75,6 +74,23 @@ Must be TRUE if meta-analysis is FALSE.}
 
 \item{RR_distribution_length}{Number of years for the calculation of RR
 distribution. Set both as 'NONE' to use full range in data.}
+
+\item{descriptive_stats}{Bool. Whether or not to compute descriptive stats.
+Defaults to FALSE.}
+
+\item{ds_correlation_method}{character. The correlation method used in correlation matrices.
+Defaults to 'pearson'.}
+
+\item{ds_dist_columns}{character vector. The names of columns to plot distributions for.
+Defaults to c().}
+
+\item{ds_ma_days}{integer. How many days to use for moving average calculations.
+Defaults to 100.}
+
+\item{ds_ma_sides}{integer. How many sides to use for moving average calculations (1 or 2).
+Defaults to 2.}
+
+\item{ds_ma_columns}{character vector. The names of columns to plot moving average for.}
 }
 \value{
 \itemize{
