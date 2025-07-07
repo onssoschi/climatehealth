@@ -35,12 +35,38 @@
 #   - sim: IF SIMULATION SAMPLES SHOULD BE RETURNED. ONLY FOR tot=TRUE
 #   - nsim: NUMBER OF SIMULATION SAMPLES
 ################################################################################
+
+#' FUNCTION FOR COMPUTING ATTRIBUTABLE MEASURES FROM DLNM
+#'
+#' @description
+#' A function to calculate attributable numbers and fractions derived from
+#' (c) Antonio Gasparrini 2015-2017.
+#'
+#'
+#' @param x AN EXPOSURE VECTOR OR (ONLY FOR dir="back") A MATRIX OF LAGGED EXPOSURES
+#' @param basis THE CROSS-BASIS COMPUTED FROM x
+#' @param cases THE CASES VECTOR OR (ONLY FOR dir="forw") THE MATRIX OF FUTURE CASES
+#' @param model THE FITTED MODEL
+#' @param coef COEF FOR basis IF model IS NOT PROVIDED
+#' @param vcov VCOV FOR basis IF model IS NOT PROVIDED
+#' @param model.link LINK FUNCTION IF model IS NOT PROVIDED
+#' @param type EITHER "an" OR "af" FOR ATTRIBUTABLE NUMBER OR FRACTION
+#' @param dir EITHER "back" OR "forw" FOR BACKWARD OR FORWARD PERSPECTIVES
+#' @param tot IF TRUE, THE TOTAL ATTRIBUTABLE RISK IS COMPUTED
+#' @param cen THE REFERENCE VALUE USED AS COUNTERFACTUAL SCENARIO
+#' @param range THE RANGE OF EXPOSURE. IF NULL, THE WHOLE RANGE IS USED
+#' @param sim IF SIMULATION SAMPLES SHOULD BE RETURNED. ONLY FOR tot=TRUE
+#' @param nsim NUMBER OF SIMULATION SAMPLES
+#'
+#' @return Attributable Numbers and Fractions
+#'
+#' @export
 attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
   type="af",dir="back",tot=TRUE,cen,range=NULL,sim=FALSE,nsim=5000) {
 ################################################################################
 #
   # CHECK VERSION OF THE DLNM PACKAGE
-  if(packageVersion("dlnm")<"2.2.0") 
+  if(packageVersion("dlnm")<"2.2.0")
     stop("update dlnm package to version >= 2.2.0")
 #
   # EXTRACT NAME AND CHECK type AND dir
@@ -53,7 +79,7 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
     stop("'cen' must be provided")
   if(!is.numeric(cen) && length(cen)>1L) stop("'cen' must be a numeric scalar")
   attributes(basis)$argvar$cen <- NULL
-#  
+#
   # SELECT RANGE (FORCE TO CENTERING VALUE OTHERWISE, MEANING NULL RISK)
   if(!is.null(range)) x[x<range[1]|x>range[2]] <- cen
 #
@@ -62,11 +88,11 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
   #   - CONSTANT EXPOSURES ALONG LAGS IF dir="forw"
   lag <- attr(basis,"lag")
   if(NCOL(x)==1L) {
-    at <- if(dir=="back") tsModel:::Lag(x,seq(lag[1],lag[2])) else 
+    at <- if(dir=="back") tsModel:::Lag(x,seq(lag[1],lag[2])) else
       matrix(rep(x,diff(lag)+1),length(x))
   } else {
     if(dir=="forw") stop("'x' must be a vector when dir='forw'")
-    if(ncol(at <- x)!=diff(lag)+1) 
+    if(ncol(at <- x)!=diff(lag)+1)
       stop("dimension of 'x' not compatible with 'basis'")
   }
 #
@@ -82,8 +108,8 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
     den <- sum(rowMeans(cases,na.rm=TRUE),na.rm=TRUE)
     cases <- rowMeans(cases)
   } else {
-    den <- sum(cases,na.rm=TRUE) 
-    if(dir=="forw") 
+    den <- sum(cases,na.rm=TRUE)
+    if(dir=="forw")
       cases <- rowMeans(as.matrix(tsModel:::Lag(cases,-seq(lag[1],lag[2]))))
   }
 #
@@ -111,7 +137,7 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
   # PREPARE THE ARGUMENTS FOR TH BASIS TRANSFORMATION
   predvar <- if(typebasis=="one") x else seq(NROW(at))
   predlag <- if(typebasis=="one") 0 else dlnm:::seqlag(lag)
-#  
+#
   # CREATE THE MATRIX OF TRANSFORMED CENTRED VARIABLES (DEPENDENT ON typebasis)
   if(typebasis=="cb") {
     Xpred <- dlnm:::mkXpred(typebasis,basis,at,predvar,predlag,cen)
@@ -124,18 +150,18 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
     basis <- do.call(onebasis,c(list(x=x),attr(basis,"argvar")))
     Xpredall <- dlnm:::mkXpred(typebasis,basis,x,predvar,predlag,cen)
   }
-#  
-  # CHECK DIMENSIONS  
+#
+  # CHECK DIMENSIONS
   if(length(coef)!=ncol(Xpredall))
     stop("arguments 'basis' do not match 'model' or 'coef'-'vcov'")
-  if(any(dim(vcov)!=c(length(coef),length(coef)))) 
+  if(any(dim(vcov)!=c(length(coef),length(coef))))
     stop("arguments 'coef' and 'vcov' do no match")
   if(typebasis=="one" && dir=="back")
     stop("only dir='forw' allowed for reduced estimates")
 #
 ################################################################################
 #
-  # COMPUTE AF AND AN 
+  # COMPUTE AF AND AN
   af <- 1-exp(-drop(as.matrix(Xpredall%*%coef)))
   an <- af*cases
 #
@@ -177,7 +203,7 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
   res <- if(sim) {
     if(type=="an") ansim else afsim
   } else {
-    if(type=="an") an else af    
+    if(type=="an") an else af
   }
 #
   return(res)
