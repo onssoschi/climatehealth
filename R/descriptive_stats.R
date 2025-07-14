@@ -388,7 +388,6 @@ common_descriptive_stats_api <- function(
   # Dis aggregate if needed
   df_list <- list(df)
   names(df_list) <- c("All")
-  print("aggregation_column")
   if (!is.null(aggregation_column)) {
     df_list <- aggregate_by_column(df, aggregation_column)
   }
