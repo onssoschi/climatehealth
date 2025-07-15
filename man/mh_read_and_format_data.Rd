@@ -9,7 +9,8 @@ mh_read_and_format_data(
   date_col,
   region_col = NULL,
   temperature_col,
-  health_outcome_col
+  health_outcome_col,
+  population_col
 )
 }
 \arguments{
