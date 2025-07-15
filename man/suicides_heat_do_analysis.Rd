@@ -11,13 +11,17 @@ suicides_heat_do_analysis(
   region_col = NULL,
   temperature_col,
   health_outcome_col,
-  var_fun = "ns",
-  var_dof = 4,
-  lag_fun = "ns",
-  lag_dof = 4,
-  lag_days = 3,
+  population_col,
+  var_fun = "bs",
+  var_degree = 2,
+  var_per = c(25, 50, 75),
+  lag_fun = "strata",
+  lag_breaks = 1,
+  lag_days = 2,
   save_fig = FALSE,
   save_csv = FALSE,
+  cenper = 50,
+  country = "National",
   descriptive_stats = FALSE,
   ds_correlation_method = "pearson",
   ds_use_individual_dfs = TRUE,
@@ -46,25 +50,34 @@ contains the temperature column.}
 contains the health outcome count column (e.g. number of deaths, hospital
 admissions).}
 
-\item{var_fun}{Character. Exposure function (see dlnm::crossbasis). Defaults
-to 'ns'.}
+\item{var_fun}{Character. Exposure function for argvar
+(see dlnm::crossbasis). Defaults to 'bs'.}
 
-\item{var_dof}{Integer. Degrees of freedom in exposure function
-(see dlnm:crossbasis). Defaults to 4.}
+\item{var_degree}{Integer. Degree of the piecewise polynomial for argvar
+(see dlnm:crossbasis). Defaults to 2 (quadratic).}
 
-\item{lag_fun}{Character. Exposure function (see dlnm::crossbasis). Defaults
-to 'ns'.}
+\item{var_per}{Vector. Internal knot positions for argvar
+(see dlnm::crossbasis). Defaults to c(25,50,75).}
 
-\item{lag_dof}{Integer. Degrees of freedom in exposure function
-(see dlnm:crossbasis). Defaults to 4.}
+\item{lag_fun}{Character. Exposure function for arglag
+(see dlnm::crossbasis). Defaults to 'strata'.}
 
-\item{lag_days}{Integer. Maximum lag (see dlnm:crossbasis). Defaults to 3.}
+\item{lag_breaks}{Integer. Internal cut-off point defining the strata for arglag
+(see dlnm:crossbasis). Defaults to 1.}
+
+\item{lag_days}{Integer. Maximum lag. Defaults to 2.
+(see dlnm:crossbasis).}
 
 \item{save_fig}{Boolean. Whether to save the plot as an output. Defaults to
 FALSE.}
 
 \item{save_csv}{Boolean. Whether to save the results as a CSV. Defaults to
 FALSE.}
+
+\item{cenper}{Integer. Value for the percentile in calculating the centering
+value 0-100. Defaults to 50.}
+
+\item{country}{Character. Name of country for national level estimates.}
 
 \item{descriptive_stats}{Boolean. Whether to calculate descriptive stats.}
 
