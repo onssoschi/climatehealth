@@ -13,10 +13,10 @@ library(tools)
 library(patchwork)
 
 
-#' Read in climate, environmental and Health data and rename columns
+#' Read in climate, environmental and health data and rename columns
 #'  
 #' @description Reads in a CSV file for a daily time series of climate, environmental 
-#' and health data and renames them to standard names. This function 
+#' and health data and renames them to standardised names. This function 
 #' creates year, month, day, and day of week columns derived from the date.
 #'
 #' @param data_path Path to a CSV file containing a daily time series of data.
@@ -60,48 +60,48 @@ load_air_pollution_data <- function(data_path,
   data <- if(is.character(data_path)) read.csv(data_path) else data_path
   
   if(date_col != "date" && date_col %in% names(data)) {
-    data <- data %>% rename(date = !!sym(date_col))
+    data <- data %>% rename(date = !!rlang::sym(date_col))
   }
   if(region_col != "region" && region_col %in% names(data)) {
-    data <- data %>% rename(region = !!sym(region_col))
+    data <- data %>% rename(region = !!rlang::sym(region_col))
   }
   if(pm25_col != "pm25" && pm25_col %in% names(data)) {
-    data <- data %>% rename(pm25 = !!sym(pm25_col))
+    data <- data %>% rename(pm25 = !!rlang::sym(pm25_col))
   }
   if(deaths_col != "deaths" && deaths_col %in% names(data)) {
-    data <- data %>% rename(deaths = !!sym(deaths_col))
+    data <- data %>% rename(deaths = !!rlang::sym(deaths_col))
   }
   if(humidity_col != "humidity" && humidity_col %in% names(data)) {
-    data <- data %>% rename(humidity = !!sym(humidity_col))
+    data <- data %>% rename(humidity = !!rlang::sym(humidity_col))
   }
   if(precipitation_col != "precipitation" && precipitation_col %in% names(data)) {
-    data <- data %>% rename(precipitation = !!sym(precipitation_col))
+    data <- data %>% rename(precipitation = !!rlang::sym(precipitation_col))
   }
   if(tmax_col != "tmax" && tmax_col %in% names(data)) {
-    data <- data %>% rename(tmax = !!sym(tmax_col))
+    data <- data %>% rename(tmax = !!rlang::sym(tmax_col))
   }
   
   if(!is.null(population_col) && population_col %in% names(data)) {
-    data <- data %>% rename(population = !!sym(population_col))
-  } else if(!"population" %in% names(data)) {
+    data <- data %>% rename(population = !!rlang::sym(population_col))
+  } else if(!("population" %in% names(data))) {
     data <- data %>% mutate(population = 1)
   }
   
   if(!is.null(age_col) && age_col %in% names(data)) {
-    data <- data %>% rename(age = !!sym(age_col))
-  } else if(!"age" %in% names(data)) {
+    data <- data %>% rename(age = !!rlang::sym(age_col))
+  } else if(!("age" %in% names(data))) {
     data <- data %>% mutate(age = "all")
   }
   
   if(!is.null(sex_col) && sex_col %in% names(data)) {
-    data <- data %>% rename(sex = !!sym(sex_col))
-  } else if(!"sex" %in% names(data)) {
+    data <- data %>% rename(sex = !!rlang::sym(sex_col))
+  } else if(!("sex" %in% names(data))) {
     data <- data %>% mutate(sex = "both")
   }
   
   if(!is.null(urbanisation_col) && urbanisation_col %in% names(data)) {
-    data <- data %>% rename(urbanisation = !!sym(urbanisation_col))
-  } else if(!"urbanisation" %in% names(data)) {
+    data <- data %>% rename(urbanisation = !!rlang::sym(urbanisation_col))
+  } else if(!("urbanisation" %in% names(data))) {
     data <- data %>% mutate(urbanisation = "mixed")
   }
   
