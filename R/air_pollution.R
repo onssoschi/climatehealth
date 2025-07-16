@@ -804,7 +804,6 @@ analyze_air_pollution_dlm <- function(data,
   region_results_list <- list()
   
   for (prov in regions) {
-    cat("Analyzing region:", prov, "\n")
     prov_data <- data %>% dplyr::filter(region == prov)
     total_deaths_prov <- sum(prov_data$deaths, na.rm = TRUE)
     if (nrow(prov_data) < 500) {
