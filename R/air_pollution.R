@@ -553,10 +553,10 @@ save_air_pollution_plot <- function(plot_object,
 
 #' Create forest plot with AF and AN
 #' 
-#' @param meta_results Meta-analysis results with AF/AN
+#' @param meta_results Meta-analysis results with AF/AN.
 #' @param title Character. Plot title. Defaults to "PM2.5 Effects by Region"
-#' @param output_dir Character. Directory to save plot. Defaults NULL.
-#' @param save_plot Logical. Whether to save the plot. Defaults FALSE.
+#' @param output_dir Character. Directory to save plot. Defaults to NULL.
+#' @param save_plot Logical. Whether to save the plot. Defaults to FALSE.
 #' 
 #' @return ggplot object
 #' 
@@ -565,7 +565,12 @@ plot_air_pollution_forest <- function(meta_results,
                                       title = "PM2.5 Effects by Region",
                                       output_dir = NULL,
                                       save_plot = FALSE) {
-  
+  # Param Validation
+  if (is.null(output_dir) && save_plot == TRUE) {
+    stop("Output directory must be specified if save_plot==T.")
+  }
+
+  # Plotting
   region_data <- meta_results$region_results %>%
     select(region, rr_10ug, ci_lower, ci_upper, af_10ug, an_10ug) %>%
     mutate(type = "Region",
@@ -610,7 +615,7 @@ plot_air_pollution_forest <- function(meta_results,
     theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
   
   # Use unified save_plot function
-  if (save_plot && !is.null(output_dir)) {
+  if (save_plot) {
     save_air_pollution_plot(
       plot_object = forest_plot,
       output_dir = output_dir,
@@ -626,10 +631,10 @@ plot_air_pollution_forest <- function(meta_results,
 
 #' Plot lag comparison with AF and AN
 #' 
-#' @param lag_results Lag analysis results with AF/AN
-#' @param max_lag Integer. Maximum lag days. Defaults to 2
-#' @param output_dir Character. Directory to save plot. Defaults NULL.
-#' @param save_plot Logical. Whether to save the plot. Defaults FALSE.
+#' @param lag_results Lag analysis results with AF/AN.
+#' @param max_lag Integer. Maximum lag days. Defaults to 2.
+#' @param output_dir Character. Directory to save plot. Defaults to NULL.
+#' @param save_plot Logical. Whether to save the plot. Defaults to FALSE.
 #' 
 #' @return ggplot object
 #' 
@@ -638,7 +643,11 @@ plot_air_pollution_lags <- function(lag_results,
                                     max_lag = 2,
                                     output_dir = NULL,
                                     save_plot = FALSE) {
-  
+  # Param Validation
+  if (is.null(output_dir) && save_plot == TRUE) {
+    stop("Output directory must be specified if save_plot==T.")
+  }
+
   lag_results_clean <- lag_results %>% filter(!is.na(rr))
   
   if(nrow(lag_results_clean) == 0) {
@@ -666,7 +675,7 @@ plot_air_pollution_lags <- function(lag_results,
     theme_minimal() + theme(plot.title = element_text(hjust = 0.5))
   
   # Use unified save_plot function
-  if (save_plot && !is.null(output_dir)) {
+  if (save_plot) {
     save_air_pollution_plot(
       plot_object = lag_plot,
       output_dir = output_dir,
@@ -734,11 +743,12 @@ calculate_air_pollution_grid_dims <- function(n_plots) {
 
 #' Calculate AF and AN for a specific PM2.5 reference value
 #' 
-#' @param data region-specific data
-#' @param reference Integer. PM2.5 reference value. Defaults to 15 (WHO guideline)
-#' @param var_name Character. PM2.5 variable name. Defaults to "pm25"
+#' @param data A region-specific dataset.
+#' @param reference Integer. PM2.5 reference value. Defaults to 15 
+#' (WHO guideline).
+#' @param var_name Character. PM2.5 variable name. Defaults to "pm25".
 #' @param family Character. Distribution family for GAM. Defaults to
-#' "quasipoisson"
+#' "quasipoisson".
 #' 
 #' @return List with AF and AN
 #' 
@@ -774,10 +784,12 @@ calculate_air_pollution_af_an <- function(data,
 #' Analyze region-specific distributed lag effects with AF/AN for a chosen 
 #' PM2.5 reference
 #'
-#' @param data Input data with lag variables
-#' @param reference Numeric. PM2.5 reference value (e.g., 15, 25, 50, ...)
+#' @param data Input data with lag variables.
+#' @param reference Numeric. PM2.5 reference value (e.g., 15, 25, 50, ...). 
+#' Defaults to 15.
 #' @param max_lag Integer. Maximum lag days. Defaults to 2
-#' @param family Character. Distribution family for GAM
+#' @param family Character. Distribution family for GAM. Defaults to 
+#' "quasipoisson".
 #' 
 #' @return List with region-specific and meta-analysis results including AF/AN
 #' 
@@ -901,17 +913,17 @@ analyze_air_pollution_dlm <- function(data,
 }
 
 
-#' Create distributed lag plots for national and regions
+#' Create distributed lag plots for countries (national) and regions
 #' 
-#' @description Create distributed lag plots for national and regions
+#' @description Create distributed lag plots for countries (national) and regions.
 #' 
-#' @param dlm_results Results from analyze_air_pollution_dlm
-#' @param output_dir String. Directory to save plots. Defaults to NULL
-#' @param max_lag Integer. Maximum lag days. Defuault to 2
-#' @param width_per_panel Integer. Width per panel for saving. Defuault to 2
-#' @param height_per_panel Integer. Height per panel for saving. Defuault to 2
+#' @param dlm_results Results from climatehealth::analyze_air_pollution_dlm.
+#' @param output_dir String. Directory to save plots. Defaults to NULL.
+#' @param max_lag Integer. Maximum lag days. Defaults to to 2.
+#' @param width_per_panel Integer. Width per panel for saving. Defaults to 4.
+#' @param height_per_panel Integer. Height per panel for saving. Defaults to 4.
 #' 
-#' @return List of ggplot objects
+#' @return List of ggplot objects.
 #' 
 #' @export
 plot_air_pollution_dlm <- function(dlm_results, 
@@ -1006,31 +1018,31 @@ plot_air_pollution_dlm <- function(dlm_results,
 
 
 #' Create adaptive exposure-response plots with optimal grid layout
-#' Updated to show reference-specific AF/AN values
 #'
 #' @param data_with_lags Data frame containing pre-processed data with exposure lags. 
-#'        Must include columns: region, date, deaths, population, and exposure variable.
-#' @param meta_results List containing meta-analysis results from previous analysis. 
-#'        Should include overall relative risk estimate (overall_rr).
+#' Must include columns: region, date, deaths, population, and exposure variable.
+#' @param meta_results List. Meta-analysis results from previous analysis. 
+#' Should include overall relative risk estimate (overall_rr).
 #' @param reference_pm25 Numeric value specifying the reference PM2.5 
 #' concentration (μg/m³) for risk calculations and plot centering.
 #' @param reference_name Character string describing the reference scenario 
-#'        (e.g., "WHO", "National"). Defaults: "Reference".
-#' @param tlag Integer specifying maximum lag days for distributed lag models. 
-#' Defaults: 2.
-#' @param vardf Degrees of freedom for exposure-response functions. Defaults: 3.
-#' @param dfseas Seasonal degrees of freedom per year. Defaults: 4.
-#' @param max_ylim Maximum Y-axis limit for relative risk. Defaults: 2.0.
-#' @param output_file Full path for output PNG file. 
-#' Defaults: results/{reference_name}_exposure_response_plots.png
-#' @param plot_width_per_panel Width (inches) per panel in output. Defaults: 4.
-#' @param plot_height_per_panel Height (inches) per panel in output. Defaults: 3.5.
-#' @param res Resolution (DPI) for output PNG. Defaults: 150.
-#' @param include_af_an Logical indicating whether to include AF/AN calculations 
-#' in plots. Defaults: TRUE.
-#' @param var_name Name of PM2.5 variable in dataset. Defaults: "pm25".
-#' @param max_lag Maximum lag days
-#' @param family Distribution family for GAM
+#' (e.g., "WHO", "National"). Defaults to "Reference".
+#' @param tlag Integer. Maximum lag days for distributed lag models. 
+#' Defaults to 2.
+#' @param vardf Integer. Degrees of freedom for exposure-response functions. Defaults to 3.
+#' @param dfseas Integer. Seasonal degrees of freedom per year. Defaults to 4.
+#' @param max_ylim Maximum Y-axis limit for relative risk. Defaults to 2.0.
+#' @param output_file Character. Full path for output PNG file. If NULL, output path will
+#' default to 'air_pollution_results/{reference_name}_exposure_response_plots.png'.
+#' Default to NULL.
+#' @param plot_width_per_panel Width (inches) per panel in output. Defaults to 4.
+#' @param plot_height_per_panel Height (inches) per panel in output. Defaults to 3.5.
+#' @param res Integer. Resolution (DPI) for output PNG. Defaults to 150.
+#' @param include_af_an Logical. Whether to include AF/AN calculations in plots.
+#' Defaults to TRUE.
+#' @param var_name Character. Name of PM2.5 variable in dataset. Defaults to "pm25".
+#' @param max_lag Integer. Maximum lag days. Defaults to 2.
+#' @param family Character. Distribution family for GAM. Defaults to "quasipoisson".
 #'
 #' @return List containing predictions, meta model, and AF/AN values
 #' 
@@ -1052,17 +1064,27 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
                                                 max_lag = 2,
                                                 family = "quasipoisson") {
   
+  # Validate essential columns
+  required_cols <- c(
+    "region", "date", "year", "month", "day", "deaths", "population", "pm25", 
+    "tmax", "humidity"
+  )
+  missing_cols <- required_cols[!(required_cols %in% colnames(data_with_lags))]
+  if (length(missing_cols)>0) {
+    stop(paste0(
+      "Missing required columns in 'data_with_lags': ", 
+      paste(missing_cols, collapse = " ,"))
+    )
+  }
+  
   if (!require(mixmeta, quietly = TRUE)) {
     stop("Package 'mixmeta' is required for meta-analysis")
   }
   
   if (is.null(output_file)) {
-    output_file <- paste0("results/", tolower(reference_name), 
+    output_file <- paste0("air_pollution_results/", tolower(reference_name), 
                           "_exposure_response_plots.png")
   }
-  
-  cat("Creating exposure-response plots with", reference_name, 
-      "reference (", reference_pm25, "μg/m³)...\n")
   
   dir.create(dirname(output_file), recursive = TRUE, showWarnings = FALSE)
   
@@ -1091,8 +1113,7 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
   yr <- length(unique(data_aggreg$year))
   knots_values <- c(0.25, 0.5, 0.75)
   
-  cat("Fitting GAM models for", length(prov), "regions...\n")
-  
+  # Fit GAM models
   coef_matrix <- NULL
   vcov_list <- vector("list", length(prov))
   names(vcov_list) <- prov
@@ -1107,11 +1128,8 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
     region_deaths[j] <- sum(dat$deaths, na.rm = TRUE)
     
     if (nrow(dat) < 100) {
-      cat("  Skipping", prov[j], "- insufficient data\n")
       next
     }
-    
-    cat("  Fitting model for", prov[j], "\n")
     
     argvar <- list(fun = varfun, degree = degree, 
                    knots = quantile(var1, knots_values, na.rm = TRUE))
@@ -1181,8 +1199,6 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
     stop("Insufficient regions with successful model fits for meta-analysis")
   }
   
-  cat("Conducting meta-analysis across", length(valid_rows), "regions...\n")
-  
   meta_model <- tryCatch({
     mixmeta(coef_matrix[valid_rows, ] ~ 1, S = vcov_list[valid_rows], 
             control = list(showiter = FALSE))
@@ -1213,9 +1229,7 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
   n_plots <- n_regions + 1
   grid_dims <- calculate_air_pollution_grid_dims(n_plots)
   
-  cat("Creating", grid_dims$nrow, "x", grid_dims$ncol, "grid for", n_plots, 
-      "plots\n")
-  
+  # Create Plots
   fig_width <- plot_width_per_panel * grid_dims$ncol
   fig_height <- plot_height_per_panel * grid_dims$nrow
   
@@ -1353,10 +1367,7 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
   }
   
   dev.off()
-  
-  cat("Exposure-response plots saved to:", output_file, "\n")
-  cat("Grid dimensions:", grid_dims$nrow, "rows x", grid_dims$ncol, "columns\n")
-  
+
   invisible(list(
     predictions = predictions,
     meta_model = meta_model,
@@ -1369,7 +1380,7 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
 }
 
 
-#' PM2.5 Mortality Analysis with Enhanced Features
+#' PM2.5 Mortality Analysis with Enhanced Features (Air Pollution)
 #'
 #' @description This function performs comprehensive analysis of the relationship
 #' between PM2.5 and all-cause mortality using GAM models. It includes meta-analysis, 
@@ -1386,17 +1397,18 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
 #' @param precipitation_col Character. Name of precipitation column
 #' @param tmax_col Character. Name of temperature column
 #' @param population_col Character. Name of population column
-#' @param max_lag Integer. Maximum lag days. Defaults 2
-#' @param var_name Character. Variable name for labeling. Defaults "pm25"
-#' @param family Character. Distribution family for GAM model. Defaults "quasipoisson"
-#' @param reference Numeric. Reference value for AF/AN calculations. Defaults 15
-#' @param output_dir Character. Output directory for results. Defaults NULL
-#' @param save_outputs Logical. Whether to save plots and results. Defaults FALSE
-#' @param include_distributed_lags Logical. Whether to include distributed lag 
-#' analysis. Defaults TRUE
-#' @param create_plots Logical. Whether to create exposure-response plots. Defaults TRUE
+#' @param max_lag Integer. Maximum lag days. Defaults to 2.
+#' @param var_name Character. Variable name for labeling. Defaults to "pm25".
+#' @param family Character. Distribution family for GAM model. Defaults to "quasipoisson".
+#' @param reference Numeric. Reference value for AF/AN calculations. Defaults to 15.
+#' @param output_dir Character. Output directory for results. Defaults to NULL.
+#' @param save_outputs Logical. Whether to save plots and results. Defaults to FALSE.
+#' @param include_distributed_lags Logical. Whether to include distributed lag .
+#' analysis. Defaults to TRUE.
+#' @param create_plots Logical. Whether to create exposure-response plots. 
+#' Defaults to TRUE.
 #' @param reference_standards List. Reference standards for exposure-response plots. 
-#'   Defaults includes WHO (15 μg/m³) and Rwanda (50 μg/m³) standards
+#' Defaults include WHO (15 μg/m³) and Rwanda (50 μg/m³) standards
 #'
 #' @return List containing:
 #' \describe{
@@ -1413,7 +1425,7 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
 #' }
 #'
 #' @export
-air_pollution_pm25_analysis <- function(data_path, 
+air_pollution_do_analysis <- function(data_path, 
                                         date_col,
                                         region_col,
                                         pm25_col,
