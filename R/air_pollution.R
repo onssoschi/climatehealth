@@ -278,7 +278,8 @@ plot_air_pollution_variables <- function(data,
 #' for climate variables.
 #' 
 #' @param data Data to fit the model.
-#' @param var_name Character. The name of the column containing PM2.5 values.
+#' @param pm_25_col Character. The name of the column containing PM2.5 values.
+#' Defaults to "pm25"
 #' @param family Character string indicating the distribution family used in the GAM.
 #' Must be one of the four options "quasipoisson", "nb", "ziP", and "poisson".
 #' "quasipoisson" (Appropriate for count data with overdispersion),
@@ -287,26 +288,37 @@ plot_air_pollution_variables <- function(data,
 #' "poisson" (Suitable for count data without overdispersion (mean = variance)).
 #' Defaults to "quasipoisson"
 #' 
-#' @return GAM model object or NULL if failed
+#' @return GAM model object or NULL if failed.
 #' 
 #' @export
 fit_air_pollution_gam <- function(data, 
                                   var_name = "pm25", 
                                   family = "quasipoisson") {
-  
+  # Data Validation
   if(nrow(data) < 500) {
-    warning("Insufficient data: only ", nrow(data), " observations")
+    warning(
+      "Insufficient data: only ", 
+      nrow(data), 
+      " observations of a recommended 500 minimum."
+    )
     return(NULL)
   }
   
-  formula_str <- paste(
-    "deaths ~ ", var_name, 
-    "+ ns(time, df = 7) + ns(tmax, df = 3) + ns(humidity, df = 3)",
-    "+ ns(precipitation, df = 3) + dow + offset(log(population))"
+  # Parameter Validation
+  if (!(var_name %in% names(data))) stop(paste0(var_name, " not in dataset."))
+
+  # Create Model Formula
+  GAM_formula <- as.formula(
+    paste(
+      "deaths ~ ", var_name, 
+      "+ ns(time, df = 7) + ns(tmax, df = 3) + ns(humidity, df = 3)",
+      "+ ns(precipitation, df = 3) + dow + offset(log(population))"
+    )
   )
   
+  # Fit Model
   tryCatch({
-    gam(as.formula(formula_str), data = data, family = family)
+    gam(GAM_formula, data = data, family = family)
   }, error = function(e) {
     warning("Model fitting failed: ", e$message)
     return(NULL)
@@ -316,10 +328,10 @@ fit_air_pollution_gam <- function(data,
 
 #' Extract coefficient and standard error from GAM model
 #' 
-#' @description Extracts the coefficient and standard error the GAM model.
+#' @description Extracts the coefficient and standard error of the GAM model.
 #' 
 #' @param model GAM model object from single region.
-#' @param var_name Character. Column name to extract, which is in this case PM2.5
+#' @param var_name Character. Column name to extract. Defaults to "pm25"
 #' 
 #' @return List with coefficient and standard error.
 #' 
@@ -351,22 +363,25 @@ extract_air_pollution_coef <- function(model,
 #' Conduct two-stage meta-analysis with random effect with AF and AN calculations
 #' 
 #' @description Performs meta-analysis across regions and calculates attributable
-#' fraction and attributable number
+#' fraction and attributable number.
 #' 
 #' @param data Input data with multiple regions
-#' @param var_name Character. PM2.5 variable to analyze
-#' @param family Character string indicating the distribution family used in 
-#' the GAM. Defaults to "quasipoisson"
+#' @param pm_25_col Character. PM2.5 variable to analyze. Defaults to "pm25".
+#' @param family Character string indicating the distribution family used in the GAM.
+#' Must be one of the four options "quasipoisson", "nb", "ziP", and "poisson".
+#' "quasipoisson" (Appropriate for count data with overdispersion),
+#' "nb" (negativebinomial which is suitable for highly dispersed count data),
+#' "ziP" (zero-inflated which is suitable for count data with excess zeros (sparse data)),
+#' "poisson" (Suitable for count data without overdispersion (mean = variance)).
+#' Defaults to "quasipoisson"
 #'
-#' @return List with meta-analysis results including AF and AN
+#' @return List with meta-analysis results including AF and AN.
 #' 
 #' @export
 air_pollution_meta_analysis <- function(data, 
                                         var_name = "pm25", 
                                         family = "quasipoisson") {
-  
-  cat("Stage 1: Fitting regional models...\n")
-  
+  # Stage 0: Fit Regional Models
   region_results <- data %>%
     group_by(region) %>%
     nest() %>%
@@ -374,13 +389,12 @@ air_pollution_meta_analysis <- function(data,
       n_obs = map_dbl(data, nrow),
       total_deaths = map_dbl(data, ~sum(.x$deaths, na.rm = TRUE)),
       model = map2(data, region, ~{
-        cat("  Fitting:", .y, "\n")
         fit_air_pollution_gam(.x, var_name, family)
       })
     ) %>%
     ungroup()
   
-  cat("Extracting coefficients and se, and calculating AF/AN...\n")
+  # Stage 1: Extract Coefficients and Calculate AN/AF
   region_results <- region_results %>%
     mutate(
       coef_results = map(model, ~extract_air_pollution_coef(.x, var_name)),
@@ -398,12 +412,11 @@ air_pollution_meta_analysis <- function(data,
     select(-coef_results)
   
   if(nrow(region_results) < 2) {
-    warning("Need at least 2 regions with successful model fits for meta-analysis")
+    warning("At least 2 regions with successful model fits needed for meta-analysis.")
     return(NULL)
   }
   
-  cat("Stage 2: Meta-analysis of", nrow(region_results), "regions...\n")
-  
+  # Stage 2: Meta Analysis
   meta_result <- rma(
     yi = coef_pm25,
     sei = se_pm25,
@@ -435,10 +448,15 @@ air_pollution_meta_analysis <- function(data,
 #' 
 #' @param data Input data
 #' @param max_lag Integer. Maximum lag days. Defaults to 2
-#' @param family Character string. Distribution family for GAM. Defaults to
-#' "quasipoisson"
+#' @param family Character string indicating the distribution family used in the GAM.
+#' Must be one of the four options "quasipoisson", "nb", "ziP", and "poisson".
+#' "quasipoisson" (Appropriate for count data with overdispersion),
+#' "nb" (negativebinomial which is suitable for highly dispersed count data),
+#' "ziP" (zero-inflated which is suitable for count data with excess zeros (sparse data)),
+#' "poisson" (Suitable for count data without overdispersion (mean = variance)).
+#' Defaults to "quasipoisson"
 #' 
-#' @return Dataframe with lag-specific results including AF and AN
+#' @return Dataframe with lag-specific results including AF and AN.
 #' 
 #' @export
 analyze_air_pollution_lags <- function(data, 
@@ -449,7 +467,6 @@ analyze_air_pollution_lags <- function(data,
   lag_labels <- c("Lag 0", paste0("Lag ", 1:max_lag), paste0("Lag 0–", max_lag))
   
   map2_dfr(lag_vars, lag_labels, ~{
-    cat("Analyzing", .y, "...\n")
     result <- tryCatch({
       air_pollution_meta_analysis(data, .x, family)
     }, error = function(e) {
@@ -479,22 +496,24 @@ analyze_air_pollution_lags <- function(data,
 }
 
 
-#' Function to plot and saving
+#' Function to plot and save air pollution plots.
 #' 
-#' @description function for saving all plot types with consistent parameters
+#' @description Function for saving all plot types with consistent parameters.
 #' 
-#' @param plot_object Character. ggplot object or grid.arrange object to save
-#' @param output_dir Character. Directory to save plots
-#' @param filename Character. Filename without extension
-#' @param width_per_panel Integer. Width per panel (for multi-panel plots)
-#' @param height_per_panel Integer. Height per panel (for multi-panel plots) 
+#' @param plot_object Character. ggplot object or grid.arrange object to save.
+#' @param output_dir Character. Directory to save plots.
+#' @param filename Character. Filename without extension.
+#' @param width_per_panel Integer. Width per panel (for multi-panel plots).
+#' Defaults to 4.
+#' @param height_per_panel Integer. Height per panel (for multi-panel plots). 
+#' Defaults to 4.
 #' @param grid_dims Grid dimensions (list with nrow, ncol) - optional 
-#' for single plots. Defaults to NULL
-#' @param dpi Resolution for output
-#' @param single_plot_width Width for single plots (when grid_dims is NULL)
-#' @param single_plot_height Height for single plots (when grid_dims is NULL)
-#' 
-#' @return NULL (saves plot to file)
+#' for single plots. Defaults to NULL.
+#' @param dpi Integer. Resolution for output. Defaults to 150.
+#' @param single_plot_width Width for single plots (when grid_dims is NULL). 
+#' Defaults to 10.
+#' @param single_plot_height Height for single plots (when grid_dims is NULL). 
+#' Defaults to 8.
 #' 
 #' @export
 save_air_pollution_plot <- function(plot_object,
@@ -506,7 +525,9 @@ save_air_pollution_plot <- function(plot_object,
                                     dpi = 150,
                                     single_plot_width = 10,
                                     single_plot_height = 8) {
-  
+  # Simple Validation
+  if (is.null(output_dir)) stop("'output_dir' must be provided")
+
   # Create output directory
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
   
@@ -515,23 +536,18 @@ save_air_pollution_plot <- function(plot_object,
     # Single plot
     fig_width <- single_plot_width
     fig_height <- single_plot_height
-    cat("Saving single plot:", filename, "\n")
   } else {
     # Multi-panel plot
     fig_width <- width_per_panel * grid_dims$ncol
     fig_height <- height_per_panel * grid_dims$nrow
-    cat("Saving", grid_dims$nrow, "x", grid_dims$ncol, "grid plot:", filename, "\n")
   }
   
   # Save plot
-  output_path <- file.path(output_dir, paste0(filename, ".png"))
+  if (!endsWith(output_path, ".png")) {
+    output_path <- file.path(output_dir, paste0(filename, ".png"))
+  }
   ggsave(output_path, plot_object, 
          width = fig_width, height = fig_height, dpi = dpi)
-  
-  cat("Plot saved to:", output_path, "\n")
-  if (!is.null(grid_dims)) {
-    cat("Grid dimensions:", grid_dims$nrow, "rows x", grid_dims$ncol, "columns\n")
-  }
 }
 
 
