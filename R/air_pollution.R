@@ -70,13 +70,13 @@ load_air_pollution_data <- function(data_path,
   if(tmax_col != "tmax" && tmax_col %in% names(data)) {
     data <- data %>% rename(tmax = !!rlang::sym(tmax_col))
   }
-  
+
   if(!is.null(population_col) && population_col %in% names(data)) {
     data <- data %>% rename(population = !!rlang::sym(population_col))
   } else if(!("population" %in% names(data))) {
     data <- data %>% mutate(population = 1)
   }
-  
+
   if(!is.null(age_col) && age_col %in% names(data)) {
     data <- data %>% rename(age = !!rlang::sym(age_col))
   } else if(!("age" %in% names(data))) {
@@ -167,14 +167,13 @@ create_air_pollution_lags <- function(
 #'
 #' @param data Dataframe containing a daily time series of climate, environmental 
 #' and health data
-#' @param variables Character or character vector with variable to produce
+#' @param variables Character or character vector with variable(s) to produce
 #' summary statistics for. Must include at least 1 variable.
 #' @param bin_width Integer. Width of each bin in a histogram of the outcome
-#' variable. Defaults is 1.
-#' @param output_dir Character. Directory to save descriptive statistics. Defaults NULL.
-#' @param save_outputs Logical. Whether to save outputs. Defaults FALSE.
-#'
-#' @returns Prints summary statistics and a histogram of the outcome variable
+#' variable. Defaults to 1.
+#' @param output_dir Character. Directory to save descriptive statistics. 
+#' Defaults to NULL.
+#' @param save_outputs Logical. Whether to save outputs. Defaults to FALSE.
 #'
 #' @export
 air_pollution_descriptive_stats <- function(data,
@@ -182,74 +181,81 @@ air_pollution_descriptive_stats <- function(data,
                                             bin_width = 1,
                                             output_dir = NULL,
                                             save_outputs = FALSE) {
+  # Check input params
+  if (save_outputs && is.null(output_dir)) {
+    stop("An output directory must be passed if save_outputs==T.")
+  }
   
-  # Display histogram
+  # Create output dir
+  if (save_outputs) {
+    output_dir <- file.path(output_dir, "air_pollution_descriptive_stats")
+    if (!file.exists(output_dir)) {
+      dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+    }
+  }
+  
+  # Create PNG device if save requested
+  if (save_outputs) {
+    png(file.path(output_dir, "mortality_histogram.png"), width = 800, height = 600)
+  }
+
+  # Display histogram (or draw on PDF)
   graphics::hist(data$deaths,
                  breaks = seq(0, max(data$deaths) + bin_width,
                               by = bin_width),
                  main = "All cause mortality",
                  xlab = "Mortality", col = "blue")
   
-  # Save histogram if requested
-  if (save_outputs && !is.null(output_dir)) {
-    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-    png(file.path(output_dir, "mortality_histogram.png"), width = 800, height = 600)
-    graphics::hist(data$deaths,
-                   breaks = seq(0, max(data$deaths) + bin_width,
-                                by = bin_width),
-                   main = "All cause mortality",
-                   xlab = "Mortality", col = "blue")
-    dev.off()
-  }
+  # Save PNG device if save requested
+  if (save_outputs) dev.off()
   
   # Store summary statistics
   summary_list <- list()
   
   for (i in seq_along(variables)) {
     variable_name <- variables[i]
-    print(variable_name)
     summary_stats <- summary(data[[variable_name]])
-    print(summary_stats)
-    cat("\n")
-    
     summary_list[[variable_name]] <- summary_stats
   }
   
   # Save summary statistics if requested
-  if (save_outputs && !is.null(output_dir)) {
+  if (save_outputs) {
     capture.output({
       for (var in names(summary_list)) {
         cat("\n", var, ":\n", sep = "")
         print(summary_list[[var]])
       }
     }, file = file.path(output_dir, "descriptive_statistics.txt"))
-    
   }
   
-  invisible(summary_list)
+  # Return desc stats summary (no hist)
+  return(summary_list)
 }
 
 
-#' Scatterplot
+#' Create a scatterplot
 #'
 #' @description Produces a ggplot2 scatterplot of two variables x versus y.
 #'
 #' @param data Dataframe containing a daily time series of climate, environmental
-#'  and health data
-#' @param xvar x variable
-#' @param yvar y variable
+#' and health data
+#' @param xvar Character. x variable
+#' @param yvar Character. y variable
 #' @param output_dir Character. Directory to save plot. Defaults NULL.
 #' @param save_plot Logical. Whether to save the plot. Defaults FALSE.
-#'
-#' @returns Prints a ggplot2 scatterplot of x versus y
-#'
+#' 
 #' @export
 plot_air_pollution_variables <- function(data, 
                                          xvar, 
                                          yvar,
                                          output_dir = NULL,
                                          save_plot = FALSE) {
-  
+  # Check input params
+  if (save_plot && is.null(output_dir)) {
+    stop("An output directory must be passed if save_outputs==T.")
+  }
+
+  # Plot Scatter
   p <- ggplot2::ggplot(data = data, ggplot2::aes(x = .data[[xvar]], y = .data[[yvar]])) +
     ggplot2::geom_point() +
     ggplot2::geom_smooth() +
@@ -257,14 +263,12 @@ plot_air_pollution_variables <- function(data,
   
   print(p)
   
-  if (save_plot && !is.null(output_dir)) {
+  if (save_plot) {
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-    filename <- paste0(xvar, "_vs_", yvar, ".png")
-    ggplot2::ggsave(file.path(output_dir, filename), p, width = 8, height = 6, dpi = 150)
-    cat("Plot saved to:", file.path(output_dir, filename), "\n")
+    fname <- paste0(xvar, "_vs_", yvar, ".png")
+    output_path <- file.path(output_dir, fname)
+    ggplot2::ggsave(output_path, p, width = 8, height = 6, dpi = 150)
   }
-  
-  invisible(p)
 }
 
 
