@@ -45,6 +45,7 @@ Imports:
     stringr (>= 1.5.1),
     terra,
     tidyverse,
+    tidytable,
     tools,
     tsModel (>= 0.6-2),
     xfun,
