@@ -87,15 +87,19 @@ load_and_process_data <- function(health_data_path,
                                   month_col = NULL,
                                   diarrhea_case_col,
                                   tot_pop_col) {
-  # Load health and climate data
-  ext <- tolower(xfun::file_ext(health_data_path))
-  # Load data based on file extension
-  data <- switch(ext,
-                 "rds" = read_rds(health_data_path),
-                 "csv" = read_csv(health_data_path, show_col_types = FALSE),
-                 "xlsx" = readxl::read_excel(health_data_path),
-                 stop("Unsupported file type: must be .rds, .csv, or .xlsx")
-                 )
+  # Create dataframe from vector/list if data comes from the API
+  if (is.data.frame(health_data_path)) {
+    data <- health_data_path
+  } else {
+    ext <- tolower(xfun::file_ext(health_data_path))
+    # Load data based on file extension
+    data <- switch(ext,
+                   "rds" = read_rds(health_data_path),
+                   "csv" = read_csv(health_data_path, show_col_types = FALSE),
+                   "xlsx" = readxl::read_excel(health_data_path),
+                   stop("Unsupported file type: must be .rds, .csv, or .xlsx")
+    )
+  }
 
   # create date columns if needed
   if (is.null(date_col) & (is.null(month_col) | is.null(year_col))) {
@@ -172,18 +176,18 @@ load_and_process_climatedata <- function(climate_data_path,
                                          runoff_col= NULL,
                                          spi_col = NULL,
                                          max_lag = 4){
-
-  # Detect file extension
-  ext <- tolower(xfun::file_ext(climate_data_path))
-
-  # Read file
-  data <- switch(ext,
-                 "rds" = readr::read_rds(climate_data_path),
-                 "csv" = readr::read_csv(climate_data_path, show_col_types = FALSE),
-                 "xlsx" = readxl::read_excel(climate_data_path),
-                 stop("Unsupported file type: must be .rds, .csv, or .xlsx")
-  )
-
+  if (is.data.frame(climate_data_path)) {
+    data <- climate_data_path
+  } else {
+    ext <- tolower(xfun::file_ext(climate_data_path))
+    # Load data based on file extension
+    data <- switch(ext,
+                   "rds" = read_rds(climate_data_path),
+                   "csv" = read_csv(climate_data_path, show_col_types = FALSE),
+                   "xlsx" = readxl::read_excel(climate_data_path),
+                   stop("Unsupported file type: must be .rds, .csv, or .xlsx")
+    )
+  }
 
   # Map columns to standard names, excluding NULLs
   var_map <- list(district = district_col, year = year_col, month = month_col,
@@ -1042,25 +1046,25 @@ plot_relative_risk <- function(data,
 
   if (!"year" %in% names(data)) stop("'year' column not found in data.")
   if (is.null(filter_year)) filter_year <- sort(unique(data$year))
-  
+
   level <- tolower(level)
   if (save_fig) {
     if (is.null(output_dir)) stop("output_dir must be provided if save_fig = TRUE")
     if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
   }
-  
+
   output_pdf <- if (save_fig) {
     file.path(output_dir, paste0("RR_", param_term, "_", level, "_all_plots.pdf"))
   } else {
     NULL
   }
-  
+
   csv_output_path <- if (save_csv) {
     file.path(output_dir, paste0("RR_", param_term, "_", level, "_all_plots.csv"))
   } else {
     NULL
   }
-  
+
   build_plot <- function(pred, yr) {
     if (anyNA(pred$allRRfit)) return(NULL)
     ggplot2::ggplot(
@@ -1079,22 +1083,22 @@ plot_relative_risk <- function(data,
       ggplot2::theme_minimal() +
       ggplot2::theme(plot.title = ggplot2::element_text(size = 9))
   }
-  
+
   all_predictions <- list()
-  
+
   if (level == "country") {
     plots <- lapply(filter_year, function(yr) {
       pred <- get_predictions(dplyr::filter(data, year == yr), param_term, model, level)
       all_predictions[[as.character(yr)]] <- pred
       build_plot(pred, yr)
     }) %>% purrr::keep(~ !is.null(.))
-    
+
     if (save_fig && !is.null(output_pdf)) {
       grDevices::pdf(output_pdf, width = 14, height = 10)
       purrr::walk(plots, print)
       grDevices::dev.off()
     }
-    
+
     if (save_csv && !is.null(csv_output_path)) {
       flat_df <- dplyr::bind_rows(lapply(names(all_predictions), function(yr) {
         df <- all_predictions[[yr]]
@@ -1108,7 +1112,7 @@ plot_relative_risk <- function(data,
       }))
       utils::write.csv(flat_df, csv_output_path, row.names = FALSE)
     }
-    
+
     return(list(
       plots = patchwork::wrap_plots(plots) +
         patchwork::plot_annotation(
@@ -1118,7 +1122,7 @@ plot_relative_risk <- function(data,
       RR = all_predictions
     ))
   }
-  
+
   # Region or district case
   group_plots <- list()
   for (yr in filter_year) {
@@ -1131,7 +1135,7 @@ plot_relative_risk <- function(data,
       }
     }
   }
-  
+
   if (save_fig && !is.null(output_pdf)) {
     grDevices::pdf(output_pdf, width = 10, height = 8)
     for (grp in names(group_plots)) {
@@ -1145,7 +1149,7 @@ plot_relative_risk <- function(data,
     }
     grDevices::dev.off()
   }
-  
+
   if (save_csv && !is.null(csv_output_path)) {
     flat_df <- dplyr::bind_rows(lapply(names(all_predictions), function(yr) {
       preds <- all_predictions[[yr]]
@@ -1163,7 +1167,7 @@ plot_relative_risk <- function(data,
     }))
     utils::write.csv(flat_df, csv_output_path, row.names = FALSE)
   }
-  
+
   return(list(plots = group_plots,RR = all_predictions))
 }
 
@@ -1347,10 +1351,9 @@ diarrhea_do_analysis <- function(health_data_path,
 
   # Simple output validation
   if (is.null(output_dir) & (save_fig | save_csv)) {
-    stop("'output_dir' must be provided is 'save_fig' or save_csv' are TRUE.")
+    stop("'output_dir' must be provided if 'save_fig' or save_csv' are TRUE.")
   }
   check_file_exists(output_dir, TRUE)
-
   # level validation
   level <- tolower(level)
   acceptable_levels = c("country", "region", "district")
@@ -1358,11 +1361,14 @@ diarrhea_do_analysis <- function(health_data_path,
     stop(paste0("Level must be one of ", paste0(acceptable_levels, collapse=", ")))
   }
 
-  # Input validation
-  check_file_exists(health_data_path, TRUE)
-  check_file_exists(climate_data_path, TRUE)
+  # Input validation (IF makes API exception)
+  if (is.character(health_data_path)) {
+    check_file_exists(health_data_path, TRUE)
+  }
+  if (is.character(climate_data_path)) {
+    check_file_exists(climate_data_path, TRUE)
+  }
   check_file_exists(map_path, TRUE)
-
   # get combined data
   combined_data <- combine_health_climate_data(health_data_path,
                                                climate_data_path,
