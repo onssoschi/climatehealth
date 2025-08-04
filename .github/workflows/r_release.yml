@@ -19,7 +19,8 @@ jobs:
       - name: Install dependencies
         run: |
           Rscript -e 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/latest"))'
-          Rscript -e 'install.packages(c("devtools", "roxygen2", "remotes"))'
+          Rscript -e 'install.packages(c("devtools", "roxygen2", "remotes", "pak"))'
+          Rscript -e 'pak::pkg_install()'
 
       - name: Build package (MacOS)
         run: |
