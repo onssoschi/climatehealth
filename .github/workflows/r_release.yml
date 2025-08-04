@@ -55,6 +55,7 @@ jobs:
           Rscript -e 'devtools::build(binary = TRUE)'
 
       - name: List all zip files
+        shell: bash
         run: find . -name "*.zip"
       
       - name: Move binary to workspace root
