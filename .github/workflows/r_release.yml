@@ -21,7 +21,7 @@ jobs:
           Rscript -e 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/latest"))'
           Rscript -e 'install.packages(c("devtools", "roxygen2", "remotes"))'
 
-      - name: Build package
+      - name: Build package (MacOS)
         run: |
           R CMD build .
 
@@ -48,10 +48,10 @@ jobs:
           Rscript -e 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/latest"))'
           Rscript -e 'install.packages(c("devtools", "roxygen2", "remotes"))'
 
-      - name: Build package
+      - name: Build Windows artifact (binary)
         shell: bash
         run: |
-          R CMD build .
+          Rscript -e 'devtools::build(binary = TRUE)'
 
       - name: Upload Windows artifact
         uses: softprops/action-gh-release@v1
