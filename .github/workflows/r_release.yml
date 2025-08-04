@@ -52,7 +52,7 @@ jobs:
       - name: Build Windows artifact (binary)
         shell: bash
         run: |
-          Rscript -e 'devtools::build(binary = TRUE)'
+          Rscript -e 'devtools::build(path = Sys.getenv("GITHUB_WORKSPACE"), binary = TRUE)'
       
       - name: Upload Windows artifact
         uses: softprops/action-gh-release@v1
