@@ -24,7 +24,7 @@ jobs:
       - name: Build package source (MacOS)
         run: |
           R CMD build .
-
+          
       - name: Upload macOS artifact
         uses: softprops/action-gh-release@v1
         with:
@@ -54,9 +54,16 @@ jobs:
         run: |
           Rscript -e 'devtools::build(binary = TRUE)'
 
+      - name: List all zip files
+        run: find . -name "*.zip"
+      
+      - name: Move binary to workspace root
+        run: |
+          mv $(find . -name "climatehealth_*.zip") .
+      
       - name: Upload Windows artifact
         uses: softprops/action-gh-release@v1
         with:
-          files: "**/climatehealth_*.zip"
+          files: "climatehealth_*.zip"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
