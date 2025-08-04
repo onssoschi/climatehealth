@@ -7,7 +7,7 @@ on:
 jobs:
   build-macos:
     runs-on: macos-latest
-    name: Build on macOS
+    name: Build source on macOS
     steps:
       - uses: actions/checkout@v3
 
@@ -21,7 +21,7 @@ jobs:
           Rscript -e 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/latest"))'
           Rscript -e 'install.packages(c("devtools", "roxygen2", "remotes", "pak"))'
 
-      - name: Build package (MacOS)
+      - name: Build package source (MacOS)
         run: |
           R CMD build .
 
@@ -34,7 +34,7 @@ jobs:
 
   build-windows:
     runs-on: windows-latest
-    name: Build on Windows
+    name: Build binary on Windows
     steps:
       - uses: actions/checkout@v3
 
@@ -57,6 +57,6 @@ jobs:
       - name: Upload Windows artifact
         uses: softprops/action-gh-release@v1
         with:
-          files: "*.zip"
+          files: "**/*.zip"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
