@@ -54,13 +54,16 @@ jobs:
         run: |
           Rscript -e 'devtools::build(binary = TRUE)'
 
-      - name: List all zip files
-        shell: bash
-        run: find . -name "*.zip"
-      
       - name: Move binary to workspace root
+        shell: bash
         run: |
-          mv $(find . -name "climatehealth_*.zip") .
+          ZIP_PATH=$(find "$GITHUB_WORKSPACE" -name "climatehealth_*.zip" | head -n 1)
+          if [ -n "$ZIP_PATH" ]; then
+            mv "$ZIP_PATH" "$GITHUB_WORKSPACE"
+          else
+            echo "No zip file found"
+            exit 1
+          fi
       
       - name: Upload Windows artifact
         uses: softprops/action-gh-release@v1
