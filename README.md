@@ -1,3 +1,7 @@
+![Static Badge](https://img.shields.io/badge/Status-In%20Development-darkgreen?logo=git&logoColor=white) ![Static Badge](https://img.shields.io/badge/Release%20Version-0.8.0-pink?logo=github) ![Static Badge](https://img.shields.io/badge/R_Version-4.4.1-pink?logo=R)  
+[![Build R Package on Release](https://github.com/onssoschi/climatehealth/actions/workflows/r_release.yml/badge.svg)](https://github.com/onssoschi/climatehealth/actions/workflows/r_release.yml) [![Build R Package on Release](https://github.com/onssoschi/climatehealth/actions/workflows/r_cmd_check.yml/badge.svg)](https://github.com/onssoschi/climatehealth/actions/workflows/r_cmd_check.yml)  
+![Static Badge](https://img.shields.io/badge/Wellcome_Trust-224682%2FZ%2F21%2FZ-%23ff24de)
+
 # Climate and Health Package (Standards for Official Statistics on Climate-Health Interactions): climatehealth 
 
 This project contains an R package for calculating climate-health indicators [beta]. The functions in this package support the production of climate-health statistics in the analysis pipelines in [climatehealth_pipelines](https://gitlab-app-l-01/hapi/climate-and-health-team/climatehealth_pipelines). The function code aligns with the methodologies set out in a statistical framework of climate-health indicators developed as part of our project _Standards for Official Statistics on Climate-Health Interactions (SOSCHI)_.
