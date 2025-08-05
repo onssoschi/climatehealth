@@ -1,4 +1,4 @@
-name: Build R Package on Release
+name: R CMD Check
 
 on:
   pull_request:
