@@ -2,6 +2,7 @@ Package: climatehealth
 Title: Package for Calculating Climate-Health Indicators
 Version: 0.8.0
 Maintainer: Charlie Browning <charlie.browning@ons.gov.uk>
+Author: Charlie Browning [aut, cre]
 Authors@R: 
     c(person("Charlie", "Browning", email = "charlie.browning@ons.gov.uk", role = c("aut", "cre")))
 Description: This package contains code allowing users to calculate climate-health
