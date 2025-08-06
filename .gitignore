@@ -25,4 +25,4 @@ renv
 *.rds
 
 # Test Data Exclusions
-!tests/testthat/testdata/*
+!tests/testdata/*
