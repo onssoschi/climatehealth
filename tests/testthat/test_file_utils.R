@@ -7,7 +7,7 @@ test_that(
   {
     test_data_path <- file.path(
       system.file(
-        "tests", "testdata", package="climatehealth"
+        "testdata", package="climatehealth"
       ),
       "temperature_test_data.csv"
     )
