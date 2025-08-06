@@ -770,7 +770,7 @@ compute_attributable_deaths <- function(df_list,
         ) %>%
       dplyr::select(-high_heat_flag, -heatwave_flag)
 
-    matsim[i, "glob_cold"] <- FluMoDL::attrdl(x = data_output_year$temp,
+    matsim[i, "glob_cold"] <- attrdl(x = data_output_year$temp,
                                               basis = cb,
                                               cases = data_output_year$dependent,
                                               coef = coefs,
@@ -782,7 +782,7 @@ compute_attributable_deaths <- function(df_list,
                                               range = c(an_thresholds[i,"min_high_cold"],
                                                         an_thresholds[i,"moderate_cold_OTR"]))
 
-    matsim[i, "glob_heat"] <- FluMoDL::attrdl(x = data_output_year$temp,
+    matsim[i, "glob_heat"] <- attrdl(x = data_output_year$temp,
                                               basis = cb,
                                               cases = data_output_year$dependent,
                                               coef = coefs,
@@ -794,7 +794,7 @@ compute_attributable_deaths <- function(df_list,
                                               range = c(an_thresholds[i,"moderate_heat_OTR"],
                                                         an_thresholds[i,"max_high_heat"]))
 
-    matsim[i, "moderate_cold"] <- FluMoDL::attrdl(x = data_output_year$temp,
+    matsim[i, "moderate_cold"] <- attrdl(x = data_output_year$temp,
                                                   basis = cb,
                                                   cases = data_output_year$dependent,
                                                   coef = coefs,
@@ -806,7 +806,7 @@ compute_attributable_deaths <- function(df_list,
                                                   range = c(an_thresholds[i,"high_moderate_cold"],
                                                             an_thresholds[i,"moderate_cold_OTR"]))
 
-    matsim[i, "moderate_heat" ] <- FluMoDL::attrdl(x = data_output_year$temp,
+    matsim[i, "moderate_heat" ] <- attrdl(x = data_output_year$temp,
                                                    basis = cb,
                                                    cases = data_output_year$dependent,
                                                    coef = coefs,
@@ -819,7 +819,7 @@ compute_attributable_deaths <- function(df_list,
                                                              an_thresholds[i,"high_moderate_heat"]))
 
     # Attributable deaths for extremes:
-    matsim[i,"high_cold"] <- FluMoDL::attrdl(x = data_output_year$temp,
+    matsim[i,"high_cold"] <- attrdl(x = data_output_year$temp,
                                              basis = cb,
                                              cases = data_output_year$dependent,
                                              coef = coefs,
@@ -831,7 +831,7 @@ compute_attributable_deaths <- function(df_list,
                                              range = c(an_thresholds[i,"min_high_cold"],
                                                        an_thresholds[i,"high_moderate_cold"]))
 
-    matsim[i,"high_heat"] <- FluMoDL::attrdl(x = data_output_year$temp,
+    matsim[i,"high_heat"] <- attrdl(x = data_output_year$temp,
                                              basis = cb,
                                              cases = data_output_year$dependent,
                                              coef = coefs,
@@ -844,7 +844,7 @@ compute_attributable_deaths <- function(df_list,
                                                        an_thresholds[i,"max_high_heat"]))
 
 
-    matsim[i,"heatwave"] <- FluMoDL::attrdl(x = data_output_year$heatwave_temp,
+    matsim[i,"heatwave"] <- attrdl(x = data_output_year$heatwave_temp,
                                             basis = cb,
                                             cases = data_output_year$dependent,
                                             coef = coefs,
@@ -856,7 +856,7 @@ compute_attributable_deaths <- function(df_list,
 
     # Compute empirical occurrences of the attributable deaths
     # Used to derive confidence intervals
-    arraysim[i, "glob_cold_ci", ] <- FluMoDL::attrdl(x = data_output_year$temp,
+    arraysim[i, "glob_cold_ci", ] <- attrdl(x = data_output_year$temp,
                                                      basis = cb,
                                                      cases = data_output_year$dependent,
                                                      coef = coefs,
@@ -869,7 +869,7 @@ compute_attributable_deaths <- function(df_list,
                                                                an_thresholds[i,"moderate_cold_OTR"]),
                                                      sim = T, nsim = nsim_)
 
-    arraysim[i, "glob_heat_ci", ] <- FluMoDL::attrdl(x = data_output_year$temp,
+    arraysim[i, "glob_heat_ci", ] <- attrdl(x = data_output_year$temp,
                                                      basis = cb,
                                                      cases = data_output_year$dependent,
                                                      coef = coefs,
@@ -882,7 +882,7 @@ compute_attributable_deaths <- function(df_list,
                                                                an_thresholds[i,"max_high_heat"]),
                                                      sim = T, nsim = nsim_)
 
-    arraysim[i, "moderate_cold_ci", ] <- FluMoDL::attrdl(x = data_output_year$temp,
+    arraysim[i, "moderate_cold_ci", ] <- attrdl(x = data_output_year$temp,
                                                          basis = cb,
                                                          cases = data_output_year$dependent,
                                                          coef = coefs,
@@ -895,7 +895,7 @@ compute_attributable_deaths <- function(df_list,
                                                                    an_thresholds[i,"moderate_cold_OTR"]),
                                                          sim = T , nsim = nsim_)
 
-    arraysim[i, "moderate_heat_ci", ] <- FluMoDL::attrdl(x = data_output_year$temp,
+    arraysim[i, "moderate_heat_ci", ] <- attrdl(x = data_output_year$temp,
                                                          basis = cb,
                                                          cases = data_output_year$dependent,
                                                          coef = coefs,
@@ -908,7 +908,7 @@ compute_attributable_deaths <- function(df_list,
                                                                    an_thresholds[i,"high_moderate_heat"]),
                                                          sim = T, nsim = nsim_)
 
-    arraysim[i, "high_cold_ci", ] <- FluMoDL::attrdl(x = data_output_year$temp,
+    arraysim[i, "high_cold_ci", ] <- attrdl(x = data_output_year$temp,
                                                      basis = cb,
                                                      cases = data_output_year$dependent,
                                                      coef = coefs,
@@ -921,7 +921,7 @@ compute_attributable_deaths <- function(df_list,
                                                                an_thresholds[i,"high_moderate_cold"]),
                                                      sim = T, nsim = nsim_)
 
-    arraysim[i, "high_heat_ci", ] <- FluMoDL::attrdl(x = data_output_year$temp,
+    arraysim[i, "high_heat_ci", ] <- attrdl(x = data_output_year$temp,
                                                      basis = cb,
                                                      cases = data_output_year$dependent,
                                                      coef = coefs,
@@ -934,7 +934,7 @@ compute_attributable_deaths <- function(df_list,
                                                                an_thresholds[i,"max_high_heat"]),
                                                      sim = T, nsim = nsim_)
 
-    arraysim[i, "heatwave_ci", ] <- FluMoDL::attrdl(x = data_output_year$heatwave_temp,
+    arraysim[i, "heatwave_ci", ] <- attrdl(x = data_output_year$heatwave_temp,
                                                     basis = cb,
                                                     cases = data_output_year$dependent,
                                                     coef = coefs,
