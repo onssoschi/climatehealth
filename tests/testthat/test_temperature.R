@@ -65,7 +65,7 @@ test_that(
 
 # Tests for load_temperature_data
 
-TEST_DATA_PATH <- "../testdata"
+TEST_DATA_PATH <- system.file("tests", "testdata", package="climatehealth")
 
 test_that(
   "Test that the dataframe is returned as expected (using testdata).",
