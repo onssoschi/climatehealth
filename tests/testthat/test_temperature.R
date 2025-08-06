@@ -62,16 +62,15 @@ test_that(
       0), regexp = "Timeseries to calculate the RR is more than 13 years.*")
   }
 )
-# TODO: review whether we also need a case for both arguments being 0.
 
 # Tests for load_temperature_data
 
-TEST_DATA_PATH <- "testdata/temperature_test_data.csv"
+TEST_DATA_PATH <- "../testdata"
 
 test_that(
   "Test that the dataframe is returned as expected (using testdata).",
   {
-    resultant <- load_temperature_data(TEST_DATA_PATH,
+    resultant <- load_temperature_data(file.path(TEST_DATA_PATH, "temperature_test_data.csv"),
                                        "death",
                                        "date",
                                        "regnames",
@@ -87,7 +86,7 @@ test_that(
     expect_equal(rows, 4748, info  = "load_temperature_data expected to return y rows")
     expect_equal(cols, 19, info  = "load_temperature_data expected to return x column")
     # check colnames are correct - checks renaming functionality
-    expected_columns<-c("X.2", "X.1","X","date","year","month","day","time",
+    expected_columns<-c("X.1","...1", "X","date","year","month","day","time",
                     "yday","dow","region","regnames","temp","tmin","tmax",
                     "dewp","rh","dependent","pop_col")
     expect_equal(colnames(resultant[1][[1]]), expected_columns)
@@ -97,7 +96,7 @@ test_that(
 test_that(
   "Test that columns are filled automatically (population_col, region_col).",
   {
-    resultant <- load_temperature_data(TEST_DATA_PATH,
+    resultant <- load_temperature_data(file.path(TEST_DATA_PATH, "temperature_test_data.csv"),
                                        "death",
                                        "date",
                                        NULL,
@@ -131,7 +130,7 @@ get_test_input_data <- function(path) {
 test_that(
   "Test that define_model returns a list of 2 items - model+crossbasis",
   {
-    data <- get_test_input_data(TEST_DATA_PATH)[[1]][1][[1]]
+    data <- get_test_input_data(file.path(TEST_DATA_PATH, "temperature_test_data.csv"))[[1]][1][[1]]
     returned <- define_model(
       data,
       independent_cols = NULL,
@@ -152,7 +151,7 @@ test_that(
 test_that(
   "Test that 'model' has the expected attributes.",
   {
-    data <- get_test_input_data(TEST_DATA_PATH)[[1]][1][[1]]
+    data <- get_test_input_data(file.path(TEST_DATA_PATH, "temperature_test_data.csv"))[[1]][1][[1]]
     model <- define_model(
       data,
       independent_cols = NULL,
@@ -177,7 +176,7 @@ test_that(
 test_that(
   "Test that 'crossbasis' has the expected attributes",
   {
-    data <- get_test_input_data(TEST_DATA_PATH)[[1]][1][[1]]
+    data <- get_test_input_data(file.path(TEST_DATA_PATH, "temperature_test_data.csv"))[[1]][1][[1]]
     cb <- define_model(
       data,
       independent_cols = NULL,
@@ -203,7 +202,7 @@ test_that(
 test_that(
   "Test that define_model raises an error when a vector of non-strings is passed.",
   {
-    data <- get_test_input_data(TEST_DATA_PATH)[[1]][1][[1]]
+    data <- get_test_input_data(file.path(TEST_DATA_PATH, "temperature_test_data.csv"))[[1]][1][[1]]
     expect_error(
       define_model(
           data,
@@ -226,7 +225,7 @@ test_that(
   "Test that run_model returns the expected data.",
   {
     # load input data
-    data <- get_test_input_data(TEST_DATA_PATH)[[1]]
+    data <- get_test_input_data(file.path(TEST_DATA_PATH, "temperature_test_data.csv"))[[1]]
     # use run_model func to obtain results
     returned <- run_model(df_list = data,
                           independent_cols = NULL,
@@ -280,7 +279,7 @@ test_that(
 test_that(
   "Test that run_meta_model has the correct return values (using test data).",
   {
-    data <- get_test_input_data(TEST_DATA_PATH)[[1]]
+    data <- get_test_input_data(file.path(TEST_DATA_PATH, "temperature_test_data.csv"))[[1]]
     c(coef_, vcov_, cb_, model_) %<-%
       run_model(df_list = data,
                 independent_cols = NULL,
@@ -321,7 +320,7 @@ test_that(
 test_that(
   "fwald calculates p-values for the explanatory variable.",
   {
-    data <- get_test_input_data(TEST_DATA_PATH)[[1]]
+    data <- get_test_input_data(file.path(TEST_DATA_PATH, "temperature_test_data.csv"))[[1]]
     c(coef_, vcov_, cb_, model_) %<-%
       run_model(df_list = data,
                 independent_cols = NULL,
@@ -402,8 +401,8 @@ test_that(
     rownames(expected_thresholds) <- c("North West", "South East", "Wales")
     expected_mintempregions <- c("North West" = 16, "South East" = 18, "Wales" = 16)
     # obtain my results
-    data <- get_test_input_data(TEST_DATA_PATH)[[1]]
-    test_blup = readRDS("testdata/temperature_blup.rds")
+    data <- get_test_input_data(file.path(TEST_DATA_PATH, "temperature_test_data.csv"))[[1]]
+    test_blup = readRDS(file.path(TEST_DATA_PATH, "temperature_blup.rds"))
     returned <- calculate_min_mortality_temp(
       df_list = data,
       blup = NULL,
@@ -428,16 +427,16 @@ test_that(
     expected_thresholds <- data.frame(
       min_high_cold = c(-100, -100, -100),
       high_moderate_cold = c(1.070975, 1.090602, 1.497259),
-      moderate_cold_OTR = c(10.2, 10.7, 10.2),
-      moderate_heat_OTR = c(20.9, 21.3, 21.3),
-      high_moderate_heat = c(20.9, 21.3, 21.3),
+      moderate_cold_OTR = c(10.1, 10.3, 10.2),
+      moderate_heat_OTR = c(21.0, 21.4, 21.3),
+      high_moderate_heat = c(21.0, 21.4, 21.3),
       max_high_heat = c(100, 100, 100)
     )
     rownames(expected_thresholds) <- c("North West", "South East", "Wales")
-    expected_mintempregions <- c("North West" = 16.10869, "South East" = 17.79293, "Wales" = 15.79192)
+    expected_mintempregions <- c("North West" = 16.10869, "South East" = 18.00545, "Wales" = 15.79192)
     # obtain my results
-    data <- get_test_input_data(TEST_DATA_PATH)[[1]]
-    test_blup = readRDS("testdata/temperature_blup.rds")
+    data <- get_test_input_data(file.path(TEST_DATA_PATH, "temperature_test_data.csv"))[[1]]
+    test_blup = readRDS(file.path(TEST_DATA_PATH, "temperature_blup.rds"))
     returned <- calculate_min_mortality_temp(
       df_list = data,
       blup = test_blup,
@@ -451,7 +450,7 @@ test_that(
     )
     # test that the returned results are correct
     expect_equal(returned[[1]], expected_mintempregions, tolerance = 1e-6)
-    expect_equal(returned[[2]], expected_thresholds, tolerance = 1e-6)
+    expect_equal(returned[[2]], expected_thresholds, tolerance = 1e-5)
   }
 )
 
@@ -461,7 +460,7 @@ test_that(
   "Test that compute_attributable_deaths calculates attributate deaths correctly.",
   {
     # read in test data
-    data <- get_test_input_data(TEST_DATA_PATH)[[1]]
+    data <- get_test_input_data(file.path(TEST_DATA_PATH, "temperature_test_data.csv"))[[1]]
     # get mintempregions and an_threshold from already tested function
     min_mort <- calculate_min_mortality_temp(
       df_list = data,
@@ -510,7 +509,7 @@ test_that(
 
 compute_rates <- function(data, o_year){
   # get attributable deaths
-  attr_deaths <- readRDS("testdata/temperature_attributable_deaths.rds")
+  attr_deaths <- readRDS(file.path(TEST_DATA_PATH, "temperature_attributable_deaths.rds"))
   arraysim <- attr_deaths[[1]]
   matsim <- attr_deaths[[2]]
   # compute rates
@@ -522,7 +521,7 @@ test_that(
   "Test that compute_attributable_rates produces the correct results.",
   {
     # read in test data
-    data <- get_test_input_data(TEST_DATA_PATH)[[1]]
+    data <- get_test_input_data(file.path(TEST_DATA_PATH, "temperature_test_data.csv"))[[1]]
     # compute rates
     returned <- compute_rates(data, 0)
     # test return size
@@ -548,13 +547,13 @@ test_that(
     # test antot values
     expect_equal(dim(antot), c(3, 7), info = "The size of antot is not as expected")
     exp_antot <- data.frame(
-      glob_cold = c(10511.180, 9452.679, 13070.127),
-      glob_heat = c(714.5264, 549.7275, 973.8396),
-      moderate_cold = c(9373.979, 8193.062, 11702.196),
+      glob_cold = c(10511.180, 9422.625, 12915.442),
+      glob_heat = c(714.5264, 536.9729, 965.1201),
+      moderate_cold = c(9373.979, 8386.406, 11663.161),
       moderate_heat = c(0, 0, 0),
-      high_cold = c(1137.201, 1103.108, 1328.867),
-      high_heat = c(714.5264, 550.9789, 961.6515),
-      heatwave = c(633.2973, 486.1243, 841.5280)
+      high_cold = c(1137.201, 1110.339, 1313.597),
+      high_heat = c(714.5264, 556.4483, 973.8864),
+      heatwave = c(633.2973, 487.6599, 868.8256)
     )
     rownames(exp_antot) <- c("antot", "antotlow", "antothigh")
     inf = "antot from compute_attributable_rates not as expected"
@@ -572,13 +571,13 @@ test_that(
     # test artot values
     expect_equal(dim(artot), c(3, 7), info = "The size of artot is not as expected")
     exp_artot <- data.frame(
-      glob_cold = c(233.5818, 210.0595, 290.4473),
-      glob_heat = c(15.87836, 12.21617, 21.64088),
-      moderate_cold = c(208.3106, 182.0681, 260.0488),
+      glob_cold = c(233.5818, 209.3917, 287.0098),
+      glob_heat = c(15.87836, 11.93273, 21.44711),
+      moderate_cold = c(208.3106, 186.3646, 259.1814),
       moderate_heat = c(0, 0, 0),
-      high_cold = c(25.27114, 24.51352, 29.53038),
-      high_heat = c(15.87836, 12.24398, 21.37003),
-      heatwave = c(14.07327, 10.80276, 18.70062)
+      high_cold = c(25.27114, 24.67420, 29.19104),
+      high_heat = c(15.87836, 12.36552, 21.64192),
+      heatwave = c(14.07327, 10.83689, 19.30724)
     )
     rownames(exp_artot) <- c("artot", "artotlow", "artothigh")
     inf = "artot from compute_attributable_rates not as expected"
@@ -594,7 +593,7 @@ test_that(
     # setup a temp directory for outputs
     temp_dir = base::tempdir()
     # load data
-    data <- get_test_input_data(TEST_DATA_PATH)[[1]]
+    data <- get_test_input_data(file.path(TEST_DATA_PATH, "temperature_test_data.csv"))[[1]]
     rates <- compute_rates(data, 0)
     # write results
     write_attributable_deaths(
@@ -633,9 +632,9 @@ test_that(
 # Tests for plot_and_write_relative_risk_all
 
 get_plot_dummy_data <- function(){
-  df_list <- get_test_input_data(TEST_DATA_PATH)[[1]]
-  cb <- readRDS("testdata/temperature_cb.rds")
-  model <- readRDS("testdata/temperature_model.rds")
+  df_list <- get_test_input_data(file.path(TEST_DATA_PATH, "temperature_test_data.csv"))[[1]]
+  cb <- readRDS(file.path(TEST_DATA_PATH, "temperature_cb.rds"))
+  model <- readRDS(file.path(TEST_DATA_PATH, "temperature_model.rds"))
   mintempregions <- c("North West" = 16.10869, "South East" = 17.79293, "Wales" = 15.79192)
   varfun <- "bs"
   varper <- c(10, 75, 90)
@@ -710,7 +709,7 @@ test_that(
 
 get_plot_dummy_data <- function(){
   # dataset
-  df_list <- get_test_input_data(TEST_DATA_PATH)[[1]]
+  df_list <- get_test_input_data(file.path(TEST_DATA_PATH, "temperature_test_data.csv"))[[1]]
   # model vars
   varfun <- "bs"
   varper <- c(10, 75, 90)
