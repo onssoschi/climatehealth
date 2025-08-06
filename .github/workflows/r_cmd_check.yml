@@ -26,7 +26,11 @@ jobs:
           Rscript -e 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/latest"))'
           Rscript -e 'install.packages(c("devtools", "roxygen2", "remotes", "patrick", "pak"))'
           Rscript -e 'pak::pkg_install(devtools::dev_package_deps()$package)'
-          
+
+      - name: Install texlive-fonts-extra for PDF generation
+        run: |
+          brew install texlive-fonts-extra
+      
       - name: Check Package
         run: |
           R CMD check .
