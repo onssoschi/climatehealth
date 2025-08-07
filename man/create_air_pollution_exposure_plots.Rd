@@ -31,7 +31,8 @@ Must include columns: region, date, deaths, population, and exposure variable.}
 Should include overall relative risk estimate (overall_rr).}
 
 \item{reference_pm25}{Numeric value specifying the reference PM2.5
-concentration (μg/m³) for risk calculations and plot centering.}
+concentration (\u03bc\u0067\u002f\u006d\u00b3) for risk calculations and plot
+centering.}
 
 \item{reference_name}{Character string describing the reference scenario
 (e.g., "WHO", "National"). Defaults to "Reference".}
@@ -46,7 +47,7 @@ Defaults to 2.}
 \item{max_ylim}{Maximum Y-axis limit for relative risk. Defaults to 2.0.}
 
 \item{output_file}{Character. Full path for output PNG file. If NULL, output path will
-default to 'air_pollution_results/{reference_name}_exposure_response_plots.png'.
+default to 'air_pollution_results/(reference_name)_exposure_response_plots.png'.
 Default to NULL.}
 
 \item{plot_width_per_panel}{Width (inches) per panel in output. Defaults to 4.}

@@ -17,11 +17,11 @@ A named list with two components:
 }
 }
 \description{
-Determines the optimal grid layout (rows × columns) for displaying multiple plots
+Determines the optimal grid layout (rows x columns) for displaying multiple plots
 in a single figure. The function prioritizes aesthetically pleasing arrangements
 that are wider than tall, minimizing empty cells while maintaining visual balance.
 }
 \note{
-For plot counts exceeding 400, the function will return a 20×20 grid.
+For plot counts exceeding 400, the function will return a 20x20 grid.
 Consider whether such large grids are appropriate for your visualization needs.
 }
