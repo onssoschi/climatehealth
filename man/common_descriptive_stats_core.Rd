@@ -20,21 +20,29 @@ common_descriptive_stats_core(
 )
 }
 \arguments{
-\item{dataset_title}{String. The title for the dataset being used.}
+\item{dataset_title}{Character. The title for the dataset being used.}
 
-\item{df}{DataFrame. Input data for descriptive stats/}
+\item{df}{Dataframe. The input DataFrame.}
 
-\item{output_path}{string. The path to write outputs to.}
+\item{output_path}{Character. The path to write outputs to.}
 
-\item{title}{string. title used for the plots in the ds.}
+\item{title}{Character. The specific title for the subset of data being used.}
 
-\item{correlation_method}{string. The correlation method used in ds.}
+\item{plot_corr_matrix}{Bool. Whether or not to plot a correlation matrix. Defaults to F.}
 
-\item{dist_columns}{vector. The columns to plot distributions for.}
+\item{correlation_method}{Character. The correlation method used in ds.}
 
-\item{dependent_col}{str. The column in the data containing the dependent var.}
+\item{plot_dist}{Bool. Whether or not to plot distribution histograms. Defaults to F.}
 
-\item{independent_cols}{str. The column in the data containing the independent var.}
+\item{dist_columns}{Vector. The columns to plot distributions for. Defaults to c().}
+
+\item{dependent_col}{Character. The column in the data containing the dependent var.}
+
+\item{independent_cols}{Character. The column in the data containing the independent var.}
+
+\item{plot_na_counts}{Bool. Whether to plot NA counts. Defaults to F.}
+
+\item{plot_scatter}{Bool. Whether to plot a scatter plot of independent vs dependent. Defaults to F.}
 }
 \description{
 The core functionality for producing descriptive stats

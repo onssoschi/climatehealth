@@ -32,6 +32,9 @@ intervals).}
 attributable to temperature, heat, cold, extreme heat and extreme cold
 (with confidence intervals).}
 
+\item{save_csv}{Bool. Whether or not to save CSV files to output path.
+Defaults to FALSE.}
+
 \item{output_folder_path}{Path to folder for storing outputs.}
 }
 \value{

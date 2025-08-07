@@ -33,6 +33,7 @@ Imports:
     ncdf4 (>= 1.24),
     openxlsx,
     patchwork,
+    purrr,
     raster,
     RColorBrewer,
     readxl,
@@ -44,6 +45,7 @@ Imports:
     stats,
     stringr (>= 1.5.1),
     terra,
+    tidyr,
     tidyverse,
     tidytable,
     tools,
@@ -51,7 +53,8 @@ Imports:
     xfun,
     zeallot (>= 0.1.0)
 Suggests:
-    testthat (>= 3.2.1.1),
+    devtools,
+    INLA,
     patrick,
-    devtools
+    testthat (>= 3.2.1.1)
 Config/rcmdcheck/ignore-inconsequential-notes: true

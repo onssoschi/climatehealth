@@ -88,7 +88,7 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
   #   - CONSTANT EXPOSURES ALONG LAGS IF dir="forw"
   lag <- attr(basis,"lag")
   if(NCOL(x)==1L) {
-    at <- if(dir=="back") tsModel:::Lag(x,seq(lag[1],lag[2])) else
+    at <- if(dir=="back") tsModel::Lag(x,seq(lag[1],lag[2])) else
       matrix(rep(x,diff(lag)+1),length(x))
   } else {
     if(dir=="forw") stop("'x' must be a vector when dir='forw'")
@@ -110,7 +110,7 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
   } else {
     den <- sum(cases,na.rm=TRUE)
     if(dir=="forw")
-      cases <- rowMeans(as.matrix(tsModel:::Lag(cases,-seq(lag[1],lag[2]))))
+      cases <- rowMeans(as.matrix(tsModel::Lag(cases,-seq(lag[1],lag[2]))))
   }
 #
 ################################################################################
@@ -147,7 +147,7 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
       Xpredall <- Xpredall + Xpred[ind,,drop=FALSE]
     }
   } else {
-    basis <- do.call(onebasis,c(list(x=x),attr(basis,"argvar")))
+    basis <- do.call(dlnm::onebasis,c(list(x=x),attr(basis,"argvar")))
     Xpredall <- dlnm:::mkXpred(typebasis,basis,x,predvar,predlag,cen)
   }
 #

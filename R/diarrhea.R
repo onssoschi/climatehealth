@@ -368,7 +368,7 @@ combine_health_climate_data <- function(health_data_path,
 #' tmean, tmin, Diarrhea). Use "all" to include all available variables.
 #' @param level Character. Aggregation level: one of "country", "region", or "district".
 #' Defaults to "country".
-#' @param year Optional numeric vector to filter data by year(s). Defaults to NULL.
+#' @param filter_year Optional numeric vector to filter data by year(s). Defaults to NULL.
 #' @param save_fig Boolean. Whether to save the figure as a PDF. Defaults to FALSE.
 #' @param output_dir Character. Directory path to save the figure. Default to NULL
 #'
@@ -1302,8 +1302,8 @@ attribution_calculation <- function(data,
 #' variable. The user may also have thepossibility to choose "nbinomial" for a
 #' negative binomial distribution. Defaults to "poisson".
 #' @param config Boolean. Enable additional model configurations. Defaults to FALSE.
+#' @param save_csv Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.
 #' @param save_fig Boolean. If TRUE, saves the generated plots. Defaults to FALSE.
-#' @param save_fig Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.
 #' @param output_dir Character. The path to the directory where outputs
 #' (e.g., plots, maps, datasets) should be saved.
 #'

@@ -9,6 +9,8 @@ air_pollution_meta_analysis(data, var_name = "pm25", family = "quasipoisson")
 \arguments{
 \item{data}{Input data with multiple regions}
 
+\item{var_name}{Character. PM2.5 variable to analyze. Defaults to "pm25".}
+
 \item{family}{Character string indicating the distribution family used in the GAM.
 Must be one of the four options "quasipoisson", "nb", "ziP", and "poisson".
 "quasipoisson" (Appropriate for count data with overdispersion),
@@ -16,8 +18,6 @@ Must be one of the four options "quasipoisson", "nb", "ziP", and "poisson".
 "ziP" (zero-inflated which is suitable for count data with excess zeros (sparse data)),
 "poisson" (Suitable for count data without overdispersion (mean = variance)).
 Defaults to "quasipoisson"}
-
-\item{pm_25_col}{Character. PM2.5 variable to analyze. Defaults to "pm25".}
 }
 \value{
 List with meta-analysis results including AF and AN.

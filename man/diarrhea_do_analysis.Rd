@@ -100,7 +100,9 @@ negative binomial distribution. Defaults to "poisson".}
 
 \item{config}{Boolean. Enable additional model configurations. Defaults to FALSE.}
 
-\item{save_fig}{Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.}
+\item{save_csv}{Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.}
+
+\item{save_fig}{Boolean. If TRUE, saves the generated plots. Defaults to FALSE.}
 
 \item{output_dir}{Character. The path to the directory where outputs
 (e.g., plots, maps, datasets) should be saved.}

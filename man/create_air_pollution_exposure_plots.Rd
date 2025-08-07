@@ -31,8 +31,7 @@ Must include columns: region, date, deaths, population, and exposure variable.}
 Should include overall relative risk estimate (overall_rr).}
 
 \item{reference_pm25}{Numeric value specifying the reference PM2.5
-concentration (\u03bc\u0067\u002f\u006d\u00b3) for risk calculations and plot
-centering.}
+concentration (μg/m³) for risk calculations and plot centering.}
 
 \item{reference_name}{Character string describing the reference scenario
 (e.g., "WHO", "National"). Defaults to "Reference".}

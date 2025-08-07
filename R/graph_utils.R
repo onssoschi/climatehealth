@@ -1,5 +1,3 @@
-library(gplots)
-
 # Utilities associated with creating graphs for indicator outputs
 
 #' Generate a grid size for a certain number of plots.

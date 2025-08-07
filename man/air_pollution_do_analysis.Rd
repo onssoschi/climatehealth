@@ -64,8 +64,7 @@ analysis. Defaults to TRUE.}
 Defaults to TRUE.}
 
 \item{reference_standards}{List. Reference standards for exposure-response plots.
-Defaults include WHO (15 \u03bc\u0067\u002f\u006d\u00b3) and Rwanda
-(\u03bc\u0067\u002f\u006d\u00b3) standards}
+Defaults include WHO (15 μg/m³) and Rwanda (50 μg/m³) standards}
 }
 \value{
 List containing:

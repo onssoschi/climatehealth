@@ -12,10 +12,14 @@ define_and_validate_optimal_temps(
 )
 }
 \arguments{
-\item{optimal_temp_range}{An matrix used to store the optimal temperature
+\item{optimal_temp_range}{Matrix. A matrix used to store the optimal temperature
 ranges.}
 
-\item{prediction}{The models prediction}
+\item{prediction}{Data. The models prediction.}
+
+\item{RR_fit_col}{Character. The column containing the relative risk values.}
+
+\item{index}{Integer. The index to use to obtain the RR values.}
 }
 \value{
 The optimal temperature range.
