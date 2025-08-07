@@ -116,16 +116,19 @@ create_na_summary <- function(
 
 #' The core functionality for producing descriptive stats
 #'
-#' @param dataset_title String. The title for the dataset being used.
-#' @param df DataFrame. Input data for descriptive stats/
-#' @param output_path string. The path to write outputs to.
-#' @param title string. title used for the plots in the ds.
-#' @param correlation_method string. The correlation method used in ds.
-#' @param dist_columns vector. The columns to plot distributions for.
-#' @param dependent_col str. The column in the data containing the dependent var.
-#' @param independent_cols str. The column in the data containing the independent var.
+#' @param dataset_title Character. The title for the dataset being used.
+#' @param df Dataframe. The input DataFrame.
+#' @param output_path Character. The path to write outputs to.
+#' @param title Character. The specific title for the subset of data being used.
+#' @param plot_corr_matrix Bool. Whether or not to plot a correlation matrix. Defaults to F.
+#' @param correlation_method Character. The correlation method used in ds.
+#' @param plot_dist Bool. Whether or not to plot distribution histograms. Defaults to F.
+#' @param dist_columns Vector. The columns to plot distributions for. Defaults to c().
+#' @param dependent_col Character. The column in the data containing the dependent var.
+#' @param independent_cols Character. The column in the data containing the independent var.
+#' @param plot_na_counts Bool. Whether to plot NA counts. Defaults to F.
+#' @param plot_scatter Bool. Whether to plot a scatter plot of independent vs dependent. Defaults to F.
 #'
-#' @export
 common_descriptive_stats_core <- function(
     dataset_title,
     df,
@@ -198,18 +201,22 @@ common_descriptive_stats_core <- function(
 
 #' The wrapper function to compute descriptive stats for the heat and cold indicator.
 #'
-#' @param dataset_title String. The title for the dataset being used.
-#' @param df_list list(dataframe) A list of input dataframes.
-#' @param output_path string. The path to write outputs to.
-#' @param use_individual_dfs bool. Whether or not to use all dfs or concat them into one.
-#' @param title string. title used for the plots in the ds.
-#' @param correlation_method string. The correlation method used in ds.
-#' @param dist_columns vector. The columns to plot distributions for.
-#' @param ma_days int. The number of days to use for a moving average.
-#' @param ma_sides int. The number of sides to use for a moving average (1 or 2).
-#' @param ma_columns vector. Additional columns to plot moving average for. Dependent done by default.
-#' @param dependent_col str. The column in the data containing the dependent var.
-#' @param independent_cols str. The column in the data containing the independent var.
+#' @param dataset_title Character. The title for the dataset being used.
+#' @param df_list Vector. A list of input dataframes.
+#' @param output_path Character. The path to write outputs to.
+#' @param plot_corr_matrix Bool. Whether or not to plot a correlation matrix. Defaults to F.
+#' @param correlation_method Character. The correlation method used in ds.
+#' @param plot_dist Bool. Whether or not to plot distribution histograms. Defaults to F.
+#' @param dist_columns Vector. The columns to plot distributions for. Defaults to c().
+#' @param plot_ma Bool. Whether or not to plot moving average for specified columns. Defaults to F.
+#' @param ma_days Integer. The number of days to use for a moving average. Defaults to 100.
+#' @param ma_sides Integer. The number of sides to use for a moving average (1 or 2). Defaults to 2.
+#' @param ma_columns Vector. Additional columns to plot moving average for. Defaults to c().
+#' @param timeseries_col Character. The column containing the timeseries (e.g., Date). Defaults to NULL.
+#' @param dependent_col Character. The column in the data containing the dependent var.
+#' @param independent_cols Character. The column in the data containing the independent var.
+#' @param plot_na_counts Bool. Whether to plot NA counts. Defaults to F.
+#' @param plot_scatter Bool. Whether to plot a scatter plot of independent vs dependent. Defaults to F.
 #'
 #' @export
 common_descriptive_stats <- function(
@@ -240,7 +247,7 @@ common_descriptive_stats <- function(
   # combine all smaller df's into one
   combined_df <- do.call(rbind, df_list)
   # obtain desc. stats
-  common_descriptive_stats_core(
+  climatehealth:::common_descriptive_stats_core(
     dataset_title = dataset_title,
     df = combined_df,
     output_path = output_path,
@@ -283,7 +290,7 @@ common_descriptive_stats <- function(
       dir.create(sub_df_path)
     }
     # save out statistics
-    common_descriptive_stats_core(
+    climatehealth:::common_descriptive_stats_core(
       dataset_title = dataset_title,
       df = df_list[[i]],
       output_path = sub_df_path,

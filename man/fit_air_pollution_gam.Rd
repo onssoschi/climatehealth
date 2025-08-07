@@ -9,6 +9,9 @@ fit_air_pollution_gam(data, var_name = "pm25", family = "quasipoisson")
 \arguments{
 \item{data}{Data to fit the model.}
 
+\item{var_name}{Character. The name of the column containing PM2.5 values.
+Defaults to "pm25"}
+
 \item{family}{Character string indicating the distribution family used in the GAM.
 Must be one of the four options "quasipoisson", "nb", "ziP", and "poisson".
 "quasipoisson" (Appropriate for count data with overdispersion),
@@ -16,9 +19,6 @@ Must be one of the four options "quasipoisson", "nb", "ziP", and "poisson".
 "ziP" (zero-inflated which is suitable for count data with excess zeros (sparse data)),
 "poisson" (Suitable for count data without overdispersion (mean = variance)).
 Defaults to "quasipoisson"}
-
-\item{pm_25_col}{Character. The name of the column containing PM2.5 values.
-Defaults to "pm25"}
 }
 \value{
 GAM model object or NULL if failed.

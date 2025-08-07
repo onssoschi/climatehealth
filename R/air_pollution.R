@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 #' @title R-code for I1: All-cause mortality attributable to Outdoor PM2.5.
 #-------------------------------------------------------------------------------
-
+library(dplyr)
 
 #' Read in climate, environmental and health data and rename columns
 #'
@@ -278,7 +278,7 @@ plot_air_pollution_variables <- function(data,
 #' for climate variables.
 #'
 #' @param data Data to fit the model.
-#' @param pm_25_col Character. The name of the column containing PM2.5 values.
+#' @param var_name Character. The name of the column containing PM2.5 values.
 #' Defaults to "pm25"
 #' @param family Character string indicating the distribution family used in the GAM.
 #' Must be one of the four options "quasipoisson", "nb", "ziP", and "poisson".
@@ -308,7 +308,6 @@ fit_air_pollution_gam <- function(data,
   if (!(var_name %in% names(data))) stop(paste0(var_name, " not in dataset."))
 
   # Create Model Formula
-  library(splines)
   GAM_formula <- as.formula(
     paste(
       "deaths ~ ", var_name,
@@ -367,7 +366,7 @@ extract_air_pollution_coef <- function(model,
 #' fraction and attributable number.
 #'
 #' @param data Input data with multiple regions
-#' @param pm_25_col Character. PM2.5 variable to analyze. Defaults to "pm25".
+#' @param var_name Character. PM2.5 variable to analyze. Defaults to "pm25".
 #' @param family Character string indicating the distribution family used in the GAM.
 #' Must be one of the four options "quasipoisson", "nb", "ziP", and "poisson".
 #' "quasipoisson" (Appropriate for count data with overdispersion),
@@ -1027,8 +1026,7 @@ plot_air_pollution_dlm <- function(dlm_results,
 #' @param meta_results List. Meta-analysis results from previous analysis.
 #' Should include overall relative risk estimate (overall_rr).
 #' @param reference_pm25 Numeric value specifying the reference PM2.5
-#' concentration (\u03bc\u0067\u002f\u006d\u00b3) for risk calculations and plot
-#'  centering.
+#' concentration (μg/m³) for risk calculations and plot centering.
 #' @param reference_name Character string describing the reference scenario
 #' (e.g., "WHO", "National"). Defaults to "Reference".
 #' @param tlag Integer. Maximum lag days for distributed lag models.
@@ -1412,8 +1410,7 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
 #' @param create_plots Logical. Whether to create exposure-response plots.
 #' Defaults to TRUE.
 #' @param reference_standards List. Reference standards for exposure-response plots.
-#' Defaults include WHO (15 \u03bc\u0067\u002f\u006d\u00b3) and Rwanda
-#' (\u03bc\u0067\u002f\u006d\u00b3) standards
+#' Defaults include WHO (15 μg/m³) and Rwanda (50 μg/m³) standards
 #'
 #' @return List containing:
 #' \describe{

@@ -24,6 +24,8 @@ compute_attributable_deaths(
 \item{df_list}{An alphabetically-ordered list
 of dataframes for each region.}
 
+\item{output_year}{The year to calculate attributable deaths for.}
+
 \item{blup}{A list of BLUPs (best linear unbiased predictions).}
 
 \item{mintempregions}{A named numeric vector.
