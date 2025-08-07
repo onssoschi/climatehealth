@@ -1079,10 +1079,6 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
     )
   }
 
-  if (!require(mixmeta, quietly = TRUE)) {
-    stop("Package 'mixmeta' is required for meta-analysis")
-  }
-
   if (is.null(output_file)) {
     output_file <- paste0("air_pollution_results/", tolower(reference_name),
                           "_exposure_response_plots.png")
