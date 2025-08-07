@@ -2,3 +2,10 @@
 ^renv\.lock$
 ^indicatorfunctions\.Rproj$
 ^\.Rproj\.user$
+^.github
+^.gitlab
+^CODEOWNERS
+^CONTRIBUTING.md
+^climatehealth.Rproj
+^git_filter
+^LICENSE.md

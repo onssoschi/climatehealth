@@ -8,6 +8,7 @@
 .RData
 .RDataTmp
 .Renviron
+..Rcheck
 renv
 
 # Common Data Files

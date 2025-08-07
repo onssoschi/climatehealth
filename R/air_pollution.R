@@ -465,7 +465,7 @@ analyze_air_pollution_lags <- function(data,
                                        family = "quasipoisson") {
 
   lag_vars <- c("pm25", paste0("pm25_lag", 1:max_lag), paste0("pm25_lag0_", max_lag))
-  lag_labels <- c("Lag 0", paste0("Lag ", 1:max_lag), paste0("Lag 0–", max_lag))
+  lag_labels <- c("Lag 0", paste0("Lag ", 1:max_lag), paste0("Lag 0-", max_lag))
 
   tidytable::map2_dfr(lag_vars, lag_labels, ~{
     result <- tryCatch({
@@ -611,7 +611,7 @@ plot_air_pollution_forest <- function(meta_results,
     ggplot2::labs(
       x = "Health Relative Risk", y = "Region",
       title = title,
-      subtitle = sprintf("I² = %.1f%%; τ² = %.4f",
+      subtitle = sprintf("I\u00b2 = %.1f%%; \u03c4\u00b2 = %.4f",
                          meta_results$heterogeneity$I2,
                          meta_results$heterogeneity$tau2)
     ) +
@@ -658,7 +658,7 @@ plot_air_pollution_lags <- function(lag_results,
     stop("No successful lag analyses to plot")
   }
 
-  lag_labels <- c("Lag 0", paste0("Lag ", 1:max_lag), paste0("Lag 0–", max_lag))
+  lag_labels <- c("Lag 0", paste0("Lag ", 1:max_lag), paste0("Lag 0-", max_lag))
   lag_results_clean$lag <- factor(lag_results_clean$lag,
                                   levels = lag_labels)
 
@@ -696,7 +696,7 @@ plot_air_pollution_lags <- function(lag_results,
 #' Calculate Optimal Grid Dimensions for Multiple Plot Display
 #'
 #' @description
-#' Determines the optimal grid layout (rows × columns) for displaying multiple plots
+#' Determines the optimal grid layout (rows x columns) for displaying multiple plots
 #' in a single figure. The function prioritizes aesthetically pleasing arrangements
 #' that are wider than tall, minimizing empty cells while maintaining visual balance.
 #'
@@ -708,7 +708,7 @@ plot_air_pollution_lags <- function(lag_results,
 #' - ncol: Number of columns in the grid
 #'
 #' @note
-#' For plot counts exceeding 400, the function will return a 20×20 grid.
+#' For plot counts exceeding 400, the function will return a 20x20 grid.
 #' Consider whether such large grids are appropriate for your visualization needs.
 #'
 #' @export
@@ -804,7 +804,7 @@ analyze_air_pollution_dlm <- function(data,
                                       family = "quasipoisson") {
   regions <- unique(data$region)
   all_vars <- c("pm25", paste0("pm25_lag", 1:max_lag), paste0("pm25_lag0_", max_lag))
-  all_labels <- c("0", paste0("", 1:max_lag), paste0("0–", max_lag))
+  all_labels <- c("0", paste0("", 1:max_lag), paste0("0-", max_lag))
   region_results_list <- list()
 
   for (prov in regions) {
@@ -937,7 +937,7 @@ plot_air_pollution_dlm <- function(dlm_results,
 
   region_results <- dlm_results$region_results
   meta_results <- dlm_results$meta_results
-  all_labels <- c("0", paste0("", 1:max_lag), paste0("0–", max_lag))
+  all_labels <- c("0", paste0("", 1:max_lag), paste0("0-", max_lag))
 
   plots_list <- list()
 
@@ -1027,7 +1027,8 @@ plot_air_pollution_dlm <- function(dlm_results,
 #' @param meta_results List. Meta-analysis results from previous analysis.
 #' Should include overall relative risk estimate (overall_rr).
 #' @param reference_pm25 Numeric value specifying the reference PM2.5
-#' concentration (μg/m³) for risk calculations and plot centering.
+#' concentration (\u03bc\u0067\u002f\u006d\u00b3) for risk calculations and plot
+#'  centering.
 #' @param reference_name Character string describing the reference scenario
 #' (e.g., "WHO", "National"). Defaults to "Reference".
 #' @param tlag Integer. Maximum lag days for distributed lag models.
@@ -1036,7 +1037,7 @@ plot_air_pollution_dlm <- function(dlm_results,
 #' @param dfseas Integer. Seasonal degrees of freedom per year. Defaults to 4.
 #' @param max_ylim Maximum Y-axis limit for relative risk. Defaults to 2.0.
 #' @param output_file Character. Full path for output PNG file. If NULL, output path will
-#' default to 'air_pollution_results/{reference_name}_exposure_response_plots.png'.
+#' default to 'air_pollution_results/(reference_name)_exposure_response_plots.png'.
 #' Default to NULL.
 #' @param plot_width_per_panel Width (inches) per panel in output. Defaults to 4.
 #' @param plot_height_per_panel Height (inches) per panel in output. Defaults to 3.5.
@@ -1339,11 +1340,11 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
     }
   }
 
-  mtext(text = "Daily PM2.5 (μg/m³)", side = 1, line = 2.5, outer = TRUE,
+  mtext(text = "Daily PM2.5 (\u03bc\u0067\u002f\u006d\u00b3)", side = 1, line = 2.5, outer = TRUE,
         cex = 1.1)
   mtext(text = "Relative risk", side = 2, line = 2.5, outer = TRUE, cex = 1.1)
   mtext(text = paste0(reference_name, " (PM2.5 reference: ",
-                      reference_pm25, " μg/m³)"),
+                      reference_pm25, " \u03bc\u0067\u002f\u006d\u00b3)"),
         side = 3, line = 1, outer = TRUE, cex = 1.2, font = 2)
 
   if (plot_count < grid_dims$nrow * grid_dims$ncol) {
@@ -1354,7 +1355,7 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
     plot(1, type = "n", axes = FALSE, xlab = "", ylab = "")
 
     legend_items <- c("RR curve", "95% CI",
-                      paste0("Reference (", reference_pm25, " μg/m³)"),
+                      paste0("Reference (", reference_pm25, " \u03bc\u0067\u002f\u006d\u00b3)"),
                       "5th/95th percentile")
 
     legend("center",
@@ -1411,7 +1412,8 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
 #' @param create_plots Logical. Whether to create exposure-response plots.
 #' Defaults to TRUE.
 #' @param reference_standards List. Reference standards for exposure-response plots.
-#' Defaults include WHO (15 μg/m³) and Rwanda (50 μg/m³) standards
+#' Defaults include WHO (15 \u03bc\u0067\u002f\u006d\u00b3) and Rwanda
+#' (\u03bc\u0067\u002f\u006d\u00b3) standards
 #'
 #' @return List containing:
 #' \describe{
@@ -1549,11 +1551,14 @@ air_pollution_do_analysis <- function(data_path,
   }
 
   cat("\n=== COMPREHENSIVE RESULTS SUMMARY ===\n")
-  cat("Overall RR (10 μg/m³):", round(meta_results$overall_rr, 3), "\n")
+  cat(
+    "Overall RR (10 \u03bc\u0067\u002f\u006d\u00b3):",
+    round(meta_results$overall_rr, 3), "\n"
+  )
   cat("95% CI:", paste(round(meta_results$overall_ci, 3), collapse = "-"), "\n")
   cat("Overall AF:", round(meta_results$overall_af * 100, 2), "%\n")
   cat("Overall AN:", round(meta_results$overall_an, 0), "deaths\n")
-  cat("Heterogeneity I²:", round(meta_results$heterogeneity$I2, 1), "%\n")
+  cat("Heterogeneity I\u00b2:", round(meta_results$heterogeneity$I2, 1), "%\n")
 
   if (!is.null(reference_specific_af_an)) {
     cat("\n--- Reference-specific AF/AN Summary ---\n")
