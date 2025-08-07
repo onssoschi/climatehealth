@@ -28,6 +28,7 @@ Imports:
     hydroGOF,
     lubridate (>= 1.9.4),
     metafor,
+    mixmeta,
     mgcv,
     mvmeta (>= 1.0.3),
     ncdf4 (>= 1.24),
