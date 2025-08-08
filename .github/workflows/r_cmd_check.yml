@@ -1,0 +1,37 @@
+name: R CMD Check
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches:
+      - dev
+  push:
+    branches:
+      - dev
+
+jobs:
+  check-macos:
+    runs-on: macos-latest
+    name: Run R CMD Check on MacOS
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-pandoc@v2
+      - uses: r-lib/actions/setup-tinytex@v2
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.4.1"
+
+      - name: Install dependencies
+        run: |
+          Rscript -e 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/latest"))'
+          Rscript -e 'install.packages(c("devtools", "roxygen2", "remotes", "patrick", "pak"))'
+          Rscript -e 'pak::pkg_install(devtools::dev_package_deps()$package)'
+
+      - uses: r-lib/actions/check-r-package@v2
+        with:
+          upload-snapshots: true
+          build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

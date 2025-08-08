@@ -1,0 +1,62 @@
+name: Build R Package on Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    name: Build source on macOS
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.4.1"
+
+      - name: Install dependencies
+        run: |
+          Rscript -e 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/latest"))'
+          Rscript -e 'install.packages(c("devtools", "roxygen2", "remotes", "pak"))'
+
+      - name: Build package source (MacOS)
+        run: |
+          R CMD build .
+          
+      - name: Upload macOS artifact
+        uses: softprops/action-gh-release@v1
+        with:
+          files: "*.tar.gz"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-windows:
+    runs-on: windows-latest
+    name: Build binary on Windows
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.4.1"
+          use-public-rspm: true
+
+      - name: Install dependencies
+        run: |
+          Rscript -e 'install.packages(c("devtools", "roxygen2", "remotes", "pak"))'
+          Rscript -e 'pak::pkg_install(devtools::dev_package_deps()$package)'
+
+      - name: Build Windows artifact (binary)
+        shell: bash
+        run: |
+          Rscript -e 'devtools::build(path = Sys.getenv("GITHUB_WORKSPACE"), binary = TRUE)'
+      
+      - name: Upload Windows artifact
+        uses: softprops/action-gh-release@v1
+        with:
+          files: "climatehealth_*.zip"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
