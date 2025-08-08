@@ -87,6 +87,7 @@ load_and_process_data <- function(health_data_path,
                                   month_col = NULL,
                                   diarrhea_case_col,
                                   tot_pop_col) {
+<<<<<<< HEAD
   # Load health and climate data
   ext <- tolower(xfun::file_ext(health_data_path))
   # Load data based on file extension
@@ -96,6 +97,21 @@ load_and_process_data <- function(health_data_path,
                  "xlsx" = readxl::read_excel(health_data_path),
                  stop("Unsupported file type: must be .rds, .csv, or .xlsx")
   )
+=======
+  # Create dataframe from vector/list if data comes from the API
+  if (is.data.frame(health_data_path)) {
+    data <- health_data_path
+  } else {
+    ext <- tolower(xfun::file_ext(health_data_path))
+    # Load data based on file extension
+    data <- switch(ext,
+                   "rds" = read_rds(health_data_path),
+                   "csv" = read_csv(health_data_path, show_col_types = FALSE),
+                   "xlsx" = readxl::read_excel(health_data_path),
+                   stop("Unsupported file type: must be .rds, .csv, or .xlsx")
+    )
+  }
+>>>>>>> dev
 
   # create date columns if needed
   if (is.null(date_col) & (is.null(month_col) | is.null(year_col))) {
@@ -172,16 +188,19 @@ load_and_process_climatedata <- function(climate_data_path,
                                          runoff_col= NULL,
                                          spi_col = NULL,
                                          max_lag = 4){
-  # Detect file extension
-  ext <- tolower(xfun::file_ext(climate_data_path))
 
-  # Read file
-  data <- switch(ext,
-                 "rds" = readr::read_rds(climate_data_path),
-                 "csv" = readr::read_csv(climate_data_path, show_col_types = FALSE),
-                 "xlsx" = readxl::read_excel(climate_data_path),
-                 stop("Unsupported file type: must be .rds, .csv, or .xlsx")
-  )
+  if (is.data.frame(climate_data_path)) {
+    data <- climate_data_path
+  } else {
+    ext <- tolower(xfun::file_ext(climate_data_path))
+    # Load data based on file extension
+    data <- switch(ext,
+                   "rds" = read_rds(climate_data_path),
+                   "csv" = read_csv(climate_data_path, show_col_types = FALSE),
+                   "xlsx" = readxl::read_excel(climate_data_path),
+                   stop("Unsupported file type: must be .rds, .csv, or .xlsx")
+    )
+  }
 
   # Map columns to standard names, excluding NULLs
   var_map <- list(district = district_col, year = year_col, month = month_col,
@@ -362,7 +381,7 @@ combine_health_climate_data <- function(health_data_path,
 #' tmean, tmin, Diarrhea). Use "all" to include all available variables.
 #' @param level Character. Aggregation level: one of "country", "region", or "district".
 #' Defaults to "country".
-#' @param year Optional numeric vector to filter data by year(s). Defaults to NULL.
+#' @param filter_year Optional numeric vector to filter data by year(s). Defaults to NULL.
 #' @param save_fig Boolean. Whether to save the figure as a PDF. Defaults to FALSE.
 #' @param output_dir Character. Directory path to save the figure. Default to NULL
 #'
@@ -934,7 +953,7 @@ contour_plot <- function(data,
     filled.contour(
       x, y, z,
       xlab = "Lag",
-      ylab = ifelse(param_term == "tmax", "Temperature (°C)",
+      ylab = ifelse(param_term == "tmax", "Temperature (\u00b0C)",
                     ifelse(param_term == "rainfall", "Rainfall (mm)", param_term)),
       main = title,
       col = cols,
@@ -1094,6 +1113,8 @@ plot_relative_risk <- function(data,
                                save_csv = FALSE,
                                save_fig = FALSE) {
   if (!"year" %in% names(data)) stop("'year' column not found in data.")
+  if (is.null(filter_year)) filter_year <- sort(unique(data$year))
+
   level <- tolower(level)
   if (save_fig) {
     if (is.null(output_dir)) stop("output_dir must be provided if save_fig = TRUE")
@@ -1734,8 +1755,8 @@ plot_attribution_metric <- function(attr_data,
 #' variable. The user may also have thepossibility to choose "nbinomial" for a
 #' negative binomial distribution. Defaults to "poisson".
 #' @param config Boolean. Enable additional model configurations. Defaults to FALSE.
+#' @param save_csv Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.
 #' @param save_fig Boolean. If TRUE, saves the generated plots. Defaults to FALSE.
-#' @param save_fig Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.
 #' @param output_dir Character. The path to the directory where outputs
 #' (e.g., plots, maps, datasets) should be saved.
 #'
@@ -1784,10 +1805,9 @@ diarrhea_do_analysis <- function(health_data_path,
 
   # Simple output validation
   if (is.null(output_dir) & (save_fig | save_csv)) {
-    stop("'output_dir' must be provided is 'save_fig' or save_csv' are TRUE.")
+    stop("'output_dir' must be provided if 'save_fig' or save_csv' are TRUE.")
   }
-  #check_file_exists(output_dir, TRUE)
-
+  check_file_exists(output_dir, TRUE)
   # level validation
   level <- tolower(level)
   acceptable_levels = c("country", "region", "district")
@@ -1795,11 +1815,14 @@ diarrhea_do_analysis <- function(health_data_path,
     stop(paste0("Level must be one of ", paste0(acceptable_levels, collapse=", ")))
   }
 
-  # Input validation
-  check_file_exists(health_data_path, TRUE)
-  check_file_exists(climate_data_path, TRUE)
+  # Input validation (IF makes API exception)
+  if (is.character(health_data_path)) {
+    check_file_exists(health_data_path, TRUE)
+  }
+  if (is.character(climate_data_path)) {
+    check_file_exists(climate_data_path, TRUE)
+  }
   check_file_exists(map_path, TRUE)
-
   # get combined data
   combined_data <- combine_health_climate_data(health_data_path,
                                                climate_data_path,

@@ -24,29 +24,37 @@ common_descriptive_stats(
 )
 }
 \arguments{
-\item{dataset_title}{String. The title for the dataset being used.}
+\item{dataset_title}{Character. The title for the dataset being used.}
 
-\item{df_list}{list(dataframe) A list of input dataframes.}
+\item{df_list}{Vector. A list of input dataframes.}
 
-\item{output_path}{string. The path to write outputs to.}
+\item{output_path}{Character. The path to write outputs to.}
 
-\item{correlation_method}{string. The correlation method used in ds.}
+\item{plot_corr_matrix}{Bool. Whether or not to plot a correlation matrix. Defaults to F.}
 
-\item{dist_columns}{vector. The columns to plot distributions for.}
+\item{correlation_method}{Character. The correlation method used in ds.}
 
-\item{ma_days}{int. The number of days to use for a moving average.}
+\item{plot_dist}{Bool. Whether or not to plot distribution histograms. Defaults to F.}
 
-\item{ma_sides}{int. The number of sides to use for a moving average (1 or 2).}
+\item{dist_columns}{Vector. The columns to plot distributions for. Defaults to c().}
 
-\item{ma_columns}{vector. Additional columns to plot moving average for. Dependent done by default.}
+\item{plot_ma}{Bool. Whether or not to plot moving average for specified columns. Defaults to F.}
 
-\item{dependent_col}{str. The column in the data containing the dependent var.}
+\item{ma_days}{Integer. The number of days to use for a moving average. Defaults to 100.}
 
-\item{independent_cols}{str. The column in the data containing the independent var.}
+\item{ma_sides}{Integer. The number of sides to use for a moving average (1 or 2). Defaults to 2.}
 
-\item{use_individual_dfs}{bool. Whether or not to use all dfs or concat them into one.}
+\item{ma_columns}{Vector. Additional columns to plot moving average for. Defaults to c().}
 
-\item{title}{string. title used for the plots in the ds.}
+\item{timeseries_col}{Character. The column containing the timeseries (e.g., Date). Defaults to NULL.}
+
+\item{dependent_col}{Character. The column in the data containing the dependent var.}
+
+\item{independent_cols}{Character. The column in the data containing the independent var.}
+
+\item{plot_na_counts}{Bool. Whether to plot NA counts. Defaults to F.}
+
+\item{plot_scatter}{Bool. Whether to plot a scatter plot of independent vs dependent. Defaults to F.}
 }
 \description{
 The wrapper function to compute descriptive stats for the heat and cold indicator.

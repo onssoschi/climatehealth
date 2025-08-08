@@ -328,18 +328,6 @@ mh_save_results <- function(results,
 #' FALSE.
 #' @param save_csv Boolean. Whether to save the results as a CSV. Defaults to
 #' FALSE.
-#' @param descriptive_stats Boolean. Whether to calculate descriptive stats.
-#' @param ds_correlation_method character. The correlation method used in correlation matrices.
-#' Defaults to 'pearson'.
-#' @param ds_use_individual_dfs Boolean. Whether to calculate descriptive stats for each individual
-#' df in df_list. Default to TRUE.
-#' @param ds_dist_columns character vector. The names of columns to plot distributions for.
-#' Defaults to c().
-#' @param ds_ma_days integer. How many days to use for moving average calculations.
-#' Defaults to 100.
-#' @param ds_ma_sides integer. How many sides to use for moving average calculations (1 or 2).
-#' Defaults to 2.
-#' @param ds_ma_columns character vector. The names of columns to plot moving average for.
 #' @param output_folder_path Path to folder where plots and/or CSV should be
 #' saved. Defaults to NULL.
 #'

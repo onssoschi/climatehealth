@@ -99,9 +99,6 @@ for each predictor. Defaults to FALSE.}
 
 \item{print_model_summaries}{Bool. Whether to print the model summaries to
 console. Defaults to FALSE.}
-
-\item{output_AF_AN}{Bool. Whether to create attributable fraction and
-attributable number output. Only works id relative_risk_by_region = TRUE.}
 }
 \value{
 Dataframe of relative risk and confidence intervals for
