@@ -541,7 +541,7 @@ create_inla_indices <- function(data) {
 #' (specifically tmax) and selected confounders (rainfall, r_humidity, runoff, tmin)
 #' using the Variance Inflation Factor (VIF) and condition number (Kappa).
 #'
-#' @param data A data frame from `combined_health_climate_data()` function,
+#' @param data A data frame from the `combined_health_climate_data()` function,
 #' containing the columns: `rainfall`, `r_humidity`, `runoff`, `tmin`,
 #' and must be compatible with `set_cross_basis()` for generating DLNM matrices.
 #'
@@ -553,7 +553,7 @@ create_inla_indices <- function(data) {
 #' }
 #'
 #' @export
-check_vif <- function(data= combined_data$data) {
+check_vif <- function(data) {
   # Create basis list with DLNM basis matrices
   basis <- set_cross_basis(data)
 
@@ -1858,7 +1858,7 @@ diarrhea_do_analysis <- function(health_data_path,
   basis <- set_cross_basis(combined_data$data)
 
   #check for multicolinearity
-  VIF<- check_vif(combined_data$data)
+  VIF <- check_vif(combined_data$data)
 
   # fitting the model
   inla_result <- run_inla_models(combined_data,
