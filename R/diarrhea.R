@@ -87,17 +87,6 @@ load_and_process_data <- function(health_data_path,
                                   month_col = NULL,
                                   diarrhea_case_col,
                                   tot_pop_col) {
-<<<<<<< HEAD
-  # Load health and climate data
-  ext <- tolower(xfun::file_ext(health_data_path))
-  # Load data based on file extension
-  data <- switch(ext,
-                 "rds" = read_rds(health_data_path),
-                 "csv" = read_csv(health_data_path, show_col_types = FALSE),
-                 "xlsx" = readxl::read_excel(health_data_path),
-                 stop("Unsupported file type: must be .rds, .csv, or .xlsx")
-  )
-=======
   # Create dataframe from vector/list if data comes from the API
   if (is.data.frame(health_data_path)) {
     data <- health_data_path
@@ -111,7 +100,6 @@ load_and_process_data <- function(health_data_path,
                    stop("Unsupported file type: must be .rds, .csv, or .xlsx")
     )
   }
->>>>>>> dev
 
   # create date columns if needed
   if (is.null(date_col) & (is.null(month_col) | is.null(year_col))) {
