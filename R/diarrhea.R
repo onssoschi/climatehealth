@@ -593,7 +593,7 @@ check_vif <- function(data= combined_data$data) {
     vif = vif_values,
     condition_number = condition_number,
     interpretation = if (condition_number < 10) {
-      "Low collinearity ✅"
+      "Low collinearity"
     } else if (condition_number < 30) {
       "Moderate collinearity"
     } else {
@@ -1473,8 +1473,8 @@ attribution_calculation <- function(data,
 #' Plot Attributable Metrics
 #'
 #' @description
-#' This function generates plots of climate-attributable health metrics—such as
-#' the attributable number, fraction, and rate of diarrhea cases—at different spatial
+#' This function generates plots of climate-attributable health metrics such as
+#' the attributable number, fraction, and rate of diarrhea cases at different spatial
 #' levels (country, region, or district). It supports filtering by year and can
 #' optionally save the plots as PDF files.
 #'
