@@ -1335,10 +1335,10 @@ plot_relative_risk <- function(data,
 #' @param param_threshold Numeric. Threshold above which exposure is considered,
 #' "attributable". Can take floats. Defaults to 1.
 #' @param filter_year Integer. The year to filter to data to. Defaults to NULL.
+#' @param output_dir Character. Directory path to save the output metrics if
+#' save_csv = TRUE. Defaults to NULL.
 #' @param save_csv Logical. Whether to save the generated attribution metrics to file.
-#' Default is `FALSE`.
-#' @param output_dir Optional. Directory path to save the output metrics if
-#' `save_fig = TRUE`.
+#' Defaults to FALSE.
 #'
 #' @return Results containing the attributable number and fraction at the chosen
 #' dissagregation level.
