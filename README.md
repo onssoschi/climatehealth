@@ -13,14 +13,11 @@ This repository currently contains analysis pipelines for the following topics i
 - Heat- and cold-related mortality (ONS)
 - Injury and mortality from extreme weather events: Wildfires (ONS)
 - Mental health (ONS)
+- Waterborne (AIMS)
+- Air Pollution (AIMS)
 
 Coming soon:
 - Malaria (AIMS/RIPS)
-- Waterborne (AIMS)
-- Malnutrition (RIPS)
-- Flooding (AIMS)
-- Air Pollution (AIMS)
-- CSM (RIPS)
 
 ## Requirements
 
