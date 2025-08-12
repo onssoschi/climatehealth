@@ -10,7 +10,9 @@ attribution_calculation(
   model,
   level,
   param_threshold = 1,
-  filter_year = NULL
+  filter_year = NULL,
+  output_dir = NULL,
+  save_csv = FALSE
 )
 }
 \arguments{
@@ -29,6 +31,12 @@ Can take one of the following values: "country", "region", or "district".}
 "attributable". Can take floats. Defaults to 1.}
 
 \item{filter_year}{Integer. The year to filter to data to. Defaults to NULL.}
+
+\item{output_dir}{Character. Directory path to save the output metrics if
+save_csv = TRUE. Defaults to NULL.}
+
+\item{save_csv}{Logical. Whether to save the generated attribution metrics to file.
+Defaults to FALSE.}
 }
 \value{
 Results containing the attributable number and fraction at the chosen

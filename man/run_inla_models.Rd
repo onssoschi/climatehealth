@@ -8,6 +8,7 @@ spatiotemporal random effects.}
 run_inla_models(
   combined_data,
   basis_matrices_choices,
+  inla_param,
   output_dir = NULL,
   save_csv = FALSE,
   family = "poisson",
@@ -18,8 +19,11 @@ run_inla_models(
 \item{combined_data}{A dataframe resulting from combine_health_climate_data() function.}
 
 \item{basis_matrices_choices}{A character vector specifying the basis matrix
-parameters to be included in the model. Possible values are "tmax", "tmin",
-"rainfall", "r_humidity", and "spi".}
+parameters to be included in the model. Possible values are "tmax" and "rainfall".}
+
+\item{inla_param}{A character vector specifying the confounding exposures to
+be included in the model. Possible values are "tmax","tmin", "rainfall",
+"r_humidity", and "runoff".}
 
 \item{output_dir}{Character. The path to save model output to.  Defaults to NULL.}
 

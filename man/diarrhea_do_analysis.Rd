@@ -10,7 +10,7 @@ diarrhea_do_analysis(
   map_path,
   region_col,
   district_col,
-  date_col,
+  date_col = NULL,
   year_col,
   month_col,
   diarrhea_case_col,
@@ -24,6 +24,7 @@ diarrhea_do_analysis(
   geometry_col,
   spi_col = NULL,
   max_lag = 2,
+  inla_param,
   basis_matrices_choices,
   param_term,
   level,
@@ -79,6 +80,10 @@ Precipitation Index. Defaults to NULL.}
 
 \item{max_lag}{Numeric. Maximum lag to consider in the model
 (typically 2 to 4). Defaults to 2.}
+
+\item{inla_param}{A character vector specifying the confounding exposures to
+be included in the model. Possible values are "tmax","tmin", "rainfall",
+"r_humidity", and "runoff".}
 
 \item{basis_matrices_choices}{Character vector specifying basis matrix
 parameters to include in the model (e.g., "tmax", "tmin", "rainfall",
