@@ -297,7 +297,6 @@ combine_health_climate_data <- function(health_data_path,
                                         max_lag = 2,
                                         output_dir = NULL){
 
-  # Load data
   health_data <- load_and_process_data(health_data_path, region_col,
                                        district_col, date_col, year_col,
                                        month_col, diarrhea_case_col,
@@ -410,7 +409,7 @@ plot_health_climate_timeseries <- function(data,
                        mean(.x, na.rm = TRUE)
                      }),
               .groups = "drop") %>%
-    pivot_longer(cols = all_of(vars_to_plot), names_to = "variable", values_to = "value")
+    tidyr::pivot_longer(cols = all_of(vars_to_plot), names_to = "variable", values_to = "value")
 
   if (!is.null(group_var)) agg <- agg %>% rename(group = all_of(group_var))
 
@@ -553,7 +552,7 @@ create_inla_indices <- function(data) {
 #' }
 #'
 #' @export
-check_vif <- function(data) {
+check_diarrhea_vif <- function(data) {
   # Create basis list with DLNM basis matrices
   basis <- set_cross_basis(data)
 
@@ -583,7 +582,7 @@ check_vif <- function(data) {
   lm_model <- lm(dummy_y ~ ., data = design_df)
 
   # Compute VIF
-  vif_values <- vif(lm_model)
+  vif_values <- car::vif(lm_model)
 
   # Compute condition number
   condition_number <- kappa(scale(design_df), exact = TRUE)
@@ -1485,20 +1484,21 @@ attribution_calculation <- function(data,
 #' including columns such as `year`, `AR_Number`, `AR_Fraction`, `AR_per_100k`,
 #' and their respective confidence intervals.
 #' @param level Character. The spatial level at which to plot the results.
-#' Must be one of `"country"`, `"region"`, or `"district"`.
+#' Must be one of `"country"`, `"region"`, or `"district"`. Defaults to "district".
 #' @param metrics Character vector. Specifies which metrics to plot.
 #' Options include `"AR_Number"` (attributable number),
 #' `"AR_Fraction"` (attributable fraction), and
 #' `"AR_per_100k"` (attributable rate per 100,000 population).
-#' Multiple values can be passed.
+#' Multiple values can be passed. Defaults to c("AR_Number", "AR_Fraction",
+#' "AR_per_100k").
 #' @param filter_year Optional. Integer or vector of integers specifying the year(s)
-#' to filter the dataset. If `NULL`, all years are aggregated.
+#' to filter the dataset. If `NULL`, all years are aggregated. Defaults to FALSE.
 #' @param param_term Character. The climate variable term used in the attribution
-#' analysis (e.g., `"tmax"`, `"rainfall"`). This is used for labeling the plot titles.
+#' analysis (e.g., "tmax", "rainfall"). This is used for labeling the plot titles.
 #' @param save_fig Logical. Whether to save the generated plots to file.
-#' Default is `FALSE`.
+#' Defaults to FALSE.
 #' @param output_dir Optional. Directory path to save the output plots if
-#' `save_fig = TRUE`.
+#' `save_fig = TRUE`. Defaults to NULL.
 #'
 #' @return
 #' A list of ggplot objects (or nested lists if the level is `"region"` or
@@ -1516,7 +1516,7 @@ attribution_calculation <- function(data,
 #'
 #' @export
 plot_attribution_metric <- function(attr_data,
-                                    level = c("country", "region", "district"),
+                                    level = "district",
                                     metrics = c("AR_Number", "AR_Fraction", "AR_per_100k"),
                                     filter_year = NULL,
                                     param_term,
@@ -1608,16 +1608,16 @@ plot_attribution_metric <- function(attr_data,
       district_plots <- attr_data_plot %>%
         split(ceiling(seq_along(attr_data_plot[[level]]) / 30)) %>%
         purrr::map(~ {
-          ggplot(.x, aes(x = .data[[level]], y = .data[[metric]])) +
-            geom_col(fill = "steelblue", width= 0.6) +
-            geom_errorbar(aes(ymin = .data[[lci_col]], ymax = .data[[uci_col]],
-                              color = "95% CI"),width = 0.2) + coord_flip() +
-            labs(x = tools::toTitleCase(level), y = y_label) +
-            scale_y_continuous(labels = y_formatter, limits = c(0, max_y)) +
-            scale_color_manual(name = "", values = c("95% CI" = "black"))+
-            theme_minimal(base_size = 10) +
-            theme(axis.text.y = element_text(size = 7),
-                  plot.title = element_text(hjust = 0.5, size =9))
+          ggplot2::ggplot(.x, ggplot2::aes(x = .data[[level]], y = .data[[metric]])) +
+            ggplot2::geom_col(fill = "steelblue", width= 0.6) +
+            ggplot2::geom_errorbar(ggplot2::aes(ymin = .data[[lci_col]], ymax = .data[[uci_col]],
+                              color = "95% CI"),width = 0.2) + ggplot2::coord_flip() +
+            ggplot2::labs(x = tools::toTitleCase(level), y = y_label) +
+            ggplot2::scale_y_continuous(labels = y_formatter, limits = c(0, max_y)) +
+            ggplot2::scale_color_manual(name = "", values = c("95% CI" = "black"))+
+            ggplot2::theme_minimal(base_size = 10) +
+            ggplot2::theme(axis.text.y = ggplot2::element_text(size = 7),
+                  plot.title = ggplot2::element_text(hjust = 0.5, size =9))
         })
       if (save_fig && !is.null(output_dir)) {
         if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
@@ -1660,18 +1660,18 @@ plot_attribution_metric <- function(attr_data,
 
       group_plots <- purrr::map(split_levels, function(subset_levels) {
         df <- filter(attr_data_plot, .data[[level]] %in% subset_levels)
-        ggplot(df, aes(x = .data[[level]], y = .data[[metric]], fill = factor(year))) +
-          geom_col(position = position_dodge(width = 0.8)) +
-          geom_errorbar(
-            aes(ymin = .data[[paste0(metric, "_LCI")]], ymax = .data[[paste0(metric, "_UCI")]],
+        ggplot2::ggplot(df, ggplot2::aes(x = .data[[level]], y = .data[[metric]], fill = factor(year))) +
+          ggplot2::geom_col(position = position_dodge(width = 0.8)) +
+          ggplot2::geom_errorbar(
+            ggplot2::aes(ymin = .data[[paste0(metric, "_LCI")]], ymax = .data[[paste0(metric, "_UCI")]],
                 color = "95% CI"), position = position_dodge(0.8), width = 0.25) +
-          scale_color_manual(name = "", values = c("95% CI" = "black"))+
-          labs( x = tools::toTitleCase(level), y = y_label, fill = "Year") +
-          theme_minimal(base_size = 6) +
-          theme(axis.text.x = element_text(angle = 70, hjust = 1, size = 8),
+          ggplot2::scale_color_manual(name = "", values = c("95% CI" = "black"))+
+          ggplot2::labs( x = tools::toTitleCase(level), y = y_label, fill = "Year") +
+          ggplot2::theme_minimal(base_size = 6) +
+          ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 70, hjust = 1, size = 8),
                 axis.text.y = element_text(size = 2),
                 plot.margin = margin(t = 5, r = 5, b = 50, l = 5))+
-          coord_cartesian(ylim = c(y_min, y_max))
+          ggplot2::coord_cartesian(ylim = c(y_min, y_max))
       })
 
       if (save_fig && !is.null(output_dir)) {
@@ -1730,6 +1730,9 @@ plot_attribution_metric <- function(attr_data,
 #' Precipitation Index. Defaults to NULL.
 #' @param max_lag Numeric. Maximum lag to consider in the model
 #' (typically 2 to 4). Defaults to 2.
+#' @param inla_param A character vector specifying the confounding exposures to
+#' be included in the model. Possible values are "tmax","tmin", "rainfall",
+#' "r_humidity", and "runoff".
 #' @param basis_matrices_choices Character vector specifying basis matrix
 #' parameters to include in the model (e.g., "tmax", "tmin", "rainfall",
 #' "r_humidity", "spi").
@@ -1833,32 +1836,37 @@ diarrhea_do_analysis <- function(health_data_path,
                                                max_lag,
                                                output_dir)
 
-  #plot time seris
-  plot_diarrhea<-plot_health_climate_timeseries(combined_data$data,
-                                                param_term= "diarrhea",
-                                                level = "country",
-                                                filter_year = filter_year,
-                                                save_fig = save_fig,
-                                                output_dir = output_dir)
-  plot_tmax<-plot_health_climate_timeseries(combined_data$data,
-                                            param_term= "tmax",
-                                            level = "district",
-                                            filter_year = filter_year,
-                                            save_fig = save_fig,
-                                            output_dir = output_dir)
-
-  plot_rainfall<-plot_health_climate_timeseries(combined_data$data,
-                                                param_term= "rainfall",
-                                                level = "country",
-                                                filter_year = filter_year,
-                                                save_fig = save_fig,
-                                                output_dir = output_dir)
+  #plot time series
+  plot_diarrhea<-plot_health_climate_timeseries(
+    combined_data$data,
+    param_term= level,
+    level = "country",
+    filter_year = filter_year,
+    save_fig = save_fig,
+    output_dir = output_dir
+  )
+  plot_tmax<-plot_health_climate_timeseries(
+    combined_data$data,
+    param_term= "tmax",
+    level = level,
+    filter_year = filter_year,
+    save_fig = save_fig,
+    output_dir = output_dir
+  )
+  plot_rainfall<-plot_health_climate_timeseries(
+    combined_data$data,
+    param_term= "rainfall",
+    level = level,
+    filter_year = filter_year,
+    save_fig = save_fig,
+    output_dir = output_dir
+  )
 
   # create base matrice
   basis <- set_cross_basis(combined_data$data)
 
   #check for multicolinearity
-  VIF <- check_vif(combined_data$data)
+  VIF <- check_diarrhea_vif(combined_data$data)
 
   # fitting the model
   inla_result <- run_inla_models(combined_data,
