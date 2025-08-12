@@ -537,6 +537,11 @@ create_inla_indices <- function(data) {
 #' @param data A data frame from `combined_health_climate_data()` function,
 #' containing the columns: `rainfall`, `r_humidity`, `runoff`, `tmin`,
 #' and must be compatible with `set_cross_basis()` for generating DLNM matrices.
+#' @param inla_param Character vector of parameter names representing all
+#' climate variables to consider.
+#' @param basis_matrices_choices Character vector specifying which variables
+#' should be included as DLNM basismatrices from `inla_param`.
+#' It might be `tmax`for temperature and `rainfall` if rainfall.
 #'
 #' @return A list with:
 #' \describe{
@@ -546,51 +551,37 @@ create_inla_indices <- function(data) {
 #' }
 #'
 #' @export
-check_vif <- function(data= combined_data$data) {
-  # Create basis list with DLNM basis matrices
-  basis <- set_cross_basis(data)
+check_vif <- function(data,
+                      inla_param,
+                      basis_matrices_choices) {
 
-  # Extract tmax basis (crossbasis matrix)
-  if (is.null(basis$tmax)) stop("tmax basis not found in data via set_cross_basis()")
+  data  <- create_inla_indices(combined_data$data)
+  basis <- set_cross_basis(combined_data$data)
 
-  # Combine tmax basis columns and raw confounders from data
-  confounders <- data[, c("rainfall", "r_humidity", "runoff", "tmin")]
+  vars_basis <- Filter(Negate(is.null), basis[basis_matrices_choices])
+  vars_data  <- setdiff(inla_param, basis_matrices_choices)
 
-  # Check if confounders exist and have no missing
-  if (any(!colnames(confounders) %in% names(data))) {
-    stop("One or more confounders not found in data")
-  }
+  miss_basis <- setdiff(basis_matrices_choices, names(vars_basis))
+  miss_data  <- setdiff(vars_data, names(data))
+  if (length(miss_basis)) stop("Missing in basis: ", paste(miss_basis, collapse = ", "))
+  if (length(miss_data))  stop("Missing in data: ", paste(miss_data, collapse = ", "))
 
-  # If any NA, consider imputing or removing rows (simple approach here: remove rows with NA)
-  complete_cases <- complete.cases(basis$tmax, confounders)
-  design_matrix <- cbind(basis$tmax[complete_cases, , drop = FALSE], confounders[complete_cases, ])
+  X <- cbind(do.call(cbind, vars_basis), data[vars_data])
+  X <- as.data.frame(X[complete.cases(X), ])
+  colnames(X) <- make.names(colnames(X), unique = TRUE)
 
-  # Convert to data frame
-  design_df <- as.data.frame(design_matrix)
-  colnames(design_df) <- make.names(colnames(design_df), unique = TRUE)
+  vif_vals <- car::vif(lm(rep(1, nrow(X)) ~ ., data = X))
+  cond_num <- kappa(scale(X), exact = TRUE)
 
-  # Dummy response for lm
-  dummy_y <- rep(1, nrow(design_df))
-
-  # Fit linear model for VIF calculation
-  lm_model <- lm(dummy_y ~ ., data = design_df)
-
-  # Compute VIF
-  vif_values <- vif(lm_model)
-
-  # Compute condition number
-  condition_number <- kappa(scale(design_df), exact = TRUE)
-
-  # Return results
   list(
-    vif = vif_values,
-    condition_number = condition_number,
-    interpretation = if (condition_number < 10) {
+    vif = vif_vals,
+    condition_number = cond_num,
+    interpretation = if (cond_num < 10) {
       "Low collinearity ✅"
-    } else if (condition_number < 30) {
+    } else if (cond_num < 30) {
       "Moderate collinearity"
     } else {
-      "High collinearity"
+      "High collinearity ⚠️"
     }
   )
 }
@@ -605,7 +596,7 @@ check_vif <- function(data= combined_data$data) {
 #'
 #' @param combined_data A dataframe resulting from combine_health_climate_data() function.
 #' @param basis_matrices_choices A character vector specifying the basis matrix
-#' parameters to be included in the model. Possible values are "tmax" and "rainfall".
+#' parameters to be included in the model. Possible values are "tmax", and "rainfall".
 #' @param inla_param A character vector specifying the confounding exposures to
 #' be included in the model. Possible values are "tmax","tmin", "rainfall",
 #' "r_humidity", and "runoff".
@@ -675,7 +666,7 @@ run_inla_models <- function(combined_data,
          file = file.path(output_dir,
                           paste0("model_with_",
                                  paste(c(valid_basis, raw_vars),
-                                       collapse = "_"), ".RData")))
+                                       collapse = "_"), ".csv")))
   }
 
   dic_table <- data.table::data.table(
@@ -1345,7 +1336,6 @@ attribution_calculation <- function(data,
                                     save_csv = FALSE) {
 
   level <- tolower(level)
-
   # Get model coefficients
   coef_mean <- model$summary.fixed$mean
   vcov_full <- model$misc$lincomb.derived.covariance.matrix
@@ -1368,8 +1358,6 @@ attribution_calculation <- function(data,
     if (nrow(df) == 0) return(NULL)
 
     ref_temp <- pred$predvar[which.min(abs(pred$allRRfit - 1))]
-
-    # Safe interpolation
     rr_obs_fit  <- approx(pred$predvar, pred$allRRfit,  xout = df[[param_term]], rule = 2)$y
     rr_obs_low  <- approx(pred$predvar, pred$allRRlow,  xout = df[[param_term]], rule = 2)$y
     rr_obs_high <- approx(pred$predvar, pred$allRRhigh, xout = df[[param_term]], rule = 2)$y
@@ -1535,9 +1523,9 @@ plot_attribution_metric <- function(attr_data,
   )
 
   title_lookup <- c(
-    AR_per_100k = paste0("Dalaria cases per 100,000 attributable to ", param_label, " (95% CI)"),
-    AR_Fraction = paste0("Attributable Fraction (%) due to ", param_label, " (95% CI)"),
-    AR_Number = paste0("Number of Dalaria cases attributable to ", param_label, " (95% CI)")
+    AR_per_100k = paste0("Diarrhea cases per 100,000 attributable to ", param_label, " (95% CI)"),
+    AR_Fraction = paste0("Diarrhea  Attributable Fraction (%) due to ", param_label, " (95% CI)"),
+    AR_Number = paste0("Number of Diarrhea  cases attributable to ", param_label, " (95% CI)")
   )
 
   formatter_lookup <- list(
@@ -1589,6 +1577,28 @@ plot_attribution_metric <- function(attr_data,
     y_formatter <- formatter_lookup[[metric]]
     y_label <- y_title_lookup[[metric]]
 
+    # Country-level time series when filter_year is NULL
+    if (level == "country" && is.null(filter_year)) {
+      attr_data_plot$year <- factor(attr_data_plot$year)
+      p <- ggplot(attr_data_plot, aes(x = year, y = .data[[metric]], group = 1)) +
+        geom_line(color = "steelblue", linewidth = 1) +
+        geom_point(color = "steelblue", size = 2) +
+        geom_ribbon(aes(ymin = .data[[lci_col]], ymax = .data[[uci_col]]),
+                    alpha = 0.2, fill = "steelblue") +
+        labs(title = title, y = y_label, x = "Year") +
+        scale_y_continuous(labels = y_formatter) +
+        theme_minimal(base_size = 10) +
+        theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"))
+
+      if (save_fig && !is.null(output_dir)) {
+        if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
+        ggsave(filename = file.path(output_dir, paste0("plot_", metric, "_", param_term, "_country.pdf")),
+               plot = p, width = 8, height = 5)
+      }
+      return(p)
+    }
+
+    # region/district bar plot logic
     if (level %in% c("region", "district") && is.null(filter_year)) {
       attr_data_plot <- attr_data_plot %>%
         dplyr::arrange(dplyr::desc(.data[[metric]])) %>%
@@ -1601,41 +1611,42 @@ plot_attribution_metric <- function(attr_data,
         purrr::map(~ {
           ggplot(.x, aes(x = .data[[level]], y = .data[[metric]])) +
             geom_col(fill = "steelblue", width= 0.6) +
-            geom_errorbar(aes(ymin = .data[[lci_col]], ymax = .data[[uci_col]],
-                              color = "95% CI"),width = 0.2) + coord_flip() +
+            geom_errorbar(aes(ymin = .data[[lci_col]], ymax = .data[[uci_col]], color = "95% CI"),
+                          width = 0.2) +
+            coord_flip() +
             labs(x = tools::toTitleCase(level), y = y_label) +
             scale_y_continuous(labels = y_formatter, limits = c(0, max_y)) +
-            scale_color_manual(name = "", values = c("95% CI" = "black"))+
+            scale_color_manual(name = "", values = c("95% CI" = "black")) +
             theme_minimal(base_size = 10) +
             theme(axis.text.y = element_text(size = 7),
-                  plot.title = element_text(hjust = 0.5, size =9))
+                  plot.title = element_text(hjust = 0.5, size = 9))
         })
+
       if (save_fig && !is.null(output_dir)) {
         if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
         pdf_file <- file.path(output_dir, paste0("plot_", metric, "_", param_term, "_", level, ".pdf"))
         pdf(pdf_file, width = 11, height = 8)
-        pages <- ceiling(length(district_plots) / 4)
-        for (i in seq_len(pages)) {
-          start <- (i - 1) * 4 + 1
-          end <- min(i * 4, length(district_plots))
-          merged_plot <- patchwork::wrap_plots(district_plots[start:end], ncol = 2, nrow = 2) +
-            patchwork::plot_annotation(title = paste(title, "by", tools::toTitleCase(level)))
-
-          print(merged_plot)  # send plot to the pdf device
+        for (i in seq_along(district_plots)) {
+          merged_plot <- patchwork::wrap_plots(district_plots[i], ncol = 1) +
+            patchwork::plot_annotation(
+              title = paste(title, "by", tools::toTitleCase(level)),
+              theme = theme(plot.title = element_text(size = 10, face = "bold", hjust = 0.5))
+            )
+          print(merged_plot)
         }
-        dev.off()  # close the pdf device
+        dev.off()
       }
       return(district_plots)
     }
-    if (!is.null(filter_year) && length(filter_year) > 2 && level %in% c("region", "district")) {
 
+    # Region/district with multi-year grouped bar plot logic
+    if (!is.null(filter_year) && length(filter_year) > 2 && level %in% c("region", "district")) {
       attr_data_plot <- attr_data_plot %>%
         group_by(.data[[level]], year) %>%
         summarise(
           across(matches("^AR_Number(_LCI|_UCI)?$"), ~ sum(.x, na.rm = TRUE)),
           across(matches("^AR_(Fraction|per_100k)(_LCI|_UCI)?$"), ~ mean(.x, na.rm = TRUE)),
-          .groups = "drop"
-        )
+          .groups = "drop")
 
       level_vals <- attr_data_plot %>%
         group_by(.data[[level]]) %>%
@@ -1644,7 +1655,6 @@ plot_attribution_metric <- function(attr_data,
         pull(.data[[level]])
 
       attr_data_plot[[level]] <- factor(attr_data_plot[[level]], levels = level_vals)
-      # Determine common y-axis limits across all data
       y_min <- min(attr_data_plot[[paste0(metric, "_LCI")]], na.rm = TRUE)
       y_max <- max(attr_data_plot[[paste0(metric, "_UCI")]], na.rm = TRUE)
       split_levels <- split(level_vals, ceiling(seq_along(level_vals) / 30))
@@ -1656,33 +1666,31 @@ plot_attribution_metric <- function(attr_data,
           geom_errorbar(
             aes(ymin = .data[[paste0(metric, "_LCI")]], ymax = .data[[paste0(metric, "_UCI")]],
                 color = "95% CI"), position = position_dodge(0.8), width = 0.25) +
-          scale_color_manual(name = "", values = c("95% CI" = "black"))+
+          scale_color_manual(name = "", values = c("95% CI" = "black")) +
           labs( x = tools::toTitleCase(level), y = y_label, fill = "Year") +
-          theme_minimal(base_size = 6) +
+          theme_minimal(base_size = 8) +
           theme(axis.text.x = element_text(angle = 70, hjust = 1, size = 8),
-                axis.text.y = element_text(size = 2),
-                plot.margin = margin(t = 5, r = 5, b = 50, l = 5))+
+                axis.text.y = element_text(size = 8),
+                plot.margin = margin(t = 5, r = 5, b = 50, l = 5)) +
           coord_cartesian(ylim = c(y_min, y_max))
       })
 
       if (save_fig && !is.null(output_dir)) {
         if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
         pdf_file <- file.path(output_dir, paste0("plot_", metric, "_", param_term, "_", "Year_",level, ".pdf"))
-
-        pdf(pdf_file, width = 11, height = 8)  # Open single PDF device
-
-        for (i in seq(1, length(group_plots), by = 4)) {
-          merged <- patchwork::wrap_plots(group_plots[i:min(i + 3, length(group_plots))], ncol = 2) +
-            patchwork::plot_annotation(title = paste(title, "by Year and", tools::toTitleCase(level)),
-                                       theme = theme(plot.title = element_text(size = 10, face = "bold", hjust = 0.5)))
-          print(merged)  # Send to the active PDF device
+        pdf(pdf_file, width = 11, height = 8)
+        for (i in seq_along(group_plots)) {
+          merged <- patchwork::wrap_plots(group_plots[i], ncol = 1) +
+            patchwork::plot_annotation(
+              title = paste(title, "by Year and", tools::toTitleCase(level)),
+              theme = theme(plot.title = element_text(size = 10, face = "bold", hjust = 0.5))
+            )
+          print(merged)
         }
-
-        dev.off()  # Close PDF device
+        dev.off()
       }
       return(group_plots)
     }
-
   })
 
   return(plots)
@@ -1847,7 +1855,7 @@ diarrhea_do_analysis <- function(health_data_path,
   basis <- set_cross_basis(combined_data$data)
 
   #check for multicolinearity
-  VIF<- check_vif(combined_data$data)
+  VIF<- check_vif(combined_data$data, inla_param, basis_matrices_choices)
 
   # fitting the model
   inla_result <- run_inla_models(combined_data,
