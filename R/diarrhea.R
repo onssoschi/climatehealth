@@ -543,6 +543,11 @@ create_inla_indices <- function(data) {
 #' @param data A data frame from the `combined_health_climate_data()` function,
 #' containing the columns: `rainfall`, `r_humidity`, `runoff`, `tmin`,
 #' and must be compatible with `set_cross_basis()` for generating DLNM matrices.
+#' @param inla_param A character vector specifying the confounding exposures to
+#' be included in the model. Possible values are "tmax","tmin", "rainfall",
+#' "r_humidity", and "runoff".
+#' @param basis_matrices_choices A character vector specifying the basis matrix
+#' parameters to be included in the model. Possible values are "tmax" and "rainfall".
 #'
 #' @return A list with:
 #' \describe{
@@ -552,54 +557,42 @@ create_inla_indices <- function(data) {
 #' }
 #'
 #' @export
-check_diarrhea_vif <- function(data) {
-  # Create basis list with DLNM basis matrices
-  basis <- set_cross_basis(data)
+check_diarrhea_vif <- function(
+    data,
+    inla_param,
+    basis_matrices_choices
+) {
+  data  <- create_inla_indices(combined_data$data)
+  basis <- set_cross_basis(combined_data$data)
 
-  # Extract tmax basis (crossbasis matrix)
-  if (is.null(basis$tmax)) stop("tmax basis not found in data via set_cross_basis()")
+  vars_basis <- Filter(Negate(is.null), basis[basis_matrices_choices])
+  vars_data  <- setdiff(inla_param, basis_matrices_choices)
 
-  # Combine tmax basis columns and raw confounders from data
-  confounders <- data[, c("rainfall", "r_humidity", "runoff", "tmin")]
+  miss_basis <- setdiff(basis_matrices_choices, names(vars_basis))
+  miss_data  <- setdiff(vars_data, names(data))
+  if (length(miss_basis)) stop("Missing in basis: ", paste(miss_basis, collapse = ", "))
+  if (length(miss_data))  stop("Missing in data: ", paste(miss_data, collapse = ", "))
 
-  # Check if confounders exist and have no missing
-  if (any(!colnames(confounders) %in% names(data))) {
-    stop("One or more confounders not found in data")
-  }
+  X <- cbind(do.call(cbind, vars_basis), data[vars_data])
+  X <- as.data.frame(X[complete.cases(X), ])
+  colnames(X) <- make.names(colnames(X), unique = TRUE)
 
-  # If any NA, consider imputing or removing rows (simple approach here: remove rows with NA)
-  complete_cases <- complete.cases(basis$tmax, confounders)
-  design_matrix <- cbind(basis$tmax[complete_cases, , drop = FALSE], confounders[complete_cases, ])
+  vif_vals <- car::vif(lm(rep(1, nrow(X)) ~ ., data = X))
+  cond_num <- kappa(scale(X), exact = TRUE)
 
-  # Convert to data frame
-  design_df <- as.data.frame(design_matrix)
-  colnames(design_df) <- make.names(colnames(design_df), unique = TRUE)
-
-  # Dummy response for lm
-  dummy_y <- rep(1, nrow(design_df))
-
-  # Fit linear model for VIF calculation
-  lm_model <- lm(dummy_y ~ ., data = design_df)
-
-  # Compute VIF
-  vif_values <- car::vif(lm_model)
-
-  # Compute condition number
-  condition_number <- kappa(scale(design_df), exact = TRUE)
-
-  # Return results
   list(
-    vif = vif_values,
-    condition_number = condition_number,
-    interpretation = if (condition_number < 10) {
+    vif = vif_vals,
+    condition_number = cond_num,
+    interpretation = if (cond_num < 10) {
       "Low collinearity"
-    } else if (condition_number < 30) {
+    } else if (cond_num < 30) {
       "Moderate collinearity"
     } else {
-      "High collinearity"
+      "High collinearity "
     }
   )
 }
+
 
 
 #' Run models of increasing complexity in INLA: Fit a baseline model including
@@ -1387,7 +1380,6 @@ attribution_calculation <- function(data,
 
     get_metrics <- function(rr_obs) {
       valid <- which(rr_obs > param_threshold & !is.na(rr_obs))
-      print(valid)
       if (length(valid) == 0 || tot_pop == 0 || is.na(tot_pop)) return(c(0, 0, 0))  # Changed NA to 0
       af <- 1 - 1 / mean(rr_obs[valid])
       an <- af * sum(total_cases[valid], na.rm = TRUE)
@@ -1873,7 +1865,25 @@ diarrhea_do_analysis <- function(health_data_path,
   basis <- set_cross_basis(combined_data$data)
 
   #check for multicolinearity
-  VIF <- check_diarrhea_vif(combined_data$data)
+  VIF <- check_diarrhea_vif(
+    data=combined_data$data,
+    inla_param=inla_param,
+    basis_matrices_choices=basis_matrices_choices
+  )
+  VIF$vif <- rbind(
+    data.frame(VIF$vif),
+    data.frame(
+      row.names=c("condition_number", "interpretation"),
+      VIF.vif=c(VIF$condition_number, VIF$interpretation)
+    )
+  )
+  if (save_csv) {
+    # Create FPATH
+    fpath <- file.path(output_dir, "VIF_results.csv")
+    file_connection <- file(fpath)
+    # Create file contents and write to file
+    write.csv(file=fpath, VIF$vif)
+  }
 
   # fitting the model
   inla_result <- run_inla_models(combined_data,
