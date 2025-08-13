@@ -1509,19 +1509,18 @@ attribution_calculation <- function(data,
 #'
 #' @export
 plot_attribution_metric <- function(attr_data,
-                                    level = "district",
+                                    level = c("country", "region", "district"),
                                     metrics = c("AR_Number", "AR_Fraction", "AR_per_100k"),
                                     filter_year = NULL,
                                     param_term,
                                     save_fig = FALSE,
                                     output_dir = NULL) {
-  # Normalise level and validate with filter_year
+  # Normalise and validate country+filter_year selection
   level <- tolower(level)
   if (level=="country" && !is.null(filter_year)) {
     warning("If level==country, filter_year must be NULL.")
     return(NULL)
   }
-
   metrics <- match.arg(metrics, several.ok = TRUE)
 
   if (is.null(param_term)) stop("'param_term' must be provided.")
@@ -1544,8 +1543,8 @@ plot_attribution_metric <- function(attr_data,
 
   title_lookup <- c(
     AR_per_100k = paste0("Diarrhea cases per 100,000 attributable to ", param_label, " (95% CI)"),
-    AR_Fraction = paste0("Attributable Fraction (%) due to ", param_label, " (95% CI)"),
-    AR_Number = paste0("Number of Diarrhea cases attributable to ", param_label, " (95% CI)")
+    AR_Fraction = paste0("Diarrhea  Attributable Fraction (%) due to ", param_label, " (95% CI)"),
+    AR_Number = paste0("Number of Diarrhea  cases attributable to ", param_label, " (95% CI)")
   )
 
   formatter_lookup <- list(
@@ -1597,6 +1596,28 @@ plot_attribution_metric <- function(attr_data,
     y_formatter <- formatter_lookup[[metric]]
     y_label <- y_title_lookup[[metric]]
 
+    # Country-level time series when filter_year is NULL
+    if (level == "country" && is.null(filter_year)) {
+      attr_data_plot$year <- factor(attr_data_plot$year)
+      p <- ggplot2::ggplot(attr_data_plot, ggplot2::aes(x = year, y = .data[[metric]], group = 1)) +
+        ggplot2::geom_line(color = "steelblue", linewidth = 1) +
+        ggplot2::geom_point(color = "steelblue", size = 2) +
+        ggplot2::geom_ribbon(ggplot2::aes(ymin = .data[[lci_col]], ymax = .data[[uci_col]]),
+                    alpha = 0.2, fill = "steelblue") +
+        ggplot2::labs(title = title, y = y_label, x = "Year") +
+        ggplot2::scale_y_continuous(labels = y_formatter) +
+        ggplot2::theme_minimal(base_size = 10) +
+        ggplot2:: theme(plot.title = ggplot2::element_text(hjust = 0.5, size = 12, face = "bold"))
+
+      if (save_fig && !is.null(output_dir)) {
+        if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
+        ggsave(filename = file.path(output_dir, paste0("plot_", metric, "_", param_term, "_country.pdf")),
+               plot = p, width = 8, height = 5)
+      }
+      return(p)
+    }
+
+    # region/district bar plot logic
     if (level %in% c("region", "district") && is.null(filter_year)) {
       attr_data_plot <- attr_data_plot %>%
         dplyr::arrange(dplyr::desc(.data[[metric]])) %>%
@@ -1609,41 +1630,42 @@ plot_attribution_metric <- function(attr_data,
         purrr::map(~ {
           ggplot2::ggplot(.x, ggplot2::aes(x = .data[[level]], y = .data[[metric]])) +
             ggplot2::geom_col(fill = "steelblue", width= 0.6) +
-            ggplot2::geom_errorbar(ggplot2::aes(ymin = .data[[lci_col]], ymax = .data[[uci_col]],
-                              color = "95% CI"),width = 0.2) + ggplot2::coord_flip() +
+            ggplot2::geom_errorbar(ggplot2::aes(ymin = .data[[lci_col]], ymax = .data[[uci_col]], color = "95% CI"),
+                          width = 0.2) +
+            ggplot2::coord_flip() +
             ggplot2::labs(x = tools::toTitleCase(level), y = y_label) +
             ggplot2::scale_y_continuous(labels = y_formatter, limits = c(0, max_y)) +
-            ggplot2::scale_color_manual(name = "", values = c("95% CI" = "black"))+
+            ggplot2::scale_color_manual(name = "", values = c("95% CI" = "black")) +
             ggplot2::theme_minimal(base_size = 10) +
             ggplot2::theme(axis.text.y = ggplot2::element_text(size = 7),
-                  plot.title = ggplot2::element_text(hjust = 0.5, size =9))
+                  plot.title = ggplot2::element_text(hjust = 0.5, size = 9))
         })
+
       if (save_fig && !is.null(output_dir)) {
         if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
         pdf_file <- file.path(output_dir, paste0("plot_", metric, "_", param_term, "_", level, ".pdf"))
         pdf(pdf_file, width = 11, height = 8)
-        pages <- ceiling(length(district_plots) / 4)
-        for (i in seq_len(pages)) {
-          start <- (i - 1) * 4 + 1
-          end <- min(i * 4, length(district_plots))
-          merged_plot <- patchwork::wrap_plots(district_plots[start:end], ncol = 2, nrow = 2) +
-            patchwork::plot_annotation(title = paste(title, "by", tools::toTitleCase(level)))
-
-          print(merged_plot)  # send plot to the pdf device
+        for (i in seq_along(district_plots)) {
+          merged_plot <- patchwork::wrap_plots(district_plots[i], ncol = 1) +
+            patchwork::plot_annotation(
+              title = paste(title, "by", tools::toTitleCase(level)),
+              theme = ggplot2::theme(plot.title = ggplot2::element_text(size = 10, face = "bold", hjust = 0.5))
+            )
+          print(merged_plot)
         }
-        dev.off()  # close the pdf device
+        dev.off()
       }
       return(district_plots)
     }
-    if (!is.null(filter_year) && length(filter_year) > 2 && level %in% c("region", "district")) {
 
+    # Region/district with multi-year grouped bar plot logic
+    if (!is.null(filter_year) && length(filter_year) > 2 && level %in% c("region", "district")) {
       attr_data_plot <- attr_data_plot %>%
         group_by(.data[[level]], year) %>%
         summarise(
           across(matches("^AR_Number(_LCI|_UCI)?$"), ~ sum(.x, na.rm = TRUE)),
           across(matches("^AR_(Fraction|per_100k)(_LCI|_UCI)?$"), ~ mean(.x, na.rm = TRUE)),
-          .groups = "drop"
-        )
+          .groups = "drop")
 
       level_vals <- attr_data_plot %>%
         group_by(.data[[level]]) %>%
@@ -1652,7 +1674,6 @@ plot_attribution_metric <- function(attr_data,
         pull(.data[[level]])
 
       attr_data_plot[[level]] <- factor(attr_data_plot[[level]], levels = level_vals)
-      # Determine common y-axis limits across all data
       y_min <- min(attr_data_plot[[paste0(metric, "_LCI")]], na.rm = TRUE)
       y_max <- max(attr_data_plot[[paste0(metric, "_UCI")]], na.rm = TRUE)
       split_levels <- split(level_vals, ceiling(seq_along(level_vals) / 30))
@@ -1664,37 +1685,36 @@ plot_attribution_metric <- function(attr_data,
           ggplot2::geom_errorbar(
             ggplot2::aes(ymin = .data[[paste0(metric, "_LCI")]], ymax = .data[[paste0(metric, "_UCI")]],
                 color = "95% CI"), position = position_dodge(0.8), width = 0.25) +
-          ggplot2::scale_color_manual(name = "", values = c("95% CI" = "black"))+
+          ggplot2::scale_color_manual(name = "", values = c("95% CI" = "black")) +
           ggplot2::labs( x = tools::toTitleCase(level), y = y_label, fill = "Year") +
-          ggplot2::theme_minimal(base_size = 6) +
-          ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 70, hjust = 1, size = 8),
-                axis.text.y = element_text(size = 2),
-                plot.margin = margin(t = 5, r = 5, b = 50, l = 5))+
+          ggplot2::theme_minimal(base_size = 8) +
+          ggplot2::theme(axis.text.x = element_text(angle = 70, hjust = 1, size = 8),
+                axis.text.y = ggplot2::element_text(size = 8),
+                plot.margin = ggplot2::margin(t = 5, r = 5, b = 50, l = 5)) +
           ggplot2::coord_cartesian(ylim = c(y_min, y_max))
       })
 
       if (save_fig && !is.null(output_dir)) {
         if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
         pdf_file <- file.path(output_dir, paste0("plot_", metric, "_", param_term, "_", "Year_",level, ".pdf"))
-
-        pdf(pdf_file, width = 11, height = 8)  # Open single PDF device
-
-        for (i in seq(1, length(group_plots), by = 4)) {
-          merged <- patchwork::wrap_plots(group_plots[i:min(i + 3, length(group_plots))], ncol = 2) +
-            patchwork::plot_annotation(title = paste(title, "by Year and", tools::toTitleCase(level)),
-                                       theme = theme(plot.title = element_text(size = 10, face = "bold", hjust = 0.5)))
-          print(merged)  # Send to the active PDF device
+        pdf(pdf_file, width = 11, height = 8)
+        for (i in seq_along(group_plots)) {
+          merged <- patchwork::wrap_plots(group_plots[i], ncol = 1) +
+            patchwork::plot_annotation(
+              title = paste(title, "by Year and", tools::toTitleCase(level)),
+              theme = ggplot2::theme(plot.title = ggplot2::element_text(size = 10, face = "bold", hjust = 0.5))
+            )
+          print(merged)
         }
-
-        dev.off()  # Close PDF device
+        dev.off()
       }
       return(group_plots)
     }
-
   })
 
   return(plots)
 }
+
 
 
 #' Run Full Diarrhea-Climate Analysis Pipeline
