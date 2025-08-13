@@ -1823,31 +1823,28 @@ Malaria_do_analysis <- function(health_data_path,
   #check for multicolinearity
   VIF<- check_vif(combined_data$data, inla_param, basis_matrices_choices)
   # fitting the model
-  inla_result <- run_inla_models(
-    combined_data,
-    basis_matrices_choices,
-    inla_param,
-    output_dir=output_dir,
-    save_csv=save_csv,
-    family=family,
-    config=config
-  )
+  inla_result <- run_inla_models(combined_data,
+                                 basis_matrices_choices,
+                                 inla_param,
+                                 output_dir=output_dir,
+                                 save_csv=save_csv,
+                                 family=family,
+                                 config=config
+                                 )
 
   # Seasonality
-  reff_plot_monthly <- plot_monthly_random_effects(
-    combined_data,
-    model=inla_result$model,
-    output_dir=output_dir,
-    save_fig=save_fig
-  )
+  reff_plot_monthly <- plot_monthly_random_effects(combined_data,
+                                                   model=inla_result$model,
+                                                   output_dir=output_dir,
+                                                   save_fig=save_fig
+                                                   )
 
   # spatial random effect
-  reff_plot_yearly <- plot_yearly_spatial_random_effect(
-    combined_data,
-    model=inla_result$model,
-    output_dir=output_dir,
-    save_fig=save_fig
-  )
+  reff_plot_yearly <- plot_yearly_spatial_random_effect(combined_data,
+                                                        model=inla_result$model,
+                                                        output_dir=output_dir,
+                                                        save_fig=save_fig
+                                                        )
 
   # contour plots
   contour_plot <- contour_plot(combined_data$data, param_term, model=inla_result$model,
@@ -1855,39 +1852,36 @@ Malaria_do_analysis <- function(health_data_path,
                                save_fig=save_fig, filter_year=filter_year)
 
   # rr map plots
-  rr_map_plot <- plot_rr_map(
-    combined_data,
-    param_term,
-    model=inla_result$model,
-    level="district",
-    filter_year=filter_year,
-    output_dir=output_dir,
-    save_fig=save_fig)
+  rr_map_plot <- plot_rr_map(combined_data,
+                             param_term,
+                             model=inla_result$model,
+                             level="district",
+                             filter_year=filter_year,
+                             output_dir=output_dir,
+                             save_fig=save_fig)
 
   # relative rist plot
-  rr_data <- plot_relative_risk(
-    combined_data$data,
-    param_term=param_term,
-    model=inla_result$model,
-    level=level,
-    filter_year=filter_year,
-    output_dir=output_dir,
-    save_csv=save_csv,
-    save_fig=save_fig
-  )
+  rr_data <- plot_relative_risk(combined_data$data,
+                                param_term=param_term,
+                                model=inla_result$model,
+                                level=level,
+                                filter_year=filter_year,
+                                output_dir=output_dir,
+                                save_csv=save_csv,
+                                save_fig=save_fig
+                                )
   rr_plot <- rr_data[["plots"]]
   rr_df <- rr_data[["RR"]]
 
   # attribution fraction and number
-  attr_frac_num <- attribution_calculation(
-    combined_data$data,
-    param_term=param_term,
-    model=inla_result$model,
-    param_threshold=param_threshold,
-    level= level,
-    filter_year=filter_year,
-    save_csv=save_csv,
-    output_dir=output_dir)
+  attr_frac_num <- attribution_calculation(combined_data$data,
+                                           param_term=param_term,
+                                           model=inla_result$model,
+                                           param_threshold=param_threshold,
+                                           level= level,
+                                           filter_year=filter_year,
+                                           save_csv=save_csv,
+                                           output_dir=output_dir)
 
   plot_AR_Num <-plot_attribution_metric(attr_data = attr_frac_num,
                                         param_term=param_term,
