@@ -1551,9 +1551,9 @@ plot_attribution_metric <- function(attr_data,
   )
 
   title_lookup <- c(
-    AR_per_100k = paste0("Dalaria cases per 100,000 attributable to ", param_label, " (95% CI)"),
+    AR_per_100k = paste0("Diarrhea cases per 100,000 attributable to ", param_label, " (95% CI)"),
     AR_Fraction = paste0("Attributable Fraction (%) due to ", param_label, " (95% CI)"),
-    AR_Number = paste0("Number of Dalaria cases attributable to ", param_label, " (95% CI)")
+    AR_Number = paste0("Number of Diarrhea cases attributable to ", param_label, " (95% CI)")
   )
 
   formatter_lookup <- list(
