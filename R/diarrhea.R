@@ -1391,14 +1391,14 @@ attribution_calculation <- function(data,
       af <- 1 - 1 / mean(rr_obs[valid])
       an <- af * sum(total_cases[valid], na.rm = TRUE)
       ar <- (an / tot_pop) * 1e5
-      c(af, an, ar)
+      return(c(af, an, ar))
     }
 
     res_fit <- get_metrics(rr_obs_fit)
     res_low <- get_metrics(rr_obs_low)
     res_high <- get_metrics(rr_obs_high)
 
-    list(
+    return(list(
       MRT = round(ref_temp, 2),
       AR_Number = round(res_fit[2], 0),
       AR_Number_LCI = round(res_low[2], 0),
@@ -1409,7 +1409,7 @@ attribution_calculation <- function(data,
       AR_per_100k = ceiling(res_fit[3]),
       AR_per_100k_LCI = ceiling(res_low[3]),
       AR_per_100k_UCI = ceiling(res_high[3])
-    )
+    ))
   }
 
   # Grouping variables
@@ -1443,6 +1443,8 @@ attribution_calculation <- function(data,
       if (is.null(pred)) return(NULL)
 
       r <- compute_metrics_from_pred(df_group, pred)
+      print(df_group)
+      print(pred)
       if (is.null(r)) return(NULL)
 
       tibble::tibble(!!!df_group[1, grp_vars],
