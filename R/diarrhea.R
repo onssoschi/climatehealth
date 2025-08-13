@@ -1387,6 +1387,7 @@ attribution_calculation <- function(data,
 
     get_metrics <- function(rr_obs) {
       valid <- which(rr_obs > param_threshold & !is.na(rr_obs))
+      print(valid)
       if (length(valid) == 0 || tot_pop == 0 || is.na(tot_pop)) return(c(0, 0, 0))  # Changed NA to 0
       af <- 1 - 1 / mean(rr_obs[valid])
       an <- af * sum(total_cases[valid], na.rm = TRUE)
@@ -1443,8 +1444,6 @@ attribution_calculation <- function(data,
       if (is.null(pred)) return(NULL)
 
       r <- compute_metrics_from_pred(df_group, pred)
-      print(df_group)
-      print(pred)
       if (is.null(r)) return(NULL)
 
       tibble::tibble(!!!df_group[1, grp_vars],
@@ -1524,7 +1523,13 @@ plot_attribution_metric <- function(attr_data,
                                     param_term,
                                     save_fig = FALSE,
                                     output_dir = NULL) {
+  # Normalise level and validate with filter_year
   level <- tolower(level)
+  if (level=="country" && !is.null(filter_year)) {
+    warning("If level==country, filter_year must be NULL.")
+    return(NULL)
+  }
+
   metrics <- match.arg(metrics, several.ok = TRUE)
 
   if (is.null(param_term)) stop("'param_term' must be provided.")
