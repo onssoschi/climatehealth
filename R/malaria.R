@@ -1,4 +1,4 @@
-#' Code for calculating Malaria disease cases attributable to extreme 
+#' Code for calculating Malaria disease cases attributable to extreme
 #' precipitation and extreme temperature
 
 #' Run Full Malaria-Climate Analysis Pipeline
@@ -134,6 +134,7 @@ malaria_do_analysis <- function(
     year_col,
     month_col,
     malaria_case_col,
+    "malaria",
     tot_pop_col,
     tmin_col,
     tmean_col,
@@ -186,13 +187,15 @@ malaria_do_analysis <- function(
       data=combined_data$data,
       inla_param=inla_param,
       basis_matrices_choices=basis_matrices_choices,
+      case_type="malaria",
       output_dir=output_dir
     )
   } else {
     VIF <- check_diseases_vif(
       data=combined_data$data,
       inla_param=inla_param,
-      basis_matrices_choices=basis_matrices_choices
+      basis_matrices_choices=basis_matrices_choices,
+      case_type="malaria"
     )
   }
 
@@ -220,6 +223,7 @@ malaria_do_analysis <- function(
   reff_plot_yearly <- plot_yearly_spatial_random_effect(
     combined_data=combined_data,
     model=inla_result$model,
+    case_type="malaria",
     save_fig=save_fig,
     output_dir=output_dir
   )
@@ -231,6 +235,7 @@ malaria_do_analysis <- function(
     model=inla_result$model,
     level=level,
     filter_year=filter_year,
+    case_type="malaria",
     save_fig=save_fig,
     output_dir=output_dir,
   )
@@ -254,6 +259,7 @@ malaria_do_analysis <- function(
     param_term=param_term,
     level=level,
     filter_year=filter_year,
+    case_type="malaria",
     output_dir=output_dir,
     save_csv=save_csv,
     save_fig=save_fig

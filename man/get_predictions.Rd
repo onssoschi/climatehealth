@@ -4,7 +4,7 @@
 \alias{get_predictions}
 \title{A function to predict relative risk at country, region, and district level}
 \usage{
-get_predictions(data, param_term, model, level)
+get_predictions(data, param_term, model, level, case_type)
 }
 \arguments{
 \item{data}{Data list from combine_health_climate_data() function.}
@@ -16,6 +16,9 @@ as "tmax" (maximum temperature) and "rainfall" (precipitation).}
 
 \item{level}{Character. The spatial disaggregation level.
 Can take one of the following values: "country", "region", or "district".}
+
+\item{case_type}{Character. The type of disease that the case column refers
+to. Must be one of 'diarrhea' or 'malaria'}
 }
 \value{
 A dataframe containing cumulative relative risk at the chosen level.
