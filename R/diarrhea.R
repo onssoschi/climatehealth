@@ -1,4 +1,4 @@
-#' Code for calculating Diarrhea disease cases attributable to extreme 
+#' Code for calculating Diarrhea disease cases attributable to extreme
 #' precipitation and extreme temperature
 
 #' Run Full Diarrhea-Climate Analysis Pipeline
@@ -102,7 +102,7 @@ diarrhea_do_analysis <- function(health_data_path,
     stop("'output_dir' must be provided if 'save_fig' or save_csv' are TRUE.")
   }
   check_file_exists(output_dir, TRUE)
-  
+
   # level validation
   level <- tolower(level)
   acceptable_levels = c("country", "region", "district")
@@ -118,7 +118,7 @@ diarrhea_do_analysis <- function(health_data_path,
     check_file_exists(climate_data_path, TRUE)
   }
   check_file_exists(map_path, TRUE)#
-  
+
   # Get combined data
   combined_data <- combine_health_climate_data(
     health_data_path,
@@ -130,6 +130,7 @@ diarrhea_do_analysis <- function(health_data_path,
     year_col,
     month_col,
     diarrhea_case_col,
+    "diarrhea",
     tot_pop_col,
     tmin_col,
     tmean_col,
@@ -182,13 +183,15 @@ diarrhea_do_analysis <- function(health_data_path,
       data=combined_data$data,
       inla_param=inla_param,
       basis_matrices_choices=basis_matrices_choices,
+      case_type="diarrhea",
       output_dir=output_dir
     )
   } else {
     VIF <- check_diseases_vif(
       data=combined_data$data,
       inla_param=inla_param,
-      basis_matrices_choices=basis_matrices_choices
+      basis_matrices_choices=basis_matrices_choices,
+      case_type="diarrhea"
     )
   }
 
@@ -216,6 +219,7 @@ diarrhea_do_analysis <- function(health_data_path,
   reff_plot_yearly <- plot_yearly_spatial_random_effect(
     combined_data=combined_data,
     model=inla_result$model,
+    case_type="diarrhea",
     save_fig=save_fig,
     output_dir=output_dir
   )
@@ -227,6 +231,7 @@ diarrhea_do_analysis <- function(health_data_path,
     model=inla_result$model,
     level=level,
     filter_year=filter_year,
+    case_type="diarrhea",
     save_fig=save_fig,
     output_dir=output_dir,
   )
@@ -250,6 +255,7 @@ diarrhea_do_analysis <- function(health_data_path,
     param_term=param_term,
     level=level,
     filter_year=filter_year,
+    case_type="diarrhea",
     output_dir=output_dir,
     save_csv=save_csv,
     save_fig=save_fig

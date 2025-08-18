@@ -10,6 +10,7 @@ contour_plot(
   model,
   level,
   filter_year = NULL,
+  case_type,
   save_fig = FALSE,
   output_dir = NULL
 )
@@ -27,6 +28,9 @@ Default to "tmax"}
 Can take one of the following values: "country", "region", or "district".}
 
 \item{filter_year}{Integer. The year to filter to data to. Defaults to NULL.}
+
+\item{case_type}{Character. The type of disease that the case column refers
+to. Must be one of 'diarrhea' or 'malaria'}
 
 \item{save_fig}{Boolean. Whether to save the outputted plot. Defaults to
 FALSE.}

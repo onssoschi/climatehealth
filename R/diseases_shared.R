@@ -2,11 +2,11 @@
 
 #' Ensure that the 'case_type' parameter is valid
 #'
-#' @description Ensures that the case_type parameter is either malaria or 
+#' @description Ensures that the case_type parameter is either malaria or
 #' diarrhea to comply with supported indicators.
-#' 
+#'
 #' @param case_type Character. The value of the case_type parameter.
-#' 
+#'
 #' @return Character. The lowere case_type.
 validate_case_type <- function(case_type) {
   # Ensure case_type is an accepted type
@@ -24,8 +24,8 @@ validate_case_type <- function(case_type) {
 #' outcomes and population data. Renames columns and creates time variables for
 #' spatiotemporal analysis.
 #'
-#' @param health_data_path Path to a csv file containing a monthly time series 
-#' of data for disease outcomes, which may be disaggregated by sex (under five 
+#' @param health_data_path Path to a csv file containing a monthly time series
+#' of data for disease outcomes, which may be disaggregated by sex (under five
 #' case or above five case), and by Region and District.
 #' @param region_col Character. Name of the column in the dataframe that contains
 #' the region names.
@@ -39,7 +39,7 @@ validate_case_type <- function(case_type) {
 #' the month.
 #' @param case_col Character. Name of the column in the dataframe
 #' that contains the disease cases to be considered.
-#' @param case_type Character. The type of disease that the case column refers 
+#' @param case_type Character. The type of disease that the case column refers
 #' to. Must be one of 'diarrhea' or 'malaria'
 #' @param tot_pop_col Character. Name of the column in the dataframe that contains
 #' the total population.
@@ -96,7 +96,7 @@ load_and_process_data <- function(
     month = month_col,
     region = region_col,
     district = district_col,
-    case_sym = case_col,
+    !!case_sym := case_col,
     tot_pop = tot_pop_col
   ) %>% select(
     all_of(c("region", "district", "year", "month", case_type, "tot_pop"))
@@ -223,7 +223,7 @@ load_and_process_climatedata <- function(
   var_map <- list(district = district_col, year = year_col, month = month_col,
                   tmin = tmin_col, tmean = tmean_col, tmax = tmax_col,
                   rainfall = rainfall_col, r_humidity = r_humidity_col,
-                  runoff = runoff_col, cvh = cvh, spi = spi_col)
+                  runoff = runoff_col, cvh = cvh_col, spi = spi_col)
 
   var_map <- var_map[!sapply(var_map, is.null)]
   selected_cols <- as.character(var_map)
@@ -278,7 +278,7 @@ load_and_process_climatedata <- function(
 #' the Month.
 #' @param case_col Character. Name of the column in the dataframe
 #' that contains the disease cases to be considered.
-#' @param case_type Character. The type of disease that the case column refers 
+#' @param case_type Character. The type of disease that the case column refers
 #' to. Must be one of 'diarrhea' or 'malaria'
 #' @param tot_pop_col Character. Name of the column in the dataframe that
 #' contains the total population.
@@ -335,12 +335,12 @@ combine_health_climate_data <- function(
   case_type <- validate_case_type(case_type)
 
   health_data <- load_and_process_data(
-    health_data_path = health_data_path, 
+    health_data_path = health_data_path,
     region_col = region_col,
     district_col = district_col,
-    date_col = date_col, 
+    date_col = date_col,
     year_col = year_col,
-    month_col = month_col, 
+    month_col = month_col,
     case_col = case_col,
     case_type = case_type,
     tot_pop_col = tot_pop_col
@@ -428,7 +428,7 @@ combine_health_climate_data <- function(
 #' tmean, tmin). Use "all" to include all available variables.
 #' @param level Character. Aggregation level: one of "country", "region", or "district".
 #' Defaults to "country".
-#' @param case_type Character. The type of disease that the case column refers 
+#' @param case_type Character. The type of disease that the case column refers
 #' to. Must be one of 'diarrhea' or 'malaria'
 #' @param filter_year Optional numeric vector to filter data by year(s). Defaults to NULL.
 #' @param save_fig Boolean. Whether to save the figure as a PDF. Defaults to FALSE.
@@ -515,7 +515,7 @@ plot_health_climate_timeseries <- function(
 #' @param data A dataset returned from \code{combine_health_climate_data()},
 #' including lagged variables like \code{tmax_lag1}, \code{tmin_lag1}, etc.
 #' @param include_cvh Logical. Whether or not to include the cvh column in
-#' the var definitions. Needed for Malaria. 
+#' the var definitions. Needed for Malaria.
 #'
 #' @return A named list of cross-basis matrices for available climate variables:
 #' maximum temperature, minimum temperature, rainfall, relative humidity, etc.
@@ -562,13 +562,13 @@ set_cross_basis <- function(data, include_cvh=FALSE) {
 #'
 #' @param data is the dataset containing district_code, region_code, and year
 #' columns from the combine_health_climate_data() function.
-#' @param case_type Character. The type of disease that the case column refers 
+#' @param case_type Character. The type of disease that the case column refers
 #' to. Must be one of 'diarrhea' or 'malaria'
 #'
 #' @returns The modified data with the created indices.
 #'
 #' @export
-create_inla_indices_malaria <- function(data, case_type) {
+create_inla_indices <- function(data, case_type) {
   # Ensure case type is one of the supported indicators
   case_type <- validate_case_type(case_type)
 
@@ -576,7 +576,7 @@ create_inla_indices_malaria <- function(data, case_type) {
   ntime <- length(unique(data$time))
   nyear <- length(unique(data$year))
   ndistrict <- length(unique(data$district_code))
-  nregion <- length(unique(data$region_code)) 
+  nregion <- length(unique(data$region_code))
 
   # define the offset variable based on the population data
   overall_rate <- sum(data[[case_type]], na.rm = TRUE) / sum(data$tot_pop, na.rm = TRUE)
@@ -622,6 +622,8 @@ create_inla_indices_malaria <- function(data, case_type) {
 #' "r_humidity", and "runoff".
 #' @param basis_matrices_choices A character vector specifying the basis matrix
 #' parameters to be included in the model. Possible values are "tmax" and "rainfall".
+#' @param case_type Character. The type of disease that the case column refers
+#' to. Must be one of 'diarrhea' or 'malaria'
 #'
 #' @return A list with:
 #' \describe{
@@ -634,10 +636,15 @@ create_inla_indices_malaria <- function(data, case_type) {
 check_diseases_vif <- function(
     data,
     inla_param,
-    basis_matrices_choices
+    basis_matrices_choices,
+    case_type
 ) {
-  data  <- create_inla_indices(combined_data$data)
-  basis <- set_cross_basis(combined_data$data)
+  # Validate case type
+  case_type <- validate_case_type(case_type)
+  include_cvh <- ifelse(case_type=="malaria", TRUE, FALSE)
+
+  data  <- create_inla_indices(combined_data$data, case_type)
+  basis <- set_cross_basis(combined_data$data, include_cvh)
 
   vars_basis <- Filter(Negate(is.null), basis[basis_matrices_choices])
   vars_data  <- setdiff(inla_param, basis_matrices_choices)
@@ -683,9 +690,11 @@ check_diseases_vif <- function(
 #' "r_humidity", and "runoff".
 #' @param basis_matrices_choices A character vector specifying the basis matrix
 #' parameters to be included in the model. Possible values are "tmax" and "rainfall".
+#' @param case_type Character. The type of disease that the case column refers
+#' to. Must be one of 'diarrhea' or 'malaria'
 #' @param output_dir Character. The output directory to save the VIF results to.
 #' Results are saved as 'VIF_results.csv'.
-#' 
+#'
 #' @return A list with:
 #' \describe{
 #'   \item{vif}{Named numeric vector of VIF values.}
@@ -698,13 +707,15 @@ check_and_write_vif <- function(
   data,
   inla_param,
   basis_matrices_choices,
+  case_type,
   output_dir
 ) {
   # Calculate VIF
   VIF <- check_diseases_vif(
     data=combined_data$data,
     inla_param=inla_param,
-    basis_matrices_choices=basis_matrices_choices
+    basis_matrices_choices=basis_matrices_choices,
+    case_type=case_type
   )
   # Create output DF
   VIF$vif <- rbind(
@@ -736,7 +747,7 @@ check_and_write_vif <- function(
 #' @param inla_param A character vector specifying the confounding exposures to
 #' be included in the model. Possible values are "tmax","tmin", "rainfall",
 #' "r_humidity", and "runoff".
-#' @param case_type Character. The type of disease that the case column refers 
+#' @param case_type Character. The type of disease that the case column refers
 #' to. Must be one of 'diarrhea' or 'malaria'
 #' @param output_dir Character. The path to save model output to.  Defaults to NULL.
 #' @param save_csv Boolean. Whether to save the results as a CSV. Defaults to
@@ -768,8 +779,9 @@ run_inla_models <- function(
     install.packages(INLA_pth, repos = NULL, type = "win.binary", lib = .libPaths()[1])
   }
 
-  data <- create_inla_indices(combined_data$data)
-  basis <- set_cross_basis(combined_data$data)
+  data <- create_inla_indices(combined_data$data, case_type)
+  include_cvh <- ifelse(case_type=="malaria", TRUE, FALSE)
+  basis <- set_cross_basis(combined_data$data, include_cvh)
   graph_file <- combined_data$graph_file
 
   prior <- list(prec = list(prior = "pc.prec", param = c(0.5 / 0.31, 0.01)))
@@ -781,8 +793,9 @@ run_inla_models <- function(
       f(district_index, model = "bym2", replicate = year_index,
         graph = graph_file, scale.model = TRUE, hyper = prior),
     list(case_type = ct_sym)
-    
+
   )
+  base_formula <- as.formula(base_formula)
 
   if (is.null(basis_matrices_choices)) basis_matrices_choices <- character(0)
 
@@ -897,6 +910,8 @@ plot_monthly_random_effects <- function(
 #'
 #' @param combined_data Data list from combine_health_climate_data() function.
 #' @param model The fitted model from run_inla_models() function.
+#' @param case_type Character. The type of disease that the case column refers
+#' to. Must be one of 'diarrhea' or 'malaria'
 #' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
 #' FALSE.
 #' @param output_dir Character. The path to save the fitted model to. Defaults
@@ -908,15 +923,18 @@ plot_monthly_random_effects <- function(
 plot_yearly_spatial_random_effect <- function(
   combined_data ,
   model,
+  case_type,
   save_fig = FALSE,
   output_dir = NULL
 ) {
+  # Validate case type
+  case_type <- validate_case_type(case_type)
   # Validate output_dir if saving
   if (save_fig && is.null(output_dir)) {
     stop("output_dir must be provided if save_fig = TRUE")
   }
   # Prepare data
-  data <- create_inla_indices(combined_data$data)
+  data <- create_inla_indices(combined_data$data, case_type=case_type)
   grid_data <- combined_data$grid_data
   map <- combined_data$map
   ntime <- length(unique(data$time))
@@ -962,19 +980,27 @@ plot_yearly_spatial_random_effect <- function(
 #' @param model The fitted model from run_inla_models() function.
 #' @param level Character. The spatial disaggregation level.
 #' Can take one of the following values: "country", "region", or "district".
+#' @param case_type Character. The type of disease that the case column refers
+#' to. Must be one of 'diarrhea' or 'malaria'
 #'
 #' @return A dataframe containing cumulative relative risk at the chosen level.
 #'
 #' @export
-get_predictions <- function(data,
-                            param_term,
-                            model,
-                            level){
+get_predictions <- function(
+    data,
+    param_term,
+    model,
+    level,
+    case_type
+){
+  # Validate case type
+  case_type <- validate_case_type(case_type)
   # loading the best model
-  data <- create_inla_indices(data)
+  data <- create_inla_indices(data, case_type)
 
   # getting basis matrices
-  basis_matrices <- set_cross_basis(data)
+  include_cvh <- ifelse(case_type=="malaria", TRUE, FALSE)
+  basis_matrices <- set_cross_basis(data, include_cvh)
 
   # Extract full coef and vcov for the region
   coef <- model$summary.fixed$mean
@@ -1035,6 +1061,8 @@ get_predictions <- function(data,
 #' @param level A character vector specifying the spatial disaggregation level.
 #' Can take one of the following values: "country", "region", or "district".
 #' @param filter_year Integer. The year to filter to data to. Defaults to NULL.
+#' @param case_type Character. The type of disease that the case column refers
+#' to. Must be one of 'diarrhea' or 'malaria'
 #' @param save_fig Boolean. Whether to save the outputted plot. Defaults to
 #' FALSE.
 #' @param output_dir The path to save the visualisation to. Defaults to NULL
@@ -1048,9 +1076,11 @@ contour_plot <- function(
   model,
   level,
   filter_year = NULL,
+  case_type,
   save_fig = FALSE,
   output_dir = NULL
 ) {
+  case_type <- validate_case_type(case_type)
   if (save_fig && is.null(output_dir)) {
     stop("'output_dir' must be provided if save_fig = TRUE")
   }
@@ -1059,7 +1089,7 @@ contour_plot <- function(
     if (!"year" %in% names(data)) stop("'year' column not found in data.")
     data <- filter(data, year %in% filter_year)
   }
-  predt <- get_predictions(data, param_term=param_term, model, level=level)
+  predt <- get_predictions(data, param_term=param_term, model, level=level, case_type=case_type)
 
   plot_contour <- function(x, y, z, title) {
     nlag <- max(x)
@@ -1125,7 +1155,7 @@ contour_plot <- function(
 #' @param level A character string indicating the spatial aggregation level.
 #' Options are "region" or "district". Defaults to "District".
 #' @param filter_year Integer. The year to filter to data to. Defaults to NULL.
-#' @param case_type Character. The type of disease that the case column refers 
+#' @param case_type Character. The type of disease that the case column refers
 #' to. Must be one of 'diarrhea' or 'malaria'
 #' @param output_dir Character. The directory path where the output PDF file
 #' should be saved. Defaults to NULL.
@@ -1162,7 +1192,7 @@ plot_rr_map <- function(
 
   # Get RR data for each year
   get_rr_df <- function(yr) {
-    pred <- get_predictions(filter(data, year == yr), param_term, model, level)
+    pred <- get_predictions(filter(data, year == yr), param_term, model, level, case_type)
     purrr::map_dfr(names(pred), function(name) {
       vals <- pred[[name]]
       if (anyNA(vals$allRRfit)) return(NULL)
@@ -1220,6 +1250,8 @@ plot_rr_map <- function(
 #' Can take one of the following values: "country", "region", or "district".
 #' Default to "country".
 #' @param filter_year Integer. The year to filter to data to. Defaults to NULL.
+#' @param case_type Character. The type of disease that the case column refers
+#' to. Must be one of 'diarrhea' or 'malaria'
 #' @param output_dir Character. The path where the PDF file will be saved. Default to NULL.
 #' @param save_csv Boolean. If TRUE, saves the RR data to the specified directory.
 #' Defaults to FALSE.
@@ -1235,10 +1267,12 @@ plot_relative_risk <- function(
   param_term,
   level = "country",
   filter_year = NULL,
+  case_type,
   output_dir = NULL,
   save_csv = FALSE,
   save_fig = FALSE
 ) {
+  case_type <- validate_case_type(case_type)
   if (!"year" %in% names(data)) stop("'year' column not found in data.")
   if (is.null(filter_year)) filter_year <- sort(unique(data$year))
 
@@ -1284,7 +1318,7 @@ plot_relative_risk <- function(
   if (level == "country") {
     if (is.null(filter_year)) {
       data_all <- data
-      pred <- get_predictions(data_all, param_term, model, level)
+      pred <- get_predictions(data_all, param_term, model, level, case_type)
       if (is.list(pred) && !is.null(names(pred)) && length(pred) == 1) {
         pred <- pred[[1]]
       }
@@ -1362,7 +1396,7 @@ plot_relative_risk <- function(
 
     filter_year <- sort(unique(filter_year))
     plots <- lapply(filter_year, function(yr) {
-      pred <- get_predictions(dplyr::filter(data, year == yr), param_term, model, level)
+      pred <- get_predictions(dplyr::filter(data, year == yr), param_term, model, level, case_type)
       all_predictions[[as.character(yr)]] <- pred
       build_plot(pred, as.character(yr))
     }) %>% purrr::keep(~ !is.null(.))
@@ -1399,7 +1433,7 @@ plot_relative_risk <- function(
     group_plots <- list()
 
     if (is.null(filter_year)) {
-      preds <- get_predictions(data, param_term, model, level)
+      preds <- get_predictions(data, param_term, model, level, case_type)
       all_predictions[["All Years"]] <- preds
       for (grp in names(preds)) {
         p <- build_plot(preds[[grp]], grp)
@@ -1409,7 +1443,7 @@ plot_relative_risk <- function(
       }
     } else {
       for (yr in filter_year) {
-        preds <- get_predictions(dplyr::filter(data, year == yr), param_term, model, level)
+        preds <- get_predictions(dplyr::filter(data, year == yr), param_term, model, level, case_type)
         all_predictions[[as.character(yr)]] <- preds
         for (grp in names(preds)) {
           p <- build_plot(preds[[grp]], paste0(grp, " (", yr, ")"))
@@ -1473,7 +1507,7 @@ plot_relative_risk <- function(
 #' @param param_threshold Numeric. Threshold above which exposure is considered,
 #' "attributable". Can take floats. Defaults to 1.
 #' @param filter_year Integer. The year to filter to data to. Defaults to NULL.
-#' @param case_type Character. The type of disease that the case column refers 
+#' @param case_type Character. The type of disease that the case column refers
 #' to. Must be one of 'diarrhea' or 'malaria'
 #' @param output_dir Character. Directory path to save the output metrics if
 #' save_csv = TRUE. Defaults to NULL.
@@ -1511,8 +1545,9 @@ attribution_calculation <- function(
   }
 
   # Create INLA indices and basis matrices
-  data <- create_inla_indices(data)
-  basis_matrices <- set_cross_basis(data)
+  data <- create_inla_indices(data, case_type)
+  include_cvh <- ifelse(case_type=="malaria", TRUE, FALSE)
+  basis_matrices <- set_cross_basis(data, include_cvh)
 
   # Function to compute metrics given prediction object
   compute_metrics_from_pred <- function(df, pred) {
@@ -1638,7 +1673,7 @@ attribution_calculation <- function(
 #' to filter the dataset. If `NULL`, all years are aggregated. Defaults to FALSE.
 #' @param param_term Character. The climate variable term used in the attribution
 #' analysis (e.g., "tmax", "rainfall"). This is used for labeling the plot titles.
-#' @param case_type Character. The type of disease that the case column refers 
+#' @param case_type Character. The type of disease that the case column refers
 #' to. Must be one of 'diarrhea' or 'malaria'
 #' @param save_fig Logical. Whether to save the generated plots to file.
 #' Defaults to FALSE.

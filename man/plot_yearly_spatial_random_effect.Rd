@@ -7,6 +7,7 @@
 plot_yearly_spatial_random_effect(
   combined_data,
   model,
+  case_type,
   save_fig = FALSE,
   output_dir = NULL
 )
@@ -15,6 +16,9 @@ plot_yearly_spatial_random_effect(
 \item{combined_data}{Data list from combine_health_climate_data() function.}
 
 \item{model}{The fitted model from run_inla_models() function.}
+
+\item{case_type}{Character. The type of disease that the case column refers
+to. Must be one of 'diarrhea' or 'malaria'}
 
 \item{save_fig}{Boolean. Whether to save the plot as an output. Defaults to
 FALSE.}

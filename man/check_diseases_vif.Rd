@@ -4,7 +4,7 @@
 \alias{check_diseases_vif}
 \title{Check multicollinearity using VIF and Condition Number}
 \usage{
-check_diseases_vif(data, inla_param, basis_matrices_choices)
+check_diseases_vif(data, inla_param, basis_matrices_choices, case_type)
 }
 \arguments{
 \item{data}{A data frame from the \code{combined_health_climate_data()} function,
@@ -17,6 +17,9 @@ be included in the model. Possible values are "tmax","tmin", "rainfall",
 
 \item{basis_matrices_choices}{A character vector specifying the basis matrix
 parameters to be included in the model. Possible values are "tmax" and "rainfall".}
+
+\item{case_type}{Character. The type of disease that the case column refers
+to. Must be one of 'diarrhea' or 'malaria'}
 }
 \value{
 A list with:

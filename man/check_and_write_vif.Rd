@@ -5,7 +5,13 @@
 \title{Check multicollinearity using VIF and Condition Number and write the results
 to file.}
 \usage{
-check_and_write_vif(data, inla_param, basis_matrices_choices, output_dir)
+check_and_write_vif(
+  data,
+  inla_param,
+  basis_matrices_choices,
+  case_type,
+  output_dir
+)
 }
 \arguments{
 \item{data}{A data frame from the \code{combined_health_climate_data()} function,
@@ -18,6 +24,9 @@ be included in the model. Possible values are "tmax","tmin", "rainfall",
 
 \item{basis_matrices_choices}{A character vector specifying the basis matrix
 parameters to be included in the model. Possible values are "tmax" and "rainfall".}
+
+\item{case_type}{Character. The type of disease that the case column refers
+to. Must be one of 'diarrhea' or 'malaria'}
 
 \item{output_dir}{Character. The output directory to save the VIF results to.
 Results are saved as 'VIF_results.csv'.}

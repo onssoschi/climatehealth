@@ -10,6 +10,7 @@ plot_relative_risk(
   param_term,
   level = "country",
   filter_year = NULL,
+  case_type,
   output_dir = NULL,
   save_csv = FALSE,
   save_fig = FALSE
@@ -29,6 +30,9 @@ Can take one of the following values: "country", "region", or "district".
 Default to "country".}
 
 \item{filter_year}{Integer. The year to filter to data to. Defaults to NULL.}
+
+\item{case_type}{Character. The type of disease that the case column refers
+to. Must be one of 'diarrhea' or 'malaria'}
 
 \item{output_dir}{Character. The path where the PDF file will be saved. Default to NULL.}
 
