@@ -4,7 +4,7 @@
 #' Run Full Malaria-Climate Analysis Pipeline
 #'
 #' @description
-#' The `Malaria_do_analysis` function runs the complete analysis workflow
+#' The `malaria_do_analysis` function runs the complete analysis workflow
 #' by combining multiple functions to analyze the association between Malaria
 #' cases and climate variables. It processes health, climate, and spatial data,
 #' fits models, generates plots, and calculates attributable risk.
@@ -17,7 +17,7 @@
 #' @param date_col Character. Name of the column containing the date. Defaults to NULL.
 #' @param year_col Character. Name of the column containing the year.
 #' @param month_col Character. Name of the column containing the month.
-#' @param Malaria_case_col Character. Name of the column containing Malaria case counts.
+#' @param malaria_case_col Character. Name of the column containing Malaria case counts.
 #' @param tot_pop_col Character. Name of the column containing total population.
 #' @param tmin_col Character. Name of the column containing minimum temperature.
 #' @param tmean_col Character. Name of the column containing mean temperature.
@@ -31,11 +31,15 @@
 #' (usually "geometry").
 #' @param spi_col Character. Name of the column containing the Standardized
 #' Precipitation Index. Defaults to NULL.
+#' @param cvh_col Character. Name of the column containing CVH.
 #' @param max_lag Numeric. Maximum lag to consider in the model
 #' (typically 2 to 4). Defaults to 2.
 #' @param basis_matrices_choices Character vector specifying basis matrix
 #' parameters to include in the model (e.g., "tmax", "tmin", "rainfall",
 #' "r_humidity", "spi").
+#' @param inla_param A character vector specifying the confounding exposures to
+#' be included in the model. Possible values are "tmax","tmin", "rainfall",
+#' "r_humidity", and "runoff".
 #' @param param_term Character vector specifying the exposure variables of interest
 #' (e.g., "tmax", "rainfall").
 #' @param level Character. Spatial disaggregation level: "country", "region", or "district".
@@ -46,8 +50,8 @@
 #' variable. The user may also have thepossibility to choose "nbinomial" for a
 #' negative binomial distribution. Defaults to "poisson".
 #' @param config Boolean. Enable additional model configurations. Defaults to FALSE.
+#' @param save_csv Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.
 #' @param save_fig Boolean. If TRUE, saves the generated plots. Defaults to FALSE.
-#' @param save_fig Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.
 #' @param output_dir Character. The path to the directory where outputs
 #' (e.g., plots, maps, datasets) should be saved.
 #'
@@ -72,7 +76,7 @@ malaria_do_analysis <- function(
   date_col= NULL,
   year_col,
   month_col,
-  Malaria_case_col,
+  malaria_case_col,
   tot_pop_col,
   tmin_col,
   tmean_col,
@@ -129,7 +133,7 @@ malaria_do_analysis <- function(
     date_col,
     year_col,
     month_col,
-    Malaria_case_col,
+    malaria_case_col,
     tot_pop_col,
     tmin_col,
     tmean_col,

@@ -36,6 +36,9 @@ to filter the dataset. If \code{NULL}, all years are aggregated. Defaults to FAL
 \item{param_term}{Character. The climate variable term used in the attribution
 analysis (e.g., "tmax", "rainfall"). This is used for labeling the plot titles.}
 
+\item{case_type}{Character. The type of disease that the case column refers
+to. Must be one of 'diarrhea' or 'malaria'}
+
 \item{save_fig}{Logical. Whether to save the generated plots to file.
 Defaults to FALSE.}
 
