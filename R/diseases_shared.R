@@ -1638,6 +1638,8 @@ attribution_calculation <- function(
 #' to filter the dataset. If `NULL`, all years are aggregated. Defaults to FALSE.
 #' @param param_term Character. The climate variable term used in the attribution
 #' analysis (e.g., "tmax", "rainfall"). This is used for labeling the plot titles.
+#' @param case_type Character. The type of disease that the case column refers 
+#' to. Must be one of 'diarrhea' or 'malaria'
 #' @param save_fig Logical. Whether to save the generated plots to file.
 #' Defaults to FALSE.
 #' @param output_dir Optional. Directory path to save the output plots if

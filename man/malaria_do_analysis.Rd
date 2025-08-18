@@ -15,7 +15,7 @@ malaria_do_analysis(
   date_col = NULL,
   year_col,
   month_col,
-  Malaria_case_col,
+  malaria_case_col,
   tot_pop_col,
   tmin_col,
   tmean_col,
@@ -57,7 +57,7 @@ malaria_do_analysis(
 
 \item{month_col}{Character. Name of the column containing the month.}
 
-\item{Malaria_case_col}{Character. Name of the column containing Malaria case counts.}
+\item{malaria_case_col}{Character. Name of the column containing Malaria case counts.}
 
 \item{tot_pop_col}{Character. Name of the column containing total population.}
 
@@ -81,12 +81,18 @@ data.}
 \item{spi_col}{Character. Name of the column containing the Standardized
 Precipitation Index. Defaults to NULL.}
 
+\item{cvh_col}{Character. Name of the column containing CVH.}
+
 \item{max_lag}{Numeric. Maximum lag to consider in the model
 (typically 2 to 4). Defaults to 2.}
 
 \item{basis_matrices_choices}{Character vector specifying basis matrix
 parameters to include in the model (e.g., "tmax", "tmin", "rainfall",
 "r_humidity", "spi").}
+
+\item{inla_param}{A character vector specifying the confounding exposures to
+be included in the model. Possible values are "tmax","tmin", "rainfall",
+"r_humidity", and "runoff".}
 
 \item{param_term}{Character vector specifying the exposure variables of interest
 (e.g., "tmax", "rainfall").}
@@ -104,7 +110,9 @@ negative binomial distribution. Defaults to "poisson".}
 
 \item{config}{Boolean. Enable additional model configurations. Defaults to FALSE.}
 
-\item{save_fig}{Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.}
+\item{save_csv}{Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.}
+
+\item{save_fig}{Boolean. If TRUE, saves the generated plots. Defaults to FALSE.}
 
 \item{output_dir}{Character. The path to the directory where outputs
 (e.g., plots, maps, datasets) should be saved.}
@@ -122,7 +130,7 @@ A list containing:
 }
 }
 \description{
-The \code{Malaria_do_analysis} function runs the complete analysis workflow
+The \code{malaria_do_analysis} function runs the complete analysis workflow
 by combining multiple functions to analyze the association between Malaria
 cases and climate variables. It processes health, climate, and spatial data,
 fits models, generates plots, and calculates attributable risk.
