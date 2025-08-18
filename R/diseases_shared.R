@@ -1072,7 +1072,7 @@ contour_plot <- function(
     filled.contour(
       x, y, z,
       xlab = "Lag",
-      ylab = ifelse(param_term == "tmax", "Temperature (°C)",
+      ylab = ifelse(param_term == "tmax", "Temperature (\u00b0C)",
                     ifelse(param_term == "rainfall", "Rainfall (mm)", param_term)),
       main = title,
       col = cols,
