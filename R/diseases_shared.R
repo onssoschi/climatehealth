@@ -581,7 +581,7 @@ create_inla_indices_malaria <- function(data, case_type) {
   # define the offset variable based on the population data
   overall_rate <- sum(data[[case_type]], na.rm = TRUE) / sum(data$tot_pop, na.rm = TRUE)
   data$E <- overall_rate * data$tot_pop # Expected counts
-  data$SIR <- data$[[case_type]] / data$E  # Standardized Incidence Ratio
+  data$SIR <- data[[case_type]] / data$E  # Standardized Incidence Ratio
 
   # Create district index
   data$district_index <- rep(1:ndistrict, length.out = nrow(data))  # Ensure correct length
