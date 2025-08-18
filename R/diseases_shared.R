@@ -1709,7 +1709,7 @@ plot_attribution_metric <- function(
       " (95% CI)"
     ),
     AR_Number = paste0(
-      "Number of "
+      "Number of ",
       tools::toTitleCase(case_type),
       " cases attributable to ",
       param_label,
