@@ -17,7 +17,7 @@ save_air_pollution_plot(
 )
 }
 \arguments{
-\item{plot_object}{Character. ggplot object or grid.arrange object to save.}
+\item{plot_object}{Character. ggplot object or grid.dplyr::arrange object to save.}
 
 \item{output_dir}{Character. Directory to save plots.}
 

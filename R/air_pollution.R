@@ -1,7 +1,6 @@
 #-------------------------------------------------------------------------------
 #' @title R-code for I1: All-cause mortality attributable to Outdoor PM2.5.
 #-------------------------------------------------------------------------------
-library(dplyr)
 
 #' Read in climate, environmental and health data and rename columns
 #'
@@ -74,25 +73,25 @@ load_air_pollution_data <- function(data_path,
   if(!is.null(population_col) && population_col %in% names(data)) {
     data <- data %>% rename(population = !!rlang::sym(population_col))
   } else if(!("population" %in% names(data))) {
-    data <- data %>% mutate(population = 1)
+    data <- data %>% dplyr::mutate(population = 1)
   }
 
   if(!is.null(age_col) && age_col %in% names(data)) {
     data <- data %>% rename(age = !!rlang::sym(age_col))
   } else if(!("age" %in% names(data))) {
-    data <- data %>% mutate(age = "all")
+    data <- data %>% dplyr::mutate(age = "all")
   }
 
   if(!is.null(sex_col) && sex_col %in% names(data)) {
     data <- data %>% rename(sex = !!rlang::sym(sex_col))
   } else if(!("sex" %in% names(data))) {
-    data <- data %>% mutate(sex = "both")
+    data <- data %>% dplyr::mutate(sex = "both")
   }
 
   if(!is.null(urbanisation_col) && urbanisation_col %in% names(data)) {
     data <- data %>% rename(urbanisation = !!rlang::sym(urbanisation_col))
   } else if(!("urbanisation" %in% names(data))) {
-    data <- data %>% mutate(urbanisation = "mixed")
+    data <- data %>% dplyr::mutate(urbanisation = "mixed")
   }
 
   date_function <- lubridate::ymd
@@ -101,21 +100,21 @@ load_air_pollution_data <- function(data_path,
   }
 
   data <- data %>%
-    mutate(
+    dplyr::mutate(
       date = date_function(date),
       year = lubridate::year(date),
       month = lubridate::month(date),
       day = lubridate::day(date),
       dow = as.character(lubridate::wday(date, label = TRUE)),
-      time = row_number()
+      time = dplyr::row_number()
     ) %>%
-    arrange(date)
+    dplyr::arrange(date)
 
   essential_cols <- c("date", "region", "pm25", "deaths", "humidity",
                       "precipitation", "tmax", "population", "age", "sex",
                       "urbanisation", "year", "month", "day", "dow", "time")
 
-  data <- data %>% select(all_of(essential_cols))
+  data <- data %>% dplyr::select(all_of(essential_cols))
 
   return(data)
 }
@@ -131,6 +130,8 @@ load_air_pollution_data <- function(data_path,
 #'
 #' @return Dataframe with added columns for lagged PM2.5 concentration.
 #'
+#' @import dplyr
+#'
 #' @export
 create_air_pollution_lags <- function(
   data,
@@ -138,24 +139,24 @@ create_air_pollution_lags <- function(
 ) {
 
   data_with_lags <- data %>%
-    group_by(region) %>%
-    arrange(date)
+    dplyr::group_by(region) %>%
+    dplyr::arrange(date)
 
   for (i in 1:max_lag) {
     lag_name <- paste0("pm25_lag", as.character(i))
     data_with_lags <- data_with_lags %>%
-      mutate(!!lag_name := lag(pm25, i))
+      dplyr::mutate(!!lag_name := lag(pm25, i))
   }
 
   lag_vars <- paste0("pm25_lag", 1:max_lag)
   all_lag_vars <- c("pm25", lag_vars)
   avg_lag_name <- paste0("pm25_lag0_", max_lag)
   data_with_lags <- data_with_lags %>%
-    mutate(!!avg_lag_name := rowMeans(across(all_of(all_lag_vars)), na.rm = FALSE))
+    dplyr::mutate(!!avg_lag_name := rowMeans(across(all_of(all_lag_vars)), na.rm = FALSE))
 
   data_with_lags <- data_with_lags %>%
-    filter(if_all(all_of(all_lag_vars), ~!is.na(.))) %>%
-    ungroup()
+    filter(dplyr::if_all(all_of(all_lag_vars), ~!is.na(.))) %>%
+    dplyr::ungroup()
 
   return(data_with_lags)
 }
@@ -383,20 +384,20 @@ air_pollution_meta_analysis <- function(data,
                                         family = "quasipoisson") {
   # Stage 0: Fit Regional Models
   region_results <- data %>%
-    group_by(region) %>%
+    dplyr::group_by(region) %>%
     tidyr::nest() %>%
-    mutate(
+    dplyr::mutate(
       n_obs = tidytable::map_dbl(data, nrow),
       total_deaths = tidytable::map_dbl(data, ~sum(.x$deaths, na.rm = TRUE)),
       model = purrr::map2(data, region, ~{
         fit_air_pollution_gam(.x, var_name, family)
       })
     ) %>%
-    ungroup()
+    dplyr::ungroup()
 
   # Stage 1: Extract Coefficients and Calculate AN/AF
   region_results <- region_results %>%
-    mutate(
+    dplyr::mutate(
       coef_results = purrr::map(model, ~extract_air_pollution_coef(.x, var_name)),
       coef_pm25 = tidytable::map_dbl(coef_results, ~.x$coef),
       se_pm25 = tidytable::map_dbl(coef_results, ~.x$se),
@@ -409,7 +410,7 @@ air_pollution_meta_analysis <- function(data,
       an_10ug = total_deaths * af_10ug
     ) %>%
     filter(!is.na(coef_pm25) & !is.na(se_pm25)) %>%
-    select(-coef_results)
+    dplyr::select(-coef_results)
 
   if(nrow(region_results) < 2) {
     warning("At least 2 regions with successful model fits needed for meta-analysis.")
@@ -500,7 +501,7 @@ analyze_air_pollution_lags <- function(data,
 #'
 #' @description Function for saving all plot types with consistent parameters.
 #'
-#' @param plot_object Character. ggplot object or grid.arrange object to save.
+#' @param plot_object Character. ggplot object or grid.dplyr::arrange object to save.
 #' @param output_dir Character. Directory to save plots.
 #' @param filename Character. Filename without extension.
 #' @param width_per_panel Integer. Width per panel (for multi-panel plots).
@@ -575,8 +576,8 @@ plot_air_pollution_forest <- function(meta_results,
 
   # Plotting
   region_data <- meta_results$region_results %>%
-    select(region, rr_10ug, ci_lower, ci_upper, af_10ug, an_10ug) %>%
-    mutate(type = "Region",
+    dplyr::select(region, rr_10ug, ci_lower, ci_upper, af_10ug, an_10ug) %>%
+    dplyr::mutate(type = "Region",
            label = sprintf("RR: %.3f", rr_10ug))
 
   overall_data <- data.frame(
@@ -591,7 +592,7 @@ plot_air_pollution_forest <- function(meta_results,
   )
 
   plot_data <- bind_rows(region_data, overall_data) %>%
-    mutate(
+    dplyr::mutate(
       region = factor(region, levels = rev(c(region_data$region, "Overall"))),
       is_overall = type == "Overall"
     )
@@ -662,7 +663,7 @@ plot_air_pollution_lags <- function(lag_results,
                                   levels = lag_labels)
 
   lag_results_clean <- lag_results_clean %>%
-    mutate(label = "")
+    dplyr::mutate(label = "")
 
   lag_plot <- ggplot2::ggplot(lag_results_clean, ggplot2::aes(x = lag, y = rr)) +
     ggplot2::geom_errorbar(ggplot2::aes(ymin = ci_lower, ymax = ci_upper),
@@ -943,7 +944,7 @@ plot_air_pollution_dlm <- function(dlm_results,
   # Create meta plot
   meta_plot_data <- meta_results %>%
     filter(!is.na(RR)) %>%
-    mutate(lag_group = factor(lag_group, levels = all_labels))
+    dplyr::mutate(lag_group = factor(lag_group, levels = all_labels))
 
   meta_plot <- ggplot2::ggplot(meta_plot_data, ggplot2::aes(x = lag_group, y = RR)) +
     ggplot2::geom_errorbar(ggplot2::aes(ymin = LB, ymax = UB), width = 0.2, color = "darkred") +
@@ -968,7 +969,7 @@ plot_air_pollution_dlm <- function(dlm_results,
     prov_data <- region_results %>%
       filter(region == prov) %>%
       filter(!is.na(RR)) %>%
-      mutate(lag_group = factor(lag_group, levels = all_labels))
+      dplyr::mutate(lag_group = factor(lag_group, levels = all_labels))
 
     if (nrow(prov_data) == 0) next
 
@@ -1088,7 +1089,7 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
 
   data_aggreg <- data_with_lags %>%
     filter(!is.na(date)) %>%
-    group_by(region, date, year, month, day) %>%
+    dplyr::group_by(region, date, year, month, day) %>%
     summarise(
       deaths = sum(deaths, na.rm = TRUE),
       pm25 = mean(pm25, na.rm = TRUE),
@@ -1098,10 +1099,10 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
       population = sum(population, na.rm = TRUE),
       .groups = 'drop'
     ) %>%
-    arrange(region, date) %>%
-    group_by(region) %>%
-    mutate(days = row_number()) %>%
-    ungroup()
+    dplyr::arrange(region, date) %>%
+    dplyr::group_by(region) %>%
+    dplyr::mutate(days = dplyr::row_number()) %>%
+    dplyr::ungroup()
 
   plist <- data_aggreg %>% split(., .$region)
   prov <- names(plist)
@@ -1198,13 +1199,13 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
   }
 
   meta_model <- tryCatch({
-    mixmeta(coef_matrix[valid_rows, ] ~ 1, S = vcov_list[valid_rows],
+    mixmeta::mixmeta(coef_matrix[valid_rows, ] ~ 1, S = vcov_list[valid_rows],
             control = list(showiter = FALSE))
   }, error = function(e) {
     stop("Error in meta-analysis: ", e$message)
   })
 
-  blup_results <- blup(meta_model, vcov = TRUE)
+  blup_results <- mixmeta::blup(meta_model, vcov = TRUE)
 
   t1 <- unlist(lapply(plist[prov[valid_rows]], function(x) x$pm25))
   argvar_national <- list(x = t1, fun = varfun, degree = degree,
@@ -1515,7 +1516,7 @@ air_pollution_do_analysis <- function(data_path,
 
       meta_summary <- ref_af_an$meta_results %>%
         filter(lag_group == "0") %>%
-        select(AF, AN)
+        dplyr::select(AF, AN)
 
       if (nrow(meta_summary) > 0) {
         cat("  Overall AF for", ref_std$name, "reference:",
@@ -1570,7 +1571,7 @@ air_pollution_do_analysis <- function(data_path,
 
     # Save cleaned region results
     region_results_clean <- meta_results$region_results %>%
-      select(-data, -model)
+      dplyr::select(-data, -model)
     write.csv(region_results_clean, file.path(output_dir, "region_results.csv"),
               row.names = FALSE)
     write.csv(lag_results, file.path(output_dir, "lag_results.csv"), row.names = FALSE)
