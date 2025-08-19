@@ -150,33 +150,35 @@ malaria_do_analysis <- function(
   )
 
   # Plot time series
-  plot_malaria <- plot_health_climate_timeseries_malaria(
-    combined_data$data,
-    param_term = "malaria",
-    level = "country",
-    case_type = "malaria",
-    filter_year = filter_year,
-    save_fig = save_fig,
-    output_dir = output_dir
-  )
-  plot_tmax <- plot_health_climate_timeseries_malaria(
-    combined_data$data,
-    param_term = "tmax",
-    level = "country",
-    case_type = "malaria",
-    filter_year = filter_year,
-    save_fig = save_fig,
-    output_dir = output_dir
-  )
-  plot_rainfall <- plot_health_climate_timeseries_malaria(
-    combined_data$data,
-    param_term = "rainfall",
-    level = "country",
-    case_type = "malaria",
-    filter_year = filter_year,
-    save_fig = save_fig,
-    output_dir = output_dir
-  )
+  if (level=="country") {
+    plot_malaria <- plot_health_climate_timeseries_malaria(
+      combined_data$data,
+      param_term = "malaria",
+      level = "country",
+      case_type = "malaria",
+      filter_year = filter_year,
+      save_fig = save_fig,
+      output_dir = output_dir
+    )
+    plot_tmax <- plot_health_climate_timeseries_malaria(
+      combined_data$data,
+      param_term = "tmax",
+      level = "country",
+      case_type = "malaria",
+      filter_year = filter_year,
+      save_fig = save_fig,
+      output_dir = output_dir
+    )
+    plot_rainfall <- plot_health_climate_timeseries_malaria(
+      combined_data$data,
+      param_term = "rainfall",
+      level = "country",
+      case_type = "malaria",
+      filter_year = filter_year,
+      save_fig = save_fig,
+      output_dir = output_dir
+    )
+  }
 
   # Create base matrice
   basis <- set_cross_basis_malaria(combined_data$data, TRUE)

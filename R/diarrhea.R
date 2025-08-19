@@ -146,33 +146,35 @@ diarrhea_do_analysis <- function(health_data_path,
   )
 
   # Plot time series
-  plot_diarrhea <- plot_health_climate_timeseries(
-    combined_data$data,
-    param_term= level,
-    level = "country",
-    case_type = "diarrhea",
-    filter_year = filter_year,
-    save_fig = save_fig,
-    output_dir = output_dir
-  )
-  plot_tmax <- plot_health_climate_timeseries(
-    combined_data$data,
-    param_term= "tmax",
-    level = level,
-    case_type = "diarrhea",
-    filter_year = filter_year,
-    save_fig = save_fig,
-    output_dir = output_dir
-  )
-  plot_rainfall <- plot_health_climate_timeseries(
-    combined_data$data,
-    param_term= "rainfall",
-    level = level,
-    case_type = "diarrhea",
-    filter_year = filter_year,
-    save_fig = save_fig,
-    output_dir = output_dir
-  )
+  if (level=="country") {
+    plot_diarrhea <- plot_health_climate_timeseries(
+      combined_data$data,
+      param_term= level,
+      level = "country",
+      case_type = "diarrhea",
+      filter_year = filter_year,
+      save_fig = save_fig,
+      output_dir = output_dir
+    )
+    plot_tmax <- plot_health_climate_timeseries(
+      combined_data$data,
+      param_term= "tmax",
+      level = level,
+      case_type = "diarrhea",
+      filter_year = filter_year,
+      save_fig = save_fig,
+      output_dir = output_dir
+    )
+    plot_rainfall <- plot_health_climate_timeseries(
+      combined_data$data,
+      param_term= "rainfall",
+      level = level,
+      case_type = "diarrhea",
+      filter_year = filter_year,
+      save_fig = save_fig,
+      output_dir = output_dir
+    )
+  }
 
   # Create base matrice
   basis <- set_cross_basis(combined_data$data, FALSE)
