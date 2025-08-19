@@ -1,11 +1,11 @@
-#' Code for calculating Diarrhea disease cases attributable to extreme
+#' Code for calculating Malaria disease cases attributable to extreme
 #' precipitation and extreme temperature
 
-#' Run Full Diarrhea-Climate Analysis Pipeline
+#' Run Full Malaria-Climate Analysis Pipeline
 #'
 #' @description
-#' The `diarrhea_do_analysis` function runs the complete analysis workflow
-#' by combining multiple functions to analyze the association between diarrhea
+#' The `malaria_do_analysis` function runs the complete analysis workflow
+#' by combining multiple functions to analyze the association between Malaria
 #' cases and climate variables. It processes health, climate, and spatial data,
 #' fits models, generates plots, and calculates attributable risk.
 #'
@@ -17,7 +17,7 @@
 #' @param date_col Character. Name of the column containing the date. Defaults to NULL.
 #' @param year_col Character. Name of the column containing the year.
 #' @param month_col Character. Name of the column containing the month.
-#' @param diarrhea_case_col Character. Name of the column containing diarrhea case counts.
+#' @param malaria_case_col Character. Name of the column containing Malaria case counts.
 #' @param tot_pop_col Character. Name of the column containing total population.
 #' @param tmin_col Character. Name of the column containing minimum temperature.
 #' @param tmean_col Character. Name of the column containing mean temperature.
@@ -31,14 +31,15 @@
 #' (usually "geometry").
 #' @param spi_col Character. Name of the column containing the Standardized
 #' Precipitation Index. Defaults to NULL.
+#' @param cvh_col Character. Name of the column containing CVH.
 #' @param max_lag Numeric. Maximum lag to consider in the model
 #' (typically 2 to 4). Defaults to 2.
-#' @param inla_param A character vector specifying the confounding exposures to
-#' be included in the model. Possible values are "tmax","tmin", "rainfall",
-#' "r_humidity", and "runoff".
 #' @param basis_matrices_choices Character vector specifying basis matrix
 #' parameters to include in the model (e.g., "tmax", "tmin", "rainfall",
 #' "r_humidity", "spi").
+#' @param inla_param A character vector specifying the confounding exposures to
+#' be included in the model. Possible values are "tmax","tmin", "rainfall",
+#' "r_humidity", and "runoff".
 #' @param param_term Character vector specifying the exposure variables of interest
 #' (e.g., "tmax", "rainfall").
 #' @param level Character. Spatial disaggregation level: "country", "region", or "district".
@@ -66,40 +67,43 @@
 #' }
 #'
 #' @export
-diarrhea_do_analysis <- function(health_data_path,
-                                 climate_data_path,
-                                 map_path,
-                                 region_col,
-                                 district_col,
-                                 date_col= NULL,
-                                 year_col,
-                                 month_col,
-                                 diarrhea_case_col,
-                                 tot_pop_col,
-                                 tmin_col,
-                                 tmean_col,
-                                 tmax_col,
-                                 rainfall_col,
-                                 r_humidity_col,
-                                 runoff_col,
-                                 geometry_col,
-                                 spi_col = NULL,
-                                 max_lag = 2,
-                                 inla_param,
-                                 basis_matrices_choices,
-                                 param_term,
-                                 level,
-                                 param_threshold = 1,
-                                 filter_year = NULL,
-                                 family = "poisson",
-                                 config = FALSE,
-                                 save_csv = FALSE,
-                                 save_fig = FALSE,
-                                 output_dir = NULL){
+malaria_do_analysis <- function(
+  health_data_path,
+  climate_data_path,
+  map_path,
+  region_col,
+  district_col,
+  date_col= NULL,
+  year_col,
+  month_col,
+  malaria_case_col,
+  tot_pop_col,
+  tmin_col,
+  tmean_col,
+  tmax_col,
+  rainfall_col,
+  r_humidity_col,
+  runoff_col,
+  geometry_col,
+  spi_col = NULL,
+  cvh_col = NULL,
+  max_lag = 4,
+  basis_matrices_choices,
+  inla_param,
+  param_term,
+  level,
+  param_threshold = 1,
+  filter_year = NULL,
+  family = "poisson",
+  config = FALSE,
+  save_csv = FALSE,
+  save_fig = FALSE,
+  output_dir = NULL
+){
 
   # Simple output validation
   if (is.null(output_dir) & (save_fig | save_csv)) {
-    stop("'output_dir' must be provided if 'save_fig' or save_csv' are TRUE.")
+    stop("'output_dir' must be provided is 'save_fig' or save_csv' are TRUE.")
   }
   check_file_exists(output_dir, TRUE)
 
@@ -117,10 +121,10 @@ diarrhea_do_analysis <- function(health_data_path,
   if (is.character(climate_data_path)) {
     check_file_exists(climate_data_path, TRUE)
   }
-  check_file_exists(map_path, TRUE)#
+  check_file_exists(map_path, TRUE)
 
   # Get combined data
-  combined_data <- combine_health_climate_data(
+  combined_data <- combine_health_climate_data_malaria(
     health_data_path,
     climate_data_path,
     map_path,
@@ -129,8 +133,8 @@ diarrhea_do_analysis <- function(health_data_path,
     date_col,
     year_col,
     month_col,
-    diarrhea_case_col,
-    "diarrhea",
+    malaria_case_col,
+    "malaria",
     tot_pop_col,
     tmin_col,
     tmean_col,
@@ -139,7 +143,7 @@ diarrhea_do_analysis <- function(health_data_path,
     r_humidity_col,
     geometry_col,
     runoff_col,
-    NULL,
+    cvh_col,
     spi_col,
     max_lag,
     output_dir
@@ -147,29 +151,29 @@ diarrhea_do_analysis <- function(health_data_path,
 
   # Plot time series
   if (level=="country") {
-    plot_diarrhea <- plot_health_climate_timeseries(
+    plot_malaria <- plot_health_climate_timeseries_malaria(
       combined_data$data,
-      param_term= level,
+      param_term = "malaria",
       level = "country",
-      case_type = "diarrhea",
+      case_type = "malaria",
       filter_year = filter_year,
       save_fig = save_fig,
       output_dir = output_dir
     )
-    plot_tmax <- plot_health_climate_timeseries(
+    plot_tmax <- plot_health_climate_timeseries_malaria(
       combined_data$data,
-      param_term= "tmax",
-      level = level,
-      case_type = "diarrhea",
+      param_term = "tmax",
+      level = "country",
+      case_type = "malaria",
       filter_year = filter_year,
       save_fig = save_fig,
       output_dir = output_dir
     )
-    plot_rainfall <- plot_health_climate_timeseries(
+    plot_rainfall <- plot_health_climate_timeseries_malaria(
       combined_data$data,
-      param_term= "rainfall",
-      level = level,
-      case_type = "diarrhea",
+      param_term = "rainfall",
+      level = "country",
+      case_type = "malaria",
       filter_year = filter_year,
       save_fig = save_fig,
       output_dir = output_dir
@@ -177,7 +181,7 @@ diarrhea_do_analysis <- function(health_data_path,
   }
 
   # Create base matrice
-  basis <- set_cross_basis(combined_data$data, FALSE)
+  basis <- set_cross_basis_malaria(combined_data$data, TRUE)
 
   # Check for multicolinearity
   if (save_csv) {
@@ -185,7 +189,7 @@ diarrhea_do_analysis <- function(health_data_path,
       data=combined_data$data,
       inla_param=inla_param,
       basis_matrices_choices=basis_matrices_choices,
-      case_type="diarrhea",
+      case_type="malaria",
       output_dir=output_dir
     )
   } else {
@@ -193,16 +197,16 @@ diarrhea_do_analysis <- function(health_data_path,
       data=combined_data$data,
       inla_param=inla_param,
       basis_matrices_choices=basis_matrices_choices,
-      case_type="diarrhea"
+      case_type="malaria"
     )
   }
 
-  # Fit the model
+  # Fitting the model
   inla_result <- run_inla_models(
     combined_data=combined_data,
     basis_matrices_choices=basis_matrices_choices,
     inla_param=inla_param,
-    case_type = "diarrhea",
+    case_type = "malaria",
     output_dir=output_dir,
     save_csv=save_csv,
     family=family,
@@ -210,8 +214,8 @@ diarrhea_do_analysis <- function(health_data_path,
   )
 
   # Plot seasonality
-  reff_plot_monthly <- plot_monthly_random_effects(
-    combined_data=combined_data,
+  reff_plot_monthly <- plot_monthly_random_effects_malaria(
+    combined_data,
     model=inla_result$model,
     output_dir=output_dir,
     save_fig=save_fig
@@ -221,7 +225,7 @@ diarrhea_do_analysis <- function(health_data_path,
   reff_plot_yearly <- plot_yearly_spatial_random_effect(
     combined_data=combined_data,
     model=inla_result$model,
-    case_type="diarrhea",
+    case_type="malaria",
     save_fig=save_fig,
     output_dir=output_dir
   )
@@ -233,7 +237,7 @@ diarrhea_do_analysis <- function(health_data_path,
     model=inla_result$model,
     level=level,
     filter_year=filter_year,
-    case_type="diarrhea",
+    case_type="malaria",
     save_fig=save_fig,
     output_dir=output_dir,
   )
@@ -245,7 +249,7 @@ diarrhea_do_analysis <- function(health_data_path,
     param_term=param_term,
     level=level,
     filter_year=filter_year,
-    case_type="diarrhea",
+    case_type="malaria",
     output_dir=output_dir,
     save_fig=save_fig
   )
@@ -257,7 +261,7 @@ diarrhea_do_analysis <- function(health_data_path,
     param_term=param_term,
     level=level,
     filter_year=filter_year,
-    case_type="diarrhea",
+    case_type="malaria",
     output_dir=output_dir,
     save_csv=save_csv,
     save_fig=save_fig
@@ -273,7 +277,7 @@ diarrhea_do_analysis <- function(health_data_path,
     level=level,
     param_threshold=param_threshold,
     filter_year=filter_year,
-    case_type="diarrhea",
+    case_type="malaria",
     output_dir=output_dir,
     save_csv=save_csv
   )
@@ -285,7 +289,7 @@ diarrhea_do_analysis <- function(health_data_path,
     metrics="AR_Number",
     filter_year=filter_year,
     param_term=param_term,
-    case_type="diarrhea",
+    case_type="malaria",
     save_fig=save_fig,
     output_dir=output_dir
   )
@@ -296,7 +300,7 @@ diarrhea_do_analysis <- function(health_data_path,
     metrics="AR_Fraction",
     filter_year=filter_year,
     param_term=param_term,
-    case_type="diarrhea",
+    case_type="malaria",
     save_fig=save_fig,
     output_dir=output_dir
   )
@@ -307,16 +311,15 @@ diarrhea_do_analysis <- function(health_data_path,
     metrics="AR_per_100k",
     filter_year=filter_year,
     param_term=param_term,
-    case_type="diarrhea",
+    case_type="malaria",
     save_fig=save_fig,
     output_dir=output_dir
   )
 
   res <- list(
-    plot_diarrhea = plot_diarrhea,
+    plot_malaria = plot_malaria,
     plot_tmax = plot_tmax,
     plot_rainfall = plot_rainfall,
-    VIF = VIF,
     inla_result = inla_result,
     reff_plot_monthly = reff_plot_monthly,
     reff_plot_yearly = reff_plot_yearly,
@@ -325,8 +328,8 @@ diarrhea_do_analysis <- function(health_data_path,
     rr_plot = rr_plot,
     rr_df = rr_df,
     attr_frac_num = attr_frac_num,
-    plot_AR_Num = plot_AR_Num,
-    plot_AR_Fr = plot_AR_Fr,
+    plot_AR_num = plot_AR_Num,
+    plot_AR_frac = plot_AR_Fr,
     plot_AR_per_100k = plot_AR_per_100k
   )
 
