@@ -1089,7 +1089,7 @@ contour_plot <- function(
     if (!"year" %in% names(data)) stop("'year' column not found in data.")
     data <- filter(data, year %in% filter_year)
   }
-  predt <- get_predictions(data, param_term=param_term, model, level=level, case_type=case_type)
+  predt <- get_predictions(data, param_term=param_term, model=model, level=level, case_type=case_type)
 
   plot_contour <- function(x, y, z, title) {
     nlag <- max(x)
