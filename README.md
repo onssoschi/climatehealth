@@ -18,15 +18,16 @@ This repository contains code for an R package dedicated to calculating climate-
 
 This package contains scientific functions dedicated to the following topics in the SOSCHI framework:
 
-| **Indicator**                                                       | **Topic Owner** | **Documents**                                      |
-|--------------------------------------------------------------------|-----------------|----------------------------------------------------|
-| Heat- and cold-related mortality                                   | ONS             | [Methodology Document](https://www.google.com)     |
-| Injury and mortality from extreme weather events: Wildfires        | ONS             | [Methodology Document](https://www.google.com)     |
-| Mental health                                                      | ONS             | [Methodology Document](https://www.google.com)     |
-| Waterborne                                                         | AIMS            | [Methodology Document](https://www.google.com)     |
-| Air Pollution                                                      | AIMS            | [Methodology Document](https://www.google.com)     |
-| Malaria                                                            | RIPS/AIMS       | [Methodology Document](https://www.google.com)     |
+| **Indicator**                                                       | **Topic Owner** | **Documents**                                                      |
+|--------------------------------------------------------------------|-----------------|---------------------------------------------------------------------|
+| Heat- and cold-related mortality                                   | ONS             | [Methodology Document](https://doi.org/10.5281/zenodo.14865904)     |
+| Injury and mortality from extreme weather events: Wildfires        | ONS             | [Methodology Document](https://doi.org/10.5281/zenodo.14052183)     |
+| Mental health                                                      | ONS             | [Methodology Document](https://doi.org/10.5281/zenodo.14050224)     |
+| Waterborne                                                         | AIMS            | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     |
+| Air Pollution                                                      | AIMS            | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     |
+| Malaria                                                            | RIPS/AIMS       | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     |
 
+For additional information on each topic/indicator, see our official website [here](https://climate-health.officialstatistics.org/framework)
 
 ## Package Installation
 
