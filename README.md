@@ -40,6 +40,8 @@ This package was largely developed on **R-4.4.1**, therefore it is recommended. 
 Installing the _climatehealth_ R package in your R environment can be done in various different ways. Your installation method can vary on your requirements and preference.  
 
 #### Devtools
+If you would like to make updates to the package code in realtime, devtools should be used to load the functions into memory.  
+Firstly, you must install the devtools package in your R environment. This can be done by typing install.packages("devtools") into the R console.
 
 #### Windows Binary (Pre-Compiled)
 
