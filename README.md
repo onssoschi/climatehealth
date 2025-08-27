@@ -7,13 +7,13 @@
 > This package is still in development and methods are actively changing.
 
 ## Table of Contents
-[📦 Package Overview](#package-overview)  
-[🛠️ Package Installation](#package-installation)  
-[📊 Example Datasets](#example-datasets)  
-[🙌 Contributing](#contributing)  
-[👥 Authors](#authors)  
-[🤝 Contributors](#contributors)  
-[💰 Funding](#funding)  
+- [📦 Package Overview](#package-overview)  
+- [🛠️ Package Installation](#package-installation)  
+- [📊 Example Datasets](#example-datasets)  
+- [🙌 Contributing](#contributing)  
+- [👥 Authors](#authors)  
+- [🤝 Contributors](#contributors)  
+- [💰 Funding](#funding)  
 
 ## Package Overview
 
@@ -113,7 +113,7 @@ Climate and Health Team, Health and International Partnerships, Office for Natio
 
 ## Contributors
 
-[]
+Coming soon...
 
 ## Funding
 ![Static Badge](https://img.shields.io/badge/Wellcome_Trust-224682%2FZ%2F21%2FZ-%23ff24de)
