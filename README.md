@@ -7,6 +7,13 @@
 > This package is still in development and methods are actively changing.
 
 ## Table of Contents
+[📦 Package Overview](#package-overview)  
+[🛠️ Package Installation](#package-installation)  
+[📊 Example Datasets](#example-datasets)  
+[🙌 Contributing](#contributing)  
+[👥 Authors](#authors)  
+[🤝 Contributors](#contributors)  
+[💰 Funding](#funding)  
 
 ## Package Overview
 
