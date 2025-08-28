@@ -13,11 +13,20 @@ mh_save_results(
 )
 }
 \arguments{
+\item{rr_results}{Dataframe containing cumulative relative risk and confidence
+intervals from analysis.}
+
+\item{res_attr_tot}{Matrix containing total attributable fractions, numbers and rates for each
+area over the whole time series.}
+
+\item{attr_yr_list}{A list of matrices containing yearly estimates of attributable
+fractions, numbers and rates by area}
+
+\item{attr_mth_list}{A list of data frames containing total attributable
+fractions, numbers and rates by calendar month and area.}
+
 \item{output_folder_path}{Path to folder where results should be saved.
 Defaults to NULL.}
-
-\item{results}{Dataframe containing cumulative relative risk and confidence
-intervals from analysis.}
 }
 \description{
 Saves a CSV file of cumulative relative risk and

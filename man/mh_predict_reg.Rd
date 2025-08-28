@@ -5,16 +5,19 @@
 \title{Run regional predictions from model}
 \usage{
 mh_predict_reg(
-  data,
+  df_list,
   var_fun = "bs",
   var_per = c(25, 50, 75),
   var_degree = 2,
   minpercreg,
-  blup
+  blup,
+  coef_,
+  vcov_,
+  meta_analysis = FALSE
 )
 }
 \arguments{
-\item{data}{A list of dataframes containing daily timeseries data for a health outcome
+\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
 and climate variables which may be disaggregated by a particular region.}
 
 \item{var_fun}{Character. Exposure function for argvar
@@ -30,6 +33,12 @@ and climate variables which may be disaggregated by a particular region.}
 
 \item{blup}{A list. BLUP (best linear unbiased predictions) from the
 meta-analysis model for each region.}
+
+\item{coef_}{A matrix of coefficients for the reduced model.}
+
+\item{vcov_}{A list. Covariance matrices for each region for the reduced model.}
+
+\item{meta_analysis}{Boolean. Whether to perform a meta-analysis.}
 }
 \value{
 A list containing predictions by region

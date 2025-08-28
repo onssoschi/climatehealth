@@ -16,8 +16,7 @@ mh_add_national_data(
   country = "National",
   cb_list,
   mm,
-  minpercreg,
-  maxpercreg
+  minpercreg
 )
 }
 \arguments{
@@ -51,15 +50,12 @@ and climate variables which may be disaggregated by a particular region.}
 \item{mm}{A model object. A multivariate meta-analysis model.}
 
 \item{minpercreg}{Vector. Percentile of maximum suicide temperature for each region.}
-
-\item{maxpercreg}{Vector. Percentile of maximum suicide temperature for each region.}
 }
 \value{
 \itemize{
 \item \code{df_list} List. A list of data frames for each region and nation.
 \item \code{cb_list} List. A list of cross-basis matrices by region and nation.
 \item \code{minpercreg} Vector. Percentile of minimum suicide temperature for each region and nation.
-\item \code{maxpercreg} Vector. Percentile of maximum suicide temperature for each region and nation.
 \item \code{mmpredall} List. A list of national coefficients and covariance matrices.
 }
 }

@@ -5,7 +5,7 @@
 \title{Create cross-basis matrix}
 \usage{
 mh_create_crossbasis(
-  data,
+  df_list,
   var_fun = "bs",
   var_degree = 2,
   var_per = c(25, 50, 75),
@@ -15,7 +15,7 @@ mh_create_crossbasis(
 )
 }
 \arguments{
-\item{data}{A list of dataframes containing daily timeseries data for a health outcome
+\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
 and climate variables which may be disaggregated by a particular region.}
 
 \item{var_fun}{Character. Exposure function for argvar

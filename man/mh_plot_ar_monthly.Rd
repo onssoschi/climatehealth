@@ -8,6 +8,7 @@ mh_plot_ar_monthly(
   attr_mth_list,
   df_list,
   country = "National",
+  attr_thr = 97.5,
   save_fig = FALSE,
   output_folder_path = NULL
 )
@@ -15,6 +16,14 @@ mh_plot_ar_monthly(
 \arguments{
 \item{attr_mth_list}{A list of data frames containing total attributable
 fractions, numbers and rates by calendar month and area.}
+
+\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
+and climate variables which may be disaggregated by a particular region.}
+
+\item{country}{Character. Name of country for national level estimates.}
+
+\item{attr_thr}{Integer. Percentile at which to define the temperature threshold for
+calculating attributable risk.}
 
 \item{save_fig}{Boolean. Whether to save the plot as an output. Defaults to
 FALSE.}

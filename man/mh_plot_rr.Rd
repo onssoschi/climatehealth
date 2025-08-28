@@ -7,8 +7,9 @@
 mh_plot_rr(
   df_list,
   pred_list,
-  maxpercreg,
+  attr_thr = 97.5,
   minpercreg,
+  country = "National",
   save_fig = FALSE,
   output_folder_path = NULL
 )
@@ -19,9 +20,12 @@ and climate variables which may be disaggregated by a particular region.}
 
 \item{pred_list}{A list containing predictions from the model by region.}
 
-\item{maxpercreg}{Vector. Percentile of maximum suicide temperature for each area.}
+\item{attr_thr}{Integer. Percentile at which to define the temperature threshold for
+calculating attributable risk.}
 
 \item{minpercreg}{Vector. Percentile of minimum suicide temperature for each area.}
+
+\item{country}{Character. Name of country for national level estimates.}
 
 \item{save_fig}{Boolean. Whether to save the plot as an output. Defaults to
 FALSE.}

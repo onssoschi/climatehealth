@@ -4,13 +4,15 @@
 \alias{mh_pop_totals}
 \title{Create population totals}
 \usage{
-mh_pop_totals(df_list, country = "National")
+mh_pop_totals(df_list, country = "National", meta_analysis = FALSE)
 }
 \arguments{
+\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
+and climate variables which may be disaggregated by a particular region.}
+
 \item{country}{Character. Name of country for national level estimates.}
 
-\item{data}{A list of dataframes containing daily timeseries data for a health outcome
-and climate variables which may be disaggregated by a particular region.}
+\item{meta_analysis}{Boolean. Whether to perform a meta-analysis.}
 }
 \value{
 List of population totals by year and region

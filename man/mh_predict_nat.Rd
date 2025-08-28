@@ -16,6 +16,9 @@ mh_predict_nat(
 )
 }
 \arguments{
+\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
+and climate variables which may be disaggregated by a particular region.}
+
 \item{var_fun}{Character. Exposure function for argvar
 (see dlnm::crossbasis). Defaults to 'bs'.}
 
@@ -32,9 +35,6 @@ mh_predict_nat(
 \item{pred_list}{A list containing predictions from the model by region.}
 
 \item{country}{Character. Name of country for national level estimates.}
-
-\item{data}{A list of dataframes containing daily timeseries data for a health outcome
-and climate variables which may be disaggregated by a particular region.}
 }
 \value{
 A list containing predictions by region.
