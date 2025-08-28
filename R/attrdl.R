@@ -62,8 +62,8 @@ an_attrdl <- function(x,basis,cases,coef=NULL,vcov=NULL,model.link=NULL,
   ################################################################################
   #
   # COMPUTE AN
-  af <- 1-exp(-drop(as.matrix(Xpredall%*%coef)))
   an <- (1-exp(-drop(as.matrix(Xpredall%*%coef)))) * cases
+  af <- an / cases
 
   ################################################################################
   #
@@ -82,6 +82,8 @@ an_attrdl <- function(x,basis,cases,coef=NULL,vcov=NULL,model.link=NULL,
   #
   an_lower_ci <- apply(ansim_mat, 1, quantile, probs = 0.025, na.rm = TRUE)
   an_upper_ci <- apply(ansim_mat, 1, quantile, probs = 0.975, na.rm = TRUE)
+  af_lower_ci <- an_lower_ci / cases
+  af_upper_ci <- an_upper_ci / cases
   #
-  return(list(cases, an, an_lower_ci, an_upper_ci))
+  return(list(af, af_lower_ci, af_upper_ci, an, an_lower_ci, an_upper_ci))
 }
