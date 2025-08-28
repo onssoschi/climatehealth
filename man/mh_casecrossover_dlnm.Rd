@@ -4,11 +4,14 @@
 \alias{mh_casecrossover_dlnm}
 \title{Quasi-Poisson Case-Crossover model with DLNM}
 \usage{
-mh_casecrossover_dlnm(data, cb_list)
+mh_casecrossover_dlnm(df_list, control_cols = NULL, cb_list)
 }
 \arguments{
-\item{data}{A list of dataframes containing daily timeseries data for a health outcome
+\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
 and climate variables which may be disaggregated by a particular region.}
+
+\item{control_cols}{A list of confounders to include in the final model adjustment.
+Defaults to NULL if none.}
 
 \item{cb_list}{List of cross_basis matrices from create_crossbasis function.}
 }

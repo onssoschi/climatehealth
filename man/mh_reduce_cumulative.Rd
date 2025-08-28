@@ -5,7 +5,7 @@
 \title{Reduce to overall cumulative}
 \usage{
 mh_reduce_cumulative(
-  data,
+  df_list,
   var_per = c(25, 50, 75),
   var_degree = 2,
   cenper = 50,
@@ -14,7 +14,7 @@ mh_reduce_cumulative(
 )
 }
 \arguments{
-\item{data}{A list of dataframes containing daily timeseries data for a health outcome
+\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
 and climate variables which may be disaggregated by a particular region.}
 
 \item{var_per}{Vector. Internal knot positions for argvar

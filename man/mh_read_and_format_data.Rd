@@ -30,6 +30,9 @@ contains the temperature column.}
 \item{health_outcome_col}{Character. Name of the column in the dataframe that
 contains the health outcome count column (e.g. number of deaths, hospital
 admissions).}
+
+\item{population_col}{Character. Name of the column in the dataframe that
+contains the population estimate coloumn.}
 }
 \value{
 A list of dataframes with formatted and renamed columns.

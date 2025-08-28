@@ -12,6 +12,8 @@ suicides_heat_do_analysis(
   temperature_col,
   health_outcome_col,
   population_col,
+  independent_cols = NULL,
+  control_cols = NULL,
   var_fun = "bs",
   var_degree = 2,
   var_per = c(25, 50, 75),
@@ -22,6 +24,8 @@ suicides_heat_do_analysis(
   save_csv = FALSE,
   cenper = 50,
   country = "National",
+  meta_analysis = FALSE,
+  attr_thr = 97.5,
   descriptive_stats = FALSE,
   ds_correlation_method = "pearson",
   ds_use_individual_dfs = TRUE,
@@ -49,6 +53,14 @@ contains the temperature column.}
 \item{health_outcome_col}{Character. Name of the column in the dataframe that
 contains the health outcome count column (e.g. number of deaths, hospital
 admissions).}
+
+\item{population_col}{Character. Name of the column in the dataframe that
+contains the population estimate coloumn.}
+
+\item{independent_cols}{Additional independent variables to test in model validation}
+
+\item{control_cols}{A list of confounders to include in the final model adjustment.
+Defaults to NULL if none.}
 
 \item{var_fun}{Character. Exposure function for argvar
 (see dlnm::crossbasis). Defaults to 'bs'.}
@@ -79,6 +91,11 @@ value 0-100. Defaults to 50.}
 
 \item{country}{Character. Name of country for national level estimates.}
 
+\item{meta_analysis}{Boolean. Whether to perform a meta-analysis.}
+
+\item{attr_thr}{Integer. Percentile at which to define the temperature threshold for
+calculating attributable risk.}
+
 \item{descriptive_stats}{Boolean. Whether to calculate descriptive stats.}
 
 \item{ds_correlation_method}{character. The correlation method used in correlation matrices.
@@ -102,8 +119,16 @@ Defaults to 2.}
 saved. Defaults to NULL.}
 }
 \value{
-Dataframe containing cumulative relative risk and confidence
+\itemize{
+\item \code{rr_results} Dataframe containing cumulative relative risk and confidence
 intervals from analysis.
+\item \code{res_attr_tot} Dataframe. Total attributable fractions, numbers and
+rates for each area over the whole time series.
+\item \code{attr_yr_list} List. Dataframes containing yearly estimates of
+attributable fractions, numbers and rates by area.
+\item \code{attr_mth_list} List. Dataframes containing total attributable
+fractions, numbers and rates by calendar month and area.
+}
 }
 \description{
 Runs full analysis pipeline for analysis of the impact of

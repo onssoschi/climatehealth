@@ -13,6 +13,9 @@ mh_plot_attr_totals(
 )
 }
 \arguments{
+\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
+and climate variables which may be disaggregated by a particular region.}
+
 \item{res_attr_tot}{Matrix containing total attributable fractions, numbers and rates for each
 area over the whole time series.}
 
@@ -21,6 +24,8 @@ FALSE.}
 
 \item{output_folder_path}{Path to folder where plots should be saved.
 Defaults to NULL.}
+
+\item{country}{Character. Name of country for national level estimates.}
 }
 \value{
 Plots of total attributable fractions and rates by area
