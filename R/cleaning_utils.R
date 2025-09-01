@@ -1,9 +1,5 @@
 # Functions to help clean and aggregate input data.
-
-library(dplyr) # used to load pipe operator
-library(rlang) # used to load sym function
-# TODO: consider splitting this up into smaller functions
-
+# Cleaning Utilities
 
 #' Reformat a dataframe using various different cleaning techniques.
 #'

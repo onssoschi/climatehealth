@@ -26,13 +26,6 @@ suicides_heat_do_analysis(
   country = "National",
   meta_analysis = FALSE,
   attr_thr = 97.5,
-  descriptive_stats = FALSE,
-  ds_correlation_method = "pearson",
-  ds_use_individual_dfs = TRUE,
-  ds_dist_columns = c(),
-  ds_ma_days = 100,
-  ds_ma_sides = 2,
-  ds_ma_columns = c(),
   output_folder_path = NULL
 )
 }
@@ -95,25 +88,6 @@ value 0-100. Defaults to 50.}
 
 \item{attr_thr}{Integer. Percentile at which to define the temperature threshold for
 calculating attributable risk.}
-
-\item{descriptive_stats}{Boolean. Whether to calculate descriptive stats.}
-
-\item{ds_correlation_method}{character. The correlation method used in correlation matrices.
-Defaults to 'pearson'.}
-
-\item{ds_use_individual_dfs}{Boolean. Whether to calculate descriptive stats for each individual
-df in df_list. Default to TRUE.}
-
-\item{ds_dist_columns}{character vector. The names of columns to plot distributions for.
-Defaults to c().}
-
-\item{ds_ma_days}{integer. How many days to use for moving average calculations.
-Defaults to 100.}
-
-\item{ds_ma_sides}{integer. How many sides to use for moving average calculations (1 or 2).
-Defaults to 2.}
-
-\item{ds_ma_columns}{character vector. The names of columns to plot moving average for.}
 
 \item{output_folder_path}{Path to folder where plots and/or CSV should be
 saved. Defaults to NULL.}

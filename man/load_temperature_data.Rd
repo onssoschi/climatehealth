@@ -31,10 +31,10 @@ are spatially aggregated e.g. regnames}
 
 \item{population_col}{The population column e.g. pop}
 
+\item{output_year}{Year(s) to calculate output for.}
+
 \item{RR_distribution_length}{Number of years for the calculation of RR
 distribution. Set both as 'NONE' to use full range in data.}
-
-\item{output_year_}{Year(s) to calculate output for.}
 }
 \value{
 \code{df_list} An alphabetically-ordered list of dataframes for each

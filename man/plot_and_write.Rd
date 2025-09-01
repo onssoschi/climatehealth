@@ -41,6 +41,10 @@ accordingly).}
 
 \item{save_csv}{Whether to save output CSVs (Bool)}
 
+\item{cb}{The generated crossbasis.}
+
+\item{model}{The generated model.}
+
 \item{blup}{A list of BLUPs (best linear unbiased predictions).}
 
 \item{mintempregions}{A named numeric vector.
@@ -71,10 +75,6 @@ variable to include in regression (excluding temperature). Defaults to NULL.}
 
 \item{dependent_col}{the column name of the
 dependent variable of interest e.g. deaths}
-
-\item{coef}{A matrix of coefficients for reduced model.}
-
-\item{vcov}{A list. Co-variance matrices for each region for reduced model.}
 }
 \value{
 \itemize{

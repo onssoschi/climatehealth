@@ -14,7 +14,7 @@ data}
 variable from which to generate splines. Default is 0 (unlagged temperature
 variable).}
 
-\item{df}{Integer. Degrees of freedom for the spline(s).}
+\item{degrees_freedom}{Integer. Degrees of freedom for the spline(s).}
 }
 \value{
 Dataframe with additional columns for temperature spline

@@ -71,7 +71,7 @@ read_and_format_data <- function(health_path,
 #' https://doi.org/10.57707/fmi-b2share.d1cac971b3224d438d5304e945e9f16c.
 #'
 #' @param ncdf_path Path to a NetCDF file
-#' @param shp_path Path to a shapefile .shp of the geographical boundaries for
+#' @param shapefile_path Path to a shapefile .shp of the geographical boundaries for
 #' which to extract mean values of wildfire-related PM2.5
 #'
 #' @returns Dataframe containing a daily time series with mean wildfire-related
@@ -127,7 +127,7 @@ extract_means_for_geography <- function(ncdf_path,
 #'
 #' @param climate_data Dataframe containing a daily time series of climate data,
 #' which may be disaggregated by region.
-#' @param health_path Path to a CSV file containing a
+#' @param health_data Path to a CSV file containing a
 #' daily time series of data for a particular health outcome, which may be
 #' disaggregated by region.
 #' @param date_col Character. Name of the column in the dataframe that contains
@@ -329,7 +329,7 @@ create_lagged_variables <- function(data,
 #' @param temperature_lag Integer. The number of days of lag in the temperature
 #' variable from which to generate splines. Default is 0 (unlagged temperature
 #' variable).
-#' @param df Integer. Degrees of freedom for the spline(s).
+#' @param degrees_freedom Integer. Degrees of freedom for the spline(s).
 #'
 #' @returns Dataframe with additional columns for temperature spline
 #'
@@ -738,8 +738,11 @@ plot_RR <- function(results,
 #' @description Saves a CSV file of relative risk and confidence intervals for
 #' each lag value of wildfire-related PM2.5
 #'
-#' @param results Dataframe of relative risk and confidence intervals for
+#' @param rr_results Dataframe. Relative risk and confidence intervals for
 #' each lag of wildfire-related PM2.5
+#' @param output_AN_AR Bool. Whether or not to output attributable numbers and
+#' fractions. Defaults to TRUE.
+#' @param an_ar_results Dataframe. The AN/AR results. Defaults to NULL.
 #' @param output_folder_path Path to folder where results should be saved.
 #'
 #' @export
@@ -986,8 +989,6 @@ summarise_AF_AN <- function(data){
 #' include in the model. Must contain at least 2 variables. Defaults to NULL.
 #' @param calc_relative_risk_by_region Bool. Whether to calculate Relative Risk by region.
 #' Default: FALSE
-#' @param output_AF_AN Bool. Whether to create attributable fraction and
-#' attributable number output. Only works id relative_risk_by_region = TRUE.
 #' @param scale_factor_wildfire_pm Numeric. The value to divide the wildfire
 #' PM2.5 concentration variables by for alternative interpretation of outputs.
 #' Corresponds to the unit increase in wildfire PM2.5 to give the model
