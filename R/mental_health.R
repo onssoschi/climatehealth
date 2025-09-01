@@ -2150,11 +2150,11 @@ suicides_heat_do_analysis <- function(data_path,
                              health_outcome_col = health_outcome_col,
                              population_col = population_col)
 
-  pop_list <- mh_pop_totals(data = df_list,
+  pop_list <- mh_pop_totals(df_list = df_list,
                             country = country,
                             meta_analysis = meta_analysis)
 
-  cb_list <- mh_create_crossbasis(data = df_list,
+  cb_list <- mh_create_crossbasis(df_list = df_list,
                                var_fun = var_fun,
                                var_degree = var_degree,
                                var_per = var_per,
@@ -2174,10 +2174,10 @@ suicides_heat_do_analysis <- function(data_path,
                                       control_cols = control_cols,
                                       cb_list = cb_list)
 
-  c(coef_, vcov_) %<-% mh_reduce_cumulative(data = df_list,
+  c(coef_, vcov_) %<-% mh_reduce_cumulative(df_list = df_list,
                                             var_per = var_per,
                                             var_degree = var_degree,
-                                            cenper = cenper, #TODO Add to config file
+                                            cenper = cenper,
                                             cb_list = cb_list,
                                             model_list = model_list)
 

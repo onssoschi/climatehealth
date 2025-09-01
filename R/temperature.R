@@ -41,7 +41,7 @@ filter_on_rr_distribution <- function(df,
   # Filter
   df <- df %>%
     dplyr::filter(year >= (output_year - RR_distribution_length + 1)
-  & year <= output_year)
+                  & year <= output_year)
 
   return(df)
 }
@@ -430,7 +430,7 @@ define_and_validate_optimal_temps <- function(optimal_temp_range,
     as.numeric(names(prediction[[RR_fit_col]]))< optimal_temp_range[index, "lower"]
   )
   if (length(which((below_one %in% above_OTR) | (below_one %in% below_OTR))) > 0) {
-  # TODO: Create a better warning
+    # TODO: Create a better warning
     warning("Predicted RR goes below 1 in the ends")
   }
 
@@ -538,7 +538,7 @@ calculate_min_mortality_temp <-  function(df_list,
         optimal_temp_range = optimal_temp_range,
         prediction = cp,
         index = i
-    )
+      )
 
     }
 
@@ -737,8 +737,8 @@ compute_attributable_deaths <- function(df_list,
       dplyr::mutate(
         high_heat_flag = ifelse(
           temp > an_thresholds[i,"high_moderate_heat"], 1, 0
-          )
         )
+      )
 
     # Prepare temperature column for attribution to heatwaves
     # Force the temperature to be the centering value for non-heatwave days
@@ -770,183 +770,183 @@ compute_attributable_deaths <- function(df_list,
     data_output_year <- data_output_year %>%
       dplyr::mutate(
         heatwave_temp = ifelse(heatwave_flag == 1, temp, mintempregions[i])
-        ) %>%
+      ) %>%
       dplyr::select(-high_heat_flag, -heatwave_flag)
 
     matsim[i, "glob_cold"] <- attrdl(x = data_output_year$temp,
-                                              basis = cb,
-                                              cases = data_output_year$dependent,
-                                              coef = coefs,
-                                              vcov = vcovs,
-                                              type = "an",
-                                              dir = "forw",
-                                              cen = mintempregions[i],
-                                              model = model,
-                                              range = c(an_thresholds[i,"min_high_cold"],
-                                                        an_thresholds[i,"moderate_cold_OTR"]))
+                                     basis = cb,
+                                     cases = data_output_year$dependent,
+                                     coef = coefs,
+                                     vcov = vcovs,
+                                     type = "an",
+                                     dir = "forw",
+                                     cen = mintempregions[i],
+                                     model = model,
+                                     range = c(an_thresholds[i,"min_high_cold"],
+                                               an_thresholds[i,"moderate_cold_OTR"]))
 
     matsim[i, "glob_heat"] <- attrdl(x = data_output_year$temp,
-                                              basis = cb,
-                                              cases = data_output_year$dependent,
-                                              coef = coefs,
-                                              vcov = vcovs,
-                                              type = "an",
-                                              dir = "forw",
-                                              cen = mintempregions[i],
-                                              model = model,
-                                              range = c(an_thresholds[i,"moderate_heat_OTR"],
-                                                        an_thresholds[i,"max_high_heat"]))
+                                     basis = cb,
+                                     cases = data_output_year$dependent,
+                                     coef = coefs,
+                                     vcov = vcovs,
+                                     type = "an",
+                                     dir = "forw",
+                                     cen = mintempregions[i],
+                                     model = model,
+                                     range = c(an_thresholds[i,"moderate_heat_OTR"],
+                                               an_thresholds[i,"max_high_heat"]))
 
     matsim[i, "moderate_cold"] <- attrdl(x = data_output_year$temp,
-                                                  basis = cb,
-                                                  cases = data_output_year$dependent,
-                                                  coef = coefs,
-                                                  vcov = vcovs,
-                                                  type = "an",
-                                                  dir = "forw",
-                                                  cen = mintempregions[i],
-                                                  model = model,
-                                                  range = c(an_thresholds[i,"high_moderate_cold"],
-                                                            an_thresholds[i,"moderate_cold_OTR"]))
+                                         basis = cb,
+                                         cases = data_output_year$dependent,
+                                         coef = coefs,
+                                         vcov = vcovs,
+                                         type = "an",
+                                         dir = "forw",
+                                         cen = mintempregions[i],
+                                         model = model,
+                                         range = c(an_thresholds[i,"high_moderate_cold"],
+                                                   an_thresholds[i,"moderate_cold_OTR"]))
 
     matsim[i, "moderate_heat" ] <- attrdl(x = data_output_year$temp,
-                                                   basis = cb,
-                                                   cases = data_output_year$dependent,
-                                                   coef = coefs,
-                                                   vcov = vcovs,
-                                                   type="an",
-                                                   dir = "forw",
-                                                   cen = mintempregions[i],
-                                                   model = model,
-                                                   range = c(an_thresholds[i,"moderate_heat_OTR"],
-                                                             an_thresholds[i,"high_moderate_heat"]))
+                                          basis = cb,
+                                          cases = data_output_year$dependent,
+                                          coef = coefs,
+                                          vcov = vcovs,
+                                          type="an",
+                                          dir = "forw",
+                                          cen = mintempregions[i],
+                                          model = model,
+                                          range = c(an_thresholds[i,"moderate_heat_OTR"],
+                                                    an_thresholds[i,"high_moderate_heat"]))
 
     # Attributable deaths for extremes:
     matsim[i,"high_cold"] <- attrdl(x = data_output_year$temp,
-                                             basis = cb,
-                                             cases = data_output_year$dependent,
-                                             coef = coefs,
-                                             vcov = vcovs,
-                                             model = model,
-                                             type = "an",
-                                             dir = "forw",
-                                             cen = mintempregions[i],
-                                             range = c(an_thresholds[i,"min_high_cold"],
-                                                       an_thresholds[i,"high_moderate_cold"]))
+                                    basis = cb,
+                                    cases = data_output_year$dependent,
+                                    coef = coefs,
+                                    vcov = vcovs,
+                                    model = model,
+                                    type = "an",
+                                    dir = "forw",
+                                    cen = mintempregions[i],
+                                    range = c(an_thresholds[i,"min_high_cold"],
+                                              an_thresholds[i,"high_moderate_cold"]))
 
     matsim[i,"high_heat"] <- attrdl(x = data_output_year$temp,
-                                             basis = cb,
-                                             cases = data_output_year$dependent,
-                                             coef = coefs,
-                                             vcov = vcovs,
-                                             model = model,
-                                             type = "an",
-                                             dir = "forw",
-                                             cen = mintempregions[i],
-                                             range = c(an_thresholds[i,"high_moderate_heat"],
-                                                       an_thresholds[i,"max_high_heat"]))
+                                    basis = cb,
+                                    cases = data_output_year$dependent,
+                                    coef = coefs,
+                                    vcov = vcovs,
+                                    model = model,
+                                    type = "an",
+                                    dir = "forw",
+                                    cen = mintempregions[i],
+                                    range = c(an_thresholds[i,"high_moderate_heat"],
+                                              an_thresholds[i,"max_high_heat"]))
 
 
     matsim[i,"heatwave"] <- attrdl(x = data_output_year$heatwave_temp,
-                                            basis = cb,
-                                            cases = data_output_year$dependent,
-                                            coef = coefs,
-                                            vcov = vcovs,
-                                            model = model,
-                                            type = "an",
-                                            dir = "forw",
-                                            cen = mintempregions[i])
+                                   basis = cb,
+                                   cases = data_output_year$dependent,
+                                   coef = coefs,
+                                   vcov = vcovs,
+                                   model = model,
+                                   type = "an",
+                                   dir = "forw",
+                                   cen = mintempregions[i])
 
     # Compute empirical occurrences of the attributable deaths
     # Used to derive confidence intervals
     arraysim[i, "glob_cold_ci", ] <- attrdl(x = data_output_year$temp,
-                                                     basis = cb,
-                                                     cases = data_output_year$dependent,
-                                                     coef = coefs,
-                                                     vcov = vcovs,
-                                                     type = "an",
-                                                     dir = "forw",
-                                                     cen = mintempregions[i],
-                                                     model = model,
-                                                     range = c(an_thresholds[i,"min_high_cold"],
-                                                               an_thresholds[i,"moderate_cold_OTR"]),
-                                                     sim = T, nsim = nsim_)
+                                            basis = cb,
+                                            cases = data_output_year$dependent,
+                                            coef = coefs,
+                                            vcov = vcovs,
+                                            type = "an",
+                                            dir = "forw",
+                                            cen = mintempregions[i],
+                                            model = model,
+                                            range = c(an_thresholds[i,"min_high_cold"],
+                                                      an_thresholds[i,"moderate_cold_OTR"]),
+                                            sim = T, nsim = nsim_)
 
     arraysim[i, "glob_heat_ci", ] <- attrdl(x = data_output_year$temp,
-                                                     basis = cb,
-                                                     cases = data_output_year$dependent,
-                                                     coef = coefs,
-                                                     vcov = vcovs,
-                                                     type = "an",
-                                                     dir = "forw",
-                                                     cen = mintempregions[i],
-                                                     model = model,
-                                                     range = c(an_thresholds[i,"moderate_heat_OTR"],
-                                                               an_thresholds[i,"max_high_heat"]),
-                                                     sim = T, nsim = nsim_)
+                                            basis = cb,
+                                            cases = data_output_year$dependent,
+                                            coef = coefs,
+                                            vcov = vcovs,
+                                            type = "an",
+                                            dir = "forw",
+                                            cen = mintempregions[i],
+                                            model = model,
+                                            range = c(an_thresholds[i,"moderate_heat_OTR"],
+                                                      an_thresholds[i,"max_high_heat"]),
+                                            sim = T, nsim = nsim_)
 
     arraysim[i, "moderate_cold_ci", ] <- attrdl(x = data_output_year$temp,
-                                                         basis = cb,
-                                                         cases = data_output_year$dependent,
-                                                         coef = coefs,
-                                                         vcov = vcovs,
-                                                         type = "an",
-                                                         dir = "forw",
-                                                         cen = mintempregions[i],
-                                                         model = model,
-                                                         range = c(an_thresholds[i,"high_moderate_cold"],
-                                                                   an_thresholds[i,"moderate_cold_OTR"]),
-                                                         sim = T , nsim = nsim_)
+                                                basis = cb,
+                                                cases = data_output_year$dependent,
+                                                coef = coefs,
+                                                vcov = vcovs,
+                                                type = "an",
+                                                dir = "forw",
+                                                cen = mintempregions[i],
+                                                model = model,
+                                                range = c(an_thresholds[i,"high_moderate_cold"],
+                                                          an_thresholds[i,"moderate_cold_OTR"]),
+                                                sim = T , nsim = nsim_)
 
     arraysim[i, "moderate_heat_ci", ] <- attrdl(x = data_output_year$temp,
-                                                         basis = cb,
-                                                         cases = data_output_year$dependent,
-                                                         coef = coefs,
-                                                         vcov = vcovs,
-                                                         type = "an",
-                                                         dir = "forw",
-                                                         cen = mintempregions[i],
-                                                         model = model,
-                                                         range = c(an_thresholds[i,"moderate_heat_OTR"],
-                                                                   an_thresholds[i,"high_moderate_heat"]),
-                                                         sim = T, nsim = nsim_)
+                                                basis = cb,
+                                                cases = data_output_year$dependent,
+                                                coef = coefs,
+                                                vcov = vcovs,
+                                                type = "an",
+                                                dir = "forw",
+                                                cen = mintempregions[i],
+                                                model = model,
+                                                range = c(an_thresholds[i,"moderate_heat_OTR"],
+                                                          an_thresholds[i,"high_moderate_heat"]),
+                                                sim = T, nsim = nsim_)
 
     arraysim[i, "high_cold_ci", ] <- attrdl(x = data_output_year$temp,
-                                                     basis = cb,
-                                                     cases = data_output_year$dependent,
-                                                     coef = coefs,
-                                                     vcov = vcovs,
-                                                     type = "an",
-                                                     dir= "forw",
-                                                     cen = mintempregions[i],
-                                                     model = model,
-                                                     range = c(an_thresholds[i,"min_high_cold"],
-                                                               an_thresholds[i,"high_moderate_cold"]),
-                                                     sim = T, nsim = nsim_)
+                                            basis = cb,
+                                            cases = data_output_year$dependent,
+                                            coef = coefs,
+                                            vcov = vcovs,
+                                            type = "an",
+                                            dir= "forw",
+                                            cen = mintempregions[i],
+                                            model = model,
+                                            range = c(an_thresholds[i,"min_high_cold"],
+                                                      an_thresholds[i,"high_moderate_cold"]),
+                                            sim = T, nsim = nsim_)
 
     arraysim[i, "high_heat_ci", ] <- attrdl(x = data_output_year$temp,
-                                                     basis = cb,
-                                                     cases = data_output_year$dependent,
-                                                     coef = coefs,
-                                                     vcov = vcovs,
-                                                     type = "an",
-                                                     dir= "forw",
-                                                     cen = mintempregions[i],
-                                                     model = model,
-                                                     range = c(an_thresholds[i,"high_moderate_heat"],
-                                                               an_thresholds[i,"max_high_heat"]),
-                                                     sim = T, nsim = nsim_)
+                                            basis = cb,
+                                            cases = data_output_year$dependent,
+                                            coef = coefs,
+                                            vcov = vcovs,
+                                            type = "an",
+                                            dir= "forw",
+                                            cen = mintempregions[i],
+                                            model = model,
+                                            range = c(an_thresholds[i,"high_moderate_heat"],
+                                                      an_thresholds[i,"max_high_heat"]),
+                                            sim = T, nsim = nsim_)
 
     arraysim[i, "heatwave_ci", ] <- attrdl(x = data_output_year$heatwave_temp,
-                                                    basis = cb,
-                                                    cases = data_output_year$dependent,
-                                                    coef = coefs,
-                                                    vcov = vcovs,
-                                                    type = "an",
-                                                    dir= "forw",
-                                                    cen = mintempregions[i],
-                                                    model = model,
-                                                    sim = T, nsim = nsim_)
+                                           basis = cb,
+                                           cases = data_output_year$dependent,
+                                           coef = coefs,
+                                           vcov = vcovs,
+                                           type = "an",
+                                           dir= "forw",
+                                           cen = mintempregions[i],
+                                           model = model,
+                                           sim = T, nsim = nsim_)
 
   }
 
@@ -1241,10 +1241,10 @@ plot_and_write <- function(
   # define output file paths
   pdf_output_path = paste(
     output_folder_path, paste(output_name, "plot.pdf", sep = "_"), sep = ""
-    )
+  )
   data_output_path = paste(
     output_folder_path, paste(output_name, "data.csv", sep = "_"), sep = ""
-    )
+  )
   # create pdf object
   if (save_fig == TRUE) {
     grid <- create_grid(length(df_list))
@@ -1269,7 +1269,7 @@ plot_and_write <- function(
                                             varfun = varfun,
                                             varper = varper,
                                             vardegree = vardegree
-                                            ))
+    ))
 
   } else {
     return(plot_and_write_relative_risk(df_list = df_list,
@@ -1286,7 +1286,7 @@ plot_and_write <- function(
                                         lag = lag,
                                         lagnk = lagnk,
                                         dfseas = dfseas))
-    }
+  }
 
 
 
@@ -1800,27 +1800,27 @@ plot_and_write_relative_risk_all <- function(df_list,
 #'
 #' @export
 heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
-                                  output_folder_path_ = NULL,
-                                  save_fig_ = FALSE,
-                                  save_csv_ = FALSE,
-                                  meta_analysis_ = FALSE,
-                                  by_region_ = FALSE,
-                                  RR_distribution_length_ = 0,
-                                  output_year_ = 0,
-                                  dependent_col_,
-                                  independent_cols_ = NULL,
-                                  time_col_,
-                                  region_col_,
-                                  temp_col_,
-                                  population_col_,
-                                  varfun_ = 'bs',
-                                  vardegree_ = 2,
-                                  lag_  = 21,
-                                  lagnk_ = 3,
-                                  dfseas_ = 8,
-                                  nsim__ = 1000) {
+                                   output_folder_path_ = NULL,
+                                   save_fig_ = FALSE,
+                                   save_csv_ = FALSE,
+                                   meta_analysis_ = FALSE,
+                                   by_region_ = FALSE,
+                                   RR_distribution_length_ = 0,
+                                   output_year_ = 0,
+                                   dependent_col_,
+                                   independent_cols_ = NULL,
+                                   time_col_,
+                                   region_col_,
+                                   temp_col_,
+                                   population_col_,
+                                   varfun_ = 'bs',
+                                   vardegree_ = 2,
+                                   lag_  = 21,
+                                   lagnk_ = 3,
+                                   dfseas_ = 8,
+                                   nsim__ = 1000) {
   varper_ <- c(10, 75, 90)
-  print(output_folder_path_)
+
   c(df_list_) %<-%
     load_temperature_data(
       input_csv_path = input_csv_path_,
@@ -1832,23 +1832,6 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
       output_year = output_year_,
       RR_distribution_length = RR_distribution_length_
     )
-
-  # descriptive stats
-  if (descriptive_stats==TRUE) {
-    common_descriptive_stats(
-      dataset_title = "temperature",
-      df_list = df_list_,
-      use_individual_dfs = T,
-      output_path = output_folder_path_,
-      correlation_method = ds_correlation_method,
-      dist_columns = ds_dist_columns,
-      ma_days = ds_ma_days,
-      ma_sides = ds_ma_sides,
-      ma_columns = ds_ma_columns,
-      dependent_col = "dependent", # col has been renamed
-      independent_cols = independent_cols_
-    )
-  }
 
   c(coef_, vcov_, cb_, model_) %<-%
     run_model(df_list = df_list_,
@@ -1937,7 +1920,7 @@ heat_and_cold_analysis <- function(input_csv_path_ = 'NONE',
       artot_bind = artot_bind_,
       save_csv = save_csv_,
       output_folder_path = output_folder_path_
-  )
+    )
 
   if (by_region_ == FALSE) {
 
