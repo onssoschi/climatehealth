@@ -11,13 +11,21 @@ suicides_heat_do_analysis(
   region_col = NULL,
   temperature_col,
   health_outcome_col,
-  var_fun = "ns",
-  var_dof = 4,
-  lag_fun = "ns",
-  lag_dof = 4,
-  lag_days = 3,
+  population_col,
+  independent_cols = NULL,
+  control_cols = NULL,
+  var_fun = "bs",
+  var_degree = 2,
+  var_per = c(25, 50, 75),
+  lag_fun = "strata",
+  lag_breaks = 1,
+  lag_days = 2,
   save_fig = FALSE,
   save_csv = FALSE,
+  cenper = 50,
+  country = "National",
+  meta_analysis = FALSE,
+  attr_thr = 97.5,
   output_folder_path = NULL
 )
 }
@@ -39,19 +47,31 @@ contains the temperature column.}
 contains the health outcome count column (e.g. number of deaths, hospital
 admissions).}
 
-\item{var_fun}{Character. Exposure function (see dlnm::crossbasis). Defaults
-to 'ns'.}
+\item{population_col}{Character. Name of the column in the dataframe that
+contains the population estimate coloumn.}
 
-\item{var_dof}{Integer. Degrees of freedom in exposure function
-(see dlnm:crossbasis). Defaults to 4.}
+\item{independent_cols}{Additional independent variables to test in model validation}
 
-\item{lag_fun}{Character. Exposure function (see dlnm::crossbasis). Defaults
-to 'ns'.}
+\item{control_cols}{A list of confounders to include in the final model adjustment.
+Defaults to NULL if none.}
 
-\item{lag_dof}{Integer. Degrees of freedom in exposure function
-(see dlnm:crossbasis). Defaults to 4.}
+\item{var_fun}{Character. Exposure function for argvar
+(see dlnm::crossbasis). Defaults to 'bs'.}
 
-\item{lag_days}{Integer. Maximum lag (see dlnm:crossbasis). Defaults to 3.}
+\item{var_degree}{Integer. Degree of the piecewise polynomial for argvar
+(see dlnm:crossbasis). Defaults to 2 (quadratic).}
+
+\item{var_per}{Vector. Internal knot positions for argvar
+(see dlnm::crossbasis). Defaults to c(25,50,75).}
+
+\item{lag_fun}{Character. Exposure function for arglag
+(see dlnm::crossbasis). Defaults to 'strata'.}
+
+\item{lag_breaks}{Integer. Internal cut-off point defining the strata for arglag
+(see dlnm:crossbasis). Defaults to 1.}
+
+\item{lag_days}{Integer. Maximum lag. Defaults to 2.
+(see dlnm:crossbasis).}
 
 \item{save_fig}{Boolean. Whether to save the plot as an output. Defaults to
 FALSE.}
@@ -59,12 +79,30 @@ FALSE.}
 \item{save_csv}{Boolean. Whether to save the results as a CSV. Defaults to
 FALSE.}
 
+\item{cenper}{Integer. Value for the percentile in calculating the centering
+value 0-100. Defaults to 50.}
+
+\item{country}{Character. Name of country for national level estimates.}
+
+\item{meta_analysis}{Boolean. Whether to perform a meta-analysis.}
+
+\item{attr_thr}{Integer. Percentile at which to define the temperature threshold for
+calculating attributable risk.}
+
 \item{output_folder_path}{Path to folder where plots and/or CSV should be
 saved. Defaults to NULL.}
 }
 \value{
-Dataframe containing cumulative relative risk and confidence
+\itemize{
+\item \code{rr_results} Dataframe containing cumulative relative risk and confidence
 intervals from analysis.
+\item \code{res_attr_tot} Dataframe. Total attributable fractions, numbers and
+rates for each area over the whole time series.
+\item \code{attr_yr_list} List. Dataframes containing yearly estimates of
+attributable fractions, numbers and rates by area.
+\item \code{attr_mth_list} List. Dataframes containing total attributable
+fractions, numbers and rates by calendar month and area.
+}
 }
 \description{
 Runs full analysis pipeline for analysis of the impact of

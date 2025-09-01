@@ -5,32 +5,36 @@
 \title{Create cross-basis matrix}
 \usage{
 mh_create_crossbasis(
-  data,
-  var_fun = "ns",
-  var_dof = 4,
-  lag_fun = "ns",
-  lag_dof = 4,
-  lag_days = 3
+  df_list,
+  var_fun = "bs",
+  var_degree = 2,
+  var_per = c(25, 50, 75),
+  lag_fun = "strata",
+  lag_breaks = 1,
+  lag_days = 2
 )
 }
 \arguments{
-\item{data}{A list of dataframes containing daily timeseries data for a health outcome
+\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
 and climate variables which may be disaggregated by a particular region.}
 
 \item{var_fun}{Character. Exposure function for argvar
-(see dlnm::crossbasis). Defaults to 'ns'.}
+(see dlnm::crossbasis). Defaults to 'bs'.}
 
-\item{var_dof}{Integer. Degrees of freedom in exposure function for argvar
-(see dlnm:crossbasis). Defaults to 4.}
+\item{var_degree}{Integer. Degree of the piecewise polynomial for argvar
+(see dlnm::crossbasis). Defaults to 2 (quadratic).}
+
+\item{var_per}{Vector. Internal knot positions for argvar
+(see dlnm::crossbasis). Defaults to c(25,50,75).}
 
 \item{lag_fun}{Character. Exposure function for arglag
-(see dlnm::crossbasis). Defaults to 'ns'.}
+(see dlnm::crossbasis). Defaults to 'strata'.}
 
-\item{lag_dof}{Integer. Degrees of freedom in exposure function for arglag
-(see dlnm:crossbasis). Defaults to 4.}
+\item{lag_breaks}{Integer. Internal cut-off point defining the strata for arglag
+(see dlnm::crossbasis). Defaults to 1.}
 
-\item{lag_days}{Integer. Maximum lag. Defaults to 3.
-(see dlnm:crossbasis).}
+\item{lag_days}{Integer. Maximum lag. Defaults to 2.
+(see dlnm::crossbasis).}
 }
 \value{
 A list of cross-basis matrices by region

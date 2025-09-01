@@ -1,4 +1,3 @@
-###
 ### (c) Antonio Gasparrini 2015-2017
 #
 ################################################################################
@@ -62,27 +61,27 @@
 #'
 #' @export
 attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
-  type="af",dir="back",tot=TRUE,cen,range=NULL,sim=FALSE,nsim=5000) {
-################################################################################
-#
+                   type="af",dir="back",tot=TRUE,cen,range=NULL,sim=FALSE,nsim=5000) {
+  ################################################################################
+  #
   # CHECK VERSION OF THE DLNM PACKAGE
   if(packageVersion("dlnm")<"2.2.0")
     stop("update dlnm package to version >= 2.2.0")
-#
+  #
   # EXTRACT NAME AND CHECK type AND dir
   name <- deparse(substitute(basis))
   type <- match.arg(type,c("an","af"))
   dir <- match.arg(dir,c("back","forw"))
-#
+  #
   # DEFINE CENTERING
   if(missing(cen) && is.null(cen1 <- attr(basis,"argvar")$cen))
     stop("'cen' must be provided")
   if(!is.numeric(cen) && length(cen)>1L) stop("'cen' must be a numeric scalar")
   attributes(basis)$argvar$cen <- NULL
-#
+  #
   # SELECT RANGE (FORCE TO CENTERING VALUE OTHERWISE, MEANING NULL RISK)
   if(!is.null(range)) x[x<range[1]|x>range[2]] <- cen
-#
+  #
   # COMPUTE THE MATRIX OF
   #   - LAGGED EXPOSURES IF dir="back"
   #   - CONSTANT EXPOSURES ALONG LAGS IF dir="forw"
@@ -95,7 +94,7 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
     if(ncol(at <- x)!=diff(lag)+1)
       stop("dimension of 'x' not compatible with 'basis'")
   }
-#
+  #
   # NUMBER USED FOR THE CONTRIBUTION AT EACH TIME IN FORWARD TYPE
   #   - IF cases PROVIDED AS A MATRIX, TAKE THE ROW AVERAGE
   #   - IF PROVIDED AS A TIME SERIES, COMPUTE THE FORWARD MOVING AVERAGE
@@ -112,9 +111,9 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
     if(dir=="forw")
       cases <- rowMeans(as.matrix(tsModel::Lag(cases,-seq(lag[1],lag[2]))))
   }
-#
-################################################################################
-#
+  #
+  ################################################################################
+  #
   # EXTRACT COEF AND VCOV IF MODEL IS PROVIDED
   if(!is.null(model)) {
     cond <- paste0(name,"[[:print:]]*v[0-9]{1,2}\\.l[0-9]{1,2}")
@@ -128,16 +127,16 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
     if(!model.link %in% c("log","logit"))
       stop("'model' must have a log or logit link function")
   }
-#
+  #
   # IF REDUCED ESTIMATES ARE PROVIDED
   typebasis <- ifelse(length(coef)!=ncol(basis),"one","cb")
-#
-################################################################################
-#
+  #
+  ################################################################################
+  #
   # PREPARE THE ARGUMENTS FOR TH BASIS TRANSFORMATION
   predvar <- if(typebasis=="one") x else seq(NROW(at))
   predlag <- if(typebasis=="one") 0 else dlnm:::seqlag(lag)
-#
+  #
   # CREATE THE MATRIX OF TRANSFORMED CENTRED VARIABLES (DEPENDENT ON typebasis)
   if(typebasis=="cb") {
     Xpred <- dlnm:::mkXpred(typebasis,basis,at,predvar,predlag,cen)
@@ -150,7 +149,7 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
     basis <- do.call(dlnm::onebasis,c(list(x=x),attr(basis,"argvar")))
     Xpredall <- dlnm:::mkXpred(typebasis,basis,x,predvar,predlag,cen)
   }
-#
+  #
   # CHECK DIMENSIONS
   if(length(coef)!=ncol(Xpredall))
     stop("arguments 'basis' do not match 'model' or 'coef'-'vcov'")
@@ -158,13 +157,13 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
     stop("arguments 'coef' and 'vcov' do no match")
   if(typebasis=="one" && dir=="back")
     stop("only dir='forw' allowed for reduced estimates")
-#
-################################################################################
-#
+  #
+  ################################################################################
+  #
   # COMPUTE AF AND AN
   af <- 1-exp(-drop(as.matrix(Xpredall%*%coef)))
   an <- af*cases
-#
+  #
   # TOTAL
   #   - SELECT NON-MISSING OBS CONTRIBUTING TO COMPUTATION
   #   - DERIVE TOTAL AF
@@ -174,9 +173,9 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
     af <- sum(an[!isna])/sum(cases[!isna])
     an <- af*den
   }
-#
-################################################################################
-#
+  #
+  ################################################################################
+  #
   # EMPIRICAL CONFIDENCE INTERVALS
   if(!tot && sim) {
     sim <- FALSE
@@ -197,17 +196,134 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
     })
     ansim <- afsim*den
   }
-#
-################################################################################
-#
+  #
+  ################################################################################
+  #
   res <- if(sim) {
     if(type=="an") ansim else afsim
   } else {
     if(type=="an") an else af
   }
-#
+  #
   return(res)
 }
 
-#
+#' FUNCTION FOR COMPUTING ATTRIBUTABLE MEASURES FROM DLNM
+#'
+#' @description
+#' A function to calculate attributable numbers and fractions derived from
+#' (c) Antonio Gasparrini 2015-2017. Modifications to produce daily values with
+#' confidence intervals.
+#'
+#'
+#' @param x AN EXPOSURE VECTOR OR (ONLY FOR dir="back") A MATRIX OF LAGGED EXPOSURES
+#' @param basis THE CROSS-BASIS COMPUTED FROM x
+#' @param cases THE CASES VECTOR OR (ONLY FOR dir="forw") THE MATRIX OF FUTURE CASES
+#' @param coef COEF FOR basis IF model IS NOT PROVIDED
+#' @param vcov VCOV FOR basis IF model IS NOT PROVIDED
+#' @param model.link LINK FUNCTION IF model IS NOT PROVIDED
+#' @param dir EITHER "back" OR "forw" FOR BACKWARD OR FORWARD PERSPECTIVES
+#' @param tot IF TRUE, THE TOTAL ATTRIBUTABLE RISK IS COMPUTED
+#' @param cen THE REFERENCE VALUE USED AS COUNTERFACTUAL SCENARIO
+#' @param range THE RANGE OF EXPOSURE. IF NULL, THE WHOLE RANGE IS USED
+#' @param nsim NUMBER OF SIMULATION SAMPLES
+#'
+#' @return
+#' \itemize{
+#'  \item Attributable Fraction
+#'  \item Attributable Fraction lower confidence intervals
+#'  \item Attributable Fraction upper confidence intervals
+#'  \item Attributable Numbers
+#'  \item Attributable Numbers lower confidence intervals
+#'  \item Attributable Numbers upper confidence intervals
+#'  }
+#' @export
+#'
+an_attrdl <- function(
+    x,
+    basis,
+    cases,
+    coef=NULL,
+    vcov=NULL,
+    model.link=NULL,
+    dir="back",
+    tot=TRUE,
+    cen,
+    range=NULL,
+    nsim=5000
+) {
+
+  # CHECK type AND dir
+  dir <- match.arg(dir,c("back","forw"))
+
+  # Remove centering value from basis
+  attributes(basis)$argvar$cen <- NULL
+  # SELECT RANGE (FORCE TO CENTERING VALUE OTHERWISE, MEANING NULL RISK)
+  if(!is.null(range)) x[x<range[1]|x>range[2]] <- cen
+  # COMPUTE THE MATRIX OF
+  #   - LAGGED EXPOSURES IF dir="back"
+  #   - CONSTANT EXPOSURES ALONG LAGS IF dir="forw"
+  lag <- attr(basis,"lag")
+  at <- if(dir=="back") tsModel:::Lag(x,seq(lag[1],lag[2])) else
+    matrix(rep(x,diff(lag)+1),length(x))
+  # NUMBER USED FOR THE CONTRIBUTION AT EACH TIME IN FORWARD TYPE
+  #   - IF PROVIDED AS A TIME SERIES, COMPUTE THE FORWARD MOVING AVERAGE
+  #   - THIS EXCLUDES MISSING ACCORDINGLY
+  # ALSO COMPUTE THE DENOMINATOR TO BE USED BELOW
+  if(NROW(cases)!=NROW(at)) stop("'x' and 'cases' not consistent")
+  den <- sum(cases,na.rm=TRUE)
+  if(dir=="forw"){
+    cases <- rowMeans(as.matrix(tsModel:::Lag(cases,-seq(lag[1],lag[2]))))
+  }
+  #
+
+  # IF REDUCED ESTIMATES ARE PROVIDED
+  typebasis <- ifelse(length(coef)!=ncol(basis),"one","cb")
+
+  # PREPARE THE ARGUMENTS FOR TH BASIS TRANSFORMATION
+  predvar <- if(typebasis=="one") x else seq(NROW(at))
+  predlag <- if(typebasis=="one") 0 else dlnm:::seqlag(lag)
+
+  # CREATE THE MATRIX OF TRANSFORMED CENTRED VARIABLES (DEPENDENT ON typebasis)
+  if(typebasis=="cb") {
+    Xpred <- dlnm:::mkXpred(typebasis,basis,at,predvar,predlag,cen)
+    Xpredall <- 0
+    for (i in seq(length(predlag))) {
+      ind <- seq(length(predvar))+length(predvar)*(i-1)
+      Xpredall <- Xpredall + Xpred[ind,,drop=FALSE]
+    }
+  } else {
+    basis <- do.call(dlnm::onebasis,c(list(x=x),attr(basis,"argvar")))
+    Xpredall <- dlnm:::mkXpred(typebasis,basis,x,predvar,predlag,cen)
+  }
+
+  # CHECK DIMENSIONS
+  if(length(coef)!=ncol(Xpredall))
+    stop("arguments 'basis' do not match 'model' or 'coef'-'vcov'")
+  if(any(dim(vcov)!=c(length(coef),length(coef))))
+    stop("arguments 'coef' and 'vcov' do no match")
+  if(typebasis=="one" && dir=="back")
+    stop("only dir='forw' allowed for reduced estimates")
+  # COMPUTE AN
+  an <- (1-exp(-drop(as.matrix(Xpredall%*%coef)))) * cases
+  af <- an / cases
+
+  # SAMPLE COEF
+  k <- length(coef)
+  eigen <- eigen(vcov)
+  X <- matrix(rnorm(k*nsim),nsim)
+  coefsim <- coef + eigen$vectors %*% diag(sqrt(eigen$values),k) %*% t(X)
+
+  ansim_mat <- apply(coefsim,2, function(coefi) {
+    (1-exp(-drop(Xpredall%*%coefi))) * cases
+  })
+
+  an_lower_ci <- apply(ansim_mat, 1, quantile, probs = 0.025, na.rm = TRUE)
+  an_upper_ci <- apply(ansim_mat, 1, quantile, probs = 0.975, na.rm = TRUE)
+  af_lower_ci <- an_lower_ci / cases
+  af_upper_ci <- an_upper_ci / cases
+
+  return(list(af, af_lower_ci, af_upper_ci, an, an_lower_ci, an_upper_ci))
+}
+
 
