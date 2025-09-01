@@ -1,42 +1,63 @@
 Package: climatehealth
-Title: Package for calculating climate-health indicators
-Version: 0.0.0.9000
+Title: Package for Calculating Climate-Health Indicators
+Version: 0.9.0
+Maintainer: Charlie Browning <charlie.browning@ons.gov.uk>
+Author: Charlie Browning [aut, cre]
 Authors@R: 
-    c(person("Cerys", "Hopkins", , "Cerys.Hopkins@ons.gov.uk", role = c("aut", "cre")),
-      person("Antony", "Brown", , "Antony.Brown@ons.gov.uk", role = c("aut")),
-      person("Euan", "Soutter", , "Euan.Soutter@ons.gov.uk", role = c("aut")),
-      person("Charlie", "Browning", , "charlie.browning@ons.gov.uk", role = c("aut"))
-           )
-Description: This package contains code allowing users to calculate climate-health
-  indicators for an online platform using R.
+    c(person("Charlie", "Browning", email = "charlie.browning@ons.gov.uk", role = c("aut", "cre")))
+Description: R code allowing users to calculate climate-health indicators.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Imports:
-    car (== 3.1-3),
-    config (== 0.3.2),
-    dlnm (== 2.4.10),
-    dplyr (== 1.1.4),
-    Epi (== 2.59),
-    exactextractr (== 0.10.0),
-    FluMoDL (== 0.0.3),
-    ggplot2 (== 3.5.2),
-    gnm (== 1.1-5),
-    gplots (== 3.2.0),
-    lubridate (== 1.9.4),
-    mvmeta (== 1.0.3),
-    ncdf4 (== 1.24),
-    raster (== 3.6-32),
-    reshape2 (== 1.4.4),
-    rlang (== 1.1.6),
-    sf (== 1.0-20),
+    car (>= 3.1-3),
+    data.table,
+    dplyr (>= 1.1.4),
+    dlnm,
+    Epi (>= 2.59),
+    exactextractr,
+    fmesher,
+    geofacet,
+    ggplot2 (>= 3.5.2),
+    gnm (>= 1.1-5),
+    gplots,
+    gridExtra,
+    here,
+    hydroGOF,
+    lubridate (>= 1.9.4),
+    metafor,
+    mixmeta,
+    mgcv,
+    mvmeta (>= 1.0.3),
+    ncdf4 (>= 1.24),
+    openxlsx,
+    patchwork,
+    purrr,
+    raster,
+    RColorBrewer,
+    readr,
+    readxl,
+    reshape2 (>= 1.4.4),
+    rlang,
+    scales,
+    sf,
+    spdep,
     splines,
-    stringr (== 1.5.1),
-    terra (== 1.8-42),
-    tsModel (== 0.6-2),
-    zeallot (== 0.1.0)
+    stats,
+    stringr (>= 1.5.1),
+    terra,
+    tibble,
+    tidyr,
+    tidyverse,
+    tidytable,
+    tools,
+    tsModel (>= 0.6-2),
+    xfun,
+    zeallot (>= 0.1.0)
 Suggests:
-  testthat (== 3.2.1.1),
-  devtools (== 2.4.5),
-  patrick
+    devtools,
+    INLA,
+    patrick,
+    testthat (>= 3.2.1.1)
+Config/rcmdcheck/ignore-inconsequential-notes: true

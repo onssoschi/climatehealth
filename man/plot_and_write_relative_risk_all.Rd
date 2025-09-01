@@ -22,6 +22,10 @@ plot_and_write_relative_risk_all(
 \item{df_list}{An alphabetically-ordered
 list of dataframes for each region.}
 
+\item{cb}{The generated crossbasis.}
+
+\item{model}{The generated model.}
+
 \item{mintempregions}{A named numeric vector.
 Minimum (optimum) mortality temperature per region.}
 

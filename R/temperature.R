@@ -60,7 +60,7 @@ filter_on_rr_distribution <- function(df,
 #' are spatially aggregated e.g. regnames
 #' @param temp_col The temperature column e.g. tmean
 #' @param population_col The population column e.g. pop
-#' @param output_year_ Year(s) to calculate output for.
+#' @param output_year Year(s) to calculate output for.
 #' @param RR_distribution_length Number of years for the calculation of RR
 #' distribution. Set both as 'NONE' to use full range in data.
 #'
@@ -406,9 +406,11 @@ wald_results <- function(mv) {
 
 #' Define and validate the optimal temperature range from the model predictions.
 #'
-#' @param optimal_temp_range An matrix used to store the optimal temperature
+#' @param optimal_temp_range Matrix. A matrix used to store the optimal temperature
 #' ranges.
-#' @param prediction The models prediction
+#' @param prediction Data. The models prediction.
+#' @param RR_fit_col Character. The column containing the relative risk values.
+#' @param index Integer. The index to use to obtain the RR values.
 #'
 #' @return The optimal temperature range.
 #' @export
@@ -612,6 +614,7 @@ calculate_min_mortality_temp <-  function(df_list,
 #'
 #' @param df_list An alphabetically-ordered list
 #' of dataframes for each region.
+#' @param output_year The year to calculate attributable deaths for.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param mintempregions A named numeric vector.
 #' Minimum (optimum) mortality temperature per region.
@@ -770,7 +773,7 @@ compute_attributable_deaths <- function(df_list,
         ) %>%
       dplyr::select(-high_heat_flag, -heatwave_flag)
 
-    matsim[i, "glob_cold"] <- FluMoDL::attrdl(x = data_output_year$temp,
+    matsim[i, "glob_cold"] <- attrdl(x = data_output_year$temp,
                                               basis = cb,
                                               cases = data_output_year$dependent,
                                               coef = coefs,
@@ -782,7 +785,7 @@ compute_attributable_deaths <- function(df_list,
                                               range = c(an_thresholds[i,"min_high_cold"],
                                                         an_thresholds[i,"moderate_cold_OTR"]))
 
-    matsim[i, "glob_heat"] <- FluMoDL::attrdl(x = data_output_year$temp,
+    matsim[i, "glob_heat"] <- attrdl(x = data_output_year$temp,
                                               basis = cb,
                                               cases = data_output_year$dependent,
                                               coef = coefs,
@@ -794,7 +797,7 @@ compute_attributable_deaths <- function(df_list,
                                               range = c(an_thresholds[i,"moderate_heat_OTR"],
                                                         an_thresholds[i,"max_high_heat"]))
 
-    matsim[i, "moderate_cold"] <- FluMoDL::attrdl(x = data_output_year$temp,
+    matsim[i, "moderate_cold"] <- attrdl(x = data_output_year$temp,
                                                   basis = cb,
                                                   cases = data_output_year$dependent,
                                                   coef = coefs,
@@ -806,7 +809,7 @@ compute_attributable_deaths <- function(df_list,
                                                   range = c(an_thresholds[i,"high_moderate_cold"],
                                                             an_thresholds[i,"moderate_cold_OTR"]))
 
-    matsim[i, "moderate_heat" ] <- FluMoDL::attrdl(x = data_output_year$temp,
+    matsim[i, "moderate_heat" ] <- attrdl(x = data_output_year$temp,
                                                    basis = cb,
                                                    cases = data_output_year$dependent,
                                                    coef = coefs,
@@ -819,7 +822,7 @@ compute_attributable_deaths <- function(df_list,
                                                              an_thresholds[i,"high_moderate_heat"]))
 
     # Attributable deaths for extremes:
-    matsim[i,"high_cold"] <- FluMoDL::attrdl(x = data_output_year$temp,
+    matsim[i,"high_cold"] <- attrdl(x = data_output_year$temp,
                                              basis = cb,
                                              cases = data_output_year$dependent,
                                              coef = coefs,
@@ -831,7 +834,7 @@ compute_attributable_deaths <- function(df_list,
                                              range = c(an_thresholds[i,"min_high_cold"],
                                                        an_thresholds[i,"high_moderate_cold"]))
 
-    matsim[i,"high_heat"] <- FluMoDL::attrdl(x = data_output_year$temp,
+    matsim[i,"high_heat"] <- attrdl(x = data_output_year$temp,
                                              basis = cb,
                                              cases = data_output_year$dependent,
                                              coef = coefs,
@@ -844,7 +847,7 @@ compute_attributable_deaths <- function(df_list,
                                                        an_thresholds[i,"max_high_heat"]))
 
 
-    matsim[i,"heatwave"] <- FluMoDL::attrdl(x = data_output_year$heatwave_temp,
+    matsim[i,"heatwave"] <- attrdl(x = data_output_year$heatwave_temp,
                                             basis = cb,
                                             cases = data_output_year$dependent,
                                             coef = coefs,
@@ -856,7 +859,7 @@ compute_attributable_deaths <- function(df_list,
 
     # Compute empirical occurrences of the attributable deaths
     # Used to derive confidence intervals
-    arraysim[i, "glob_cold_ci", ] <- FluMoDL::attrdl(x = data_output_year$temp,
+    arraysim[i, "glob_cold_ci", ] <- attrdl(x = data_output_year$temp,
                                                      basis = cb,
                                                      cases = data_output_year$dependent,
                                                      coef = coefs,
@@ -869,7 +872,7 @@ compute_attributable_deaths <- function(df_list,
                                                                an_thresholds[i,"moderate_cold_OTR"]),
                                                      sim = T, nsim = nsim_)
 
-    arraysim[i, "glob_heat_ci", ] <- FluMoDL::attrdl(x = data_output_year$temp,
+    arraysim[i, "glob_heat_ci", ] <- attrdl(x = data_output_year$temp,
                                                      basis = cb,
                                                      cases = data_output_year$dependent,
                                                      coef = coefs,
@@ -882,7 +885,7 @@ compute_attributable_deaths <- function(df_list,
                                                                an_thresholds[i,"max_high_heat"]),
                                                      sim = T, nsim = nsim_)
 
-    arraysim[i, "moderate_cold_ci", ] <- FluMoDL::attrdl(x = data_output_year$temp,
+    arraysim[i, "moderate_cold_ci", ] <- attrdl(x = data_output_year$temp,
                                                          basis = cb,
                                                          cases = data_output_year$dependent,
                                                          coef = coefs,
@@ -895,7 +898,7 @@ compute_attributable_deaths <- function(df_list,
                                                                    an_thresholds[i,"moderate_cold_OTR"]),
                                                          sim = T , nsim = nsim_)
 
-    arraysim[i, "moderate_heat_ci", ] <- FluMoDL::attrdl(x = data_output_year$temp,
+    arraysim[i, "moderate_heat_ci", ] <- attrdl(x = data_output_year$temp,
                                                          basis = cb,
                                                          cases = data_output_year$dependent,
                                                          coef = coefs,
@@ -908,7 +911,7 @@ compute_attributable_deaths <- function(df_list,
                                                                    an_thresholds[i,"high_moderate_heat"]),
                                                          sim = T, nsim = nsim_)
 
-    arraysim[i, "high_cold_ci", ] <- FluMoDL::attrdl(x = data_output_year$temp,
+    arraysim[i, "high_cold_ci", ] <- attrdl(x = data_output_year$temp,
                                                      basis = cb,
                                                      cases = data_output_year$dependent,
                                                      coef = coefs,
@@ -921,7 +924,7 @@ compute_attributable_deaths <- function(df_list,
                                                                an_thresholds[i,"high_moderate_cold"]),
                                                      sim = T, nsim = nsim_)
 
-    arraysim[i, "high_heat_ci", ] <- FluMoDL::attrdl(x = data_output_year$temp,
+    arraysim[i, "high_heat_ci", ] <- attrdl(x = data_output_year$temp,
                                                      basis = cb,
                                                      cases = data_output_year$dependent,
                                                      coef = coefs,
@@ -934,7 +937,7 @@ compute_attributable_deaths <- function(df_list,
                                                                an_thresholds[i,"max_high_heat"]),
                                                      sim = T, nsim = nsim_)
 
-    arraysim[i, "heatwave_ci", ] <- FluMoDL::attrdl(x = data_output_year$heatwave_temp,
+    arraysim[i, "heatwave_ci", ] <- attrdl(x = data_output_year$heatwave_temp,
                                                     basis = cb,
                                                     cases = data_output_year$dependent,
                                                     coef = coefs,
@@ -958,11 +961,11 @@ compute_attributable_deaths <- function(df_list,
 #' @param df_list An alphabetically-ordered list of dataframes for each
 #' region comprising dates, deaths, and temperatures.
 #' @param output_year Year(s) to calculate output for.
-#' @param arraysim` An array (numeric). Total (glob),
-#' cold and heat-attributable deaths per region for 1000 simulations.
-#'  Used to derive confidence intervals.
 #' @param matsim A matrix (numeric). Total (glob),
 #' cold and heat-attributable deaths per region from reduced coefficients.
+#' @param arraysim An array (numeric). Total (glob),
+#' cold and heat-attributable deaths per region for 1000 simulations.
+#'  Used to derive confidence intervals.
 
 #' @return
 #' \itemize{
@@ -1058,6 +1061,8 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 #' @param artot_bind A matrix of fractions of all-cause mortality
 #'  attributable to temperature, heat, cold, extreme heat and extreme cold
 #'  (with confidence intervals).
+#' @param save_csv Bool. Whether or not to save CSV files to output path.
+#' Defaults to FALSE.
 #' @param output_folder_path Path to folder for storing outputs.
 #'
 #' @return
@@ -1170,6 +1175,8 @@ write_attributable_deaths <- function(avgtmean_wald,
 #' @param output_folder_path The directory to output the resultant data/plots to.
 #' @param save_fig Whether to save output figure (Bool)
 #' @param save_csv Whether to save output CSVs (Bool)
+#' @param cb The generated crossbasis.
+#' @param model The generated model.
 #' @param blup A list of BLUPs (best linear unbiased predictions).
 #' @param mintempregions A named numeric vector.
 #'   Minimum (optimum) mortality temperature per region.
@@ -1188,8 +1195,6 @@ write_attributable_deaths <- function(avgtmean_wald,
 #' @param lagnk Number of knots in lag function
 #' (see dlnm::logknots)
 #' @param dfseas Degrees of freedom for seasonality
-#' @param coef A matrix of coefficients for reduced model.
-#' @param vcov A list. Co-variance matrices for each region for reduced model.
 #' @param dependent_col the column name of the
 #' dependent variable of interest e.g. deaths
 #'
@@ -1549,6 +1554,8 @@ plot_and_write_relative_risk <- function(df_list,
 #'
 #' @param df_list An alphabetically-ordered
 #' list of dataframes for each region.
+#' @param cb The generated crossbasis.
+#' @param model The generated model.
 #' @param mintempregions A named numeric vector.
 #'   Minimum (optimum) mortality temperature per region.
 #' @param save_fig Whether to save output figure (Bool)
@@ -1743,11 +1750,11 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @param output_folder_path_ Path to folder for storing outputs.
 #' @param save_fig_ Boolean (TRUE or FALSE). Whether to save output figure.
 #' @param save_csv_ Boolean (TRUE or FALSE). Whether to save output CSVs.
-#' @param meta_analysis Boolean (TRUE or FALSE). Whether to include
+#' @param meta_analysis_ Boolean (TRUE or FALSE). Whether to include
 #' meta-analysis. Must be TRUE if by_region argument is FALSE.
-#' @param by_region Boolean (TRUE or FALSE). Whether to disaggregate by region.
+#' @param by_region_ Boolean (TRUE or FALSE). Whether to disaggregate by region.
 #' Must be TRUE if meta-analysis is FALSE.
-#' @param RR_distribution_length Number of years for the calculation of RR
+#' @param RR_distribution_length_ Number of years for the calculation of RR
 #' distribution. Set both as 'NONE' to use full range in data.
 #' @param output_year_ Year(s) to calculate output for.
 #' @param dependent_col_ the column name of the  dependent variable of interest e.g. deaths
@@ -1766,17 +1773,8 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @param lagnk_ Number of knots in lag function
 #' (see dlnm::logknots)
 #' @param dfseas_ Degrees of freedom for seasonality
-#' @param descriptive_stats Bool. Whether or not to compute descriptive stats.
-#' Defaults to FALSE.
-#' @param ds_correlation_method character. The correlation method used in correlation matrices.
-#' Defaults to 'pearson'.
-#' @param ds_dist_columns character vector. The names of columns to plot distributions for.
-#' Defaults to c().
-#' @param ds_ma_days integer. How many days to use for moving average calculations.
-#' Defaults to 100.
-#' @param ds_ma_sides integer. How many sides to use for moving average calculations (1 or 2).
-#' Defaults to 2.
-#' @param ds_ma_columns character vector. The names of columns to plot moving average for.
+#' @param nsim__ Integer. The number of simulations to run for the model.
+#' Defaults to 1000.
 #'
 #' @return
 #' \itemize{

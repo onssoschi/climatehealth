@@ -5,7 +5,12 @@ library(patrick)
 test_that(
   "Passing tests for check_file_exists().",
   {
-    test_data_path <- file.path("testdata", "temperature_test_data.csv")
+    test_data_path <- file.path(
+      system.file(
+        "testdata", package="climatehealth"
+      ),
+      "temperature_test_data.csv"
+    )
     exists <- expect_no_error(
       check_file_exists(test_data_path)
     )

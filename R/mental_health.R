@@ -2105,18 +2105,6 @@ mh_save_results <- function(rr_results,
 #' @param meta_analysis Boolean. Whether to perform a meta-analysis.
 #' @param attr_thr Integer. Percentile at which to define the temperature threshold for
 #' calculating attributable risk.
-#' @param descriptive_stats Boolean. Whether to calculate descriptive stats.
-#' @param ds_correlation_method character. The correlation method used in correlation matrices.
-#' Defaults to 'pearson'.
-#' @param ds_use_individual_dfs Boolean. Whether to calculate descriptive stats for each individual
-#' df in df_list. Default to TRUE.
-#' @param ds_dist_columns character vector. The names of columns to plot distributions for.
-#' Defaults to c().
-#' @param ds_ma_days integer. How many days to use for moving average calculations.
-#' Defaults to 100.
-#' @param ds_ma_sides integer. How many sides to use for moving average calculations (1 or 2).
-#' Defaults to 2.
-#' @param ds_ma_columns character vector. The names of columns to plot moving average for.
 #' @param output_folder_path Path to folder where plots and/or CSV should be
 #' saved. Defaults to NULL.
 #'
@@ -2153,13 +2141,6 @@ suicides_heat_do_analysis <- function(data_path,
                                       country = "National",
                                       meta_analysis = FALSE,
                                       attr_thr = 97.5,
-                                      descriptive_stats = FALSE,
-                                      ds_correlation_method = "pearson",
-                                      ds_use_individual_dfs = TRUE,
-                                      ds_dist_columns = c(),
-                                      ds_ma_days = 100,
-                                      ds_ma_sides = 2,
-                                      ds_ma_columns = c(),
                                       output_folder_path = NULL) {
 
   df_list <- mh_read_and_format_data(data_path = data_path,
@@ -2168,22 +2149,6 @@ suicides_heat_do_analysis <- function(data_path,
                              temperature_col = temperature_col,
                              health_outcome_col = health_outcome_col,
                              population_col = population_col)
-
-  if(descriptive_stats) {
-    common_descriptive_stats(
-      dataset_title = "mental health",
-      df_list = df_list,
-      use_individual_dfs = ds_use_individual_dfs,
-      output_path = output_folder_path,
-      correlation_method = ds_correlation_method,
-      dist_columns =  ds_dist_columns,
-      ma_days = ds_ma_days,
-      ma_sides = ds_ma_sides,
-      ma_columns = ds_ma_columns,
-      dependent_col = "suicides", # col is renamed in data
-      independent_cols = c()
-    )
-  }
 
   pop_list <- mh_pop_totals(data = df_list,
                             country = country,
