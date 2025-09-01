@@ -1823,18 +1823,18 @@ mh_plot_af_monthly <- function(attr_mth_list,
          col.axis = "black",
          col = "black")
 
-    mtext("Mean Temp (°C)", side = 4, line = 3, col = "black", cex = 0.7)
+    mtext("Mean Temp (\u00b0C)", side = 4, line = 3, col = "black", cex = 0.7)
 
     abline(h = 0,
            col = "black",
            lty = 1)
 
     attr_thr_tmp <- round(quantile(region_temp, attr_thr/100, na.rm = TRUE), 2)
-    af_leg_lab <- paste0("AF (%) - from Attr. Risk Treshold, ", attr_thr_tmp, "°C (", attr_thr, "p)")
+    af_leg_lab <- paste0("AF (%) - from Attr. Risk Treshold, ", attr_thr_tmp, "\u00b0C (", attr_thr, "p)")
 
     legend("topleft",
            inset = c(0, -0.05),
-           legend = c(af_leg_lab, "Mean Temp (°C)"),
+           legend = c(af_leg_lab, "Mean Temp (\u00b0C)"),
            fill = c("#296991", NA),
            border = NA,
            lty = c(NA, 1),
@@ -1951,18 +1951,18 @@ mh_plot_ar_monthly <- function(attr_mth_list,
          col.axis = "black",
          col = "black")
 
-    mtext("Mean Temp (°C)", side = 4, line = 3, col = "black", cex = 0.7)
+    mtext("Mean Temp (\u00b0C)", side = 4, line = 3, col = "black", cex = 0.7)
 
     abline(h = 0,
            col = "black",
            lty = 1)
 
     attr_thr_tmp <- round(quantile(region_temp, attr_thr/100, na.rm = TRUE), 2)
-    ar_leg_lab <- paste0("AR - from Attr. Risk Threshold, ", attr_thr_tmp, "°C (", attr_thr, "p)")
+    ar_leg_lab <- paste0("AR - from Attr. Risk Threshold, ", attr_thr_tmp, "\u00b0C (", attr_thr, "p)")
 
     legend("topleft",
            inset = c(0, -0.05),
-           legend = c(ar_leg_lab, "Mean Temp (°C)"),
+           legend = c(ar_leg_lab, "Mean Temp (\u00b0C)"),
            fill = c("#c75e70", NA),
            border = NA,
            lty = c(NA, 1),
