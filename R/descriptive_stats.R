@@ -208,7 +208,7 @@ label_with_unit <- function(col, units) {
 #' @param plot_seasonal Logical. Whether to plot seasonal plots.
 #' @param plot_regional Logical. Whether to plot regional plots.
 #' @param plot_total Logical. Whether to plot total health outcomes per year.
-#' @param timerseries_col Character. Column containing timeseries data (e.g., date).
+#' @param timeseries_col Character. Column containing timeseries data (e.g., date).
 #' @param detect_outliers Logical. Whether to output a table containing outlier information.
 #' @param calculate_rate Logical. Whether to calculate the rate of health outcomes per 100k people.
 #'
@@ -237,7 +237,7 @@ common_descriptive_stats_core <- function(
   plot_seasonal = F,
   plot_regional = F,
   plot_total = F,
-  timerseries_col = "date",
+  timeseries_col = "date",
   detect_outliers = F,
   calculate_rate = F
 ) {
@@ -294,7 +294,7 @@ common_descriptive_stats_core <- function(
     corr_path
   )
   }
-  
+
   # If dist_columns is not provided, default to columns
   if (is.null(dist_columns)) {
     dist_columns <- columns
@@ -442,26 +442,26 @@ common_descriptive_stats_core <- function(
 
   # Rate based metrics
   if (calculate_rate == TRUE) {
-  rate_path <- file.path(output_path, "rate_health_outcome.pdf")
-  plot_rate_overall(
-    df = df,
-    dependent_col = dependent_col,
-    population_col = population_col,
-    date_col = timeseries_col,
-    save_rate = TRUE,
-    output_path = rate_path
-  )
+    rate_path <- file.path(output_path, "rate_health_outcome.pdf")
+    plot_rate_overall(
+      df = df,
+      dependent_col = dependent_col,
+      population_col = population_col,
+      date_col = timeseries_col,
+      save_rate = TRUE,
+      output_path = rate_path
+    )
   }
   # Plot total by year
   if (plot_total == TRUE) {
-  total_path <- file.path(output_path, "plot_total_by_year.pdf")
-  plot_total_variables_by_year(
-    df = df,
-    date_col = timeseries_col,
-    variables = dependent_col,
-    save_total = TRUE,
-    output_path = total_path
-  )
+    total_path <- file.path(output_path, "plot_total_by_year.pdf")
+    plot_total_variables_by_year(
+      df = df,
+      date_col = timeseries_col,
+      variables = dependent_col,
+      save_total = TRUE,
+      output_path = total_path
+    )
   }
 
   # Save analysis
@@ -540,11 +540,16 @@ common_descriptive_stats <- function(
   }
   # combine all smaller df's into one
   combined_df <- do.call(rbind, df_list)
+  # Create the folder if it doesn't exist
+  all_folder <- file.path(output_path, "All")
+  if (!dir.exists(all_folder)) {
+    dir.create(all_folder, recursive = TRUE)
+  }
   # obtain desc. stats
   common_descriptive_stats_core(
     dataset_title = dataset_title,
     df = combined_df,
-    output_path = file.path(output_path, "All"),
+    output_path = all_folder,
     title = "Full Dataset",
     aggregation_column = aggregation_column,
     population_col = population_col,
@@ -605,7 +610,9 @@ common_descriptive_stats <- function(
   # Use group_name in titles or filenames
   region_title <- paste0(dataset_title, " - ", region_name)
   region_output_path <- file.path(output_path, region_name)
-  dir.create(region_output_path, recursive = TRUE)
+  if (!dir.exists(region_output_path)) {
+    dir.create(region_output_path, recursive = TRUE)
+  }
 
 
 

@@ -565,7 +565,7 @@ plot_total_variables_by_year <- function(
 
   # Plot each variable
   for (var in variables) {
-    p <-  ggplot2::ggplot(yearly_totals, aes(x = Year, y = .data[[var]])) +
+    p <-  ggplot2::ggplot(yearly_totals, ggplot2::aes(x = Year, y = .data[[var]])) +
       ggplot2::geom_line(color = "#27a0cc", linewidth = 1.2) +
       ggplot2::geom_point(color = "#27a0cc", size = 2) +
       ggplot2::labs(
