@@ -8,7 +8,6 @@ plot_boxplots(
   df,
   columns = NULL,
   select_numeric = FALSE,
-  pattern = NULL,
   title = "Boxplots",
   ylabs = NULL,
   save_plot = FALSE,

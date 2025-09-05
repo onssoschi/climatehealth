@@ -300,7 +300,6 @@ plot_boxplots <- function(
     df,
     columns = NULL,
     select_numeric = FALSE,
-    pattern = NULL,
     title = "Boxplots",
     ylabs = NULL,
     save_plot = FALSE,
@@ -312,7 +311,7 @@ plot_boxplots <- function(
   } else if (select_numeric) {
     selected_cols <- names(df)[sapply(df, is.numeric)]
   } else {
-    stop("Please specify columns, select_numeric = TRUE")
+    stop("Please specify columns or 'select_numeric' to TRUE")
   }
 
   df <- df %>% dplyr::select(all_of(selected_cols))
@@ -355,7 +354,7 @@ plot_boxplots <- function(
 #'
 #' @param df The dataframe containing the raw data.
 #' @param date_col The name of the column containing date values.
-#' @param outcome_col The name of the outcome column to analyse.
+#' @param outcome_cols Character Vector. The names of the outcome columns to analyse.
 #' @param title The title of your plot.
 #' @param ylabs A character vector of y-axis labels (e.g., with units) corresponding to the columns.
 #' @param save_plot Whether or not to save the plot.
@@ -417,7 +416,7 @@ plot_seasonal_trends <- function(
 #'
 #' @param df The dataframe containing the raw data.
 #' @param region_col The name of the column containing regions.
-#' @param outcome_col The name of the outcome column to analyse.
+#' @param outcome_cols Character Vector. The names of the outcome columns to analyse.
 #' @param title The title of your plot.
 #' @param ylabs A character vector of y-axis labels (e.g., with units) corresponding to the columns.
 #' @param save_plot Whether or not to save the plot.
