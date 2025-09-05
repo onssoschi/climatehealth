@@ -4,7 +4,14 @@
 \alias{plot_distributions}
 \title{Plot histograms of column distributions.}
 \usage{
-plot_distributions(df, columns, title, save_hists = FALSE, output_path = NULL)
+plot_distributions(
+  df,
+  columns,
+  title,
+  xlabs = NULL,
+  save_hists = FALSE,
+  output_path = NULL
+)
 }
 \arguments{
 \item{df}{The dataframe containing the data.}
@@ -12,6 +19,9 @@ plot_distributions(df, columns, title, save_hists = FALSE, output_path = NULL)
 \item{columns}{The columns to plot distributions for.}
 
 \item{title}{The title of your plot.}
+
+\item{xlabs}{A character vector of x-axis labels (e.g., with units)
+corresponding to the columns.}
 
 \item{save_hists}{Whether to save the histograms to file.}
 
