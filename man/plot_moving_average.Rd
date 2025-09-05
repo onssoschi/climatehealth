@@ -12,7 +12,8 @@ plot_moving_average(
   ma_sides,
   title,
   save_plot = FALSE,
-  output_path = ""
+  output_path = "",
+  units = NULL
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ plot_moving_average(
 \item{save_plot}{Whether or not to save the plot.}
 
 \item{output_path}{The path to output the plot to.}
+
+\item{units}{A named character vector of units for each variable.}
 }
 \description{
 Plot the moving average of a column.

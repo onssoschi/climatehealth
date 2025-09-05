@@ -196,7 +196,6 @@ label_with_unit <- function(col, units) {
 #' @param plot_corr_matrix Logical. Whether or not to plot correlation matrix.
 #' @param correlation_method Character. The correlation method. One of 'pearson', 'spearman', 'kendall'.
 #' @param plot_dist Logical. Whether or not to plot distribution histograms.
-#' @param dist_columns Character vector. Columns to plot distributions for.
 #' @param dependent_col Character. The dependent column.
 #' @param independent_cols Character vector. The independent columns.
 #' @param columns Character vector. Specific columns to use for analysis.
@@ -225,7 +224,6 @@ common_descriptive_stats_core <- function(
   plot_corr_matrix = F,
   correlation_method = "pearson",
   plot_dist = F,
-  dist_columns = NULL,
   dependent_col = "dependent",
   independent_cols = c("temp"),
   columns = NULL,
@@ -295,11 +293,6 @@ common_descriptive_stats_core <- function(
   )
   }
 
-  # If dist_columns is not provided, default to columns
-  if (is.null(dist_columns)) {
-    dist_columns <- columns
-  }
-
   # Column distributions
   if (plot_dist==T) {
   dist_path <- file.path(output_path, "column_distributions.pdf")
@@ -311,7 +304,7 @@ common_descriptive_stats_core <- function(
 
   plot_distributions(
     df,
-    dist_columns,
+    columns,
     xlabs = xlabs,
     paste0("Column Distributions for the ", stringr::str_to_title(dataset_title), " dataset \n(", title, ")"),
     T,
@@ -479,7 +472,6 @@ common_descriptive_stats_core <- function(
 #' @param plot_corr_matrix Logical. Whether or not to plot correlation matrix.
 #' @param correlation_method Character. The correlation method. One of 'pearson', 'spearman', 'kendall'.
 #' @param plot_dist Logical. Whether or not to plot distribution histograms.
-#' @param dist_columns Character vector. Columns to plot distributions for.
 #' @param plot_ma Logical. Whether to plot moving averages over a timeseries.
 #' @param ma_days Integer. The number of days to use for a moving average.
 #' @param ma_sides Integer. The number of sides to use for a moving average (1 or 2).
@@ -511,7 +503,6 @@ common_descriptive_stats <- function(
   plot_corr_matrix = F,
   correlation_method = "pearson",
   plot_dist = F,
-  dist_columns = c(),
   plot_ma = F,
   ma_days = 100,
   ma_sides = 1,
@@ -556,7 +547,6 @@ common_descriptive_stats <- function(
     plot_corr_matrix = plot_corr_matrix,
     correlation_method = correlation_method,
     plot_dist = plot_dist,
-    dist_columns = dist_columns,
     dependent_col = dependent_col,
     independent_cols = independent_cols,
     columns = columns,
@@ -627,7 +617,6 @@ common_descriptive_stats <- function(
     plot_corr_matrix = plot_corr_matrix,
     correlation_method = correlation_method,
     plot_dist = plot_dist,
-    dist_columns = dist_columns,
     dependent_col = dependent_col,
     independent_cols = independent_cols,
     columns = columns,
@@ -681,7 +670,6 @@ raise_if_null <- function(param_nm, value) {
 #' @param plot_regional Logical. Whether to plot regional trends of the variables in columns.
 #' @param plot_total Logical. Whether to plot the total of the dependent column per year.
 #' @param correlation_method Character. The correlation method. One of 'pearson', 'spearman', 'kendall'.
-#' @param dist_columns Character vector. The columns to plot distributions for.
 #' @param ma_days Integer. The number of days to use in moving average calculations.
 #' @param ma_sides Integer. The number of sides to use in moving average calculations (1 or 2).
 #' @param ma_columns Character vector. Columns to plot moving average for.
@@ -713,7 +701,6 @@ common_descriptive_stats_api <- function(
   plot_regional = T,
   plot_total = T,
   correlation_method = NULL,
-  dist_columns = NULL,
   ma_days = NULL,
   ma_sides = 1,
   ma_columns = NULL,
@@ -776,7 +763,6 @@ common_descriptive_stats_api <- function(
     plot_corr_matrix = plot_correlation,
     correlation_method = correlation_method,
     plot_dist = plot_dist_hists,
-    dist_columns = dist_columns,
     plot_ma = plot_ma,
     ma_days = ma_days,
     ma_sides = ma_sides,

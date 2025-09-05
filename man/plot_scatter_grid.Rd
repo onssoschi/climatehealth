@@ -9,8 +9,9 @@ plot_scatter_grid(
   main_col,
   comparison_cols,
   title,
-  save_scatters = F,
-  output_path = ""
+  save_scatters = FALSE,
+  output_path = "",
+  units = NULL
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ plot_scatter_grid(
 \item{save_scatters}{Whether or not to save the plot.}
 
 \item{output_path}{The path to output the plot to.}
+
+\item{units}{A named character vector of units for each variable.}
 }
 \description{
 Plot a grid of scatter graphs comparing one column to various others.
