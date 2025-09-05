@@ -19,6 +19,8 @@ plot_seasonal_trends(
 
 \item{date_col}{The name of the column containing date values.}
 
+\item{outcome_cols}{Character Vector. The names of the outcome columns to analyse.}
+
 \item{title}{The title of your plot.}
 
 \item{ylabs}{A character vector of y-axis labels (e.g., with units) corresponding to the columns.}
@@ -26,8 +28,6 @@ plot_seasonal_trends(
 \item{save_plot}{Whether or not to save the plot.}
 
 \item{output_path}{The path to output the plot to.}
-
-\item{outcome_col}{The name of the outcome column to analyse.}
 }
 \description{
 Plot seasonal trends of a health outcome and climate by month.
