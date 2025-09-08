@@ -45,7 +45,8 @@ mh_read_and_format_data <- function(data_path,
     dplyr::rename(date = date_col,
                   region = region_col,
                   temp = temperature_col,
-                  suicides = health_outcome_col) %>%
+                  suicides = health_outcome_col,
+                  population = population_col) %>%
     dplyr::mutate(date = as.Date(date, tryFormats = c("%d/%m/%Y", "%Y-%m-%d")),
                   year = as.factor(lubridate::year(date)),
                   month = as.factor(lubridate::month(date)),
