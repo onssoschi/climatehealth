@@ -28,7 +28,7 @@ filter_on_rr_distribution <- function(df,
     RR_distribution_length = max(df$year, na.rm = TRUE) - min(df$year, na.rm = TRUE)
   }
 
-  # Raise an error if the RR distribution length is out of range (5-15)
+  # Raise an error if the RR distribution length is out of range (5-200 years)
   if(RR_distribution_length < lower_range) {
 
     stop(paste0("Timeseries to calculate the RR is less than ", lower_range, " years."))
@@ -60,7 +60,7 @@ filter_on_rr_distribution <- function(df,
 #' are spatially aggregated e.g. regnames
 #' @param temp_col The temperature column e.g. tmean
 #' @param population_col The population column e.g. pop
-#' @param output_year_ Year(s) to calculate output for.
+#' @param output_year Year(s) to calculate output for.
 #' @param RR_distribution_length Number of years for the calculation of RR
 #' distribution. Set both as 'NONE' to use full range in data.
 #' @return `df_list` An alphabetically-ordered list of dataframes for each
@@ -82,7 +82,7 @@ load_temperature_data <- function(input_csv_path,
   if (is.null(population_col)) {
     df <- df %>%
       dplyr::mutate(pop_col = "NONE")
-    population_col = "pop_col"
+    population_col = "pop"
   }
   # Format the region column
   if (is.null(region_col)) {
