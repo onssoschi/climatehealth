@@ -1282,16 +1282,17 @@ mh_attr <- function(df_list,
     max_range <- max(region_data$temp, na.rm = TRUE)
 
     c(af, af_lower_ci, af_upper_ci,
-      an, an_lower_ci, an_upper_ci)  %<-% an_attrdl(x = region_data$temp,
-                                                    basis = cb,
-                                                    cases = region_data$suicides,
-                                                    coef = pred$coefficients,
-                                                    vcov = pred$vcov,
-                                                    dir = "forw",
-                                                    cen = cen,
-                                                    range = c(min_range, max_range),
-                                                    tot = FALSE,
-                                                    nsim = 1000)
+      an, an_lower_ci, an_upper_ci,
+      ansim_mat)  %<-% an_attrdl(x = region_data$temp,
+                                 basis = cb,
+                                 cases = region_data$suicides,
+                                 coef = pred$coefficients,
+                                 vcov = pred$vcov,
+                                 dir = "forw",
+                                 cen = cen,
+                                 range = c(min_range, max_range),
+                                 tot = FALSE,
+                                 nsim = 1000)
 
     results <- region_data %>%
       select(region, date, temp, year, month, suicides, population) %>%
@@ -1306,7 +1307,8 @@ mh_attr <- function(df_list,
              ar_lower_ci = (an_lower_ci / population) * 100000,
              ar_upper_ci = (an_upper_ci / population) * 100000)
 
-    attr_list[[reg]] <- results
+    attr_list[[reg]] <- list(results = results,
+                             ansim_mat = ansim_mat)
 
   }
 
@@ -1339,8 +1341,13 @@ mh_attr_tables <- function(attr_list,
                            country = "National",
                            meta_analysis = FALSE){
 
-  attr_res <- do.call(rbind, attr_list) %>%
+  attr_res <- do.call(rbind, lapply(attr_list, `[[`, "results")) %>%
     mutate(year = as.numeric(as.character(year)))
+
+  ansim_mats <- lapply(attr_list, `[[`, "ansim_mat")
+  ansim_all <- do.call(rbind, ansim_mats)
+
+  attr_res$sim_index <- seq_len(nrow(attr_res))
 
   res_list <- list()
 
@@ -1350,31 +1357,50 @@ mh_attr_tables <- function(attr_list,
 
   for (grp_name in names(groupings)){
 
-    results <- attr_res %>%
-      group_by(!!!groupings[[grp_name]]) %>%
-      summarise(population = round(mean(population, na.rm = TRUE), 0),
-                temp = round(mean(temp, na.rm = TRUE), 2),
-                threshold_temp = mean(threshold_temp, na.rm = TRUE),
-                across(c(suicides, an, an_lower_ci, an_upper_ci),
-                       sum, na.rm = TRUE)) %>%
-      mutate(af = an/suicides * 100,
-             af_lower_ci = an_lower_ci/suicides * 100,
-             af_upper_ci = an_upper_ci/suicides * 100,
-             ar = an / population * 100000,
-             ar_lower_ci = an_lower_ci / population * 100000,
-             ar_upper_ci = an_upper_ci / population * 100000,
-             across(c(an, an_lower_ci, an_upper_ci,
-                      ar, ar_lower_ci, ar_upper_ci,
-                      af, af_lower_ci, af_upper_ci),
-                    ~ ifelse(abs(.) < 1, signif(., 2), round(., 2))))
 
-    res_list[[grp_name]] <- results
+    # Group rows
+    grouped <- attr_res %>%
+      group_by(!!!groupings[[grp_name]]) %>%
+      summarise(
+        population = round(mean(population, na.rm = TRUE), 0),
+        temp = round(mean(temp, na.rm = TRUE), 2),
+        threshold_temp = mean(threshold_temp, na.rm = TRUE),
+        suicides = sum(suicides, na.rm = TRUE),
+        an = sum(an, na.rm = TRUE),
+        sim_rows = list(sim_index)
+      )
+
+    # Compute CI from simulation matrix
+    grouped <- grouped %>%
+      rowwise() %>%
+      mutate(
+        sim_sum = list(colSums(ansim_all[unlist(sim_rows), , drop = FALSE], na.rm = TRUE)),
+        an_lower_ci = quantile(unlist(sim_sum), probs = 0.025, na.rm = TRUE),
+        an_upper_ci = quantile(unlist(sim_sum), probs = 0.975, na.rm = TRUE)
+      ) %>%
+      ungroup() %>%
+      mutate(
+        af = an / suicides * 100,
+        af_lower_ci = an_lower_ci / suicides * 100,
+        af_upper_ci = an_upper_ci / suicides * 100,
+        ar = an / population * 100000,
+        ar_lower_ci = an_lower_ci / population * 100000,
+        ar_upper_ci = an_upper_ci / population * 100000,
+        across(c(an, an_lower_ci, an_upper_ci,
+                 ar, ar_lower_ci, ar_upper_ci,
+                 af, af_lower_ci, af_upper_ci),
+               ~ ifelse(abs(.) < 1, signif(., 2), round(., 2)))
+      ) %>%
+      select(-sim_rows, -sim_sum)
+
+    res_list[[grp_name]] <- grouped
+
 
   }
 
   if (meta_analysis == TRUE){
 
-  region_order <- c(sort(setdiff(names(attr_list), country)), country)
+    region_order <- c(sort(setdiff(names(attr_list), country)), country)
 
   } else region_order <- sort(names(attr_list))
 

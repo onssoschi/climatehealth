@@ -236,6 +236,7 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
 #'  \item Attributable Numbers
 #'  \item Attributable Numbers lower confidence intervals
 #'  \item Attributable Numbers upper confidence intervals
+#'  \item Simulation matrix of attributable numbers
 #'  }
 #' @export
 #'
@@ -323,7 +324,7 @@ an_attrdl <- function(
   af_lower_ci <- an_lower_ci / cases
   af_upper_ci <- an_upper_ci / cases
 
-  return(list(af, af_lower_ci, af_upper_ci, an, an_lower_ci, an_upper_ci))
+  return(list(af, af_lower_ci, af_upper_ci, an, an_lower_ci, an_upper_ci, ansim_mat))
 }
 
 
