@@ -1067,23 +1067,45 @@ mh_predict_nat <- function(df_list,
 #' from analysis.
 #'
 #' @param pred_list A list containing predictions from the model by region.
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param attr_thr Integer. Percentile at which to define the temperature threshold for
+#' calculating attributable risk.
+#' @param minpercreg Vector. Percentile of minimum suicide temperature for each area.
 #'
 #' @returns Dataframe containing cumulative relative risk and confidence
 #' intervals from analysis.
 #'
 #' @export
-mh_rr_results <- function(pred_list) {
+mh_rr_results <- function(pred_list,
+                          df_list,
+                          attr_thr = 97.5,
+                          minpercreg) {
 
   rr_results <- bind_rows(lapply(names(pred_list), function(region_name) {
 
     reg_pred <- pred_list[[region_name]]
+    region_temp <- df_list[[region_name]]$temp
+
+    min_st <- quantile(region_temp, minpercreg[region_name] / 100, na.rm = TRUE)
+    attr_thr_temp <- quantile(region_temp, attr_thr / 100, na.rm = TRUE)
+
+    temp_rounded <- round(region_temp, 1)
+    temp_freq_table <- table(temp_rounded)
+
+    pred_temp_rounded <- round(reg_pred$predvar, 1)
+    temp_freq <- as.numeric(temp_freq_table[as.character(pred_temp_rounded)])
+    temp_freq[is.na(temp_freq)] <- 0  # Replace NAs with 0 for bins not present
 
     df <- data.frame(
       Area = region_name,
-      Temperature = reg_pred$predvar,
-      RR = reg_pred$allRRfit,
-      RR_lower_CI = reg_pred$allRRlow,
-      RR_upper_CI = reg_pred$allRRhigh
+      MinST = round(min_st, 2),
+      Attr_Threshold_Temp = round(attr_thr_temp, 2),
+      Temperature = round(reg_pred$predvar, 1),
+      Temp_Frequency = temp_freq,
+      RR = round(reg_pred$allRRfit, 3),
+      RR_lower_CI = round(reg_pred$allRRlow, 3),
+      RR_upper_CI = round(reg_pred$allRRhigh, 3)
     )
 
     return(df)
@@ -2270,7 +2292,10 @@ suicides_heat_do_analysis <- function(data_path,
              save_fig = save_fig,
              output_folder_path = output_folder_path)
 
-  rr_results <- mh_rr_results(pred_list)
+  rr_results <- mh_rr_results(pred_list,
+                              df_list,
+                              attr_thr = attr_thr,
+                              minpercreg = minpercreg)
 
   attr_list <- mh_attr(df_list = df_list,
                        cb_list = cb_list,
