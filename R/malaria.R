@@ -124,7 +124,7 @@ malaria_do_analysis <- function(
   check_file_exists(map_path, TRUE)
 
   # Get combined data
-  combined_data <- combine_health_climate_data_malaria(
+  combined_data <- combine_health_climate_data(
     health_data_path,
     climate_data_path,
     map_path,
@@ -151,7 +151,7 @@ malaria_do_analysis <- function(
 
   # Plot time series
   if (level=="country") {
-    plot_malaria <- plot_health_climate_timeseries_malaria(
+    plot_malaria <- plot_health_climate_timeseries(
       combined_data$data,
       param_term = "malaria",
       level = "country",
@@ -160,7 +160,7 @@ malaria_do_analysis <- function(
       save_fig = save_fig,
       output_dir = output_dir
     )
-    plot_tmax <- plot_health_climate_timeseries_malaria(
+    plot_tmax <- plot_health_climate_timeseries(
       combined_data$data,
       param_term = "tmax",
       level = "country",
@@ -169,7 +169,7 @@ malaria_do_analysis <- function(
       save_fig = save_fig,
       output_dir = output_dir
     )
-    plot_rainfall <- plot_health_climate_timeseries_malaria(
+    plot_rainfall <- plot_health_climate_timeseries(
       combined_data$data,
       param_term = "rainfall",
       level = "country",
@@ -181,7 +181,7 @@ malaria_do_analysis <- function(
   }
 
   # Create base matrice
-  basis <- set_cross_basis_malaria(combined_data$data, TRUE)
+  basis <- set_cross_basis(combined_data$data, TRUE)
 
   # Check for multicolinearity
   if (save_csv) {
@@ -214,7 +214,7 @@ malaria_do_analysis <- function(
   )
 
   # Plot seasonality
-  reff_plot_monthly <- plot_monthly_random_effects_malaria(
+  reff_plot_monthly <- plot_monthly_random_effects(
     combined_data,
     model=inla_result$model,
     output_dir=output_dir,
