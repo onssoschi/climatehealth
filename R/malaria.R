@@ -97,6 +97,7 @@ malaria_do_analysis <- function(
   family = "poisson",
   config = FALSE,
   save_csv = FALSE,
+  save_model = FALSE,
   save_fig = FALSE,
   output_dir = NULL
 ){
@@ -150,6 +151,9 @@ malaria_do_analysis <- function(
   )
 
   # Plot time series
+  plot_malaria <- NULL
+  plot_tmax <- NULL
+  plot_rainfall <- NULL
   if (level=="country") {
     plot_malaria <- plot_health_climate_timeseries(
       combined_data$data,
@@ -208,7 +212,7 @@ malaria_do_analysis <- function(
     inla_param=inla_param,
     case_type = "malaria",
     output_dir=output_dir,
-    save_csv=save_csv,
+    save_model=save_model,
     family=family,
     config=config
   )
@@ -231,7 +235,7 @@ malaria_do_analysis <- function(
   )
 
   # Contour plots
-  contour_plot <- contour_plot(
+  contour_plot_malaria <- contour_plot(
     data=combined_data$data,
     param_term=param_term,
     model=inla_result$model,
@@ -239,7 +243,7 @@ malaria_do_analysis <- function(
     filter_year=filter_year,
     case_type="malaria",
     save_fig=save_fig,
-    output_dir=output_dir,
+    output_dir=output_dir
   )
 
   # Relative risk map plots
@@ -323,7 +327,7 @@ malaria_do_analysis <- function(
     inla_result = inla_result,
     reff_plot_monthly = reff_plot_monthly,
     reff_plot_yearly = reff_plot_yearly,
-    contour_plot = contour_plot,
+    contour_plot = contour_plot_malaria,
     rr_map_plot = rr_map_plot,
     rr_plot = rr_plot,
     rr_df = rr_df,

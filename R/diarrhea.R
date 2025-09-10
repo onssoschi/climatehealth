@@ -94,6 +94,7 @@ diarrhea_do_analysis <- function(health_data_path,
                                  family = "poisson",
                                  config = FALSE,
                                  save_csv = FALSE,
+                                 save_model = FALSE,
                                  save_fig = FALSE,
                                  output_dir = NULL){
 
@@ -146,6 +147,9 @@ diarrhea_do_analysis <- function(health_data_path,
   )
 
   # Plot time series
+  plot_diarrhea <- NULL
+  plot_tmax <- NULL
+  plot_rainfall <- NULL
   if (level=="country") {
     plot_diarrhea <- plot_health_climate_timeseries(
       combined_data$data,
@@ -204,7 +208,7 @@ diarrhea_do_analysis <- function(health_data_path,
     inla_param=inla_param,
     case_type = "diarrhea",
     output_dir=output_dir,
-    save_csv=save_csv,
+    save_model=save_model,
     family=family,
     config=config
   )
@@ -227,7 +231,7 @@ diarrhea_do_analysis <- function(health_data_path,
   )
 
   # Contour plots
-  contour_plot <- contour_plot(
+  contour_plot_diarrhea <- contour_plot(
     data=combined_data$data,
     param_term=param_term,
     model=inla_result$model,
@@ -235,7 +239,7 @@ diarrhea_do_analysis <- function(health_data_path,
     filter_year=filter_year,
     case_type="diarrhea",
     save_fig=save_fig,
-    output_dir=output_dir,
+    output_dir=output_dir
   )
 
   # Relative risk map plots
@@ -320,7 +324,7 @@ diarrhea_do_analysis <- function(health_data_path,
     inla_result = inla_result,
     reff_plot_monthly = reff_plot_monthly,
     reff_plot_yearly = reff_plot_yearly,
-    contour_plot = contour_plot,
+    contour_plot = contour_plot_diarrhea,
     rr_map_plot = rr_map_plot,
     rr_plot = rr_plot,
     rr_df = rr_df,
