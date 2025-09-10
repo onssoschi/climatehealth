@@ -35,6 +35,7 @@ diarrhea_do_analysis(
   family = "poisson",
   config = FALSE,
   save_csv = FALSE,
+  save_model = FALSE,
   save_fig = FALSE,
   output_dir = NULL
 )
@@ -108,6 +109,8 @@ negative binomial distribution. Defaults to "poisson".}
 \item{config}{Boolean. Enable additional model configurations. Defaults to FALSE.}
 
 \item{save_csv}{Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.}
+
+\item{save_model}{Boolean. If TRUE, saves the INLA model. Defaults to FALSE.}
 
 \item{save_fig}{Boolean. If TRUE, saves the generated plots. Defaults to FALSE.}
 
