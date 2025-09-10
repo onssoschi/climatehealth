@@ -643,8 +643,8 @@ check_diseases_vif <- function(
   case_type <- validate_case_type(case_type)
   include_cvh <- ifelse(case_type=="malaria", TRUE, FALSE)
 
-  data  <- create_inla_indices(combined_data$data, case_type)
-  basis <- set_cross_basis(combined_data$data, include_cvh)
+  data  <- create_inla_indices(data, case_type)
+  basis <- set_cross_basis(data, include_cvh)
 
   vars_basis <- Filter(Negate(is.null), basis[basis_matrices_choices])
   vars_data  <- setdiff(inla_param, basis_matrices_choices)
@@ -712,7 +712,7 @@ check_and_write_vif <- function(
 ) {
   # Calculate VIF
   VIF <- check_diseases_vif(
-    data=combined_data$data,
+    data=data,
     inla_param=inla_param,
     basis_matrices_choices=basis_matrices_choices,
     case_type=case_type
@@ -750,7 +750,7 @@ check_and_write_vif <- function(
 #' @param case_type Character. The type of disease that the case column refers
 #' to. Must be one of 'diarrhea' or 'malaria'
 #' @param output_dir Character. The path to save model output to.  Defaults to NULL.
-#' @param save_csv Boolean. Whether to save the results as a CSV. Defaults to
+#' @param save_model Boolean. Whether to save the model as a CSV. Defaults to
 #' FALSE.
 #' @param family Character. The probability distribution for the response
 #' variable. The user may also have thepossibility to choose "nbinomial" for a
@@ -766,11 +766,11 @@ run_inla_models <- function(
   inla_param,
   case_type,
   output_dir = NULL,
-  save_csv = FALSE,
+  save_model = FALSE,
   family = "poisson",
   config = FALSE
 ) {
-  if (save_csv && is.null(output_dir)) stop("output_dir must be provided if save_csv = TRUE")
+  if (save_model && is.null(output_dir)) stop("output_dir must be provided if save_csv = TRUE")
 
   case_type <- validate_case_type(case_type)
 
@@ -822,7 +822,7 @@ run_inla_models <- function(
   baseline_model <- fit(base_formula)
   model <- fit(full_formula)
 
-  if (save_csv) {
+  if (save_model) {
     save(model,
          file = file.path(output_dir,
                           paste0("model_with_",
