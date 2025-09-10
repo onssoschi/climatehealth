@@ -750,7 +750,7 @@ check_and_write_vif <- function(
 #' @param case_type Character. The type of disease that the case column refers
 #' to. Must be one of 'diarrhea' or 'malaria'
 #' @param output_dir Character. The path to save model output to.  Defaults to NULL.
-#' @param save_csv Boolean. Whether to save the results as a CSV. Defaults to
+#' @param save_model Boolean. Whether to save the model as a CSV. Defaults to
 #' FALSE.
 #' @param family Character. The probability distribution for the response
 #' variable. The user may also have thepossibility to choose "nbinomial" for a

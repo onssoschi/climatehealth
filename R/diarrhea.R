@@ -50,6 +50,7 @@
 #' negative binomial distribution. Defaults to "poisson".
 #' @param config Boolean. Enable additional model configurations. Defaults to FALSE.
 #' @param save_csv Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.
+#' @param save_model Boolean. If TRUE, saves the INLA model. Defaults to FALSE.
 #' @param save_fig Boolean. If TRUE, saves the generated plots. Defaults to FALSE.
 #' @param output_dir Character. The path to the directory where outputs
 #' (e.g., plots, maps, datasets) should be saved.
