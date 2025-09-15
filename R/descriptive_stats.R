@@ -51,6 +51,10 @@ create_correlation_matrix <- function(
 #'
 #' @export
 create_column_summaries <- function(df, columns = NULL) {
+  # check dataframe is populated
+  if (nrow(df) == 0 || ncol(df) == 0) {
+    stop("Please provide a populated dataframe.")
+  }
   # use all columns if columns=NULL
   if (is.null(columns)) {
     columns <- colnames(df)
@@ -65,7 +69,6 @@ create_column_summaries <- function(df, columns = NULL) {
       stop(paste0("Column ", col, " not in dataset."))
     }
   }
-
   # get summaries
   summary_list <- list()
   for (col in columns) {
@@ -75,7 +78,6 @@ create_column_summaries <- function(df, columns = NULL) {
     # Ensure all expected fields are present
     expected_fields <- c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.")
     stats <- stats[expected_fields]
-
     # Calculate IQR, Variance, and SD if numeric
     if (is.numeric(col_data)) {
       iqr <- stats["3rd Qu."] - stats["1st Qu."]
@@ -87,10 +89,18 @@ create_column_summaries <- function(df, columns = NULL) {
       sd_val <- NA
     }
 
-    summary_df <- as.data.frame(t(c(stats, IQR = iqr, Variance = var_val, SD = sd_val)))
+    summary_df <- as.data.frame(t(c(stats,
+      IQR = iqr,
+      Variance = var_val,
+      SD = sd_val
+    )))
+    final_fields <- c(
+      "Min.", "1st Qu.", "Median", "Mean", "3rd Qu.",
+      "Max.", "IQR", "Variance", "SD"
+    )
+    colnames(summary_df) <- final_fields
     summary_list[[col]] <- summary_df
   }
-
   # Combine all summaries into one data frame
   result <- do.call(rbind, summary_list)
   rownames(result) <- columns
