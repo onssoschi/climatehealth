@@ -1,4 +1,3 @@
-library(patrick)
 # Tests for check_file_exists().
 
 # Passing test

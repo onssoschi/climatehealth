@@ -1,6 +1,4 @@
 # Tests for temperature.R
-library(zeallot)
-library(patrick)
 
 # Tests for filter_on_rr_distribution
 
