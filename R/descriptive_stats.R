@@ -1,5 +1,20 @@
 # Utilities to allow for statistics to be derived from datasets
 
+#' Check if a dataframe is empty.
+#' @description 
+#' Checks if a dataframe is empty, and raises an error if it is.
+#' 
+#' @param df Dataframe. The dataframe to check.
+#' 
+#' @return NULL. No return if the dataframe is not empty.
+#' 
+#' @export
+check_empty_dataframe <- function(df) {
+  if (!is.data.frame(df) || nrow(df) == 0 || ncol(df) == 0) {
+    stop("Please provide a populated dataframe.")
+  }
+}
+
 #' Create a correlation matrix for columns in a dataframe.
 #'
 #' @param df Dataframe. The dataframe to use to create a correlation matrix.
@@ -14,6 +29,8 @@ create_correlation_matrix <- function(
     columns = NULL,
     correlation_method = "pearson"
 ) {
+  # check if the dataframe is populated
+  check_empty_dataframe(df)
   # use all columns if columns=NULL
   if (is.null(columns)) {
     columns <- colnames(df)
@@ -52,9 +69,7 @@ create_correlation_matrix <- function(
 #' @export
 create_column_summaries <- function(df, columns = NULL) {
   # check dataframe is populated
-  if (nrow(df) == 0 || ncol(df) == 0) {
-    stop("Please provide a populated dataframe.")
-  }
+  check_empty_dataframe(df)
   # use all columns if columns=NULL
   if (is.null(columns)) {
     columns <- colnames(df)
@@ -119,6 +134,8 @@ create_na_summary <- function(
     df,
     columns = NULL
 ) {
+  # check if the dataframe is populated
+  check_empty_dataframe(df)
   # use all columns if columns=NULL
   if (is.null(columns)) {
     columns <- colnames(df)
@@ -134,12 +151,12 @@ create_na_summary <- function(
     }
   }
   total_count <- nrow(df)
-  na_count <- sapply(df, function(y) sum(length(which(is.na(y)))))
+  na_count <- sapply(columns, function(col) sum(is.na(df[[col]])))
   na_percent <- (na_count / total_count) * 100
   na_summary <- data.frame(
     column = columns,
     na_count = na_count,
-    na_percent = round(na_percent,2)
+    na_proportion = (round(na_percent, 2)/100)
   )
   rownames(na_summary) <- NULL
   return(na_summary)

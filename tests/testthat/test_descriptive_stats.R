@@ -1,5 +1,13 @@
 # Tests for descriptive_stats.R
 
+# Tests for check_empty_dataframe
+test_that("Empty dataframe throws an error", {
+  expect_error(
+    check_empty_dataframe(data.frame()),
+    "Please provide a populated dataframe."
+  )
+})
+
 # Tests for create_correlation_matrix
 
 # Sample data
@@ -74,7 +82,6 @@ COL_SUM_TEST_DATA <- data.frame(
   factor1 = factor(c("low", "medium", "high", "medium", "low"))
 )
 
-
 # Valid Responses
 test_that("Default behavior summarises all columns", {
   result <- create_column_summaries(COL_SUM_TEST_DATA)
@@ -104,14 +111,6 @@ test_that("Mixed column types are handled correctly", {
   expect_true(is.na(result["char1", "Mean"]))
 })
 
-# Error Raisees
-test_that("Empty dataframe throws an error", {
-  expect_error(
-    create_column_summaries(data.frame()),
-    "Please provide a populated dataframe."
-  )
-})
-
 test_that("Invalid column name throws error", {
   expect_error(
     create_column_summaries(COL_SUM_TEST_DATA, columns = c("num1", "missing_col")),
@@ -123,5 +122,50 @@ test_that("Non-vector columns argument throws error", {
   expect_error(
     create_column_summaries(COL_SUM_TEST_DATA, columns = data.frame(x = 1)),
     "'columns' expected a vector of column names"
+  )
+})
+
+# Tests for create_na_summary
+
+# Test data
+NA_SUM_TEST_DATA <- data.frame(
+  a = c(1, NA, 3, NA, 5),
+  b = c(NA, NA, NA, NA, NA),
+  c = c("x", "y", NA, "z", "w"),
+  d = factor(c("low", NA, "high", "medium", NA)),
+  stringsAsFactors = FALSE
+)
+
+# Valid Responses
+test_that("Default behavior summarises all columns", {
+  result <- create_na_summary(NA_SUM_TEST_DATA)
+  expect_true(is.data.frame(result))
+  expect_equal(nrow(result), ncol(NA_SUM_TEST_DATA))
+  expect_equal(sort(result$column), sort(colnames(NA_SUM_TEST_DATA)))
+  expect_equal(
+    as.vector(result$na_proportion),
+    c(0.4, 1.0, 0.2, 0.4)
+  )
+})
+
+test_that("Summarizing specific columns works", {
+  result <- create_na_summary(NA_SUM_TEST_DATA, columns = c("a", "b"))
+  expect_equal(result$column, c("a", "b"))
+  expect_equal(result$na_count[1], 2)
+  expect_equal(result$na_count[2], 5)
+})
+
+# Error Raises
+test_that("Non-vector columns argument throws error", {
+  expect_error(
+    create_na_summary(NA_SUM_TEST_DATA, columns = data.frame(x = 1)),
+    "'columns' expected a vector of column names."
+  )
+})
+
+test_that("Invalid column name throws error", {
+  expect_error(
+    create_na_summary(NA_SUM_TEST_DATA, columns = c("a", "not_a_column")),
+    "Column not_a_column not in dataset."
   )
 })
