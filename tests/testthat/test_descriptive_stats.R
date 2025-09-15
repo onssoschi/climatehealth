@@ -169,3 +169,34 @@ test_that("Invalid column name throws error", {
     "Column not_a_column not in dataset."
   )
 })
+
+# Tests for detect_outliers
+
+# Tests for label_with_unit
+
+test_that("Passing a column with available units works.",
+  {
+    test_water <- label_with_unit(
+      "Water Consumption", 
+      list("Water Consumption" = "L", "Frequency" = "Hz")
+    )
+    test_freq <- label_with_unit(
+      "Frequency", 
+      list("Water Consumption" = "L", "Frequency" = "Hz")
+    )
+    expect_equal(test_water, "Water Consumption (L)")
+    expect_equal(test_freq, "Frequency (Hz)")
+  }
+)
+
+test_that("Passing a column without available units returns the column name",
+  {
+    test_none <- label_with_unit(
+      "Frequency", 
+      list("Water Consumption" = "L")
+    )
+    expect_equal(test_none, "Frequency")
+  }
+)
+
+# Tests for raise_if_null
