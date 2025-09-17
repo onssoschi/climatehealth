@@ -184,9 +184,8 @@ detect_outliers <- function(df, columns = NULL) {
     Q1 <- quantile(df[[col]], 0.25, na.rm = TRUE)
     Q3 <- quantile(df[[col]], 0.75, na.rm = TRUE)
     IQR_val <- Q3 - Q1
-    lower_bound <- Q1 - 1.5 * IQR_val
-    upper_bound <- Q3 + 1.5 * IQR_val
-
+    lower_bound <- Q1 - (1.5 * IQR_val)
+    upper_bound <- Q3 + (1.5 * IQR_val)
     outlier_flags[[col]] <- df[[col]] < lower_bound | df[[col]] > upper_bound
   }
 

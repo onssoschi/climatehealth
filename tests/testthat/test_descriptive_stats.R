@@ -172,6 +172,58 @@ test_that("Invalid column name throws error", {
 
 # Tests for detect_outliers
 
+test_that("detect_outliers works with default values", {
+  df <- data.frame(
+    a = c(1, 2, 3, 100),
+    b = c(10, 20, 30, 40)
+  )
+  result <- detect_outliers(df)
+
+  expect_s3_class(result, "data.frame")
+  expect_named(result, c("row", "a", "b"))
+  expect_true(result$a[4])
+  expect_false(any(result$b))  # no outliers in b
+})
+
+test_that("detect_outliers selects columns correctly", {
+  df <- data.frame(
+    x = c(1, 2, 3, 100),
+    y = c(10, 20, 30, 40)
+  )
+  result <- detect_outliers(df, columns = "x")
+
+  expect_named(result, c("row", "x"))
+  expect_true(result$x[4])
+})
+
+test_that("detect_outliers skips non-numeric columns", {
+  df <- data.frame(
+    num = c(1, 2, 3, 100),
+    chr = c("a", "b", "c", "d")
+  )
+  result <- detect_outliers(df)
+
+  expect_named(result, c("row", "num"))
+  expect_false("chr" %in% names(result))
+})
+
+test_that("detect_outliers handles NA values", {
+  df <- data.frame(
+    val = c(1, 2, NA, 100, 3, NA)
+  )
+  result <- detect_outliers(df)
+
+  expect_named(result, c("row", "val"))
+  expect_true(result$val[4])
+  expect_false(result$val[1])
+})
+
+test_that("detect_outliers does not raise error on valid input", {
+  df <- data.frame(a = c(1, 2, 3, 4))
+  expect_error(detect_outliers(df), regexp = NA)
+})
+
+
 # Tests for label_with_unit
 
 test_that("Passing a column with available units works.",
@@ -200,3 +252,23 @@ test_that("Passing a column without available units returns the column name",
 )
 
 # Tests for raise_if_null
+
+test_that(
+  "An error is raised if the passed value is NULL.",
+  {
+    expect_error(
+      raise_if_null("test", NULL),
+      "Unexpected NULL in test"
+    )
+  }
+)
+
+test_that(
+  "No error is raised when a non NULL is passed.",
+  {
+    expect_error(
+      raise_if_null("test", "not_null"),
+      regexp = NA
+    )
+  }
+)
