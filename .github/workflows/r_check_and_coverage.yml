@@ -57,7 +57,7 @@ jobs:
           Rscript -e '
             coverage <- covr::package_coverage()
             covr::codecov(coverage)
-            covr::report(coverage, file = 'coverage.html')
+            covr::report(coverage, file = "coverage.html")
           '
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_API_TOKEN }}
