@@ -27,3 +27,6 @@ renv
 
 # Test Data Exclusions
 !inst/testdata/*
+
+# Workflow exclusions
+!.github/worfklows/*
