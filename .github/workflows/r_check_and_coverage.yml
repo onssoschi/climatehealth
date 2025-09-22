@@ -24,7 +24,7 @@ jobs:
       - uses: r-lib/actions/setup-pandoc@v2
       - uses: r-lib/actions/setup-tinytex@v2
 
-      - name: Restore Cached R Packages
+      - name: Restore cached R packages
         uses: actions/cache@v4
         with:
           path: ${{ env.R_LIBS_USER }}
@@ -64,7 +64,6 @@ jobs:
           Rscript -e 'covr::report(covr::package_coverage(), file = "coverage.html")'
 
       - name: Upload coverage artifact
-        if: steps.coverage.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
