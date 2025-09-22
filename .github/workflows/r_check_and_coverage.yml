@@ -59,12 +59,6 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_API_TOKEN }}
       
-      - name: Create coverage artifact for upload
+      - name: Print coverage for quick view
         run: |
-          Rscript -e 'covr::report(covr::package_coverage(), file = "coverage.html")'
-
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage.html
+          Rscript -e 'print(covr::package_coverage())'
