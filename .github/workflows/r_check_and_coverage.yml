@@ -35,7 +35,6 @@ jobs:
       - name: Install dependencies
         run: |
           Rscript -e '
-          options(repos = c(CRAN = "https://packagemanager.posit.co/cran/latest"))
           install.packages(c("devtools", "roxygen2", "remotes", "patrick", "pak", "covr"))
           pak::pkg_install(devtools::dev_package_deps()$package)
           '
