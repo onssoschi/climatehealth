@@ -53,17 +53,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create R Package Coverage Report
+      - name: Upload coverage report to Codecov
         run: |
-          Rscript -e '
-          setwd("${{ github.workspace }}")
-          coverage <- covr::package_coverage(path=".")
-          covr::report(covr::package_coverage(), file = "coverage.html")
-          covr::codecov()
-          '
+          Rscript -e 'covr::codecov()'
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_API_TOKEN }}
       
+      - name: Create coverage artifact for upload
+        run: |
+          Rscript -e 'covr::report(covr::package_coverage(), file = "coverage.html")'
+
       - name: Upload coverage artifact
         if: steps.coverage.outcome == 'success'
         uses: actions/upload-artifact@v4
