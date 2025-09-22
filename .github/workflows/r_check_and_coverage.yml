@@ -36,7 +36,7 @@ jobs:
         run: |
           Rscript -e 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/latest"))'
           Rscript -e 'install.packages(c("devtools", "roxygen2", "remotes", "patrick", "pak", "covr"))'
-          Rscript -e 'pak::pkg_install(devtools::dev_package_deps(dependencies = TRUE)$package)'
+          Rscript -e 'pak::pkg_install(devtools::dev_package_deps()$package)'
 
       - name: Run R CMD Check
         uses: r-lib/actions/check-r-package@v2
