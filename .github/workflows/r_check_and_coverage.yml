@@ -63,8 +63,8 @@ jobs:
           Rscript -e '
           setwd("${{ github.workspace }}")
           coverage <- covr::package_coverage(path=".")
-          covr::codecov(coverage)
-          covr::report(coverage, file = "coverage.html")
+          covr::report(covr::package_coverage(), file = "coverage.html")
+          covr::codecov()
           '
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_API_TOKEN }}
