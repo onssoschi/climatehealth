@@ -38,12 +38,6 @@ jobs:
           install.packages(c("devtools", "roxygen2", "remotes", "patrick", "pak", "covr", "DT", "htmltools"))
           pak::pkg_install(devtools::dev_package_deps()$package)
           '
-      
-      - name: Save R package cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.R_LIBS_USER }}
-          key: ${{ runner.os }}-r-${{ hashFiles('DESCRIPTION') }}
 
       - name: Run R CMD Check
         uses: r-lib/actions/check-r-package@v2
