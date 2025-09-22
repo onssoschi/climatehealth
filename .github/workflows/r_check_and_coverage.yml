@@ -16,32 +16,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Cache R packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.local/share/R
-          key: ${{ runner.os }}-r-${{ hashFiles('DESCRIPTION') }}
-          restore-keys: |
-            ${{ runner.os }}-r-
-
-      - uses: r-lib/actions/setup-pandoc@v2
-      - uses: r-lib/actions/setup-tinytex@v2
-
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
         with:
           r-version: "4.4.1"
+  
+      - uses: r-lib/actions/setup-pandoc@v2
+      - uses: r-lib/actions/setup-tinytex@v2
+
+      - name: Restore Cached R Packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.R_LIBS_USER }}
+          key: ${{ runner.os }}-r-${{ hashFiles('DESCRIPTION') }}
+          restore-keys: |
+            ${{ runner.os }}-r-
 
       - name: Install dependencies
         run: |
-          Rscript -e 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/latest"))'
-          Rscript -e 'install.packages(c("devtools", "roxygen2", "remotes", "patrick", "pak", "covr"))'
-          Rscript -e 'pak::pkg_install(devtools::dev_package_deps()$package)'
+          Rscript -e '
+          options(repos = c(CRAN = "https://packagemanager.posit.co/cran/latest"))
+          install.packages(c("devtools", "roxygen2", "remotes", "patrick", "pak", "covr"))
+          pak::pkg_install(devtools::dev_package_deps()$package)
+          '
       
       - name: Save R package cache
         uses: actions/cache@v4
         with:
-          path: ~/.local/share/R
+          path: ${{ env.R_LIBS_USER }}
           key: ${{ runner.os }}-r-${{ hashFiles('DESCRIPTION') }}
 
       - name: Run R CMD Check
@@ -52,17 +54,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Show workspace contents
+        run: |
+          echo "Workspace root: $GITHUB_WORKSPACE"
+          ls -R .
+
       - name: Create R Package Coverage Report
         run: |
           Rscript -e '
-            coverage <- covr::package_coverage()
-            covr::codecov(coverage)
-            covr::report(coverage, file = "coverage.html")
+          setwd("${{ github.workspace }}")
+          coverage <- covr::package_coverage(path=".")
+          covr::codecov(coverage)
+          covr::report(coverage, file = "coverage.html")
           '
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_API_TOKEN }}
       
       - name: Upload coverage artifact
+        if: steps.coverage.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
