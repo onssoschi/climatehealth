@@ -35,7 +35,7 @@ jobs:
       - name: Install dependencies
         run: |
           Rscript -e '
-          install.packages(c("devtools", "roxygen2", "remotes", "patrick", "pak", "covr"))
+          install.packages(c("devtools", "roxygen2", "remotes", "patrick", "pak", "covr", "DT", "htmltools"))
           pak::pkg_install(devtools::dev_package_deps()$package)
           '
       
@@ -52,11 +52,6 @@ jobs:
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Show workspace contents
-        run: |
-          echo "Workspace root: $GITHUB_WORKSPACE"
-          ls -R .
 
       - name: Create R Package Coverage Report
         run: |
