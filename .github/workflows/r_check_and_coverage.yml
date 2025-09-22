@@ -42,7 +42,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.local/share/R
-          key: ${{ runner.os }}-r-${{ hashFiles('DESCRIPTION') 
+          key: ${{ runner.os }}-r-${{ hashFiles('DESCRIPTION') }}
 
       - name: Run R CMD Check
         uses: r-lib/actions/check-r-package@v2
@@ -54,11 +54,11 @@ jobs:
 
       - name: Create R Package Coverage Report
         run: |
-          Rscript -e "
+          Rscript -e '
             coverage <- covr::package_coverage()
             covr::codecov(coverage)
             covr::report(coverage, file = 'coverage.html')
-          "
+          '
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_API_TOKEN }}
       
