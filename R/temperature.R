@@ -1,6 +1,6 @@
 # Functions to generate analysis for the temperature indicators.
 
-#' Filter the dataframe based on the relative risk distribution.
+#' @title Filter the dataframe based on the relative risk distribution.
 #'
 #' @param df The dataframe to filter.
 #' @param RR_distribution_length The RR distribution length. Defaults to 0.
@@ -1744,6 +1744,8 @@ plot_and_write_relative_risk_all <- function(df_list,
 #'
 #' @details Modified from Gasparrini A et al. (2015)
 #' The Lancet. 2015;386(9991):369-375.
+#' 
+#' @importFrom zeallot %<-%
 #'
 #' @param input_csv_path_ Path to a CSV contain
 #' daily time series of death and temperature per region.

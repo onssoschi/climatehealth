@@ -1,5 +1,4 @@
 # Tests for defence_utils.R
-library(patrick)
 
 # Test is_list_of_dfs().
 

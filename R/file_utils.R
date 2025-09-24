@@ -90,8 +90,8 @@ read_input_data <- function(input_csv_path) {
   } else {
     # Raise an error when the input_csv argument isn't valid
     stop(paste(
-      "'input_csv' expected a list or a string. Got",
-      typeof(input_csv)
+      "'input_csv_path' expected a list or a string. Got",
+      typeof(input_csv_path)
     ))
   }
 
