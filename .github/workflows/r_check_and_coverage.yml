@@ -21,7 +21,7 @@ jobs:
         with:
           r-version: "4.4.1"
         timeout-minutes: 5
-  
+
       - uses: r-lib/actions/setup-pandoc@v2
       - uses: r-lib/actions/setup-tinytex@v2
 
@@ -44,7 +44,7 @@ jobs:
       - name: Run R CMD Check
         uses: r-lib/actions/check-r-package@v2
         with:
-          upload-snapshots: true
+          upload-snapshots: false
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -55,7 +55,7 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_API_TOKEN }}
         timeout-minutes: 5
-      
-      - name: Print coverage for quick view
-        run: |
-          Rscript -e 'print(covr::package_coverage())'
+
+#      - name: Print coverage for quick view
+#        run: |
+#          Rscript -e 'print(covr::package_coverage())'
