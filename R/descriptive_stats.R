@@ -1,5 +1,20 @@
 # Utilities to allow for statistics to be derived from datasets
 
+#' Check if a dataframe is empty.
+#' @description 
+#' Checks if a dataframe is empty, and raises an error if it is.
+#' 
+#' @param df Dataframe. The dataframe to check.
+#' 
+#' @return NULL. No return if the dataframe is not empty.
+#' 
+#' @export
+check_empty_dataframe <- function(df) {
+  if (!is.data.frame(df) || nrow(df) == 0 || ncol(df) == 0) {
+    stop("Please provide a populated dataframe.")
+  }
+}
+
 #' Create a correlation matrix for columns in a dataframe.
 #'
 #' @param df Dataframe. The dataframe to use to create a correlation matrix.
@@ -14,6 +29,8 @@ create_correlation_matrix <- function(
     columns = NULL,
     correlation_method = "pearson"
 ) {
+  # check if the dataframe is populated
+  check_empty_dataframe(df)
   # use all columns if columns=NULL
   if (is.null(columns)) {
     columns <- colnames(df)
@@ -51,6 +68,8 @@ create_correlation_matrix <- function(
 #'
 #' @export
 create_column_summaries <- function(df, columns = NULL) {
+  # check dataframe is populated
+  check_empty_dataframe(df)
   # use all columns if columns=NULL
   if (is.null(columns)) {
     columns <- colnames(df)
@@ -65,7 +84,6 @@ create_column_summaries <- function(df, columns = NULL) {
       stop(paste0("Column ", col, " not in dataset."))
     }
   }
-
   # get summaries
   summary_list <- list()
   for (col in columns) {
@@ -75,7 +93,6 @@ create_column_summaries <- function(df, columns = NULL) {
     # Ensure all expected fields are present
     expected_fields <- c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.")
     stats <- stats[expected_fields]
-
     # Calculate IQR, Variance, and SD if numeric
     if (is.numeric(col_data)) {
       iqr <- stats["3rd Qu."] - stats["1st Qu."]
@@ -87,10 +104,18 @@ create_column_summaries <- function(df, columns = NULL) {
       sd_val <- NA
     }
 
-    summary_df <- as.data.frame(t(c(stats, IQR = iqr, Variance = var_val, SD = sd_val)))
+    summary_df <- as.data.frame(t(c(stats,
+      IQR = iqr,
+      Variance = var_val,
+      SD = sd_val
+    )))
+    final_fields <- c(
+      "Min.", "1st Qu.", "Median", "Mean", "3rd Qu.",
+      "Max.", "IQR", "Variance", "SD"
+    )
+    colnames(summary_df) <- final_fields
     summary_list[[col]] <- summary_df
   }
-
   # Combine all summaries into one data frame
   result <- do.call(rbind, summary_list)
   rownames(result) <- columns
@@ -109,6 +134,8 @@ create_na_summary <- function(
     df,
     columns = NULL
 ) {
+  # check if the dataframe is populated
+  check_empty_dataframe(df)
   # use all columns if columns=NULL
   if (is.null(columns)) {
     columns <- colnames(df)
@@ -124,12 +151,12 @@ create_na_summary <- function(
     }
   }
   total_count <- nrow(df)
-  na_count <- sapply(df, function(y) sum(length(which(is.na(y)))))
+  na_count <- sapply(columns, function(col) sum(is.na(df[[col]])))
   na_percent <- (na_count / total_count) * 100
   na_summary <- data.frame(
     column = columns,
     na_count = na_count,
-    na_percent = round(na_percent,2)
+    na_proportion = (round(na_percent, 2)/100)
   )
   rownames(na_summary) <- NULL
   return(na_summary)
@@ -157,9 +184,8 @@ detect_outliers <- function(df, columns = NULL) {
     Q1 <- quantile(df[[col]], 0.25, na.rm = TRUE)
     Q3 <- quantile(df[[col]], 0.75, na.rm = TRUE)
     IQR_val <- Q3 - Q1
-    lower_bound <- Q1 - 1.5 * IQR_val
-    upper_bound <- Q3 + 1.5 * IQR_val
-
+    lower_bound <- Q1 - (1.5 * IQR_val)
+    upper_bound <- Q3 + (1.5 * IQR_val)
     outlier_flags[[col]] <- df[[col]] < lower_bound | df[[col]] > upper_bound
   }
 
@@ -224,8 +250,8 @@ common_descriptive_stats_core <- function(
   plot_corr_matrix = F,
   correlation_method = "pearson",
   plot_dist = F,
-  dependent_col = "dependent",
-  independent_cols = c("temp"),
+  dependent_col,
+  independent_cols = c(),
   columns = NULL,
   units = NULL,
   select_all_numeric = F,
@@ -239,21 +265,20 @@ common_descriptive_stats_core <- function(
   detect_outliers = F,
   calculate_rate = F
 ) {
-  # get numeric columns
-  numeric_cols <- colnames(select_if(df, is.numeric))
+  raise_if_null("dependent_col", dependent_col)
+
   # get dataframe summary
   full_summary <- create_column_summaries(df, columns)
 
   # Determine selected columns
   if (!is.null(columns)) {
     selected_cols <- columns
-  } else if (!is.null(independent_cols)) {
-    selected_cols <- independent_cols
   } else if (select_all_numeric) {
-    selected_cols <- setdiff(names(df)[sapply(df, is.numeric)], dependent_col)
+    selected_cols <- names(df)[sapply(df, is.numeric)]
   } else {
-    stop("Please specify `columns`, `independent_cols`, or set `select_all_numeric = TRUE`.")
+    stop("Please specify `columns` or set `select_all_numeric = TRUE`.")
   }
+  selected_cols <- unique(c(selected_cols, independent_cols, dependent_col))
 
   # plot box plots
   if (plot_box==T) {
@@ -262,7 +287,8 @@ common_descriptive_stats_core <- function(
 
     ylabs <- sapply(columns, function(col) {
       unit <- units[[col]]
-      if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
+      unit <- if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
+      return(unit)
     })
 
     plot_boxplots(
@@ -277,39 +303,40 @@ common_descriptive_stats_core <- function(
 
   # plot correlation matrix
   if (plot_corr_matrix) {
-  full_corr <- create_correlation_matrix(df, columns, correlation_method)
-  corr_path <- file.path(output_path, "correlation_matrix.png")
-  plot_correlation_matrix(
-    full_corr,
-    paste0(
-    "Correlation Matrix for the ",
-    stringr::str_to_title(dataset_title),
-    " Dataset \n(",
-    title,
-    ", Method: ",
-    stringr::str_to_title(correlation_method),
-    ")"),
-    corr_path
-  )
+    full_corr <- create_correlation_matrix(df, columns, correlation_method)
+    corr_path <- file.path(output_path, "correlation_matrix.png")
+    plot_correlation_matrix(
+      full_corr,
+      paste0(
+      "Correlation Matrix for the ",
+      stringr::str_to_title(dataset_title),
+      " Dataset \n(",
+      title,
+      ", Method: ",
+      stringr::str_to_title(correlation_method),
+      ")"),
+      corr_path
+    )
   }
 
   # Column distributions
   if (plot_dist==T) {
-  dist_path <- file.path(output_path, "column_distributions.pdf")
+    dist_path <- file.path(output_path, "column_distributions.pdf")
 
-  xlabs <- sapply(columns, function(col) {
-    unit <- units[[col]]
-    if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
-  })
+    xlabs <- sapply(columns, function(col) {
+      unit <- units[[col]]
+      unit <- if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
+      return(unit)
+    })
 
-  plot_distributions(
-    df,
-    columns,
-    xlabs = xlabs,
-    paste0("Column Distributions for the ", stringr::str_to_title(dataset_title), " dataset \n(", title, ")"),
-    T,
-    dist_path
-  )
+    plot_distributions(
+      df,
+      columns,
+      xlabs = xlabs,
+      paste0("Column Distributions for the ", stringr::str_to_title(dataset_title), " dataset \n(", title, ")"),
+      T,
+      dist_path
+    )
   }
   # Count NAs and visualise
   na_counts_path <- file.path(output_path, "na_counts.pdf")
@@ -365,7 +392,8 @@ common_descriptive_stats_core <- function(
     # Create y-axis labels with units
     ylabs <- sapply(columns, function(col) {
       unit <- units[[col]]
-      if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
+      unit <- if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
+      return(unit)
     })
 
     plot_seasonal_trends(
@@ -388,7 +416,8 @@ common_descriptive_stats_core <- function(
       # Create y-axis labels with units
       ylabs <- sapply(columns, function(col) {
         unit <- units[[col]]
-        if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
+        unit <- if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
+        return(unit)
       })
 
       plot_regional_trends(
@@ -404,33 +433,41 @@ common_descriptive_stats_core <- function(
   }
   # Outlier table
   if (detect_outliers == TRUE) {
-  outlier_columns <- if (!is.null(columns)) columns else independent_cols
-  outlier_flags <- detect_outliers(df, outlier_columns)
+    outlier_columns <- setdiff(
+      selected_cols[sapply(df[selected_cols], is.numeric)], dependent_col
+    )
+    outlier_flags <- detect_outliers(df, outlier_columns)
 
-  # Add outlier flags to df
-  for (col in outlier_columns) {
-    df[[paste0("is_outlier_", col)]] <- outlier_flags[[col]]
-  }
+    # Add outlier flags to df
+    for (col in outlier_columns) {
+      df[[paste0("is_outlier_", col)]] <- outlier_flags[[col]]
+    }
 
-  # Identify rows with any outlier
-  outlier_flag_cols <- paste0("is_outlier_", outlier_columns)
-  outlier_flag_cols <- outlier_flag_cols[outlier_flag_cols %in% names(df)]
+    # Identify rows with any outlier
+    outlier_flag_cols <- paste0("is_outlier_", outlier_columns)
+    outlier_flag_cols <- outlier_flag_cols[outlier_flag_cols %in% names(df)]
 
-  if (length(outlier_flag_cols) > 0) {
-    outlier_rows <- df[apply(df[, outlier_flag_cols, drop = FALSE], 1, any), ]
-  } else {
-    warning("No valid outlier flag columns found in the dataframe.")
-    outlier_rows <- df[FALSE, ]  # empty dataframe with same structure
-  }
+    if (length(outlier_flag_cols) > 0) {
+      outlier_rows <- df[apply(df[, outlier_flag_cols, drop = FALSE], 1, any), ]
+    } else {
+      warning("No valid outlier flag columns found in the dataframe.")
+      outlier_rows <- df[FALSE, ]  # empty dataframe with same structure
+    }
 
-  # Always include timeseries_col and region
-  base_cols <- c(timeseries_col, "region")
-  selected_cols <- unique(c(base_cols, outlier_columns, outlier_flag_cols))
-  selected_cols <- intersect(selected_cols, names(outlier_rows))  # Ensure they exist
+    # Always include timeseries_col and region
+    base_cols <- c()
+    if (!is.null(timeseries_col) && timeseries_col %in% names(df)) {
+      base_cols <- c(base_cols, timeseries_col)
+    }
+    if (!is.null(aggregation_column) && aggregation_column %in% names(df)) {
+      base_cols <- c(base_cols, aggregation_column)
+    }
+    selected_cols <- unique(c(base_cols, outlier_columns, outlier_flag_cols))
+    selected_cols <- intersect(selected_cols, names(outlier_rows))  # Ensure they exist
 
-  # Create and save the outlier table
-  outlier_table <- outlier_rows[, selected_cols, drop = FALSE]
-  write.csv(outlier_table, file.path(output_path, "outlier_table.csv"), row.names = FALSE)
+    # Create and save the outlier table
+    outlier_table <- outlier_rows[, selected_cols, drop = FALSE]
+    write.csv(outlier_table, file.path(output_path, "outlier_table.csv"), row.names = FALSE)
   }
 
   # Rate based metrics
@@ -563,76 +600,73 @@ common_descriptive_stats <- function(
   )
   # Moving Average
   if (plot_ma) {
-  ma_vars <- c(ma_columns, dependent_col)
-  for (col_i in seq_along(ma_vars)) {
-    for (i in seq_along(df_list)) {
-    region_name <- names(df_list)[i]
-    region_folder <- file.path(output_path, region_name)
+    ma_vars <- c(ma_columns, dependent_col)
+    for (col_i in seq_along(ma_vars)) {
+      for (i in seq_along(df_list)) {
+      region_name <- names(df_list)[i]
+      region_folder <- file.path(output_path, region_name)
 
-    # Create the folder if it doesn't exist
-    if (!dir.exists(region_folder)) {
-      dir.create(region_folder, recursive = TRUE)
+      # Create the folder if it doesn't exist
+      if (!dir.exists(region_folder)) {
+        dir.create(region_folder, recursive = TRUE)
+      }
+
+      fname <- paste0(ma_vars[[col_i]], "_moving_average.pdf")
+      file_path <- file.path(region_folder, fname)
+
+      pdf(file_path)
+      plot_moving_average(
+        df_list[[i]],
+        timeseries_col,
+        ma_vars[[col_i]],
+        ma_days,
+        ma_sides,
+        units = units,
+        paste0("Moving average for the ", stringr::str_to_title(dataset_title), " Dataset \n(", region_name, ")")
+      )
+      dev.off()
+      }
     }
-
-    fname <- paste0(ma_vars[[col_i]], "_moving_average.pdf")
-    file_path <- file.path(region_folder, fname)
-
-    pdf(file_path)
-    plot_moving_average(
-      df_list[[i]],
-      timeseries_col,
-      ma_vars[[col_i]],
-      ma_days,
-      ma_sides,
-      units = units,
-      paste0("Moving average for the ", stringr::str_to_title(dataset_title), " Dataset \n(", region_name, ")")
-    )
-    dev.off()
-    }
-  }
   }
 
 
   # create summary, corr. and dist. for each df
   for (region_name in setdiff(names(df_list), "All")) {
-  df <- df_list[[region_name]]
+    df <- df_list[[region_name]]
 
-  # Use group_name in titles or filenames
-  region_title <- paste0(dataset_title, " - ", region_name)
-  region_output_path <- file.path(output_path, region_name)
-  if (!dir.exists(region_output_path)) {
-    dir.create(region_output_path, recursive = TRUE)
-  }
+    # Use group_name in titles or filenames
+    region_title <- paste0(dataset_title, " - ", region_name)
+    region_output_path <- file.path(output_path, region_name)
+    if (!dir.exists(region_output_path)) {
+      dir.create(region_output_path, recursive = TRUE)
+    }
 
-
-
-  # save out statistics
-  common_descriptive_stats_core(
-    dataset_title = region_title,
-    df = df,
-    output_path = region_output_path,
-    title = region_title,
-    aggregation_column = aggregation_column,
-    population_col = population_col,
-    plot_corr_matrix = plot_corr_matrix,
-    correlation_method = correlation_method,
-    plot_dist = plot_dist,
-    dependent_col = dependent_col,
-    independent_cols = independent_cols,
-    columns = columns,
-    select_all_numeric = select_all_numeric,
-    plot_na_counts = plot_na_counts,
-    plot_scatter = plot_scatter,
-    plot_box = plot_box,
-    plot_seasonal = plot_seasonal,
-    plot_regional = plot_regional,
-    plot_total = plot_total,
-    detect_outliers = detect_outliers,
-    calculate_rate = calculate_rate
-  )
+    # save out statistics
+    common_descriptive_stats_core(
+      dataset_title = region_title,
+      df = df,
+      output_path = region_output_path,
+      title = region_title,
+      aggregation_column = aggregation_column,
+      population_col = population_col,
+      plot_corr_matrix = plot_corr_matrix,
+      correlation_method = correlation_method,
+      plot_dist = plot_dist,
+      dependent_col = dependent_col,
+      independent_cols = independent_cols,
+      columns = columns,
+      select_all_numeric = select_all_numeric,
+      plot_na_counts = plot_na_counts,
+      plot_scatter = plot_scatter,
+      plot_box = plot_box,
+      plot_seasonal = plot_seasonal,
+      plot_regional = plot_regional,
+      plot_total = plot_total,
+      detect_outliers = detect_outliers,
+      calculate_rate = calculate_rate
+    )
   }
   return (c(output_path, paste0(normalised_title, "_descriptive_stats")))
-
 }
 
 #' Raise an Error if a Parameter's Value is NULL
@@ -720,9 +754,6 @@ common_descriptive_stats_api <- function(
   }
   if(plot_correlation) {
     raise_if_null("correlation_method", correlation_method)
-  }
-  if(plot_dist_hists) {
-    raise_if_null("plot_dist_hists", plot_dist_hists)
   }
 
   # Convert data to the correct format
