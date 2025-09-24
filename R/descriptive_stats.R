@@ -600,33 +600,33 @@ common_descriptive_stats <- function(
   )
   # Moving Average
   if (plot_ma) {
-  ma_vars <- c(ma_columns, dependent_col)
-  for (col_i in seq_along(ma_vars)) {
-    for (i in seq_along(df_list)) {
-    region_name <- names(df_list)[i]
-    region_folder <- file.path(output_path, region_name)
+    ma_vars <- c(ma_columns, dependent_col)
+    for (col_i in seq_along(ma_vars)) {
+      for (i in seq_along(df_list)) {
+      region_name <- names(df_list)[i]
+      region_folder <- file.path(output_path, region_name)
 
-    # Create the folder if it doesn't exist
-    if (!dir.exists(region_folder)) {
-      dir.create(region_folder, recursive = TRUE)
+      # Create the folder if it doesn't exist
+      if (!dir.exists(region_folder)) {
+        dir.create(region_folder, recursive = TRUE)
+      }
+
+      fname <- paste0(ma_vars[[col_i]], "_moving_average.pdf")
+      file_path <- file.path(region_folder, fname)
+
+      pdf(file_path)
+      plot_moving_average(
+        df_list[[i]],
+        timeseries_col,
+        ma_vars[[col_i]],
+        ma_days,
+        ma_sides,
+        units = units,
+        paste0("Moving average for the ", stringr::str_to_title(dataset_title), " Dataset \n(", region_name, ")")
+      )
+      dev.off()
+      }
     }
-
-    fname <- paste0(ma_vars[[col_i]], "_moving_average.pdf")
-    file_path <- file.path(region_folder, fname)
-
-    pdf(file_path)
-    plot_moving_average(
-      df_list[[i]],
-      timeseries_col,
-      ma_vars[[col_i]],
-      ma_days,
-      ma_sides,
-      units = units,
-      paste0("Moving average for the ", stringr::str_to_title(dataset_title), " Dataset \n(", region_name, ")")
-    )
-    dev.off()
-    }
-  }
   }
 
 
@@ -754,9 +754,6 @@ common_descriptive_stats_api <- function(
   }
   if(plot_correlation) {
     raise_if_null("correlation_method", correlation_method)
-  }
-  if(plot_dist_hists) {
-    raise_if_null("plot_dist_hists", plot_dist_hists)
   }
 
   # Convert data to the correct format
