@@ -512,3 +512,203 @@ test_that("common_descriptive_stats creates the expected files", {
     expect_gt(file.info(pdf_path)$size, 0)
   }
 })
+
+test_that(
+  "common_descriptive_stats creates region output directories without plot_ma=T",
+  {
+    # Create tmpdir
+    tmp_root <- local_tempdir()
+    df <- data.frame(
+      date = seq.Date(as.Date("2020-01-01"), by = "day", length.out = 10),
+      value = rnorm(10)
+    )
+    out <- common_descriptive_stats(
+      dataset_title = "My Dataset",
+      df_list = list(region1=df),
+      output_path = tmp_root,
+      timeseries_col = "date",
+      dependent_col = "value",
+      independent_cols = c(),
+      aggregation_column = "region",
+      select_all_numeric = T,
+      plot_ma = FALSE,
+      units = list(value = "units"),
+      plot_corr_matrix = FALSE,
+      plot_dist = FALSE,
+      plot_box = FALSE,
+      plot_na_counts = FALSE,
+      plot_scatter = FALSE,
+      plot_seasonal = FALSE,
+      plot_regional = FALSE,
+      plot_total = FALSE,
+      detect_outliers = FALSE,
+      calculate_rate = FALSE
+    )
+    expect_false(
+      file.exists(file.path(out[1], "region1", "value_moving_average.pdf"))
+    )
+  }
+)
+
+
+# Tests for common_descriptive_stats_api
+
+# Helper dataset
+cds_api_df <- data.frame(
+  date = c("2020-01-01", "2020-01-02", "2020-01-03", "2020-01-04"),
+  value = c(10, 20, 30, 40),
+  region = c("North", "South", "North", "South"),
+  population = c(100, 200, 150, 250)
+)
+
+test_that("API runs with all features enabled", {
+  tmp <- local_tempdir()
+
+  out <- common_descriptive_stats_api(
+    data = cds_api_df,
+    aggregation_column = "region",
+    population_col = "population",
+    dataset_title = "Full Test",
+    dependent_col = "value",
+    independent_cols = c("population"),
+    columns = c("value", "population"),
+    units = c(value = "units", population = "people"),
+    select_all_numeric = TRUE,
+    plot_correlation = TRUE,
+    plot_dist_hists = TRUE,
+    plot_ma = TRUE,
+    plot_na_counts = TRUE,
+    plot_scatter = TRUE,
+    plot_box = TRUE,
+    plot_seasonal = TRUE,
+    plot_regional = TRUE,
+    plot_total = TRUE,
+    correlation_method = "pearson",
+    ma_days = 2,
+    ma_sides = 1,
+    ma_columns = c("value"),
+    timeseries_col = "date",
+    detect_outliers = TRUE,
+    calculate_rate = TRUE,
+    output_path = tmp
+  )
+
+  expect_true(dir.exists(out[1]))
+  expect_equal(out[2], "full_test_descriptive_stats")
+})
+
+test_that("API runs with minimal required inputs and no aggregation", {
+  tmp <- local_tempdir()
+
+  out <- common_descriptive_stats_api(
+    data = cds_api_df,
+    dataset_title = "Minimal Test",
+    dependent_col = "value",
+    independent_cols = c("population"),
+    output_path = tmp,
+    plot_correlation = FALSE,
+    plot_dist_hists = FALSE,
+    plot_ma = FALSE,
+    plot_na_counts = FALSE,
+    plot_scatter = FALSE,
+    plot_box = FALSE,
+    plot_seasonal = FALSE,
+    plot_regional = FALSE,
+    plot_total = FALSE,
+    detect_outliers = FALSE,
+    calculate_rate = FALSE
+  )
+
+  expect_true(dir.exists(out[1]))
+})
+
+test_that("API errors if required MA parameters are missing", {
+  tmp <- local_tempdir()
+
+  expect_error(
+    common_descriptive_stats_api(
+      data = cds_api_df,
+      dataset_title = "Missing MA",
+      dependent_col = "value",
+      independent_cols = c("population"),
+      output_path = tmp,
+      plot_ma = TRUE,
+      plot_correlation = FALSE,
+      plot_dist_hists = FALSE,
+      detect_outliers = FALSE,
+      calculate_rate = FALSE
+    ),
+    "ma_days"
+  )
+})
+
+test_that("API errors if correlation_method is missing when plot_correlation = TRUE", {
+  tmp <- local_tempdir()
+
+  expect_error(
+    common_descriptive_stats_api(
+      data = cds_api_df,
+      dataset_title = "Missing Corr",
+      dependent_col = "value",
+      independent_cols = c("population"),
+      output_path = tmp,
+      plot_correlation = TRUE,
+      plot_dist_hists = FALSE,
+      plot_ma = FALSE,
+      detect_outliers = FALSE,
+      calculate_rate = FALSE
+    ),
+    "correlation_method"
+  )
+})
+
+test_that("API errors if dependent_col is not in dataset", {
+  tmp <- local_tempdir()
+
+  bad_df <- cds_api_df[, c("date", "region", "population")]
+
+  expect_error(
+    common_descriptive_stats_api(
+      data = bad_df,
+      dataset_title = "Missing Dependent",
+      dependent_col = "value",
+      independent_cols = c("population"),
+      output_path = tmp,
+      plot_correlation = FALSE,
+      plot_dist_hists = FALSE,
+      plot_ma = FALSE,
+      detect_outliers = FALSE,
+      calculate_rate = FALSE
+    ),
+    "Column 'value' not in passed dataset"
+  )
+})
+
+test_that("API converts date column correctly", {
+  tmp <- local_tempdir()
+
+  df <- data.frame(
+    date = c("01/01/2020", "02/01/2020"),
+    value = c(1, 2),
+    region = c("A", "B"),
+    population = c(100, 200)
+  )
+
+  out <- common_descriptive_stats_api(
+    data = df,
+    aggregation_column = "region",
+    dataset_title = "Date Format Test",
+    dependent_col = "value",
+    independent_cols = c("population"),
+    output_path = tmp,
+    columns = c("value"),
+    plot_correlation = FALSE,
+    plot_dist_hists = FALSE,
+    plot_ma=FALSE,
+    timeseries_col = "date",
+    detect_outliers = FALSE,
+    calculate_rate = FALSE
+  )
+
+  expect_true(dir.exists(out[1]))
+})

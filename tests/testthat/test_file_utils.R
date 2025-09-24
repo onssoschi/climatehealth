@@ -75,5 +75,50 @@ test_that(
   }
 )
 
+# Tests for read_input_data
 
+test_that(
+  "read_input_data works with listed data.",
+  {
+    list_data <- list(
+      Name = c("Alice", "Bob", "Charlie"),
+      Age = c(25, 30, 22),
+      City = c("London", "Cardiff", "Edinburgh")
+    )
+    df <- read_input_data(input_csv_path=list_data)
+    expect_true(is.data.frame(df))
+    expect_equal(nrow(df), 3)
+  }
+)
+
+test_that(
+  "read_input_data works with a csv file.",
+  {
+    # write data to a temp file
+    tmp_dir <- withr::local_tempdir()
+    write.csv(
+      data.frame(
+        list(
+          Name = c("Alice", "Bob", "Charlie"),
+          Age = c(25, 30, 22),
+          City = c("London", "Cardiff", "Edinburgh")
+        )
+      ),
+      file.path(tmp_dir, "test.csv")
+    )
+    df <- read_input_data(file.path(tmp_dir, "test.csv"))
+    expect_true(is.data.frame(df))
+    expect_equal(nrow(df), 3)
+  }
+)
+
+test_that(
+  "read_input_data raises an error when input_csv_path is invalid",
+  {
+    expect_error(
+      read_input_data(5),
+      regexp="expected a list or a string"
+    )
+  }
+)
 
