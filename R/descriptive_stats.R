@@ -250,8 +250,8 @@ common_descriptive_stats_core <- function(
   plot_corr_matrix = F,
   correlation_method = "pearson",
   plot_dist = F,
-  dependent_col = "dependent",
-  independent_cols = c("temp"),
+  dependent_col,
+  independent_cols = c(),
   columns = NULL,
   units = NULL,
   select_all_numeric = F,
@@ -265,21 +265,20 @@ common_descriptive_stats_core <- function(
   detect_outliers = F,
   calculate_rate = F
 ) {
-  # get numeric columns
-  numeric_cols <- colnames(select_if(df, is.numeric))
+  raise_if_null("dependent_col", dependent_col)
+
   # get dataframe summary
   full_summary <- create_column_summaries(df, columns)
 
   # Determine selected columns
   if (!is.null(columns)) {
     selected_cols <- columns
-  } else if (!is.null(independent_cols)) {
-    selected_cols <- independent_cols
   } else if (select_all_numeric) {
-    selected_cols <- setdiff(names(df)[sapply(df, is.numeric)], dependent_col)
+    selected_cols <- names(df)[sapply(df, is.numeric)]
   } else {
-    stop("Please specify `columns`, `independent_cols`, or set `select_all_numeric = TRUE`.")
+    stop("Please specify `columns` or set `select_all_numeric = TRUE`.")
   }
+  selected_cols <- unique(c(selected_cols, independent_cols, dependent_col))
 
   # plot box plots
   if (plot_box==T) {
@@ -288,7 +287,8 @@ common_descriptive_stats_core <- function(
 
     ylabs <- sapply(columns, function(col) {
       unit <- units[[col]]
-      if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
+      unit <- if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
+      return(unit)
     })
 
     plot_boxplots(
@@ -303,39 +303,40 @@ common_descriptive_stats_core <- function(
 
   # plot correlation matrix
   if (plot_corr_matrix) {
-  full_corr <- create_correlation_matrix(df, columns, correlation_method)
-  corr_path <- file.path(output_path, "correlation_matrix.png")
-  plot_correlation_matrix(
-    full_corr,
-    paste0(
-    "Correlation Matrix for the ",
-    stringr::str_to_title(dataset_title),
-    " Dataset \n(",
-    title,
-    ", Method: ",
-    stringr::str_to_title(correlation_method),
-    ")"),
-    corr_path
-  )
+    full_corr <- create_correlation_matrix(df, columns, correlation_method)
+    corr_path <- file.path(output_path, "correlation_matrix.png")
+    plot_correlation_matrix(
+      full_corr,
+      paste0(
+      "Correlation Matrix for the ",
+      stringr::str_to_title(dataset_title),
+      " Dataset \n(",
+      title,
+      ", Method: ",
+      stringr::str_to_title(correlation_method),
+      ")"),
+      corr_path
+    )
   }
 
   # Column distributions
   if (plot_dist==T) {
-  dist_path <- file.path(output_path, "column_distributions.pdf")
+    dist_path <- file.path(output_path, "column_distributions.pdf")
 
-  xlabs <- sapply(columns, function(col) {
-    unit <- units[[col]]
-    if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
-  })
+    xlabs <- sapply(columns, function(col) {
+      unit <- units[[col]]
+      unit <- if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
+      return(unit)
+    })
 
-  plot_distributions(
-    df,
-    columns,
-    xlabs = xlabs,
-    paste0("Column Distributions for the ", stringr::str_to_title(dataset_title), " dataset \n(", title, ")"),
-    T,
-    dist_path
-  )
+    plot_distributions(
+      df,
+      columns,
+      xlabs = xlabs,
+      paste0("Column Distributions for the ", stringr::str_to_title(dataset_title), " dataset \n(", title, ")"),
+      T,
+      dist_path
+    )
   }
   # Count NAs and visualise
   na_counts_path <- file.path(output_path, "na_counts.pdf")
@@ -391,7 +392,8 @@ common_descriptive_stats_core <- function(
     # Create y-axis labels with units
     ylabs <- sapply(columns, function(col) {
       unit <- units[[col]]
-      if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
+      unit <- if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
+      return(unit)
     })
 
     plot_seasonal_trends(
@@ -414,7 +416,8 @@ common_descriptive_stats_core <- function(
       # Create y-axis labels with units
       ylabs <- sapply(columns, function(col) {
         unit <- units[[col]]
-        if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
+        unit <- if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
+        return(unit)
       })
 
       plot_regional_trends(
@@ -430,33 +433,41 @@ common_descriptive_stats_core <- function(
   }
   # Outlier table
   if (detect_outliers == TRUE) {
-  outlier_columns <- if (!is.null(columns)) columns else independent_cols
-  outlier_flags <- detect_outliers(df, outlier_columns)
+    outlier_columns <- setdiff(
+      selected_cols[sapply(df[selected_cols], is.numeric)], dependent_col
+    )
+    outlier_flags <- detect_outliers(df, outlier_columns)
 
-  # Add outlier flags to df
-  for (col in outlier_columns) {
-    df[[paste0("is_outlier_", col)]] <- outlier_flags[[col]]
-  }
+    # Add outlier flags to df
+    for (col in outlier_columns) {
+      df[[paste0("is_outlier_", col)]] <- outlier_flags[[col]]
+    }
 
-  # Identify rows with any outlier
-  outlier_flag_cols <- paste0("is_outlier_", outlier_columns)
-  outlier_flag_cols <- outlier_flag_cols[outlier_flag_cols %in% names(df)]
+    # Identify rows with any outlier
+    outlier_flag_cols <- paste0("is_outlier_", outlier_columns)
+    outlier_flag_cols <- outlier_flag_cols[outlier_flag_cols %in% names(df)]
 
-  if (length(outlier_flag_cols) > 0) {
-    outlier_rows <- df[apply(df[, outlier_flag_cols, drop = FALSE], 1, any), ]
-  } else {
-    warning("No valid outlier flag columns found in the dataframe.")
-    outlier_rows <- df[FALSE, ]  # empty dataframe with same structure
-  }
+    if (length(outlier_flag_cols) > 0) {
+      outlier_rows <- df[apply(df[, outlier_flag_cols, drop = FALSE], 1, any), ]
+    } else {
+      warning("No valid outlier flag columns found in the dataframe.")
+      outlier_rows <- df[FALSE, ]  # empty dataframe with same structure
+    }
 
-  # Always include timeseries_col and region
-  base_cols <- c(timeseries_col, "region")
-  selected_cols <- unique(c(base_cols, outlier_columns, outlier_flag_cols))
-  selected_cols <- intersect(selected_cols, names(outlier_rows))  # Ensure they exist
+    # Always include timeseries_col and region
+    base_cols <- c()
+    if (!is.null(timeseries_col) && timeseries_col %in% names(df)) {
+      base_cols <- c(base_cols, timeseries_col)
+    }
+    if (!is.null(aggregation_column) && aggregation_column %in% names(df)) {
+      base_cols <- c(base_cols, aggregation_column)
+    }
+    selected_cols <- unique(c(base_cols, outlier_columns, outlier_flag_cols))
+    selected_cols <- intersect(selected_cols, names(outlier_rows))  # Ensure they exist
 
-  # Create and save the outlier table
-  outlier_table <- outlier_rows[, selected_cols, drop = FALSE]
-  write.csv(outlier_table, file.path(output_path, "outlier_table.csv"), row.names = FALSE)
+    # Create and save the outlier table
+    outlier_table <- outlier_rows[, selected_cols, drop = FALSE]
+    write.csv(outlier_table, file.path(output_path, "outlier_table.csv"), row.names = FALSE)
   }
 
   # Rate based metrics
@@ -621,44 +632,41 @@ common_descriptive_stats <- function(
 
   # create summary, corr. and dist. for each df
   for (region_name in setdiff(names(df_list), "All")) {
-  df <- df_list[[region_name]]
+    df <- df_list[[region_name]]
 
-  # Use group_name in titles or filenames
-  region_title <- paste0(dataset_title, " - ", region_name)
-  region_output_path <- file.path(output_path, region_name)
-  if (!dir.exists(region_output_path)) {
-    dir.create(region_output_path, recursive = TRUE)
-  }
+    # Use group_name in titles or filenames
+    region_title <- paste0(dataset_title, " - ", region_name)
+    region_output_path <- file.path(output_path, region_name)
+    if (!dir.exists(region_output_path)) {
+      dir.create(region_output_path, recursive = TRUE)
+    }
 
-
-
-  # save out statistics
-  common_descriptive_stats_core(
-    dataset_title = region_title,
-    df = df,
-    output_path = region_output_path,
-    title = region_title,
-    aggregation_column = aggregation_column,
-    population_col = population_col,
-    plot_corr_matrix = plot_corr_matrix,
-    correlation_method = correlation_method,
-    plot_dist = plot_dist,
-    dependent_col = dependent_col,
-    independent_cols = independent_cols,
-    columns = columns,
-    select_all_numeric = select_all_numeric,
-    plot_na_counts = plot_na_counts,
-    plot_scatter = plot_scatter,
-    plot_box = plot_box,
-    plot_seasonal = plot_seasonal,
-    plot_regional = plot_regional,
-    plot_total = plot_total,
-    detect_outliers = detect_outliers,
-    calculate_rate = calculate_rate
-  )
+    # save out statistics
+    common_descriptive_stats_core(
+      dataset_title = region_title,
+      df = df,
+      output_path = region_output_path,
+      title = region_title,
+      aggregation_column = aggregation_column,
+      population_col = population_col,
+      plot_corr_matrix = plot_corr_matrix,
+      correlation_method = correlation_method,
+      plot_dist = plot_dist,
+      dependent_col = dependent_col,
+      independent_cols = independent_cols,
+      columns = columns,
+      select_all_numeric = select_all_numeric,
+      plot_na_counts = plot_na_counts,
+      plot_scatter = plot_scatter,
+      plot_box = plot_box,
+      plot_seasonal = plot_seasonal,
+      plot_regional = plot_regional,
+      plot_total = plot_total,
+      detect_outliers = detect_outliers,
+      calculate_rate = calculate_rate
+    )
   }
   return (c(output_path, paste0(normalised_title, "_descriptive_stats")))
-
 }
 
 #' Raise an Error if a Parameter's Value is NULL

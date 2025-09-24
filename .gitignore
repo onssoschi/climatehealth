@@ -10,6 +10,7 @@
 .Renviron
 ..Rcheck
 renv
+lib
 
 # Common Data Files
 *.csv

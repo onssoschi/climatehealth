@@ -62,5 +62,6 @@ Suggests:
     htmltools,
     INLA,
     patrick,
-    testthat (>= 3.2.1.1)
+    testthat (>= 3.2.1.1),
+    withr
 Config/rcmdcheck/ignore-inconsequential-notes: true
