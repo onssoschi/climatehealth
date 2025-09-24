@@ -272,3 +272,243 @@ test_that(
     )
   }
 )
+
+# Tests for common_descriptive_stats_core
+
+test_that("Fails when no column selection method is provided", {
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(x = 1:5)
+
+  expect_error(
+    common_descriptive_stats_core(
+      dataset_title = "Test",
+      df = df,
+      output_path = temp_dir,
+      title = "Subset",
+      columns = NULL,
+      independent_cols = NULL,
+      select_all_numeric = FALSE,
+      dependent_col = "x"
+    ),
+    "Please specify `columns` or set `select_all_numeric = TRUE`."
+  )
+})
+
+
+test_that("Creates summary file with columns specified", {
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(
+    date = as.Date("2020-01-01") + 0:4,
+    region = rep("A", 5),
+    temp = c(10, 15, 20, NA, 25),
+    dependent = c(100, 200, 150, 175, 300),
+    population = c(1000, 1000, 1000, 1000, 1000)
+  )
+  units <- c(temp = "degrees", dependent = "cases")
+
+  common_descriptive_stats_core(
+    dataset_title = "Test",
+    df = df,
+    output_path = temp_dir,
+    title = "Subset",
+    columns = c("temp", "dependent"),
+    units = units,
+    dependent_col = "dependent",
+    independent_cols = c("temp")
+  )
+
+  expect_true(file.exists(file.path(temp_dir, "dataset_summary.csv")))
+})
+
+test_that("Generates all enabled plots and outputs", {
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(
+    date = as.Date("2020-01-01") + 0:4,
+    region = rep(c("A", "B"), length.out = 5),
+    temp = c(10, 15, 20, 25, 30),
+    dependent = c(100, 200, 150, 175, 300),
+    population = c(1000, 1000, 1000, 1000, 1000)
+  )
+  units <- c(temp = "°C", dependent = "cases")
+
+  common_descriptive_stats_core(
+    dataset_title = "Test",
+    df = df,
+    output_path = temp_dir,
+    title = "Subset",
+    columns = c("temp", "dependent"),
+    units = units,
+    dependent_col = "dependent",
+    independent_cols = c("temp"),
+    plot_box = TRUE,
+    plot_corr_matrix = TRUE,
+    plot_dist = TRUE,
+    plot_na_counts = TRUE,
+    plot_scatter = TRUE,
+    plot_seasonal = TRUE,
+    plot_regional = TRUE,
+    detect_outliers = TRUE,
+    calculate_rate = TRUE,
+    plot_total = TRUE,
+    population_col = "population",
+    aggregation_column = "region"
+  )
+
+  expected_files <- c(
+    "dataset_summary.csv",
+    "boxplots.pdf",
+    "correlation_matrix.png",
+    "column_distributions.pdf",
+    "na_counts.pdf",
+    "dependent_vs_independents.pdf",
+    "seasonal_trends.pdf",
+    "regional_trends.pdf",
+    "outlier_table.csv",
+    "rate_health_outcome.pdf",
+    "plot_total_by_year.pdf"
+  )
+
+  for (f in expected_files) {
+    expect_true(file.exists(file.path(temp_dir, f)), info = paste("Missing:", f))
+  }
+})
+
+
+test_that("Works with select_all_numeric fallback", {
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(
+    date = as.Date("2020-01-01") + 0:4,
+    region = rep("A", 5),
+    temp = c(10, 15, 20, NA, 25),
+    dependent = c(100, 200, 150, 175, 300),
+    population = c(1000, 1000, 1000, 1000, 1000)
+  )
+
+  common_descriptive_stats_core(
+    dataset_title = "Test",
+    df = df,
+    output_path = temp_dir,
+    title = "Subset",
+    select_all_numeric = TRUE,
+    detect_outliers = TRUE,
+    dependent_col = "dependent",
+    independent_cols = c("temp"),
+    timeseries_col = "date",
+    aggregation_column = "region"
+  )
+
+  outlier_table <- read.csv(file.path(temp_dir, "outlier_table.csv"))
+
+  expected_cols <- c("date", "region", "temp", "population", "is_outlier_temp", "is_outlier_population")
+  expect_true(all(expected_cols %in% colnames(outlier_table)))
+})
+
+
+test_that("common_descriptive_stats_core handles empty dataframes", {
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame()
+
+  expect_error(
+    common_descriptive_stats_core(
+      dataset_title = "Empty",
+      df = df,
+      output_path = temp_dir,
+      title = "Empty",
+      select_all_numeric = TRUE,
+      dependent_col = "x",
+      independent_cols = c("y")
+    ),
+    "Please provide a populated dataframe."
+  )
+})
+
+test_that("Triggers warning and creates empty outlier table when no valid outlier flags", {
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(
+    date = as.Date("2020-01-01") + 0:4,
+    region = c("A", "B", "A", "B", "A"),
+    category = c("X", "Y", "X", "Y", "X"),  # non-numeric
+    dependent = c(100, 200, 150, 175, 300)
+  )
+
+  expect_warning({
+    common_descriptive_stats_core(
+      dataset_title = "Test",
+      df = df,
+      output_path = temp_dir,
+      title = "No numeric columns",
+      columns = c("category"),  # non-numeric column
+      dependent_col = "dependent",
+      independent_cols = c("category"),
+      detect_outliers = TRUE
+    )
+    outlier_table <- read.csv(file.path(temp_dir, "outlier_table.csv"))
+    expect_equal(nrow(outlier_table), 0)
+  }, "No valid outlier flag columns found in the dataframe.")
+})
+
+
+# Tests for common_descriptive_stats
+
+test_that("common_descriptive_stats creates the expected files", {
+  # Create tmpdir
+  tmp_root <- local_tempdir()
+  # Prepare minimal data: two regions and their data frames
+  df_region_a <- data.frame(
+    date = seq.Date(as.Date("2020-01-01"), by = "day", length.out = 10),
+    value = rnorm(10)
+  )
+  df_region_b <- data.frame(
+    date = seq.Date(as.Date("2020-01-01"), by = "day", length.out = 10),
+    value = rnorm(10)
+  )
+  df_list <- list(
+    RegionA=df_region_a,
+    RegionB=df_region_b
+  )
+  # Create descriptive stats
+  out <- common_descriptive_stats(
+    dataset_title = "My Dataset",
+    df_list = df_list,
+    output_path = tmp_root,
+    timeseries_col = "date",
+    dependent_col = "value",
+    independent_cols = c(),
+    aggregation_column = "region",
+    select_all_numeric = T,
+    plot_ma = TRUE,
+    ma_columns = c("value"),
+    ma_days = 3,
+    ma_sides = 1,
+    units = list(value = "units"),
+    plot_corr_matrix = FALSE,
+    plot_dist = FALSE,
+    plot_box = FALSE,
+    plot_na_counts = FALSE,
+    plot_scatter = FALSE,
+    plot_seasonal = FALSE,
+    plot_regional = FALSE,
+    plot_total = FALSE,
+    detect_outliers = FALSE,
+    calculate_rate = FALSE
+  )
+  # Validate outputs have been created
+  expected_root_folder <- file.path(tmp_root, "my_dataset_descriptive_stats")
+  expect_true(dir.exists(expected_root_folder))
+  expect_equal(out[1], expected_root_folder)
+  expect_equal(out[2], "my_dataset_descriptive_stats")
+
+  # Validate correct output files are present
+  all_folder <- file.path(expected_root_folder, "All")
+  expect_true(dir.exists(all_folder))
+  expect_true(file.exists(file.path(all_folder, "dataset_summary.csv")))
+
+  for (region in c("RegionA", "RegionB")) {
+    region_folder <- file.path(expected_root_folder, region)
+    expect_true(dir.exists(region_folder), info = paste("Missing region folder:", region))
+    pdf_path <- file.path(region_folder, "value_moving_average.pdf")
+    expect_true(file.exists(pdf_path), info = paste("Missing moving average PDF for", region))
+    expect_true(file.exists(file.path(region_folder, "dataset_summary.csv")))
+    expect_gt(file.info(pdf_path)$size, 0)
+  }
+})
