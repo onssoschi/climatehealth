@@ -1,6 +1,6 @@
 Package: climatehealth
 Title: Package for Calculating Climate-Health Indicators
-Version: 0.9.2
+Version: 0.9.1
 Maintainer: Charlie Browning <charlie.browning@ons.gov.uk>
 Author: Charlie Browning [aut, cre]
 Authors@R: 
