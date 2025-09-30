@@ -46,7 +46,7 @@ Imports:
     splines,
     stats,
     stringr (>= 1.5.1),
-    terra,
+    terra (<= 1.8-60),
     tibble,
     tidyr,
     tidyverse,
