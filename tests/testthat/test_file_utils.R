@@ -122,3 +122,39 @@ test_that(
   }
 )
 
+# Tests for enforce_file_extension
+
+test_that(
+    "Adds extension if missing", 
+    {
+        result <- enforce_file_extension("file", "pdf")
+        expect_equal(result, "file.pdf")
+    }
+)
+
+test_that(
+    "Replaces existing extension with desired one", 
+    {
+        result <- enforce_file_extension("file.txt", "pdf")
+        expect_equal(result, "file.pdf")
+    }
+)
+
+test_that(
+    "Handles extension with or without leading dot", 
+    {
+        result1 <- enforce_file_extension("file", "pdf")
+        result2 <- enforce_file_extension("file", ".pdf")
+        expect_equal(result1, "file.pdf")
+        expect_equal(result2, "file.pdf")
+    }
+)
+
+test_that(
+    "Does not double-append extension", 
+    {
+        result <- enforce_file_extension("file.pdf", "pdf")
+        expect_equal(result, "file.pdf")
+    }
+)
+
