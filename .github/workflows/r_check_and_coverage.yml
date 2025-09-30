@@ -32,6 +32,9 @@ jobs:
           key: ${{ runner.os }}-r-${{ hashFiles('DESCRIPTION') }}
           restore-keys: |
             ${{ runner.os }}-r-
+      
+      - name: Set R options
+        run: echo 'options(pkgType = "binary")' >> ~/.Rprofile
 
       - name: Install dependencies
         run: |
