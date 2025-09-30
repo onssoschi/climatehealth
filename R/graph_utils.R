@@ -8,7 +8,7 @@
 #'
 #' @param plot_count The number of plots required for the grid.
 #'
-#' @return A vector containing [1] x value and [2] y value for the grid.
+#' @return A numeric vector: c(x, y), where x and y define the grid dimensions.
 #'
 #' @export
 create_grid <- function(plot_count) {

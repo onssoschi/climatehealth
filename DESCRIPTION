@@ -33,6 +33,7 @@ Imports:
     ncdf4 (>= 1.24),
     openxlsx,
     patchwork,
+    pkgbuild,
     purrr,
     raster,
     RColorBrewer,
@@ -54,7 +55,10 @@ Imports:
     tools,
     tsModel (>= 0.6-2),
     xfun,
-    zeallot (>= 0.1.0)
+    zeallot (>= 0.1.0),
+    graphics,
+    grDevices,
+    utils
 Suggests:
     covr,
     devtools,

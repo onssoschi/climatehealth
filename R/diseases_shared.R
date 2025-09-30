@@ -775,8 +775,10 @@ run_inla_models <- function(
   case_type <- validate_case_type(case_type)
 
   if (!requireNamespace("INLA", quietly = TRUE)) {
-    INLA_pth <- system.file("packages", "INLA_24.12.11.zip", package = "climatehealth")
-    install.packages(INLA_pth, repos = NULL, type = "win.binary", lib = .libPaths()[1])
+    stop(
+      "INLA is not installed. Run climatehealth::install_INLA to install the ",
+      "package."
+    )
   }
 
   data <- create_inla_indices(combined_data$data, case_type)
