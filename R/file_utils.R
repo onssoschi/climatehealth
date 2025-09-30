@@ -67,7 +67,6 @@ check_file_extension <- function(
 
 }
 
-
 #' Read a csv file into memory as a data frame.
 #'
 #' @param input_csv_path The path to the csv to read as a dataframe.
@@ -96,5 +95,31 @@ read_input_data <- function(input_csv_path) {
   }
 
   return(df)
+}
+
+#' Enforce a file extension on a given path
+#'
+#' Ensures that the provided file path ends with the desired file extension.
+#'
+#' @param path Character. A file path.
+#' @param file_extension Character. The file extension to enforce on 'path'.
+#'
+#' @return Character. The path with the expected file extension.
+#'
+#' @examples
+#' enforce_file_extension("output", "pdf")
+#' enforce_file_extension("report.txt", ".pdf")
+#'
+#' @export
+enforce_file_extension <- function(path, file_extension) {
+  # Normalise the file ext
+  if (!startsWith(file_extension, ".")) {
+    file_extension <- paste0(".", file_extension)
+  }
+  # Enforce the extension
+  if (!endsWith(path, file_extension)) {
+    path <- paste0(tools::file_path_sans_ext(path), file_extension)
+  }
+  return (path)
 }
 

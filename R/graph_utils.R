@@ -38,10 +38,7 @@ create_grid <- function(plot_count) {
 #' @export
 plot_correlation_matrix <- function(matrix_, title, output_path) {
   # validate output path
-  if (!endsWith(output_path, ".png")) {
-    output_path <- strsplit(output_path, "\\.")[1]
-    output_path <- paste0(output_path, ".png")
-  }
+  output_path <- enforce_file_extension(output_path, ".png")
   # round correlation metrics
   matrix_ <- round(matrix_, 3)
   # draw and save correlation matrix
@@ -75,10 +72,7 @@ plot_distributions <- function(
   # create a pdf if a save is selected
   if (save_hists == T) {
     # normalise output path
-    if (!endsWith(output_path, ".pdf")) {
-      output_path <- strsplit(output_path, "\\.")[[1]]
-      output_path <- paste0(output_path, ".pdf")
-    }
+    output_path <- enforce_file_extension(output_path, ".pdf")
     pdf(output_path)
   }
   # normalise columns
@@ -153,9 +147,7 @@ plot_moving_average <- function(
 ) {
   # Create a PDF if saving is requested
   if (save_plot == TRUE) {
-    if (!endsWith(output_path, ".pdf")) {
-      output_path <- paste0(tools::file_path_sans_ext(output_path), ".pdf")
-    }
+    output_path <- enforce_file_extension(output_path, ".pdf")
     dir.create(dirname(output_path), recursive = TRUE, showWarnings = FALSE)
     pdf(output_path)
   }
@@ -253,9 +245,7 @@ plot_scatter_grid <- function(
   grid_size <- create_grid(length(comparison_cols))
 
   if (save_scatters) {
-    if (!endsWith(output_path, ".pdf")) {
-      output_path <- paste0(tools::file_path_sans_ext(output_path), ".pdf")
-    }
+    output_path <- enforce_file_extension(output_path, ".pdf")
     pdf(output_path, width = 8, height = 8)
   }
 
@@ -318,9 +308,7 @@ plot_boxplots <- function(
 
   # Save to PDF if requested
   if (save_plot) {
-    if (!endsWith(output_path, ".pdf")) {
-      output_path <- paste0(tools::file_path_sans_ext(output_path), ".pdf")
-    }
+    output_path <- enforce_file_extension(output_path, ".pdf")
     pdf(output_path)
   }
 
@@ -378,9 +366,7 @@ plot_seasonal_trends <- function(
 
   # Set up PDF output if needed
   if (save_plot) {
-    if (!endsWith(output_path, ".pdf")) {
-      output_path <- paste0(tools::file_path_sans_ext(output_path), ".pdf")
-    }
+    output_path <- enforce_file_extension(output_path, ".pdf")
     pdf(output_path, width = 10, height = 6)
   }
 
@@ -434,9 +420,7 @@ plot_regional_trends <- function(
 ) {
   # Set up PDF output if needed
   if (save_plot) {
-    if (!endsWith(output_path, ".pdf")) {
-      output_path <- paste0(tools::file_path_sans_ext(output_path), ".pdf")
-    }
+    output_path <- enforce_file_extension(output_path, ".pdf")
     pdf(output_path, width = 10, height = 6)
   }
 
@@ -448,7 +432,17 @@ plot_regional_trends <- function(
     col <- outcome_cols[i]
     ylab <- if (!is.null(ylabs) && length(ylabs) >= i) ylabs[i] else col
 
-    regional_avg <- aggregate(df[[col]], by = list(Region = df[[region_col]]), FUN = mean, na.rm = TRUE)
+    valid_rows <- !is.na(df[[col]]) & !is.na(df[[region_col]])
+    if (sum(valid_rows) == 0) {
+      warning(paste("No valid data to plot for", col))
+      next
+    }
+
+    regional_avg <- aggregate(
+      df[[col]][valid_rows],
+      by = list(Region = df[[region_col]][valid_rows]),
+      FUN = mean
+    )
 
     barplot(
       height = regional_avg$x,
@@ -459,6 +453,7 @@ plot_regional_trends <- function(
       las = 2
     )
   }
+
 
   # Overall title
   mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2, col = "black")
@@ -495,12 +490,12 @@ plot_rate_overall <- function(
   df$Year <- lubridate::year(as.Date(df[[date_col]]))
 
   # Aggregate
-  yearly_data <- df |>
-    dplyr::group_by(Year) |>
+  yearly_data <- df  %>%
+    dplyr::group_by(Year)  %>%
     dplyr::summarise(
       Total_Dependent = sum(.data[[dependent_col]], na.rm = TRUE),
       Total_Population = sum(.data[[population_col]], na.rm = TRUE)
-    ) |>
+    )  %>%
     dplyr::mutate(Rate_per_100k = round((Total_Dependent / Total_Population) * 100000, 3))
 
   # Create plot
@@ -517,9 +512,7 @@ plot_rate_overall <- function(
 
   # Save or return
   if (save_rate && !is.null(output_path)) {
-    if (!endsWith(output_path, ".pdf")) {
-      output_path <- paste0(tools::file_path_sans_ext(output_path), ".pdf")
-    }
+    output_path <- enforce_file_extension(output_path, ".pdf")
     pdf(output_path, width = 10, height = 6)
     print(plot_overall_rate)
     dev.off()
@@ -556,9 +549,7 @@ plot_total_variables_by_year <- function(
 
   # Set up PDF output if needed
   if (save_total) {
-    if (!endsWith(output_path, ".pdf")) {
-      output_path <- paste0(tools::file_path_sans_ext(output_path), ".pdf")
-    }
+    output_path <- enforce_file_extension(output_path, ".pdf")
     pdf(output_path, width = 10, height = 6)
   }
 
