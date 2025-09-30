@@ -264,7 +264,7 @@ an_attrdl <- function(
   #   - LAGGED EXPOSURES IF dir="back"
   #   - CONSTANT EXPOSURES ALONG LAGS IF dir="forw"
   lag <- attr(basis,"lag")
-  at <- if(dir=="back") tsModel:::Lag(x,seq(lag[1],lag[2])) else
+  at <- if(dir=="back") tsModel::Lag(x,seq(lag[1],lag[2])) else
     matrix(rep(x,diff(lag)+1),length(x))
   # NUMBER USED FOR THE CONTRIBUTION AT EACH TIME IN FORWARD TYPE
   #   - IF PROVIDED AS A TIME SERIES, COMPUTE THE FORWARD MOVING AVERAGE
@@ -273,7 +273,7 @@ an_attrdl <- function(
   if(NROW(cases)!=NROW(at)) stop("'x' and 'cases' not consistent")
   den <- sum(cases,na.rm=TRUE)
   if(dir=="forw"){
-    cases <- rowMeans(as.matrix(tsModel:::Lag(cases,-seq(lag[1],lag[2]))))
+    cases <- rowMeans(as.matrix(tsModel::Lag(cases,-seq(lag[1],lag[2]))))
   }
   #
 
