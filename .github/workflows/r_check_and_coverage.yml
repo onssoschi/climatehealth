@@ -40,7 +40,7 @@ jobs:
         run: |
           Rscript -e '
           install.packages(c("devtools", "roxygen2", "remotes", "patrick", "pak", "covr", "DT", "htmltools"))
-          pak::pkg_install(devtools::dev_package_deps()$package)
+          pak::local_install(".", dependencies = TRUE)
           '
         timeout-minutes: 5
 
