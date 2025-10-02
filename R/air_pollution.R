@@ -384,12 +384,12 @@ air_pollution_meta_analysis <- function(data,
                                         family = "quasipoisson") {
   # Stage 0: Fit Regional Models
   region_results <- data %>%
-    dplyr::group_by(region) %>%
+    dplyr::group_by(.data$region) %>%
     tidyr::nest() %>%
     dplyr::mutate(
-      n_obs = tidytable::map_dbl(data, nrow),
-      total_deaths = tidytable::map_dbl(data, ~sum(.x$deaths, na.rm = TRUE)),
-      model = purrr::map2(data, region, ~{
+      n_obs = tidytable::map_dbl(.data$data, nrow),
+      total_deaths = tidytable::map_dbl(.data$data, ~sum(.x$deaths, na.rm = TRUE)),
+      model = purrr::map2(.data$data, .data$region, ~{
         fit_air_pollution_gam(.x, var_name, family)
       })
     ) %>%
@@ -398,32 +398,32 @@ air_pollution_meta_analysis <- function(data,
   # Stage 1: Extract Coefficients and Calculate AN/AF
   region_results <- region_results %>%
     dplyr::mutate(
-      coef_results = purrr::map(model, ~extract_air_pollution_coef(.x, var_name)),
-      coef_pm25 = tidytable::map_dbl(coef_results, ~.x$coef),
-      se_pm25 = tidytable::map_dbl(coef_results, ~.x$se),
+      coef_results = purrr::map(.data$model, ~extract_air_pollution_coef(.x, var_name)),
+      coef_pm25 = tidytable::map_dbl(.data$coef_results, ~.x$coef),
+      se_pm25 = tidytable::map_dbl(.data$coef_results, ~.x$se),
 
-      rr_10ug = exp(coef_pm25 * 10),
-      ci_lower = exp((coef_pm25 - 1.96 * se_pm25) * 10),
-      ci_upper = exp((coef_pm25 + 1.96 * se_pm25) * 10),
+      rr_10ug = exp(.data$coef_pm25 * 10),
+      ci_lower = exp((.data$coef_pm25 - 1.96 * .data$se_pm25) * 10),
+      ci_upper = exp((.data$coef_pm25 + 1.96 * .data$se_pm25) * 10),
 
-      af_10ug = (rr_10ug - 1) / rr_10ug,
-      an_10ug = total_deaths * af_10ug
+      af_10ug = (.data$rr_10ug - 1) / .data$rr_10ug,
+      an_10ug = .data$total_deaths * .data$af_10ug
     ) %>%
-    filter(!is.na(coef_pm25) & !is.na(se_pm25)) %>%
-    dplyr::select(-coef_results)
+    dplyr::filter(!is.na(.data$coef_pm25) & !is.na(.data$se_pm25)) %>%
+    dplyr::select(-.data$coef_results)
 
-  if(nrow(region_results) < 2) {
+  if (nrow(region_results) < 2) {
     warning("At least 2 regions with successful model fits needed for meta-analysis.")
     return(NULL)
   }
 
   # Stage 2: Meta Analysis
   meta_result <- metafor::rma(
-    yi = coef_pm25,
-    sei = se_pm25,
+    yi = region_results$coef_pm25,
+    sei = region_results$se_pm25,
     data = region_results,
     method = "REML",
-    slab = region
+    slab = region_results$region
   )
 
   overall_rr <- exp((meta_result$beta) * 10)
@@ -569,16 +569,17 @@ plot_air_pollution_forest <- function(meta_results,
                                       title = "PM2.5 Effects by Region",
                                       output_dir = NULL,
                                       save_plot = FALSE) {
-  # Param Validation
-  if (is.null(output_dir) && save_plot == TRUE) {
-    stop("Output directory must be specified if save_plot==T.")
+  if (is.null(output_dir) && save_plot) {
+    stop("Output directory must be specified if save_plot == TRUE.")
   }
 
-  # Plotting
   region_data <- meta_results$region_results %>%
-    dplyr::select(region, rr_10ug, ci_lower, ci_upper, af_10ug, an_10ug) %>%
-    dplyr::mutate(type = "Region",
-           label = sprintf("RR: %.3f", rr_10ug))
+    dplyr::select(.data$region, .data$rr_10ug, .data$ci_lower, .data$ci_upper,
+                  .data$af_10ug, .data$an_10ug) %>%
+    dplyr::mutate(
+      type = "Region",
+      label = sprintf("RR: %.3f", .data$rr_10ug)
+    )
 
   overall_data <- data.frame(
     region = "Overall",
@@ -591,18 +592,21 @@ plot_air_pollution_forest <- function(meta_results,
     label = sprintf("RR: %.3f", meta_results$overall_rr)
   )
 
-  plot_data <- bind_rows(region_data, overall_data) %>%
+  plot_data <- dplyr::bind_rows(region_data, overall_data) %>%
     dplyr::mutate(
-      region = factor(region, levels = rev(c(region_data$region, "Overall"))),
-      is_overall = type == "Overall"
+      region = factor(.data$region, levels = rev(c(region_data$region, "Overall"))),
+      is_overall = .data$type == "Overall"
     )
 
-  forest_plot <- ggplot2::ggplot(plot_data, ggplot2::aes(x = rr_10ug, y = region)) +
-    ggplot2::geom_errorbarh(ggplot2::aes(xmin = ci_lower, xmax = ci_upper,
-                       color = is_overall, linewidth = is_overall),
-                   height = 0.3) +
-    ggplot2::geom_point(ggplot2::aes(color = is_overall, size = is_overall)) +
-    ggplot2::geom_text(ggplot2::aes(label = label, x = ci_upper), hjust = -0.1, size = 3) +
+  forest_plot <- ggplot2::ggplot(plot_data, ggplot2::aes(x = .data$rr_10ug, y = .data$region)) +
+    ggplot2::geom_errorbarh(
+      ggplot2::aes(xmin = .data$ci_lower, xmax = .data$ci_upper,
+                   color = .data$is_overall, linewidth = .data$is_overall),
+      height = 0.3
+    ) +
+    ggplot2::geom_point(ggplot2::aes(color = .data$is_overall, size = .data$is_overall)) +
+    ggplot2::geom_text(ggplot2::aes(label = .data$label, x = .data$ci_upper),
+                       hjust = -0.1, size = 3) +
     ggplot2::geom_vline(xintercept = 1, linetype = "dashed", color = "red") +
     ggplot2::scale_color_manual(values = c("FALSE" = "blue", "TRUE" = "red")) +
     ggplot2::scale_size_manual(values = c("FALSE" = 2, "TRUE" = 3)) +
@@ -616,9 +620,11 @@ plot_air_pollution_forest <- function(meta_results,
                          meta_results$heterogeneity$tau2)
     ) +
     ggplot2::theme_minimal() +
-    ggplot2::theme(legend.position = "none", plot.title = ggplot2::element_text(hjust = 0.5))
+    ggplot2::theme(
+      legend.position = "none",
+      plot.title = ggplot2::element_text(hjust = 0.5)
+    )
 
-  # Use unified save_plot function
   if (save_plot) {
     save_air_pollution_plot(
       plot_object = forest_plot,
@@ -652,7 +658,7 @@ plot_air_pollution_lags <- function(lag_results,
     stop("Output directory must be specified if save_plot==T.")
   }
 
-  lag_results_clean <- lag_results %>% filter(!is.na(rr))
+  lag_results_clean <- lag_results %>% filter(!is.na(.data$rr))
 
   if(nrow(lag_results_clean) == 0) {
     stop("No successful lag analyses to plot")
@@ -666,7 +672,7 @@ plot_air_pollution_lags <- function(lag_results,
     dplyr::mutate(label = "")
 
   lag_plot <- ggplot2::ggplot(lag_results_clean, ggplot2::aes(x = lag, y = rr)) +
-    ggplot2::geom_errorbar(ggplot2::aes(ymin = ci_lower, ymax = ci_upper),
+    ggplot2::geom_errorbar(ggplot2::aes(ymin = .data$ci_lower, ymax = .data$ci_upper),
                   width = 0.2, color = "darkblue", linewidth = 0.8) +
     ggplot2::geom_point(size = 3, color = "blue") +
     ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
@@ -808,7 +814,7 @@ analyze_air_pollution_dlm <- function(data,
   region_results_list <- list()
 
   for (prov in regions) {
-    prov_data <- data %>% dplyr::filter(region == prov)
+    prov_data <- data %>% dplyr::filter(.data$region == prov)
     total_deaths_prov <- sum(prov_data$deaths, na.rm = TRUE)
     if (nrow(prov_data) < 500) {
       message("Skipping region ", prov, " due to insufficient data")
@@ -888,8 +894,8 @@ analyze_air_pollution_dlm <- function(data,
   )
   for (lg in all_labels) {
     lag_data <- region_dlm_results %>%
-      dplyr::filter(lag_group == lg) %>%
-      dplyr::filter(!is.na(RR))
+      dplyr::filter(.data$lag_group == lg) %>%
+      dplyr::filter(!is.na(.data$RR))
     if (nrow(lag_data) < 2) next
     lag_data$yi <- log(lag_data$RR)
     lag_data$sei <- (log(lag_data$UB) - log(lag_data$LB)) / (2 * 1.96)
@@ -943,11 +949,11 @@ plot_air_pollution_dlm <- function(dlm_results,
 
   # Create meta plot
   meta_plot_data <- meta_results %>%
-    filter(!is.na(RR)) %>%
-    dplyr::mutate(lag_group = factor(lag_group, levels = all_labels))
+    filter(!is.na(.data$RR)) %>%
+    dplyr::mutate(lag_group = factor(.data$lag_group, levels = all_labels))
 
-  meta_plot <- ggplot2::ggplot(meta_plot_data, ggplot2::aes(x = lag_group, y = RR)) +
-    ggplot2::geom_errorbar(ggplot2::aes(ymin = LB, ymax = UB), width = 0.2, color = "darkred") +
+  meta_plot <- ggplot2::ggplot(meta_plot_data, ggplot2::aes(x = .data$lag_group, y = .data$RR)) +
+    ggplot2::geom_errorbar(ggplot2::aes(ymin = .data$LB, ymax = .data$UB), width = 0.2, color = "darkred") +
     ggplot2::geom_point(size = 2, color = "red") +
     ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "red", size = 1) +
     ggplot2::labs(x = "Lag (days)", y = "RR", title = "Countrywide") +
@@ -967,14 +973,14 @@ plot_air_pollution_dlm <- function(dlm_results,
 
   for (prov in regions) {
     prov_data <- region_results %>%
-      filter(region == prov) %>%
-      filter(!is.na(RR)) %>%
+      filter(.data$region == prov) %>%
+      filter(!is.na(.data$RR)) %>%
       dplyr::mutate(lag_group = factor(lag_group, levels = all_labels))
 
     if (nrow(prov_data) == 0) next
 
-    prov_plot <- ggplot2::ggplot(prov_data, ggplot2::aes(x = lag_group, y = RR)) +
-      ggplot2::geom_errorbar(ggplot2::aes(ymin = LB, ymax = UB), width = 0.2, color = "darkblue") +
+    prov_plot <- ggplot2::ggplot(prov_data, ggplot2::aes(x = .data$lag_group, y = .data$RR)) +
+      ggplot2::geom_errorbar(ggplot2::aes(ymin = .data$LB, ymax = .data$UB), width = 0.2, color = "darkblue") +
       ggplot2::geom_point(size = 2, color = "blue") +
       ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "red", size = 1) +
       ggplot2::labs(x = "Lag (days)", y = "RR", title = prov) +
@@ -1088,19 +1094,19 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
   dir.create(dirname(output_file), recursive = TRUE, showWarnings = FALSE)
 
   data_aggreg <- data_with_lags %>%
-    filter(!is.na(date)) %>%
-    dplyr::group_by(region, date, year, month, day) %>%
-    summarise(
-      deaths = sum(deaths, na.rm = TRUE),
-      pm25 = mean(pm25, na.rm = TRUE),
-      tmax = mean(tmax, na.rm = TRUE),
-      humidity = mean(humidity, na.rm = TRUE),
-      precipitation = mean(precipitation, na.rm = TRUE),
-      population = sum(population, na.rm = TRUE),
-      .groups = 'drop'
+    dplyr::filter(!is.na(.data$date)) %>%
+    dplyr::group_by(.data$region, .data$date, .data$year, .data$month, .data$day) %>%
+    dplyr::summarise(
+      deaths = sum(.data$deaths, na.rm = TRUE),
+      pm25 = mean(.data$pm25, na.rm = TRUE),
+      tmax = mean(.data$tmax, na.rm = TRUE),
+      humidity = mean(.data$humidity, na.rm = TRUE),
+      precipitation = mean(.data$precipitation, na.rm = TRUE),
+      population = sum(.data$population, na.rm = TRUE),
+      .groups = "drop"
     ) %>%
-    dplyr::arrange(region, date) %>%
-    dplyr::group_by(region) %>%
+    dplyr::arrange(.data$region, .data$date) %>%
+    dplyr::group_by(.data$region) %>%
     dplyr::mutate(days = dplyr::row_number()) %>%
     dplyr::ungroup()
 
