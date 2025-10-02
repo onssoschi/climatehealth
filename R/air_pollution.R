@@ -1033,7 +1033,7 @@ plot_air_pollution_dlm <- function(dlm_results,
 #' @param meta_results List. Meta-analysis results from previous analysis.
 #' Should include overall relative risk estimate (overall_rr).
 #' @param reference_pm25 Numeric value specifying the reference PM2.5
-#' concentration (μg/m³) for risk calculations and plot centering.
+#' concentration for risk calculations and plot centering, expressed in \eqn{\mu g/m^3}.
 #' @param reference_name Character string describing the reference scenario
 #' (e.g., "WHO", "National"). Defaults to "Reference".
 #' @param tlag Integer. Maximum lag days for distributed lag models.
@@ -1412,8 +1412,8 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
 #' analysis. Defaults to TRUE.
 #' @param create_plots Logical. Whether to create exposure-response plots.
 #' Defaults to TRUE.
-#' @param reference_standards List. Reference standards for exposure-response plots.
-#' Defaults include WHO (15 μg/m³) and Rwanda (50 μg/m³) standards
+#' @param reference_standards List of reference thresholds used in exposure-response plots.
+#' Defaults include WHO (\eqn{15~\mu g/m^3}) and Rwanda (\eqn{50~\mu g/m^3}) air quality standards.
 #'
 #' @return List containing:
 #' \describe{
