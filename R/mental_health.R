@@ -50,9 +50,9 @@ mh_read_and_format_data <- function(data_path,
                   year = as.factor(lubridate::year(date)),
                   month = as.factor(lubridate::month(date)),
                   dow = as.factor(lubridate::wday(date, label = TRUE)),
-                  region = as.factor(region),
-                  stratum = as.factor(region:year:month:dow),
-                  ind = tapply(suicides, stratum, sum)[stratum])
+                  region = as.factor(.data$region),
+                  stratum = as.factor(.data$region:.data$year:.data$month:.data$dow),
+                  ind = tapply(.data$suicides, .data$stratum, sum)[stratum])
   df_list <- aggregate_by_column(df, "region")
 
   return(df_list)
@@ -203,8 +203,8 @@ mh_model_combo_res <- function(df_list,
       # Build the full formula string
       formula_str <- paste("suicides ~ cb", if (length(vars) > 0) paste("+", paste(vars, collapse = " + ")) else "")
 
-      model <- gnm::gnm(as.formula(formula_str), eliminate = stratum, family = quasipoisson(), data = region_data,
-                        na.action = "na.exclude", subset = ind > 0)
+      model <- gnm::gnm(as.formula(formula_str), eliminate = .data$stratum, family = quasipoisson(), data = region_data,
+                        na.action = "na.exclude", subset = .data$ind > 0)
 
       disp <- summary(model)$dispersion
       loglik <- sum(dpois(model$y,model$fitted.values,log=TRUE))
@@ -251,8 +251,10 @@ mh_model_combo_res <- function(df_list,
 #' @return A list. Variance inflation factors for each independent variables by region.
 #'
 #' @export
-mh_vif <- function(df_list,
-                   independent_cols = NULL){
+mh_vif <- function(
+  df_list,
+  independent_cols = NULL
+){
 
   vif_list <- list()
 
@@ -260,7 +262,7 @@ mh_vif <- function(df_list,
 
     region_data <- df_list[[reg]]
 
-    formula_str <- paste(paste('suicides ~ temp'), paste("+", paste(model_config$independent_cols, collapse = " + ")))
+    formula_str <- paste(paste('suicides ~ temp'), paste("+", paste(independent_cols, collapse = " + ")))
 
     vif_model <- glm(as.formula(formula_str), data = region_data, family = quasipoisson())
     vif_values <- car::vif(vif_model)
@@ -320,10 +322,10 @@ mh_model_validation <- function(df_list = df_list,
   if (save_csv == TRUE){
 
     dir.create(file.path(
-      path_config$output_folder_path, "model_validation"), recursive = TRUE, showWarnings = FALSE)
+      output_folder_path, "model_validation"), recursive = TRUE, showWarnings = FALSE)
 
     write.csv(qaic_results, file = file.path(
-      path_config$output_folder_path, "model_validation", "qaic_results.csv"), row.names = FALSE)
+      output_folder_path, "model_validation", "qaic_results.csv"), row.names = FALSE)
 
   }
 
@@ -337,7 +339,7 @@ mh_model_validation <- function(df_list = df_list,
     if (save_csv == TRUE) {
 
       write.csv(vif_results, file = file.path(
-        path_config$output_folder_path, "model_validation", "vif_results.csv"), row.names = FALSE)
+        output_folder_path, "model_validation", "vif_results.csv"), row.names = FALSE)
 
     }
 
@@ -347,26 +349,26 @@ mh_model_validation <- function(df_list = df_list,
 
     qaic_summary <- qaic_results %>%
       group_by(formula) %>%
-      summarise(mean_disp = mean(disp),
-                mean_qaic = mean(qaic))
+      summarise(mean_disp = mean(.data$disp),
+                mean_qaic = mean(.data$qaic))
 
     if (save_csv == TRUE){
 
       write.csv(qaic_summary, file = file.path(
-        path_config$output_folder_path, "model_validation", "qaic_summary.csv"), row.names = FALSE)
+        output_folder_path, "model_validation", "qaic_summary.csv"), row.names = FALSE)
 
     }
 
     if (!is.null(vif_results)){
 
       vif_summary <- vif_results %>%
-        group_by(variable) %>%
-        summarise(mean_vif = mean(vif, na.rm = TRUE))
+        dplyr::group_by(.data$variable) %>%
+        dplyr::summarise(mean_vif = mean(.data$vif, na.rm = TRUE))
 
       if (save_csv == TRUE){
 
         write.csv(vif_summary, file = file.path(
-          path_config$output_folder_path, "model_validation", "vif_summary.csv"), row.names = FALSE)
+          output_folder_path, "model_validation", "vif_summary.csv"), row.names = FALSE)
 
       }
 
@@ -406,7 +408,7 @@ mh_model_validation <- function(df_list = df_list,
 
       reg_folder <- gsub(pattern = " ", replacement = "_", x = reg)
 
-      output_folder_main <- file.path(path_config$output_folder_path, "model_validation", reg_folder)
+      output_folder_main <- file.path(output_folder_path, "model_validation", reg_folder)
       dir.create(output_folder_main, recursive = TRUE, showWarnings = FALSE)
 
       grid <- c(min(length(formula_list), 3), ceiling(length(formula_list) / 3))
@@ -448,7 +450,7 @@ mh_model_validation <- function(df_list = df_list,
 
       set.seed(123)  # for reproducibility
       sampled_residuals <- all_residuals %>%
-        group_by(formula) %>%
+        group_by(.data$formula) %>%
         sample_frac(0.2) %>%
         ungroup()
 
@@ -597,8 +599,8 @@ mh_casecrossover_dlnm <- function(df_list,
     region_data <- df_list[[reg]]
     cb <- cb_list[[reg]]
 
-    model <- gnm::gnm(formula, eliminate = stratum, family = quasipoisson(), data = region_data,
-                      na.action = "na.exclude", subset = ind > 0)
+    model <- gnm::gnm(formula, eliminate = .data$stratum, family = quasipoisson(), data = region_data,
+                      na.action = "na.exclude", subset = .data$ind > 0)
     model_list[[reg]] <- model
 
   }
@@ -937,7 +939,7 @@ mh_predict_reg <- function(df_list,
 mh_add_national_data <- function(df_list,
                                  pop_list,
                                  var_fun = "bs",
-                                 var_per = c(25,50,75),
+                                 var_per = c(25, 50, 75),
                                  var_degree = 2,
                                  lag_fun = "strata",
                                  lag_breaks = 1,
@@ -945,45 +947,42 @@ mh_add_national_data <- function(df_list,
                                  country = "National",
                                  cb_list,
                                  mm,
-                                 minpercreg){
+                                 minpercreg) {
 
   # Aggregate national level data
-
   national_data <- as.data.frame(do.call(rbind, df_list))
 
   nat_pop <- pop_list[[country]] %>%
-    rename(nat_population = population)
+    dplyr::rename(nat_population = .data$population)
 
   national_data <- national_data %>%
-    left_join(nat_pop, by = "year") %>%
-    mutate(weight = population / nat_population,
-           weighted_temp = temp * weight) %>%
-    group_by(date) %>%
-    summarise(temp = round(sum(weighted_temp, na.rm = TRUE), 2),
-              suicides = sum(suicides, na.rm = TRUE),
-              population = unique(nat_population)) %>%
-    mutate(year = as.factor(lubridate::year(date)),
-           month = as.factor(lubridate::month(date)),
-           region = country)
+    dplyr::left_join(nat_pop, by = "year") %>%
+    dplyr::mutate(weight = .data$population / .data$nat_population,
+                  weighted_temp = .data$temp * .data$weight) %>%
+    dplyr::group_by(.data$date) %>%
+    dplyr::summarise(temp = round(sum(.data$weighted_temp, na.rm = TRUE), 2),
+                     suicides = sum(.data$suicides, na.rm = TRUE),
+                     population = unique(.data$nat_population)) %>%
+    dplyr::mutate(year = as.factor(lubridate::year(.data$date)),
+                  month = as.factor(lubridate::month(.data$date)),
+                  region = country)
 
   df_list[[country]] <- as.data.frame(national_data)
 
   # Create cross basis for national data
-
   argvar <- list(fun = var_fun,
-                 knots = quantile(national_data$temp, var_per/100, na.rm = T),
+                 knots = quantile(national_data$temp, var_per / 100, na.rm = TRUE),
                  degree = var_degree)
   arglag <- list(fun = lag_fun, breaks = lag_breaks)
 
   cb_list[[country]] <- dlnm::crossbasis(national_data$temp, lag = lag_days, argvar = argvar, arglag = arglag)
 
   # Add national min and max suicide temperatures
-
-  predvar <- quantile(national_data$temp, 1:99/100, na.rm = TRUE)
+  predvar <- quantile(national_data$temp, 1:99 / 100, na.rm = TRUE)
 
   argvar <- list(x = predvar,
                  fun = var_fun,
-                 knots = quantile(national_data$temp, var_per/100, na.rm = TRUE),
+                 knots = quantile(national_data$temp, var_per / 100, na.rm = TRUE),
                  degree = var_degree,
                  Boundary.knots = range(national_data$temp, na.rm = TRUE))
 
@@ -993,14 +992,13 @@ mh_add_national_data <- function(df_list,
     temp_avg = mean(national_data$temp),
     temp_range = diff(range(national_data$temp, na.rm = TRUE)))
 
-  mmpredall <- predict(mm,datanew,vcov=T,format="list")
+  mmpredall <- predict(mm, datanew, vcov = TRUE, format = "list")
 
-  minpercnat <- (1:50)[which.min((bvar%*%mmpredall$fit)[1:50,])]
+  minpercnat <- (1:50)[which.min((bvar %*% mmpredall$fit)[1:50, ])]
 
-  minpercreg[country] <- minpercnat
+  minpercreg[[country]] <- minpercnat
 
   return(list(df_list, cb_list, minpercreg, mmpredall))
-
 }
 
 
@@ -1144,7 +1142,7 @@ mh_plot_rr <- function(df_list,
 
     grid <- c(min(length(pred_list), 3), ceiling(length(pred_list) / 3))
 
-    output_path <- file.path(path_config$output_folder_path, "suicides_rr_plot.pdf")
+    output_path <- file.path(output_folder_path, "suicides_rr_plot.pdf")
     pdf(output_path, width=max(10,grid[1]*5.5), height=max(7, grid[2]*4))
 
     layout_ids <- seq_len(grid[1] * grid[2])
@@ -1269,48 +1267,51 @@ mh_attr <- function(df_list,
 
   attr_list <- list()
 
-  for (reg in names(df_list)){
+  for (reg in names(df_list)) {
 
     region_data <- df_list[[reg]]
     cb <- cb_list[[reg]]
     pred <- pred_list[[reg]]
     minperc <- minpercreg[reg]
 
-    cen <- quantile(region_data$temp, minperc/100, na.rm = TRUE)
-    min_range <- quantile(region_data$temp, attr_thr/100, na.rm = TRUE)
+    cen <- quantile(region_data$temp, minperc / 100, na.rm = TRUE)
+    min_range <- quantile(region_data$temp, attr_thr / 100, na.rm = TRUE)
     max_range <- max(region_data$temp, na.rm = TRUE)
 
     c(af, af_lower_ci, af_upper_ci,
-      an, an_lower_ci, an_upper_ci)  %<-% an_attrdl(x = region_data$temp,
-                                                    basis = cb,
-                                                    cases = region_data$suicides,
-                                                    coef = pred$coefficients,
-                                                    vcov = pred$vcov,
-                                                    dir = "forw",
-                                                    cen = cen,
-                                                    range = c(min_range, max_range),
-                                                    tot = FALSE,
-                                                    nsim = 1000)
+      an, an_lower_ci, an_upper_ci) %<-% an_attrdl(
+        x = region_data$temp,
+        basis = cb,
+        cases = region_data$suicides,
+        coef = pred$coefficients,
+        vcov = pred$vcov,
+        dir = "forw",
+        cen = cen,
+        range = c(min_range, max_range),
+        tot = FALSE,
+        nsim = 1000
+      )
 
     results <- region_data %>%
-      select(region, date, temp, year, month, suicides, population) %>%
-      mutate(threshold_temp = round(min_range, 2),
-             af = af,
-             af_lower_ci = af_lower_ci,
-             af_upper_ci = af_upper_ci,
-             an = an,
-             an_lower_ci = an_lower_ci,
-             an_upper_ci = an_upper_ci,
-             ar = (an / population) * 100000,
-             ar_lower_ci = (an_lower_ci / population) * 100000,
-             ar_upper_ci = (an_upper_ci / population) * 100000)
+      dplyr::select(.data$region, .data$date, .data$temp, .data$year,
+                    .data$month, .data$suicides, .data$population) %>%
+      dplyr::mutate(
+        threshold_temp = round(min_range, 2),
+        af = af,
+        af_lower_ci = af_lower_ci,
+        af_upper_ci = af_upper_ci,
+        an = an,
+        an_lower_ci = an_lower_ci,
+        an_upper_ci = an_upper_ci,
+        ar = (.data$an / .data$population) * 100000,
+        ar_lower_ci = (.data$an_lower_ci / .data$population) * 100000,
+        ar_upper_ci = (.data$an_upper_ci / .data$population) * 100000
+      )
 
     attr_list[[reg]] <- results
-
   }
 
   return(attr_list)
-
 }
 
 
@@ -1336,46 +1337,58 @@ mh_attr <- function(df_list,
 #' @export
 mh_attr_tables <- function(attr_list,
                            country = "National",
-                           meta_analysis = FALSE){
+                           meta_analysis = FALSE) {
 
   attr_res <- do.call(rbind, attr_list) %>%
-    mutate(year = as.numeric(as.character(year)))
+    dplyr::mutate(year = as.numeric(as.character(.data$year)))
 
   res_list <- list()
 
-  groupings <- list(monthly = rlang::quos(month, region),
-                    yearly = rlang::quos(year, region),
-                    overall = rlang::quos(region))
+  groupings <- list(
+    monthly = rlang::quos(.data$month, .data$region),
+    yearly  = rlang::quos(.data$year, .data$region),
+    overall = rlang::quos(.data$region)
+  )
 
-  for (grp_name in names(groupings)){
+  for (grp_name in names(groupings)) {
 
     results <- attr_res %>%
-      group_by(!!!groupings[[grp_name]]) %>%
-      summarise(population = round(mean(population, na.rm = TRUE), 0),
-                temp = round(mean(temp, na.rm = TRUE), 2),
-                threshold_temp = mean(threshold_temp, na.rm = TRUE),
-                across(c(suicides, an, an_lower_ci, an_upper_ci),
-                       sum, na.rm = TRUE)) %>%
-      mutate(af = an/suicides * 100,
-             af_lower_ci = an_lower_ci/suicides * 100,
-             af_upper_ci = an_upper_ci/suicides * 100,
-             ar = an / population * 100000,
-             ar_lower_ci = an_lower_ci / population * 100000,
-             ar_upper_ci = an_upper_ci / population * 100000,
-             across(c(an, an_lower_ci, an_upper_ci,
-                      ar, ar_lower_ci, ar_upper_ci,
-                      af, af_lower_ci, af_upper_ci),
-                    ~ ifelse(abs(.) < 1, signif(., 2), round(., 2))))
+      dplyr::group_by(!!!groupings[[grp_name]]) %>%
+      dplyr::summarise(
+        population     = round(mean(.data$population, na.rm = TRUE), 0),
+        temp           = round(mean(.data$temp, na.rm = TRUE), 2),
+        threshold_temp = mean(.data$threshold_temp, na.rm = TRUE),
+        dplyr::across(
+          c("suicides", "an", "an_lower_ci", "an_upper_ci"),
+          ~ sum(.x, na.rm = TRUE)
+        ),
+        .groups = "drop"
+      ) %>%
+      dplyr::mutate(
+        af           = .data$an / .data$suicides * 100,
+        af_lower_ci  = .data$an_lower_ci / .data$suicides * 100,
+        af_upper_ci  = .data$an_upper_ci / .data$suicides * 100,
+        ar           = .data$an / .data$population * 100000,
+        ar_lower_ci  = .data$an_lower_ci / .data$population * 100000,
+        ar_upper_ci  = .data$an_upper_ci / .data$population * 100000
+      ) %>%
+      dplyr::mutate(
+        dplyr::across(
+          c("an", "an_lower_ci", "an_upper_ci",
+            "ar", "ar_lower_ci", "ar_upper_ci",
+            "af", "af_lower_ci", "af_upper_ci"),
+          ~ ifelse(abs(.x) < 1, signif(.x, 2), round(.x, 2))
+        )
+      )
 
     res_list[[grp_name]] <- results
-
   }
 
-  if (meta_analysis == TRUE){
-
-  region_order <- c(sort(setdiff(names(attr_list), country)), country)
-
-  } else region_order <- sort(names(attr_list))
+  region_order <- if (isTRUE(meta_analysis)) {
+    c(sort(setdiff(names(attr_list), country)), country)
+  } else {
+    sort(names(attr_list))
+  }
 
   res_attr_tot <- res_list[["overall"]]
 
@@ -1383,12 +1396,11 @@ mh_attr_tables <- function(attr_list,
   attr_yr_list <- attr_yr_list[region_order]
 
   attr_mth_list <- res_list[["monthly"]] %>%
-    mutate(month = month.name[month]) %>%
+    dplyr::mutate(month = month.name[.data$month]) %>%
     aggregate_by_column("region")
   attr_mth_list <- attr_mth_list[region_order]
 
   return(list(res_attr_tot, attr_yr_list, attr_mth_list))
-
 }
 
 
@@ -2039,13 +2051,13 @@ mh_save_results <- function(rr_results,
       output_folder_path, "suicides_attr_tot_results.csv"), row.names = FALSE)
 
     res_attr_yr <- do.call(rbind, attr_yr_list) %>%
-      select(region, everything())
+      select(.data$region, everything())
 
     write.csv(res_attr_yr, file = file.path(
       output_folder_path, "suicides_attr_yr_results.csv"), row.names = FALSE)
 
     res_attr_mth <- do.call(rbind, attr_mth_list) %>%
-      select(region, everything())
+      select(.data$region, everything())
 
     write.csv(res_attr_mth, file = file.path(
       output_folder_path, "suicides_attr_mth_results.csv"), row.names = FALSE)

@@ -475,12 +475,12 @@ plot_regional_trends <- function(
 #'
 #' @export
 plot_rate_overall <- function(
-    df,
-    dependent_col,
-    population_col,
-    date_col,
-    save_rate = FALSE,
-    output_path = NULL
+  df,
+  dependent_col,
+  population_col,
+  date_col,
+  save_rate = FALSE,
+  output_path = NULL
 ) {
   # Clean numeric columns
   df[[population_col]] <- as.numeric(gsub(",", "", df[[population_col]]))
@@ -490,16 +490,19 @@ plot_rate_overall <- function(
   df$Year <- lubridate::year(as.Date(df[[date_col]]))
 
   # Aggregate
-  yearly_data <- df  %>%
-    dplyr::group_by(Year)  %>%
+  yearly_data <- df %>%
+    dplyr::group_by(.data$Year) %>%
     dplyr::summarise(
       Total_Dependent = sum(.data[[dependent_col]], na.rm = TRUE),
-      Total_Population = sum(.data[[population_col]], na.rm = TRUE)
-    )  %>%
-    dplyr::mutate(Rate_per_100k = round((Total_Dependent / Total_Population) * 100000, 3))
+      Total_Population = sum(.data[[population_col]], na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    dplyr::mutate(
+      Rate_per_100k = round((.data$Total_Dependent / .data$Total_Population) * 100000, 3)
+    )
 
   # Create plot
-  plot_overall_rate <- ggplot2::ggplot(yearly_data, ggplot2::aes(x = Year, y = Rate_per_100k)) +
+  plot_overall_rate <- ggplot2::ggplot(yearly_data, ggplot2::aes(x = .data$Year, y = .data$Rate_per_100k)) +
     ggplot2::geom_line(group = 1, color = "#003c57", linewidth = 1.2) +
     ggplot2::geom_point(color = "#003c57", size = 2) +
     ggplot2::labs(
@@ -507,15 +510,14 @@ plot_rate_overall <- function(
       y = "Rate per 100,000", x = "Year"
     ) +
     ggplot2::expand_limits(y = 0) +
-
     ggplot2::theme_minimal()
 
   # Save or return
   if (save_rate && !is.null(output_path)) {
     output_path <- enforce_file_extension(output_path, ".pdf")
-    pdf(output_path, width = 10, height = 6)
+    grDevices::pdf(output_path, width = 10, height = 6)
     print(plot_overall_rate)
-    dev.off()
+    grDevices::dev.off()
   } else {
     return(plot_overall_rate)
   }
@@ -555,7 +557,7 @@ plot_total_variables_by_year <- function(
 
   # Plot each variable
   for (var in variables) {
-    p <-  ggplot2::ggplot(yearly_totals, ggplot2::aes(x = Year, y = .data[[var]])) +
+    p <-  ggplot2::ggplot(yearly_totals, ggplot2::aes(x = .data$Year, y = .data[[var]])) +
       ggplot2::geom_line(color = "#27a0cc", linewidth = 1.2) +
       ggplot2::geom_point(color = "#27a0cc", size = 2) +
       ggplot2::labs(
