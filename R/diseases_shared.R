@@ -370,7 +370,7 @@ combine_health_climate_data <- function(
   )
 
   data <- health_data %>%
-    dplyr::left_join(climate_data, by = dplyr::join_by(.data$district, .data$year, .data$month)) %>%
+    dplyr::left_join(climate_data, by = dplyr::join_by(district, year, month)) %>%
     dplyr::distinct() %>%
     dplyr::group_by(.data$region, .data$district) %>%
     dplyr::mutate(time = (.data$year - min(.data$year)) * 12 + .data$month) %>%
@@ -975,6 +975,8 @@ plot_yearly_spatial_random_effect <- function(
   ndistrict <- length(unique(data$district_code))
   # Extract spatial random effects
   space <- data.table::data.table(model$summary.random$district_index)
+  saveRDS(space, file="data/outputs/space.rds")
+  saveRDS(rep(min(data$year):max(data$year), each = 2 * ndistrict), file="data/outputs/years.rds")
   space$year <- rep(min(data$year):max(data$year), each = 2 * ndistrict)
   space$re <- rep(c(rep(1, ndistrict), rep(2, ndistrict)), nyear)
   space <- space[space$re == 1, ]
