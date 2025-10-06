@@ -52,7 +52,7 @@ mh_read_and_format_data <- function(data_path,
                   dow = as.factor(lubridate::wday(date, label = TRUE)),
                   region = as.factor(.data$region),
                   stratum = as.factor(.data$region:.data$year:.data$month:.data$dow),
-                  ind = tapply(.data$suicides, .data$stratum, sum)[stratum])
+                  ind = tapply(.data$suicides, .data$stratum, sum)[.data$stratum])
   df_list <- aggregate_by_column(df, "region")
 
   return(df_list)
