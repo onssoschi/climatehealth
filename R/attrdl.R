@@ -64,10 +64,10 @@ mkXpred <- function(type, basis, at, predvar, predlag, cen) {
     # IF STANDARD CROSS-BASIS, CREATE MARGINAL BASIS AND CALL TENSOR
     # NB: ORDER OF BASIS MATRICES IN TENSOR CHANGED SINCE VERSION 2.2.4
     # CENTERING APPLIED ONLY MARGINALLY TO VAR DIMENSION
-    basisvar <- do.call(dlnm::onebasis,c(list(x=varvec),attr(basis,"argvar")))
-    basislag <- do.call(dlnm::onebasis,c(list(x=lagvec),attr(basis,"arglag")))
+    basisvar <- do.call("onebasis", c(list(x=varvec),attr(basis,"argvar")))
+    basislag <- do.call("onebasis", c(list(x=lagvec),attr(basis,"arglag")))
     if(!is.null(cen)) {
-      basiscen <- do.call(dlnm::onebasis,c(list(x=cen),attr(basis,"argvar")))
+      basiscen <- do.call("onebasis",c(list(x=cen),attr(basis,"argvar")))
       basisvar <- scale(basisvar,center=basiscen,scale=FALSE)
     }
     Xpred <- mgcv::tensor.prod.model.matrix(list(basisvar,basislag))
@@ -75,9 +75,9 @@ mkXpred <- function(type, basis, at, predvar, predlag, cen) {
     # IF ONEBASIS, SIMPLY CALL THE FUNCTION WITH PROPER ARGUMENTS
     ind <- match(c("fun",names(formals(attr(basis,"fun")))),
       names(attributes(basis)),nomatch=0)
-    basisvar <- do.call(dlnm::onebasis,c(list(x=varvec),attributes(basis)[ind]))
+    basisvar <- do.call("onebasis",c(list(x=varvec),attributes(basis)[ind]))
     if(!is.null(cen)) {
-      basiscen <- do.call(dlnm::onebasis,c(list(x=cen),attributes(basis)[ind]))
+      basiscen <- do.call("onebasis",c(list(x=cen),attributes(basis)[ind]))
       basisvar <- scale(basisvar,center=basiscen,scale=FALSE)
     }
     Xpred <- basisvar
@@ -121,6 +121,9 @@ mkXpred <- function(type, basis, at, predvar, predlag, cen) {
 #' @return Attributable Numbers and Fractions
 #'
 #' @export
+#'
+#' @importFrom dlnm onebasis
+#' @importFrom splines bs
 attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
                    type="af",dir="back",tot=TRUE,cen,range=NULL,sim=FALSE,nsim=5000) {
   ################################################################################
@@ -208,7 +211,7 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
       Xpredall <- Xpredall + Xpred[ind,,drop=FALSE]
     }
   } else {
-    basis <- do.call(dlnm::onebasis,c(list(x=x),attr(basis,"argvar")))
+    basis <- do.call("onebasis",c(list(x=x),attr(basis,"argvar")))
     Xpredall <- mkXpred(typebasis,basis,x,predvar,predlag,cen)
   }
   #
@@ -301,6 +304,8 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
 #'  }
 #' @export
 #'
+#' @importFrom dlnm onebasis
+#' @importFrom splines bs
 an_attrdl <- function(
     x,
     basis,
@@ -317,7 +322,6 @@ an_attrdl <- function(
 
   # CHECK type AND dir
   dir <- match.arg(dir,c("back","forw"))
-
   # Remove centering value from basis
   attributes(basis)$argvar$cen <- NULL
   # SELECT RANGE (FORCE TO CENTERING VALUE OTHERWISE, MEANING NULL RISK)
@@ -325,7 +329,7 @@ an_attrdl <- function(
   # COMPUTE THE MATRIX OF
   #   - LAGGED EXPOSURES IF dir="back"
   #   - CONSTANT EXPOSURES ALONG LAGS IF dir="forw"
-  lag <- attr(basis,"lag")
+  lag <- attr(basis, "lag")
   at <- if(dir=="back") tsModel::Lag(x,seq(lag[1],lag[2])) else
     matrix(rep(x,diff(lag)+1),length(x))
   # NUMBER USED FOR THE CONTRIBUTION AT EACH TIME IN FORWARD TYPE
@@ -355,7 +359,7 @@ an_attrdl <- function(
       Xpredall <- Xpredall + Xpred[ind,,drop=FALSE]
     }
   } else {
-    basis <- do.call(dlnm::onebasis,c(list(x=x),attr(basis,"argvar")))
+    basis <- do.call("onebasis",c(list(x=x),attr(basis,"argvar")))
     Xpredall <- mkXpred(typebasis,basis,x,predvar,predlag,cen)
   }
 

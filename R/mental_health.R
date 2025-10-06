@@ -203,8 +203,8 @@ mh_model_combo_res <- function(df_list,
       # Build the full formula string
       formula_str <- paste("suicides ~ cb", if (length(vars) > 0) paste("+", paste(vars, collapse = " + ")) else "")
 
-      model <- gnm::gnm(as.formula(formula_str), eliminate = .data$stratum, family = quasipoisson(), data = region_data,
-                        na.action = "na.exclude", subset = .data$ind > 0)
+      model <- gnm::gnm(as.formula(formula_str), eliminate = region_data$stratum, family = quasipoisson(), data = region_data,
+                        na.action = "na.exclude", subset = region_data$ind > 0)
 
       disp <- summary(model)$dispersion
       loglik <- sum(dpois(model$y,model$fitted.values,log=TRUE))
@@ -599,8 +599,8 @@ mh_casecrossover_dlnm <- function(df_list,
     region_data <- df_list[[reg]]
     cb <- cb_list[[reg]]
 
-    model <- gnm::gnm(formula, eliminate = .data$stratum, family = quasipoisson(), data = region_data,
-                      na.action = "na.exclude", subset = .data$ind > 0)
+    model <- gnm::gnm(formula, eliminate = region_data$stratum, family = quasipoisson(), data = region_data,
+                      na.action = "na.exclude", subset = region_data$ind > 0)
     model_list[[reg]] <- model
 
   }
@@ -781,7 +781,7 @@ mh_meta_analysis <- function(df_list,
 #'
 #' @export
 mh_min_suicide_temp <- function(df_list,
-                                   var_fun = "bs",
+                                   var_fun = "splines",
                                    var_per = c(25,50,75),
                                    var_degree = 2,
                                    blup = blup,
