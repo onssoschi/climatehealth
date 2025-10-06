@@ -399,7 +399,7 @@ common_descriptive_stats_core <- function(
     plot_seasonal_trends(
       df = df,
       date_col = timeseries_col,
-      outcome_col = columns,
+      outcome_cols = columns,
       ylabs = ylabs,
       title = paste("Seasonal Trends for", dataset_title),
       save_plot = TRUE,
@@ -423,9 +423,9 @@ common_descriptive_stats_core <- function(
       plot_regional_trends(
         df = df,
         region_col = aggregation_column,
-        outcome_col = columns,
+        outcome_cols = columns,
         title = paste("Regional Trends for", dataset_title),
-        ylab = ylabs,
+        ylabs = ylabs,
         save_plot = TRUE,
         output_path = regional_path
       )

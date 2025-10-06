@@ -32,12 +32,15 @@ jobs:
           key: ${{ runner.os }}-r-${{ hashFiles('DESCRIPTION') }}
           restore-keys: |
             ${{ runner.os }}-r-
+      
+      - name: Set R options
+        run: echo 'options(pkgType = "binary")' >> ~/.Rprofile
 
       - name: Install dependencies
         run: |
           Rscript -e '
           install.packages(c("devtools", "roxygen2", "remotes", "patrick", "pak", "covr", "DT", "htmltools"))
-          pak::pkg_install(devtools::dev_package_deps()$package)
+          pak::local_install(".", dependencies = c("Depends", "Imports", "LinkingTo"))
           '
         timeout-minutes: 5
 

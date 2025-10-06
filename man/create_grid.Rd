@@ -10,7 +10,7 @@ create_grid(plot_count)
 \item{plot_count}{The number of plots required for the grid.}
 }
 \value{
-A vector containing \link{1} x value and \link{2} y value for the grid.
+A numeric vector: c(x, y), where x and y define the grid dimensions.
 }
 \description{
 This function calculates the minimum grid size required to plot X amount of
