@@ -63,8 +63,8 @@ analysis. Defaults to TRUE.}
 \item{create_plots}{Logical. Whether to create exposure-response plots.
 Defaults to TRUE.}
 
-\item{reference_standards}{List. Reference standards for exposure-response plots.
-Defaults include WHO (15 μg/m³) and Rwanda (50 μg/m³) standards}
+\item{reference_standards}{List of reference thresholds used in exposure-response plots.
+Defaults include WHO (\eqn{15~\mu g/m^3}) and Rwanda (\eqn{50~\mu g/m^3}) air quality standards.}
 }
 \value{
 List containing:

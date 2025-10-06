@@ -65,8 +65,8 @@ load_and_process_data <- function(
     ext <- tolower(xfun::file_ext(health_data_path))
     # Load data based on file extension
     data <- switch(ext,
-                   "rds" = read_rds(health_data_path),
-                   "csv" = read_csv(health_data_path, show_col_types = FALSE),
+                   "rds" = readr::read_rds(health_data_path),
+                   "csv" = readr::read_csv(health_data_path, show_col_types = FALSE),
                    "xlsx" = readxl::read_excel(health_data_path),
                    stop("Unsupported file type: must be .rds, .csv, or .xlsx")
     )
@@ -135,7 +135,7 @@ load_and_process_map <- function(
     select(region = !!sym(region_col),
            district = !!sym(district_col),
            geometry = !!sym(geometry_col)) %>%
-    mutate(geometry = sf::st_make_valid(geometry))
+    mutate(geometry = sf::st_make_valid(.data$geometry))
   # Create adjacency matrix
   nb_file <- if (!is.null(output_dir)) file.path(output_dir, "nbfile") else NULL
   g_file <- if (!is.null(output_dir)) file.path(output_dir, "map.graph")
@@ -212,8 +212,8 @@ load_and_process_climatedata <- function(
     ext <- tolower(xfun::file_ext(climate_data_path))
     # Load data based on file extension
     data <- switch(ext,
-                   "rds" = read_rds(climate_data_path),
-                   "csv" = read_csv(climate_data_path, show_col_types = FALSE),
+                   "rds" = readr::read_rds(climate_data_path),
+                   "csv" = readr::read_csv(climate_data_path, show_col_types = FALSE),
                    "xlsx" = readxl::read_excel(climate_data_path),
                    stop("Unsupported file type: must be .rds, .csv, or .xlsx")
     )
@@ -330,8 +330,7 @@ combine_health_climate_data <- function(
   spi_col = NULL,
   max_lag = 2,
   output_dir = NULL
-){
-  # Ensure case_type is an accepted type
+) {
   case_type <- validate_case_type(case_type)
 
   health_data <- load_and_process_data(
@@ -370,35 +369,32 @@ combine_health_climate_data <- function(
     output_dir = output_dir
   )
 
-  # Merge health + climate
   data <- health_data %>%
-    left_join(climate_data, by = join_by(district, year, month)) %>%
-    distinct() %>%
-    group_by(region, district) %>%
-    mutate(time = (year - min(year)) * 12 + month) %>%
-    ungroup()
+    dplyr::left_join(climate_data, by = dplyr::join_by(.data$district, .data$year, .data$month)) %>%
+    dplyr::distinct() %>%
+    dplyr::group_by(.data$region, .data$district) %>%
+    dplyr::mutate(time = (.data$year - min(.data$year)) * 12 + .data$month) %>%
+    dplyr::ungroup()
 
-  # Build grid codes
   grid_data <- data %>%
-    select(region, district) %>%
-    distinct() %>%
-    group_by(region) %>%
-    mutate(
-      region_code = cur_group_id(),
-      district_number = row_number(),
-      district_code = as.integer(paste0(region_code, district_number))
-    ) %>% ungroup()
+    dplyr::select(.data$region, .data$district) %>%
+    dplyr::distinct() %>%
+    dplyr::group_by(.data$region) %>%
+    dplyr::mutate(
+      region_code = dplyr::cur_group_id(),
+      district_number = dplyr::row_number(),
+      district_code = as.integer(paste0(.data$region_code, .data$district_number))
+    ) %>%
+    dplyr::ungroup()
 
-  # Attach codes
-  data <- left_join(data, grid_data, by = c("region", "district")) %>%
-    arrange(region_code, district_code)
+  data <- dplyr::left_join(data, grid_data, by = c("region", "district")) %>%
+    dplyr::arrange(.data$region_code, .data$district_code)
 
-  map <- left_join(map_data$map, grid_data, by = c("region", "district")) %>%
-    arrange(region_code, district_code)
+  map <- dplyr::left_join(map_data$map, grid_data, by = c("region", "district")) %>%
+    dplyr::arrange(.data$region_code, .data$district_code)
 
-  grid_data <- rename(grid_data, name = region, code_num = region_code)
+  grid_data <- dplyr::rename(grid_data, name = .data$region, code_num = .data$region_code)
 
-  # Summary stats
   summary_stats <- list(
     tmin = summary(data$tmin),
     tmax = summary(data$tmax),
@@ -406,16 +402,18 @@ combine_health_climate_data <- function(
     rhumidity = summary(data$r_humidity)
   )
 
-  # Return combined
   return_list <- list(
     map = map,
     nb.map = map_data$nb.map,
     graph_file = map_data$graph_file,
-    data = data, grid_data = grid_data,
+    data = data,
+    grid_data = grid_data,
     summary = summary_stats
   )
+
   return(return_list)
 }
+
 
 #' Plot Time Series of Health and Climate Variables
 #'
@@ -446,15 +444,16 @@ plot_health_climate_timeseries <- function(
   save_fig = FALSE,
   output_dir = NULL
 ) {
-  # Ensure case type is an accepted indicator type
   case_type <- validate_case_type(case_type)
 
   vars_all <- c(case_type, "tmin", "tmean", "tmax", "rainfall")
   vars_to_plot <- if (param_term == "all") vars_all else param_term
 
-  if (!is.null(filter_year)) data <- data %>% filter(year %in% filter_year)
+  if (!is.null(filter_year)) {
+    data <- data %>% dplyr::filter(.data$year %in% filter_year)
+  }
 
-  data <- data %>% mutate(date = as.Date(paste(year, month, 1, sep = "-")))
+  data <- data %>% dplyr::mutate(date = as.Date(paste(.data$year, .data$month, 1, sep = "-")))
 
   missing <- setdiff(vars_to_plot, names(data))
   if (length(missing)) stop("Missing columns: ", paste(missing, collapse = ", "))
@@ -468,17 +467,27 @@ plot_health_climate_timeseries <- function(
   group_cols <- c("date", group_var)
 
   agg <- data %>%
-    group_by(across(all_of(group_cols))) %>%
-    summarise(across(all_of(vars_to_plot),
-                     ~ if (level == "country" && case_type %in% cur_column()) {
-                       if (cur_column() == case_type) sum(.x, na.rm = TRUE) else mean(.x, na.rm = TRUE)
-                     } else {
-                       mean(.x, na.rm = TRUE)
-                     }),
-              .groups = "drop") %>%
-    tidyr::pivot_longer(cols = all_of(vars_to_plot), names_to = "variable", values_to = "value")
+    dplyr::group_by(dplyr::across(dplyr::all_of(group_cols))) %>%
+    dplyr::summarise(
+      dplyr::across(
+        dplyr::all_of(vars_to_plot),
+        ~ if (level == "country" && case_type %in% cur_column()) {
+          if (cur_column() == case_type) sum(.x, na.rm = TRUE) else mean(.x, na.rm = TRUE)
+        } else {
+          mean(.x, na.rm = TRUE)
+        }
+      ),
+      .groups = "drop"
+    ) %>%
+    tidyr::pivot_longer(
+      cols = dplyr::all_of(vars_to_plot),
+      names_to = "variable",
+      values_to = "value"
+    )
 
-  if (!is.null(group_var)) agg <- agg %>% rename(group = all_of(group_var))
+  if (!is.null(group_var)) {
+    agg <- agg %>% dplyr::rename(group = dplyr::all_of(group_var))
+  }
 
   title_text <- if (length(vars_to_plot) == 1) {
     paste("Time Series of", vars_to_plot)
@@ -488,18 +497,22 @@ plot_health_climate_timeseries <- function(
     paste("Time Series of", paste(vars_to_plot, collapse = ", "))
   }
 
-  p <- ggplot2::ggplot(agg, ggplot2::aes(x = date, y = value)) +
-    ggplot2::geom_line(ggplot2::aes(color = if (!is.null(group_var)) group), linewidth = 1) +
-    ggplot2::facet_wrap(~variable, scales = "free_y", ncol = 1) +
+  p <- ggplot2::ggplot(agg, ggplot2::aes(x = .data$date, y = .data$value)) +
+    ggplot2::geom_line(
+      ggplot2::aes(color = if (!is.null(group_var)) .data$group),
+      linewidth = 1
+    ) +
+    ggplot2::facet_wrap(~.data$variable, scales = "free_y", ncol = 1) +
     ggplot2::scale_x_date(date_breaks = "6 month", date_labels = "%Y-%m") +
     ggplot2::labs(title = title_text, x = "date", y = "Value") +
     ggplot2::theme_minimal() +
-    ggplot2::theme(legend.title = ggplot2::element_blank(),
-                   axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+    ggplot2::theme(
+      legend.title = ggplot2::element_blank(),
+      axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+    )
 
   if (save_fig) {
-    fname <- paste0("timeseries_",
-                    paste(vars_to_plot, collapse = "_"), "_", level, ".pdf")
+    fname <- paste0("timeseries_", paste(vars_to_plot, collapse = "_"), "_", level, ".pdf")
     ggplot2::ggsave(file.path(output_dir, fname), p, width = 12, height = 7)
   }
 
@@ -775,8 +788,10 @@ run_inla_models <- function(
   case_type <- validate_case_type(case_type)
 
   if (!requireNamespace("INLA", quietly = TRUE)) {
-    INLA_pth <- system.file("packages", "INLA_24.12.11.zip", package = "climatehealth")
-    install.packages(INLA_pth, repos = NULL, type = "win.binary", lib = .libPaths()[1])
+    stop(
+      "INLA is not installed. Run climatehealth::install_INLA to install the ",
+      "package."
+    )
   }
 
   data <- create_inla_indices(combined_data$data, case_type)
@@ -860,7 +875,6 @@ plot_monthly_random_effects <- function(
   save_fig = FALSE,
   output_dir = NULL
 ) {
-  # Validate output_dir if saving
   if (save_fig & is.null(output_dir)) {
     stop("output_dir must be provided if save_fig = TRUE")
   }
@@ -869,37 +883,56 @@ plot_monthly_random_effects <- function(
   grid_data <- combined_data$grid_data
   map <- combined_data$map
 
-  # Create data frame for monthly random effects per region
-  month_effects <- data.frame(region_code = rep(unique(data$region_code), each = 12),
-                              month = model$summary.random$month)
+  month_effects <- data.frame(
+    region_code = rep(unique(data$region_code), each = 12),
+    month = model$summary.random$month
+  )
 
-  # Merge with predefined state grid
   month_effects <- month_effects %>%
-    left_join(grid_data %>% select(-district, -district_code) %>% unique(),
-              by = c("region_code" = "code_num"))
+    dplyr::left_join(
+      grid_data %>%
+        dplyr::select(-.data$district, -.data$district_code) %>%
+        dplyr::distinct(),
+      by = c("region_code" = "code_num")
+    )
 
-  month_effects <- map %>% select(-district) %>% unique() %>%
-    left_join(month_effects, by = c("region" = "name"))
+  month_effects <- map %>%
+    dplyr::select(-.data$district) %>%
+    dplyr::distinct() %>%
+    dplyr::left_join(month_effects, by = c("region" = "name"))
 
-  # Generate plot
   p <- month_effects %>%
     ggplot2::ggplot() +
-    ggplot2::geom_ribbon(ggplot2::aes(x = month.ID, ymin = `month.0.025quant`, ymax = `month.0.975quant`),
-                         fill = "cadetblue4", alpha = 0.5) +
-    ggplot2::geom_line(ggplot2::aes(x = month.ID, y = month.mean), col = "cadetblue4") +
+    ggplot2::geom_ribbon(
+      ggplot2::aes(
+        x = .data$month.ID,
+        ymin = .data$`month.0.025quant`,
+        ymax = .data$`month.0.975quant`
+      ),
+      fill = "cadetblue4", alpha = 0.5
+    ) +
+    ggplot2::geom_line(
+      ggplot2::aes(x = .data$month.ID, y = .data$month.mean),
+      col = "cadetblue4"
+    ) +
     ggplot2::geom_hline(yintercept = 0, linetype = "dashed", color = "grey70") +
     ggplot2::xlab("Month") +
     ggplot2::ylab("Contribution to log(DIR)") +
     ggplot2::scale_y_continuous() +
-    ggplot2::scale_x_continuous(breaks = c(1,4,7,10), labels = c("Jan", "Apr", "Jul", "Oct")) +
+    ggplot2::scale_x_continuous(
+      breaks = c(1, 4, 7, 10),
+      labels = c("Jan", "Apr", "Jul", "Oct")
+    ) +
     ggplot2::theme_bw() +
-    ggplot2::facet_wrap(~region)
+    ggplot2::facet_wrap(~.data$region)
 
-  # Save plot
-  if (save_fig){
-    ggplot2::ggsave(file.path(output_dir, "monthly_random_effects.pdf"),
-                    plot = p, height = 30, width = 25, units = "cm")
+  if (save_fig) {
+    ggplot2::ggsave(
+      filename = file.path(output_dir, "monthly_random_effects.pdf"),
+      plot = p, height = 30, width = 25, units = "cm"
+    )
   }
+
   return(p)
 }
 
@@ -1021,7 +1054,7 @@ get_predictions <- function(
     regions <- unique(data$region)
     predt <- regions %>%
       lapply(function(regi){
-        region_data <- subset(data, region == regi)
+        region_data <- subset(data, .data$region == regi)
         # Extract predictions from the tmax DLNM centered on overall mean Tmax
         mean_param <- round(mean(region_data[[param_term]], na.rm = TRUE), 0)
         predt <- dlnm::crosspred(basis_matrices[[param_term]], coef = coef[indt],
@@ -1036,7 +1069,7 @@ get_predictions <- function(
     predt <- districts %>%
       lapply(function(dist){
         # Filter data for the current district
-        district_data <- subset(data, district == dist)
+        district_data <- subset(data, .data$district == dist)
         # Extract predictions from the tmax DLNM centered on overall mean Tmax
         mean_param <- round(mean(district_data[[param_term]], na.rm = TRUE), 0)
         predt <- dlnm::crosspred(basis_matrices[[param_term]], coef = coef[indt],
@@ -1087,7 +1120,7 @@ contour_plot <- function(
 
   if (!is.null(filter_year)) {
     if (!"year" %in% names(data)) stop("'year' column not found in data.")
-    data <- filter(data, year %in% filter_year)
+    data <- filter(data, .data$year %in% filter_year)
   }
   predt <- get_predictions(data, param_term=param_term, model=model, level=level, case_type=case_type)
 
@@ -1192,7 +1225,7 @@ plot_rr_map <- function(
 
   # Get RR data for each year
   get_rr_df <- function(yr) {
-    pred <- get_predictions(filter(data, year == yr), param_term, model, level, case_type)
+    pred <- get_predictions(filter(data, .data$year == yr), param_term, model, level, case_type)
     purrr::map_dfr(names(pred), function(name) {
       vals <- pred[[name]]
       if (anyNA(vals$allRRfit)) return(NULL)
@@ -1208,7 +1241,7 @@ plot_rr_map <- function(
   plots <- lapply(seq_along(years), function(i) {
     map_rr <- left_join(map, rr_list[[i]], by = grouping_var)
     ggplot2::ggplot(map_rr) +
-      ggplot2::geom_sf(ggplot2::aes(fill = RR), color = "black", size = 0.2) +
+      ggplot2::geom_sf(ggplot2::aes(fill = .data$RR), color = "black", size = 0.2) +
       ggplot2::scale_fill_gradient2(
         low = "blue", mid = "white", high = "red",
         midpoint = 1, limits = rr_range, na.value = "grey80", name = "RR"
@@ -1281,19 +1314,19 @@ plot_relative_risk <- function(
     if (is.null(output_dir)) stop("output_dir must be provided if save_fig = TRUE")
     if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
   }
+
   output_pdf <- if (save_fig) {
     file.path(output_dir, paste0("RR_", param_term, "_", level, "_all_plots.pdf"))
-  } else {
-    NULL
-  }
+  } else NULL
+
   csv_output_path <- if (save_csv) {
     file.path(output_dir, paste0("RR_", param_term, "_", level, "_all_plots.csv"))
-  } else {
-    NULL
-  }
+  } else NULL
+
   if (!requireNamespace("patchwork", quietly = TRUE)) {
     stop("Package 'patchwork' is required but not installed.")
   }
+
   build_plot <- function(pred, title) {
     if (anyNA(pred$allRRfit)) return(NULL)
     ggplot2::ggplot(
@@ -1303,10 +1336,10 @@ plot_relative_risk <- function(
         ymin = pred$allRRlow,
         ymax = pred$allRRhigh
       ),
-      ggplot2::aes(x, y)
+      ggplot2::aes(x = .data$x, y = .data$y)
     ) +
       ggplot2::geom_line(color = "red", linewidth = 1) +
-      ggplot2::geom_ribbon(ggplot2::aes(ymin = ymin, ymax = ymax), fill = "red", alpha = 0.3) +
+      ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$ymin, ymax = .data$ymax), fill = "red", alpha = 0.3) +
       ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "gray", linewidth = 0.5) +
       ggplot2::labs(title = title, x = param_term, y = "Relative Risk") +
       ggplot2::theme_minimal() +
@@ -1316,143 +1349,105 @@ plot_relative_risk <- function(
   all_predictions <- list()
 
   if (level == "country") {
-    if (is.null(filter_year)) {
-      data_all <- data
-      pred <- get_predictions(data_all, param_term, model, level, case_type)
-      if (is.list(pred) && !is.null(names(pred)) && length(pred) == 1) {
-        pred <- pred[[1]]
-      }
-      all_predictions[["All Years"]] <- pred
-
-      x_breaks <- pretty(range(pred$predvar, na.rm = TRUE), n = 6)
-      x_limits <- range(x_breaks)
-      param_sym <- rlang::sym(param_term)
-
-      # Get range of predvar where RR >= 1
-      rr_above_1 <- pred$predvar[which(pred$allRRfit >= 1)]
-      rr_range <- range(rr_above_1, na.rm = TRUE)
-
-      rr_plot <- ggplot2::ggplot() +
-        ggplot2::geom_line(
-          data = dplyr::tibble(x = pred$predvar, y = pred$allRRfit),
-          ggplot2::aes(x = x, y = y), color = "red", linewidth = 1) +
-        ggplot2::geom_ribbon(
-          data = dplyr::tibble(x = pred$predvar, ymin = pred$allRRlow, ymax = pred$allRRhigh),
-          ggplot2::aes(x = x, ymin = ymin, ymax = ymax), fill = "red", alpha = 0.3) +
-        ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "gray", linewidth = 0.5) +
-        ggplot2::geom_vline(xintercept = rr_range, linetype = "dotted", color = "blue", linewidth = 0.8) +
-        ggplot2::scale_x_continuous(limits = x_limits, breaks = x_breaks) +
-        ggplot2::labs(title = "Relative Risk Curve", y = "Relative Risk") +
-        ggplot2::theme_minimal() +
-        ggplot2::theme(
-          axis.title.x = ggplot2::element_blank(),
-          axis.text.x = ggplot2::element_blank(),
-          axis.ticks.x = ggplot2::element_blank(),
-          axis.title.y = ggplot2::element_text(color = "gray"),
-          plot.title = ggplot2::element_text(size = 11)
-        )
-
-      hist_counts <- ggplot2::ggplot_build(
-        ggplot2::ggplot(data_all, ggplot2::aes(x = !!param_sym)) +
-          ggplot2::geom_histogram(binwidth = 1, boundary = 0)
-      )$data[[1]]
-      max_count <- max(hist_counts$count, na.rm = TRUE)
-      y_breaks <- pretty(c(0, max_count), n = 3)
-      y_limits <- range(y_breaks)
-
-      hist_plot <- ggplot2::ggplot(data_all, ggplot2::aes(x = !!param_sym)) +
-        ggplot2::geom_histogram(binwidth = 1, boundary = 0, fill = "skyblue",
-                                color = "black", alpha = 0.6) +
-        ggplot2::scale_x_continuous(limits = x_limits, breaks = x_breaks) +
-        ggplot2::scale_y_continuous(name = "Frequency", limits = y_limits,
-                                    breaks = y_breaks, position = "right") +
-        ggplot2::labs(x = param_term) +
-        ggplot2::theme_minimal() +
-        ggplot2::theme(axis.title.y = ggplot2::element_text(color = "skyblue"))
-
-      plot_all_years <- rr_plot / hist_plot +
-        patchwork::plot_layout(heights = c(2, 1))
-
-      if (save_fig && !is.null(output_pdf)) {
-        grDevices::pdf(output_pdf, width = 10, height = 6)
-        print(plot_all_years)
-        grDevices::dev.off()
-      }
-
-      if (save_csv && !is.null(csv_output_path)) {
-        utils::write.csv(
-          dplyr::tibble(
-            predvar = pred$predvar,
-            allRRfit = pred$allRRfit,
-            allRRlow = pred$allRRlow,
-            allRRhigh = pred$allRRhigh
-          ),
-          csv_output_path, row.names = FALSE
-        )
-      }
-
-      return(list(plots = plot_all_years, RR = all_predictions))
+    data_all <- data
+    pred <- get_predictions(data_all, param_term, model, level, case_type)
+    if (is.list(pred) && !is.null(names(pred)) && length(pred) == 1) {
+      pred <- pred[[1]]
     }
+    all_predictions[["All Years"]] <- pred
 
-    filter_year <- sort(unique(filter_year))
-    plots <- lapply(filter_year, function(yr) {
-      pred <- get_predictions(dplyr::filter(data, year == yr), param_term, model, level, case_type)
-      all_predictions[[as.character(yr)]] <- pred
-      build_plot(pred, as.character(yr))
-    }) %>% purrr::keep(~ !is.null(.))
+    x_breaks <- pretty(range(pred$predvar, na.rm = TRUE), n = 6)
+    x_limits <- range(x_breaks)
+    param_sym <- rlang::sym(param_term)
+
+    rr_above_1 <- pred$predvar[which(pred$allRRfit >= 1)]
+    rr_range <- range(rr_above_1, na.rm = TRUE)
+
+    rr_plot <- ggplot2::ggplot() +
+      ggplot2::geom_line(
+        data = dplyr::tibble(x = pred$predvar, y = pred$allRRfit),
+        ggplot2::aes(x = .data$x, y = .data$y), color = "red", linewidth = 1
+      ) +
+      ggplot2::geom_ribbon(
+        data = dplyr::tibble(x = pred$predvar, ymin = pred$allRRlow, ymax = pred$allRRhigh),
+        ggplot2::aes(x = .data$x, ymin = .data$ymin, ymax = .data$ymax), fill = "red", alpha = 0.3
+      ) +
+      ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "gray", linewidth = 0.5) +
+      ggplot2::geom_vline(xintercept = rr_range, linetype = "dotted", color = "blue", linewidth = 0.8) +
+      ggplot2::scale_x_continuous(limits = x_limits, breaks = x_breaks) +
+      ggplot2::labs(title = "Relative Risk Curve", y = "Relative Risk") +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(
+        axis.title.x = ggplot2::element_blank(),
+        axis.text.x = ggplot2::element_blank(),
+        axis.ticks.x = ggplot2::element_blank(),
+        axis.title.y = ggplot2::element_text(color = "gray"),
+        plot.title = ggplot2::element_text(size = 11)
+      )
+
+    hist_counts <- ggplot2::ggplot_build(
+      ggplot2::ggplot(data_all, ggplot2::aes(x = !!param_sym)) +
+        ggplot2::geom_histogram(binwidth = 1, boundary = 0)
+    )$data[[1]]
+
+    max_count <- max(hist_counts$count, na.rm = TRUE)
+    y_breaks <- pretty(c(0, max_count), n = 3)
+    y_limits <- range(y_breaks)
+
+    hist_plot <- ggplot2::ggplot(data_all, ggplot2::aes(x = !!param_sym)) +
+      ggplot2::geom_histogram(binwidth = 1, boundary = 0, fill = "skyblue",
+                              color = "black", alpha = 0.6) +
+      ggplot2::scale_x_continuous(limits = x_limits, breaks = x_breaks) +
+      ggplot2::scale_y_continuous(name = "Frequency", limits = y_limits,
+                                  breaks = y_breaks, position = "right") +
+      ggplot2::labs(x = param_term) +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(axis.title.y = ggplot2::element_text(color = "skyblue"))
+
+    plot_all_years <- rr_plot / hist_plot +
+      patchwork::plot_layout(heights = c(2, 1))
 
     if (save_fig && !is.null(output_pdf)) {
-      grDevices::pdf(output_pdf, width = 14, height = 10)
-      purrr::walk(plots, print)
+      grDevices::pdf(output_pdf, width = 10, height = 6)
+      print(plot_all_years)
       grDevices::dev.off()
     }
 
     if (save_csv && !is.null(csv_output_path)) {
-      flat_df <- dplyr::bind_rows(lapply(names(all_predictions), function(yr) {
-        df <- all_predictions[[yr]]
+      utils::write.csv(
         dplyr::tibble(
-          year = as.numeric(yr),
-          predvar = df$predvar,
-          allRRfit = df$allRRfit,
-          allRRlow = df$allRRlow,
-          allRRhigh = df$allRRhigh
-        )
-      }))
-      utils::write.csv(flat_df, csv_output_path, row.names = FALSE)
-    }
-    return(list(
-      plots = patchwork::wrap_plots(plots) +
-        patchwork::plot_annotation(
-          title = "Exposure-Response Curves by Country",
-          subtitle = paste(param_term, "Years:", paste(filter_year, collapse = ", "))
+          predvar = pred$predvar,
+          allRRfit = pred$allRRfit,
+          allRRlow = pred$allRRlow,
+          allRRhigh = pred$allRRhigh
         ),
-      RR = all_predictions
-    ))
+        csv_output_path, row.names = FALSE
+      )
+    }
+
+    return(list(plots = plot_all_years, RR = all_predictions))
   }
+
   if (level %in% c("region", "district")) {
     group_plots <- list()
-
     if (is.null(filter_year)) {
       preds <- get_predictions(data, param_term, model, level, case_type)
       all_predictions[["All Years"]] <- preds
       for (grp in names(preds)) {
         p <- build_plot(preds[[grp]], grp)
-        if (!is.null(p)) {
-          group_plots[[grp]] <- list(p)
-        }
+        if (!is.null(p)) group_plots[[grp]] <- list(p)
       }
     } else {
       for (yr in filter_year) {
-        preds <- get_predictions(dplyr::filter(data, year == yr), param_term, model, level, case_type)
+        preds <- get_predictions(dplyr::filter(data, .data$year == yr), param_term, model, level, case_type)
         all_predictions[[as.character(yr)]] <- preds
         for (grp in names(preds)) {
           p <- build_plot(preds[[grp]], paste0(grp, " (", yr, ")"))
-          if (!is.null(p)) {
-            group_plots[[grp]] <- c(group_plots[[grp]], list(p))
-          }
+          if (!is.null(p)) group_plots[[grp]] <- c(group_plots[[grp]], list(p))
         }
       }
     }
+
     if (save_fig && !is.null(output_pdf)) {
       grDevices::pdf(output_pdf, width = 12, height = 9)
       all_plots <- unlist(group_plots, recursive = FALSE)
@@ -1470,6 +1465,7 @@ plot_relative_risk <- function(
       }
       grDevices::dev.off()
     }
+
     if (save_csv && !is.null(csv_output_path)) {
       flat_df <- dplyr::bind_rows(lapply(names(all_predictions), function(yr) {
         preds <- all_predictions[[yr]]
@@ -1490,7 +1486,10 @@ plot_relative_risk <- function(
 
     return(list(plots = group_plots, RR = all_predictions))
   }
+
+  stop("Invalid level: must be 'country', 'region', or 'district'")
 }
+
 
 #' Attribution calculation for maximum temperature
 #'
@@ -1541,7 +1540,7 @@ attribution_calculation <- function(
   # Filter years if needed
   if (!is.null(filter_year)) {
     stopifnot("year" %in% names(data), all(filter_year %in% unique(data$year)))
-    data <- dplyr::filter(data, year %in% filter_year)
+    data <- dplyr::filter(data, .data$year %in% filter_year)
   }
 
   # Create INLA indices and basis matrices
@@ -1706,14 +1705,12 @@ plot_attribution_metric <- function(
   output_dir = NULL
 ) {
   case_type <- validate_case_type(case_type)
-  # Normalise and validate country+filter_year selection
   level <- tolower(level)
-  if (level=="country" && !is.null(filter_year)) {
-    warning("If level==country, filter_year must be NULL.")
+  if (level == "country" && !is.null(filter_year)) {
+    warning("If level == 'country', filter_year must be NULL.")
     return(NULL)
   }
   metrics <- match.arg(metrics, several.ok = TRUE)
-
   if (is.null(param_term)) stop("'param_term' must be provided.")
 
   param_label <- switch(tolower(param_term),
@@ -1723,7 +1720,7 @@ plot_attribution_metric <- function(
 
   if (!is.null(filter_year)) {
     if (!"year" %in% names(attr_data)) stop("'year' column not found in data.")
-    attr_data <- dplyr::filter(attr_data, year %in% filter_year)
+    attr_data <- dplyr::filter(attr_data, .data$year %in% filter_year)
   }
 
   y_title_lookup <- c(
@@ -1733,25 +1730,9 @@ plot_attribution_metric <- function(
   )
 
   title_lookup <- c(
-    AR_per_100k = paste0(
-      tools::toTitleCase(case_type),
-      " cases per 100,000 attributable to ",
-      param_label,
-      " (95% CI)"
-    ),
-    AR_Fraction = paste0(
-      tools::toTitleCase(case_type),
-      " Attributable Fraction (%) due to ",
-      param_label,
-      " (95% CI)"
-    ),
-    AR_Number = paste0(
-      "Number of ",
-      tools::toTitleCase(case_type),
-      " cases attributable to ",
-      param_label,
-      " (95% CI)"
-    )
+    AR_per_100k = paste0(tools::toTitleCase(case_type), " cases per 100,000 attributable to ", param_label, " (95% CI)"),
+    AR_Fraction = paste0(tools::toTitleCase(case_type), " Attributable Fraction (%) due to ", param_label, " (95% CI)"),
+    AR_Number = paste0("Number of ", tools::toTitleCase(case_type), " cases attributable to ", param_label, " (95% CI)")
   )
 
   formatter_lookup <- list(
@@ -1761,10 +1742,11 @@ plot_attribution_metric <- function(
   )
 
   aggregate_attr_data <- function(data, group_var) {
-    dplyr::group_by(data, .data[[group_var]]) %>%
+    data %>%
+      dplyr::group_by(.data[[group_var]]) %>%
       dplyr::summarise(
-        across(matches("^AR_Number(_LCI|_UCI)?$"), ~ sum(.x, na.rm = TRUE)),
-        across(matches("^AR_(Fraction|per_100k)(_LCI|_UCI)?$"), ~ mean(.x, na.rm = TRUE)),
+        dplyr::across(matches("^AR_Number(_LCI|_UCI)?$"), ~ sum(.x, na.rm = TRUE)),
+        dplyr::across(matches("^AR_(Fraction|per_100k)(_LCI|_UCI)?$"), ~ mean(.x, na.rm = TRUE)),
         .groups = "drop"
       )
   }
@@ -1803,28 +1785,26 @@ plot_attribution_metric <- function(
     y_formatter <- formatter_lookup[[metric]]
     y_label <- y_title_lookup[[metric]]
 
-    # Country-level time series when filter_year is NULL
     if (level == "country" && is.null(filter_year)) {
       attr_data_plot$year <- factor(attr_data_plot$year)
-      p <- ggplot2::ggplot(attr_data_plot, ggplot2::aes(x = year, y = .data[[metric]], group = 1)) +
+      p <- ggplot2::ggplot(attr_data_plot, ggplot2::aes(x = .data$year, y = .data[[metric]], group = 1)) +
         ggplot2::geom_line(color = "steelblue", linewidth = 1) +
         ggplot2::geom_point(color = "steelblue", size = 2) +
         ggplot2::geom_ribbon(ggplot2::aes(ymin = .data[[lci_col]], ymax = .data[[uci_col]]),
-                    alpha = 0.2, fill = "steelblue") +
+                             alpha = 0.2, fill = "steelblue") +
         ggplot2::labs(title = title, y = y_label, x = "Year") +
         ggplot2::scale_y_continuous(labels = y_formatter) +
         ggplot2::theme_minimal(base_size = 10) +
-        ggplot2:: theme(plot.title = ggplot2::element_text(hjust = 0.5, size = 12, face = "bold"))
+        ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, size = 12, face = "bold"))
 
       if (save_fig && !is.null(output_dir)) {
         if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
-        ggsave(filename = file.path(output_dir, paste0("plot_", metric, "_", param_term, "_country.pdf")),
-               plot = p, width = 8, height = 5)
+        ggplot2::ggsave(filename = file.path(output_dir, paste0("plot_", metric, "_", param_term, "_country.pdf")),
+                        plot = p, width = 8, height = 5)
       }
       return(p)
     }
 
-    # region/district bar plot logic
     if (level %in% c("region", "district") && is.null(filter_year)) {
       attr_data_plot <- attr_data_plot %>%
         dplyr::arrange(dplyr::desc(.data[[metric]])) %>%
@@ -1836,22 +1816,22 @@ plot_attribution_metric <- function(
         split(ceiling(seq_along(attr_data_plot[[level]]) / 30)) %>%
         purrr::map(~ {
           ggplot2::ggplot(.x, ggplot2::aes(x = .data[[level]], y = .data[[metric]])) +
-            ggplot2::geom_col(fill = "steelblue", width= 0.6) +
+            ggplot2::geom_col(fill = "steelblue", width = 0.6) +
             ggplot2::geom_errorbar(ggplot2::aes(ymin = .data[[lci_col]], ymax = .data[[uci_col]], color = "95% CI"),
-                          width = 0.2) +
+                                   width = 0.2) +
             ggplot2::coord_flip() +
             ggplot2::labs(x = tools::toTitleCase(level), y = y_label) +
             ggplot2::scale_y_continuous(labels = y_formatter, limits = c(0, max_y)) +
             ggplot2::scale_color_manual(name = "", values = c("95% CI" = "black")) +
             ggplot2::theme_minimal(base_size = 10) +
             ggplot2::theme(axis.text.y = ggplot2::element_text(size = 7),
-                  plot.title = ggplot2::element_text(hjust = 0.5, size = 9))
+                           plot.title = ggplot2::element_text(hjust = 0.5, size = 9))
         })
 
       if (save_fig && !is.null(output_dir)) {
         if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
         pdf_file <- file.path(output_dir, paste0("plot_", metric, "_", param_term, "_", level, ".pdf"))
-        pdf(pdf_file, width = 11, height = 8)
+        grDevices::pdf(pdf_file, width = 11, height = 8)
         for (i in seq_along(district_plots)) {
           merged_plot <- patchwork::wrap_plots(district_plots[i], ncol = 1) +
             patchwork::plot_annotation(
@@ -1860,25 +1840,25 @@ plot_attribution_metric <- function(
             )
           print(merged_plot)
         }
-        dev.off()
+        grDevices::dev.off()
       }
       return(district_plots)
     }
 
-    # Region/district with multi-year grouped bar plot logic
     if (!is.null(filter_year) && length(filter_year) > 2 && level %in% c("region", "district")) {
       attr_data_plot <- attr_data_plot %>%
-        group_by(.data[[level]], year) %>%
-        summarise(
-          across(matches("^AR_Number(_LCI|_UCI)?$"), ~ sum(.x, na.rm = TRUE)),
-          across(matches("^AR_(Fraction|per_100k)(_LCI|_UCI)?$"), ~ mean(.x, na.rm = TRUE)),
-          .groups = "drop")
+        dplyr::group_by(.data[[level]], .data$year) %>%
+        dplyr::summarise(
+          dplyr::across(matches("^AR_Number(_LCI|_UCI)?$"), ~ sum(.x, na.rm = TRUE)),
+          dplyr::across(matches("^AR_(Fraction|per_100k)(_LCI|_UCI)?$"), ~ mean(.x, na.rm = TRUE)),
+          .groups = "drop"
+        )
 
-      level_vals <- attr_data_plot %>%
-        group_by(.data[[level]]) %>%
-        summarise(avg = mean(.data[[metric]], na.rm = TRUE), .groups = "drop") %>%
-        arrange(desc(avg)) %>%
-        pull(.data[[level]])
+            level_vals <- attr_data_plot %>%
+        dplyr::group_by(.data[[level]]) %>%
+        dplyr::summarise(avg = mean(.data[[metric]], na.rm = TRUE), .groups = "drop") %>%
+        dplyr::arrange(dplyr::desc(.data$avg)) %>%
+        dplyr::pull(.data[[level]])
 
       attr_data_plot[[level]] <- factor(attr_data_plot[[level]], levels = level_vals)
       y_min <- min(attr_data_plot[[paste0(metric, "_LCI")]], na.rm = TRUE)
@@ -1886,25 +1866,33 @@ plot_attribution_metric <- function(
       split_levels <- split(level_vals, ceiling(seq_along(level_vals) / 30))
 
       group_plots <- purrr::map(split_levels, function(subset_levels) {
-        df <- filter(attr_data_plot, .data[[level]] %in% subset_levels)
-        ggplot2::ggplot(df, ggplot2::aes(x = .data[[level]], y = .data[[metric]], fill = factor(year))) +
-          ggplot2::geom_col(position = position_dodge(width = 0.8)) +
+        df <- dplyr::filter(attr_data_plot, .data[[level]] %in% subset_levels)
+        ggplot2::ggplot(df, ggplot2::aes(x = .data[[level]], y = .data[[metric]], fill = factor(.data$year))) +
+          ggplot2::geom_col(position = ggplot2::position_dodge(width = 0.8)) +
           ggplot2::geom_errorbar(
-            ggplot2::aes(ymin = .data[[paste0(metric, "_LCI")]], ymax = .data[[paste0(metric, "_UCI")]],
-                color = "95% CI"), position = position_dodge(0.8), width = 0.25) +
+            ggplot2::aes(
+              ymin = .data[[paste0(metric, "_LCI")]],
+              ymax = .data[[paste0(metric, "_UCI")]],
+              color = "95% CI"
+            ),
+            position = ggplot2::position_dodge(0.8),
+            width = 0.25
+          ) +
           ggplot2::scale_color_manual(name = "", values = c("95% CI" = "black")) +
-          ggplot2::labs( x = tools::toTitleCase(level), y = y_label, fill = "Year") +
+          ggplot2::labs(x = tools::toTitleCase(level), y = y_label, fill = "Year") +
           ggplot2::theme_minimal(base_size = 8) +
-          ggplot2::theme(axis.text.x = element_text(angle = 70, hjust = 1, size = 8),
-                axis.text.y = ggplot2::element_text(size = 8),
-                plot.margin = ggplot2::margin(t = 5, r = 5, b = 50, l = 5)) +
+          ggplot2::theme(
+            axis.text.x = ggplot2::element_text(angle = 70, hjust = 1, size = 8),
+            axis.text.y = ggplot2::element_text(size = 8),
+            plot.margin = ggplot2::margin(t = 5, r = 5, b = 50, l = 5)
+          ) +
           ggplot2::coord_cartesian(ylim = c(y_min, y_max))
       })
 
       if (save_fig && !is.null(output_dir)) {
         if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
-        pdf_file <- file.path(output_dir, paste0("plot_", metric, "_", param_term, "_", "Year_",level, ".pdf"))
-        pdf(pdf_file, width = 11, height = 8)
+        pdf_file <- file.path(output_dir, paste0("plot_", metric, "_", param_term, "_Year_", level, ".pdf"))
+        grDevices::pdf(pdf_file, width = 11, height = 8)
         for (i in seq_along(group_plots)) {
           merged <- patchwork::wrap_plots(group_plots[i], ncol = 1) +
             patchwork::plot_annotation(
@@ -1913,12 +1901,17 @@ plot_attribution_metric <- function(
             )
           print(merged)
         }
-        dev.off()
+        grDevices::dev.off()
       }
+
       return(group_plots)
     }
+
+    return(NULL)
   })
 
   return(plots)
 }
+
+
 

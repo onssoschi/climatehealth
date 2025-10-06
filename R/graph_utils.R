@@ -8,7 +8,7 @@
 #'
 #' @param plot_count The number of plots required for the grid.
 #'
-#' @return A vector containing [1] x value and [2] y value for the grid.
+#' @return A numeric vector: c(x, y), where x and y define the grid dimensions.
 #'
 #' @export
 create_grid <- function(plot_count) {
@@ -38,10 +38,7 @@ create_grid <- function(plot_count) {
 #' @export
 plot_correlation_matrix <- function(matrix_, title, output_path) {
   # validate output path
-  if (!endsWith(output_path, ".png")) {
-    output_path <- strsplit(output_path, "\\.")[1]
-    output_path <- paste0(output_path, ".png")
-  }
+  output_path <- enforce_file_extension(output_path, ".png")
   # round correlation metrics
   matrix_ <- round(matrix_, 3)
   # draw and save correlation matrix
@@ -75,10 +72,7 @@ plot_distributions <- function(
   # create a pdf if a save is selected
   if (save_hists == T) {
     # normalise output path
-    if (!endsWith(output_path, ".pdf")) {
-      output_path <- strsplit(output_path, "\\.")[[1]]
-      output_path <- paste0(output_path, ".pdf")
-    }
+    output_path <- enforce_file_extension(output_path, ".pdf")
     pdf(output_path)
   }
   # normalise columns
@@ -153,9 +147,7 @@ plot_moving_average <- function(
 ) {
   # Create a PDF if saving is requested
   if (save_plot == TRUE) {
-    if (!endsWith(output_path, ".pdf")) {
-      output_path <- paste0(tools::file_path_sans_ext(output_path), ".pdf")
-    }
+    output_path <- enforce_file_extension(output_path, ".pdf")
     dir.create(dirname(output_path), recursive = TRUE, showWarnings = FALSE)
     pdf(output_path)
   }
@@ -253,9 +245,7 @@ plot_scatter_grid <- function(
   grid_size <- create_grid(length(comparison_cols))
 
   if (save_scatters) {
-    if (!endsWith(output_path, ".pdf")) {
-      output_path <- paste0(tools::file_path_sans_ext(output_path), ".pdf")
-    }
+    output_path <- enforce_file_extension(output_path, ".pdf")
     pdf(output_path, width = 8, height = 8)
   }
 
@@ -318,9 +308,7 @@ plot_boxplots <- function(
 
   # Save to PDF if requested
   if (save_plot) {
-    if (!endsWith(output_path, ".pdf")) {
-      output_path <- paste0(tools::file_path_sans_ext(output_path), ".pdf")
-    }
+    output_path <- enforce_file_extension(output_path, ".pdf")
     pdf(output_path)
   }
 
@@ -378,9 +366,7 @@ plot_seasonal_trends <- function(
 
   # Set up PDF output if needed
   if (save_plot) {
-    if (!endsWith(output_path, ".pdf")) {
-      output_path <- paste0(tools::file_path_sans_ext(output_path), ".pdf")
-    }
+    output_path <- enforce_file_extension(output_path, ".pdf")
     pdf(output_path, width = 10, height = 6)
   }
 
@@ -434,9 +420,7 @@ plot_regional_trends <- function(
 ) {
   # Set up PDF output if needed
   if (save_plot) {
-    if (!endsWith(output_path, ".pdf")) {
-      output_path <- paste0(tools::file_path_sans_ext(output_path), ".pdf")
-    }
+    output_path <- enforce_file_extension(output_path, ".pdf")
     pdf(output_path, width = 10, height = 6)
   }
 
@@ -448,7 +432,17 @@ plot_regional_trends <- function(
     col <- outcome_cols[i]
     ylab <- if (!is.null(ylabs) && length(ylabs) >= i) ylabs[i] else col
 
-    regional_avg <- aggregate(df[[col]], by = list(Region = df[[region_col]]), FUN = mean, na.rm = TRUE)
+    valid_rows <- !is.na(df[[col]]) & !is.na(df[[region_col]])
+    if (sum(valid_rows) == 0) {
+      warning(paste("No valid data to plot for", col))
+      next
+    }
+
+    regional_avg <- aggregate(
+      df[[col]][valid_rows],
+      by = list(Region = df[[region_col]][valid_rows]),
+      FUN = mean
+    )
 
     barplot(
       height = regional_avg$x,
@@ -459,6 +453,7 @@ plot_regional_trends <- function(
       las = 2
     )
   }
+
 
   # Overall title
   mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2, col = "black")
@@ -480,12 +475,12 @@ plot_regional_trends <- function(
 #'
 #' @export
 plot_rate_overall <- function(
-    df,
-    dependent_col,
-    population_col,
-    date_col,
-    save_rate = FALSE,
-    output_path = NULL
+  df,
+  dependent_col,
+  population_col,
+  date_col,
+  save_rate = FALSE,
+  output_path = NULL
 ) {
   # Clean numeric columns
   df[[population_col]] <- as.numeric(gsub(",", "", df[[population_col]]))
@@ -495,16 +490,19 @@ plot_rate_overall <- function(
   df$Year <- lubridate::year(as.Date(df[[date_col]]))
 
   # Aggregate
-  yearly_data <- df |>
-    dplyr::group_by(Year) |>
+  yearly_data <- df %>%
+    dplyr::group_by(.data$Year) %>%
     dplyr::summarise(
       Total_Dependent = sum(.data[[dependent_col]], na.rm = TRUE),
-      Total_Population = sum(.data[[population_col]], na.rm = TRUE)
-    ) |>
-    dplyr::mutate(Rate_per_100k = round((Total_Dependent / Total_Population) * 100000, 3))
+      Total_Population = sum(.data[[population_col]], na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    dplyr::mutate(
+      Rate_per_100k = round((.data$Total_Dependent / .data$Total_Population) * 100000, 3)
+    )
 
   # Create plot
-  plot_overall_rate <- ggplot2::ggplot(yearly_data, ggplot2::aes(x = Year, y = Rate_per_100k)) +
+  plot_overall_rate <- ggplot2::ggplot(yearly_data, ggplot2::aes(x = .data$Year, y = .data$Rate_per_100k)) +
     ggplot2::geom_line(group = 1, color = "#003c57", linewidth = 1.2) +
     ggplot2::geom_point(color = "#003c57", size = 2) +
     ggplot2::labs(
@@ -512,17 +510,14 @@ plot_rate_overall <- function(
       y = "Rate per 100,000", x = "Year"
     ) +
     ggplot2::expand_limits(y = 0) +
-
     ggplot2::theme_minimal()
 
   # Save or return
   if (save_rate && !is.null(output_path)) {
-    if (!endsWith(output_path, ".pdf")) {
-      output_path <- paste0(tools::file_path_sans_ext(output_path), ".pdf")
-    }
-    pdf(output_path, width = 10, height = 6)
+    output_path <- enforce_file_extension(output_path, ".pdf")
+    grDevices::pdf(output_path, width = 10, height = 6)
     print(plot_overall_rate)
-    dev.off()
+    grDevices::dev.off()
   } else {
     return(plot_overall_rate)
   }
@@ -556,15 +551,13 @@ plot_total_variables_by_year <- function(
 
   # Set up PDF output if needed
   if (save_total) {
-    if (!endsWith(output_path, ".pdf")) {
-      output_path <- paste0(tools::file_path_sans_ext(output_path), ".pdf")
-    }
+    output_path <- enforce_file_extension(output_path, ".pdf")
     pdf(output_path, width = 10, height = 6)
   }
 
   # Plot each variable
   for (var in variables) {
-    p <-  ggplot2::ggplot(yearly_totals, ggplot2::aes(x = Year, y = .data[[var]])) +
+    p <-  ggplot2::ggplot(yearly_totals, ggplot2::aes(x = .data$Year, y = .data[[var]])) +
       ggplot2::geom_line(color = "#27a0cc", linewidth = 1.2) +
       ggplot2::geom_point(color = "#27a0cc", size = 2) +
       ggplot2::labs(
