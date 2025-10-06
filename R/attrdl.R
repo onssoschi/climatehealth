@@ -1,38 +1,17 @@
-### (c) Antonio Gasparrini 2015-2017
-#
 ################################################################################
 # FUNCTION FOR COMPUTING ATTRIBUTABLE MEASURES FROM DLNM
-#   REQUIRES dlnm VERSION 2.2.0 AND ON
-################################################################################
+#   RE-IMPLEMENTED TO INCLUDE INTERNAL LOGIC FROM DLNM:
+#     - getcoef
+#     - getvcov
+#     - getlink
+#     - seqlag
+#     - mkXpred
 #
-# DISCLAIMER:
-#   THE CODE COMPOSING THIS FUNCTION HAS NOT BEEN SYSTEMATICALLY TESTED. THE
-#   PRESENCE OF BUGS CANNOT BE RULED OUT. ALSO, ALTHOUGH WRITTEN GENERICALLY
-#   FOR WORKING IN DIFFERENT SCENARIOS AND DATA, THE FUNCTION HAS NOT BEEN
-#   TESTED IN CONTEXTS DIFFERENT THAN THE EXAMPLE INCLUDED IN THE PAPER.
-#   IT IS RESPONSIBILITY OF THE USER TO CHECK THE RELIABILITY OF THE RESULTS IN
-#   DIFFERENT APPLICATIONS.
-#
-# Version: 25 January 2017
-# AN UPDATED VERSION CAN BE FOUND AT:
-#   https://github.com/gasparrini/2014_gasparrini_BMCmrm_Rcodedata
-#
-################################################################################
-# SEE THE PDF WITH A DETAILED DOCUMENTATION AT www.ag-myresearch.com
-#
-#   - x: AN EXPOSURE VECTOR OR (ONLY FOR dir="back") A MATRIX OF LAGGED EXPOSURES
-#   - basis: THE CROSS-BASIS COMPUTED FROM x
-#   - cases: THE CASES VECTOR OR (ONLY FOR dir="forw") THE MATRIX OF FUTURE CASES
-#   - model: THE FITTED MODEL
-#   - coef, vcov: COEF AND VCOV FOR basis IF model IS NOT PROVIDED
-#   - model.link: LINK FUNCTION IF model IS NOT PROVIDED
-#   - type: EITHER "an" OR "af" FOR ATTRIBUTABLE NUMBER OR FRACTION
-#   - dir: EITHER "back" OR "forw" FOR BACKWARD OR FORWARD PERSPECTIVES
-#   - tot: IF TRUE, THE TOTAL ATTRIBUTABLE RISK IS COMPUTED
-#   - cen: THE REFERENCE VALUE USED AS COUNTERFACTUAL SCENARIO
-#   - range: THE RANGE OF EXPOSURE. IF NULL, THE WHOLE RANGE IS USED
-#   - sim: IF SIMULATION SAMPLES SHOULD BE RETURNED. ONLY FOR tot=TRUE
-#   - nsim: NUMBER OF SIMULATION SAMPLES
+# (c) Antonio Gasparrini 2015–2017
+# Adapted and extended for standalone use without ::: calls
+# Original sources:
+#   - https://github.com/gasparrini/2014_gasparrini_BMCmrm_Rcodedata
+#   - https://cran.r-project.org/package=dlnm
 ################################################################################
 
 getcoef <- function(model, class) {
