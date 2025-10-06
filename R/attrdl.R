@@ -44,7 +44,7 @@ getlink <- function(model, class, model.link=NULL) {
   if(!is.null(model.link)) return(model.link)
   # OTHERWISE, EXTRACT FROM MODEL (IF AVAILABLE)
   link <- if(all(class%in%c("lm")) || all(class%in%c("lme")) ||
-    any(class%in%"nlme") || any(class%in%"lmerMod")) "identity" else 
+    any(class%in%"nlme") || any(class%in%"lmerMod")) "identity" else
     if(any(class %in% c("clogit"))) "logit" else
     if(any(class %in% c("coxph"))) "log" else
     if(any(class %in% c("glm")) || any(class %in% c("glmmPQL")))
@@ -64,10 +64,10 @@ mkXpred <- function(type, basis, at, predvar, predlag, cen) {
     # IF STANDARD CROSS-BASIS, CREATE MARGINAL BASIS AND CALL TENSOR
     # NB: ORDER OF BASIS MATRICES IN TENSOR CHANGED SINCE VERSION 2.2.4
     # CENTERING APPLIED ONLY MARGINALLY TO VAR DIMENSION
-    basisvar <- do.call("onebasis",c(list(x=varvec),attr(basis,"argvar")))
-    basislag <- do.call("onebasis",c(list(x=lagvec),attr(basis,"arglag")))
+    basisvar <- do.call(dlnm::onebasis,c(list(x=varvec),attr(basis,"argvar")))
+    basislag <- do.call(dlnm::onebasis,c(list(x=lagvec),attr(basis,"arglag")))
     if(!is.null(cen)) {
-      basiscen <- do.call("onebasis",c(list(x=cen),attr(basis,"argvar")))
+      basiscen <- do.call(dlnm::onebasis,c(list(x=cen),attr(basis,"argvar")))
       basisvar <- scale(basisvar,center=basiscen,scale=FALSE)
     }
     Xpred <- mgcv::tensor.prod.model.matrix(list(basisvar,basislag))
@@ -75,9 +75,9 @@ mkXpred <- function(type, basis, at, predvar, predlag, cen) {
     # IF ONEBASIS, SIMPLY CALL THE FUNCTION WITH PROPER ARGUMENTS
     ind <- match(c("fun",names(formals(attr(basis,"fun")))),
       names(attributes(basis)),nomatch=0)
-    basisvar <- do.call("onebasis",c(list(x=varvec),attributes(basis)[ind]))
+    basisvar <- do.call(dlnm::onebasis,c(list(x=varvec),attributes(basis)[ind]))
     if(!is.null(cen)) {
-      basiscen <- do.call("onebasis",c(list(x=cen),attributes(basis)[ind]))
+      basiscen <- do.call(dlnm::onebasis,c(list(x=cen),attributes(basis)[ind]))
       basisvar <- scale(basisvar,center=basiscen,scale=FALSE)
     }
     Xpred <- basisvar
