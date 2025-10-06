@@ -40,8 +40,8 @@ filter_on_rr_distribution <- function(df,
   }
   # Filter
   df <- df %>%
-    dplyr::filter(year >= (output_year - RR_distribution_length + 1)
-                  & year <= output_year)
+    dplyr::filter(.data$year >= (output_year - RR_distribution_length + 1)
+                  & .data$year <= output_year)
 
   return(df)
 }
@@ -696,7 +696,6 @@ compute_attributable_deaths <- function(df_list,
 
 
   if (output_year == 0) {
-
     output_year = max(df_list[[1]]$year)
   }
   # Run the loop
@@ -776,7 +775,7 @@ compute_attributable_deaths <- function(df_list,
 
     data_output_year <- data_output_year %>%
       dplyr::mutate(
-        heatwave_temp = ifelse(.data$heatwave_flag == 1, temp, mintempregions[i])
+        heatwave_temp = ifelse(.data$heatwave_flag == 1, .data$temp, mintempregions[i])
       ) %>%
       dplyr::select(-.data$high_heat_flag, -.data$heatwave_flag)
 
@@ -1019,7 +1018,7 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 
   for (i in seq(df_list)){
     for (j in seq(length(output_year))){
-      data_output_year <- df_list[[i]] %>% dplyr::filter(year == output_year[j])
+      data_output_year <- df_list[[i]] %>% dplyr::filter(.data$year == output_year[j])
       years_pop[j] <- as.numeric(unique(data_output_year["pop_col"]))
     }
     regions_pop[i] <- mean(years_pop)
@@ -1050,7 +1049,7 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
   arregions_bind <- t(cbind(arregions, arregionslow, arregionshigh))
   artot_bind <- t(cbind(artot, artotlow, artothigh))
 
-  return(list(anregions_bind,antot_bind,arregions_bind,artot_bind))
+  return(list(anregions_bind, antot_bind, arregions_bind, artot_bind))
 }
 
 

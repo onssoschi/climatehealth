@@ -65,8 +65,8 @@ load_and_process_data <- function(
     ext <- tolower(xfun::file_ext(health_data_path))
     # Load data based on file extension
     data <- switch(ext,
-                   "rds" = tidyverse::read_rds(health_data_path),
-                   "csv" = tidyverse::read_csv(health_data_path, show_col_types = FALSE),
+                   "rds" = readr::read_rds(health_data_path),
+                   "csv" = readr::read_csv(health_data_path, show_col_types = FALSE),
                    "xlsx" = readxl::read_excel(health_data_path),
                    stop("Unsupported file type: must be .rds, .csv, or .xlsx")
     )
@@ -135,7 +135,7 @@ load_and_process_map <- function(
     select(region = !!sym(region_col),
            district = !!sym(district_col),
            geometry = !!sym(geometry_col)) %>%
-    mutate(geometry = sf::st_make_valid(geometry))
+    mutate(geometry = sf::st_make_valid(.data$geometry))
   # Create adjacency matrix
   nb_file <- if (!is.null(output_dir)) file.path(output_dir, "nbfile") else NULL
   g_file <- if (!is.null(output_dir)) file.path(output_dir, "map.graph")
@@ -212,8 +212,8 @@ load_and_process_climatedata <- function(
     ext <- tolower(xfun::file_ext(climate_data_path))
     # Load data based on file extension
     data <- switch(ext,
-                   "rds" = tidyverse::read_rds(climate_data_path),
-                   "csv" = tidyverse::read_csv(climate_data_path, show_col_types = FALSE),
+                   "rds" = readr::read_rds(climate_data_path),
+                   "csv" = readr::read_csv(climate_data_path, show_col_types = FALSE),
                    "xlsx" = readxl::read_excel(climate_data_path),
                    stop("Unsupported file type: must be .rds, .csv, or .xlsx")
     )
@@ -1120,7 +1120,7 @@ contour_plot <- function(
 
   if (!is.null(filter_year)) {
     if (!"year" %in% names(data)) stop("'year' column not found in data.")
-    data <- filter(data, year %in% filter_year)
+    data <- filter(data, .data$year %in% filter_year)
   }
   predt <- get_predictions(data, param_term=param_term, model=model, level=level, case_type=case_type)
 
@@ -1540,7 +1540,7 @@ attribution_calculation <- function(
   # Filter years if needed
   if (!is.null(filter_year)) {
     stopifnot("year" %in% names(data), all(filter_year %in% unique(data$year)))
-    data <- dplyr::filter(data, year %in% filter_year)
+    data <- dplyr::filter(data, .data$year %in% filter_year)
   }
 
   # Create INLA indices and basis matrices

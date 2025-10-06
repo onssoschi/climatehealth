@@ -157,7 +157,7 @@ pair_with_health <- function(climate_data,
 
   # Remove failed joins
   df_paired <- df_paired_all %>%
-    dplyr::filter(!is.na(mean_PM_FRP))
+    dplyr::filter(!is.na(.data$mean_PM_FRP))
 
   df_paired[is.finite(df_paired$mean_PM_FRP), ]
 
@@ -564,7 +564,7 @@ casecrossover_quasipoisson <- function(data,
     output_path <- file.path(output_folder_path,
                              "wildfires_residuals_vs_fit_plot.pdf")
     pdf(output_path, width=grid[1]*4, height=grid[2]*4)
-    par(mfrow=c(grid[1],  grid[2]))
+    par(mfrow=c(grid[1], grid[2]))
   }
 
   for (i in lags) {
@@ -576,8 +576,8 @@ casecrossover_quasipoisson <- function(data,
     model <- gnm::gnm(formula,
                       data = data,
                       family = quasipoisson,
-                      subset = ind > 0,
-                      eliminate = stratum)
+                      subset = data$ind > 0,
+                      eliminate = data$stratum)
 
     if (print_model_summaries) {
       print(Epi::ci.exp(model, subset = i))

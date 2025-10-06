@@ -35,6 +35,88 @@
 #   - nsim: NUMBER OF SIMULATION SAMPLES
 ################################################################################
 
+getcoef <- function(model, class) {
+  # EXTRACT COEF
+  # NB: gam, gee AND geeglm HAVE CLASS glm AS WELL
+  coef <- if(any(class%in%c("glm","gam","coxph"))) coef(model) else
+    if(any(class%in%c("lme","lmerMod","glmerMod","lmerModLmerTest"))) lme4::fixef(model) else
+      tryCatch(coef(model),error=function(w) "error")
+  if(identical(coef,"error")) stop("methods for coef() and vcov() must ",
+    "exist for the class of object 'model'. If not, extract them manually and ",
+    "use the arguments 'coef' and 'vcov'")
+  return(coef)
+}
+
+getvcov <- function(model, class) {
+  # EXTRACT VCOV
+  # NB: gam, gee AND geeglm HAVE CLASS glm AS WELL
+  vcov <- if(any(class%in%c("lm","glm","lme","coxph")) &&
+      !identical(class,c("gee","glm"))) vcov(model) else if(identical(class,c("gee","glm")))
+        model$robust.variance else if(any(class%in%c("lmerMod","glmerMod","lmerModLmerTest")))
+            as.matrix(vcov(model)) else tryCatch(vcov(model),error=function(w) "error")
+  if(identical(vcov,"error")) stop("methods for coef() and vcov() must ",
+    "exist for the class of object 'model'. If not, extract them manually and ",
+    "use the arguments 'coef' and 'vcov'")
+  return(vcov)
+}
+
+getlink <- function(model, class, model.link=NULL) {
+  # IF PROVIDED, JUST RETURN
+  if(!is.null(model.link)) return(model.link)
+  # OTHERWISE, EXTRACT FROM MODEL (IF AVAILABLE)
+  link <- if(all(class%in%c("lm")) || all(class%in%c("lme")) ||
+    any(class%in%"nlme") || any(class%in%"lmerMod")) "identity" else 
+    if(any(class %in% c("clogit"))) "logit" else
+    if(any(class %in% c("coxph"))) "log" else
+    if(any(class %in% c("glm")) || any(class %in% c("glmmPQL")))
+    model$family$link else if(any(class %in% c("glmerMod")))
+    model@resp$family$link else NA
+  return(link)
+}
+
+seqlag <- function(lag, by=1) seq(from=lag[1], to=lag[2], by=by)
+
+mkXpred <- function(type, basis, at, predvar, predlag, cen) {
+  # CREATE THE MATRIX OF TRANSFORMED CENTRED VARIABLES (DEPENDENT ON TYPE)
+  # CREATE VECTORIZED LAGGED VALUES
+  varvec <- if(is.matrix(at)) as.numeric(at) else rep(at,length(predlag))
+  lagvec <- rep(predlag,each=length(predvar))
+  if(type=="cb") {
+    # IF STANDARD CROSS-BASIS, CREATE MARGINAL BASIS AND CALL TENSOR
+    # NB: ORDER OF BASIS MATRICES IN TENSOR CHANGED SINCE VERSION 2.2.4
+    # CENTERING APPLIED ONLY MARGINALLY TO VAR DIMENSION
+    basisvar <- do.call("onebasis",c(list(x=varvec),attr(basis,"argvar")))
+    basislag <- do.call("onebasis",c(list(x=lagvec),attr(basis,"arglag")))
+    if(!is.null(cen)) {
+      basiscen <- do.call("onebasis",c(list(x=cen),attr(basis,"argvar")))
+      basisvar <- scale(basisvar,center=basiscen,scale=FALSE)
+    }
+    Xpred <- mgcv::tensor.prod.model.matrix(list(basisvar,basislag))
+  } else if(type=="one") {
+    # IF ONEBASIS, SIMPLY CALL THE FUNCTION WITH PROPER ARGUMENTS
+    ind <- match(c("fun",names(formals(attr(basis,"fun")))),
+      names(attributes(basis)),nomatch=0)
+    basisvar <- do.call("onebasis",c(list(x=varvec),attributes(basis)[ind]))
+    if(!is.null(cen)) {
+      basiscen <- do.call("onebasis",c(list(x=cen),attributes(basis)[ind]))
+      basisvar <- scale(basisvar,center=basiscen,scale=FALSE)
+    }
+    Xpred <- basisvar
+  } else {
+    # FINALLY, IF GAM, CALL PredictMat WITH PROPER DATA
+    # CENTERING APPLIED TO THE TENSOR PRODUCT (NOT EFFICIENT BUT EASIER)
+    data <- list(varvec, lagvec)
+    names(data) <- basis$term
+    Xpred <- mgcv::PredictMat(basis, data, n=length(varvec))
+    if(!is.null(cen)) {
+      data[[1]] <- rep(cen,length(varvec))
+      cbcen <- mgcv::PredictMat(basis,data,n=length(varvec))
+      Xpred <- Xpred-cbcen
+    }
+  }
+  return(Xpred)
+}
+
 #' FUNCTION FOR COMPUTING ATTRIBUTABLE MEASURES FROM DLNM
 #'
 #' @description
@@ -111,6 +193,7 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
     if(dir=="forw")
       cases <- rowMeans(as.matrix(tsModel::Lag(cases,-seq(lag[1],lag[2]))))
   }
+
   #
   ################################################################################
   #
@@ -119,11 +202,11 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
     cond <- paste0(name,"[[:print:]]*v[0-9]{1,2}\\.l[0-9]{1,2}")
     if(ncol(basis)==1L) cond <- name
     model.class <- class(model)
-    coef <- dlnm:::getcoef(model,model.class)
+    coef <- getcoef(model,model.class)
     ind <- grep(cond,names(coef))
     coef <- coef[ind]
-    vcov <- dlnm:::getvcov(model,model.class)[ind,ind,drop=FALSE]
-    model.link <- dlnm:::getlink(model,model.class)
+    vcov <- getvcov(model,model.class)[ind,ind,drop=FALSE]
+    model.link <- getlink(model,model.class)
     if(!model.link %in% c("log","logit"))
       stop("'model' must have a log or logit link function")
   }
@@ -135,11 +218,11 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
   #
   # PREPARE THE ARGUMENTS FOR TH BASIS TRANSFORMATION
   predvar <- if(typebasis=="one") x else seq(NROW(at))
-  predlag <- if(typebasis=="one") 0 else dlnm:::seqlag(lag)
+  predlag <- if(typebasis=="one") 0 else seqlag(lag)
   #
   # CREATE THE MATRIX OF TRANSFORMED CENTRED VARIABLES (DEPENDENT ON typebasis)
   if(typebasis=="cb") {
-    Xpred <- dlnm:::mkXpred(typebasis,basis,at,predvar,predlag,cen)
+    Xpred <- mkXpred(typebasis,basis,at,predvar,predlag,cen)
     Xpredall <- 0
     for (i in seq(length(predlag))) {
       ind <- seq(length(predvar))+length(predvar)*(i-1)
@@ -147,7 +230,7 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
     }
   } else {
     basis <- do.call(dlnm::onebasis,c(list(x=x),attr(basis,"argvar")))
-    Xpredall <- dlnm:::mkXpred(typebasis,basis,x,predvar,predlag,cen)
+    Xpredall <- mkXpred(typebasis,basis,x,predvar,predlag,cen)
   }
   #
   # CHECK DIMENSIONS
@@ -282,11 +365,11 @@ an_attrdl <- function(
 
   # PREPARE THE ARGUMENTS FOR TH BASIS TRANSFORMATION
   predvar <- if(typebasis=="one") x else seq(NROW(at))
-  predlag <- if(typebasis=="one") 0 else dlnm:::seqlag(lag)
+  predlag <- if(typebasis=="one") 0 else seqlag(lag)
 
   # CREATE THE MATRIX OF TRANSFORMED CENTRED VARIABLES (DEPENDENT ON typebasis)
   if(typebasis=="cb") {
-    Xpred <- dlnm:::mkXpred(typebasis,basis,at,predvar,predlag,cen)
+    Xpred <- mkXpred(typebasis,basis,at,predvar,predlag,cen)
     Xpredall <- 0
     for (i in seq(length(predlag))) {
       ind <- seq(length(predvar))+length(predvar)*(i-1)
@@ -294,7 +377,7 @@ an_attrdl <- function(
     }
   } else {
     basis <- do.call(dlnm::onebasis,c(list(x=x),attr(basis,"argvar")))
-    Xpredall <- dlnm:::mkXpred(typebasis,basis,x,predvar,predlag,cen)
+    Xpredall <- mkXpred(typebasis,basis,x,predvar,predlag,cen)
   }
 
   # CHECK DIMENSIONS

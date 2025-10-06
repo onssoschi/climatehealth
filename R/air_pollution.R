@@ -139,13 +139,13 @@ create_air_pollution_lags <- function(
 ) {
 
   data_with_lags <- data %>%
-    dplyr::group_by(region) %>%
+    dplyr::group_by(.data$region) %>%
     dplyr::arrange(date)
 
   for (i in 1:max_lag) {
     lag_name <- paste0("pm25_lag", as.character(i))
     data_with_lags <- data_with_lags %>%
-      dplyr::mutate(!!lag_name := lag(pm25, i))
+      dplyr::mutate(!!lag_name := lag(.data$pm25, i))
   }
 
   lag_vars <- paste0("pm25_lag", 1:max_lag)
@@ -671,7 +671,7 @@ plot_air_pollution_lags <- function(lag_results,
   lag_results_clean <- lag_results_clean %>%
     dplyr::mutate(label = "")
 
-  lag_plot <- ggplot2::ggplot(lag_results_clean, ggplot2::aes(x = lag, y = rr)) +
+  lag_plot <- ggplot2::ggplot(lag_results_clean, ggplot2::aes(x = lag, y = .data$rr)) +
     ggplot2::geom_errorbar(ggplot2::aes(ymin = .data$ci_lower, ymax = .data$ci_upper),
                   width = 0.2, color = "darkblue", linewidth = 0.8) +
     ggplot2::geom_point(size = 3, color = "blue") +
@@ -900,7 +900,7 @@ analyze_air_pollution_dlm <- function(data,
     lag_data$yi <- log(lag_data$RR)
     lag_data$sei <- (log(lag_data$UB) - log(lag_data$LB)) / (2 * 1.96)
     meta_res <- tryCatch({
-      metafor::rma(yi = yi, sei = sei, data = lag_data, method = "REML")
+      metafor::rma(yi = lag_data$yi, sei = lag_data$sei, method = "REML")
     }, error = function(e) NULL)
     if (!is.null(meta_res)) {
       pooled_rr <- exp(meta_res$b)
@@ -975,7 +975,7 @@ plot_air_pollution_dlm <- function(dlm_results,
     prov_data <- region_results %>%
       filter(.data$region == prov) %>%
       filter(!is.na(.data$RR)) %>%
-      dplyr::mutate(lag_group = factor(lag_group, levels = all_labels))
+      dplyr::mutate(lag_group = factor(.data$lag_group, levels = all_labels))
 
     if (nrow(prov_data) == 0) next
 
@@ -1110,7 +1110,7 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
     dplyr::mutate(days = dplyr::row_number()) %>%
     dplyr::ungroup()
 
-  plist <- data_aggreg %>% split(., .$region)
+  plist <- plist <- split(data_aggreg, data_aggreg$region)
   prov <- names(plist)
 
   varfun <- "bs"
@@ -1181,7 +1181,7 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
     coef_matrix[j, ] <- coef(red)
     vcov_list[[j]] <- vcov(red)
 
-    prov_data <- data_with_lags %>% filter(region == prov[j])
+    prov_data <- data_with_lags %>% filter(.data$region == prov[j])
 
     simple_model <- tryCatch({
       fit_air_pollution_gam(prov_data, var_name, family)
@@ -1521,8 +1521,8 @@ air_pollution_do_analysis <- function(data_path,
       reference_specific_af_an[[ref_std$name]] <- ref_af_an
 
       meta_summary <- ref_af_an$meta_results %>%
-        filter(lag_group == "0") %>%
-        dplyr::select(AF, AN)
+        filter(.data$lag_group == "0") %>%
+        dplyr::select(.data$AF, .data$AN)
 
       if (nrow(meta_summary) > 0) {
         cat("  Overall AF for", ref_std$name, "reference:",
@@ -1564,7 +1564,7 @@ air_pollution_do_analysis <- function(data_path,
     cat("\n--- Reference-specific AF/AN Summary ---\n")
     for (ref_name in names(reference_specific_af_an)) {
       ref_data <- reference_specific_af_an[[ref_name]]$meta_results %>%
-        filter(lag_group == "0")
+        filter(.data$lag_group == "0")
       if (nrow(ref_data) > 0) {
         cat(ref_name, "standard: AF =", round(ref_data$AF * 100, 2), "%, AN =",
             round(ref_data$AN, 0), "deaths\n")
@@ -1577,7 +1577,7 @@ air_pollution_do_analysis <- function(data_path,
 
     # Save cleaned region results
     region_results_clean <- meta_results$region_results %>%
-      dplyr::select(-data, -model)
+      dplyr::select(-.data$data, -.data$model)
     write.csv(region_results_clean, file.path(output_dir, "region_results.csv"),
               row.names = FALSE)
     write.csv(lag_results, file.path(output_dir, "lag_results.csv"), row.names = FALSE)
