@@ -369,8 +369,9 @@ combine_health_climate_data <- function(
     output_dir = output_dir
   )
 
+  joinby_vars <- c("district", "year", "month")
   data <- health_data %>%
-    dplyr::left_join(climate_data, by = dplyr::join_by(.data$district, .data$year, .data$month)) %>%
+    dplyr::left_join(climate_data, by = dplyr::join_by(!!!syms(joinby_vars))) %>%
     dplyr::distinct() %>%
     dplyr::group_by(.data$region, .data$district) %>%
     dplyr::mutate(time = (.data$year - min(.data$year)) * 12 + .data$month) %>%
@@ -954,7 +955,7 @@ plot_monthly_random_effects <- function(
 #'
 #' @export
 plot_yearly_spatial_random_effect <- function(
-  combined_data ,
+  combined_data,
   model,
   case_type,
   save_fig = FALSE,
@@ -975,10 +976,10 @@ plot_yearly_spatial_random_effect <- function(
   ndistrict <- length(unique(data$district_code))
   # Extract spatial random effects
   space <- data.table::data.table(model$summary.random$district_index)
-  space$year <- rep(min(data$year):max(data$year), each = 2 * ndistrict)
-  space$re <- rep(c(rep(1, ndistrict), rep(2, ndistrict)), nyear)
+  space$year <- rep(min(data$year):max(data$year), each = 2 * ndistrict, length.out=nrow(space))
+  space$re <- rep(c(rep(1, ndistrict), rep(2, ndistrict)), nyear, length.out=nrow(space))
   space <- space[space$re == 1, ]
-  space$district_code <- rep(unique(data$district_code), nyear)
+  space$district_code <- rep(unique(data$district_code), nyear, length.out=nrow(space))
   # Merge with spatial map
   space <- left_join(map, space, by = c("district_code" = "district_code"))
   # Plot
@@ -1069,7 +1070,7 @@ get_predictions <- function(
     predt <- districts %>%
       lapply(function(dist){
         # Filter data for the current district
-        district_data <- subset(data, .data$district == dist)
+        district_data <- data %>% filter(.data$district == dist)
         # Extract predictions from the tmax DLNM centered on overall mean Tmax
         mean_param <- round(mean(district_data[[param_term]], na.rm = TRUE), 0)
         predt <- dlnm::crosspred(basis_matrices[[param_term]], coef = coef[indt],
