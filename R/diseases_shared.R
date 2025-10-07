@@ -1070,7 +1070,7 @@ get_predictions <- function(
     predt <- districts %>%
       lapply(function(dist){
         # Filter data for the current district
-        district_data <- subset(data, district == dist)
+        district_data <- data %>% filter(.data$district == dist)
         # Extract predictions from the tmax DLNM centered on overall mean Tmax
         mean_param <- round(mean(district_data[[param_term]], na.rm = TRUE), 0)
         predt <- dlnm::crosspred(basis_matrices[[param_term]], coef = coef[indt],
