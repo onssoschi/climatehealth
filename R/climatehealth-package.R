@@ -1,3 +1,30 @@
+#' climatehealth: Tools for Advanced Data Visualization and Analysis
+#'
+#' This package provides a suite of analysis functions for measuring the relationship
+#' between various climate factors (indicators) and health outcomes.
+#'
+#' ## Indicators
+#' - Heat and Cold
+#' - Wildfires
+#' - Mental Health
+#' - Air Pollution
+#' - Waterborne Diseases
+#' - Vectorborne Diseases
+#'
+#' ## Author
+#' Charlie Browning
+#'
+#' ## Maintainer
+#' Charlie Browning <charlbrowning@ons.gov.uk>
+#'
+#' ## License
+#' MIT
+#'
+#' ## See Also
+#' TBC
+#'
+#' @docType package
+#' @name climatehealth
 #' @keywords internal
 "_PACKAGE"
 
