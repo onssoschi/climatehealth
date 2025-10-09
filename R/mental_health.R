@@ -20,7 +20,7 @@
 #'
 #' @returns A list of dataframes with formatted and renamed columns.
 #'
-#' @export
+#' @keywords internal
 mh_read_and_format_data <- function(data_path,
                                  date_col,
                                  region_col = NULL,
@@ -71,7 +71,7 @@ mh_read_and_format_data <- function(data_path,
 #'
 #' @returns List of population totals by year and region
 #'
-#' @export
+#' @keywords internal
 mh_pop_totals <- function(df_list,
                           country = "National",
                           meta_analysis = FALSE){
@@ -113,7 +113,7 @@ mh_pop_totals <- function(df_list,
 #'
 #' @returns A list of cross-basis matrices by region
 #'
-#' @export
+#' @keywords internal
 mh_create_crossbasis <- function(df_list,
                               var_fun = "bs", #TODO What if natural spline (degree won't be needed as cubic) - if statement
                               var_degree = 2,
@@ -158,7 +158,7 @@ mh_create_crossbasis <- function(df_list,
 #'   \item `residuals_list` A list. Residuals for each model combination.
 #'   }
 #'
-#' @export
+#' @keywords internal
 mh_model_combo_res <- function(df_list,
                                cb_list,
                                independent_cols = NULL){
@@ -250,7 +250,7 @@ mh_model_combo_res <- function(df_list,
 #'
 #' @return A list. Variance inflation factors for each independent variables by region.
 #'
-#' @export
+#' @keywords internal
 mh_vif <- function(
   df_list,
   independent_cols = NULL
@@ -307,7 +307,7 @@ mh_vif <- function(
 #'   \item `vif_summary` A dataframe with the mean variance inflation factors for each independent variable.
 #'   }
 #'
-#' @export
+#' @keywords internal
 mh_model_validation <- function(df_list = df_list,
                                 cb_list = cb_list,
                                 independent_cols = NULL,
@@ -550,7 +550,7 @@ mh_model_validation <- function(df_list = df_list,
 #'
 #' @returns List containing models by region
 #'
-#' @export
+#' @keywords internal
 mh_casecrossover_dlnm <- function(df_list,
                                   control_cols = NULL,
                                   cb_list) {
@@ -632,7 +632,7 @@ mh_casecrossover_dlnm <- function(df_list,
 #'   \item `vcov_` A list. Covariance matrices for each region for the reduced model.
 #'   }
 #'
-#' @export
+#' @keywords internal
 mh_reduce_cumulative <- function(df_list,
                                  var_per = c(25,50,75),
                                  var_degree = 2,
@@ -687,7 +687,7 @@ mh_reduce_cumulative <- function(df_list,
 #'   \item `meta_test_res` A dataframe of results from statistical tests on the meta model.
 #'   }
 #'
-#' @export
+#' @keywords internal
 mh_meta_analysis <- function(df_list,
                              coef_,
                              vcov_,
@@ -779,7 +779,7 @@ mh_meta_analysis <- function(df_list,
 #'
 #' @returns Vector. Percentile of minimum suicide temperature for each region.
 #'
-#' @export
+#' @keywords internal
 mh_min_suicide_temp <- function(df_list,
                                    var_fun = "splines",
                                    var_per = c(25,50,75),
@@ -847,7 +847,7 @@ mh_min_suicide_temp <- function(df_list,
 #'
 #' @return A list containing predictions by region
 #'
-#' @export
+#' @keywords internal
 mh_predict_reg <- function(df_list,
                            var_fun = "bs",
                            var_per = c(25,50,75),
@@ -935,7 +935,7 @@ mh_predict_reg <- function(df_list,
 #'   \item `mmpredall` List. A list of national coefficients and covariance matrices.
 #'   }
 #'
-#' @export
+#' @keywords internal
 mh_add_national_data <- function(df_list,
                                  pop_list,
                                  var_fun = "bs",
@@ -1021,7 +1021,7 @@ mh_add_national_data <- function(df_list,
 #'
 #' @return A list containing predictions by region.
 #'
-#' @export
+#' @keywords internal
 mh_predict_nat <- function(df_list,
                            var_fun = "bs",
                            var_per = c(25,50,75),
@@ -1068,7 +1068,7 @@ mh_predict_nat <- function(df_list,
 #' @returns Dataframe containing cumulative relative risk and confidence
 #' intervals from analysis.
 #'
-#' @export
+#' @keywords internal
 mh_rr_results <- function(pred_list) {
 
   rr_results <- bind_rows(lapply(names(pred_list), function(region_name) {
@@ -1114,7 +1114,7 @@ mh_rr_results <- function(pred_list) {
 #' @returns Plots of cumulative lag exposure-response function with histogram of
 #' temperature distribution for each region
 #'
-#' @export
+#' @keywords internal
 mh_plot_rr <- function(df_list,
                        pred_list,
                        attr_thr = 97.5,
@@ -1258,7 +1258,7 @@ mh_plot_rr <- function(df_list,
 #'
 #' @return A list containing attributable numbers per region
 #'
-#' @export
+#' @keywords internal
 mh_attr <- function(df_list,
                     cb_list,
                     pred_list,
@@ -1334,7 +1334,7 @@ mh_attr <- function(df_list,
 #'   fractions, numbers and rates by calendar month and area.
 #'   }
 #'
-#' @export
+#' @keywords internal
 mh_attr_tables <- function(attr_list,
                            country = "National",
                            meta_analysis = FALSE) {
@@ -1420,7 +1420,7 @@ mh_attr_tables <- function(attr_list,
 #'
 #' @return Plots of total attributable fractions and rates by area
 #'
-#' @export
+#' @keywords internal
 mh_plot_attr_totals <- function(df_list,
                               res_attr_tot,
                               save_fig = FALSE,
@@ -1548,7 +1548,7 @@ mh_plot_attr_totals <- function(df_list,
 #'
 #' @return Plots of yearly attributable fractions per area
 #'
-#' @export
+#' @keywords internal
 mh_plot_af_yearly <- function(attr_yr_list,
                               save_fig = FALSE,
                               output_folder_path = NULL,
@@ -1660,7 +1660,7 @@ mh_plot_af_yearly <- function(attr_yr_list,
 #'
 #' @return Plots of yearly attributable rates per area
 #'
-#' @export
+#' @keywords internal
 mh_plot_ar_yearly <- function(attr_yr_list,
                               save_fig = FALSE,
                               output_folder_path = NULL,
@@ -1777,7 +1777,7 @@ mh_plot_ar_yearly <- function(attr_yr_list,
 #'
 #' @return Plots of attributable fractions by calendar month per area
 #'
-#' @export
+#' @keywords internal
 mh_plot_af_monthly <- function(attr_mth_list,
                                df_list,
                                country = "National",
@@ -1907,7 +1907,7 @@ mh_plot_af_monthly <- function(attr_mth_list,
 #'
 #' @return Plots of attributable rates by calendar month per area
 #'
-#' @export
+#' @keywords internal
 mh_plot_ar_monthly <- function(attr_mth_list,
                                df_list,
                                country = "National",
@@ -2033,7 +2033,7 @@ mh_plot_ar_monthly <- function(attr_mth_list,
 #' @param output_folder_path Path to folder where results should be saved.
 #' Defaults to NULL.
 #'
-#' @export
+#' @keywords internal
 mh_save_results <- function(rr_results,
                             res_attr_tot,
                             attr_yr_list,

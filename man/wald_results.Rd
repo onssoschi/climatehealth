@@ -16,3 +16,4 @@ P-values for average and range of temperatures
 \description{
 Get Wald statistic for a meta-analysis model
 }
+\keyword{internal}

@@ -29,3 +29,4 @@ Plots of yearly attributable rates per area
 \description{
 Plot attributable rates by year and area with confidence intervals
 }
+\keyword{internal}

@@ -21,3 +21,4 @@ List of population totals by year and region
 Creates a list of population totals by year and region for use
 in the attributable rate calculations.
 }
+\keyword{internal}

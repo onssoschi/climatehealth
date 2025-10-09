@@ -32,3 +32,4 @@ plot_regional_trends(
 \description{
 Plot regional trends of a climate and healthoutcome.
 }
+\keyword{internal}

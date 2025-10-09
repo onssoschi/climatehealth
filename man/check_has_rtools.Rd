@@ -26,3 +26,4 @@ check_has_rtools()
 \seealso{
 \code{\link[pkgbuild]{check_build_tools}}, \url{https://cran.r-project.org/bin/windows/Rtools/}
 }
+\keyword{internal}

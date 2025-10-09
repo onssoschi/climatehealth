@@ -56,3 +56,4 @@ climate and health data.
 Loads a dataframe containing a daily time series of health and
 climate data, which may be disaggregated by region.
 }
+\keyword{internal}

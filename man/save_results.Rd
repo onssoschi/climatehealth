@@ -26,3 +26,4 @@ fractions. Defaults to TRUE.}
 Saves a CSV file of relative risk and confidence intervals for
 each lag value of wildfire-related PM2.5
 }
+\keyword{internal}

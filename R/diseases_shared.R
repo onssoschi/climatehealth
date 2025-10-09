@@ -7,7 +7,9 @@
 #'
 #' @param case_type Character. The value of the case_type parameter.
 #'
-#' @return Character. The lowere case_type.
+#' @return Character. The lower case_type.
+#' 
+#' @keywords internal
 validate_case_type <- function(case_type) {
   # Ensure case_type is an accepted type
   accepted_cases <- c("diarrhea", "malaria")
@@ -46,7 +48,7 @@ validate_case_type <- function(case_type) {
 #'
 #' @return A dataframe with formatted and renamed columns.
 #'
-#' @export
+#' @keywords internal
 load_and_process_data <- function(
   health_data_path,
   region_col,
@@ -122,7 +124,7 @@ load_and_process_data <- function(
 #'  \item 'graph_file'
 #'  }
 #'
-#' @export
+#' @keywords internal
 load_and_process_map <- function(
   map_path,
   region_col,
@@ -189,7 +191,7 @@ load_and_process_map <- function(
 #' @return climate dataframe with formatted and renamed columns, and the lag
 #' variables
 #'
-#' @export
+#' @keywords internal
 load_and_process_climatedata <- function(
   climate_data_path,
   district_col,
@@ -306,7 +308,7 @@ load_and_process_climatedata <- function(
 #'
 #' @returns A list of dataframes containing the map, nb.map, data, grid_data, summary
 #'
-#' @export
+#' @keywords internal
 combine_health_climate_data <- function(
   health_data_path,
   climate_data_path,
@@ -435,7 +437,7 @@ combine_health_climate_data <- function(
 #'
 #' @return A ggplot object.
 #'
-#' @export
+#' @keywords internal
 plot_health_climate_timeseries <- function(
   data,
   param_term,
@@ -534,7 +536,7 @@ plot_health_climate_timeseries <- function(
 #' @return A named list of cross-basis matrices for available climate variables:
 #' maximum temperature, minimum temperature, rainfall, relative humidity, etc.
 #'
-#' @export
+#' @keywords internal
 set_cross_basis <- function(data, include_cvh=FALSE) {
 
   nlag <- ncol(dplyr::select(data, all_of(grep("^tmax_lag", names(data),
@@ -581,7 +583,7 @@ set_cross_basis <- function(data, include_cvh=FALSE) {
 #'
 #' @returns The modified data with the created indices.
 #'
-#' @export
+#' @keywords internal
 create_inla_indices <- function(data, case_type) {
   # Ensure case type is one of the supported indicators
   case_type <- validate_case_type(case_type)
@@ -646,7 +648,7 @@ create_inla_indices <- function(data, case_type) {
 #'   \item{interpretation}{A qualitative interpretation of collinearity level.}
 #' }
 #'
-#' @export
+#' @keywords internal
 check_diseases_vif <- function(
     data,
     inla_param,
@@ -716,7 +718,7 @@ check_diseases_vif <- function(
 #'   \item{interpretation}{A qualitative interpretation of collinearity level.}
 #' }
 #'
-#' @export
+#' @keywords internal
 check_and_write_vif <- function(
   data,
   inla_param,
@@ -773,7 +775,7 @@ check_and_write_vif <- function(
 #'
 #' @returns A list containing the model, baseline_model, and the dic_table.
 #'
-#' @export
+#' @keywords internal
 run_inla_models <- function(
   combined_data,
   basis_matrices_choices,
@@ -869,7 +871,7 @@ run_inla_models <- function(
 #'
 #' @return THe monthly random effects plot.
 #'
-#' @export
+#' @keywords internal
 plot_monthly_random_effects <- function(
   combined_data,
   model,
@@ -953,7 +955,7 @@ plot_monthly_random_effects <- function(
 #'
 #' @return The yearly space random effect plot
 #'
-#' @export
+#' @keywords internal
 plot_yearly_spatial_random_effect <- function(
   combined_data,
   model,
@@ -1019,7 +1021,7 @@ plot_yearly_spatial_random_effect <- function(
 #'
 #' @return A dataframe containing cumulative relative risk at the chosen level.
 #'
-#' @export
+#' @keywords internal
 get_predictions <- function(
     data,
     param_term,
@@ -1103,7 +1105,7 @@ get_predictions <- function(
 #'
 #' @return contour plot at country, Region and District level
 #'
-#' @export
+#' @keywords internal
 contour_plot <- function(
   data,
   param_term,
@@ -1198,7 +1200,7 @@ contour_plot <- function(
 #'
 #' @return Relative risk map at the chosen level.
 #'
-#' @export
+#' @keywords internal
 plot_rr_map <- function(
   combined_data,
   model,
@@ -1294,7 +1296,7 @@ plot_rr_map <- function(
 #'
 #' @return Relative risk plot at country, region, and district levels.
 #'
-#' @export
+#' @keywords internal
 plot_relative_risk <- function(
   data,
   model,
@@ -1517,7 +1519,7 @@ plot_relative_risk <- function(
 #' @return Results containing the attributable number and fraction at the chosen
 #' dissagregation level.
 #'
-#' @export
+#' @keywords internal
 attribution_calculation <- function(
   data,
   param_term,
@@ -1694,7 +1696,7 @@ attribution_calculation <- function(
 #' - When `filter_year` is provided, trends over time are shown for the specified
 #' regions or districts.
 #'
-#' @export
+#' @keywords internal
 plot_attribution_metric <- function(
   attr_data,
   level = c("country", "region", "district"),

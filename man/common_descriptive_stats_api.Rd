@@ -92,3 +92,4 @@ Character vector. The full directory path that the descriptive stats are saved t
 \description{
 Create Descriptive Statistics via an API Endpoint
 }
+\keyword{internal}

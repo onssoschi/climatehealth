@@ -43,3 +43,4 @@ each lag of wildfire-related PM2.5
 \description{
 Fits quasipoisson regression models using \link[gnm]{gnm}
 }
+\keyword{internal}

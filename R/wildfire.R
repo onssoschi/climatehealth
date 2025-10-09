@@ -18,7 +18,7 @@
 #'
 #' @returns Dataframe with formatted and renamed columns
 #'
-#' @export
+#' @keywords internal
 read_and_format_data <- function(health_path,
                                  date_col,
                                  region_col = NULL,
@@ -77,7 +77,7 @@ read_and_format_data <- function(health_path,
 #' @returns Dataframe containing a daily time series with mean wildfire-related
 #' PM2.5 values for each region
 #'
-#' @export
+#' @keywords internal
 extract_means_for_geography <- function(ncdf_path,
                                         shapefile_path) {
 
@@ -143,7 +143,7 @@ extract_means_for_geography <- function(ncdf_path,
 #' @returns Dataframe containing a daily time series of the joined
 #' climate and health data.
 #'
-#' @export
+#' @keywords internal
 pair_with_health <- function(climate_data,
                              health_data,
                              date_col,
@@ -200,7 +200,7 @@ pair_with_health <- function(climate_data,
 #' @returns Dataframe containing a daily time series of
 #' climate and health data.
 #'
-#' @export
+#' @keywords internal
 load_wildfire_data <- function(health_path,
                                join_wildfire_data,
                                ncdf_path,
@@ -269,7 +269,7 @@ load_wildfire_data <- function(health_path,
 #' @returns Dataframe with added columns for lagged temperature and
 #' wildfire-related PM2.5 concentration
 #'
-#' @export
+#' @keywords internal
 create_lagged_variables <- function(data,
                                     wildfire_lag = 3,
                                     temperature_lag = 1) {
@@ -333,7 +333,7 @@ create_lagged_variables <- function(data,
 #'
 #' @returns Dataframe with additional columns for temperature spline
 #'
-#' @export
+#' @keywords internal
 create_temperature_splines <- function(data,
                                        temperature_lag = 0,
                                        degrees_freedom = 6) {
@@ -372,7 +372,7 @@ create_temperature_splines <- function(data,
 #' (region:year:month:dayofweek) and for the total counts of a health outcome
 #' across days in each stratum.
 #'
-#' @export
+#' @keywords internal
 time_stratify <- function(data) {
 
   df <- split(data, f = data$regnames)
@@ -414,7 +414,7 @@ time_stratify <- function(data) {
 #' @returns Prints summary statistics and a histogram of the the outcome
 #' variable
 #'
-#' @export
+#' @keywords internal
 descriptive_stats <- function(data,
                               variables,
                               bin_width = 5) {
@@ -446,7 +446,7 @@ descriptive_stats <- function(data,
 #'
 #' @returns Prints a ggplot2 scatterplot of x versus y
 #'
-#' @export
+#' @keywords internal
 plot_variables <- function(data, xvar, yvar) {
 
   ggplot2::ggplot(data = data, ggplot2::aes(x = {{xvar}}, y = {{yvar}})) +
@@ -470,7 +470,7 @@ plot_variables <- function(data, xvar, yvar) {
 #'
 #' @returns Prints variance inflation factors for each predictor variable.
 #'
-#' @export
+#' @keywords internal
 check_vif <- function(data, predictors, print_vif = FALSE) {
 
   if (!is.character(predictors)) {
@@ -522,7 +522,7 @@ check_vif <- function(data, predictors, print_vif = FALSE) {
 #' @returns Dataframe of relative risk and confidence intervals for
 #' each lag of wildfire-related PM2.5
 #'
-#' @export
+#' @keywords internal
 casecrossover_quasipoisson <- function(data,
                                        scale_factor = 10,
                                        wildfire_lag = 3,
@@ -630,7 +630,7 @@ casecrossover_quasipoisson <- function(data,
 #' @returns Plot of relative risk and confidence intervals for each lag of
 #' wildfire-related PM2.5
 #'
-#' @export
+#' @keywords internal
 
 plot_RR_by_region <- function(results,
                               save_fig = FALSE,
@@ -689,7 +689,7 @@ plot_RR_by_region <- function(results,
 #' @returns Plot of relative risk and confidence intervals for each lag of
 #' wildfire-related PM2.5
 #'
-#' @export
+#' @keywords internal
 plot_RR <- function(results,
                     save_fig,
                     wildfire_lag = 3,
@@ -745,7 +745,7 @@ plot_RR <- function(results,
 #' @param an_ar_results Dataframe. The AN/AR results. Defaults to NULL.
 #' @param output_folder_path Path to folder where results should be saved.
 #'
-#' @export
+#' @keywords internal
 save_results <- function(rr_results,
                          output_AN_AR = TRUE,
                          an_ar_results = NULL,
@@ -802,7 +802,7 @@ save_results <- function(rr_results,
 #' each lag of wildfire-related PM2.5. Split by region if calc_relative_risk_by_region
 #' set to TRUE.
 #'
-#' @export
+#' @keywords internal
 
 relative_risk_by_region <- function(data,
                                     scale_factor = 10,
@@ -919,7 +919,7 @@ calculate_daily_AF_AN <- function(data, rr_data) {
 #'
 #' @returns Dataframe containing summarised AF and AN data, by year and region
 #'
-#' @export
+#' @keywords internal
 summarise_AF_AN <- function(data) {
   yearly_summary <- data %>%
     dplyr::group_by(.data$regnames, .data$year) %>%
@@ -1008,7 +1008,7 @@ summarise_AF_AN <- function(data) {
 #'   \item `af_an_results` A dataframe containing attributable fractions and numbers for each region
 #' }
 #'
-#' @export
+#' @keywords internal
 wildfire_do_analysis <- function(health_path,
                                  join_wildfire_data = FALSE,
                                  ncdf_path = NULL,

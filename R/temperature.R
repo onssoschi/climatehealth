@@ -10,7 +10,7 @@
 #'
 #' @return The filtered dataframe.
 #'
-#' @export
+#' @keywords internal
 filter_on_rr_distribution <- function(df,
                                       RR_distribution_length = 0,
                                       lower_range = 5,
@@ -67,7 +67,7 @@ filter_on_rr_distribution <- function(df,
 #' @return `df_list` An alphabetically-ordered list of dataframes for each
 #' region comprising dates, deaths, and temperatures.
 #'
-#' @export
+#' @keywords internal
 load_temperature_data <- function(input_csv_path,
                                   dependent_col,
                                   time_col,
@@ -139,7 +139,7 @@ load_temperature_data <- function(input_csv_path,
 #'   \item `cb` Basis matrices for the two dimensions of predictor and lags.
 #'   }
 #'
-#' @export
+#' @keywords internal
 define_model <- function(dataset,
                          independent_cols = NULL,
                          varfun,
@@ -238,7 +238,7 @@ define_model <- function(dataset,
 #'   See: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/glm
 #'   }
 #'
-#' @export
+#' @keywords internal
 run_model <- function(df_list,
                       independent_cols = NULL,
                       varfun,
@@ -303,7 +303,7 @@ run_model <- function(df_list,
 #'   \item `blup` A list. BLUP (best linear unbiased predictions) from the
 #'   meta-analysis model for each region.
 #'   }
-#' @export
+#' @keywords internal
 run_meta_model <- function(df_list, coef, vcov) {
 
   # Assert that df_list is a list of dataframes
@@ -366,7 +366,7 @@ run_meta_model <- function(df_list, coef, vcov) {
 #' @param var A character. The name of the variable in the model to calculate
 #' p-values for.
 #'
-#' @export
+#' @keywords internal
 #' @return A number. The p-value of the explanatory variable.
 fwald <- function(model, var) {
 
@@ -392,7 +392,7 @@ fwald <- function(model, var) {
 #' @return P-values for average and range of temperatures
 #' (avgtmean_wald, rangetmean_wald).
 #'
-#' @export
+#' @keywords internal
 wald_results <- function(mv) {
 
   avgtmean_wald <- fwald(mv, "avgtmean")
@@ -413,7 +413,7 @@ wald_results <- function(mv) {
 #' @param index Integer. The index to use to obtain the RR values.
 #'
 #' @return The optimal temperature range.
-#' @export
+#' @keywords internal
 define_and_validate_optimal_temps <- function(optimal_temp_range,
                                               prediction,
                                               RR_fit_col = "allRRfit",
@@ -468,7 +468,7 @@ define_and_validate_optimal_temps <- function(optimal_temp_range,
 #' temperature thresholds for calculation of attributable deaths.
 #' }
 #'
-#' @export
+#' @keywords internal
 calculate_min_mortality_temp <-  function(df_list,
                                           blup = NULL,
                                           independent_cols = NULL,
@@ -655,7 +655,7 @@ calculate_min_mortality_temp <-  function(df_list,
 #'    for each region.
 #' }
 #'
-#' @export
+#' @keywords internal
 compute_attributable_deaths <- function(df_list,
                                         output_year,
                                         blup = NULL,
@@ -981,7 +981,7 @@ compute_attributable_deaths <- function(df_list,
 #'   \item `artot_bind`
 #' }
 #'
-#' @export
+#' @keywords internal
 compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 
   ###################################################
@@ -1089,7 +1089,7 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 #'
 #' @examples output_folder_path = 'myfolder/output/'
 #'
-#' @export
+#' @keywords internal
 write_attributable_deaths <- function(avgtmean_wald,
                                       rangetmean_wald,
                                       anregions_bind,
@@ -1206,7 +1206,7 @@ write_attributable_deaths <- function(avgtmean_wald,
 #'   region.
 #' }
 #'
-#' @export
+#' @keywords internal
 plot_and_write <- function(
     df_list,
     output_name,
@@ -1330,7 +1330,7 @@ plot_and_write <- function(
 #'
 #' @examples csv_output_path = "directory/sub_directory/file_name.csv"
 #'
-#' @export
+#' @keywords internal
 plot_and_write_relative_risk <- function(df_list,
                                          blup = NULL,
                                          mintempregions,
@@ -1581,7 +1581,7 @@ plot_and_write_relative_risk <- function(df_list,
 #'
 #' @examples csv_output_path = "directory/sub_directory/file_name.csv"
 #'
-#' @export
+#' @keywords internal
 plot_and_write_relative_risk_all <- function(df_list,
                                              cb,
                                              model,

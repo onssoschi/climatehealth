@@ -26,3 +26,4 @@ ggplot object
 \description{
 Plot lag comparison with AF and AN
 }
+\keyword{internal}

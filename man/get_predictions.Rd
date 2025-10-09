@@ -27,3 +27,4 @@ A dataframe containing cumulative relative risk at the chosen level.
 Produces cumulative relative risk at country, region and
 district level from analysis.
 }
+\keyword{internal}

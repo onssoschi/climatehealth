@@ -42,3 +42,4 @@ climate and health data.
 Joins a daily time series of climate data with a daily time
 series of health data.
 }
+\keyword{internal}
