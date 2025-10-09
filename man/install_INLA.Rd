@@ -28,3 +28,4 @@ install_INLA()
 }
 
 }
+\keyword{internal}

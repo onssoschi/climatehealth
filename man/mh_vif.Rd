@@ -18,3 +18,4 @@ A list. Variance inflation factors for each independent variables by region.
 \description{
 Produces variance inflation factor for the independent variables.
 }
+\keyword{internal}

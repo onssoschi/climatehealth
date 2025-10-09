@@ -16,3 +16,4 @@ Dataframe containing summarised AF and AN data, by year and region
 Takes daily data with attributable fraction and attributable number
 and summarises by year and region
 }
+\keyword{internal}

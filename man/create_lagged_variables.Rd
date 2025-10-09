@@ -24,3 +24,4 @@ wildfire-related PM2.5 concentration
 Generates new variables in a dataframe for lags and means over
 lag periods.
 }
+\keyword{internal}

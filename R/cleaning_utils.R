@@ -15,7 +15,7 @@
 #'
 #' @return The cleaned/reformatted data frame.
 #'
-#' @export
+#' @keywords internal
 reformat_data <- function(
     df,
     reformat_date = TRUE,
@@ -51,7 +51,7 @@ reformat_data <- function(
 #'
 #' @return A list of dataframes, split up based on the value of column_name.
 #'
-#' @export
+#' @keywords internal
 aggregate_by_column <- function(df, column_name) {
   unique_values <- sort(as.character(unique(df[[column_name]])))
   aggregated_dfs <- lapply(

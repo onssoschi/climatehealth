@@ -40,3 +40,4 @@ analysis.}
 \description{
 Reduce model to the overall cumulative association
 }
+\keyword{internal}

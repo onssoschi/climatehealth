@@ -1,9 +1,12 @@
-#' climatehealth: Tools for Advanced Data Visualization and Analysis
+#' @title climatehealth: Measuring the climate-health relationship
 #'
+#' @description
+#' 
+#' ## Overview
 #' This package provides a suite of analysis functions for measuring the relationship
 #' between various climate factors (indicators) and health outcomes.
 #'
-#' ## Indicators
+#' ## Included Indicators
 #' - Heat and Cold
 #' - Wildfires
 #' - Mental Health
@@ -23,9 +26,7 @@
 #' ## See Also
 #' TBC
 #'
-#' @docType package
-#' @name climatehealth
-#' @keywords internal
+#' @name climatehealth-package
 "_PACKAGE"
 
 # Core graphics functions for plotting

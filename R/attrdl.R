@@ -120,7 +120,7 @@ mkXpred <- function(type, basis, at, predvar, predlag, cen) {
 #'
 #' @return Attributable Numbers and Fractions
 #'
-#' @export
+#' @keywords internal
 #'
 #' @importFrom dlnm onebasis
 #' @importFrom splines bs
@@ -302,7 +302,7 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
 #'  \item Attributable Numbers lower confidence intervals
 #'  \item Attributable Numbers upper confidence intervals
 #'  }
-#' @export
+#' @keywords internal
 #'
 #' @importFrom dlnm onebasis
 #' @importFrom splines bs

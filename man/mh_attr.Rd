@@ -26,3 +26,4 @@ A list containing attributable numbers per region
 Estimate attributable numbers for each region and confidence
 intervals using Monte Carlo simulations.
 }
+\keyword{internal}

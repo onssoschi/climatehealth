@@ -43,3 +43,4 @@ Defaults to 8.}
 \description{
 Function for saving all plot types with consistent parameters.
 }
+\keyword{internal}

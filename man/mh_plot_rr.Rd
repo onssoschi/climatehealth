@@ -41,3 +41,4 @@ temperature distribution for each region
 Plots cumulative lag exposure-response function with histogram of
 temperature distribution for each region
 }
+\keyword{internal}

@@ -109,3 +109,4 @@ The Lancet. 2015;386(9991):369-375.
 \seealso{
 \link[dlnm:dlnm-package]{dlnm::dlnm} package
 }
+\keyword{internal}

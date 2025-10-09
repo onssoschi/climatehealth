@@ -18,3 +18,4 @@ Dataframe with added columns for lagged PM2.5 concentration.
 Creates new variables in a dataframe for lags and means over lag
 periods.
 }
+\keyword{internal}

@@ -22,3 +22,4 @@ enforce_file_extension("output", "pdf")
 enforce_file_extension("report.txt", ".pdf")
 
 }
+\keyword{internal}

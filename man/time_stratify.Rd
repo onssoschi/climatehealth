@@ -19,3 +19,4 @@ across days in each stratum.
 Adds columns for strata for each region:year:month:dayofweek
 and for the total counts of a health outcome across days in each stratum.
 }
+\keyword{internal}

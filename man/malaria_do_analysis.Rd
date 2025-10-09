@@ -138,3 +138,4 @@ by combining multiple functions to analyze the association between Malaria
 cases and climate variables. It processes health, climate, and spatial data,
 fits models, generates plots, and calculates attributable risk.
 }
+\keyword{internal}

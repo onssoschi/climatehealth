@@ -30,3 +30,4 @@ corresponding to the columns.}
 \description{
 Plot histograms of column distributions.
 }
+\keyword{internal}

@@ -70,3 +70,4 @@ List containing predictions, meta model, and AF/AN values
 \description{
 Create adaptive exposure-response plots with optimal grid layout
 }
+\keyword{internal}
