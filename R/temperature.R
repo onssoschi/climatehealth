@@ -1,483 +1,850 @@
-# Functions to generate analysis for the temperature indicators.
+# Functions to generate analysis for the heat and cold indicator.
 
-#' @title Filter the dataframe based on the relative risk distribution.
+
+#' Read heat and cold indicator data
 #'
-#' @param df The dataframe to filter.
-#' @param RR_distribution_length The RR distribution length. Defaults to 0.
-#' @param lower_range The lower range. Defaults to 5.
-#' @param upper_range The upper range. Defaults to 15.
-#' @param output_year The output year. Defaults to 0.
-#'
-#' @return The filtered dataframe.
-#'
-#' @export
-filter_on_rr_distribution <- function(df,
-                                      RR_distribution_length = 0,
-                                      lower_range = 5,
-                                      upper_range = 200,
-                                      output_year = 0) {
-  # Set the output year if the user has not passed one.
-  if (output_year == 0) {
-
-    output_year <- max(as.integer(df$year), na.rm = TRUE)
-
-  }
-
-  # Calculate the RR distribution length if it is 0
-  if (RR_distribution_length == 0) {
-    RR_distribution_length = max(df$year, na.rm = TRUE) - min(df$year, na.rm = TRUE)
-  }
-
-  # Raise an error if the RR distribution length is out of range (5-15)
-  if(RR_distribution_length < lower_range) {
-
-    stop(paste0("Timeseries to calculate the RR is less than ", lower_range, " years."))
-
-  } else if (RR_distribution_length > upper_range) {
-
-    stop(paste0("Timeseries to calculate the RR is more than ", upper_range, " years."))
-
-  }
-  # Filter
-  df <- df %>%
-    dplyr::filter(.data$year >= (output_year - RR_distribution_length + 1)
-                  & .data$year <= output_year)
-
-  return(df)
-}
-
-
-#' Load temperature (heat/cold indicator) for analysis.
-#'
-#' @description Loads data and names of regions for analysis from a CSV file.
+#' @description Reads in data and geography names for analysis from a CSV file.
 #'
 #' @param input_csv_path Path to a CSV containing a
-#' daily time series of death and temperature per region.
-#' @param dependent_col the column name of the
-#' dependent variable of interest e.g. deaths
-#' @param time_col Time column e.g. date
-#' @param region_col The region column over which the data
-#' are spatially aggregated e.g. regnames
-#' @param temp_col The temperature column e.g. tmean
-#' @param population_col The population column e.g. pop
-#' @param output_year Year(s) to calculate output for.
-#' @param RR_distribution_length Number of years for the calculation of RR
-#' distribution. Set both as 'NONE' to use full range in data.
+#' daily time series of death counts and temperature per geography.
+#' @param dependent_col the column name of the health outcome
+#' dependent variable of interest e.g,. deaths.
+#' @param date_col Date column.
+#' @param geog_col The geography column over which the data
+#' are spatially aggregated e.g., geognames.
+#' @param temp_col The temperature variable column e.g., tmean.
+#' @param population_col The population estimate column e.g., pop.
 #'
-#' @return `df_list` An alphabetically-ordered list of dataframes for each
-#' region comprising dates, deaths, and temperatures.
+#' @return An alphabetically-ordered list of dataframes for each
+#' geography comprising of dates, deaths, and temperatures.
 #'
 #' @export
-load_temperature_data <- function(input_csv_path,
-                                  dependent_col,
-                                  time_col,
-                                  region_col,
-                                  temp_col,
-                                  population_col = NULL,
-                                  output_year = 0,
-                                  RR_distribution_length = 0) {
+hc_read_data <- function(input_csv_path,
+                         dependent_col,
+                         date_col,
+                         geog_col,
+                         temp_col,
+                         population_col) {
 
   # Load the input dataset
   df <- read_input_data(input_csv_path)
-  # Format the population column
-  if (is.null(population_col)) {
+
+  # Format the geography column. If geog_col is missing, then assume geographies are aggregated or only single input geography
+  if (is.null(df$geog_col)) {
     df <- df %>%
-      dplyr::mutate(pop_col = "NONE")
-    population_col = "pop_col"
-  }
-  # Format the region column
-  if (is.null(region_col)) {
-    df <- df %>%
-      dplyr::mutate(regnames = "aggregated")
-    region_col = "regnames"
+      dplyr::mutate(geog_col = "aggregated")
+    geog_col = "geog_col"
   }
   # Rename the columns
   df <- df %>%
     dplyr::rename(dependent = dependent_col,
-                  date = time_col,
-                  regnames = region_col,
+                  date = date_col,
+                  geog_col = geog_col,
                   temp = temp_col,
-                  pop_col = population_col)
+                  pop = population_col,
+    ) %>%
+    dplyr::mutate(date = as.Date(date, tryFormats = c("%d/%m/%Y", "%Y-%m-%d")),
+                  year = as.factor(lubridate::year(date)),
+                  month = as.factor(lubridate::month(date)),
+                  dow = as.factor(lubridate::wday(date, label = TRUE)),
+                  geog_col = as.factor(geog_col))
+
   # Reformat data and fill NaNs
   df <- reformat_data(df,
                       reformat_date = TRUE,
                       fill_na = c("dependent"),
                       year_from_date = TRUE)
-  # Filter the data based on RR_distribution_length
-  df <- filter_on_rr_distribution(df,
-                                  RR_distribution_length,
-                                  output_year = output_year)
   # Split the data by region
-  df_list <- aggregate_by_column(df, "regnames")
+  df_list <- aggregate_by_column(df, "geog_col")
 
   return (list(df_list))
 
 }
 
 
-#' Define regression model
+#' Create population totals
 #'
-#' @param dataset dataframe with temp column to be modelled
-#' @param independent_cols column name (or list of names) of extra independent
-#' variable to include in regression (excluding temperature). Defaults to NULL.
-#' @param varfun Exposure function
-#' (see dlnm::crossbasis)
-#' @param varper Internal knot positions in exposure function
-#' (see dlnm::crossbasis)
-#' @param vardegree Degrees of freedom in exposure function
-#' (see dlnm:crossbasis)
-#' @param lag Lag length in time
-#' (see dlnm::logknots)
-#' @param lagnk Number of knots in lag function
-#' (see dlnm::logknots)
-#' @param dfseas Degrees of freedom for seasonality
+#' @description Creates a list of population totals by year and geography for use
+#' in the attributable number, fraction and rate calculations.
+#'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular geography.
+#' @param country Character. Name of country for national level estimate.
+#' @param meta_analysis Boolean. Whether to perform a meta-analysis.
+#'
+#' @returns List of population totals by year and region
+#'
+#' @export
+hc_pop_totals <- function(df_list,
+                          country = "National",
+                          meta_analysis = FALSE){
+
+  pop_list <- lapply(df_list, function(x) aggregate(pop ~ year, data = x, mean))
+
+  if (meta_analysis == TRUE){
+
+    tot_pop <- do.call(rbind, pop_list)
+    tot_pop <- aggregate(pop ~ year, data = tot_pop, sum)
+
+    pop_list[[country]] <- tot_pop}
+
+
+  return(pop_list)
+
+}
+
+#' Create cross-basis matrix
+#'
+#' @description Creates a cross-basis matrix for each geography
+#'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular geography.
+#' @param var_fun Character. Exposure function for argvar
+#' (see dlnm::crossbasis). Defaults to 'bs'.
+#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
+#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
+#' @param var_per Vector. Internal knot positions for argvar
+#' (see dlnm::crossbasis). Defaults to c(10,75,90).
+#' @param lagn Integer. Number of days in the lag period. Defaults to 21.
+#' (see dlnm::crossbasis).
+#' @param lagnk Integer. Number of knots in lag function. Defaults to 3.
+#' (see dlnm::logknots).
+#' @param dfseas Integer. Degrees of freedom for seasonality.
+#'
+#' @returns A list of cross-basis matrices by geography
+#'
+#' @export
+hc_create_crossbasis <- function(df_list,
+                                 var_fun = "bs", #TODO What if natural spline (degree won't be needed as cubic) - if statement
+                                 var_degree = 2,
+                                 var_per = c(10,75,90),
+                                 lagn = 21,
+                                 lagnk = 3,
+                                 dfseas = 8) {
+
+  cb_list <- list()
+
+  for(geog in names(df_list)){
+
+    geog_data <- df_list[[geog]]
+    argvar <- list(fun = var_fun,
+                   knots = quantile(geog_data$temp,
+                                    var_per/100,
+                                    na.rm = TRUE),
+                   degree = var_degree)
+
+    lagn <- as.numeric(lagn)
+    lagnk <- as.numeric(lagnk)
+    dfseas <- as.numeric(dfseas)
+    arglag = list(knots = dlnm::logknots(lagn,
+                                         lagnk))
+    cb <- dlnm::crossbasis(geog_data$temp,
+                           lag = lagn,
+                           argvar = argvar,
+                           arglag = arglag)
+    cb_list[[geog]] <- cb
+  }
+
+  return(cb_list)
+}
+
+
+#' Produce check results of model combinations
+#'
+#' @description Runs every combination of model based on user selected additional
+#' independent variables and returns model diagnostic checks for each.
+#'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular geography.
+#' @param cb_list List of cross_basis matrices from create_crossbasis function.
+#' @param independent_cols Additional independent variables to test in model validation
+#' as confounders.
 #'
 #' @return
-#' \itemize{
-#'   \item `model` A quasi-poission generalised linear model object.
-#'   See: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/glm
-#'   \item `cb` Basis matrices for the two dimensions of predictor and lags.
+#'  \itemize{
+#'   \item `qaic_results` A dataframe of QAIC and dispersion metrics for each model
+#'   combination.
+#'   \item `residuals_list` A list. Residuals for each model combination.
 #'   }
 #'
 #' @export
-define_model <- function(dataset,
-                         independent_cols = NULL,
-                         varfun,
-                         varper,
-                         vardegree,
-                         lag,
-                         lagnk,
-                         dfseas) {
+hc_model_combo_res <- function(df_list,
+                               cb_list,
+                               independent_cols = NULL){
+
   # define the base independent cols
   base_independent_cols <- c(
     'cb',
+    'dow',
     'splines::ns(date, df = dfseas * length(unique(year)))'
   )
 
-  #TODO: add type check for independent_cols
+  qaic_results <- list()
+  residuals_list <- list()
 
   if (!is.null(independent_cols)) {
 
+    control_vars <- c(independent_cols)
+
+    transformed_vars <- unlist(lapply(independent_cols, function(v) {
+      paste0(v, "_ns")
+    }))
+
+  } else(transformed_vars <- NULL)
+
+  all_combos <- unlist(lapply(0:length(transformed_vars), function(i) {
+    combn(transformed_vars, i, simplify = FALSE)
+  }), recursive = FALSE)
+
+  for (geog in names(df_list)) {
+
+    formula_list <- list()
+
+    geog_data <- df_list[[geog]]
+    cb <- cb_list[[geog]]
+
+    if (!is.null(independent_cols)) {
+
+      for (v in control_vars) {
+
+        ns_matrix <- splines::ns(geog_data[[v]], df = 3)
+        assign(paste0(v, "_ns"), ns_matrix)
+
+      }
+
+    }
+
+    for (vars in all_combos) {
+
+      # Build the full formula string
+      base_formula <- paste("dependent ~", paste(base_independent_cols, collapse = " + "))
+      formula_str <- paste(base_formula, if (length(vars) > 0) paste("+", paste(vars, collapse = " + ")) else "")
+
+      model <- glm(as.formula(formula_str),
+                   geog_data,
+                   family = quasipoisson,
+                   na.action = "na.exclude")
+
+      disp <- summary(model)$dispersion
+      loglik <- sum(dpois(model$y,model$fitted.values,log=TRUE))
+      k <- length(coef(model))
+      qaic <- -2 * loglik / disp + 2 * k
+
+      qaic_results[[length(qaic_results) + 1]] <- data.frame(geography = geog,
+                                                             formula = formula_str,
+                                                             disp = disp,
+                                                             qaic = qaic)
+
+      residuals_df <- data.frame(geography = geog,
+                                 formula = formula_str,
+                                 fitted = fitted(model),
+                                 residuals = residuals(model, type = "deviance"))
+
+      formula_list[[formula_str]] <- residuals_df
+
+    }
+
+    residuals_list[[geog]] <- formula_list
+
+  }
+
+  # Combine results into a single data frame
+  qaic_results <- do.call(rbind, qaic_results)
+
+  # Sort by geography and QAIC
+  qaic_results <- qaic_results[order(qaic_results$geography, qaic_results$formula), ]
+
+  return(list(qaic_results, residuals_list))
+
+}
+
+
+#' Produce variance inflation factor
+#'
+#' @description Produces variance inflation factor for the independent variables.
+#'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular geography.
+#' @param independent_cols Additional independent variables to test in model validation
+#'
+#' @return A list. Variance inflation factors for each independent variables by geography.
+#'
+#' @export
+hc_vif <- function(df_list,
+                   independent_cols = NULL){
+
+  vif_list <- list()
+
+  for (geog in names(df_list)){
+
+    geog_data <- df_list[[geog]]
+
+    # test whether temp and optional independent variable are correlated with each other
+    formula_str <- paste(paste('dependent ~ temp'), paste("+", paste(independent_cols, collapse = " + ")))
+
+    vif_model <- glm(as.formula(formula_str), data = geog_data, family = quasipoisson())
+    vif_values <- car::vif(vif_model)
+
+
+    vif_df <- data.frame(
+      variable = names(vif_values),
+      vif = as.numeric(vif_values),
+      stringsAsFactors = FALSE
+    )
+
+    vif_list[[geog]] <- vif_df
+
+  }
+
+  return(vif_list)
+
+}
+
+
+#' Model Validation Assessment
+#'
+#' @description Produces results on QAIC for each model combination, variance inflation
+#' factor for each independent variable, and plots for residuals to assess the models
+#'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular geography.
+#' @param cb_list List of cross_basis matrices from create_crossbasis function.
+#' @param independent_cols Additional independent variables to test in model validation
+#' as confounders.
+#' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
+#' FALSE.
+#' @param save_csv Boolean. Whether to save the results as a CSV. Defaults to
+#' FALSE.
+#' @param output_folder_path Path to folder where plots should be saved.
+#' Defaults to NULL.
+#'
+#' @return
+#'   \itemize{
+#'   \item `qaic_results` A dataframe of QAIC and dispersion metrics for each model combination and geography.
+#'   \item `qaic_summary` A dataframe with the mean QAIC and dispersion metrics for each model combination.
+#'   \item `vif_results` A dataframe. Variance inflation factors for each independent variables by geography.
+#'   \item `vif_summary` A dataframe with the mean variance inflation factors for each independent variable.
+#'   }
+#'
+#' @export
+hc_model_validation <- function(df_list = df_list,
+                                cb_list = cb_list,
+                                independent_cols = NULL,
+                                save_fig = FALSE,
+                                save_csv = FALSE,
+                                output_folder_path = NULL){
+
+  c(qaic_results, residuals_list) %<-% hc_model_combo_res(df_list = df_list,
+                                                          cb_list = cb_list,
+                                                          independent_cols = independent_cols)
+
+  if (save_csv == TRUE){
+
+    dir.create(file.path(
+      path_config$output_folder_path, "model_validation"), recursive = TRUE, showWarnings = FALSE)
+
+    write.csv(qaic_results, file = file.path(
+      path_config$output_folder_path, "model_validation", "qaic_results.csv"), row.names = FALSE)
+
+  }
+
+  if (!is.null(independent_cols)) {
+
+    vif_list <- hc_vif(df_list = df_list,
+                       independent_cols = independent_cols)
+
+    vif_results <- dplyr::bind_rows(vif_list, .id = "Geography")
+
+    if (save_csv == TRUE) {
+
+      write.csv(vif_results, file = file.path(
+        path_config$output_folder_path, "model_validation", "vif_results.csv"), row.names = FALSE)
+
+    }
+
+  } else vif_results <- NULL
+
+  if (length(df_list) > 1){
+
+    qaic_summary <- qaic_results %>%
+      group_by(formula) %>%
+      summarise(mean_disp = mean(disp),
+                mean_qaic = mean(qaic))
+
+    if (save_csv == TRUE){
+
+      write.csv(qaic_summary, file = file.path(
+        path_config$output_folder_path, "model_validation", "qaic_summary.csv"), row.names = FALSE)
+
+    }
+
+    if (!is.null(vif_results)){
+
+      vif_summary <- vif_results %>%
+        group_by(variable) %>%
+        summarise(mean_vif = mean(vif, na.rm = TRUE))
+
+      if (save_csv == TRUE){
+
+        write.csv(vif_summary, file = file.path(
+          path_config$output_folder_path, "model_validation", "vif_summary.csv"), row.names = FALSE)
+
+      }
+
+    }
+
+  } else qaic_summary <- vif_summary <- NULL
+
+  if (save_fig == TRUE){
+
+    # Shorten the labels to a fixed length
+    short_labels <- sapply(as.character(names(df_list)), function(x) {
+      x_clean <- gsub(" ", "", x)  # remove all spaces
+      if (nchar(x_clean) > 10) {
+        substr(x_clean, 1, 10)     # truncate to first 10 characters
+      } else {
+        x_clean
+      }
+    })
+
+    # Assign names to the list
+    named_label_list <- as.list(short_labels)
+    names(named_label_list) <- names(df_list)
+
+  }
+
+  if (nrow(do.call(rbind, do.call(rbind, residuals_list))) > 100000){
+    sample_check <- TRUE
+  } else sample_check <- FALSE
+
+  for (geog in names(df_list)){
+
+    geog_data <- df_list[[geog]]
+    formula_list <- residuals_list[[geog]]
+    named_label <- named_label_list[[geog]]
+
+    if (save_fig == TRUE){
+
+      geog_folder <- gsub(pattern = " ", replacement = "_", x = geog)
+
+      output_folder_main <- file.path(path_config$output_folder_path, "model_validation", geog_folder)
+      dir.create(output_folder_main, recursive = TRUE, showWarnings = FALSE)
+
+      grid <- c(min(length(formula_list), 3), ceiling(length(formula_list) / 3))
+      output_path <- paste0(output_folder_main, "/", named_label, "_residuals_timeseries.pdf")
+      pdf(output_path, width = grid[1]*5.5, height = grid[2]*4.5)
+
+      par(mfrow=c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
+
+    }
+
+    for (i in names(formula_list)){
+
+      plot(x = geog_data$date[geog_data$ind > 0],
+           y = formula_list[[i]]$residuals,
+           ylim=c(-5,10),
+           pch=19,
+           cex=0.2,
+           col="#0A2E4D",
+           main=unique(formula_list[[i]]$formula),
+           ylab="Deviance residuals",
+           xlab="Date")
+
+      abline(h=0,lty=2,lwd=2)
+
+      if (save_fig == TRUE){
+
+        title <- paste0("Deviance Residuals by Date: ", geog)
+        mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+
+      }
+
+    }
+
+    dev.off()
+
+    if(sample_check == TRUE){
+
+      all_residuals <- do.call(rbind, formula_list)
+
+      set.seed(123)  # for reproducibility
+      sampled_residuals <- all_residuals %>%
+        group_by(formula) %>%
+        sample_frac(0.2) %>%
+        ungroup()
+
+      new_res_list <- split(sampled_residuals, sampled_residuals$formula)
+
+      sample_title <- " (20% sample)"
+
+    } else {
+
+      new_res_list <- formula_list
+      sample_title <- ""
+
+    }
+
+    if (save_fig == TRUE){
+
+      grid <- c(min(length(formula_list), 3), ceiling(length(new_res_list) / 3))
+      output_path <- paste0(output_folder_main, "/", named_label, "_residuals_fitted.pdf")
+      pdf(output_path, width = grid[1]*5.5, height = grid[2]*4.5)
+
+      par(mfrow=c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
+
+    }
+
+    for (i in names(new_res_list)){
+
+      plot(x = jitter(new_res_list[[i]]$fitted, amount = 0.5),
+           y = jitter(new_res_list[[i]]$residuals, amount = 0.5),
+           pch=19,
+           cex=0.2,
+           col="#0A2E4D",
+           main=unique(new_res_list[[i]]$formula),
+           ylab="Deviance residuals",
+           xlab="Fitted values")
+
+      abline(h=0,lty=2,lwd=2)
+
+      if (save_fig == TRUE){
+
+        title <- paste0("Deviance Residuals by Fitted Values: ", geog, sample_title)
+        mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+
+      }
+
+    }
+
+    dev.off()
+
+    if (save_fig == TRUE){
+
+      grid <- c(min(length(formula_list), 3), ceiling(length(new_res_list) / 3))
+      output_path <- paste0(output_folder_main, "/", named_label, "_qq_plot.pdf")
+      pdf(output_path, width = grid[1]*5.5, height = grid[2]*4.5)
+
+      par(mfrow=c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
+
+    }
+
+    for (i in names(new_res_list)){
+
+      qqnorm(new_res_list[[i]]$residuals,
+             pch = 19,
+             cex = 0.2,
+             col = "#0A2E4D",
+             main = unique(new_res_list[[i]]$formula))
+
+      qqline(new_res_list[[i]]$residuals, lwd = 2)
+
+      if (save_fig == TRUE){
+
+        title <- paste0("Normal Q-Q Plot of Residuals: ", geog, sample_title)
+        mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+
+      }
+
+    }
+
+    dev.off()
+
+  }
+
+  return(list(qaic_results, qaic_summary, vif_results, vif_summary))
+
+}
+
+
+#' Define and run quasi-Poisson regression with distributed lag non-linear model
+#'
+#' @description Fits a quasi-Poisson case-crossover with a distributed lag
+#' non-linear model
+#'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param control_cols A list of confounders to include in the final model adjustment.
+#' Defaults to NULL if none.
+#' @param cb_list List of cross_basis matrices from create_crossbasis function.
+#'
+#' @returns List containing models by region
+#'
+#' @export
+hc_quasipoisson_dlnm <- function(df_list,
+                                 control_cols = NULL,
+                                 cb_list) {
+
+  model_list <- list()
+
+  # build the formula with base formula and control variables
+  if (!is.null(control_cols)) {
+
     # normalize type
-    if (is.character(independent_cols)) {
-      independent_cols <- c(independent_cols)
+    if (is.character(control_cols)) {
+      control_cols <- c(control_cols)
     }
 
     # type check column names
-    for (col in independent_cols){
+    for (col in control_cols){
       if (!is.character(col)){
         stop(
           paste0(
-            "'independent_cols' expected a vector of strings or a string. Got",
+            "'control_cols' expected a vector of strings or a string.",
             typeof(col)
           )
         )
       }
     }
   } else {
-    independent_cols = c()
+    control_cols = c()
   }
-  # Join on user-defined independent cols
-  independent_cols <- c(base_independent_cols, independent_cols)
 
-  # Model formula
-  formula <- as.formula(paste(paste('dependent'),
-                              " ~ ",
-                              paste(independent_cols,
-                                    collapse = " + ")))
+  # define the base independent cols
+  base_independent_cols <- c(
+    'cb', 'dow',
+    'splines::ns(date, df = dfseas * length(unique(year)))'
+  )
 
-  # Define crossbasis
-  argvar_ <- list(fun = varfun,
-                  knots = quantile(dataset$temp,
-                                   varper / 100,
-                                   na.rm = TRUE),
-                  degree = vardegree)
+  # model formula
+  base_formula <- paste("dependent ~",
+                        paste(base_independent_cols,
+                              collapse = " + "))
 
-  lag <- as.numeric(lag)
-  lagnk <- as.numeric(lagnk)
-  dfseas <- as.numeric(dfseas)
-  cb <- dlnm::crossbasis(dataset$temp,
-                         lag = lag,
-                         argvar = argvar_,
-                         arglag = list(knots = dlnm::logknots(lag,
-                                                              lagnk)))
-  # Run the model and obtain predictions
-  model <- glm(formula,
-               dataset,
-               family = quasipoisson,
-               na.action = "na.exclude")
+  formula <- as.formula(paste(base_formula,
+                              paste("+", paste(control_cols,
+                                               collapse = " + "))))
 
-  return (list(model, cb))
+  # Run model
+  for(geog in names(df_list)){
+
+    geog_data <- df_list[[geog]]
+    cb <- cb_list[[geog]]
+
+    model <- glm(formula,
+                 geog_data,
+                 family = quasipoisson,
+                 na.action = "na.exclude")
+
+    model_list[[geog]] <- model
+
+  }
+
+  return(model_list)
 
 }
 
 
-#' Define and run poisson regression model for each dataframe
+#' Reduce to overall cumulative
 #'
-#' @param df_list An alphabetically-ordered list of dataframes for each region.
-#' @param independent_cols column name (or list of names) of extra independent
-#' variable to include in regression (excluding temperature). Defaults to NULL.
-#' @param varfun Exposure function
-#' (see dlnm::crossbasis)
-#' @param varper Internal knot positions in exposure function
-#' (see dlnm::crossbasis)
-#' @param vardegree Degrees of freedom in exposure function
-#' (see dlnm:crossbasis)
-#' @param lag Lag length in time
-#' (see dlnm::logknots)
-#' @param lagnk Number of knots in lag function
-#' (see dlnm::logknots)
-#' @param dfseas Degrees of freedom for seasonality
+#' @description Reduce model to the overall cumulative association
+#'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param var_per Vector. Internal knot positions for argvar
+#' (see dlnm::crossbasis). Defaults to c(25,50,75).
+#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
+#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
+#' @param cenper Integer. Value for the percentile in calculating the centering
+#' value 0-100. Defaults to 50.
+#' @param cb_list List of cross_basis matrices from create_crossbasis function.
+#' @param model_list List of models produced from case-crossover and DLNM
+#' analysis.
 #'
 #' @return
-#' \itemize{
-#'   \item `coef_` A matrix of coefficients for reduced model.
-#'   \item `vcov_` A list. Co-variance matrices for each region for reduced model.
-#'   \item `cb` Basis matrices for the two dimensions of predictor and lags.
-#'   \item `model` A quasi-poission generalised linear model object.
-#'   See: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/glm
+#'  \itemize{
+#'   \item `coef_` A matrix of coefficients for the reduced model.
+#'   \item `vcov_` A list. Covariance matrices for each region for the reduced model.
 #'   }
 #'
 #' @export
-run_model <- function(df_list,
-                      independent_cols = NULL,
-                      varfun,
-                      varper,
-                      vardegree,
-                      lag,
-                      lagnk,
-                      dfseas) {
-
-  minperregions <- mintempregions <- rep(NA,
-                                         length(df_list))
+hc_reduce_cumulative <- function(df_list,
+                                 var_per = c(10,75,90),
+                                 var_degree = 8,
+                                 cb_list,
+                                 model_list) {
 
   # Coefficients and vcov for overall cumulative summary
-  coef_ <- matrix(NA,
-                  length(names(df_list)),
-                  length(varper) + vardegree,
+  coef_ <- matrix(data = NA,
+                  nrow = length(names(df_list)),
+                  ncol = length(var_per) + var_degree,
                   dimnames = list(names(df_list)))
 
   vcov_ <- vector("list", length(names(df_list)))
-
   names(vcov_) <- names(df_list)
 
-  for(i in seq(length(df_list))) {
-    # Extract data
-    data <- df_list[[i]]
 
-    c(model, cb) %<-% define_model(dataset = data,
-                                   independent_cols = independent_cols,
-                                   varfun = varfun,
-                                   varper = varper,
-                                   vardegree = vardegree,
-                                   lag = lag,
-                                   lagnk = lagnk,
-                                   dfseas = dfseas)
+  for(geog in names(df_list)){
 
-    cen_ <- mean(data$temp, na.rm = TRUE)
+    geog_data <- df_list[[geog]]
+    cb <- cb_list[[geog]]
 
-    # Reduction to overall cumulative
-    pred <- dlnm::crossreduce(cb, model, cen = cen_)
-    mintempregions[i] <- as.numeric(names(which.min(pred$RRfit)))
+    cen_ <- mean(geog_data$temp, na.rm = TRUE)
 
-    coef_[i,] <- coef(pred)
-    vcov_[[i]] <- vcov(pred)
+
+    # Reduction to overall cumulative lag effect
+    red <- dlnm::crossreduce(cb, model_list[[geog]], cen = cen_)
+
+    coef_[geog,] <- coef(red)
+    vcov_[[geog]] <- vcov(red)
 
   }
-  return (list(coef_, vcov_, cb, model))
+
+  return(list(coef_, vcov_))
+
 }
 
 
-#' Meta-analysis model
+#' Meta-analysis and BLUPs
 #'
-#' Runs meta-analysis model and estimates best linear unbiased predictions
-#' (BLUPs) from this model.
+#' @description Run meta-analysis using temperature average and range as meta
+#' predictors. Then create the best linear unbiased predictions (BLUPs).
 #'
-#' @param df_list An alphabetically-ordered list of dataframes for each region.
-#' @param coef A matrix of coefficients for reduced model.
-#' @param vcov A list. Co-variance matrices for each region for reduced model.
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param coef_ A matrix of coefficients for the reduced model.
+#' @param vcov_ A list. Covariance matrices for each region for the reduced model.
+#' @param save_csv Boolean. Whether to save the results as a CSV. Defaults to
+#' FALSE.
+#' @param output_folder_path Path to folder where results should be saved.
+#' Defaults to NULL.
 #'
 #' @return
 #' \itemize{
-#'   \item `mvmeta` A model object. A multivariate meta-analysis model.
+#'   \item `mm` A model object. A multivariate meta-analysis model.
 #'   \item `blup` A list. BLUP (best linear unbiased predictions) from the
 #'   meta-analysis model for each region.
+#'   \item `meta_test_res` A dataframe of results from statistical tests on the meta model.
 #'   }
+#'
 #' @export
-run_meta_model <- function(df_list, coef, vcov) {
+hc_meta_analysis <- function(df_list,
+                             coef_,
+                             vcov_,
+                             save_csv = FALSE,
+                             output_folder_path = NULL){
 
   # Assert that df_list is a list of dataframes
   is_list_of_dfs(list_ = df_list)
 
   # Assert that coef is a numeric matrix
-  if(!is.matrix(coef)) {
-    stop("Argument 'coef' must be a numeric matrix")
-  }
-  else {
-    if (!is.numeric(coef)) {
-      stop("Argument 'coef' must be a numeric matrix")
-    }
+  if (!is.matrix(coef_) || !is.numeric(coef_)) {
+    stop("Argument 'coef_' must be a numeric matrix")
   }
 
+
   # Assert that vcov is a list of matrices.
-  # TODO: Functionalise this functionality into a defences module
-  if (is.list(vcov)) {
-    for (matr in vcov){
+  # TODO: Functionalise this functionality into a defenses module
+  if (is.list(vcov_)) {
+    for (matr in vcov_){
       if (!is.matrix(matr)) {
         stop(paste(
-          "'vcov' expected a list of matrices. List contains item of",
+          "'vcov_' expected a list of matrices. List contains item of",
           "type", toString(typeof(matr))
         )
         )
       }
     }
-  }
-  else {
-    stop(paste("'vcov' expected a list. Got", toString(typeof(vcov))))
+  } else {
+    stop(paste("'vcov_' expected a list.", toString(typeof(vcov_))))
   }
   # Create average temperature and range as meta-predictors
-  avgtmean <- sapply(df_list,
+  temp_avg <- sapply(df_list,
                      function(x)
                        mean(x$temp, na.rm = TRUE))
 
-  rangetmean <- sapply(df_list,
+  temp_range <- sapply(df_list,
                        function(x)
                          diff(range(x$temp, na.rm = TRUE)))
 
   # Meta-analysis
-  # NB: country effects is not included in this example
-  mv <- mvmeta::mvmeta(coef ~ avgtmean + rangetmean,
-                       vcov,
-                       data = as.data.frame(names(df_list)), # was data = regions_df
-                       control = list(showiter = FALSE))
+  mm <- mixmeta::mixmeta(formula = coef_ ~ temp_avg + temp_range,
+                         S = vcov_,
+                         data = as.data.frame(names(df_list)),
+                         method = "reml"
+                         #, control = list(showiter = FALSE) - EW: left from original heat and cold code, check what it does
+  )
 
-  # Obtain blups
-  blup <- mvmeta::blup(mv, vcov = TRUE)
+  # Obtain BLUPs
+  blup <- mixmeta::blup(mm, vcov = TRUE)
 
-  return(list(mv, blup))
-}
+  names(blup) <- names(df_list)
 
+  # Wald test
+  # EW: ask Charlie
 
-#' Calculate p-values for Wald test
-#'
-#' A function to calculate p-values for an explanatory variable.
-#'
-#' @param model A model object.
-#' @param var A character. The name of the variable in the model to calculate
-#' p-values for.
-#'
-#' @export
-#' @return A number. The p-value of the explanatory variable.
-fwald <- function(model, var) {
+  temp_avg_wald <- climatehealth::fwald(mm, "temp_avg")
+  temp_range_wald <- climatehealth::fwald(mm, "temp_range")
 
-  if(!is.character(var)) {
-    stop("Argument 'var' must be a character")
+  # Cochran's Q-test
+
+  qstat <- mixmeta::qtest(mm)
+
+  # I^2 statistic
+
+  i2stat <- ((qstat$Q - qstat$df) / qstat$Q)[1] * 100
+
+  meta_test_res <- data.frame(test = c("temp_avg Wald p-value",
+                                       "temp_range Wald p-value",
+                                       "Cochran's Q test p-value",
+                                       "I2 (%)",
+                                       "AIC"),
+                              result = round(c(temp_avg_wald,
+                                               temp_range_wald,
+                                               qstat[["pvalue"]][1],
+                                               i2stat,
+                                               summary(mm)$AIC),3))
+
+  if (save_csv == TRUE){
+
+    if (!is.null(output_folder_path)) {
+
+      check_file_exists(file.path(output_folder_path))
+
+      write.csv(meta_test_res, file = file.path(
+        output_folder_path, "meta_model_stat_test_results.csv"), row.names = FALSE)
+
+    } else {
+
+      stop("Output path not specified")
+
+    }
+
   }
 
-  ind <- grep(var, names(coef(model)))
-  coef <- coef(model)[ind]
-  vcov <- vcov(model)[ind, ind]
-  waldstat <- coef %*% solve(vcov) %*% coef
-  df <- length(coef)
-
-  return(1 - pchisq(waldstat, df))
+  return(list(mm, blup, meta_test_res))
 
 }
 
 
-#' Get Wald statistic for a meta-analysis model
+#' Define minimum mortality percentiles and temperatures
 #'
-#' @param mv A model object (multivariate meta-analysis model)
+#' @description Calculate the temperature at which there is minimum mortality risk
+#' using the product of the basis matrix and BLUPs.
 #'
-#' @return P-values for average and range of temperatures
-#' (avgtmean_wald, rangetmean_wald).
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param var_fun Character. Exposure function for argvar
+#' (see dlnm::crossbasis). Defaults to 'bs'.
+#' @param var_per Vector. Internal knot positions for argvar
+#' (see dlnm::crossbasis). Defaults to c(25,50,75).
+#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
+#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
+#' @param blup A list. BLUP (best linear unbiased predictions) from the
+#' meta-analysis model for each region.
+#' @param coef_ A matrix of coefficients for the reduced model.
+#' @param meta_analysis Boolean. Whether to perform a meta-analysis.
 #'
-#' @export
-wald_results <- function(mv) {
-
-  avgtmean_wald <- fwald(mv, "avgtmean")
-  rangetmean_wald <- fwald(mv, "rangetmean")
-
-  return(list(avgtmean_wald, rangetmean_wald))
-
-}
-
-
-
-#' Define and validate the optimal temperature range from the model predictions.
-#'
-#' @param optimal_temp_range Matrix. A matrix used to store the optimal temperature
-#' ranges.
-#' @param prediction Data. The models prediction.
-#' @param RR_fit_col Character. The column containing the relative risk values.
-#' @param index Integer. The index to use to obtain the RR values.
-#'
-#' @return The optimal temperature range.
-#' @export
-define_and_validate_optimal_temps <- function(optimal_temp_range,
-                                              prediction,
-                                              RR_fit_col = "allRRfit",
-                                              index) {
-  optimal_temp_range[index,"lower"] <- as.numeric(names(
-    which.min(which(prediction[[RR_fit_col]] >= 1 & prediction[[RR_fit_col]] <= 1.1))))
-  optimal_temp_range[index, "upper"] <- as.numeric(names(
-    which.max(which(prediction[[RR_fit_col]] >= 1 & prediction[[RR_fit_col]] <= 1.1))))
-  below_one <- which(prediction[[RR_fit_col]] < 1)
-  above_OTR <- which(
-    as.numeric(names(prediction[[RR_fit_col]])) > optimal_temp_range[index, "upper"]
-  )
-  below_OTR <- which(
-    as.numeric(names(prediction[[RR_fit_col]]))< optimal_temp_range[index, "lower"]
-  )
-  if (length(which((below_one %in% above_OTR) | (below_one %in% below_OTR))) > 0) {
-    # TODO: Create a better warning
-    warning("Predicted RR goes below 1 in the ends")
-  }
-
-  return (optimal_temp_range)
-
-}
-
-
-#' Calculate minimum mortality values
-#'
-#' Calculate the temperature at which there is minimum mortality
-#' using the product of the basis matrix and blup
-#'
-#' @param df_list An alphabetically-ordered list of dataframes for each region.
-#' @param blup A list of BLUPs (best linear unbiased predictions).
-#' @param independent_cols column name (or list of names) of extra independent
-#' variable to include in regression (excluding temperature). Defaults to NULL.
-#' @param varfun Exposure function
-#' (see dlnm::crossbasis)
-#' @param varper Internal knot positions in exposure function
-#' (see dlnm::crossbasis)
-#' @param vardegree Degrees of freedom in exposure function
-#' (see dlnm:crossbasis)
-#' @param lag Lag length in time
-#' (see dlnm::logknots)
-#' @param lagnk Number of knots in lag function
-#' (see dlnm::logknots)
-#' @param dfseas Degrees of freedom for seasonality
-#'
-#' @return
-#' \itemize{
-#'   \item `mintempregions_` A named numeric vector.
-#'   Minimum (optimum) mortality temperature per region.
-#'    \item `an_thresholds` A dataframe with the optimal temperature range and
-#' temperature thresholds for calculation of attributable deaths.
-#' }
+#' @returns Percentiles and corresponding temperatures for each geography.
 #'
 #' @export
-calculate_min_mortality_temp <-  function(df_list,
-                                          blup = NULL,
-                                          independent_cols = NULL,
-                                          varfun,
-                                          varper,
-                                          vardegree,
-                                          lag,
-                                          lagnk,
-                                          dfseas) {
+hc_min_mortality_temp <- function(df_list,
+                                  var_fun = "bs",
+                                  var_per = c(10,75,90),
+                                  var_degree = 8,
+                                  blup = blup,
+                                  coef_,
+                                  meta_analysis = FALSE) {
+
   # Assert that df_list is a list of dataframes
   is_list_of_dfs(list_ = df_list)
 
@@ -485,138 +852,584 @@ calculate_min_mortality_temp <-  function(df_list,
     stop("Argument 'blup' must be a list")
   }
 
-  # Re-centering
-  # Generate the matrix for storing results
-  minpercregions_ <- mintempregions_ <- rep(NA,
-                                            length(df_list))
-  names(mintempregions_) <- names(minpercregions_) <- names(df_list)
-
-  optimal_temp_range <- matrix(NA,
-                               length(df_list),
-                               2,
-                               dimnames = list(names(df_list),
-                                               c("lower","upper")))
-
-  ranges <- t(sapply(df_list, function(x)
-    range(x$temp,na.rm = TRUE)))
-  if (!is.null(blup)) {
-
-    # Define minimum mortality values: exclude low and very hot temperatures
-    for(i in seq(length(df_list))) {
-
-      data <- df_list[[i]]
-      predvar <- quantile(data$temp, 1:99 / 100, na.rm = TRUE)
-
-      # Redefine the function using all arguments (boundary knots included)
-      argvar_ <- list(x = predvar, fun = varfun,
-                      knots = quantile(data$temp,
-                                       varper / 100,
-                                       na.rm = TRUE),
-                      degree = vardegree,
-                      Bound = range(data$temp, na.rm = TRUE))
-
-      bvar_ <- do.call(dlnm::onebasis, argvar_)
-
-      minpercregions_[i] <- (1:99)[which.min(bvar_ %*%
-                                               blup[[i]]$blup)]
-      mintempregions_[i] <- quantile(data$temp,
-                                     minpercregions_[i] / 100,
-                                     na.rm = TRUE)
-
-      # OVERALL CUMULATIVE SUMMARY ASSOCIATION FOR MAIN MODEL
-      cp <- dlnm::crosspred(bvar_,
-                            coef = blup[[i]]$blup,
-                            vcov = blup[[i]]$vcov,
-                            cen = mintempregions_[i],
-                            model.link = "log",
-                            by = 0.1,
-                            from = ranges[i,1],
-                            to = ranges[i,2])
-
-
-      optimal_temp_range <- define_and_validate_optimal_temps(
-        optimal_temp_range = optimal_temp_range,
-        prediction = cp,
-        index = i
-      )
-
-    }
-
-  } else {
-
-    for(i in seq(length(df_list))) {
-
-      # Extract data
-      data <- df_list[[i]]
-
-      c(model, cb) %<-% define_model(dataset = data,
-                                     independent_cols = independent_cols,
-                                     varfun = varfun,
-                                     varper = varper,
-                                     vardegree = vardegree,
-                                     lag = lag,
-                                     lagnk = lagnk,
-                                     dfseas = dfseas)
-
-      cen_ <- mean(data$temp, na.rm = TRUE)
-
-      # Reduction to overall cumulative
-      pred <- dlnm::crossreduce(cb, model, cen = cen_)
-      mintempregions_[i] <- as.numeric(names(which.min(pred$RRfit)))
-
-      cen_ <- mintempregions_[i]
-      pred <- dlnm::crossreduce(cb, model, cen = cen_)
-
-      optimal_temp_range <- define_and_validate_optimal_temps(
-        optimal_temp_range = optimal_temp_range,
-        RR_fit_col = "RRfit",
-        prediction = pred,
-        index = i
-      )
-
-    }
-
+  # Assert that coef is a numeric matrix
+  if (!is.matrix(coef_) || !is.numeric(coef_)) {
+    stop("Argument 'coef_' must be a numeric matrix")
   }
-  # calculate percentiles
-  per <- t(sapply(df_list, function(x)
-    quantile(x$temp, c(2.5, 97.5) / 100, na.rm = TRUE)))
-
-  # data frame with final thresholds to use for hot and cold days to attribute deaths to
-  an_thresholds <- as.data.frame(cbind(per, optimal_temp_range)) %>%
-    dplyr::mutate(
-      min_high_cold = -100,
-      max_high_heat = 100,
-      moderate_cold_OTR = .data$lower,
-      moderate_heat_OTR = .data$upper,
-      high_moderate_cold = ifelse(.data$moderate_cold_OTR < .data$`2.5%`,
-                                  .data$moderate_cold_OTR,
-                                  .data$`2.5%`),
-      high_moderate_heat = ifelse(.data$moderate_heat_OTR > .data$`97.5%`,
-                                  .data$moderate_heat_OTR,
-                                  .data$`97.5%`)
-    ) %>%
-    dplyr::select(
-      .data$min_high_cold,
-      .data$high_moderate_cold,
-      .data$moderate_cold_OTR,
-      .data$moderate_heat_OTR,
-      .data$high_moderate_heat,
-      .data$max_high_heat
-    )
-
-  # Country-specific points of minimum mortality
-  (minperccountry <- median(minpercregions_))
 
 
-  return(list(mintempregions = mintempregions_, an_thresholds))
+  # Assert that vcov is a list of matrices.
+  # TODO: Functionalise this functionality into a defenses module
+  if (is.list(vcov_)) {
+    for (matr in vcov_){
+      if (!is.matrix(matr)) {
+        stop(paste(
+          "'vcov_' expected a list of matrices. List contains item of",
+          "type", toString(typeof(matr))
+        )
+        )
+      }
+    }
+  } else {
+    stop(paste("'vcov_' expected a list.", toString(typeof(vcov_))))
+  }
+
+
+  # if running a meta-analysis, then MMT is determined by BLUPs
+  # else, MMT is determined by coefficients matrix
+  if (meta_analysis == TRUE){
+
+    coef_list <- lapply(blup, function(x) x$blup)
+
+  } else coef_list <- split(coef_, rownames(coef_))
+
+
+  # Generate matrix for storing results
+  minpercgeog_ <- mintempgeog_ <- rep(NA,length(df_list))
+  names(mintempgeog_) <- names(minpercgeog_) <- names(df_list)
+
+
+  # Define minimum mortality percentile and corresponding temperature per geography: exclude low and very hot temperature
+  for(geog in names(df_list)){
+
+    geog_data <- df_list[[geog]]
+
+    predvar <- quantile(geog_data$temp, 1:99/100, na.rm = TRUE)
+
+    # Redefine the function using all arguments (boundary knots included)
+    argvar <- list(x = predvar,
+                   fun = var_fun,
+                   knots = quantile(geog_data$temp,
+                                    var_per / 100,
+                                    na.rm = TRUE),
+                   degree = var_degree,
+                   Bound = range(geog_data$temp, na.rm = TRUE))
+
+    bvar <- do.call(dlnm::onebasis, argvar)
+
+    minpercgeog_[geog] <- (1:99)[which.min(bvar %*%
+                                             coef_list[[geog]])]
+    mintempgeog_[geog] <- quantile(geog_data$temp,
+                                   minpercgeog_[geog]/100,
+                                   na.rm = TRUE)
+  }
+
+  return(list(minpercgeog_, mintempgeog_))
 
 }
 
-# TODO: Explore functionalising this?
+
+#' Run predictions from model
+#'
+#' @description Use model to run predictions. Predictions can be produced for a single input geography,
+#' or multiple disaggregated geographies.
+#'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param var_fun Character. Exposure function for argvar
+#' (see dlnm::crossbasis). Defaults to 'bs'.
+#' @param var_per Vector. Internal knot positions for argvar
+#' (see dlnm::crossbasis). Defaults to c(25,50,75).
+#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
+#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
+#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
+#' @param blup A list. BLUP (best linear unbiased predictions) from the
+#' meta-analysis model for each region.
+#' @param coef_ A matrix of coefficients for the reduced model.
+#' @param vcov_ A list. Covariance matrices for each region for the reduced model.
+#' @param meta_analysis Boolean. Whether to perform a meta-analysis.
+#'
+#' @return A list containing predictions by region
+#'
+#' @export
+hc_predict_reg <- function(df_list,
+                           var_fun = "bs",
+                           var_per = c(10,75,90),
+                           var_degree = 8,
+                           minpercgeog_,
+                           blup,
+                           coef_,
+                           vcov_,
+                           meta_analysis = FALSE){
+
+  if (meta_analysis == TRUE){
+
+    coef_list <- lapply(blup, function(x) x$blup)
+    vcov_list <- lapply(blup, function(x) x$vcov)
+
+  } else {
+
+    coef_list <- split(coef_, rownames(coef_))
+    vcov_list <- vcov_
+
+  }
+
+  pred_list <- list()
+
+  for(geog in names(df_list)){
+
+    geog_data <- df_list[[geog]]
+
+    argvar <- list(x = geog_data$temp, # determines x axis for predictions
+                   fun = var_fun,
+                   knots = quantile(geog_data$temp,
+                                    var_per/100,
+                                    na.rm = TRUE),
+                   degree = var_degree)
+
+    bvar <- do.call(dlnm::onebasis, argvar)
+
+    pred <- dlnm::crosspred(bvar,
+                            coef = coef_list[[geog]],
+                            vcov = vcov_list[[geog]],
+                            model.link = "log",
+                            by = 0.1,
+                            cen = mintempgeog_[geog],
+                            from = min(geog_data$temp, na.rm = TRUE),
+                            to = max(geog_data$temp, na.rm = TRUE))
+
+    pred_list[[geog]] <- pred
+
+  }
+
+  return(pred_list)
+
+}
+
+
+#' Process data for national analysis
+#'
+#' @description Aggregate to national data and run crossbasis
+#'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param pop_list List of population totals by year and region.
+#' @param var_fun Character. Exposure function for argvar
+#' (see dlnm::crossbasis). Defaults to 'bs'.
+#' @param var_per Vector. Internal knot positions for argvar
+#' (see dlnm::crossbasis). Defaults to c(25,50,75).
+#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
+#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
+#' @param lag_fun Character. Exposure function for arglag
+#' (see dlnm::crossbasis). Defaults to 'strata'.
+#' @param lag_breaks Integer. Internal cut-off point defining the strata for arglag
+#' (see dlnm::crossbasis). Defaults to 1.
+#' @param lag_days Integer. Maximum lag. Defaults to 2.
+#' (see dlnm::crossbasis).
+#' @param country Character. Name of country for national level estimates.
+#' @param cb_list A list of cross-basis matrices by region.
+#' @param mm A model object. A multivariate meta-analysis model.
+#' @param minpercgeog Vector. Percentile of minumum mortality temperature for each region.
+#'
+#' @return
+#' \itemize{
+#'   \item `df_list` List. A list of data frames for each region and nation.
+#'   \item `cb_list` List. A list of cross-basis matrices by region and nation.
+#'   \item `minpercreg` Vector. Percentile of minimum suicide temperature for each region and nation.
+#'   \item `mmpredall` List. A list of national coefficients and covariance matrices.
+#'   }
+#'
+#' @export
+hc_add_national_data <- function(df_list,
+                                 pop_list,
+                                 var_fun = "bs",
+                                 var_per = c(10, 75, 90),
+                                 var_degree = 8,
+                                 lagn = 21,
+                                 country = "National",
+                                 cb_list,
+                                 mm,
+                                 minpercgeog_){
+
+  # Aggregate national level data
+  national_data <- as.data.frame(do.call(rbind, df_list))
+
+  nat_pop <- pop_list[[country]] %>%
+    rename(nat_pop = pop)
+
+  national_data <- national_data %>%
+    left_join(nat_pop, by = "year") %>%
+    mutate(weight = pop/nat_pop,
+           weighted_temp = temp * weight) %>%
+    group_by(date) %>%
+    summarise(temp = round(sum(weighted_temp, na.rm = TRUE), 2),
+              dependent = sum(dependent, na.rm = TRUE),
+              pop = unique(nat_pop)) %>%
+    mutate(year = as.factor(lubridate::year(date)),
+           month = as.factor(lubridate::month(date)),
+           geog_col = country)
+
+  df_list[[country]] <- as.data.frame(national_data)
+
+
+  # Create cross basis for national data
+
+  argvar <- list(fun = var_fun,
+                 knots = quantile(national_data$temp,
+                                  var_per/100,
+                                  na.rm = TRUE),
+                 degree = var_degree)
+
+  arglag <- list(knots = dlnm::logknots(lagn,
+                                        lagnk))
+
+  cb_list[[country]] <- dlnm::crossbasis(national_data$temp,
+                                         lag = lagn,
+                                         argvar = argvar,
+                                         arglag = arglag)
+
+  # Add national min temperatures
+
+  predvar <- quantile(national_data$temp, 1:99/100, na.rm = TRUE)
+
+  argvar <- list(x = predvar,
+                 fun = var_fun,
+                 knots = quantile(national_data$temp,
+                                  var_per/100,
+                                  na.rm = TRUE),
+                 degree = var_degree,
+                 Boundary.knots = range(national_data$temp, na.rm = TRUE))
+
+  bvar <- do.call(dlnm::onebasis, argvar)
+
+  datanew <- data.frame(
+    temp_avg = mean(national_data$temp),
+    temp_range = diff(range(national_data$temp, na.rm = TRUE)))
+
+  mmpredall <- predict(mm, datanew, vcov=TRUE, format="list")
+
+  minpercnat <- (1:99)[which.min((bvar%*%mmpredall$fit)[1:99,])]
+
+  minpercgeog_[country] <- minpercnat
+
+  return(list(df_list, cb_list, minpercgeog_, mintempgeog_, mmpredall))
+
+}
+
+
+
+#' Run national predictions from meta analysis
+#'
+#' @description Use the meta analysis to create national level predictions
+#'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param var_fun Character. Exposure function for argvar
+#' (see dlnm::crossbasis). Defaults to 'bs'.
+#' @param var_per Vector. Internal knot positions for argvar
+#' (see dlnm::crossbasis). Defaults to c(10,75,90).
+#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
+#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
+#' @param minpercgeog Vector. Percentile of maximum suicide temperature for each region.
+#' @param mmpredall List of national coefficients and covariance matrices for the crosspred.
+#' @param pred_list A list containing predictions from the model by region.
+#' @param country Character. Name of country for national level estimates.
+#'
+#' @return A list containing predictions by region.
+#'
+#' @export
+hc_predict_nat <- function(df_list,
+                           var_fun = "bs",
+                           var_per = c(10,75,90),
+                           var_degree = 2,
+                           minpercgeog,
+                           mmpredall,
+                           pred_list,
+                           country = "National"){
+
+  national_data <- df_list[[country]]
+
+  argvar <- list(x = national_data$temp,
+                 fun = var_fun,
+                 knots = quantile(national_data$temp,
+                                  var_per/100,
+                                  na.rm = TRUE),
+                 degree = var_degree)
+
+  bvar <- do.call(dlnm::onebasis, argvar)
+
+  cen <- quantile(national_data$temp,
+                  minpercgeog_[country]/100,
+                  na.rm=TRUE)
+
+  pred_nat <- dlnm::crosspred(bvar,
+                              coef=mixmpredall$fit,
+                              vcov=mixmpredall$vcov,
+                              cen=cen,
+                              model.link="log",
+                              by=0.1,
+                              from = min(national_data$temp, na.rm = TRUE),
+                              to = max(national_data$temp, na.rm = TRUE))
+
+  pred_list[[country]] <- pred_nat
+
+
+  return(pred_list)
+
+}
+
+
+#' Produce cumulative relative risk results of analysis
+#'
+#' @description Produces cumulative relative risk and confidence intervals
+#' from analysis.
+#'
+#' @param pred_list A list containing predictions from the model by region.
+#'
+#' @returns Dataframe containing cumulative relative risk and confidence
+#' intervals from analysis.
+#'
+#' @export
+hc_rr_results <- function(pred_list) {
+
+  rr_results <- bind_rows(lapply(names(pred_list), function(geog_name) {
+
+    geog_pred <- pred_list[[geog_name]]
+
+    df <- data.frame(
+      Area = region_name,
+      Temperature = reg_pred$predvar,
+      RR = reg_pred$allRRfit,
+      RR_lower_CI = reg_pred$allRRlow,
+      RR_upper_CI = reg_pred$allRRhigh
+    )
+
+    return(df)
+
+  }))
+
+  rownames(rr_results) <- NULL
+
+  return(rr_results)
+
+}
+
+
+#' Plot results of relative risk analysis - Mental Health
+#'
+#' @description Plots cumulative lag exposure-response function with histogram of
+#' temperature distribution for each region
+#'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param pred_list A list containing predictions from the model by region.
+#' @param attr_thr Integer. Percentile at which to define the temperature threshold for
+#' calculating attributable risk.
+#' @param minpercreg Vector. Percentile of minimum suicide temperature for each area.
+#' @param country Character. Name of country for national level estimates.
+#' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
+#' FALSE.
+#' @param output_folder_path Path to folder where plots should be saved.
+#' Defaults to NULL.
+#'
+#' @returns Plots of cumulative lag exposure-response function with histogram of
+#' temperature distribution for each region
+#'
+#' @export
+mh_plot_rr <- function(df_list,
+                       pred_list,
+                       attr_thr = 97.5,
+                       minpercreg,
+                       country = "National",
+                       save_fig = FALSE,
+                       output_folder_path = NULL) {
+
+  xlim <- c(min(sapply(pred_list, function(x) min(x$predvar, na.rm = TRUE))),
+            max(sapply(pred_list, function(x) max(x$predvar, na.rm = TRUE))))
+
+  ylim <- c(min(c(min(sapply(pred_list, function(x) min(x$allRRfit, na.rm = TRUE))) - 0.5, 0.4)),
+            max(c(max(sapply(pred_list, function(x) max(x$allRRfit, na.rm = TRUE))) + 0.5, 2.1)))
+
+  hist_max <- max(unlist(lapply(df_list, function(x) {
+
+    temp_range <- range(x$temp, na.rm = TRUE)
+    breaks <- seq(floor(temp_range[1]), ceiling(temp_range[2]), by = 1)
+    hist(x$temp, breaks = breaks, plot = FALSE)$counts
+
+  })), na.rm = TRUE)
+
+
+  if (save_fig==T) {
+
+    grid <- c(min(length(pred_list), 3), ceiling(length(pred_list) / 3))
+
+    output_path <- file.path(path_config$output_folder_path, "suicides_rr_plot.pdf")
+    pdf(output_path, width=max(10,grid[1]*5.5), height=max(7, grid[2]*4))
+
+    layout_ids <- seq_len(grid[1] * grid[2])
+    layout_matrix <- matrix(layout_ids, nrow = grid[2], ncol = grid[1], byrow = TRUE)
+
+    layout(layout_matrix, heights = rep(1, grid[2]), widths = rep(1, grid[1]))
+
+    par(oma = c(0,1,4,1))
+
+  }
+
+  for(reg in names(pred_list)){
+
+    region_pred <- pred_list[[reg]]
+    region_temp <- df_list[[reg]]$temp
+
+    par(mar = c(5, 5, 4, 5) + 0.1)
+
+    plot(region_pred,
+         "overall",
+         xlab = expression(paste("Temperature (", degree, "C)")),
+         ylab = "RR",
+         ylim = ylim,
+         xlim = xlim,
+         main = reg,
+         col = "#296991")
+
+    vline_pos_max_x <- quantile(region_temp, attr_thr/100, na.rm = TRUE)
+    vline_pos_max_y <- max(region_pred$allRRfit, na.rm = TRUE) + 0.3
+    vline_lab_max <- paste0("Attr. Risk Threshold\n", round(vline_pos_max_x, 2), intToUtf8(176), "C (p", attr_thr, ")")
+
+    abline(v = vline_pos_max_x, col = "black", lty = 2)
+    text(x = vline_pos_max_x, y = vline_pos_max_y, labels = vline_lab_max, pos = 2, col = "black", cex = 0.8)
+
+    vline_pos_min_x <- quantile(region_temp, minpercreg[reg]/100, na.rm = TRUE)
+    min_rr <- min(region_pred$allRRfit, na.rm = TRUE)
+
+    if (dplyr::between(min_rr, 0.90, 1.1)) {
+      vline_pos_min_y <- min_rr - 0.2
+    } else {
+      vline_pos_min_y <- min_rr - 0.1
+    }
+
+    vline_lab_min <- paste0("Min ST\n", round(vline_pos_min_x, 2), intToUtf8(176), "C (p", round(minpercreg[reg], 2), ")")
+
+    abline(v = vline_pos_min_x, col = "black", lty = 2)
+    text(x = vline_pos_min_x, y = vline_pos_min_y, labels = vline_lab_min, pos = 4, col = "black", cex = 0.8)
+
+    reg_temp_range <- range(region_temp, na.rm = TRUE)
+
+    hist_data <- hist(region_temp,
+                      breaks = seq(floor(reg_temp_range[1]), ceiling(reg_temp_range[2]), by = 1),
+                      plot = FALSE)
+
+    hist_scale <- (0.3) / hist_max
+    scaled_counts <- hist_data$counts * hist_scale
+
+    for (i in seq_along(hist_data$counts)) {
+      rect(xleft = hist_data$breaks[i],
+           xright = hist_data$breaks[i + 1],
+           ybottom = ylim[1],
+           ytop = ylim[1] + scaled_counts[i],
+           col = "#C75E70",
+           border = "white")
+    }
+
+    axis_labels <- pretty(c(0, hist_max), n = 2)
+    axis_scaled <- c(ylim[1], ylim[1] + (c(axis_labels[-1]) * hist_scale))
+    axis(side = 4, at = axis_scaled, labels = axis_labels, las = 1)
+
+    hist_midpoint <- ylim[1] + (max(scaled_counts, na.rm = TRUE) / 2)
+
+    # Normalize midpoint to [0, 1] scale for adj
+    adj_val <- (hist_midpoint - ylim[1]) / (ylim[2] - ylim[1])
+
+    # Add axis title with dynamic vertical alignment
+    mtext("Frequency", side = 4, line = 3, adj = adj_val, cex = 0.7)
+
+
+  }
+
+  if (save_fig==T) {
+
+    year_range <- paste0("(",
+                         min(sapply(df_list, function(x) min(lubridate::year(x$date), na.rm = TRUE))),
+                         "-",
+                         max(sapply(df_list, function(x) max(lubridate::year(x$date), na.rm = TRUE))),
+                         ")")
+
+    title <- paste0("Relative Risk of Suicide by Mean Temperature and Area, ", country, " ",  year_range)
+
+    mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+
+    dev.off()
+
+  }
+
+}
+
+
+#' Estimate attributable numbers
+#'
+#' @description Estimate attributable numbers for each region and confidence
+#' intervals using Monte Carlo simulations.
+#'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param cb_list A list of cross-basis matrices by region.
+#' @param pred_list A list containing predictions from the model by region.
+#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
+#' @param attr_thr Integer. Percentile at which to define the temperature threshold for
+#' calculating attributable risk.
+#'
+#' @return A list containing attributable numbers per region
+#'
+#' @export
+mh_attr <- function(df_list,
+                    cb_list,
+                    pred_list,
+                    minpercreg,
+                    attr_thr = 97.5) {
+
+  attr_list <- list()
+
+  for (reg in names(df_list)){
+
+    region_data <- df_list[[reg]]
+    cb <- cb_list[[reg]]
+    pred <- pred_list[[reg]]
+    minperc <- minpercreg[reg]
+
+    cen <- quantile(region_data$temp, minperc/100, na.rm = TRUE)
+    min_range <- quantile(region_data$temp, attr_thr/100, na.rm = TRUE)
+    max_range <- max(region_data$temp, na.rm = TRUE)
+
+    c(af, af_lower_ci, af_upper_ci,
+      an, an_lower_ci, an_upper_ci)  %<-% an_attrdl(x = region_data$temp,
+                                                    basis = cb,
+                                                    cases = region_data$suicides,
+                                                    coef = pred$coefficients,
+                                                    vcov = pred$vcov,
+                                                    dir = "forw",
+                                                    cen = cen,
+                                                    range = c(min_range, max_range),
+                                                    tot = FALSE,
+                                                    nsim = 1000)
+
+    results <- region_data %>%
+      select(region, date, temp, year, month, suicides, population) %>%
+      mutate(threshold_temp = round(min_range, 2),
+             af = af,
+             af_lower_ci = af_lower_ci,
+             af_upper_ci = af_upper_ci,
+             an = an,
+             an_lower_ci = an_lower_ci,
+             an_upper_ci = an_upper_ci,
+             ar = (an / population) * 100000,
+             ar_lower_ci = (an_lower_ci / population) * 100000,
+             ar_upper_ci = (an_upper_ci / population) * 100000)
+
+    attr_list[[reg]] <- results
+
+  }
+
+  return(attr_list)
+
+}
+
+
+
+
+
 
 #' Compute attributable deaths
 #'
-#' Compute the attributable deaths for each regions,
+#' @description Compute the attributable deaths for each regions,
 #' with empirical CI estimated using the re-centered bases.
 #'
 #' @param df_list An alphabetically-ordered list
@@ -629,11 +1442,11 @@ calculate_min_mortality_temp <-  function(df_list,
 #' temperature thresholds for calculation of attributable deaths.
 #' @param independent_cols column name (or list of names) of extra independent
 #' variable to include in regression (excluding temperature). Defaults to NULL.
-#' @param varfun Exposure function
+#' @param var_fun Exposure function
 #' (see dlnm::crossbasis)
-#' @param varper Internal knot positions in exposure function
+#' @param var_per Internal knot positions in exposure function
 #' (see dlnm::crossbasis)
-#' @param vardegree Degrees of freedom in exposure function
+#' @param vardegree Degree of the piecewise polynomial for argvar
 #' (see dlnm:crossbasis)
 #' @param lag Lag length in time
 #' (see dlnm::logknots)
@@ -656,19 +1469,19 @@ calculate_min_mortality_temp <-  function(df_list,
 #' }
 #'
 #' @export
-compute_attributable_deaths <- function(df_list,
-                                        output_year,
-                                        blup = NULL,
-                                        mintempregions,
-                                        an_thresholds,
-                                        independent_cols = NULL,
-                                        varfun,
-                                        varper,
-                                        vardegree,
-                                        lag,
-                                        lagnk,
-                                        dfseas,
-                                        nsim_ = 1000) {
+old_compute_attributable_deaths <- function(df_list,
+                                            output_year,
+                                            blup = NULL,
+                                            mintempregions,
+                                            an_thresholds,
+                                            independent_cols = NULL,
+                                            var_fun,
+                                            varper,
+                                            vardegree,
+                                            lag,
+                                            lagnk,
+                                            dfseas,
+                                            nsim_ = 1000) {
 
   # Create the vectors to store the total mortality (accounting for missing)
   totdeath <- rep(NA, length(names(df_list)))
@@ -696,6 +1509,7 @@ compute_attributable_deaths <- function(df_list,
 
 
   if (output_year == 0) {
+
     output_year = max(df_list[[1]]$year)
   }
   # Run the loop
@@ -736,13 +1550,13 @@ compute_attributable_deaths <- function(df_list,
 
     }
 
-    #############################################
+
     # Return heat attributable deaths for the output year
 
-    data_output_year <- data %>% dplyr::filter(.data$year %in% output_year) %>%
+    data_output_year <- data %>% dplyr::filter(year %in% output_year) %>%
       dplyr::mutate(
         high_heat_flag = ifelse(
-          .data$temp > an_thresholds[i,"high_moderate_heat"], 1, 0
+          temp > an_thresholds[i,"high_moderate_heat"], 1, 0
         )
       )
 
@@ -775,9 +1589,9 @@ compute_attributable_deaths <- function(df_list,
 
     data_output_year <- data_output_year %>%
       dplyr::mutate(
-        heatwave_temp = ifelse(.data$heatwave_flag == 1, .data$temp, mintempregions[i])
+        heatwave_temp = ifelse(heatwave_flag == 1, temp, mintempregions[i])
       ) %>%
-      dplyr::select(-.data$high_heat_flag, -.data$heatwave_flag)
+      dplyr::select(-high_heat_flag, -heatwave_flag)
 
     matsim[i, "glob_cold"] <- attrdl(x = data_output_year$temp,
                                      basis = cb,
@@ -982,9 +1796,8 @@ compute_attributable_deaths <- function(df_list,
 #' }
 #'
 #' @export
-compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
+old_compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 
-  ###################################################
   # Attributable numbers: estimates as well as the upper and lower ends of the
   # 95% confidence interval, derived from the simulated arraysim
 
@@ -1008,7 +1821,7 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
   antotlow <- apply(apply(arraysim, c(2,3), sum), 1, quantile, 0.025)
   antothigh <- apply(apply(arraysim, c(2,3), sum), 1, quantile, 0.975)
 
-  ###################################################
+
   # Attributable rates
 
   # Populations to compute attributable rates with
@@ -1018,7 +1831,7 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 
   for (i in seq(df_list)){
     for (j in seq(length(output_year))){
-      data_output_year <- df_list[[i]] %>% dplyr::filter(.data$year == output_year[j])
+      data_output_year <- df_list[[i]] %>% dplyr::filter(year == output_year[j])
       years_pop[j] <- as.numeric(unique(data_output_year["pop_col"]))
     }
     regions_pop[i] <- mean(years_pop)
@@ -1036,7 +1849,7 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
   artotlow <- antotlow / totpopulation * 100000
   artothigh <- antothigh / totpopulation * 100000
 
-  ###################################################
+
   # Bind datasets
 
   colnames(anregionslow) <- paste(colnames(anregionslow), '2.5', sep = '_')
@@ -1049,7 +1862,7 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
   arregions_bind <- t(cbind(arregions, arregionslow, arregionshigh))
   artot_bind <- t(cbind(artot, artotlow, artothigh))
 
-  return(list(anregions_bind, antot_bind, arregions_bind, artot_bind))
+  return(list(anregions_bind,antot_bind,arregions_bind,artot_bind))
 }
 
 
@@ -1100,9 +1913,9 @@ write_attributable_deaths <- function(avgtmean_wald,
                                       output_folder_path = NULL) {
   # convert data to publication format
   # wald test results
-  if (!is.null(avgtmean_wald) & !is.null(rangetmean_wald)) {
-    wald_publication <- data.frame(avgtmean_wald, rangetmean_wald)
-    colnames(wald_publication) <- c("region_mean_temp", "region_temp_range")
+  if (!is.null(avgtmean_wald) & !is.null(rangetmean_wald)){
+    wald_publication <- data.frame(cbind(avgtmean_wald,rangetmean_wald))
+    colnames(wald_publication) <- c("region_mean_temp","region_temp_range")
     rownames(wald_publication) <- "Wald statistic p-value"
   } else {
     wald_publication <- NULL
@@ -1112,52 +1925,62 @@ write_attributable_deaths <- function(avgtmean_wald,
   anregions_publication <- anregions_bind %>%
     t() %>%
     as.data.frame() %>%
-    dplyr::select(
-      .data$glob_cold, .data$glob_cold_ci_2.5, .data$glob_cold_ci_97.5,
-      .data$glob_heat, .data$glob_heat_ci_2.5, .data$glob_heat_ci_97.5,
-      .data$moderate_cold, .data$moderate_cold_ci_2.5, .data$moderate_cold_ci_97.5,
-      .data$moderate_heat, .data$moderate_heat_ci_2.5, .data$moderate_heat_ci_97.5,
-      .data$high_cold, .data$high_cold_ci_2.5, .data$high_cold_ci_97.5,
-      .data$high_heat, .data$high_heat_ci_2.5, .data$high_heat_ci_97.5,
-      .data$heatwave, .data$heatwave_ci_2.5, .data$heatwave_ci_97.5
-    )
+    dplyr::select(glob_cold, glob_cold_ci_2.5, glob_cold_ci_97.5,
+                  glob_heat, glob_heat_ci_2.5, glob_heat_ci_97.5,
+                  moderate_cold, moderate_cold_ci_2.5, moderate_cold_ci_97.5,
+                  moderate_heat, moderate_heat_ci_2.5, moderate_heat_ci_97.5,
+                  high_cold, high_cold_ci_2.5, high_cold_ci_97.5,
+                  high_heat, high_heat_ci_2.5, high_heat_ci_97.5,
+                  heatwave, heatwave_ci_2.5, heatwave_ci_97.5)
+
 
   # AR_regions (attributable rates by region)
   arregions_publication <- arregions_bind %>%
     t() %>%
     as.data.frame() %>%
-    dplyr::select(
-      .data$glob_cold, .data$glob_cold_ci_2.5, .data$glob_cold_ci_97.5,
-      .data$glob_heat, .data$glob_heat_ci_2.5, .data$glob_heat_ci_97.5,
-      .data$moderate_cold, .data$moderate_cold_ci_2.5, .data$moderate_cold_ci_97.5,
-      .data$moderate_heat, .data$moderate_heat_ci_2.5, .data$moderate_heat_ci_97.5,
-      .data$high_cold, .data$high_cold_ci_2.5, .data$high_cold_ci_97.5,
-      .data$high_heat, .data$high_heat_ci_2.5, .data$high_heat_ci_97.5,
-      .data$heatwave, .data$heatwave_ci_2.5, .data$heatwave_ci_97.5
-    )
+    dplyr::select(glob_cold, glob_cold_ci_2.5, glob_cold_ci_97.5,
+                  glob_heat, glob_heat_ci_2.5, glob_heat_ci_97.5,
+                  moderate_cold, moderate_cold_ci_2.5, moderate_cold_ci_97.5,
+                  moderate_heat, moderate_heat_ci_2.5, moderate_heat_ci_97.5,
+                  high_cold, high_cold_ci_2.5, high_cold_ci_97.5,
+                  high_heat, high_heat_ci_2.5, high_heat_ci_97.5,
+                  heatwave, heatwave_ci_2.5, heatwave_ci_97.5)
 
-  if (isTRUE(save_csv)) {
+  if (save_csv==TRUE) {
     # define output_folder_path as CWD if it is null
     if (is.null(output_folder_path)) {
       output_folder_path <- "/"
-    } else if (!endsWith(output_folder_path, "/")) {
-      output_folder_path <- paste0(output_folder_path, "/")
+    }
+    # normalise outputs paths
+    else if (!endsWith(output_folder_path, "/")) {
+      output_folder_path <- paste(output_folder_path, "/", sep="")
     }
 
     write.csv(wald_publication,
-              file = paste0(output_folder_path, "heat_and_cold_wald_test_results.csv"))
-    write.csv(anregions_publication,
-              file = paste0(output_folder_path, "heat_and_cold_attributable_deaths_regions.csv"))
-    write.csv(antot_bind,
-              file = paste0(output_folder_path, "heat_and_cold_attributable_deaths_total.csv"))
-    write.csv(arregions_publication,
-              file = paste0(output_folder_path, "heat_and_cold_attributable_rates_regions.csv"))
-    write.csv(artot_bind,
-              file = paste0(output_folder_path, "heat_and_cold_attributable_rates_total.csv"))
-  }
+              file = paste(output_folder_path,
+                           'heat_and_cold_wald_test_results.csv',
+                           sep = ""))
 
+    write.csv(anregions_publication,
+              file = paste(output_folder_path,
+                           'heat_and_cold_attributable_deaths_regions.csv',
+                           sep = ""))
+    write.csv(antot_bind,
+              file = paste(output_folder_path,
+                           'heat_and_cold_attributable_deaths_total.csv',
+                           sep = ""))
+    write.csv(arregions_publication,
+              file = paste(output_folder_path,
+                           'heat_and_cold_attributable_rates_regions.csv',
+                           sep = ""))
+    write.csv(artot_bind,
+              file = paste(output_folder_path,
+                           'heat_and_cold_attributable_rates_total.csv',
+                           sep=""))
+  }
   return(list(wald_publication, anregions_publication, antot_bind,
               arregions_publication, artot_bind))
+
 }
 
 
@@ -1184,7 +2007,7 @@ write_attributable_deaths <- function(avgtmean_wald,
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
 #' (see dlnm::crossbasis)
-#' @param vardegree Degrees of freedom in exposure function
+#' @param vardegree Degree of the piecewise polynomial for argvar
 #' (see dlnm:crossbasis)
 #' @param lag Lag length in time
 #' (see dlnm::logknots)
@@ -1308,7 +2131,7 @@ plot_and_write <- function(
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
 #' (see dlnm::crossbasis)
-#' @param vardegree Degrees of freedom in exposure function
+#' @param vardegree Degree of the piecewise polynomial for argvar
 #' (see dlnm:crossbasis)
 #' @param lag Lag length in time
 #' (see dlnm::logknots)
@@ -1520,10 +2343,10 @@ plot_and_write_relative_risk <- function(df_list,
                           lower = lower_vector)
 
   optimal_temp_df <- output_df %>%
-    dplyr::group_by(.data$regions) %>%
-    dplyr::filter(.data$rel_risk < 1.1) %>%
-    dplyr::summarise(optimal_temp_range_min = min(.data$temp),
-                     optimal_temp_range_max = max(.data$temp))
+    dplyr::group_by(regions) %>%
+    dplyr::filter(rel_risk < 1.1) %>%
+    dplyr::summarise(optimal_temp_range_min = min(temp),
+                     optimal_temp_range_max = max(temp))
 
   output_df <- dplyr::left_join(x = output_df,
                                 y = optimal_temp_df,
@@ -1564,7 +2387,7 @@ plot_and_write_relative_risk <- function(df_list,
 #' (see dlnm::crossbasis)
 #' @param varper Internal knot positions in exposure function
 #' (see dlnm::crossbasis)
-#' @param vardegree Degrees of freedom in exposure function
+#' @param vardegree Degree of the piecewise polynomial for argvar
 #' (see dlnm:crossbasis)
 #'
 #' @return
@@ -1740,8 +2563,6 @@ plot_and_write_relative_risk_all <- function(df_list,
 #'
 #' @details Modified from Gasparrini A et al. (2015)
 #' The Lancet. 2015;386(9991):369-375.
-#' 
-#' @importFrom zeallot %<-%
 #'
 #' @param input_csv_path_ Path to a CSV contain
 #' daily time series of death and temperature per region.
@@ -1764,7 +2585,7 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @param population_col_ the column name of the column containing population values.
 #' @param varfun_ Exposure function
 #' (see dlnm::crossbasis)
-#' @param vardegree_ Degrees of freedom in exposure function
+#' @param vardegree_ Degree of the piecewise polynomial for argvar
 #' (see dlnm:crossbasis)
 #' @param lag_ Lag length in time
 #' (see dlnm::logknots)
