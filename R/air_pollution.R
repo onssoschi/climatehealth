@@ -410,7 +410,7 @@ air_pollution_meta_analysis <- function(data,
       an_10ug = .data$total_deaths * .data$af_10ug
     ) %>%
     dplyr::filter(!is.na(.data$coef_pm25) & !is.na(.data$se_pm25)) %>%
-    dplyr::select(-.data$coef_results)
+    dplyr::select(-"coef_results")
 
   if (nrow(region_results) < 2) {
     warning("At least 2 regions with successful model fits needed for meta-analysis.")
@@ -574,8 +574,11 @@ plot_air_pollution_forest <- function(meta_results,
   }
 
   region_data <- meta_results$region_results %>%
-    dplyr::select(.data$region, .data$rr_10ug, .data$ci_lower, .data$ci_upper,
-                  .data$af_10ug, .data$an_10ug) %>%
+    dplyr::select(
+      all_of(
+        c("region", "rr_10ug", "ci_lower", "ci_upper", "af_10ug", "an_10ug")
+      )
+    ) %>%
     dplyr::mutate(
       type = "Region",
       label = sprintf("RR: %.3f", .data$rr_10ug)
@@ -1522,7 +1525,7 @@ air_pollution_do_analysis <- function(data_path,
 
       meta_summary <- ref_af_an$meta_results %>%
         filter(.data$lag_group == "0") %>%
-        dplyr::select(.data$AF, .data$AN)
+        dplyr::select(all_of(c("AF", "AN")))
 
       if (nrow(meta_summary) > 0) {
         cat("  Overall AF for", ref_std$name, "reference:",
@@ -1577,7 +1580,7 @@ air_pollution_do_analysis <- function(data_path,
 
     # Save cleaned region results
     region_results_clean <- meta_results$region_results %>%
-      dplyr::select(-.data$data, -.data$model)
+      dplyr::select(all_of(c(-"data", -"model")))
     write.csv(region_results_clean, file.path(output_dir, "region_results.csv"),
               row.names = FALSE)
     write.csv(lag_results, file.path(output_dir, "lag_results.csv"), row.names = FALSE)

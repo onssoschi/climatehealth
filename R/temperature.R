@@ -595,14 +595,15 @@ calculate_min_mortality_temp <-  function(df_list,
                                   .data$moderate_heat_OTR,
                                   .data$`97.5%`)
     ) %>%
-    dplyr::select(
-      .data$min_high_cold,
-      .data$high_moderate_cold,
-      .data$moderate_cold_OTR,
-      .data$moderate_heat_OTR,
-      .data$high_moderate_heat,
-      .data$max_high_heat
-    )
+    dplyr::select(all_of(c(
+      "min_high_cold",
+      "high_moderate_cold",
+      "moderate_cold_OTR",
+      "moderate_heat_OTR",
+      "high_moderate_heat",
+      "max_high_heat"
+    )))
+
 
   # Country-specific points of minimum mortality
   (minperccountry <- median(minpercregions_))
@@ -777,7 +778,7 @@ compute_attributable_deaths <- function(df_list,
       dplyr::mutate(
         heatwave_temp = ifelse(.data$heatwave_flag == 1, .data$temp, mintempregions[i])
       ) %>%
-      dplyr::select(-.data$high_heat_flag, -.data$heatwave_flag)
+      dplyr::select(all_of(c(-"high_heat_flag", -"heatwave_flag")))
 
     matsim[i, "glob_cold"] <- attrdl(x = data_output_year$temp,
                                      basis = cb,
@@ -1112,29 +1113,29 @@ write_attributable_deaths <- function(avgtmean_wald,
   anregions_publication <- anregions_bind %>%
     t() %>%
     as.data.frame() %>%
-    dplyr::select(
-      .data$glob_cold, .data$glob_cold_ci_2.5, .data$glob_cold_ci_97.5,
-      .data$glob_heat, .data$glob_heat_ci_2.5, .data$glob_heat_ci_97.5,
-      .data$moderate_cold, .data$moderate_cold_ci_2.5, .data$moderate_cold_ci_97.5,
-      .data$moderate_heat, .data$moderate_heat_ci_2.5, .data$moderate_heat_ci_97.5,
-      .data$high_cold, .data$high_cold_ci_2.5, .data$high_cold_ci_97.5,
-      .data$high_heat, .data$high_heat_ci_2.5, .data$high_heat_ci_97.5,
-      .data$heatwave, .data$heatwave_ci_2.5, .data$heatwave_ci_97.5
-    )
+    dplyr::select(all_of(c(
+      "glob_cold", "glob_cold_ci_2.5", "glob_cold_ci_97.5",
+      "glob_heat", "glob_heat_ci_2.5", "glob_heat_ci_97.5",
+      "moderate_cold", "moderate_cold_ci_2.5", "moderate_cold_ci_97.5",
+      "moderate_heat", "moderate_heat_ci_2.5", "moderate_heat_ci_97.5",
+      "high_cold", "high_cold_ci_2.5", "high_cold_ci_97.5",
+      "high_heat", "high_heat_ci_2.5", "high_heat_ci_97.5",
+      "heatwave", "heatwave_ci_2.5", "heatwave_ci_97.5"
+    )))
 
   # AR_regions (attributable rates by region)
   arregions_publication <- arregions_bind %>%
     t() %>%
     as.data.frame() %>%
-    dplyr::select(
-      .data$glob_cold, .data$glob_cold_ci_2.5, .data$glob_cold_ci_97.5,
-      .data$glob_heat, .data$glob_heat_ci_2.5, .data$glob_heat_ci_97.5,
-      .data$moderate_cold, .data$moderate_cold_ci_2.5, .data$moderate_cold_ci_97.5,
-      .data$moderate_heat, .data$moderate_heat_ci_2.5, .data$moderate_heat_ci_97.5,
-      .data$high_cold, .data$high_cold_ci_2.5, .data$high_cold_ci_97.5,
-      .data$high_heat, .data$high_heat_ci_2.5, .data$high_heat_ci_97.5,
-      .data$heatwave, .data$heatwave_ci_2.5, .data$heatwave_ci_97.5
-    )
+    dplyr::select(all_of(c(
+      "glob_cold", "glob_cold_ci_2.5", "glob_cold_ci_97.5",
+      "glob_heat", "glob_heat_ci_2.5", "glob_heat_ci_97.5",
+      "moderate_cold", "moderate_cold_ci_2.5", "moderate_cold_ci_97.5",
+      "moderate_heat", "moderate_heat_ci_2.5", "moderate_heat_ci_97.5",
+      "high_cold", "high_cold_ci_2.5", "high_cold_ci_97.5",
+      "high_heat", "high_heat_ci_2.5", "high_heat_ci_97.5",
+      "heatwave", "heatwave_ci_2.5", "heatwave_ci_97.5"
+    )))
 
   if (isTRUE(save_csv)) {
     # define output_folder_path as CWD if it is null
