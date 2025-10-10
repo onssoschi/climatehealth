@@ -715,8 +715,8 @@ mh_meta_analysis <- function(df_list,
 
   # Wald test
 
-  temp_avg_wald <- climatehealth::fwald(mm, "temp_avg")
-  temp_range_wald <- climatehealth::fwald(mm, "temp_range")
+  temp_avg_wald <- fwald(mm, "temp_avg")
+  temp_range_wald <- fwald(mm, "temp_range")
 
   # Cochran Q-test
 

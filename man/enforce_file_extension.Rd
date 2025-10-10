@@ -17,9 +17,4 @@ Character. The path with the expected file extension.
 \description{
 Ensures that the provided file path ends with the desired file extension.
 }
-\examples{
-enforce_file_extension("output", "pdf")
-enforce_file_extension("report.txt", ".pdf")
-
-}
 \keyword{internal}

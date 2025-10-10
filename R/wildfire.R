@@ -25,7 +25,7 @@ read_and_format_data <- function(health_path,
                                  mean_temperature_col,
                                  health_outcome_col) {
 
-  df <- climatehealth::read_input_data(health_path)
+  df <- read_input_data(health_path)
 
   if (is.null(region_col)) {
 
@@ -726,7 +726,7 @@ plot_RR <- function(results,
           width = 8, height = 8)
       print(plot) # NOTE: this print() is required to produce the plot pdf
       dev.off()
-      climatehealth::check_file_exists(file.path(output_folder_path, file_name))
+      check_file_exists(file.path(output_folder_path, file_name))
     }
 
   }
@@ -756,14 +756,14 @@ save_results <- function(rr_results,
     write.csv(rr_results, file = file.path(
       output_folder_path, "wildfire_rr.csv")
       )
-    climatehealth::check_file_exists(file.path(
+    check_file_exists(file.path(
       output_folder_path, "wildfire_rr.csv"))
     # AN/AF
     if (output_AN_AR) {
       write.csv(an_ar_results, file = file.path(
         output_folder_path, "wildfire_an_ar.csv")
       )
-      climatehealth::check_file_exists(file.path(
+      check_file_exists(file.path(
         output_folder_path, "wildfire_an_ar.csv"))
     }
 

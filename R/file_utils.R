@@ -106,10 +106,6 @@ read_input_data <- function(input_csv_path) {
 #'
 #' @return Character. The path with the expected file extension.
 #'
-#' @examples
-#' enforce_file_extension("output", "pdf")
-#' enforce_file_extension("report.txt", ".pdf")
-#'
 #' @keywords internal
 enforce_file_extension <- function(path, file_extension) {
   # Normalise the file ext

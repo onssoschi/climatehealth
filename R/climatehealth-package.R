@@ -14,12 +14,6 @@
 #' - Waterborne Diseases
 #' - Vectorborne Diseases
 #'
-#' ## Author
-#' Charlie Browning
-#'
-#' ## Maintainer
-#' Charlie Browning <charlbrowning@ons.gov.uk>
-#'
 #' ## License
 #' MIT
 #'
