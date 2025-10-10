@@ -1293,8 +1293,11 @@ mh_attr <- function(df_list,
       )
 
     results <- region_data %>%
-      dplyr::select(.data$region, .data$date, .data$temp, .data$year,
-                    .data$month, .data$suicides, .data$population) %>%
+      dplyr::select(
+        all_of(
+          c("region", "date", "temp", "year", "month", "suicides", "population")
+        )
+      ) %>%
       dplyr::mutate(
         threshold_temp = round(min_range, 2),
         af = af,
@@ -2051,13 +2054,13 @@ mh_save_results <- function(rr_results,
       output_folder_path, "suicides_attr_tot_results.csv"), row.names = FALSE)
 
     res_attr_yr <- do.call(rbind, attr_yr_list) %>%
-      select(.data$region, everything())
+      select("region", everything())
 
     write.csv(res_attr_yr, file = file.path(
       output_folder_path, "suicides_attr_yr_results.csv"), row.names = FALSE)
 
     res_attr_mth <- do.call(rbind, attr_mth_list) %>%
-      select(.data$region, everything())
+      select("region", everything())
 
     write.csv(res_attr_mth, file = file.path(
       output_folder_path, "suicides_attr_mth_results.csv"), row.names = FALSE)

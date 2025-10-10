@@ -380,7 +380,7 @@ combine_health_climate_data <- function(
     dplyr::ungroup()
 
   grid_data <- data %>%
-    dplyr::select(.data$region, .data$district) %>%
+    dplyr::select(all_of(c("region", "district"))) %>%
     dplyr::distinct() %>%
     dplyr::group_by(.data$region) %>%
     dplyr::mutate(
@@ -894,13 +894,13 @@ plot_monthly_random_effects <- function(
   month_effects <- month_effects %>%
     dplyr::left_join(
       grid_data %>%
-        dplyr::select(-.data$district, -.data$district_code) %>%
+        dplyr::select(-all_of(c("district", "district_code"))) %>%
         dplyr::distinct(),
       by = c("region_code" = "code_num")
     )
 
   month_effects <- map %>%
-    dplyr::select(-.data$district) %>%
+    dplyr::select(-"district") %>%
     dplyr::distinct() %>%
     dplyr::left_join(month_effects, by = c("region" = "name"))
 
