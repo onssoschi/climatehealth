@@ -23,3 +23,4 @@ variable
 \description{
 Generates summary statistics for climate and health data.
 }
+\keyword{internal}

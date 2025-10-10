@@ -18,7 +18,7 @@
 #'
 #' @seealso \code{\link[pkgbuild]{check_build_tools}}, \url{https://cran.r-project.org/bin/windows/Rtools/}
 #'
-#' @export
+#' @keywords internal
 check_has_rtools <- function() {
     # Create temp dir
     temp_dir <- tempdir()

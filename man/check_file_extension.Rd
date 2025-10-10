@@ -23,3 +23,4 @@ Whether or not the passed file has a valid file extension.
 This function takes an expected file extension, and validates it
 against a user-inputted file path.
 }
+\keyword{internal}

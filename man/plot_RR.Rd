@@ -33,3 +33,4 @@ wildfire-related PM2.5
 Plots relative risk and confidence intervals for each lag value
 of wildfire-related PM2.5
 }
+\keyword{internal}

@@ -47,3 +47,4 @@ Generates a map of the relative risk of Malaria cases associated with climate
 hazards, including extreme temperature and cumulative rainfall, at a specified
 spatial level (District or Region).
 }
+\keyword{internal}

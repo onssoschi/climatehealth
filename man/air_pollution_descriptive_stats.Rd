@@ -30,3 +30,4 @@ Defaults to NULL.}
 \description{
 Generates summary statistics for climate, environmental and health data.
 }
+\keyword{internal}

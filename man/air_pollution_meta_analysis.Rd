@@ -26,3 +26,4 @@ List with meta-analysis results including AF and AN.
 Performs meta-analysis across regions and calculates attributable
 fraction and attributable number.
 }
+\keyword{internal}

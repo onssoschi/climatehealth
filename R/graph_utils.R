@@ -10,7 +10,7 @@
 #'
 #' @return A numeric vector: c(x, y), where x and y define the grid dimensions.
 #'
-#' @export
+#' @keywords internal
 create_grid <- function(plot_count) {
   est <- sqrt(plot_count)
   if (est==floor(est)){
@@ -35,7 +35,7 @@ create_grid <- function(plot_count) {
 #' @param title The title for the correlation matrix.
 #' @param output_path The path to output the plot to.
 #'
-#' @export
+#' @keywords internal
 plot_correlation_matrix <- function(matrix_, title, output_path) {
   # validate output path
   output_path <- enforce_file_extension(output_path, ".png")
@@ -60,7 +60,7 @@ plot_correlation_matrix <- function(matrix_, title, output_path) {
 #' @param save_hists Whether to save the histograms to file.
 #' @param output_path The path to save your distributions to.
 #'
-#' @export
+#' @keywords internal
 plot_distributions <- function(
     df,
     columns,
@@ -112,7 +112,7 @@ plot_distributions <- function(
 #' @param alpha The alpha of the converted colour (ranging from 0-1).
 #'
 #' @return The converted RGB colour.
-#' @export
+#' @keywords internal
 get_alpha_colour <- function(hex, alpha) {
   rgb_vals <- col2rgb(hex)
   alpha_colour <- rgb(rgb_vals[1, ] / 255, rgb_vals[2, ] / 255, rgb_vals[3, ] /
@@ -133,7 +133,7 @@ get_alpha_colour <- function(hex, alpha) {
 #' @param output_path The path to output the plot to.
 #' @param units A named character vector of units for each variable.
 #'
-#' @export
+#' @keywords internal
 plot_moving_average <- function(
     df,
     time_col,
@@ -227,7 +227,7 @@ plot_moving_average <- function(
 #' @param output_path The path to output the plot to.
 #' @param units A named character vector of units for each variable.
 #'
-#' @export
+#' @keywords internal
 plot_scatter_grid <- function(
     df,
     main_col,
@@ -285,7 +285,7 @@ plot_scatter_grid <- function(
 #' @param save_plot Whether to save the plot as a PDF
 #' @param output_path The file path to save the PDF (if save_plot is TRUE)
 #'
-#' @export
+#' @keywords internal
 plot_boxplots <- function(
     df,
     columns = NULL,
@@ -348,7 +348,7 @@ plot_boxplots <- function(
 #' @param save_plot Whether or not to save the plot.
 #' @param output_path The path to output the plot to.
 #'
-#' @export
+#' @keywords internal
 plot_seasonal_trends <- function(
     df,
     date_col,
@@ -408,7 +408,7 @@ plot_seasonal_trends <- function(
 #' @param save_plot Whether or not to save the plot.
 #' @param output_path The path to output the plot to.
 #'
-#' @export
+#' @keywords internal
 plot_regional_trends <- function(
     df,
     region_col,
@@ -473,7 +473,7 @@ plot_regional_trends <- function(
 #' @param save_rate Whether to save the plot as a PDF.
 #' @param output_path The file path to save the plot if save_rate is TRUE.
 #'
-#' @export
+#' @keywords internal
 plot_rate_overall <- function(
   df,
   dependent_col,
@@ -534,7 +534,7 @@ plot_rate_overall <- function(
 #'
 #' @return Plots are printed to the console or saved as PDF files.
 #'
-#' @export
+#' @keywords internal
 plot_total_variables_by_year <- function(
     df,
     date_col,

@@ -29,3 +29,4 @@ Plots are printed to the console or saved as PDF files.
 \description{
 Plot the total of selected variables per year.
 }
+\keyword{internal}

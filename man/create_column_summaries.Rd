@@ -17,3 +17,4 @@ Dataframe. Column summaries
 \description{
 Create statistical summaries of columns in a dataframe.
 }
+\keyword{internal}

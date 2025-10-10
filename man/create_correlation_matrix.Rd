@@ -19,3 +19,4 @@ Matrix. Correlation matrix for selected columns in the input dataset.
 \description{
 Create a correlation matrix for columns in a dataframe.
 }
+\keyword{internal}

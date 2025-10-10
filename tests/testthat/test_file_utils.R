@@ -8,7 +8,7 @@ test_that(
       system.file(
         "testdata", package="climatehealth"
       ),
-      "temperature_test_data.csv"
+      "example_file.csv"
     )
     exists <- expect_no_error(
       check_file_exists(test_data_path)

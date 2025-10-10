@@ -92,3 +92,4 @@ Character vector. The output directory path and summary directory name.
 \description{
 Wrapper Function to Compute Descriptive Statistics for Heat and Cold Indicators
 }
+\keyword{internal}

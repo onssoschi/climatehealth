@@ -10,7 +10,7 @@
 #'
 #' @return The filtered dataframe.
 #'
-#' @export
+#' @keywords internal
 filter_on_rr_distribution <- function(df,
                                       RR_distribution_length = 0,
                                       lower_range = 5,
@@ -67,7 +67,7 @@ filter_on_rr_distribution <- function(df,
 #' @return `df_list` An alphabetically-ordered list of dataframes for each
 #' region comprising dates, deaths, and temperatures.
 #'
-#' @export
+#' @keywords internal
 load_temperature_data <- function(input_csv_path,
                                   dependent_col,
                                   time_col,
@@ -139,7 +139,7 @@ load_temperature_data <- function(input_csv_path,
 #'   \item `cb` Basis matrices for the two dimensions of predictor and lags.
 #'   }
 #'
-#' @export
+#' @keywords internal
 define_model <- function(dataset,
                          independent_cols = NULL,
                          varfun,
@@ -238,7 +238,7 @@ define_model <- function(dataset,
 #'   See: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/glm
 #'   }
 #'
-#' @export
+#' @keywords internal
 run_model <- function(df_list,
                       independent_cols = NULL,
                       varfun,
@@ -303,7 +303,7 @@ run_model <- function(df_list,
 #'   \item `blup` A list. BLUP (best linear unbiased predictions) from the
 #'   meta-analysis model for each region.
 #'   }
-#' @export
+#' @keywords internal
 run_meta_model <- function(df_list, coef, vcov) {
 
   # Assert that df_list is a list of dataframes
@@ -366,7 +366,7 @@ run_meta_model <- function(df_list, coef, vcov) {
 #' @param var A character. The name of the variable in the model to calculate
 #' p-values for.
 #'
-#' @export
+#' @keywords internal
 #' @return A number. The p-value of the explanatory variable.
 fwald <- function(model, var) {
 
@@ -392,7 +392,7 @@ fwald <- function(model, var) {
 #' @return P-values for average and range of temperatures
 #' (avgtmean_wald, rangetmean_wald).
 #'
-#' @export
+#' @keywords internal
 wald_results <- function(mv) {
 
   avgtmean_wald <- fwald(mv, "avgtmean")
@@ -413,7 +413,7 @@ wald_results <- function(mv) {
 #' @param index Integer. The index to use to obtain the RR values.
 #'
 #' @return The optimal temperature range.
-#' @export
+#' @keywords internal
 define_and_validate_optimal_temps <- function(optimal_temp_range,
                                               prediction,
                                               RR_fit_col = "allRRfit",
@@ -468,7 +468,7 @@ define_and_validate_optimal_temps <- function(optimal_temp_range,
 #' temperature thresholds for calculation of attributable deaths.
 #' }
 #'
-#' @export
+#' @keywords internal
 calculate_min_mortality_temp <-  function(df_list,
                                           blup = NULL,
                                           independent_cols = NULL,
@@ -595,14 +595,15 @@ calculate_min_mortality_temp <-  function(df_list,
                                   .data$moderate_heat_OTR,
                                   .data$`97.5%`)
     ) %>%
-    dplyr::select(
-      .data$min_high_cold,
-      .data$high_moderate_cold,
-      .data$moderate_cold_OTR,
-      .data$moderate_heat_OTR,
-      .data$high_moderate_heat,
-      .data$max_high_heat
-    )
+    dplyr::select(all_of(c(
+      "min_high_cold",
+      "high_moderate_cold",
+      "moderate_cold_OTR",
+      "moderate_heat_OTR",
+      "high_moderate_heat",
+      "max_high_heat"
+    )))
+
 
   # Country-specific points of minimum mortality
   (minperccountry <- median(minpercregions_))
@@ -655,7 +656,7 @@ calculate_min_mortality_temp <-  function(df_list,
 #'    for each region.
 #' }
 #'
-#' @export
+#' @keywords internal
 compute_attributable_deaths <- function(df_list,
                                         output_year,
                                         blup = NULL,
@@ -777,7 +778,7 @@ compute_attributable_deaths <- function(df_list,
       dplyr::mutate(
         heatwave_temp = ifelse(.data$heatwave_flag == 1, .data$temp, mintempregions[i])
       ) %>%
-      dplyr::select(-.data$high_heat_flag, -.data$heatwave_flag)
+      dplyr::select(all_of(c(-"high_heat_flag", -"heatwave_flag")))
 
     matsim[i, "glob_cold"] <- attrdl(x = data_output_year$temp,
                                      basis = cb,
@@ -981,7 +982,7 @@ compute_attributable_deaths <- function(df_list,
 #'   \item `artot_bind`
 #' }
 #'
-#' @export
+#' @keywords internal
 compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 
   ###################################################
@@ -1089,7 +1090,7 @@ compute_attributable_rates <- function(df_list, output_year, matsim, arraysim){
 #'
 #' @examples output_folder_path = 'myfolder/output/'
 #'
-#' @export
+#' @keywords internal
 write_attributable_deaths <- function(avgtmean_wald,
                                       rangetmean_wald,
                                       anregions_bind,
@@ -1112,29 +1113,29 @@ write_attributable_deaths <- function(avgtmean_wald,
   anregions_publication <- anregions_bind %>%
     t() %>%
     as.data.frame() %>%
-    dplyr::select(
-      .data$glob_cold, .data$glob_cold_ci_2.5, .data$glob_cold_ci_97.5,
-      .data$glob_heat, .data$glob_heat_ci_2.5, .data$glob_heat_ci_97.5,
-      .data$moderate_cold, .data$moderate_cold_ci_2.5, .data$moderate_cold_ci_97.5,
-      .data$moderate_heat, .data$moderate_heat_ci_2.5, .data$moderate_heat_ci_97.5,
-      .data$high_cold, .data$high_cold_ci_2.5, .data$high_cold_ci_97.5,
-      .data$high_heat, .data$high_heat_ci_2.5, .data$high_heat_ci_97.5,
-      .data$heatwave, .data$heatwave_ci_2.5, .data$heatwave_ci_97.5
-    )
+    dplyr::select(all_of(c(
+      "glob_cold", "glob_cold_ci_2.5", "glob_cold_ci_97.5",
+      "glob_heat", "glob_heat_ci_2.5", "glob_heat_ci_97.5",
+      "moderate_cold", "moderate_cold_ci_2.5", "moderate_cold_ci_97.5",
+      "moderate_heat", "moderate_heat_ci_2.5", "moderate_heat_ci_97.5",
+      "high_cold", "high_cold_ci_2.5", "high_cold_ci_97.5",
+      "high_heat", "high_heat_ci_2.5", "high_heat_ci_97.5",
+      "heatwave", "heatwave_ci_2.5", "heatwave_ci_97.5"
+    )))
 
   # AR_regions (attributable rates by region)
   arregions_publication <- arregions_bind %>%
     t() %>%
     as.data.frame() %>%
-    dplyr::select(
-      .data$glob_cold, .data$glob_cold_ci_2.5, .data$glob_cold_ci_97.5,
-      .data$glob_heat, .data$glob_heat_ci_2.5, .data$glob_heat_ci_97.5,
-      .data$moderate_cold, .data$moderate_cold_ci_2.5, .data$moderate_cold_ci_97.5,
-      .data$moderate_heat, .data$moderate_heat_ci_2.5, .data$moderate_heat_ci_97.5,
-      .data$high_cold, .data$high_cold_ci_2.5, .data$high_cold_ci_97.5,
-      .data$high_heat, .data$high_heat_ci_2.5, .data$high_heat_ci_97.5,
-      .data$heatwave, .data$heatwave_ci_2.5, .data$heatwave_ci_97.5
-    )
+    dplyr::select(all_of(c(
+      "glob_cold", "glob_cold_ci_2.5", "glob_cold_ci_97.5",
+      "glob_heat", "glob_heat_ci_2.5", "glob_heat_ci_97.5",
+      "moderate_cold", "moderate_cold_ci_2.5", "moderate_cold_ci_97.5",
+      "moderate_heat", "moderate_heat_ci_2.5", "moderate_heat_ci_97.5",
+      "high_cold", "high_cold_ci_2.5", "high_cold_ci_97.5",
+      "high_heat", "high_heat_ci_2.5", "high_heat_ci_97.5",
+      "heatwave", "heatwave_ci_2.5", "heatwave_ci_97.5"
+    )))
 
   if (isTRUE(save_csv)) {
     # define output_folder_path as CWD if it is null
@@ -1206,7 +1207,7 @@ write_attributable_deaths <- function(avgtmean_wald,
 #'   region.
 #' }
 #'
-#' @export
+#' @keywords internal
 plot_and_write <- function(
     df_list,
     output_name,
@@ -1330,7 +1331,7 @@ plot_and_write <- function(
 #'
 #' @examples csv_output_path = "directory/sub_directory/file_name.csv"
 #'
-#' @export
+#' @keywords internal
 plot_and_write_relative_risk <- function(df_list,
                                          blup = NULL,
                                          mintempregions,
@@ -1581,7 +1582,7 @@ plot_and_write_relative_risk <- function(df_list,
 #'
 #' @examples csv_output_path = "directory/sub_directory/file_name.csv"
 #'
-#' @export
+#' @keywords internal
 plot_and_write_relative_risk_all <- function(df_list,
                                              cb,
                                              model,

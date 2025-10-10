@@ -32,7 +32,7 @@
 #'
 #' @return Dataframe with formatted and renamed with standardized column names.
 #'
-#' @export
+#' @keywords internal
 load_air_pollution_data <- function(data_path,
                                     date_col = "date",
                                     region_col = "province",
@@ -132,7 +132,7 @@ load_air_pollution_data <- function(data_path,
 #'
 #' @import dplyr
 #'
-#' @export
+#' @keywords internal
 create_air_pollution_lags <- function(
   data,
   max_lag = 2
@@ -176,7 +176,7 @@ create_air_pollution_lags <- function(
 #' Defaults to NULL.
 #' @param save_outputs Logical. Whether to save outputs. Defaults to FALSE.
 #'
-#' @export
+#' @keywords internal
 air_pollution_descriptive_stats <- function(data,
                                             variables,
                                             bin_width = 1,
@@ -245,7 +245,7 @@ air_pollution_descriptive_stats <- function(data,
 #' @param output_dir Character. Directory to save plot. Defaults NULL.
 #' @param save_plot Logical. Whether to save the plot. Defaults FALSE.
 #'
-#' @export
+#' @keywords internal
 plot_air_pollution_variables <- function(data,
                                          xvar,
                                          yvar,
@@ -291,7 +291,7 @@ plot_air_pollution_variables <- function(data,
 #'
 #' @return GAM model object or NULL if failed.
 #'
-#' @export
+#' @keywords internal
 fit_air_pollution_gam <- function(data,
                                   var_name = "pm25",
                                   family = "quasipoisson") {
@@ -336,7 +336,7 @@ fit_air_pollution_gam <- function(data,
 #'
 #' @return List with coefficient and standard error.
 #'
-#' @export
+#' @keywords internal
 extract_air_pollution_coef <- function(model,
                                        var_name = "pm25") {
 
@@ -378,7 +378,7 @@ extract_air_pollution_coef <- function(model,
 #'
 #' @return List with meta-analysis results including AF and AN.
 #'
-#' @export
+#' @keywords internal
 air_pollution_meta_analysis <- function(data,
                                         var_name = "pm25",
                                         family = "quasipoisson") {
@@ -410,7 +410,7 @@ air_pollution_meta_analysis <- function(data,
       an_10ug = .data$total_deaths * .data$af_10ug
     ) %>%
     dplyr::filter(!is.na(.data$coef_pm25) & !is.na(.data$se_pm25)) %>%
-    dplyr::select(-.data$coef_results)
+    dplyr::select(-"coef_results")
 
   if (nrow(region_results) < 2) {
     warning("At least 2 regions with successful model fits needed for meta-analysis.")
@@ -459,7 +459,7 @@ air_pollution_meta_analysis <- function(data,
 #'
 #' @return Dataframe with lag-specific results including AF and AN.
 #'
-#' @export
+#' @keywords internal
 analyze_air_pollution_lags <- function(data,
                                        max_lag = 2,
                                        family = "quasipoisson") {
@@ -516,7 +516,7 @@ analyze_air_pollution_lags <- function(data,
 #' @param single_plot_height Height for single plots (when grid_dims is NULL).
 #' Defaults to 8.
 #'
-#' @export
+#' @keywords internal
 save_air_pollution_plot <- function(plot_object,
                                     output_dir,
                                     filename,
@@ -564,7 +564,7 @@ save_air_pollution_plot <- function(plot_object,
 #'
 #' @return ggplot object
 #'
-#' @export
+#' @keywords internal
 plot_air_pollution_forest <- function(meta_results,
                                       title = "PM2.5 Effects by Region",
                                       output_dir = NULL,
@@ -574,8 +574,11 @@ plot_air_pollution_forest <- function(meta_results,
   }
 
   region_data <- meta_results$region_results %>%
-    dplyr::select(.data$region, .data$rr_10ug, .data$ci_lower, .data$ci_upper,
-                  .data$af_10ug, .data$an_10ug) %>%
+    dplyr::select(
+      all_of(
+        c("region", "rr_10ug", "ci_lower", "ci_upper", "af_10ug", "an_10ug")
+      )
+    ) %>%
     dplyr::mutate(
       type = "Region",
       label = sprintf("RR: %.3f", .data$rr_10ug)
@@ -648,7 +651,7 @@ plot_air_pollution_forest <- function(meta_results,
 #'
 #' @return ggplot object
 #'
-#' @export
+#' @keywords internal
 plot_air_pollution_lags <- function(lag_results,
                                     max_lag = 2,
                                     output_dir = NULL,
@@ -717,7 +720,7 @@ plot_air_pollution_lags <- function(lag_results,
 #' For plot counts exceeding 400, the function will return a 20x20 grid.
 #' Consider whether such large grids are appropriate for your visualization needs.
 #'
-#' @export
+#' @keywords internal
 calculate_air_pollution_grid_dims <- function(n_plots) {
   if (!is.numeric(n_plots) || length(n_plots) != 1) {
     stop("n_plots must be a single numeric value")
@@ -762,7 +765,7 @@ calculate_air_pollution_grid_dims <- function(n_plots) {
 #'
 #' @return List with AF and AN
 #'
-#' @export
+#' @keywords internal
 calculate_air_pollution_af_an <- function(data,
                                           reference = 15,
                                           var_name = "pm25",
@@ -803,7 +806,7 @@ calculate_air_pollution_af_an <- function(data,
 #'
 #' @return List with region-specific and meta-analysis results including AF/AN
 #'
-#' @export
+#' @keywords internal
 analyze_air_pollution_dlm <- function(data,
                                       reference = 15,
                                       max_lag = 2,
@@ -934,7 +937,7 @@ analyze_air_pollution_dlm <- function(data,
 #'
 #' @return List of ggplot objects.
 #'
-#' @export
+#' @keywords internal
 plot_air_pollution_dlm <- function(dlm_results,
                                    output_dir = NULL,
                                    max_lag = 2,
@@ -1055,7 +1058,7 @@ plot_air_pollution_dlm <- function(dlm_results,
 #'
 #' @return List containing predictions, meta model, and AF/AN values
 #'
-#' @export
+#' @keywords internal
 create_air_pollution_exposure_plots <- function(data_with_lags,
                                                 meta_results,
                                                 reference_pm25,
@@ -1522,7 +1525,7 @@ air_pollution_do_analysis <- function(data_path,
 
       meta_summary <- ref_af_an$meta_results %>%
         filter(.data$lag_group == "0") %>%
-        dplyr::select(.data$AF, .data$AN)
+        dplyr::select(all_of(c("AF", "AN")))
 
       if (nrow(meta_summary) > 0) {
         cat("  Overall AF for", ref_std$name, "reference:",
@@ -1577,7 +1580,7 @@ air_pollution_do_analysis <- function(data_path,
 
     # Save cleaned region results
     region_results_clean <- meta_results$region_results %>%
-      dplyr::select(-.data$data, -.data$model)
+      dplyr::select(all_of(c(-"data", -"model")))
     write.csv(region_results_clean, file.path(output_dir, "region_results.csv"),
               row.names = FALSE)
     write.csv(lag_results, file.path(output_dir, "lag_results.csv"), row.names = FALSE)

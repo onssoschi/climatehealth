@@ -22,3 +22,4 @@ The cleaned/reformatted data frame.
 Take a dataframe, and apply various different cleaning methods to it in order
 to prepare the data for use with a climate indicator.
 }
+\keyword{internal}

@@ -35,3 +35,4 @@ Plots relative risk and confidence intervals for each lag value
 of wildfire-related PM2.5. If RR by region is true, plots RR results by region.
 If false plots overall RR.
 }
+\keyword{internal}

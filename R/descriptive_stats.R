@@ -8,7 +8,7 @@
 #' 
 #' @return NULL. No return if the dataframe is not empty.
 #' 
-#' @export
+#' @keywords internal
 check_empty_dataframe <- function(df) {
   if (!is.data.frame(df) || nrow(df) == 0 || ncol(df) == 0) {
     stop("Please provide a populated dataframe.")
@@ -23,7 +23,7 @@ check_empty_dataframe <- function(df) {
 #'
 #' @return Matrix. Correlation matrix for selected columns in the input dataset.
 #'
-#' @export
+#' @keywords internal
 create_correlation_matrix <- function(
     df,
     columns = NULL,
@@ -66,7 +66,7 @@ create_correlation_matrix <- function(
 #'
 #' @return Dataframe. Column summaries
 #'
-#' @export
+#' @keywords internal
 create_column_summaries <- function(df, columns = NULL) {
   # check dataframe is populated
   check_empty_dataframe(df)
@@ -129,7 +129,7 @@ create_column_summaries <- function(df, columns = NULL) {
 #' @param columns vector. The columns to summaries NA counts for.
 #'
 #' @return Dataframe. A summary of NA values in the dataset.
-#' @export
+#' @keywords internal
 create_na_summary <- function(
     df,
     columns = NULL
@@ -170,7 +170,7 @@ create_na_summary <- function(
 #'
 #' @return Dataframe. Column summaries
 #'
-#' @export
+#' @keywords internal
 detect_outliers <- function(df, columns = NULL) {
   if (is.null(columns)) {
     columns <- colnames(df)
@@ -201,7 +201,7 @@ detect_outliers <- function(df, columns = NULL) {
 #'
 #' @return The new column label containing units (if col in units).
 #'
-#' @export
+#' @keywords internal
 label_with_unit <- function(col, units) {
   unit <- units[[col]]
   lbl_with_unit <- (
@@ -239,7 +239,7 @@ label_with_unit <- function(col, units) {
 #'
 #' @return None. Outputs are written to files.
 #'
-#' @export
+#' @keywords internal
 common_descriptive_stats_core <- function(
   dataset_title,
   df,
@@ -530,7 +530,7 @@ common_descriptive_stats_core <- function(
 #'
 #' @return Character vector. The output directory path and summary directory name.
 #'
-#' @export
+#' @keywords internal
 common_descriptive_stats <- function(
   dataset_title,
   df_list,
@@ -676,7 +676,7 @@ common_descriptive_stats <- function(
 #'
 #' @return None. Stops execution if value is NULL.
 #'
-#' @export
+#' @keywords internal
 raise_if_null <- function(param_nm, value) {
   if (is.null(value)) {
     stop(paste0("Unexpected NULL in ", param_nm))
@@ -714,7 +714,7 @@ raise_if_null <- function(param_nm, value) {
 #'
 #' @return Character vector. The full directory path that the descriptive stats are saved to.
 #'
-#' @export
+#' @keywords internal
 common_descriptive_stats_api <- function(
   data,
   aggregation_column = NULL,

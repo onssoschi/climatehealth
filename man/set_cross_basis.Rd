@@ -21,3 +21,4 @@ maximum temperature, minimum temperature, rainfall, relative humidity, etc.
 Generates cross-basis matrices for lagged climate variables in a dataset,
 for use in Distributed Lag Nonlinear Models (DLNM).
 }
+\keyword{internal}
