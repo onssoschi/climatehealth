@@ -115,4 +115,3 @@ intervals for each region.
 Runs full analysis pipeline for analysis of the impact of
 wildfire-related PM2.5 on a health outcome.
 }
-\keyword{internal}
