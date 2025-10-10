@@ -50,3 +50,4 @@ See: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/glm
 \description{
 Define and run poisson regression model for each dataframe
 }
+\keyword{internal}

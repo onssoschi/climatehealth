@@ -48,3 +48,4 @@ A list containing the model, baseline_model, and the dic_table.
 Laplace Approximation) models to the dataset, evaluates them using
 DIC (Deviance Information Criterion), and identifies the best-fitting model.
 }
+\keyword{internal}

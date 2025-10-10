@@ -43,3 +43,4 @@ Defaults to NULL.}
 Produces results on QAIC for each model combination, variance inflation
 factor for each independent variable, and plots for residuals to assess the models
 }
+\keyword{internal}

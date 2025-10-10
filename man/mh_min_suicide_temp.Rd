@@ -41,3 +41,4 @@ Vector. Percentile of minimum suicide temperature for each region.
 Define the minimum suicide temperature values (between 1st and
 50th percentiles).
 }
+\keyword{internal}

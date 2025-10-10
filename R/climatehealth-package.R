@@ -1,4 +1,26 @@
-#' @keywords internal
+#' @title climatehealth: Measuring the climate-health relationship
+#'
+#' @description
+#' 
+#' ## Overview
+#' This package provides a suite of analysis functions for measuring the relationship
+#' between various climate factors (indicators) and health outcomes.
+#'
+#' ## Included Indicators
+#' - Heat and Cold
+#' - Wildfires
+#' - Mental Health
+#' - Air Pollution
+#' - Waterborne Diseases
+#' - Vectorborne Diseases
+#'
+#' ## License
+#' MIT
+#'
+#' ## See Also
+#' TBC
+#'
+#' @name climatehealth-package
 "_PACKAGE"
 
 # Core graphics functions for plotting

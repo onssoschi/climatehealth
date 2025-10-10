@@ -40,3 +40,4 @@ Generate time series plots for combined health and climate data
 prepared for spatiotemporal and DLNM analysis. Supports aggregation
 at the country, region, or district level.
 }
+\keyword{internal}

@@ -20,3 +20,4 @@ Whether or not the item passed (list_) is a list of dfs.
 \description{
 Check that a passed argument is a list of dataframes.
 }
+\keyword{internal}

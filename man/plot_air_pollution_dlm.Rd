@@ -29,3 +29,4 @@ List of ggplot objects.
 \description{
 Create distributed lag plots for countries (national) and regions.
 }
+\keyword{internal}

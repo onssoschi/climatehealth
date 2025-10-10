@@ -57,3 +57,4 @@ Attributable Numbers and Fractions
 A function to calculate attributable numbers and fractions derived from
 (c) Antonio Gasparrini 2015-2017.
 }
+\keyword{internal}

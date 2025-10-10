@@ -38,3 +38,4 @@ meta-analysis model for each region.
 Run meta-analysis using temperature average and range as meta
 predictors. Then create the best linear unbiased predictions (BLUPs).
 }
+\keyword{internal}

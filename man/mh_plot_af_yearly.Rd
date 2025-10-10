@@ -29,3 +29,4 @@ Plots of yearly attributable fractions per area
 \description{
 Plot attributable fractions by year and area with confidence intervals
 }
+\keyword{internal}

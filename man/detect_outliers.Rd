@@ -17,3 +17,4 @@ Dataframe. Column summaries
 \description{
 Detect Outliers Using the IQR Method
 }
+\keyword{internal}

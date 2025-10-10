@@ -32,3 +32,4 @@ plot_boxplots(
 \description{
 Plot a grid of box plots for multiple numeric variables
 }
+\keyword{internal}

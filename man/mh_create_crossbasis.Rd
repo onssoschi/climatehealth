@@ -42,3 +42,4 @@ A list of cross-basis matrices by region
 \description{
 Creates a cross-basis matrix for each region
 }
+\keyword{internal}

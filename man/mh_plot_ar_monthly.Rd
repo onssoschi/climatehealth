@@ -38,3 +38,4 @@ Plots of attributable rates by calendar month per area
 Plot attributable rates grouped over the whole time series by
 calendar month to explore seasonality.
 }
+\keyword{internal}

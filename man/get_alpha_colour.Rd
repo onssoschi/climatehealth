@@ -17,3 +17,4 @@ The converted RGB colour.
 \description{
 Generate and RGB colour value with alpha from a hex value.
 }
+\keyword{internal}

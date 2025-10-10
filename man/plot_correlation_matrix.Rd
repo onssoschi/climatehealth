@@ -16,3 +16,4 @@ plot_correlation_matrix(matrix_, title, output_path)
 \description{
 Plot a correlation matrix include a heatmap.
 }
+\keyword{internal}
