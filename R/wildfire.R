@@ -868,7 +868,7 @@ relative_risk_by_region <- function(data,
 #' @returns Time series dataframe with daily AF and AN, and AF and AN upper and
 #' lower CIs
 #'
-#' @export
+#' @keywords internal
 calculate_daily_AF_AN <- function(data, rr_data) {
   df_list <- split(data, f = data$regnames)
 
@@ -1008,7 +1008,7 @@ summarise_AF_AN <- function(data) {
 #'   \item `af_an_results` A dataframe containing attributable fractions and numbers for each region
 #' }
 #'
-#' @keywords internal
+#' @export
 wildfire_do_analysis <- function(health_path,
                                  join_wildfire_data = FALSE,
                                  ncdf_path = NULL,
