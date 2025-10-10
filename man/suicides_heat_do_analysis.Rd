@@ -108,4 +108,3 @@ fractions, numbers and rates by calendar month and area.
 Runs full analysis pipeline for analysis of the impact of
 extreme heat on suicides
 }
-\keyword{internal}

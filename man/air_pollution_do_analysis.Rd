@@ -88,4 +88,3 @@ lag analysis, distributed lag modeling, and exposure-response plots with
 attributable fraction (AF) and attributable number (AN) calculations for
 multiple reference standards.
 }
-\keyword{internal}

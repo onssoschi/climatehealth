@@ -24,4 +24,3 @@ takes a calculated RR and upper and lower CIs, and applies these
 to the input data to calculate attributable fraction and attributable number,
 along with upper and lower CIs, for each day in the input data.
 }
-\keyword{internal}

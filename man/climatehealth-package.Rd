@@ -23,16 +23,6 @@ between various climate factors (indicators) and health outcomes.
 }
 }
 
-\subsection{Author}{
-
-Charlie Browning
-}
-
-\subsection{Maintainer}{
-
-Charlie Browning \href{mailto:charlbrowning@ons.gov.uk}{charlbrowning@ons.gov.uk}
-}
-
 \subsection{License}{
 
 MIT
