@@ -462,7 +462,9 @@ plot_health_climate_timeseries <- function(
   case_type <- validate_case_type(case_type)
 
   vars_all <- c(case_type, "tmin", "tmean", "tmax", "rainfall")
-  vars_to_plot <- if (param_term == "all") vars_all else param_term
+  if (length(param_term)>1) vars_to_plot <- param_term
+  else if (param_term == "all") vars_to_plot <- vars_all
+  else vars_to_plot <- param_term
 
   if (!is.null(filter_year)) {
     data <- data %>% dplyr::filter(.data$year %in% filter_year)
@@ -486,11 +488,11 @@ plot_health_climate_timeseries <- function(
     dplyr::summarise(
       dplyr::across(
         dplyr::all_of(vars_to_plot),
-        ~ if (level == "country" && case_type %in% cur_column()) {
-          if (cur_column() == case_type) sum(.x, na.rm = TRUE) else mean(.x, na.rm = TRUE)
-        } else {
-          mean(.x, na.rm = TRUE)
-        }
+        ~ if (level == "country") {
+            if (cur_column() == case_type) sum(.x, na.rm = TRUE) else mean(.x, na.rm = TRUE)
+          } else {
+            mean(.x, na.rm = TRUE)
+          }
       ),
       .groups = "drop"
     ) %>%
