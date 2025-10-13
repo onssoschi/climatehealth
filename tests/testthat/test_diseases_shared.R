@@ -294,3 +294,144 @@ test_that(
         expect_equal(max(output$grid_data$district_code), 21)
     }
 )
+
+# Tests for plot_health_climate_timeseries
+
+# Setup test data
+PHT_test_data <- data.frame(
+  region = c("North", "North", "South", "South"),
+  district = c("N1", "N2", "S1", "S2"),
+  year = c(2020, 2020, 2021, 2021),
+  month = c(1, 2, 1, 2),
+  malaria = c(10, 15, 5, 8),
+  diarrhea = c(20, 25, 10, 12),
+  tmin = c(22, 23, 24, 25),
+  tmean = c(28, 29, 30, 31),
+  tmax = c(35, 36, 37, 38),
+  rainfall = c(100, 110, 120, 130)
+)
+
+# Basic test for country-level aggregation
+test_that("plot_health_climate_timeseries works at country level", {
+  p <- plot_health_climate_timeseries(
+    data = PHT_test_data,
+    param_term = "tmean",
+    level = "country",
+    case_type = "malaria"
+  )
+  expect_s3_class(p, "ggplot")
+  expect_true(!("group" %in% names(p$data)))
+})
+
+# Test for region-level aggregation
+test_that("plot_health_climate_timeseries works at region level", {
+  p <- plot_health_climate_timeseries(
+    data = PHT_test_data,
+    param_term = "tmax",
+    level = "region",
+    case_type = "malaria"
+  )
+  expect_s3_class(p, "ggplot")
+  expect_equal(unique(p$data$group), c("North", "South"))
+})
+
+# Test for district-level aggregation
+test_that("plot_health_climate_timeseries works at district level", {
+  p <- plot_health_climate_timeseries(
+    data = PHT_test_data,
+    param_term = "rainfall",
+    level = "district",
+    case_type = "malaria"
+  )
+  expect_s3_class(p, "ggplot")
+  expect_equal(unique(p$data$group), c("N1", "N2", "S1", "S2"))
+})
+
+# Test for plotting all variables
+test_that("plot_health_climate_timeseries handles param_term = 'all'", {
+  p <- plot_health_climate_timeseries(
+    data = PHT_test_data,
+    param_term = "all",
+    level = "country",
+    case_type = "malaria"
+  )
+  expect_s3_class(p, "ggplot")
+  expect_equal(unique(p$data$variable), c("malaria", "tmin", "tmean", "tmax", "rainfall"))
+})
+
+# Test filtering by year
+test_that("plot_health_climate_timeseries filters by year", {
+  p <- plot_health_climate_timeseries(
+    data = PHT_test_data,
+    param_term = "tmin",
+    level = "country",
+    case_type = "malaria",
+    filter_year = 2020
+  )
+  # Validate filter works correctly
+  expect_s3_class(p, "ggplot")
+  expect_equal(p$data$date, as.Date(c("2020-01-01", "2020-02-01")))
+})
+
+test_that("plot_health_climate_timeseries saves figure when save_fig = TRUE", {
+  tmp_dir <- tempdir()
+  p <- plot_health_climate_timeseries(
+    data = PHT_test_data,
+    param_term = c("tmean", "tmax", "tmin"),
+    level = "country",
+    case_type = "malaria",
+    save_fig = TRUE,
+    output_dir = tmp_dir
+  )
+  expect_s3_class(p, "ggplot")
+  expect_true(file.exists(file.path(tmp_dir, "timeseries_tmean_country.pdf")))
+})
+
+test_that(
+    "plot_health_climate_timeseries sums instead of taking mean when param_term==case_col",
+    {
+        # Create single date dataset
+        PHT_data_adjusted <- PHT_test_data %>% 
+            mutate(
+                date = as.Date(rep("2020-01-01")),
+                year = rep(2020),
+                month = rep(01)
+            )
+        # Creat plot
+        p <- plot_health_climate_timeseries(
+            data = PHT_data_adjusted,
+            param_term = c("malaria", "tmin"),
+            level = "country",
+            case_type = "malaria"
+        )
+        expect_s3_class(p, "ggplot")
+        # Validate aggregation
+        expect_equal(p$data$value[1], 38)
+    }
+)
+
+test_that("plot_health_climate_timeseries errors on missing columns", {
+  bad_data <- PHT_test_data[, !(names(PHT_test_data) %in% c("tmin"))]
+  expect_error(
+    plot_health_climate_timeseries(
+      data = bad_data,
+      param_term = "tmin",
+      level = "country",
+      case_type = "malaria"
+    ),
+    "Missing columns: tmin"
+  )
+})
+
+# Test error for invalid level
+test_that("plot_health_climate_timeseries errors on invalid level", {
+  expect_error(
+    plot_health_climate_timeseries(
+      data = PHT_test_data,
+      param_term = "tmean",
+      level = "continent",
+      case_type = "malaria"
+    ),
+    "Invalid level"
+  )
+})
