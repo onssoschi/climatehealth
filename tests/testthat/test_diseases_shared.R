@@ -384,7 +384,9 @@ test_that("plot_health_climate_timeseries saves figure when save_fig = TRUE", {
     output_dir = tmp_dir
   )
   expect_s3_class(p, "ggplot")
-  expect_true(file.exists(file.path(tmp_dir, "timeseries_tmean_country.pdf")))
+  expect_true(file.exists(
+    file.path(tmp_dir, "timeseries_tmean_tmax_tmin_country.pdf")
+  ))
 })
 
 test_that(
@@ -423,7 +425,6 @@ test_that("plot_health_climate_timeseries errors on missing columns", {
   )
 })
 
-# Test error for invalid level
 test_that("plot_health_climate_timeseries errors on invalid level", {
   expect_error(
     plot_health_climate_timeseries(
@@ -435,3 +436,278 @@ test_that("plot_health_climate_timeseries errors on invalid level", {
     "Invalid level"
   )
 })
+
+# Tests for set_cross_basis
+
+# Create test data (2 lags for spline knots, cvh inc.)
+CB_test_data <- data.frame(
+  tmax = c(30, 32),
+  tmax_lag1 = c(29, 31),
+  tmax_lag2 = c(28, 30),
+  tmin = c(20, 21),
+  tmin_lag1 = c(19, 20),
+  tmin_lag2 = c(18, 19),
+  cvh = c(0.5, 0.6),
+  cvh_lag1 = c(0.4, 0.5),
+  cvh_lag2 = c(0.3, 0.4)
+)
+
+test_that("set_cross_basis returns expected variables (CVH excluded)", {
+  cb <- set_cross_basis(CB_test_data, include_cvh = FALSE)
+
+  # Check main outputs
+  expect_type(cb, "list")
+  expect_equal(sort(names(cb)), sort(c("tmax", "tmin")))
+
+  # Check column name prefixing
+  for (var in names(cb)) {
+    expect_true(all(grepl(paste0("^basis_", var, "\\."), colnames(cb[[var]]))))
+  }
+
+  # Check additional output information
+  attrs <- attributes(cb[["tmax"]])
+  expect_equal(attrs$class, c("crossbasis", "matrix"))
+  expect_equal(round(attrs$argvar$knots, 2), c(30.67, 31.33))
+})
+
+test_that("set_cross_basis includes CVH when requested", {
+  cb <- set_cross_basis(CB_test_data, include_cvh = TRUE)
+  expect_equal(
+    sort(names(cb)),
+    c("cvh", "tmax", "tmin")
+  )
+})
+
+test_that("set_cross_basis skips variables with missing lags", {
+  data_missing_tmin <- CB_test_data[, !grepl("^tmin", names(CB_test_data))]
+  cb <- set_cross_basis(data_missing_tmin)
+  expect_false("tmin" %in% names(cb))
+})
+
+# Tests for create_inla_indices
+
+# create_inla_indices test data
+INLA_IND <- data.frame(
+  district_code = c("D1", "D2", "D1", "D2"),
+  region_code = c("R1", "R1", "R2", "R2"),
+  year = c(2020, 2020, 2021, 2021),
+  time = 1:4,
+  tot_pop = seq(1000, 1300, 100),
+  malaria = 10:13
+)
+
+test_that(
+  "create_inla_indices adds expected columns",
+  {
+    result <- create_inla_indices(INLA_IND, case_type = "malaria")
+    expect_true(all(c(
+      "E", "SIR", "district_index", "region_index", "year_index"
+    ) %in% names(result)))
+  }
+)
+
+# Test for correct expected counts and SIR
+test_that("create_inla_indices computes E and SIR correctly", {
+  result <- create_inla_indices(INLA_IND, case_type = "malaria")
+  overall_rate <- sum(INLA_IND$malaria) / sum(INLA_IND$tot_pop)
+  expected_E <- overall_rate * INLA_IND$tot_pop
+  expected_SIR <- INLA_IND$malaria / expected_E
+  expect_equal(result$E, expected_E)
+  expect_equal(result$SIR, expected_SIR)
+})
+
+test_that("create_inla_indices assigns district indices correctly", {
+  result <- create_inla_indices(INLA_IND, case_type = "malaria")
+  expect_equal(result$district_index, c(1, 2, 1, 2))
+})
+
+test_that("create_inla_indices assigns region indices correctly", {
+  result <- create_inla_indices(INLA_IND, case_type = "malaria")
+  expect_equal(result$region_index, c(1, 1, 2, 2))
+})
+
+test_that("create_inla_indices assigns year indices correctly", {
+  result <- create_inla_indices(INLA_IND, case_type = "malaria")
+  expect_equal(result$year_index, c(1, 1, 2, 2))
+})
+
+test_that("create_inla_indices handles NA values in case column", {
+  INLA_NA <- INLA_IND
+  INLA_NA$malaria[2] <- NA
+  result <- create_inla_indices(INLA_NA, case_type = "malaria")
+  # E is still computed for all rows
+  expect_true(all(!is.na(result$E)))
+  # Check that SIR is NA where case value is NA
+  expect_true(is.na(result$SIR[2]))
+  expect_equal(result$SIR[-2], result$malaria[-2] / result$E[-2])
+})
+
+# Tests for check_diseases_VIF
+
+# HIGH Colinearity
+set.seed(123)
+CHECK_VIF_DF <- data.frame(
+  district_code = rep(c("D1", "D2", "D3", "D4", "D5"), 4),
+  region_code = rep(c("R1", "R1", "R2", "R2", "R3"), 4),
+  year = rep(2020, 20),
+  time = 1:20,
+  tot_pop = sample(1000:1500, 20, replace = TRUE),
+  malaria = sample(10:30, 20, replace = TRUE),
+  tmax = rnorm(20, mean = 32, sd = 2),
+  tmax_lag1 = rnorm(20, mean = 31, sd = 2),
+  tmax_lag2 = rnorm(20, mean = 30, sd = 2),
+  tmin = rnorm(20, mean = 22, sd = 2),
+  tmin_lag1 = rnorm(20, mean = 21, sd = 2),
+  tmin_lag2 = rnorm(20, mean = 20, sd = 2),
+  cvh = runif(20, 0.4, 0.8),
+  cvh_lag1 = runif(20, 0.3, 0.7),
+  cvh_lag2 = runif(20, 0.2, 0.6)
+)
+
+test_that(
+  "check_diseases_vif returns expected output",
+  {
+    # Get VIF with warnings supressed (for test dset)
+    result <- suppressWarnings(
+      check_diseases_vif(
+        data = CHECK_VIF_DF,
+        inla_param = c("tmax", "tmin"),
+        basis_matrices_choices = c("tmax", "tmin"),
+        case_type = "malaria"
+      )
+    )
+    expect_type(result, "list")
+    expect_named(result, c("vif", "condition_number", "interpretation"))
+    expect_true(is.numeric(result$condition_number))
+    expect_true(result$interpretation %in% c(
+      "Low collinearity", "Moderate collinearity", "High collinearity"
+    ))
+  }
+)
+
+test_that(
+  "check_diseases_vif errors on missing basis matrix",
+  {
+    bad_data <- CHECK_VIF_DF[, !grepl("^tmin", names(CHECK_VIF_DF))]
+    expect_error(
+      check_diseases_vif(
+        data = bad_data,
+        inla_param = c("tmax", "tmin"),
+        basis_matrices_choices = c("tmax", "tmin"),
+        case_type = "malaria"
+      ),
+      "Missing in basis: tmin"
+    )
+  }
+)
+
+test_that(
+  "check_diseases_vif errors on missing inla_param variable",
+  {
+    bad_data <- CHECK_VIF_DF[, !(names(CHECK_VIF_DF) %in% c("tmin"))]
+    expect_error(
+      check_diseases_vif(
+        data = bad_data,
+        inla_param = c("tmax", "tmin"),
+        basis_matrices_choices = c("tmax"),
+        case_type = "malaria"
+      ),
+      "Missing in data: tmin"
+    )
+  }
+)
+
+# Moderate Colinearity
+MOD_COL_DF <- data.frame(
+  district_code = rep(c("D1", "D2", "D3", "D4", "D5"), 20),
+  region_code = rep(c("R1", "R2", "R3", "R1", "R2"), 20),
+  year = rep(2020, 100),
+  time = 1:100,
+  tot_pop = sample(1000:1500, 100, replace = TRUE),
+  malaria = sample(10:30, 100, replace = TRUE),
+  tmax = rnorm(100, mean = 32, sd = 2),
+  tmax_lag1 = rnorm(100, mean = 31, sd = 2),
+  tmax_lag2 = rnorm(100, mean = 30, sd = 2),
+  tmin = rnorm(100, mean = 22, sd = 2),
+  tmin_lag1 = rnorm(100, mean = 21, sd = 2),
+  tmin_lag2 = rnorm(100, mean = 20, sd = 2),
+  cvh = runif(100, 0.4, 0.8),
+  cvh_lag1 = runif(100, 0.3, 0.7),
+  cvh_lag2 = runif(100, 0.2, 0.6)
+)
+
+test_that(
+  "check_diseases_vif detects moderate collinearity",
+  {
+    result <- suppressWarnings(
+      check_diseases_vif(
+        data = MOD_COL_DF,
+        inla_param = c("tmax", "tmin"),
+        basis_matrices_choices = c("tmax", "tmin"),
+        case_type = "malaria"
+      )
+    )
+    expect_equal(result$interpretation, "Moderate collinearity")
+  }
+)
+
+# Low Colinearity
+set.seed(456)
+LOW_COL_DF <- data.frame(
+  district_code = rep(c("D1", "D2", "D3", "D4", "D5"), 40),
+  region_code = rep(c("R1", "R2", "R3", "R1", "R2"), 40),
+  year = rep(2020, 200),
+  time = 1:200,
+  tot_pop = sample(1000:1500, 200, replace = TRUE),
+  malaria = sample(10:30, 200, replace = TRUE),
+  tmax = rnorm(200, mean = 32, sd = 3),
+  tmax_lag1 = rnorm(200, mean = 31, sd = 3),
+  tmax_lag2 = rnorm(200, mean = 30, sd = 3),
+  tmin = rnorm(200, mean = 22, sd = 3),
+  tmin_lag1 = rnorm(200, mean = 21, sd = 3),
+  tmin_lag2 = rnorm(200, mean = 20, sd = 3),
+  cvh = runif(200, 0.4, 0.8),
+  cvh_lag1 = runif(200, 0.3, 0.7),
+  cvh_lag2 = runif(200, 0.2, 0.6)
+)
+
+test_that(
+  "check_diseases_vif detects low collinearity",
+  {
+    result <- suppressWarnings(
+      check_diseases_vif(
+        data = LOW_COL_DF,
+        inla_param = c("tmax", "tmin"),
+        basis_matrices_choices = c("tmax", "tmin"),
+        case_type = "malaria"
+      )
+    )
+    expect_equal(result$interpretation, "Low collinearity")
+  }
+)
+
+# Test for check_and_write_vif
+test_that(
+  "check_and_write_vif creates VIF DF and writes to a file",
+  {
+    # generate and write results
+    temp_dir <- tempdir()
+    result <- check_and_write_vif(
+      data = MOD_COL_DF,
+      inla_param = c("tmax", "tmin"),
+      basis_matrices_choices = c("tmax", "tmin"),
+      case_type = "malaria",
+      output_dir = temp_dir
+    )
+    result <<- result
+    # validate returned values
+    expect_equal(round(result$condition_number, 2), 10.07)
+    expect_equal(result$interpretation, "Moderate collinearity")
+    # validate file outputs
+    output_fpath <- file.path(temp_dir, "VIF_results.csv")
+    expect_true(file.exists(output_fpath))
+    outputted_df <- read.csv(output_fpath)
+    expect_equal(nrow(outputted_df), 20)
+    expect_equal(ncol(outputted_df), 2)
+  }
+)

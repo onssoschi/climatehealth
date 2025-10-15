@@ -1,3 +1,6 @@
+library(patrick)
+library(testthat)
+
 fname <- "diseases_shared.R"
 covr::report(
   covr::file_coverage(
