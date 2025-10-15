@@ -669,25 +669,31 @@ check_diseases_vif <- function(
     basis_matrices_choices,
     case_type
 ) {
-  # Validate case type
+  # validate case type
   case_type <- validate_case_type(case_type)
   include_cvh <- ifelse(case_type=="malaria", TRUE, FALSE)
-
+  # get inla indices and cross basis
   data  <- create_inla_indices(data, case_type)
   basis <- set_cross_basis(data, include_cvh)
-
+  # assign variables
   vars_basis <- Filter(Negate(is.null), basis[basis_matrices_choices])
   vars_data  <- setdiff(inla_param, basis_matrices_choices)
-
+  # detect missing values are raise errors
   miss_basis <- setdiff(basis_matrices_choices, names(vars_basis))
   miss_data  <- setdiff(vars_data, names(data))
-  if (length(miss_basis)) stop("Missing in basis: ", paste(miss_basis, collapse = ", "))
-  if (length(miss_data))  stop("Missing in data: ", paste(miss_data, collapse = ", "))
+  if (length(miss_basis)) {
+    stop("Missing in basis: ", paste(miss_basis, collapse = ", "))
+  }
+  if (length(miss_data)) {
+    stop("Missing in data: ", paste(miss_data, collapse = ", "))
+  }
 
+  # create dataset (X)
   X <- cbind(do.call(cbind, vars_basis), data[vars_data])
   X <- as.data.frame(X[complete.cases(X), ])
   colnames(X) <- make.names(colnames(X), unique = TRUE)
 
+  # calculate VIF and return structured results
   vif_vals <- car::vif(lm(rep(1, nrow(X)) ~ ., data = X))
   cond_num <- kappa(scale(X), exact = TRUE)
 
