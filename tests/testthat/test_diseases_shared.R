@@ -711,3 +711,130 @@ test_that(
     expect_equal(ncol(outputted_df), 2)
   }
 )
+
+# TODO: Add INLA to CI to accomodate tests
+# Tests for run_inla_models
+
+test_that(
+  "run_inla_models raises an error when save_model==T and output_dir==NULL",
+  {
+    expect_error(
+      run_inla_models(
+        data.frame(),
+        c(),
+        c(),
+        "malaria",
+        NULL,
+        TRUE
+      ),
+      "output_dir must be provided if save_csv = TRUE"
+    )
+  }
+)
+
+test_that(
+  "run_inla_models raises an error if INLA is not installed",
+  {
+    with_mocked_bindings(
+      requireNamespace = function(pkg, quietly=T) FALSE,
+      .package = "base",
+      code = expect_error(
+        run_inla_models(NULL, NULL, NULL, "malaria"),
+        "INLA is not installed"
+      ),
+    )
+  }
+)
+
+# Shared test fixtures
+RIM_n <- 10
+RIM_dummy_data <- data.frame(
+  time = rep(1:5, 2),
+  year = rep(2020:2021, each = 5),
+  district_code = rep(c("A", "B"), each = 5),
+  region_code = rep(c("X", "Y"), each = 5),
+  tot_pop = rep(1000, RIM_n),
+  malaria = rpois(RIM_n, lambda = 5),
+  tmax = rnorm(RIM_n),
+  tmax_lag1 = rnorm(RIM_n),
+  tmax_lag2 = rnorm(RIM_n),
+  humidity = rnorm(RIM_n)
+)
+
+RIM_combined_data <- list(data = RIM_dummy_data, graph_file = "dummy.graph")
+
+RIM_make_mock_model <- function(dic_val = 123.45, cpo_val = 0.9) {
+  list(
+    dic = list(dic = dic_val),
+    cpo = list(cpo = rep(cpo_val, RIM_n), failure = rep(0, RIM_n))
+  )
+}
+
+# Test 1: basis_matrices_choices = NULL
+test_that(
+  "run_inla_models handles NULL basis_matrices_choices",
+  {
+    with_mocked_bindings(
+      `inla.rerun` = function(x) RIM_make_mock_model(100, 0.8),
+      .package = "INLA",
+      code = {
+        result <- run_inla_models(
+          combined_data = RIM_combined_data,
+          basis_matrices_choices = NULL,
+          inla_param = character(),
+          case_type = "malaria"
+        )
+        expect_equal(result$dic_table$Model, "")
+        expect_equal(result$dic_table$DIC, 100)
+      }
+    )
+  }
+)
+
+test_that(
+  "run_inla_models saves model to output_dir when save_model is TRUE",
+  {
+    RIM_temp_dir <- tempdir()
+    with_mocked_bindings(
+      `inla.rerun` = function(x) RIM_make_mock_model(200, 0.95),
+      .package = "INLA",
+      code = {
+        run_inla_models(
+          combined_data = RIM_combined_data,
+          basis_matrices_choices = "tmax",
+          inla_param = "tmax",
+          case_type = "malaria",
+          output_dir = RIM_temp_dir,
+          save_model = TRUE
+        )
+        RIM_saved_files <- list.files(
+          RIM_temp_dir, pattern = "^model_with_.*\\.csv$", full.names = TRUE
+        )
+        expect_true(length(RIM_saved_files) == 1)
+        expect_true(file.exists(RIM_saved_files[1]))
+      }
+    )
+  }
+)
+
+test_that(
+  "run_inla_models includes basis and raw variables in model string",
+  {
+    with_mocked_bindings(
+      `inla.rerun` = function(x) RIM_make_mock_model(300, 0.85),
+      .package = "INLA",
+      code = {
+        result <- run_inla_models(
+          combined_data = RIM_combined_data,
+          basis_matrices_choices = "tmax",
+          inla_param = "humidity",
+          case_type = "malaria"
+        )
+        expect_equal(result$dic_table$Model, "tmax + humidity")
+        expect_equal(result$dic_table$DIC, 300)
+      }
+    )
+  }
+)
+
+
