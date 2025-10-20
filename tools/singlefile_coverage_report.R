@@ -1,6 +1,8 @@
 library(patrick)
 library(testthat)
 
+# NOTE: by - Charlie Browning; on - 20/10/2025
+# This will not show coverage for functions called with :: or :::
 fname <- "diseases_shared.R"
 covr::report(
   covr::file_coverage(
