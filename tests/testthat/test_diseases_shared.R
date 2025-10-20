@@ -712,9 +712,7 @@ test_that(
   }
 )
 
-# TODO: Add INLA to CI to accomodate tests
 # Tests for run_inla_models
-
 test_that(
   "run_inla_models raises an error when save_model==T and output_dir==NULL",
   {
@@ -770,7 +768,6 @@ RIM_make_mock_model <- function(dic_val = 123.45, cpo_val = 0.9) {
   )
 }
 
-# Test 1: basis_matrices_choices = NULL
 test_that(
   "run_inla_models handles NULL basis_matrices_choices",
   {
@@ -808,10 +805,9 @@ test_that(
           save_model = TRUE
         )
         RIM_saved_files <- list.files(
-          RIM_temp_dir, pattern = "^model_with_.*\\.csv$", full.names = TRUE
+          RIM_temp_dir, pattern = "^model_with_tmax_tmax.csv$", full.names = TRUE
         )
         expect_true(length(RIM_saved_files) == 1)
-        expect_true(file.exists(RIM_saved_files[1]))
       }
     )
   }
@@ -837,4 +833,251 @@ test_that(
   }
 )
 
+# Tests for plot_monthly_random_effects
 
+# Test dataset
+PMRE_n_regions <- 2
+
+PMRE_model <- list(summary.random = list(
+  month = data.frame(
+    region = rep(c("Region A", "Region B"), each = 12),
+    month.ID = rep(1:12, PMRE_n_regions),
+    month.mean = rnorm(12 * PMRE_n_regions),
+    month.0.025quant = rnorm(12 * PMRE_n_regions, -1),
+    month.0.975quant = rnorm(12 * PMRE_n_regions, 1)
+  )
+))
+names(PMRE_model$summary.random$month) <- sub("^month\\.", "", names(PMRE_model$summary.random$month))
+
+PMRE_data <- data.frame(
+  region_code = rep(c("A", "B"), each = 6),
+  other = rnorm(12)
+)
+
+PMRE_grid_data <- data.frame(
+  code_num = c("A", "B"),
+  name = c("Region A", "Region B"),
+  district = c("D1", "D2"),
+  district_code = c("A1", "B1"),
+  other_info = rnorm(2)
+)
+
+PMRE_map <- data.frame(
+  region = c("Region A", "Region B"),
+  district = c("D1", "D2"),
+  geometry = c("geomA", "geomB")
+)
+
+PMRE_combined_data <- list(
+  data = PMRE_data,
+  grid_data = PMRE_grid_data,
+  map = PMRE_map
+)
+
+test_that(
+  "plot_monthly_random_effects raises an error if save_fig = TRUE and output_dir = NULL",
+  {
+    expect_error(
+      plot_monthly_random_effects(
+        combined_data = PMRE_combined_data,
+        model = PMRE_model,
+        save_fig = TRUE,
+        output_dir = NULL
+      ),
+      "output_dir must be provided if save_fig = TRUE"
+    )
+  }
+)
+
+test_that(
+  "plot_monthly_random_effects saves and returns PDF when save_fig = TRUE",
+  {
+    temp_dir <- tempdir()
+    p <- plot_monthly_random_effects(
+      combined_data = PMRE_combined_data,
+      model = PMRE_model,
+      save_fig = TRUE,
+      output_dir = temp_dir
+    )
+    # validate returned object
+    expect_s3_class(p, "ggplot")
+    # validate plot was saved
+    fpath <- file.path(temp_dir, "monthly_random_effects.pdf")
+    expect_true(file.exists(fpath))
+  }
+)
+
+# Tests for plot_yearly_spatial_random_effect
+
+# Test datasets
+PYSRE_model <- list(summary.random = list(
+  district_index = data.frame(
+    ID = 1:12,
+    mean = rnorm(12),
+    `0.025quant` = rnorm(12, -1),
+    `0.975quant` = rnorm(12, 1)
+  )
+))
+
+PYSRE_data <- data.frame(
+  district_code = rep(c("A1", "B1"), each = 6),
+  region_code = rep(c("A", "B"), each = 6),
+  year = rep(2020:2021, each = 6),
+  time = rep(2020:2021, each = 6),
+  malaria = rpois(12, lambda = 5),
+  tot_pop = sample(100:1000, 12, replace = TRUE),
+  other = rnorm(12)
+)
+
+PYSRE_grid_data <- PMRE_grid_data
+
+# Create dummy polygons for two districts
+dummy_polygons <- sf::st_sfc(
+  st_polygon(list(rbind(c(0,0), c(1,0), c(1,1), c(0,1), c(0,0)))),
+  st_polygon(list(rbind(c(1,1), c(2,1), c(2,2), c(1,2), c(1,1))))
+)
+
+PYSRE_map <- sf::st_sf(
+  district_code = c("A1", "B1"),
+  geometry = dummy_polygons
+)
+
+PYSRE_combined_data <- list(
+  data = PYSRE_data,
+  grid_data = PYSRE_grid_data,
+  map = PYSRE_map
+)
+
+test_that(
+  "plot_yearly_spatial_random_effect raises an error if save_fig = TRUE and output_dir = NULL",
+  {
+    expect_error(
+      plot_yearly_spatial_random_effect(
+        combined_data = PYSRE_combined_data,
+        model = PYSRE_model,
+        case_type = "malaria",
+        save_fig = TRUE,
+        output_dir = NULL
+      ),
+      "output_dir must be provided if save_fig = TRUE"
+    )
+  }
+)
+
+test_that(
+  "plot_yearly_spatial_random_effect saves and returns PDF when save_fig = TRUE",
+  {
+    temp_dir <- tempdir()
+    p <- plot_yearly_spatial_random_effect(
+      combined_data = PYSRE_combined_data,
+      model = PYSRE_model,
+      case_type = "malaria",
+      save_fig = TRUE,
+      output_dir = temp_dir
+    )
+    expect_s3_class(p, "ggplot")
+    fpath <- file.path(temp_dir, "spatial_random_effects_per_year.pdf")
+    expect_true(file.exists(fpath))
+  }
+)
+
+# Tests for get_predictions
+
+# -------------------------------
+# 1. Create realistic input data
+# -------------------------------
+
+set.seed(42)
+
+test_data <- data.frame(
+  region = rep(c("North", "South"), each = 6),
+  district = rep(c("N1", "N2", "S1", "S2"), each = 3),
+  district_code = rep(c("A1", "A2", "B1", "B2"), each = 3),
+  region_code = rep(c("A", "A", "B", "B"), each = 3),
+  year = rep(2020:2021, each = 6),
+  time = rep(2020:2021, each = 6),
+  malaria = rpois(12, lambda = 5),
+  tot_pop = sample(100:1000, 12, replace = TRUE),
+  tmax = runif(12, min = 20, max = 35),
+  tmax_lag1 = runif(12, min = 20, max = 35),
+  tmax_lag2 = runif(12, min = 20, max = 35),
+  tmax_lag3 = runif(12, min = 20, max = 35)
+)
+
+test_data$region <- as.character(test_data$region)
+test_data$district <- as.character(test_data$district)
+
+# -------------------------------
+# 2. Create matching model object
+# -------------------------------
+
+# Run create_inla_indices and set_cross_basis to get real basis matrix
+indexed_data <- create_inla_indices(test_data, "malaria")
+basis_matrices <- set_cross_basis(indexed_data, include_cvh = TRUE)
+
+# Extract column names for tmax basis
+tmax_basis <- basis_matrices$tmax
+basis_names <- colnames(tmax_basis)
+
+# Create mock model with matching structure
+mock_model <- list(
+  summary.fixed = list(mean = rnorm(length(basis_names))),
+  misc = list(lincomb.derived.covariance.matrix = diag(length(basis_names))),
+  names.fixed = basis_names
+)
+
+# -------------------------------
+# 3. Unit tests
+# -------------------------------
+
+test_that("get_predictions returns country-level crosspred object", {
+  result <- get_predictions(
+    data = test_data,
+    param_term = "tmax",
+    model = mock_model,
+    level = "country",
+    case_type = "malaria"
+  )
+  expect_s3_class(result, "crosspred")
+})
+
+test_that("get_predictions returns region-level named list of crosspred objects", {
+  result <- get_predictions(
+    data = test_data,
+    param_term = "tmax",
+    model = mock_model,
+    level = "region",
+    case_type = "malaria"
+  )
+  expect_type(result, "list")
+  expect_named(result, unique(test_data$region))
+  lapply(result, function(x) expect_s3_class(x, "crosspred"))
+})
+
+test_that("get_predictions returns district-level named list of crosspred objects", {
+  result <- get_predictions(
+    data = test_data,
+    param_term = "tmax",
+    model = mock_model,
+    level = "district",
+    case_type = "malaria"
+  )
+  expect_type(result, "list")
+  expect_named(result, unique(test_data$district))
+  lapply(result, function(x) expect_s3_class(x, "crosspred"))
+})
+
+test_that("get_predictions errors if param_term is not found in model", {
+  bad_model <- mock_model
+  bad_model$names.fixed <- paste0("basis_other.", seq_along(basis_names))
+  expect_error(
+    get_predictions(
+      data = test_data,
+      param_term = "tmax",
+      model = bad_model,
+      level = "country",
+      case_type = "malaria"
+    ),
+    regexp = "coef/vcov not consistent with basis matrix"
+  )
+})
