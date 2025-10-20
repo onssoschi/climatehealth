@@ -1350,3 +1350,174 @@ test_that("plot_rr_map filters correctly by year", {
 
 # Tests for plot_relative_risk
 
+# Test dataset
+prr_data <- data.frame(
+  year = rep(2020, 6),
+  region = rep(c("North", "South"), each = 3),
+  district = rep(c("N1", "N2", "S1"), times = 2),
+  tmax = runif(6, 20, 35),
+  malaria = rpois(6, lambda = 5)
+)
+
+# Minimal mock model
+prr_mock_model <- list()
+
+# Mock get_predictions
+mock_get_predictions <- function(data, param_term, model, level, case_type) {
+  if (level == "country") {
+    return(list(
+      predvar = seq(20, 35, length.out = 10),
+      allRRfit = seq(0.8, 1.5, length.out = 10),
+      allRRlow = seq(0.6, 1.2, length.out = 10),
+      allRRhigh = seq(1.0, 1.8, length.out = 10)
+    ))
+  } else {
+    groups <- unique(data[[level]])
+    out <- setNames(vector("list", length(groups)), groups)
+    for (g in groups) {
+      out[[g]] <- list(
+        predvar = seq(20, 35, length.out = 10),
+        allRRfit = seq(0.8, 1.5, length.out = 10),
+        allRRlow = seq(0.6, 1.2, length.out = 10),
+        allRRhigh = seq(1.0, 1.8, length.out = 10)
+      )
+    }
+    return(out)
+  }
+}
+
+test_that("plot_relative_risk runs without error at country level", {
+  with_mocked_bindings(
+    get_predictions = mock_get_predictions,
+    {
+      result <- suppress_plot(
+        plot_relative_risk(
+          data = RR_data,
+          model = mock_model,
+          param_term = "tmax",
+          level = "country",
+          case_type = "malaria"
+        )
+      )
+      expect_type(result, "list")
+      expect_true("plots" %in% names(result))
+      expect_true("RR" %in% names(result))
+    }
+  )
+})
+
+test_that("plot_relative_risk errors if 'year' column is missing", {
+  no_year <- RR_data[, !names(RR_data) %in% "year"]
+  expect_error(
+    plot_relative_risk(
+      data = no_year,
+      model = mock_model,
+      param_term = "tmax",
+      level = "country",
+      case_type = "malaria"
+    ),
+    "'year' column not found in data."
+  )
+})
+
+test_that("plot_relative_risk saves CSV when save_csv = TRUE", {
+  tmp_dir <- tempdir()
+  with_mocked_bindings(
+    get_predictions = mock_get_predictions,
+    {
+      plot_relative_risk(
+        data = RR_data,
+        model = mock_model,
+        param_term = "tmax",
+        level = "country",
+        case_type = "malaria",
+        save_csv = TRUE,
+        output_dir = tmp_dir
+      )
+      expected_file <- file.path(tmp_dir, "RR_tmax_country_all_plots.csv")
+      expect_true(file.exists(expected_file))
+    }
+  )
+})
+
+test_that("plot_relative_risk saves PDF when save_fig = TRUE", {
+  tmp_dir <- tempdir()
+  with_mocked_bindings(
+    get_predictions = mock_get_predictions,
+    {
+      plot_relative_risk(
+        data = RR_data,
+        model = mock_model,
+        param_term = "tmax",
+        level = "country",
+        case_type = "malaria",
+        save_fig = TRUE,
+        output_dir = tmp_dir
+      )
+      expected_file <- file.path(tmp_dir, "RR_tmax_country_all_plots.pdf")
+      expect_true(file.exists(expected_file))
+    }
+  )
+})
+
+test_that("plot_relative_risk errors if save_fig = TRUE and output_dir is NULL", {
+  expect_error(
+    plot_relative_risk(
+      data = RR_data,
+      model = mock_model,
+      param_term = "tmax",
+      level = "country",
+      case_type = "malaria",
+      save_fig = TRUE
+    ),
+    "output_dir must be provided if save_fig = TRUE"
+  )
+})
+
+test_that("plot_relative_risk skips NA allRRfit entries", {
+  mock_na_predictions <- function(data, param_term, model, level, case_type) {
+    return(list(
+      predvar = seq(20, 35, length.out = 10),
+      allRRfit = rep(NA, 10),
+      allRRlow = rep(NA, 10),
+      allRRhigh = rep(NA, 10)
+    ))
+  }
+
+  with_mocked_bindings(
+    get_predictions = mock_na_predictions,
+    {
+      result <- suppress_plot(
+        plot_relative_risk(
+          data = RR_data,
+          model = mock_model,
+          param_term = "tmax",
+          level = "country",
+          case_type = "malaria"
+        )
+      )
+      expect_null(result$plots)  # plot should be NULL
+    }
+  )
+})
+
+test_that("plot_relative_risk runs for region level with multiple groups", {
+  with_mocked_bindings(
+    get_predictions = mock_get_predictions,
+    {
+      result <- suppress_plot(
+        plot_relative_risk(
+          data = RR_data,
+          model = mock_model,
+          param_term = "tmax",
+          level = "region",
+          case_type = "malaria"
+        )
+      )
+      expect_type(result$plots, "list")
+      expect_true(length(result$plots) >= 2)
+    }
+  )
+})
+
+
