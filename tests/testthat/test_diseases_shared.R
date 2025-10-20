@@ -933,8 +933,8 @@ PYSRE_grid_data <- PMRE_grid_data
 
 # Create dummy polygons for two districts
 dummy_polygons <- sf::st_sfc(
-  st_polygon(list(rbind(c(0,0), c(1,0), c(1,1), c(0,1), c(0,0)))),
-  st_polygon(list(rbind(c(1,1), c(2,1), c(2,2), c(1,2), c(1,1))))
+  sf::st_polygon(list(rbind(c(0,0), c(1,0), c(1,1), c(0,1), c(0,0)))),
+  sf::st_polygon(list(rbind(c(1,1), c(2,1), c(2,2), c(1,2), c(1,1))))
 )
 
 PYSRE_map <- sf::st_sf(
@@ -1083,10 +1083,10 @@ test_that("get_predictions errors if param_term is not found in model", {
 })
 
 # Tests for contour_plot
-set.seed(123)
 
-# Tests dataset
-test_data <- data.frame(
+# Create test dataset
+set.seed(123)
+CP_data <- data.frame(
   region = rep(c("North", "South"), each = 6),
   district = rep(c("N1", "N2", "S1", "S2"), each = 3),
   district_code = rep(c("A1", "A2", "B1", "B2"), each = 3),
@@ -1101,81 +1101,95 @@ test_data <- data.frame(
   tmax_lag3 = runif(12, min = 20, max = 35)
 )
 
-indexed_data <- create_inla_indices(test_data, "malaria")
-basis_matrices <- set_cross_basis(indexed_data, include_cvh = TRUE)
-tmax_basis <- basis_matrices$tmax
-basis_names <- colnames(tmax_basis)
+indexed_cp_data <- create_inla_indices(test_data, "malaria")
+cp_basis_matrices <- set_cross_basis(indexed_data, include_cvh = TRUE)
+cp_tmax_basis <- basis_matrices$tmax
+cp_basis_names <- colnames(tmax_basis)
 
-mock_model <- list(
+cp_model <- list(
   summary.fixed = list(mean = rnorm(length(basis_names))),
   misc = list(lincomb.derived.covariance.matrix = diag(length(basis_names))),
   names.fixed = basis_names
 )
 
-# -------------------------------
-# Tests
-# -------------------------------
+test_that(
+  "contour_plot runs without error for country level",
+  {
+    expect_error(
+      suppress_plot(
+        contour_plot(
+          data = CP_data,
+          param_term = "tmax",
+          model = cp_model,
+          level = "country",
+          case_type = "malaria"
+        )
+      ),
+      NA
+    )
+  }
+)
 
-test_that("contour_plot runs without error for country level", {
-  expect_error(
-    contour_plot(
-      data = test_data,
-      param_term = "tmax",
-      model = mock_model,
-      level = "country",
-      case_type = "malaria"
-    ),
-    NA
-  )
-})
+test_that(
+  "contour_plot runs without error for region level", {
+    expect_error(
+      suppress_plot(
+        contour_plot(
+          data = CP_data,
+          param_term = "tmax",
+          model = cp_model,
+          level = "region",
+          case_type = "malaria"
+        )
+      ),
+      NA
+    )
+  }
+)
 
-test_that("contour_plot runs without error for region level", {
-  expect_error(
-    contour_plot(
-      data = test_data,
-      param_term = "tmax",
-      model = mock_model,
-      level = "region",
-      case_type = "malaria"
-    ),
-    NA
-  )
-})
+test_that(
+  "contour_plot runs without error for district level", {
+    expect_error(
+      suppress_plot(
+        contour_plot(
+          data = CP_data,
+          param_term = "tmax",
+          model = cp_model,
+          level = "district",
+          case_type = "malaria"
+        )
+      ),
+      NA
+    )
+  }
+)
 
-test_that("contour_plot runs without error for district level", {
-  expect_error(
-    contour_plot(
-      data = test_data,
-      param_term = "tmax",
-      model = mock_model,
-      level = "district",
-      case_type = "malaria"
-    ),
-    NA
-  )
-})
-
-test_that("contour_plot saves PDF when save_fig = TRUE", {
-  tmp_dir <- tempdir()
-  contour_plot(
-    data = test_data,
-    param_term = "tmax",
-    model = mock_model,
-    level = "country",
-    case_type = "malaria",
-    save_fig = TRUE,
-    output_dir = tmp_dir
-  )
-  expected_file <- file.path(tmp_dir, "contour_plot_tmax_country.pdf")
-  expect_true(file.exists(expected_file))
-})
+test_that(
+  "contour_plot saves PDF when save_fig = TRUE",
+  {
+    tmp_dir <- tempdir()
+    suppress_plot(
+      contour_plot(
+        data = CP_data,
+        param_term = "tmax",
+        model = cp_model,
+        level = "country",
+        case_type = "malaria",
+        save_fig = TRUE,
+        output_dir = tmp_dir
+      )
+    )
+    expected_file <- file.path(tmp_dir, "contour_plot_tmax_country.pdf")
+    expect_true(file.exists(expected_file))
+  }
+)
 
 test_that("contour_plot errors if save_fig = TRUE and output_dir is NULL", {
   expect_error(
     contour_plot(
-      data = test_data,
+      data = CP_data,
       param_term = "tmax",
-      model = mock_model,
+      model = cp_model,
       level = "country",
       case_type = "malaria",
       save_fig = TRUE
@@ -1184,17 +1198,20 @@ test_that("contour_plot errors if save_fig = TRUE and output_dir is NULL", {
   )
 })
 
-test_that("contour_plot filters by year correctly", {
-  filtered_year <- 2020
-  expect_error(
-    contour_plot(
-      data = test_data,
-      param_term = "tmax",
-      model = mock_model,
-      level = "country",
-      case_type = "malaria",
-      filter_year = filtered_year
-    ),
-    NA
-  )
-})
+test_that(
+  "countour_plot errors if data is missing 'year' column",
+  {
+    no_year <- CP_data %>% dplyr::select(-"year")
+    expect_error(
+      contour_plot(
+        data = no_year,
+        param_term = "tmax",
+        model = cp_model,
+        level = "country",
+        case_type = "malaria",
+        filter_year = 2025
+      ),
+      "'year' column not found in data."
+    )
+  }
+)
