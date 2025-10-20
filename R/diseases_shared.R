@@ -1077,7 +1077,7 @@ get_predictions <- function(
     regions <- unique(data$region)
     predt <- regions %>%
       lapply(function(regi){
-        region_data <- subset(data, .data$region == regi)
+        region_data <- subset(data, data$region == regi)
         # Extract predictions from the tmax DLNM centered on overall mean Tmax
         mean_param <- round(mean(region_data[[param_term]], na.rm = TRUE), 0)
         predt <- dlnm::crosspred(basis_matrices[[param_term]], coef = coef[indt],
@@ -1092,7 +1092,7 @@ get_predictions <- function(
     predt <- districts %>%
       lapply(function(dist){
         # Filter data for the current district
-        district_data <- data %>% filter(.data$district == dist)
+        district_data <- data %>% filter(data$district == dist)
         # Extract predictions from the tmax DLNM centered on overall mean Tmax
         mean_param <- round(mean(district_data[[param_term]], na.rm = TRUE), 0)
         predt <- dlnm::crosspred(basis_matrices[[param_term]], coef = coef[indt],
