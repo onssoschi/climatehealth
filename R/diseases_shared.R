@@ -1251,7 +1251,6 @@ plot_rr_map <- function(
     pred <- get_predictions(filter(data, .data$year == yr), param_term, model, level, case_type)
     purrr::map_dfr(names(pred), function(name) {
       vals <- pred[[name]]
-      if (anyNA(vals$allRRfit)) return(NULL)
       tibble(!!grouping_var := name, RR = median(vals$allRRfit, na.rm = TRUE))
     })
   }
