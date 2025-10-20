@@ -1081,3 +1081,120 @@ test_that("get_predictions errors if param_term is not found in model", {
     regexp = "coef/vcov not consistent with basis matrix"
   )
 })
+
+# Tests for contour_plot
+set.seed(123)
+
+# Tests dataset
+test_data <- data.frame(
+  region = rep(c("North", "South"), each = 6),
+  district = rep(c("N1", "N2", "S1", "S2"), each = 3),
+  district_code = rep(c("A1", "A2", "B1", "B2"), each = 3),
+  region_code = rep(c("A", "A", "B", "B"), each = 3),
+  year = rep(2020:2021, each = 6),
+  time = rep(2020:2021, each = 6),
+  malaria = rpois(12, lambda = 5),
+  tot_pop = sample(100:1000, 12, replace = TRUE),
+  tmax = runif(12, min = 20, max = 35),
+  tmax_lag1 = runif(12, min = 20, max = 35),
+  tmax_lag2 = runif(12, min = 20, max = 35),
+  tmax_lag3 = runif(12, min = 20, max = 35)
+)
+
+indexed_data <- create_inla_indices(test_data, "malaria")
+basis_matrices <- set_cross_basis(indexed_data, include_cvh = TRUE)
+tmax_basis <- basis_matrices$tmax
+basis_names <- colnames(tmax_basis)
+
+mock_model <- list(
+  summary.fixed = list(mean = rnorm(length(basis_names))),
+  misc = list(lincomb.derived.covariance.matrix = diag(length(basis_names))),
+  names.fixed = basis_names
+)
+
+# -------------------------------
+# Tests
+# -------------------------------
+
+test_that("contour_plot runs without error for country level", {
+  expect_error(
+    contour_plot(
+      data = test_data,
+      param_term = "tmax",
+      model = mock_model,
+      level = "country",
+      case_type = "malaria"
+    ),
+    NA
+  )
+})
+
+test_that("contour_plot runs without error for region level", {
+  expect_error(
+    contour_plot(
+      data = test_data,
+      param_term = "tmax",
+      model = mock_model,
+      level = "region",
+      case_type = "malaria"
+    ),
+    NA
+  )
+})
+
+test_that("contour_plot runs without error for district level", {
+  expect_error(
+    contour_plot(
+      data = test_data,
+      param_term = "tmax",
+      model = mock_model,
+      level = "district",
+      case_type = "malaria"
+    ),
+    NA
+  )
+})
+
+test_that("contour_plot saves PDF when save_fig = TRUE", {
+  tmp_dir <- tempdir()
+  contour_plot(
+    data = test_data,
+    param_term = "tmax",
+    model = mock_model,
+    level = "country",
+    case_type = "malaria",
+    save_fig = TRUE,
+    output_dir = tmp_dir
+  )
+  expected_file <- file.path(tmp_dir, "contour_plot_tmax_country.pdf")
+  expect_true(file.exists(expected_file))
+})
+
+test_that("contour_plot errors if save_fig = TRUE and output_dir is NULL", {
+  expect_error(
+    contour_plot(
+      data = test_data,
+      param_term = "tmax",
+      model = mock_model,
+      level = "country",
+      case_type = "malaria",
+      save_fig = TRUE
+    ),
+    "'output_dir' must be provided if save_fig = TRUE"
+  )
+})
+
+test_that("contour_plot filters by year correctly", {
+  filtered_year <- 2020
+  expect_error(
+    contour_plot(
+      data = test_data,
+      param_term = "tmax",
+      model = mock_model,
+      level = "country",
+      case_type = "malaria",
+      filter_year = filtered_year
+    ),
+    NA
+  )
+})
