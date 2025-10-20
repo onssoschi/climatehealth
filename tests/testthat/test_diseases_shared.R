@@ -699,7 +699,6 @@ test_that(
       case_type = "malaria",
       output_dir = temp_dir
     )
-    result <<- result
     # validate returned values
     expect_equal(round(result$condition_number, 2), 10.07)
     expect_equal(result$interpretation, "Moderate collinearity")
@@ -983,13 +982,9 @@ test_that(
 
 # Tests for get_predictions
 
-# -------------------------------
-# 1. Create realistic input data
-# -------------------------------
-
+# Create test dataset
 set.seed(42)
-
-test_data <- data.frame(
+gp_data <- data.frame(
   region = rep(c("North", "South"), each = 6),
   district = rep(c("N1", "N2", "S1", "S2"), each = 3),
   district_code = rep(c("A1", "A2", "B1", "B2"), each = 3),
@@ -1004,83 +999,97 @@ test_data <- data.frame(
   tmax_lag3 = runif(12, min = 20, max = 35)
 )
 
-test_data$region <- as.character(test_data$region)
-test_data$district <- as.character(test_data$district)
-
-# -------------------------------
-# 2. Create matching model object
-# -------------------------------
+gp_data$region <- as.character(gp_data$region)
+gp_data$district <- as.character(gp_data$district)
 
 # Run create_inla_indices and set_cross_basis to get real basis matrix
-indexed_data <- create_inla_indices(test_data, "malaria")
-basis_matrices <- set_cross_basis(indexed_data, include_cvh = TRUE)
+gp_indexed_data <- create_inla_indices(gp_data, "malaria")
+gp_basis_matrices <- set_cross_basis(gp_indexed_data, include_cvh = TRUE)
 
 # Extract column names for tmax basis
-tmax_basis <- basis_matrices$tmax
-basis_names <- colnames(tmax_basis)
+gp_tmax_basis <- gp_basis_matrices$tmax
+gp_basis_names <- colnames(gp_tmax_basis)
 
-# Create mock model with matching structure
-mock_model <- list(
-  summary.fixed = list(mean = rnorm(length(basis_names))),
-  misc = list(lincomb.derived.covariance.matrix = diag(length(basis_names))),
-  names.fixed = basis_names
+# Create mock model
+gp_model <- list(
+  summary.fixed = list(mean = rnorm(length(gp_basis_names))),
+  misc = list(lincomb.derived.covariance.matrix = diag(length(gp_basis_names))),
+  names.fixed = gp_basis_names
 )
 
-# -------------------------------
-# 3. Unit tests
-# -------------------------------
-
-test_that("get_predictions returns country-level crosspred object", {
-  result <- get_predictions(
-    data = test_data,
-    param_term = "tmax",
-    model = mock_model,
-    level = "country",
-    case_type = "malaria"
-  )
-  expect_s3_class(result, "crosspred")
-})
-
-test_that("get_predictions returns region-level named list of crosspred objects", {
-  result <- get_predictions(
-    data = test_data,
-    param_term = "tmax",
-    model = mock_model,
-    level = "region",
-    case_type = "malaria"
-  )
-  expect_type(result, "list")
-  expect_named(result, unique(test_data$region))
-  lapply(result, function(x) expect_s3_class(x, "crosspred"))
-})
-
-test_that("get_predictions returns district-level named list of crosspred objects", {
-  result <- get_predictions(
-    data = test_data,
-    param_term = "tmax",
-    model = mock_model,
-    level = "district",
-    case_type = "malaria"
-  )
-  expect_type(result, "list")
-  expect_named(result, unique(test_data$district))
-  lapply(result, function(x) expect_s3_class(x, "crosspred"))
-})
-
-test_that("get_predictions errors if param_term is not found in model", {
-  bad_model <- mock_model
-  bad_model$names.fixed <- paste0("basis_other.", seq_along(basis_names))
-  expect_error(
-    get_predictions(
-      data = test_data,
+test_that(
+  "get_predictions returns country-level crosspred object",
+  {
+    result <- get_predictions(
+      data = gp_data,
       param_term = "tmax",
-      model = bad_model,
+      model = gp_model,
       level = "country",
       case_type = "malaria"
-    ),
-    regexp = "coef/vcov not consistent with basis matrix"
-  )
-})
+    )
+    # validate outputs
+    expect_s3_class(result, "crosspred")
+    expect_equal(result$model.link, "log")
+    expect_equal(result$model.class, NA)
+    expect_equal(
+      round(result$coefficients[1], 2),
+      -0.78
+    )
+    expect_equal(
+      round(cp$allfit[1], 3),
+      c("20.5" = 0.651)
+    )
+  }
+)
+
+test_that(
+  "get_predictions returns region-level named list of crosspred objects", {
+    result <- get_predictions(
+      data = gp_data,
+      param_term = "tmax",
+      model = gp_model,
+      level = "region",
+      case_type = "malaria"
+    )
+    expect_type(result, "list")
+    expect_named(result, unique(gp_data$region))
+    lapply(result, function(x) expect_s3_class(x, "crosspred"))
+  }
+)
+
+test_that(
+  "get_predictions returns district-level named list of crosspred objects",
+  {
+    result <- get_predictions(
+      data = gp_data,
+      param_term = "tmax",
+      model = gp_model,
+      level = "district",
+      case_type = "malaria"
+    )
+    expect_type(result, "list")
+    expect_named(result, unique(gp_data$district))
+    lapply(result, function(x) expect_s3_class(x, "crosspred"))
+  }
+)
+
+test_that(
+  "get_predictions errors if param_term is not found in model",
+  {
+    bad_model <- gp_model
+    bad_model$names.fixed <- paste0("basis_other.", seq_along(gp_basis_names))
+    expect_error(
+      get_predictions(
+        data = gp_data,
+        param_term = "tmax",
+        model = bad_model,
+        level = "country",
+        case_type = "malaria"
+      ),
+      regexp = "coef/vcov not consistent with basis matrix"
+    )
+  }
+)
 
 # Tests for contour_plot
 
@@ -1101,15 +1110,15 @@ CP_data <- data.frame(
   tmax_lag3 = runif(12, min = 20, max = 35)
 )
 
-indexed_cp_data <- create_inla_indices(test_data, "malaria")
-cp_basis_matrices <- set_cross_basis(indexed_data, include_cvh = TRUE)
-cp_tmax_basis <- basis_matrices$tmax
-cp_basis_names <- colnames(tmax_basis)
+indexed_cp_data <- create_inla_indices(CP_data, "malaria")
+cp_basis_matrices <- set_cross_basis(indexed_cp_data, include_cvh = TRUE)
+cp_tmax_basis <- cp_basis_matrices$tmax
+cp_basis_names <- colnames(cp_tmax_basis)
 
 cp_model <- list(
-  summary.fixed = list(mean = rnorm(length(basis_names))),
-  misc = list(lincomb.derived.covariance.matrix = diag(length(basis_names))),
-  names.fixed = basis_names
+  summary.fixed = list(mean = rnorm(length(cp_basis_names))),
+  misc = list(lincomb.derived.covariance.matrix = diag(length(cp_basis_names))),
+  names.fixed = cp_basis_names
 )
 
 test_that(
@@ -1184,6 +1193,24 @@ test_that(
   }
 )
 
+test_that(
+  "contour_plot filters to year when instructed", {
+    expect_error(
+      suppress_plot(
+        contour_plot(
+          data = CP_data,
+          param_term = "tmax",
+          model = cp_model,
+          level = "district",
+          case_type = "malaria",
+          filter_year = 2020
+        )
+      ),
+      NA
+    )
+  }
+)
+
 test_that("contour_plot errors if save_fig = TRUE and output_dir is NULL", {
   expect_error(
     contour_plot(
@@ -1215,3 +1242,111 @@ test_that(
     )
   }
 )
+
+# Test for plot_rr_map
+
+# Additional test data (utilise CP_data also)
+RR_tests_map <- sf::st_sf(
+  district = unique(CP_data$district),
+  geometry = sf::st_sfc(
+    lapply(1:4,
+      function(i) sf::st_polygon(list(matrix(c(0,0,1,0,1,1,0,1,0,0) + i,
+      ncol = 2,
+      byrow = TRUE
+    ))))
+  )
+)
+RR_tests_map$region <- rep(c("North", "South"), each = 2)
+
+test_that("plot_rr_map runs without error for district level", {
+  expect_error(
+    suppress_plot(
+      plot_rr_map(
+        combined_data = list(data = CP_data, map = RR_tests_map),
+        param_term = "tmax",
+        model = cp_model,
+        level = "district",
+        case_type = "malaria"
+      )
+    ),
+    NA
+  )
+})
+
+test_that("plot_rr_map runs without error for region level", {
+  expect_error(
+    suppress_plot(
+      plot_rr_map(
+        combined_data = list(data = CP_data, map = RR_tests_map),
+        param_term = "tmax",
+        model = cp_model,
+        level = "region",
+        case_type = "malaria"
+      )
+    ),
+    NA
+  )
+})
+
+test_that("plot_rr_map saves PDF when save_fig = TRUE", {
+  tmp_dir <- tempdir()
+  suppress_plot(
+    plot_rr_map(
+      combined_data = list(data = CP_data, map = RR_tests_map),
+      param_term = "tmax",
+      model = cp_model,
+      level = "district",
+      case_type = "malaria",
+      save_fig = TRUE,
+      output_dir = tmp_dir
+    )
+  )
+  expected_file <- file.path(tmp_dir, "RR_map_tmax_district_all_years.pdf")
+  expect_true(file.exists(expected_file))
+})
+
+test_that("plot_rr_map errors if save_fig = TRUE and output_dir is NULL", {
+  expect_error(
+    plot_rr_map(
+      combined_data = list(data = CP_data, map = RR_tests_map),
+      param_term = "tmax",
+      model = cp_model,
+      level = "district",
+      case_type = "malaria",
+      save_fig = TRUE
+    ),
+    "output_dir must be provided if save_fig = TRUE"
+  )
+})
+
+test_that("plot_rr_map errors if data is missing 'year' column", {
+  no_year <- CP_data %>% dplyr::select(-"year")
+  expect_error(
+    plot_rr_map(
+      combined_data = list(data = no_year, map = RR_tests_map),
+      param_term = "tmax",
+      model = cp_model,
+      level = "district",
+      case_type = "malaria",
+      filter_year = 2025
+    ),
+    "year"
+  )
+})
+
+test_that("plot_rr_map filters correctly by year", {
+  filtered_plot <- suppress_plot(
+    plot_rr_map(
+      combined_data = list(data = CP_data, map = RR_tests_map),
+      param_term = "tmax",
+      model = cp_model,
+      level = "district",
+      case_type = "malaria",
+      filter_year = 2020
+    )
+  )
+  expect_s3_class(filtered_plot, "gg")
+})
+
+# Tests for plot_relative_risk
+
