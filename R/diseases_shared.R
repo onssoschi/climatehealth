@@ -1723,6 +1723,8 @@ plot_attribution_metric <- function(
   save_fig = FALSE,
   output_dir = NULL
 ) {
+  # validation
+  if (is.null(param_term)) stop("'param_term' must be provided.")
   case_type <- validate_case_type(case_type)
   level <- tolower(level)
   if (level == "country" && !is.null(filter_year)) {
@@ -1730,7 +1732,6 @@ plot_attribution_metric <- function(
     return(NULL)
   }
   metrics <- match.arg(metrics, several.ok = TRUE)
-  if (is.null(param_term)) stop("'param_term' must be provided.")
 
   param_label <- switch(tolower(param_term),
                         tmax = "Extreme Temperature",
@@ -1925,8 +1926,6 @@ plot_attribution_metric <- function(
 
       return(group_plots)
     }
-
-    return(NULL)
   })
 
   return(plots)

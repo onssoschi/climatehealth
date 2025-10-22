@@ -1525,3 +1525,525 @@ test_that("plot_relative_risk unwraps single-element named list for country leve
     .package = "climatehealth"
   )
 })
+
+# Tests for attribution calculation
+
+# Test dataset
+
+AC_data <- tibble::tibble(
+  region = rep("North", 10),
+  district = rep("A", 10),
+  year = rep(2020, 10),
+  month = 1:10,
+  temp = seq(10, 50, length.out = 10),
+  malaria = rep(10, 10),
+  tot_pop = rep(1000, 10),
+)
+
+# Use a real crossbasis matrix with variation
+real_basis <- dlnm::crossbasis(
+  AC_data$temp,
+  lag = 0,
+  argvar = list(fun = "poly", degree = 2),
+  arglag = list(fun = "strata", breaks = 1)
+)
+
+# Use real coefficients that match the basis matrix
+AC_model <- list(
+  summary.fixed = list(mean = c(0.5, 0.3)),
+  misc = list(lincomb.derived.covariance.matrix = diag(2)),
+  names.fixed = c("basis_temp1", "basis_temp2")
+)
+
+mock_validate <- function(x) x
+mock_indices <- function(data, case_type) data
+mock_basis <- function(data, include_cvh) list(temp = real_basis)
+
+test_that(
+  "attribution_calculation raises an error ifthere are no terms for a basis",
+  {
+    error_data <- tibble::tibble(
+      tmax = seq(10, 50, length.out = 10),
+      malaria = rep(10, 10),
+    )
+    error_model <- list(
+      summary.fixed = list(mean = c(1.5, 1.0)),
+      misc = list(lincomb.derived.covariance.matrix = diag(2)),
+      names.fixed = c("intercept", "basis_other1")
+    )
+    expect_error(
+      attribution_calculation(
+        data=error_data,
+        param_term="tmax",
+        model=error_model,
+        level="region",
+        case_type="malaria"
+      ),
+      "No terms for 'basis_tmax' found in model."
+    )
+  }
+)
+
+test_that(
+  "attribution_calculation raises an error if filter_year=NULL and year isn't in the data",
+  {
+    no_year_data <- AC_data %>% select(-"year")
+    expect_error(
+      attribution_calculation(
+        data=no_year_data,
+        param_term="tmax",
+        model=AC_model,
+        level="region",
+        case_type="malaria",
+        filter_year=2022
+      )
+    )
+  }
+)
+
+test_that(
+  "attribution_calculation returns empty tibble for empty data frame",
+  {
+    empty_data <- AC_data[0, ]
+    with_mocked_bindings(
+      {
+        result <- climatehealth:::attribution_calculation(
+          data = empty_data,
+          param_term = "temp",
+          model = AC_model,
+          level = "region",
+          case_type = "malaria"
+        )
+        expect_s3_class(result, "tbl_df")
+        expect_equal(nrow(result), 0)
+      },
+      validate_case_type = mock_validate,
+      create_inla_indices = mock_indices,
+      set_cross_basis = mock_basis,
+      .package = "climatehealth"
+    )
+  }
+)
+
+test_that(
+  "attribution_calculation returns zeroed metrics for zero population",
+  {
+    zero_pop_data <- AC_data
+    zero_pop_data$tot_pop <- 0
+
+    with_mocked_bindings(
+      {
+        # Supress missing cols warning for testing
+        suppressWarnings(
+          result <- climatehealth:::attribution_calculation(
+            data = zero_pop_data,
+            param_term = "temp",
+            model = AC_model,
+            level = "region",
+            case_type = "malaria"
+          )
+        )
+        expect_s3_class(result, "tbl_df")
+        expect_equal(nrow(result), nrow(zero_pop_data))
+        expect_true(all(result$AR_Number == 0))
+        expect_true(all(result$AR_Fraction == 0))
+        expect_true(all(result$AR_per_100k == 0))
+      },
+      validate_case_type = mock_validate,
+      create_inla_indices = mock_indices,
+      set_cross_basis = mock_basis,
+      .package = "climatehealth"
+    )
+  }
+)
+
+test_that(
+  "attribution_calculation returns NULL if crosspred fails",
+  {
+    bad_basis <- function(data, include_cvh) list(temp = matrix(NA, nrow = nrow(data), ncol = 2))
+    with_mocked_bindings(
+      {
+        result <- climatehealth:::attribution_calculation(
+          data = AC_data,
+          param_term = "temp",
+          model = AC_model,
+          level = "region",
+          case_type = "malaria"
+        )
+        expect_s3_class(result, "tbl_df")
+        expect_equal(nrow(result), 0)
+      },
+      validate_case_type = mock_validate,
+      create_inla_indices = mock_indices,
+      set_cross_basis = bad_basis,
+      .package = "climatehealth"
+    )
+  }
+)
+
+test_that(
+  "attribution_calculation returns NULL if RR vector is NULL",
+  {
+    null_basis <- function(data, include_cvh) list(temp = matrix(1, nrow = nrow(data), ncol = 2))
+    null_model <- AC_model
+    null_model$summary.fixed$mean <- rep(NA, 2)
+    with_mocked_bindings(
+      {
+        result <- climatehealth:::attribution_calculation(
+          data = AC_data,
+          param_term = "temp",
+          model = null_model,
+          level = "region",
+          case_type = "malaria"
+        )
+        expect_s3_class(result, "tbl_df")
+        expect_equal(nrow(result), 0)
+      },
+      validate_case_type = mock_validate,
+      create_inla_indices = mock_indices,
+      set_cross_basis = null_basis,
+      .package = "climatehealth"
+    )
+  }
+)
+
+test_that(
+  "attribution_calculation returns NULL when group is filtered to zero rows",
+  {
+    # Group has rows, but all will be filtered out inside compute_metrics_from_pred()
+    tricky_data <- tibble::tibble(
+      region = rep("North", 5),
+      district = rep("A", 5),
+      year = rep(2020, 5),
+      month = 1:5,
+      temp = c(25, NA, 30, NA, 35),       # some NA
+      malaria = c(NA, 10, NA, 15, NA),    # some NA
+      tot_pop = c(NA, NA, NA, NA, NA)     # all NA → triggers filter
+    )
+
+    # Valid basis matrix to ensure crosspred works
+    real_basis <- dlnm::crossbasis(
+      x = rep(25, 5),
+      lag = 0,
+      argvar = list(fun = "poly", degree = 2),
+      arglag = list(fun = "strata", breaks = 1)
+    )
+
+    valid_model <- list(
+      summary.fixed = list(mean = c(0.5, 0.3)),
+      misc = list(lincomb.derived.covariance.matrix = diag(2)),
+      names.fixed = c("basis_temp1", "basis_temp2")
+    )
+
+    mock_validate <- function(x) x
+    mock_indices <- function(data, case_type) data
+    mock_basis <- function(data, include_cvh) list(temp = real_basis)
+
+    with_mocked_bindings(
+      {
+        suppressWarnings(
+          result <- climatehealth:::attribution_calculation(
+            data = tricky_data,
+            param_term = "temp",
+            model = valid_model,
+            level = "region",
+            case_type = "malaria"
+          )
+        )
+        expect_s3_class(result, "tbl_df")
+        expect_equal(nrow(result), 0)  # confirms group was skipped
+      },
+      validate_case_type = mock_validate,
+      create_inla_indices = mock_indices,
+      set_cross_basis = mock_basis,
+      .package = "climatehealth"
+    )
+  }
+)
+
+test_that(
+  "attribution_calculation runs as expected.",
+  {
+    tmp_dir <- file.path(tempdir(), "new_nested_dir")
+    if (dir.exists(tmp_dir)) unlink(tmp_dir, recursive = TRUE)
+    with_mocked_bindings(
+      {
+        climatehealth:::attribution_calculation(
+          data = AC_data,
+          param_term = "temp",
+          model = AC_model,
+          level = "region",
+          case_type = "malaria",
+          param_threshold = 0.5,
+          save_csv = TRUE,
+          output_dir = tmp_dir,
+          filter_year = 2020
+        )
+        expect_true(dir.exists(tmp_dir))
+        expect_true(file.exists(file.path(tmp_dir, "attribution_region_temp.csv")))
+      },
+      validate_case_type = mock_validate,
+      create_inla_indices = mock_indices,
+      set_cross_basis = mock_basis,
+      .package = "climatehealth"
+    )
+  }
+)
+
+# Tests for plot_attribution_metric
+test_that(
+  "plot_attribution_metric errors if param_term is NULL",
+  {
+    expect_error(
+      plot_attribution_metric(
+        attr_data = AC_data,
+        param_term = NULL,
+        case_type = "malaria"
+      ),
+      "'param_term' must be provided."
+    )
+  }
+)
+
+test_that(
+  "plot_attribution_metric returns NULL and warns if level is 'country' and filter_year is set",
+  {
+    expect_warning(
+      result <- plot_attribution_metric(
+        attr_data = AC_data,
+        level = "country",
+        filter_year = 2020,
+        param_term = "temp",
+        case_type = "malaria"
+      ),
+      "If level == 'country', filter_year must be NULL."
+    )
+    expect_null(result)
+  }
+)
+
+test_that(
+  "plot_attribution_metric errors if 'year' column is missing and filter_year is set",
+  {
+    no_year_data <- AC_data %>% select(-year)
+    expect_error(
+      plot_attribution_metric(
+        attr_data = no_year_data,
+        level = "region",
+        filter_year = 2020,
+        param_term = "temp",
+        case_type = "malaria"
+      ),
+      "'year' column not found in data."
+    )
+  }
+)
+
+test_that(
+  "plot_attribution_metric errors if level column is missing",
+  {
+    no_region_data <- AC_data %>% select(-region)
+    expect_error(
+      plot_attribution_metric(
+        attr_data = no_region_data,
+        level = "region",
+        param_term = "temp",
+        case_type = "malaria"
+      ),
+      "'region' column not found in data."
+    )
+  }
+)
+
+test_that(
+  "plot_attribution_metric returns NULL if required metric columns are missing",
+  {
+    bad_data <- AC_data %>% select(-temp)
+    result <- expect_warning(
+      plot_attribution_metric(
+        attr_data = bad_data,
+        level = "region",
+        param_term = "temp",
+        case_type = "malaria",
+        metrics = "AR_Number",
+        filter_year = 2020
+      ),
+      "Skipping 'AR_Number'"
+    )
+    expect_null(result[[1]])
+  }
+)
+
+test_that(
+  "plot_attribution_metric returns ggplot object for valid country-level input",
+  {
+    valid_data <- AC_data %>%
+      dplyr::mutate(
+        AR_Fraction = 0.25,
+        AR_Fraction_LCI = 0.2,
+        AR_Fraction_UCI = 0.3
+      )
+    result <- plot_attribution_metric(
+      attr_data = valid_data,
+      level = "country",
+      param_term = "temp",
+      case_type = "malaria",
+      metrics = "AR_Fraction"
+    )
+    expect_type(result, "list")
+    expect_true(inherits(result[[1]], "ggplot"))
+  }
+)
+
+test_that(
+  "plot_attribution_metric returns list of ggplot objects for region-level input",
+  {
+    valid_data <- AC_data %>%
+      dplyr::mutate(
+        AR_Fraction = 0.25,
+        AR_Fraction_LCI = 0.2,
+        AR_Fraction_UCI = 0.3
+      )
+    result <- plot_attribution_metric(
+      attr_data = valid_data,
+      level = "region",
+      param_term = "temp",
+      case_type = "malaria",
+      metrics = "AR_Fraction"
+    )
+    expect_type(result, "list")
+    expect_true(inherits(result[[1]][[1]], "ggplot"))
+  }
+)
+
+test_that(
+  "plot_attribution_metric saves figure when save_fig = TRUE",
+  {
+    tmp_dir <- file.path(tempdir(), "plot_output_dir")
+    if (dir.exists(tmp_dir)) unlink(tmp_dir, recursive = TRUE)
+
+    valid_data <- AC_data %>%
+      dplyr::mutate(
+        AR_per_100k = 100,
+        AR_per_100k_LCI = 90,
+        AR_per_100k_UCI = 110
+      )
+
+    plot_attribution_metric(
+      attr_data = valid_data,
+      level = "country",
+      param_term = "temp",
+      case_type = "malaria",
+      metrics = "AR_per_100k",
+      save_fig = TRUE,
+      output_dir = tmp_dir
+    )
+
+    expect_true(dir.exists(tmp_dir))
+    expect_true(file.exists(file.path(tmp_dir, "plot_AR_per_100k_temp_country.pdf")))
+  }
+)
+
+test_that(
+  "plot_attribution_metric returns grouped bar plots when filter_year has >2 values and level is region",
+  {
+    PAM_unique_data <- tibble::tibble(
+      region = rep(c("North", "South", "East", "West"), each = 3),
+      year = rep(c(2020, 2021, 2022), times = 4),
+      AR_Fraction = c(0.2, 0.25, 0.3, 0.1, 0.15, 0.2, 0.05, 0.1, 0.15, 0.3, 0.35, 0.4),
+      AR_Fraction_LCI = AR_Fraction - 0.05,
+      AR_Fraction_UCI = AR_Fraction + 0.05
+    )
+
+    result <- plot_attribution_metric(
+      attr_data = PAM_unique_data,
+      level = "region",
+      param_term = "temp",
+      case_type = "malaria",
+      metrics = "AR_Fraction",
+      filter_year = c(2020, 2021, 2022)
+    )
+
+    expect_type(result, "list")
+    flat_plots <- unlist(result, recursive = FALSE)
+    expect_true(all(purrr::map_lgl(flat_plots, ~ inherits(.x, "ggplot"))))
+  }
+)
+
+test_that(
+  "plot_attribution_metric saves PDF correctly with district plots",
+  {
+    # Data for district plotting
+    PAM_unique_data <- tibble::tibble(
+      district = paste0("District_", 1:5),
+      year = rep(2020, 5),
+      AR_Number = c(10, 20, 30, 40, 50),
+      AR_Number_LCI = AR_Number - 5,
+      AR_Number_UCI = AR_Number + 5
+    )
+
+    tmp_dir <- file.path(tempdir(), "plot_test_dir")
+    if (dir.exists(tmp_dir)) unlink(tmp_dir, recursive = TRUE)
+
+    result <- plot_attribution_metric(
+      attr_data = PAM_unique_data,
+      level = "district",
+      param_term = "temp",
+      case_type = "malaria",
+      metrics = "AR_Number",
+      save_fig = TRUE,
+      output_dir = tmp_dir
+    )
+
+    # Confirm directory was created
+    expect_true(dir.exists(tmp_dir))
+
+    # Confirm PDF file was saved
+    expected_file <- file.path(tmp_dir, "plot_AR_Number_temp_district.pdf")
+    expect_true(file.exists(expected_file))
+    res <<-  result
+    # Confirm result is a list of ggplot objects
+    expect_type(result, "list")
+    flat_plots <- unlist(result, recursive = FALSE)
+    expect_true(all(purrr::map_lgl(flat_plots, ~ inherits(.x, "ggplot"))))
+  }
+)
+
+test_that(
+  "plot_attribution_metric saves multi-year grouped region plots to PDF",
+  {
+    # Create 6 regions × 3 years to trigger grouped logic and chunking
+    test_data <- expand.grid(
+      region = paste0("Region_", 1:6),
+      year = c(2020, 2021, 2022)
+    ) %>%
+      dplyr::mutate(
+        AR_per_100k = runif(n(), 100, 500),
+        AR_per_100k_LCI = AR_per_100k - 20,
+        AR_per_100k_UCI = AR_per_100k + 20
+      )
+
+    tmp_dir <- file.path(tempdir(), "multi_year_region_pdf")
+    if (dir.exists(tmp_dir)) unlink(tmp_dir, recursive = TRUE)
+
+    result <- plot_attribution_metric(
+      attr_data = test_data,
+      level = "region",
+      param_term = "temp",
+      case_type = "malaria",
+      metrics = "AR_per_100k",
+      filter_year = c(2020, 2021, 2022),
+      save_fig = TRUE,
+      output_dir = tmp_dir
+    )
+
+    # Confirm directory and file creation
+    expect_true(dir.exists(tmp_dir))
+    expected_file <- file.path(tmp_dir, "plot_AR_per_100k_temp_Year_region.pdf")
+    expect_true(file.exists(expected_file))
+
+    # Confirm result is a list of ggplot objects
+    flat_plots <- unlist(result, recursive = FALSE)
+    expect_true(all(purrr::map_lgl(flat_plots, ~ inherits(.x, "ggplot"))))
+  }
+)
