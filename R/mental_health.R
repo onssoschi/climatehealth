@@ -1099,13 +1099,13 @@ mh_rr_results <- function(pred_list,
 
     df <- data.frame(
       Area = region_name,
-      MinST = round(min_st, 2),
-      Attr_Threshold_Temp = round(attr_thr_temp, 2),
+      MinST = round(min_st, 1),
+      Attr_Threshold_Temp = round(attr_thr_temp, 1),
       Temperature = round(reg_pred$predvar, 1),
       Temp_Frequency = temp_freq,
-      RR = round(reg_pred$allRRfit, 3),
-      RR_lower_CI = round(reg_pred$allRRlow, 3),
-      RR_upper_CI = round(reg_pred$allRRhigh, 3)
+      RR = round(reg_pred$allRRfit, 2),
+      RR_lower_CI = round(reg_pred$allRRlow, 2),
+      RR_upper_CI = round(reg_pred$allRRhigh, 2)
     )
 
     return(df)
@@ -1318,7 +1318,7 @@ mh_attr <- function(df_list,
 
     results <- region_data %>%
       select(region, date, temp, year, month, suicides, population) %>%
-      mutate(threshold_temp = round(min_range, 2),
+      mutate(threshold_temp = round(min_range, 1),
              af = af,
              af_lower_ci = af_lower_ci,
              af_upper_ci = af_upper_ci,
@@ -1385,7 +1385,7 @@ mh_attr_tables <- function(attr_list,
       group_by(!!!groupings[[grp_name]]) %>%
       summarise(
         population = round(mean(population, na.rm = TRUE), 0),
-        temp = round(mean(temp, na.rm = TRUE), 2),
+        temp = round(mean(temp, na.rm = TRUE), 1),
         threshold_temp = mean(threshold_temp, na.rm = TRUE),
         suicides = sum(suicides, na.rm = TRUE),
         an = sum(an, na.rm = TRUE),
@@ -1408,10 +1408,10 @@ mh_attr_tables <- function(attr_list,
         ar = an / population * 100000,
         ar_lower_ci = an_lower_ci / population * 100000,
         ar_upper_ci = an_upper_ci / population * 100000,
-        across(c(an, an_lower_ci, an_upper_ci,
-                 ar, ar_lower_ci, ar_upper_ci,
-                 af, af_lower_ci, af_upper_ci),
-               ~ ifelse(abs(.) < 1, signif(., 2), round(., 2)))
+        #across(c(an, an_lower_ci, an_upper_ci,
+        #         ar, ar_lower_ci, ar_upper_ci,
+        #         af, af_lower_ci, af_upper_ci),
+        #       ~ ifelse(abs(.) < 1, signif(., 2), round(., 2)))
       ) %>%
       select(-sim_rows, -sim_sum)
 
