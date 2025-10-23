@@ -54,6 +54,8 @@ check_has_rtools <- function() {
 #'
 #' On non-Windows systems, the package is installed normally from the repository.
 #'
+#' @param os The current operating system. Defaults to \code{.Platform$OS.type}.
+#' 
 #' @return Invisibly returns \code{NULL}. The function is called for its side effect.
 #'
 #' @examples
@@ -97,6 +99,8 @@ install_INLA <- function(os = .Platform$OS.type) {
 #' \code{pkgbuild::has_build_tools()}. If Rtools is missing, it displays a warning
 #' and aborts the installation. The function then forces installation from source.
 #'
+#' @param os The current operating system. Defaults to \code{.Platform$OS.type}.
+#' 
 #' @return Invisibly returns \code{NULL}. The function is called for its side effect.
 #'
 #' @examples
