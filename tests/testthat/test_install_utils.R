@@ -109,7 +109,7 @@ test_that(
         stub(install_terra, "requireNamespace", function(...) TRUE)
         expect_message(
             install_terra(os="windows"),
-            "Installing terra<=1.8-60"
+            "Installing terra==1.8-60"
         )
         expect_message(
             install_terra(os="windows"),
@@ -117,7 +117,7 @@ test_that(
         )
         expect_message(
             install_terra(os="windows"),
-            "terra<=1.8-60 succesfully installed"
+            "terra==1.8-60 succesfully installed"
         )
     }
 )
@@ -129,11 +129,11 @@ test_that(
         stub(install_terra, "requireNamespace", function(...) TRUE)
         expect_message(
             install_terra(os="unix"),
-            "Installing terra<=1.8-60"
+            "Installing terra==1.8-60"
         )
         expect_message(
             install_terra(os="unix"),
-            "terra<=1.8-60 succesfully installed"
+            "terra==1.8-60 succesfully installed"
         )
     }
 )

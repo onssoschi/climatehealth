@@ -87,8 +87,26 @@ install_INLA <- function(os = .Platform$OS.type) {
   if (requireNamespace("INLA", quietly=T)) message("INLA succesfully installed.")
 }
 
+#' Install the terra Package from the CRAN Archive
+#'
+#' This function installs the \code{terra} package at version 1.8-60 from the 
+#' CRAN archive.
+#'
+#' @details
+#' On Windows systems, the function verifies that Rtools is installed using
+#' \code{pkgbuild::has_build_tools()}. If Rtools is missing, it displays a warning
+#' and aborts the installation. The function then forces installation from source.
+#'
+#' @return Invisibly returns \code{NULL}. The function is called for its side effect.
+#'
+#' @examples
+#' \dontrun{
+#' install_terra()
+#' }
+#'
+#' @export
 install_terra <- function(os = .Platform$OS.type) {
-  message("Installing terra<=1.8-60 from the CRAN archive...\n")
+  message("Installing terra==1.8-60 from the CRAN archive...\n")
 
   # Install from source tarball
   tarball <- "https://cran.r-project.org/src/contrib/Archive/terra/terra_1.8-60.tar.gz"
@@ -100,5 +118,5 @@ install_terra <- function(os = .Platform$OS.type) {
   install.packages(
     tarball, repos = NULL, type = "source"
   )
-  if (requireNamespace("terra", quietly=T)) message("terra<=1.8-60 succesfully installed.")
+  if (requireNamespace("terra", quietly=T)) message("terra==1.8-60 succesfully installed.")
 }
