@@ -84,3 +84,18 @@ install_INLA <- function() {
   if (requireNamespace("INLA", quietly=T)) message("INLA succesfully installed.")
 }
 
+install_terra <- function() {
+  message("Installing INLA from its official repository...\n")
+
+  # Install from source tarball
+  tarball <- "https://cran.r-project.org/src/contrib/Archive/terra/terra_1.8-60.tar.gz"
+  # Check for RTools on Windows
+  if (.Platform$OS.type == "windows") {
+    # Ensure rtools is installed
+    check_has_rtools()
+  }
+  install.packages(
+    tarball, repos = NULL, type = "source"
+  )
+  if (requireNamespace("terra", quietly=T)) message("terra<=1.8-60 succesfully installed.")
+}
