@@ -238,9 +238,21 @@ load_and_process_climatedata <- function(
 
   # Function to create lagged variables
   create_lags <- function(df, var, max_lag) {
+    # Create lag groups
+    df <- df %>%
+      dplyr::group_by(.data$district) %>%
+      dplyr::arrange(.data$year, .data$month, .by_group = TRUE)
+    # Create lagged vars
     for (i in 1:max_lag) {
-      df[[paste0(var, "_lag", i)]] <- dplyr::lag(df[[var]], i)
+      lag_name <- paste0(var, "_lag", i)
+      df <- df %>%
+        dplyr::mutate(!!lag_name := dplyr::lag(.data[[var]], i))
     }
+    # Ungroup the df and filter to only lag columns
+    df <- df %>%
+      dplyr::ungroup() %>%
+      dplyr::select(all_of(c(var, paste0(var, "_lag", 1:max_lag))))
+
     return(df)
   }
 
@@ -251,7 +263,7 @@ load_and_process_climatedata <- function(
 
   # Create lagged data
   lagged_data <- lapply(vars_to_lag,
-                        function(var) create_lags(climate_data[var], var, max_lag))
+                        function(var) create_lags(climate_data, var, max_lag))
 
   # Bind all
   final_data <- dplyr::bind_cols(climate_data[c("district", "year", "month")],
@@ -450,7 +462,9 @@ plot_health_climate_timeseries <- function(
   case_type <- validate_case_type(case_type)
 
   vars_all <- c(case_type, "tmin", "tmean", "tmax", "rainfall")
-  vars_to_plot <- if (param_term == "all") vars_all else param_term
+  if (length(param_term)>1) vars_to_plot <- param_term
+  else if (param_term == "all") vars_to_plot <- vars_all
+  else vars_to_plot <- param_term
 
   if (!is.null(filter_year)) {
     data <- data %>% dplyr::filter(.data$year %in% filter_year)
@@ -474,11 +488,11 @@ plot_health_climate_timeseries <- function(
     dplyr::summarise(
       dplyr::across(
         dplyr::all_of(vars_to_plot),
-        ~ if (level == "country" && case_type %in% cur_column()) {
-          if (cur_column() == case_type) sum(.x, na.rm = TRUE) else mean(.x, na.rm = TRUE)
-        } else {
-          mean(.x, na.rm = TRUE)
-        }
+        ~ if (level == "country") {
+            if (cur_column() == case_type) sum(.x, na.rm = TRUE) else mean(.x, na.rm = TRUE)
+          } else {
+            mean(.x, na.rm = TRUE)
+          }
       ),
       .groups = "drop"
     ) %>%
@@ -655,25 +669,31 @@ check_diseases_vif <- function(
     basis_matrices_choices,
     case_type
 ) {
-  # Validate case type
+  # validate case type
   case_type <- validate_case_type(case_type)
   include_cvh <- ifelse(case_type=="malaria", TRUE, FALSE)
-
+  # get inla indices and cross basis
   data  <- create_inla_indices(data, case_type)
   basis <- set_cross_basis(data, include_cvh)
-
+  # assign variables
   vars_basis <- Filter(Negate(is.null), basis[basis_matrices_choices])
   vars_data  <- setdiff(inla_param, basis_matrices_choices)
-
+  # detect missing values are raise errors
   miss_basis <- setdiff(basis_matrices_choices, names(vars_basis))
   miss_data  <- setdiff(vars_data, names(data))
-  if (length(miss_basis)) stop("Missing in basis: ", paste(miss_basis, collapse = ", "))
-  if (length(miss_data))  stop("Missing in data: ", paste(miss_data, collapse = ", "))
+  if (length(miss_basis)) {
+    stop("Missing in basis: ", paste(miss_basis, collapse = ", "))
+  }
+  if (length(miss_data)) {
+    stop("Missing in data: ", paste(miss_data, collapse = ", "))
+  }
 
+  # create dataset (X)
   X <- cbind(do.call(cbind, vars_basis), data[vars_data])
   X <- as.data.frame(X[complete.cases(X), ])
   colnames(X) <- make.names(colnames(X), unique = TRUE)
 
+  # calculate VIF and return structured results
   vif_vals <- car::vif(lm(rep(1, nrow(X)) ~ ., data = X))
   cond_num <- kappa(scale(X), exact = TRUE)
 
@@ -1057,7 +1077,7 @@ get_predictions <- function(
     regions <- unique(data$region)
     predt <- regions %>%
       lapply(function(regi){
-        region_data <- subset(data, .data$region == regi)
+        region_data <- subset(data, data$region == regi)
         # Extract predictions from the tmax DLNM centered on overall mean Tmax
         mean_param <- round(mean(region_data[[param_term]], na.rm = TRUE), 0)
         predt <- dlnm::crosspred(basis_matrices[[param_term]], coef = coef[indt],
@@ -1072,7 +1092,7 @@ get_predictions <- function(
     predt <- districts %>%
       lapply(function(dist){
         # Filter data for the current district
-        district_data <- data %>% filter(.data$district == dist)
+        district_data <- data %>% filter(data$district == dist)
         # Extract predictions from the tmax DLNM centered on overall mean Tmax
         mean_param <- round(mean(district_data[[param_term]], na.rm = TRUE), 0)
         predt <- dlnm::crosspred(basis_matrices[[param_term]], coef = coef[indt],
@@ -1231,7 +1251,6 @@ plot_rr_map <- function(
     pred <- get_predictions(filter(data, .data$year == yr), param_term, model, level, case_type)
     purrr::map_dfr(names(pred), function(name) {
       vals <- pred[[name]]
-      if (anyNA(vals$allRRfit)) return(NULL)
       tibble(!!grouping_var := name, RR = median(vals$allRRfit, na.rm = TRUE))
     })
   }
@@ -1326,12 +1345,7 @@ plot_relative_risk <- function(
     file.path(output_dir, paste0("RR_", param_term, "_", level, "_all_plots.csv"))
   } else NULL
 
-  if (!requireNamespace("patchwork", quietly = TRUE)) {
-    stop("Package 'patchwork' is required but not installed.")
-  }
-
   build_plot <- function(pred, title) {
-    if (anyNA(pred$allRRfit)) return(NULL)
     ggplot2::ggplot(
       dplyr::tibble(
         x = pred$predvar,
@@ -1342,8 +1356,10 @@ plot_relative_risk <- function(
       ggplot2::aes(x = .data$x, y = .data$y)
     ) +
       ggplot2::geom_line(color = "red", linewidth = 1) +
-      ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$ymin, ymax = .data$ymax), fill = "red", alpha = 0.3) +
-      ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "gray", linewidth = 0.5) +
+      ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$ymin, ymax = .data$ymax),
+                           fill = "red", alpha = 0.3) +
+      ggplot2::geom_hline(yintercept = 1, linetype = "dashed",
+                          color = "gray", linewidth = 0.5) +
       ggplot2::labs(title = title, x = param_term, y = "Relative Risk") +
       ggplot2::theme_minimal() +
       ggplot2::theme(plot.title = ggplot2::element_text(size = 9))
@@ -1369,23 +1385,29 @@ plot_relative_risk <- function(
     rr_plot <- ggplot2::ggplot() +
       ggplot2::geom_line(
         data = dplyr::tibble(x = pred$predvar, y = pred$allRRfit),
-        ggplot2::aes(x = .data$x, y = .data$y), color = "red", linewidth = 1
+        ggplot2::aes(x = .data$x, y = .data$y),
+        color = "red", linewidth = 1
       ) +
       ggplot2::geom_ribbon(
-        data = dplyr::tibble(x = pred$predvar, ymin = pred$allRRlow, ymax = pred$allRRhigh),
-        ggplot2::aes(x = .data$x, ymin = .data$ymin, ymax = .data$ymax), fill = "red", alpha = 0.3
+        data = dplyr::tibble(x = pred$predvar,
+                             ymin = pred$allRRlow,
+                             ymax = pred$allRRhigh),
+        ggplot2::aes(x = .data$x, ymin = .data$ymin, ymax = .data$ymax),
+        fill = "red", alpha = 0.3
       ) +
-      ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "gray", linewidth = 0.5) +
-      ggplot2::geom_vline(xintercept = rr_range, linetype = "dotted", color = "blue", linewidth = 0.8) +
+      ggplot2::geom_hline(yintercept = 1, linetype = "dashed",
+                          color = "gray", linewidth = 0.5) +
+      ggplot2::geom_vline(xintercept = rr_range, linetype = "dotted",
+                          color = "blue", linewidth = 0.8) +
       ggplot2::scale_x_continuous(limits = x_limits, breaks = x_breaks) +
       ggplot2::labs(title = "Relative Risk Curve", y = "Relative Risk") +
       ggplot2::theme_minimal() +
       ggplot2::theme(
         axis.title.x = ggplot2::element_blank(),
-        axis.text.x = ggplot2::element_blank(),
+        axis.text.x  = ggplot2::element_blank(),
         axis.ticks.x = ggplot2::element_blank(),
         axis.title.y = ggplot2::element_text(color = "gray"),
-        plot.title = ggplot2::element_text(size = 11)
+        plot.title   = ggplot2::element_text(size = 11)
       )
 
     hist_counts <- ggplot2::ggplot_build(
@@ -1398,8 +1420,8 @@ plot_relative_risk <- function(
     y_limits <- range(y_breaks)
 
     hist_plot <- ggplot2::ggplot(data_all, ggplot2::aes(x = !!param_sym)) +
-      ggplot2::geom_histogram(binwidth = 1, boundary = 0, fill = "skyblue",
-                              color = "black", alpha = 0.6) +
+      ggplot2::geom_histogram(binwidth = 1, boundary = 0,
+                              fill = "skyblue", color = "black", alpha = 0.6) +
       ggplot2::scale_x_continuous(limits = x_limits, breaks = x_breaks) +
       ggplot2::scale_y_continuous(name = "Frequency", limits = y_limits,
                                   breaks = y_breaks, position = "right") +
@@ -1419,10 +1441,10 @@ plot_relative_risk <- function(
     if (save_csv && !is.null(csv_output_path)) {
       utils::write.csv(
         dplyr::tibble(
-          predvar = pred$predvar,
+          predvar  = pred$predvar,
           allRRfit = pred$allRRfit,
           allRRlow = pred$allRRlow,
-          allRRhigh = pred$allRRhigh
+          allRRhigh= pred$allRRhigh
         ),
         csv_output_path, row.names = FALSE
       )
@@ -1433,21 +1455,13 @@ plot_relative_risk <- function(
 
   if (level %in% c("region", "district")) {
     group_plots <- list()
-    if (is.null(filter_year)) {
-      preds <- get_predictions(data, param_term, model, level, case_type)
-      all_predictions[["All Years"]] <- preds
+    for (yr in filter_year) {
+      preds <- get_predictions(dplyr::filter(data, .data$year == yr),
+                               param_term, model, level, case_type)
+      all_predictions[[as.character(yr)]] <- preds
       for (grp in names(preds)) {
-        p <- build_plot(preds[[grp]], grp)
-        if (!is.null(p)) group_plots[[grp]] <- list(p)
-      }
-    } else {
-      for (yr in filter_year) {
-        preds <- get_predictions(dplyr::filter(data, .data$year == yr), param_term, model, level, case_type)
-        all_predictions[[as.character(yr)]] <- preds
-        for (grp in names(preds)) {
-          p <- build_plot(preds[[grp]], paste0(grp, " (", yr, ")"))
-          if (!is.null(p)) group_plots[[grp]] <- c(group_plots[[grp]], list(p))
-        }
+        p <- build_plot(preds[[grp]], paste0(grp, " (", yr, ")"))
+        if (!is.null(p)) group_plots[[grp]] <- c(group_plots[[grp]], list(p))
       }
     }
 
@@ -1460,8 +1474,11 @@ plot_relative_risk <- function(
           print(
             patchwork::wrap_plots(page, ncol = 2, nrow = 3) +
               patchwork::plot_annotation(
-                title = paste("Exposure-Response Curves by", tools::toTitleCase(level)),
-                subtitle = if (is.null(filter_year)) "All Years Combined" else paste(param_term, "Years:", paste(filter_year, collapse = ", "))
+                title    = paste("Exposure-Response Curves by",
+                                 tools::toTitleCase(level)),
+                subtitle = if (is.null(filter_year)) "All Years Combined"
+                           else paste(param_term, "Years:",
+                                      paste(filter_year, collapse = ", "))
               )
           )
         }
@@ -1475,12 +1492,12 @@ plot_relative_risk <- function(
         dplyr::bind_rows(lapply(names(preds), function(grp) {
           df <- preds[[grp]]
           dplyr::tibble(
-            year = yr,
-            group = grp,
-            predvar = df$predvar,
+            year     = yr,
+            group    = grp,
+            predvar  = df$predvar,
             allRRfit = df$allRRfit,
             allRRlow = df$allRRlow,
-            allRRhigh = df$allRRhigh
+            allRRhigh= df$allRRhigh
           )
         }))
       }))
@@ -1492,7 +1509,6 @@ plot_relative_risk <- function(
 
   stop("Invalid level: must be 'country', 'region', or 'district'")
 }
-
 
 #' Attribution calculation for maximum temperature
 #'
@@ -1707,6 +1723,8 @@ plot_attribution_metric <- function(
   save_fig = FALSE,
   output_dir = NULL
 ) {
+  # validation
+  if (is.null(param_term)) stop("'param_term' must be provided.")
   case_type <- validate_case_type(case_type)
   level <- tolower(level)
   if (level == "country" && !is.null(filter_year)) {
@@ -1714,7 +1732,6 @@ plot_attribution_metric <- function(
     return(NULL)
   }
   metrics <- match.arg(metrics, several.ok = TRUE)
-  if (is.null(param_term)) stop("'param_term' must be provided.")
 
   param_label <- switch(tolower(param_term),
                         tmax = "Extreme Temperature",
@@ -1909,8 +1926,6 @@ plot_attribution_metric <- function(
 
       return(group_plots)
     }
-
-    return(NULL)
   })
 
   return(plots)

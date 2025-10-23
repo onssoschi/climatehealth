@@ -40,6 +40,11 @@ jobs:
         run: |
           Rscript -e '
           install.packages(c("devtools", "roxygen2", "remotes", "patrick", "pak", "covr", "DT", "htmltools"))
+          install.packages("fmesher")
+          install.packages(
+            "INLA",
+            repos = "https://inla.r-inla-download.org/R/stable"
+          )
           pak::local_install(".", dependencies = c("Depends", "Imports", "LinkingTo"))
           '
         timeout-minutes: 5
