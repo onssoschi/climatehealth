@@ -63,8 +63,11 @@ check_has_rtools <- function() {
 #'
 #' @export
 install_INLA <- function() {
+  # Install fmesher
+  message("Installing fmesher as INLA is dependent on it...\n")
+  install.packages("fmesher")
+  # Install INLA
   message("Installing INLA from its official repository...\n")
-
   # Detect OS and install INLA accordingly
   if (.Platform$OS.type == "windows") {
     # Ensure rtools is installed
