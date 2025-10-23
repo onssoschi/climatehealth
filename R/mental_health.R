@@ -1099,23 +1099,23 @@ mh_power_list <- function(df_list = df_list,
                                       se = pred$allse)
 
     coef_effect_with_se <- coef_effect_with_se %>%
-      dplyr::filter(temperature == thresh_temp)
+      dplyr::filter(temperature >= thresh_temp)
 
     rownames(coef_effect_with_se) <- NULL
-
-    coef <- coef_effect_with_se$log_rr
-    se <- coef_effect_with_se$se
-
-    z_alpha <- qnorm(1 - alpha / 2)
-
-    power <- pnorm(coef / se - z_alpha) + (1 - pnorm(coef / se + z_alpha))
 
     power_df <- data.frame(region = reg,
                            threshold_temp = coef_effect_with_se$temperature,
                            cen = min_st,
-                           log_rr = round(coef_effect_with_se$log_rr, 2),
-                           se = round(coef_effect_with_se$se, 2),
-                           power = round(power * 100, 1))
+                           log_rr = coef_effect_with_se$log_rr,
+                           se = coef_effect_with_se$se,
+                           z_alpha = qnorm(1 - alpha / 2))
+
+    power_df <- power_df %>%
+      mutate(power = pnorm(log_rr / se - z_alpha) + (1 - pnorm(log_rr / se + z_alpha))) %>%
+      select(-z_alpha) %>%
+      mutate(log_rr = round(log_rr, 2),
+             se = round(se, 2),
+             power = round(power * 100, 1))
 
     power_list[[reg]] <- power_df
 
@@ -1123,6 +1123,46 @@ mh_power_list <- function(df_list = df_list,
 
   return(power_list)
 
+}
+
+
+mh_plot_power <- function(power_list,
+                          save_fig = FALSE,
+                          output_folder_path = NULL,
+                          country = "National") {
+
+  if (save_fig == TRUE) {
+    grid <- c(min(length(power_list), 3), ceiling(length(power_list) / 3))
+    output_path <- file.path(output_folder_path, "power_vs_temperature.pdf")
+    pdf(output_path, width = max(10, grid[1]*5.5), height = max(7, grid[2]*4.5))
+    par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0), mar = c(8, 4, 5, 4))
+  }
+
+  for (reg in names(power_list)) {
+    df <- power_list[[reg]]
+    df <- df[order(df$threshold_temp), ]
+
+    plot(x = df$threshold_temp,
+         y = df$power,
+         type = "l",
+         xlab = "Temperature",
+         ylab = "Power (%)",
+         main = reg,
+         col = "#296991",
+         ylim = c(0, 100),
+         lwd = 2)
+
+    abline(h = 80,
+           col = "black",
+           lty = 2)
+
+  }
+
+  if (save_fig == TRUE) {
+    title <- paste0("Power vs Temperature by Area, ", country)
+    mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+    dev.off()
+  }
 }
 
 
