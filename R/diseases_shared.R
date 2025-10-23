@@ -240,8 +240,8 @@ load_and_process_climatedata <- function(
   create_lags <- function(df, var, max_lag) {
     # Create lag groups
     df <- df %>%
-      dplyr::group_by(district) %>%
-      dplyr::arrange(year, month, .by_group = TRUE)
+      dplyr::group_by(.data$district) %>%
+      dplyr::arrange(.data$year, .data$month, .by_group = TRUE)
     # Create lagged vars
     for (i in 1:max_lag) {
       lag_name <- paste0(var, "_lag", i)
