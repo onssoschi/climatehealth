@@ -62,14 +62,14 @@ check_has_rtools <- function() {
 #' }
 #'
 #' @export
-install_INLA <- function() {
+install_INLA <- function(os = .Platform$OS.type) {
   # Install fmesher
   message("Installing fmesher as INLA is dependent on it...\n")
   install.packages("fmesher")
   # Install INLA
   message("Installing INLA from its official repository...\n")
   # Detect OS and install INLA accordingly
-  if (.Platform$OS.type == "windows") {
+  if (os == "windows") {
     # Ensure rtools is installed
     check_has_rtools()
 
@@ -87,13 +87,13 @@ install_INLA <- function() {
   if (requireNamespace("INLA", quietly=T)) message("INLA succesfully installed.")
 }
 
-install_terra <- function() {
-  message("Installing INLA from its official repository...\n")
+install_terra <- function(os = .Platform$OS.type) {
+  message("Installing terra<=1.8-60 from the CRAN archive...\n")
 
   # Install from source tarball
   tarball <- "https://cran.r-project.org/src/contrib/Archive/terra/terra_1.8-60.tar.gz"
   # Check for RTools on Windows
-  if (.Platform$OS.type == "windows") {
+  if (os == "windows") {
     # Ensure rtools is installed
     check_has_rtools()
   }
