@@ -890,8 +890,8 @@ mh_predict_reg <- function(df_list,
                             model.link = "log",
                             by = 0.1,
                             cen = cen,
-                            from = min(region_data$temp, na.rm = TRUE),
-                            to = max(region_data$temp, na.rm = TRUE))
+                            from = min(round(region_data$temp, 1), na.rm = TRUE),
+                            to = max(round(region_data$temp, 1), na.rm = TRUE))
 
     pred_list[[reg]] <- pred
 
@@ -1051,12 +1051,77 @@ mh_predict_nat <- function(df_list,
                               cen=cen,
                               model.link="log",
                               by=0.1,
-                              from = min(national_data$temp, na.rm = TRUE),
-                              to = max(national_data$temp, na.rm = TRUE))
+                              from = min(round(national_data$temp, 1), na.rm = TRUE),
+                              to = max(round(national_data$temp, 1), na.rm = TRUE))
 
   pred_list[[country]] <- pred_nat
 
   return(pred_list)
+
+}
+
+
+#' Power calculation
+#'
+#' @description Produce a power statistic by area for the attributable threshold
+#' as a reference.
+#'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param pred_list A list containing predictions from the model by region.
+#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
+#' @param attr_thr Integer. Percentile at which to define the temperature threshold for
+#' calculating attributable risk.
+#'
+#' @return A list containing power information by area.
+#'
+#' @export
+mh_power_list <- function(df_list = df_list,
+                          pred_list = pred_list,
+                          minpercreg = minpercreg,
+                          attr_thr){
+
+  power_list <- list()
+  alpha <- 0.05
+
+  for(reg in names(df_list)){
+
+    region_data <- df_list[[reg]]
+    pred <- pred_list[[reg]]
+    min_st <- round(quantile(region_data$temp, minpercreg[reg]/100, na.rm = TRUE), 1)
+
+    # Compute power with attr_thr as a reference value for log coefficient and se
+
+    thresh_temp <- round(quantile(region_data$temp, attr_thr/100, na.rm = TRUE), 1)
+
+    coef_effect_with_se <- data.frame(temperature = round(pred$predvar, 1),
+                                      log_rr = pred$allfit,
+                                      se = pred$allse)
+
+    coef_effect_with_se <- coef_effect_with_se %>%
+      dplyr::filter(temperature == thresh_temp)
+
+    rownames(coef_effect_with_se) <- NULL
+
+    coef <- coef_effect_with_se$log_rr
+    se <- coef_effect_with_se$se
+
+    z_alpha <- qnorm(1 - alpha / 2)
+
+    power <- pnorm(coef / se - z_alpha) + (1 - pnorm(coef / se + z_alpha))
+
+    power_df <- data.frame(region = reg,
+                           threshold_temp = coef_effect_with_se$temperature,
+                           cen = min_st,
+                           log_rr = round(coef_effect_with_se$log_rr, 2),
+                           se = round(coef_effect_with_se$se, 2),
+                           power = round(power * 100, 1))
+
+    power_list[[reg]] <- power_df
+
+  }
+
+  return(power_list)
 
 }
 
@@ -2069,12 +2134,14 @@ mh_plot_ar_monthly <- function(attr_mth_list,
 #' fractions, numbers and rates by calendar month and area.
 #' @param output_folder_path Path to folder where results should be saved.
 #' Defaults to NULL.
+#' @param power_list A list containing power information by area.
 #'
 #' @export
 mh_save_results <- function(rr_results,
                             res_attr_tot,
                             attr_yr_list,
                             attr_mth_list,
+                            power_list,
                             output_folder_path = NULL) {
 
   if (!is.null(output_folder_path)) {
@@ -2098,6 +2165,11 @@ mh_save_results <- function(rr_results,
 
     write.csv(res_attr_mth, file = file.path(
       output_folder_path, "suicides_attr_mth_results.csv"), row.names = FALSE)
+
+    res_power <- do.call(rbind, power_list)
+
+    write.csv(res_power, file = file.path(
+      output_folder_path, "suicides_power_results.csv"), row.names = FALSE)
 
     #TODO also in wildfire functions, generalise and put in files.utils
 
