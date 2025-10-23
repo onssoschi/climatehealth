@@ -45,7 +45,6 @@ Imports:
     splines,
     stats,
     stringr (>= 1.5.1),
-    terra (<= 1.8-60),
     tibble,
     tidyr,
     tidytable,
@@ -62,6 +61,7 @@ Suggests:
     INLA,
     openxlsx,
     patrick,
+    terra (<= 1.8-60),
     testthat (>= 3.2.1.1),
     withr
 Config/rcmdcheck/ignore-inconsequential-notes: true
