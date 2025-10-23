@@ -30,6 +30,7 @@ Imports:
     mixmeta,
     mvmeta (>= 1.0.3),
     ncdf4 (>= 1.24),
+    openxlsx,
     patchwork,
     pkgbuild,
     purrr,
@@ -45,7 +46,6 @@ Imports:
     splines,
     stats,
     stringr (>= 1.5.1),
-    terra (<= 1.8-60),
     tibble,
     tidyr,
     tidytable,
@@ -61,6 +61,7 @@ Suggests:
     htmltools,
     INLA,
     patrick,
+    terra (<= 1.8-60),
     testthat (>= 3.2.1.1),
     withr
 Config/rcmdcheck/ignore-inconsequential-notes: true
