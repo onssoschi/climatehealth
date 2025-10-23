@@ -254,7 +254,6 @@ with_parameters_test_that(
 )
 
 # Tests for combine_health_climate_data
-
 test_that(
     "comine_health_climate_data succesfully joins data from 3 data sources",
     {

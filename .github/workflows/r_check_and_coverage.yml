@@ -39,7 +39,10 @@ jobs:
       - name: Install dependencies
         run: |
           Rscript -e '
-          install.packages(c("devtools", "roxygen2", "remotes", "patrick", "pak", "covr", "DT", "htmltools"))
+          install.packages(c(
+            "devtools", "roxygen2", "remotes", "patrick", "pak", "covr", "DT",
+            "htmltools", "mockery", "openxlsx"
+          ))
           install.packages("fmesher")
           install.packages(
             "INLA",
