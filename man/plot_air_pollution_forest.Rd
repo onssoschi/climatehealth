@@ -26,3 +26,4 @@ ggplot object
 \description{
 Create forest plot with AF and AN
 }
+\keyword{internal}

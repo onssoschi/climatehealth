@@ -17,3 +17,4 @@ intervals from analysis.
 Produces cumulative relative risk and confidence intervals
 from analysis.
 }
+\keyword{internal}

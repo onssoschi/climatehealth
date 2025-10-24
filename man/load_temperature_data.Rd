@@ -43,3 +43,4 @@ region comprising dates, deaths, and temperatures.
 \description{
 Loads data and names of regions for analysis from a CSV file.
 }
+\keyword{internal}

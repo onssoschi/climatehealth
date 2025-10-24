@@ -91,3 +91,4 @@ region.
 \description{
 Plot and write results of analysis
 }
+\keyword{internal}

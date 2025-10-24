@@ -11,7 +11,7 @@
 #'
 #' @return 'exists'. Whether or not the file exists on disk.
 #'
-#' @export
+#' @keywords internal
 check_file_exists <- function(fpath, raise = TRUE) {
   # assert if the file exists
   exists <- file.exists(fpath)
@@ -36,7 +36,7 @@ check_file_exists <- function(fpath, raise = TRUE) {
 #'
 #' @return Whether or not the passed file has a valid file extension.
 #'
-#' @export
+#' @keywords internal
 check_file_extension <- function(
     fpath,
     expected_ext,
@@ -67,17 +67,16 @@ check_file_extension <- function(
 
 }
 
-
 #' Read a csv file into memory as a data frame.
 #'
 #' @param input_csv_path The path to the csv to read as a dataframe.
 #'
 #' @return A dataframe containing the data from the csv.
-#' @export
+#' @keywords internal
 #'
 #' @examples input_csv_path = "directory/file_name.csv"
 #'
-#' @export
+#' @keywords internal
 read_input_data <- function(input_csv_path) {
   if (is.list(input_csv_path)) {
     df <- data.frame(input_csv_path)
@@ -90,11 +89,33 @@ read_input_data <- function(input_csv_path) {
   } else {
     # Raise an error when the input_csv argument isn't valid
     stop(paste(
-      "'input_csv' expected a list or a string. Got",
-      typeof(input_csv)
+      "'input_csv_path' expected a list or a string. Got",
+      typeof(input_csv_path)
     ))
   }
 
   return(df)
+}
+
+#' Enforce a file extension on a given path
+#'
+#' Ensures that the provided file path ends with the desired file extension.
+#'
+#' @param path Character. A file path.
+#' @param file_extension Character. The file extension to enforce on 'path'.
+#'
+#' @return Character. The path with the expected file extension.
+#'
+#' @keywords internal
+enforce_file_extension <- function(path, file_extension) {
+  # Normalise the file ext
+  if (!startsWith(file_extension, ".")) {
+    file_extension <- paste0(".", file_extension)
+  }
+  # Enforce the extension
+  if (!endsWith(path, file_extension)) {
+    path <- paste0(tools::file_path_sans_ext(path), file_extension)
+  }
+  return (path)
 }
 

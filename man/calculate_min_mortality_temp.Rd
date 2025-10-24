@@ -53,3 +53,4 @@ temperature thresholds for calculation of attributable deaths.
 Calculate the temperature at which there is minimum mortality
 using the product of the basis matrix and blup
 }
+\keyword{internal}

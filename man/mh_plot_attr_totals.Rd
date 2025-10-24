@@ -33,3 +33,4 @@ Plots of total attributable fractions and rates by area
 \description{
 Plot total attributable fractions and rates over the whole time series by area.
 }
+\keyword{internal}

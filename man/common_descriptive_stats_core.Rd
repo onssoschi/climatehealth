@@ -2,21 +2,32 @@
 % Please edit documentation in R/descriptive_stats.R
 \name{common_descriptive_stats_core}
 \alias{common_descriptive_stats_core}
-\title{The core functionality for producing descriptive stats}
+\title{Core Functionality for Producing Descriptive Statistics}
 \usage{
 common_descriptive_stats_core(
   dataset_title,
   df,
   output_path,
   title,
+  aggregation_column = NULL,
+  population_col = NULL,
   plot_corr_matrix = F,
   correlation_method = "pearson",
   plot_dist = F,
-  dist_columns = c("temp"),
-  dependent_col = "dependent",
-  independent_cols = c("temp"),
+  dependent_col,
+  independent_cols = c(),
+  columns = NULL,
+  units = NULL,
+  select_all_numeric = F,
   plot_na_counts = F,
-  plot_scatter = F
+  plot_scatter = F,
+  plot_box = F,
+  plot_seasonal = F,
+  plot_regional = F,
+  plot_total = F,
+  timeseries_col = "date",
+  detect_outliers = F,
+  calculate_rate = F
 )
 }
 \arguments{
@@ -28,22 +39,48 @@ common_descriptive_stats_core(
 
 \item{title}{Character. The specific title for the subset of data being used.}
 
-\item{plot_corr_matrix}{Bool. Whether or not to plot a correlation matrix. Defaults to F.}
+\item{aggregation_column}{Character. Column to aggregate data by.}
 
-\item{correlation_method}{Character. The correlation method used in ds.}
+\item{population_col}{Character. Column containing population data.}
 
-\item{plot_dist}{Bool. Whether or not to plot distribution histograms. Defaults to F.}
+\item{plot_corr_matrix}{Logical. Whether or not to plot correlation matrix.}
 
-\item{dist_columns}{Vector. The columns to plot distributions for. Defaults to c().}
+\item{correlation_method}{Character. The correlation method. One of 'pearson', 'spearman', 'kendall'.}
 
-\item{dependent_col}{Character. The column in the data containing the dependent var.}
+\item{plot_dist}{Logical. Whether or not to plot distribution histograms.}
 
-\item{independent_cols}{Character. The column in the data containing the independent var.}
+\item{dependent_col}{Character. The dependent column.}
 
-\item{plot_na_counts}{Bool. Whether to plot NA counts. Defaults to F.}
+\item{independent_cols}{Character vector. The independent columns.}
 
-\item{plot_scatter}{Bool. Whether to plot a scatter plot of independent vs dependent. Defaults to F.}
+\item{columns}{Character vector. Specific columns to use for analysis.}
+
+\item{units}{Named character vector. Units to use for plots (maps to columns parameter).}
+
+\item{select_all_numeric}{Logical. Whether to select all numerical columns for plotting (columns parameter overwrites this).}
+
+\item{plot_na_counts}{Logical. Whether to plot NA counts.}
+
+\item{plot_scatter}{Logical. Whether to plot scatter plots.}
+
+\item{plot_box}{Logical. Whether to plot box plots.}
+
+\item{plot_seasonal}{Logical. Whether to plot seasonal plots.}
+
+\item{plot_regional}{Logical. Whether to plot regional plots.}
+
+\item{plot_total}{Logical. Whether to plot total health outcomes per year.}
+
+\item{timeseries_col}{Character. Column containing timeseries data (e.g., date).}
+
+\item{detect_outliers}{Logical. Whether to output a table containing outlier information.}
+
+\item{calculate_rate}{Logical. Whether to calculate the rate of health outcomes per 100k people.}
+}
+\value{
+None. Outputs are written to files.
 }
 \description{
-The core functionality for producing descriptive stats
+Core Functionality for Producing Descriptive Statistics
 }
+\keyword{internal}

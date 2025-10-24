@@ -22,3 +22,4 @@ List containing models by region
 Fits a quasi-Poisson case-crossover with a distributed lag
 non-linear model
 }
+\keyword{internal}

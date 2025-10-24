@@ -34,3 +34,4 @@ This function checks for multicollinearity among DLNM basis variables
 (specifically tmax) and selected confounders (rainfall, r_humidity, runoff, tmin)
 using the Variance Inflation Factor (VIF) and condition number (Kappa).
 }
+\keyword{internal}

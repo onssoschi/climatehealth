@@ -19,3 +19,4 @@ Default: TRUE}
 Checks the files on disk to assert that the passed file is
 present.
 }
+\keyword{internal}

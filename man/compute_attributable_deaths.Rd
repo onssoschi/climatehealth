@@ -74,3 +74,4 @@ for each region.
 Compute the attributable deaths for each regions,
 with empirical CI estimated using the re-centered bases.
 }
+\keyword{internal}

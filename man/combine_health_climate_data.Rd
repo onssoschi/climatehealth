@@ -99,3 +99,4 @@ A list of dataframes containing the map, nb.map, data, grid_data, summary
 Read and combine climate and health data prepared for the
 spatiotemporal and DLNM analysis.
 }
+\keyword{internal}

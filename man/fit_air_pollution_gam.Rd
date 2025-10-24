@@ -27,3 +27,4 @@ GAM model object or NULL if failed.
 Fits the GAM model for a single region with a natural spline
 for climate variables.
 }
+\keyword{internal}

@@ -6,7 +6,7 @@
 \usage{
 mh_min_suicide_temp(
   df_list,
-  var_fun = "bs",
+  var_fun = "splines",
   var_per = c(25, 50, 75),
   var_degree = 2,
   blup = blup,
@@ -41,3 +41,4 @@ Vector. Percentile of minimum suicide temperature for each region.
 Define the minimum suicide temperature values (between 1st and
 50th percentiles).
 }
+\keyword{internal}

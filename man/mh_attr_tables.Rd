@@ -27,3 +27,4 @@ fractions, numbers and rates by calendar month and area.
 Aggregate tables of attributable numbers, rates and fractions
 for total, yearly and monthly by region and nation
 }
+\keyword{internal}

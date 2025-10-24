@@ -11,7 +11,7 @@ run_inla_models(
   inla_param,
   case_type,
   output_dir = NULL,
-  save_csv = FALSE,
+  save_model = FALSE,
   family = "poisson",
   config = FALSE
 )
@@ -31,7 +31,7 @@ to. Must be one of 'diarrhea' or 'malaria'}
 
 \item{output_dir}{Character. The path to save model output to.  Defaults to NULL.}
 
-\item{save_csv}{Boolean. Whether to save the results as a CSV. Defaults to
+\item{save_model}{Boolean. Whether to save the model as a CSV. Defaults to
 FALSE.}
 
 \item{family}{Character. The probability distribution for the response
@@ -48,3 +48,4 @@ A list containing the model, baseline_model, and the dic_table.
 Laplace Approximation) models to the dataset, evaluates them using
 DIC (Deviance Information Criterion), and identifies the best-fitting model.
 }
+\keyword{internal}

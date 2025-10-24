@@ -18,14 +18,14 @@
 #'
 #' @returns Dataframe with formatted and renamed columns
 #'
-#' @export
+#' @keywords internal
 read_and_format_data <- function(health_path,
                                  date_col,
                                  region_col = NULL,
                                  mean_temperature_col,
                                  health_outcome_col) {
 
-  df <- climatehealth::read_input_data(health_path)
+  df <- read_input_data(health_path)
 
   if (is.null(region_col)) {
 
@@ -77,7 +77,7 @@ read_and_format_data <- function(health_path,
 #' @returns Dataframe containing a daily time series with mean wildfire-related
 #' PM2.5 values for each region
 #'
-#' @export
+#' @keywords internal
 extract_means_for_geography <- function(ncdf_path,
                                         shapefile_path) {
 
@@ -143,7 +143,7 @@ extract_means_for_geography <- function(ncdf_path,
 #' @returns Dataframe containing a daily time series of the joined
 #' climate and health data.
 #'
-#' @export
+#' @keywords internal
 pair_with_health <- function(climate_data,
                              health_data,
                              date_col,
@@ -157,13 +157,13 @@ pair_with_health <- function(climate_data,
 
   # Remove failed joins
   df_paired <- df_paired_all %>%
-    dplyr::filter(!is.na(mean_PM_FRP))
+    dplyr::filter(!is.na(.data$mean_PM_FRP))
 
   df_paired[is.finite(df_paired$mean_PM_FRP), ]
 
   df_paired <- df_paired %>%
-    dplyr::mutate(mean_PM_FRP = (mean_PM_FRP * 1e9), # convert kg to microgram
-                  regnames = as.factor(regnames))
+    dplyr::mutate(mean_PM_FRP = (.data$mean_PM_FRP * 1e9), # convert kg to microgram
+                  regnames = as.factor(.data$regnames))
 
   return(df_paired)
 
@@ -200,7 +200,7 @@ pair_with_health <- function(climate_data,
 #' @returns Dataframe containing a daily time series of
 #' climate and health data.
 #'
-#' @export
+#' @keywords internal
 load_wildfire_data <- function(health_path,
                                join_wildfire_data,
                                ncdf_path,
@@ -269,7 +269,7 @@ load_wildfire_data <- function(health_path,
 #' @returns Dataframe with added columns for lagged temperature and
 #' wildfire-related PM2.5 concentration
 #'
-#' @export
+#' @keywords internal
 create_lagged_variables <- function(data,
                                     wildfire_lag = 3,
                                     temperature_lag = 1) {
@@ -333,7 +333,7 @@ create_lagged_variables <- function(data,
 #'
 #' @returns Dataframe with additional columns for temperature spline
 #'
-#' @export
+#' @keywords internal
 create_temperature_splines <- function(data,
                                        temperature_lag = 0,
                                        degrees_freedom = 6) {
@@ -372,7 +372,7 @@ create_temperature_splines <- function(data,
 #' (region:year:month:dayofweek) and for the total counts of a health outcome
 #' across days in each stratum.
 #'
-#' @export
+#' @keywords internal
 time_stratify <- function(data) {
 
   df <- split(data, f = data$regnames)
@@ -414,7 +414,7 @@ time_stratify <- function(data) {
 #' @returns Prints summary statistics and a histogram of the the outcome
 #' variable
 #'
-#' @export
+#' @keywords internal
 descriptive_stats <- function(data,
                               variables,
                               bin_width = 5) {
@@ -446,7 +446,7 @@ descriptive_stats <- function(data,
 #'
 #' @returns Prints a ggplot2 scatterplot of x versus y
 #'
-#' @export
+#' @keywords internal
 plot_variables <- function(data, xvar, yvar) {
 
   ggplot2::ggplot(data = data, ggplot2::aes(x = {{xvar}}, y = {{yvar}})) +
@@ -470,7 +470,7 @@ plot_variables <- function(data, xvar, yvar) {
 #'
 #' @returns Prints variance inflation factors for each predictor variable.
 #'
-#' @export
+#' @keywords internal
 check_vif <- function(data, predictors, print_vif = FALSE) {
 
   if (!is.character(predictors)) {
@@ -522,7 +522,7 @@ check_vif <- function(data, predictors, print_vif = FALSE) {
 #' @returns Dataframe of relative risk and confidence intervals for
 #' each lag of wildfire-related PM2.5
 #'
-#' @export
+#' @keywords internal
 casecrossover_quasipoisson <- function(data,
                                        scale_factor = 10,
                                        wildfire_lag = 3,
@@ -564,7 +564,7 @@ casecrossover_quasipoisson <- function(data,
     output_path <- file.path(output_folder_path,
                              "wildfires_residuals_vs_fit_plot.pdf")
     pdf(output_path, width=grid[1]*4, height=grid[2]*4)
-    par(mfrow=c(grid[1],  grid[2]))
+    par(mfrow=c(grid[1], grid[2]))
   }
 
   for (i in lags) {
@@ -576,8 +576,8 @@ casecrossover_quasipoisson <- function(data,
     model <- gnm::gnm(formula,
                       data = data,
                       family = quasipoisson,
-                      subset = ind > 0,
-                      eliminate = stratum)
+                      subset = data$ind > 0,
+                      eliminate = data$stratum)
 
     if (print_model_summaries) {
       print(Epi::ci.exp(model, subset = i))
@@ -630,7 +630,7 @@ casecrossover_quasipoisson <- function(data,
 #' @returns Plot of relative risk and confidence intervals for each lag of
 #' wildfire-related PM2.5
 #'
-#' @export
+#' @keywords internal
 
 plot_RR_by_region <- function(results,
                               save_fig = FALSE,
@@ -689,7 +689,7 @@ plot_RR_by_region <- function(results,
 #' @returns Plot of relative risk and confidence intervals for each lag of
 #' wildfire-related PM2.5
 #'
-#' @export
+#' @keywords internal
 plot_RR <- function(results,
                     save_fig,
                     wildfire_lag = 3,
@@ -704,8 +704,8 @@ plot_RR <- function(results,
     labels <- c(labels, additional_labels)
   }
 
-  plot <- ggplot2::ggplot(data = results, ggplot2::aes(x = lag, y = relative_risk,
-                                                       ymin = ci_lower, ymax = ci_upper)) +
+  plot <- ggplot2::ggplot(data = results, ggplot2::aes(x = lag, y = .data$relative_risk,
+                                                       ymin = .data$ci_lower, ymax = .data$ci_upper)) +
     ggplot2::geom_point(size = 3) +
     ggplot2::geom_errorbar(width = 0.5, size = 1) +
     ggplot2::geom_hline(yintercept = 1, lty = 2) +
@@ -726,7 +726,7 @@ plot_RR <- function(results,
           width = 8, height = 8)
       print(plot) # NOTE: this print() is required to produce the plot pdf
       dev.off()
-      climatehealth::check_file_exists(file.path(output_folder_path, file_name))
+      check_file_exists(file.path(output_folder_path, file_name))
     }
 
   }
@@ -745,7 +745,7 @@ plot_RR <- function(results,
 #' @param an_ar_results Dataframe. The AN/AR results. Defaults to NULL.
 #' @param output_folder_path Path to folder where results should be saved.
 #'
-#' @export
+#' @keywords internal
 save_results <- function(rr_results,
                          output_AN_AR = TRUE,
                          an_ar_results = NULL,
@@ -756,14 +756,14 @@ save_results <- function(rr_results,
     write.csv(rr_results, file = file.path(
       output_folder_path, "wildfire_rr.csv")
       )
-    climatehealth::check_file_exists(file.path(
+    check_file_exists(file.path(
       output_folder_path, "wildfire_rr.csv"))
     # AN/AF
     if (output_AN_AR) {
       write.csv(an_ar_results, file = file.path(
         output_folder_path, "wildfire_an_ar.csv")
       )
-      climatehealth::check_file_exists(file.path(
+      check_file_exists(file.path(
         output_folder_path, "wildfire_an_ar.csv"))
     }
 
@@ -802,7 +802,7 @@ save_results <- function(rr_results,
 #' each lag of wildfire-related PM2.5. Split by region if calc_relative_risk_by_region
 #' set to TRUE.
 #'
-#' @export
+#' @keywords internal
 
 relative_risk_by_region <- function(data,
                                     scale_factor = 10,
@@ -868,44 +868,38 @@ relative_risk_by_region <- function(data,
 #' @returns Time series dataframe with daily AF and AN, and AF and AN upper and
 #' lower CIs
 #'
-#' @export
-calculate_daily_AF_AN <- function(data,
-                                  rr_data){
-
+#' @keywords internal
+calculate_daily_AF_AN <- function(data, rr_data) {
   df_list <- split(data, f = data$regnames)
 
-  for (i in seq(df_list)) {
+  for (i in seq_along(df_list)) {
     region_data <- df_list[[i]]
     region_name <- names(df_list)[i]
 
     RR_value <- rr_data %>%
-      filter(lag == 0, region_name == region_name) %>%
-      pull(relative_risk)
+      dplyr::filter(.data$lag == 0, .data$region_name == region_name) %>%
+      dplyr::pull(.data$relative_risk)
 
     RR_CI_lower <- rr_data %>%
-      filter(lag == 0, region_name == region_name) %>%
-      pull(ci_lower)
+      dplyr::filter(.data$lag == 0, .data$region_name == region_name) %>%
+      dplyr::pull(.data$ci_lower)
 
     RR_CI_upper <- rr_data %>%
-      filter(lag == 0, region_name == region_name) %>%
-      pull(ci_upper)
-
-    # Calculate daily rescaled_RR, attributable fraction and attributable number.
-    # Repeat for upper and lower confidence intervals
-    region_data <- region_data %>%
-      mutate(rescaled_RR = exp((log(RR_value) / 10) * mean_PM_FRP),
-             attributable_fraction = (rescaled_RR - 1) / rescaled_RR,
-             attributable_number = attributable_fraction * health_outcome)
+      dplyr::filter(.data$lag == 0, .data$region_name == region_name) %>%
+      dplyr::pull(.data$ci_upper)
 
     region_data <- region_data %>%
-      mutate(rescaled_CI_upper = exp((log(RR_CI_upper) / 10) * mean_PM_FRP),
-             attributable_fraction_upper = (rescaled_CI_upper - 1) / rescaled_CI_upper,
-             attributable_number_upper = attributable_fraction_upper * health_outcome)
-
-    region_data <- region_data %>%
-      mutate(rescaled_CI_lower = exp((log(RR_CI_lower) / 10) * mean_PM_FRP),
-             attributable_fraction_lower = (rescaled_CI_lower - 1) / rescaled_CI_lower,
-             attributable_number_lower = attributable_fraction_lower * health_outcome)
+      dplyr::mutate(
+        rescaled_RR = exp((log(RR_value) / 10) * .data$mean_PM_FRP),
+        attributable_fraction = (.data$rescaled_RR - 1) / .data$rescaled_RR,
+        attributable_number = .data$attributable_fraction * .data$health_outcome,
+        rescaled_CI_upper = exp((log(RR_CI_upper) / 10) * .data$mean_PM_FRP),
+        attributable_fraction_upper = (.data$rescaled_CI_upper - 1) / .data$rescaled_CI_upper,
+        attributable_number_upper = .data$attributable_fraction_upper * .data$health_outcome,
+        rescaled_CI_lower = exp((log(RR_CI_lower) / 10) * .data$mean_PM_FRP),
+        attributable_fraction_lower = (.data$rescaled_CI_lower - 1) / .data$rescaled_CI_lower,
+        attributable_number_lower = .data$attributable_fraction_lower * .data$health_outcome
+      )
 
     df_list[[i]] <- region_data
   }
@@ -925,28 +919,28 @@ calculate_daily_AF_AN <- function(data,
 #'
 #' @returns Dataframe containing summarised AF and AN data, by year and region
 #'
-#' @export
-summarise_AF_AN <- function(data){
-
+#' @keywords internal
+summarise_AF_AN <- function(data) {
   yearly_summary <- data %>%
-    group_by(regnames, year) %>%
-    summarise(
-      population = mean(pop, na.rm = TRUE),
-      total_attributable_number = sum(attributable_number, na.rm = TRUE),
-      lower_ci_attributable_number = sum(attributable_number_lower, na.rm = TRUE),
-      upper_ci_attributable_number = sum(attributable_number_upper, na.rm = TRUE),
-      average_attributable_fraction = mean(attributable_fraction, na.rm = TRUE),
-      lower_ci_attributable_fraction = mean(attributable_fraction_lower, na.rm = TRUE),
-      upper_ci_attributable_fraction = mean(attributable_fraction_upper, na.rn = TRUE)
+    dplyr::group_by(.data$regnames, .data$year) %>%
+    dplyr::summarise(
+      population = mean(.data$pop, na.rm = TRUE),
+      total_attributable_number = sum(.data$attributable_number, na.rm = TRUE),
+      lower_ci_attributable_number = sum(.data$attributable_number_lower, na.rm = TRUE),
+      upper_ci_attributable_number = sum(.data$attributable_number_upper, na.rm = TRUE),
+      average_attributable_fraction = mean(.data$attributable_fraction, na.rm = TRUE),
+      lower_ci_attributable_fraction = mean(.data$attributable_fraction_lower, na.rm = TRUE),
+      upper_ci_attributable_fraction = mean(.data$attributable_fraction_upper, na.rm = TRUE),
+      .groups = "drop"
     ) %>%
-    mutate(
-      deaths_per_100k = (total_attributable_number / population) * 100000,
-      lower_ci_deaths_per_100k = (lower_ci_attributable_number / population) * 100000,
-      upper_ci_deaths_per_100k = (upper_ci_attributable_number / population) * 100000
+    dplyr::mutate(
+      deaths_per_100k = (.data$total_attributable_number / .data$population) * 100000,
+      lower_ci_deaths_per_100k = (.data$lower_ci_attributable_number / .data$population) * 100000,
+      upper_ci_deaths_per_100k = (.data$upper_ci_attributable_number / .data$population) * 100000
     )
-
   return(yearly_summary)
 }
+
 
 #' Run pipeline to analyse the impact of wildfire-related PM2.5 on a health
 #' outcome using a time-stratified case-crossover approach.
