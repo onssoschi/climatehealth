@@ -1133,7 +1133,7 @@ mh_plot_power <- function(power_list,
 
   if (save_fig == TRUE) {
     grid <- c(min(length(power_list), 3), ceiling(length(power_list) / 3))
-    output_path <- file.path(output_folder_path, "power_vs_temperature.pdf")
+    output_path <- file.path(output_folder_path, "model_validation", "power_vs_temperature.pdf")
     pdf(output_path, width = max(10, grid[1]*5.5), height = max(7, grid[2]*4.5))
     par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0), mar = c(8, 4, 5, 4))
   }
@@ -2209,7 +2209,7 @@ mh_save_results <- function(rr_results,
     res_power <- do.call(rbind, power_list)
 
     write.csv(res_power, file = file.path(
-      output_folder_path, "suicides_power_results.csv"), row.names = FALSE)
+      output_folder_path, "model_validation", "suicides_power_results.csv"), row.names = FALSE)
 
     #TODO also in wildfire functions, generalise and put in files.utils
 
