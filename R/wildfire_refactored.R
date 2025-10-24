@@ -410,4 +410,47 @@ create_temperature_splines <- function(
     return(df_all)
 }
 
-
+#' Stratify data by time period
+#'
+#' @description Adds columns for strata for each region:year:month:dayofweek
+#' and for the total counts of a health outcome across days in each stratum.
+#'
+#' @param data Dataframe containing a daily time series of climate and health
+#' data. Assumes that 'data' has a 'month', 'year', 'dow' and 'regnames' column.
+#'
+#' @returns Dataframe with additional columns for stratum
+#' (region:year:month:dayofweek) and for the total counts of a health outcome
+#' across days in each stratum.
+#'
+#' @keywords internal
+time_stratify <- function(data) {
+    # validate columns
+    required_cols <- c("month", "year", "dow", "regnames", "health_outcome")
+    if (!all(required_cols %in% colnames(data))) stop(
+        paste("data must include columns:", paste(required_col, collapse=", "))
+    )
+    # Create stratified columns
+    df <- split(data, f = data$regnames)
+    for (i in seq(df)) {
+        # Convert column to factors
+        df[[i]]$month <- as.factor(df[[i]]$month)
+        df[[i]]$year  <- as.factor(df[[i]]$year)
+        df[[i]]$dow   <- as.factor(df[[i]]$dow)
+        df[[i]]$reg_name_strata <- as.factor(
+            stringr::str_replace_all(df[[i]]$regnames, " ", "_")
+        )
+        df[[i]]$stratum <- with(
+            df[[i]],
+            as.factor(reg_name_strata:year:month:dow)
+        )
+        df[[i]]$ind <- tapply(
+            df[[i]]$health_outcome,
+            df[[i]]$stratum,
+            sum
+        )[df[[i]]$stratum]
+    }
+    # Combine region level datasets
+    df_all <- do.call(rbind, df)
+    row.names(df_all) <- NULL
+    return(df_all)
+}
