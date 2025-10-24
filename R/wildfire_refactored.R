@@ -369,3 +369,45 @@ create_lagged_variables <- function(
     return(df_all)
 }
 
+#' Generate splines for temperature variable
+#'
+#' @description Generates temperature splines for each region
+#'
+#' @param data Dataframe containing a daily time series of climate and health
+#' data
+#' @param nlag Integer. The number of days of lag in the temperature
+#' variable from which to generate splines. Default is 0 (unlagged temperature
+#' variable). Defaults to 0.
+#' @param degrees_freedom Integer. Degrees of freedom for the spline(s). 
+#' Defaults to 6.
+#'
+#' @returns Dataframe with additional column for temperature spline.
+#'
+#' @keywords internal
+create_temperature_splines <- function(
+    data,
+    nlag = 0,
+    degrees_freedom = 6
+) {
+    # Validate inputs
+    if (degrees_freedom<1) stop("Degrees of freedom must be >= 1.")
+    if (nlag<0) stop("nlag must be >= 0.")
+    lagcol <- paste0("tmean_1", temperature_lag, "_tmean")
+    if (!(lagcol %in% colnames(data))) stop(paste(lagcol, "not found in dataset."))
+    # Create splines
+    df_list <- split(data, f = data$regnames)
+    for (i in seq_along(df_list)) {
+        region_data <- df_list[[i]]
+        region_data$ns.tmean <- splines::ns(
+            x = region_data[[temperature_column]],
+            df = degrees_freedom
+        )
+        df_list[[i]] <- region_data
+    }
+    # Combine region level data in to one dataframe
+    df_all <- do.call(rbind, df_list)
+    row.names(df_all) <- NULL
+    return(df_all)
+}
+
+
