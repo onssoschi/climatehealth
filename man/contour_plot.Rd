@@ -44,3 +44,4 @@ contour plot at country, Region and District level
 : Generates a contour plot showing the lag exposure effect of
 maximum temperature (tmax) and cumulative rainfall on Malaria cases.
 }
+\keyword{internal}

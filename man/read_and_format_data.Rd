@@ -37,3 +37,4 @@ Reads in a CSV file for a daily time series of health data and
 renames columns to standard names. This function creates day of week, month,
 and year columns derived from the date.
 }
+\keyword{internal}

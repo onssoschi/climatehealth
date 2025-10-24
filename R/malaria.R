@@ -51,6 +51,7 @@
 #' negative binomial distribution. Defaults to "poisson".
 #' @param config Boolean. Enable additional model configurations. Defaults to FALSE.
 #' @param save_csv Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.
+#' @param save_model Boolean. If TRUE, saves the INLA model. Defaults to FALSE.
 #' @param save_fig Boolean. If TRUE, saves the generated plots. Defaults to FALSE.
 #' @param output_dir Character. The path to the directory where outputs
 #' (e.g., plots, maps, datasets) should be saved.
@@ -97,6 +98,7 @@ malaria_do_analysis <- function(
   family = "poisson",
   config = FALSE,
   save_csv = FALSE,
+  save_model = FALSE,
   save_fig = FALSE,
   output_dir = NULL
 ){
@@ -124,7 +126,7 @@ malaria_do_analysis <- function(
   check_file_exists(map_path, TRUE)
 
   # Get combined data
-  combined_data <- combine_health_climate_data_malaria(
+  combined_data <- combine_health_climate_data(
     health_data_path,
     climate_data_path,
     map_path,
@@ -150,8 +152,11 @@ malaria_do_analysis <- function(
   )
 
   # Plot time series
+  plot_malaria <- NULL
+  plot_tmax <- NULL
+  plot_rainfall <- NULL
   if (level=="country") {
-    plot_malaria <- plot_health_climate_timeseries_malaria(
+    plot_malaria <- plot_health_climate_timeseries(
       combined_data$data,
       param_term = "malaria",
       level = "country",
@@ -160,7 +165,7 @@ malaria_do_analysis <- function(
       save_fig = save_fig,
       output_dir = output_dir
     )
-    plot_tmax <- plot_health_climate_timeseries_malaria(
+    plot_tmax <- plot_health_climate_timeseries(
       combined_data$data,
       param_term = "tmax",
       level = "country",
@@ -169,7 +174,7 @@ malaria_do_analysis <- function(
       save_fig = save_fig,
       output_dir = output_dir
     )
-    plot_rainfall <- plot_health_climate_timeseries_malaria(
+    plot_rainfall <- plot_health_climate_timeseries(
       combined_data$data,
       param_term = "rainfall",
       level = "country",
@@ -181,7 +186,7 @@ malaria_do_analysis <- function(
   }
 
   # Create base matrice
-  basis <- set_cross_basis_malaria(combined_data$data, TRUE)
+  basis <- set_cross_basis(combined_data$data, TRUE)
 
   # Check for multicolinearity
   if (save_csv) {
@@ -208,13 +213,13 @@ malaria_do_analysis <- function(
     inla_param=inla_param,
     case_type = "malaria",
     output_dir=output_dir,
-    save_csv=save_csv,
+    save_model=save_model,
     family=family,
     config=config
   )
 
   # Plot seasonality
-  reff_plot_monthly <- plot_monthly_random_effects_malaria(
+  reff_plot_monthly <- plot_monthly_random_effects(
     combined_data,
     model=inla_result$model,
     output_dir=output_dir,
@@ -231,7 +236,7 @@ malaria_do_analysis <- function(
   )
 
   # Contour plots
-  contour_plot <- contour_plot(
+  contour_plot_malaria <- contour_plot(
     data=combined_data$data,
     param_term=param_term,
     model=inla_result$model,
@@ -239,7 +244,7 @@ malaria_do_analysis <- function(
     filter_year=filter_year,
     case_type="malaria",
     save_fig=save_fig,
-    output_dir=output_dir,
+    output_dir=output_dir
   )
 
   # Relative risk map plots
@@ -323,7 +328,7 @@ malaria_do_analysis <- function(
     inla_result = inla_result,
     reff_plot_monthly = reff_plot_monthly,
     reff_plot_yearly = reff_plot_yearly,
-    contour_plot = contour_plot,
+    contour_plot = contour_plot_malaria,
     rr_map_plot = rr_map_plot,
     rr_plot = rr_plot,
     rr_df = rr_df,

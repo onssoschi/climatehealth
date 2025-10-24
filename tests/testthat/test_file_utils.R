@@ -1,4 +1,3 @@
-library(patrick)
 # Tests for check_file_exists().
 
 # Passing test
@@ -9,7 +8,7 @@ test_that(
       system.file(
         "testdata", package="climatehealth"
       ),
-      "temperature_test_data.csv"
+      "example_file.csv"
     )
     exists <- expect_no_error(
       check_file_exists(test_data_path)
@@ -76,5 +75,86 @@ test_that(
   }
 )
 
+# Tests for read_input_data
 
+test_that(
+  "read_input_data works with listed data.",
+  {
+    list_data <- list(
+      Name = c("Alice", "Bob", "Charlie"),
+      Age = c(25, 30, 22),
+      City = c("London", "Cardiff", "Edinburgh")
+    )
+    df <- read_input_data(input_csv_path=list_data)
+    expect_true(is.data.frame(df))
+    expect_equal(nrow(df), 3)
+  }
+)
+
+test_that(
+  "read_input_data works with a csv file.",
+  {
+    # write data to a temp file
+    tmp_dir <- withr::local_tempdir()
+    write.csv(
+      data.frame(
+        list(
+          Name = c("Alice", "Bob", "Charlie"),
+          Age = c(25, 30, 22),
+          City = c("London", "Cardiff", "Edinburgh")
+        )
+      ),
+      file.path(tmp_dir, "test.csv")
+    )
+    df <- read_input_data(file.path(tmp_dir, "test.csv"))
+    expect_true(is.data.frame(df))
+    expect_equal(nrow(df), 3)
+  }
+)
+
+test_that(
+  "read_input_data raises an error when input_csv_path is invalid",
+  {
+    expect_error(
+      read_input_data(5),
+      regexp="expected a list or a string"
+    )
+  }
+)
+
+# Tests for enforce_file_extension
+
+test_that(
+    "Adds extension if missing", 
+    {
+        result <- enforce_file_extension("file", "pdf")
+        expect_equal(result, "file.pdf")
+    }
+)
+
+test_that(
+    "Replaces existing extension with desired one", 
+    {
+        result <- enforce_file_extension("file.txt", "pdf")
+        expect_equal(result, "file.pdf")
+    }
+)
+
+test_that(
+    "Handles extension with or without leading dot", 
+    {
+        result1 <- enforce_file_extension("file", "pdf")
+        result2 <- enforce_file_extension("file", ".pdf")
+        expect_equal(result1, "file.pdf")
+        expect_equal(result2, "file.pdf")
+    }
+)
+
+test_that(
+    "Does not double-append extension", 
+    {
+        result <- enforce_file_extension("file.pdf", "pdf")
+        expect_equal(result, "file.pdf")
+    }
+)
 

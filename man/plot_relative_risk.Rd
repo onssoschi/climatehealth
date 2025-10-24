@@ -49,3 +49,4 @@ Relative risk plot at country, region, and district levels.
 Plots the relative risk of diarrhea cases by the maximum
 temperature and cumulative rainfall at country, Region and District level
 }
+\keyword{internal}

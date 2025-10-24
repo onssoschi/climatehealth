@@ -20,7 +20,7 @@
 #'
 #' @returns A list of dataframes with formatted and renamed columns.
 #'
-#' @export
+#' @keywords internal
 mh_read_and_format_data <- function(data_path,
                                  date_col,
                                  region_col = NULL,
@@ -51,9 +51,9 @@ mh_read_and_format_data <- function(data_path,
                   year = as.factor(lubridate::year(date)),
                   month = as.factor(lubridate::month(date)),
                   dow = as.factor(lubridate::wday(date, label = TRUE)),
-                  region = as.factor(region),
-                  stratum = as.factor(region:year:month:dow),
-                  ind = tapply(suicides, stratum, sum)[stratum])
+                  region = as.factor(.data$region),
+                  stratum = as.factor(.data$region:.data$year:.data$month:.data$dow),
+                  ind = tapply(.data$suicides, .data$stratum, sum)[.data$stratum])
   df_list <- aggregate_by_column(df, "region")
 
   return(df_list)
@@ -72,7 +72,7 @@ mh_read_and_format_data <- function(data_path,
 #'
 #' @returns List of population totals by year and region
 #'
-#' @export
+#' @keywords internal
 mh_pop_totals <- function(df_list,
                           country = "National",
                           meta_analysis = FALSE){
@@ -114,7 +114,7 @@ mh_pop_totals <- function(df_list,
 #'
 #' @returns A list of cross-basis matrices by region
 #'
-#' @export
+#' @keywords internal
 mh_create_crossbasis <- function(df_list,
                               var_fun = "bs", #TODO What if natural spline (degree won't be needed as cubic) - if statement
                               var_degree = 2,
@@ -159,7 +159,7 @@ mh_create_crossbasis <- function(df_list,
 #'   \item `residuals_list` A list. Residuals for each model combination.
 #'   }
 #'
-#' @export
+#' @keywords internal
 mh_model_combo_res <- function(df_list,
                                cb_list,
                                independent_cols = NULL){
@@ -204,8 +204,8 @@ mh_model_combo_res <- function(df_list,
       # Build the full formula string
       formula_str <- paste("suicides ~ cb", if (length(vars) > 0) paste("+", paste(vars, collapse = " + ")) else "")
 
-      model <- gnm::gnm(as.formula(formula_str), eliminate = stratum, family = quasipoisson(), data = region_data,
-                        na.action = "na.exclude", subset = ind > 0)
+      model <- gnm::gnm(as.formula(formula_str), eliminate = region_data$stratum, family = quasipoisson(), data = region_data,
+                        na.action = "na.exclude", subset = region_data$ind > 0)
 
       disp <- summary(model)$dispersion
       loglik <- sum(dpois(model$y,model$fitted.values,log=TRUE))
@@ -251,9 +251,11 @@ mh_model_combo_res <- function(df_list,
 #'
 #' @return A list. Variance inflation factors for each independent variables by region.
 #'
-#' @export
-mh_vif <- function(df_list,
-                   independent_cols = NULL){
+#' @keywords internal
+mh_vif <- function(
+  df_list,
+  independent_cols = NULL
+){
 
   vif_list <- list()
 
@@ -261,7 +263,7 @@ mh_vif <- function(df_list,
 
     region_data <- df_list[[reg]]
 
-    formula_str <- paste(paste('suicides ~ temp'), paste("+", paste(model_config$independent_cols, collapse = " + ")))
+    formula_str <- paste(paste('suicides ~ temp'), paste("+", paste(independent_cols, collapse = " + ")))
 
     vif_model <- glm(as.formula(formula_str), data = region_data, family = quasipoisson())
     vif_values <- car::vif(vif_model)
@@ -306,7 +308,7 @@ mh_vif <- function(df_list,
 #'   \item `vif_summary` A dataframe with the mean variance inflation factors for each independent variable.
 #'   }
 #'
-#' @export
+#' @keywords internal
 mh_model_validation <- function(df_list = df_list,
                                 cb_list = cb_list,
                                 independent_cols = NULL,
@@ -321,10 +323,10 @@ mh_model_validation <- function(df_list = df_list,
   if (save_csv == TRUE){
 
     dir.create(file.path(
-      path_config$output_folder_path, "model_validation"), recursive = TRUE, showWarnings = FALSE)
+      output_folder_path, "model_validation"), recursive = TRUE, showWarnings = FALSE)
 
     write.csv(qaic_results, file = file.path(
-      path_config$output_folder_path, "model_validation", "qaic_results.csv"), row.names = FALSE)
+      output_folder_path, "model_validation", "qaic_results.csv"), row.names = FALSE)
 
   }
 
@@ -338,7 +340,7 @@ mh_model_validation <- function(df_list = df_list,
     if (save_csv == TRUE) {
 
       write.csv(vif_results, file = file.path(
-        path_config$output_folder_path, "model_validation", "vif_results.csv"), row.names = FALSE)
+        output_folder_path, "model_validation", "vif_results.csv"), row.names = FALSE)
 
     }
 
@@ -348,26 +350,26 @@ mh_model_validation <- function(df_list = df_list,
 
     qaic_summary <- qaic_results %>%
       group_by(formula) %>%
-      summarise(mean_disp = mean(disp),
-                mean_qaic = mean(qaic))
+      summarise(mean_disp = mean(.data$disp),
+                mean_qaic = mean(.data$qaic))
 
     if (save_csv == TRUE){
 
       write.csv(qaic_summary, file = file.path(
-        path_config$output_folder_path, "model_validation", "qaic_summary.csv"), row.names = FALSE)
+        output_folder_path, "model_validation", "qaic_summary.csv"), row.names = FALSE)
 
     }
 
     if (!is.null(vif_results)){
 
       vif_summary <- vif_results %>%
-        group_by(variable) %>%
-        summarise(mean_vif = mean(vif, na.rm = TRUE))
+        dplyr::group_by(.data$variable) %>%
+        dplyr::summarise(mean_vif = mean(.data$vif, na.rm = TRUE))
 
       if (save_csv == TRUE){
 
         write.csv(vif_summary, file = file.path(
-          path_config$output_folder_path, "model_validation", "vif_summary.csv"), row.names = FALSE)
+          output_folder_path, "model_validation", "vif_summary.csv"), row.names = FALSE)
 
       }
 
@@ -407,7 +409,7 @@ mh_model_validation <- function(df_list = df_list,
 
       reg_folder <- gsub(pattern = " ", replacement = "_", x = reg)
 
-      output_folder_main <- file.path(path_config$output_folder_path, "model_validation", reg_folder)
+      output_folder_main <- file.path(output_folder_path, "model_validation", reg_folder)
       dir.create(output_folder_main, recursive = TRUE, showWarnings = FALSE)
 
       grid <- c(min(length(formula_list), 3), ceiling(length(formula_list) / 3))
@@ -449,7 +451,7 @@ mh_model_validation <- function(df_list = df_list,
 
       set.seed(123)  # for reproducibility
       sampled_residuals <- all_residuals %>%
-        group_by(formula) %>%
+        group_by(.data$formula) %>%
         sample_frac(0.2) %>%
         ungroup()
 
@@ -549,7 +551,7 @@ mh_model_validation <- function(df_list = df_list,
 #'
 #' @returns List containing models by region
 #'
-#' @export
+#' @keywords internal
 mh_casecrossover_dlnm <- function(df_list,
                                   control_cols = NULL,
                                   cb_list) {
@@ -598,8 +600,8 @@ mh_casecrossover_dlnm <- function(df_list,
     region_data <- df_list[[reg]]
     cb <- cb_list[[reg]]
 
-    model <- gnm::gnm(formula, eliminate = stratum, family = quasipoisson(), data = region_data,
-                      na.action = "na.exclude", subset = ind > 0)
+    model <- gnm::gnm(formula, eliminate = region_data$stratum, family = quasipoisson(), data = region_data,
+                      na.action = "na.exclude", subset = region_data$ind > 0)
     model_list[[reg]] <- model
 
   }
@@ -631,7 +633,7 @@ mh_casecrossover_dlnm <- function(df_list,
 #'   \item `vcov_` A list. Covariance matrices for each region for the reduced model.
 #'   }
 #'
-#' @export
+#' @keywords internal
 mh_reduce_cumulative <- function(df_list,
                                  var_per = c(25,50,75),
                                  var_degree = 2,
@@ -686,7 +688,7 @@ mh_reduce_cumulative <- function(df_list,
 #'   \item `meta_test_res` A dataframe of results from statistical tests on the meta model.
 #'   }
 #'
-#' @export
+#' @keywords internal
 mh_meta_analysis <- function(df_list,
                              coef_,
                              vcov_,
@@ -714,8 +716,8 @@ mh_meta_analysis <- function(df_list,
 
   # Wald test
 
-  temp_avg_wald <- climatehealth::fwald(mm, "temp_avg")
-  temp_range_wald <- climatehealth::fwald(mm, "temp_range")
+  temp_avg_wald <- fwald(mm, "temp_avg")
+  temp_range_wald <- fwald(mm, "temp_range")
 
   # Cochran Q-test
 
@@ -778,9 +780,9 @@ mh_meta_analysis <- function(df_list,
 #'
 #' @returns Vector. Percentile of minimum suicide temperature for each region.
 #'
-#' @export
+#' @keywords internal
 mh_min_suicide_temp <- function(df_list,
-                                   var_fun = "bs",
+                                   var_fun = "splines",
                                    var_per = c(25,50,75),
                                    var_degree = 2,
                                    blup = blup,
@@ -846,7 +848,7 @@ mh_min_suicide_temp <- function(df_list,
 #'
 #' @return A list containing predictions by region
 #'
-#' @export
+#' @keywords internal
 mh_predict_reg <- function(df_list,
                            var_fun = "bs",
                            var_per = c(25,50,75),
@@ -934,11 +936,11 @@ mh_predict_reg <- function(df_list,
 #'   \item `mmpredall` List. A list of national coefficients and covariance matrices.
 #'   }
 #'
-#' @export
+#' @keywords internal
 mh_add_national_data <- function(df_list,
                                  pop_list,
                                  var_fun = "bs",
-                                 var_per = c(25,50,75),
+                                 var_per = c(25, 50, 75),
                                  var_degree = 2,
                                  lag_fun = "strata",
                                  lag_breaks = 1,
@@ -946,45 +948,42 @@ mh_add_national_data <- function(df_list,
                                  country = "National",
                                  cb_list,
                                  mm,
-                                 minpercreg){
+                                 minpercreg) {
 
   # Aggregate national level data
-
   national_data <- as.data.frame(do.call(rbind, df_list))
 
   nat_pop <- pop_list[[country]] %>%
-    rename(nat_population = population)
+    dplyr::rename(nat_population = .data$population)
 
   national_data <- national_data %>%
-    left_join(nat_pop, by = "year") %>%
-    mutate(weight = population / nat_population,
-           weighted_temp = temp * weight) %>%
-    group_by(date) %>%
-    summarise(temp = round(sum(weighted_temp, na.rm = TRUE), 2),
-              suicides = sum(suicides, na.rm = TRUE),
-              population = unique(nat_population)) %>%
-    mutate(year = as.factor(lubridate::year(date)),
-           month = as.factor(lubridate::month(date)),
-           region = country)
+    dplyr::left_join(nat_pop, by = "year") %>%
+    dplyr::mutate(weight = .data$population / .data$nat_population,
+                  weighted_temp = .data$temp * .data$weight) %>%
+    dplyr::group_by(.data$date) %>%
+    dplyr::summarise(temp = round(sum(.data$weighted_temp, na.rm = TRUE), 2),
+                     suicides = sum(.data$suicides, na.rm = TRUE),
+                     population = unique(.data$nat_population)) %>%
+    dplyr::mutate(year = as.factor(lubridate::year(.data$date)),
+                  month = as.factor(lubridate::month(.data$date)),
+                  region = country)
 
   df_list[[country]] <- as.data.frame(national_data)
 
   # Create cross basis for national data
-
   argvar <- list(fun = var_fun,
-                 knots = quantile(national_data$temp, var_per/100, na.rm = T),
+                 knots = quantile(national_data$temp, var_per / 100, na.rm = TRUE),
                  degree = var_degree)
   arglag <- list(fun = lag_fun, breaks = lag_breaks)
 
   cb_list[[country]] <- dlnm::crossbasis(national_data$temp, lag = lag_days, argvar = argvar, arglag = arglag)
 
   # Add national min and max suicide temperatures
-
-  predvar <- quantile(national_data$temp, 1:99/100, na.rm = TRUE)
+  predvar <- quantile(national_data$temp, 1:99 / 100, na.rm = TRUE)
 
   argvar <- list(x = predvar,
                  fun = var_fun,
-                 knots = quantile(national_data$temp, var_per/100, na.rm = TRUE),
+                 knots = quantile(national_data$temp, var_per / 100, na.rm = TRUE),
                  degree = var_degree,
                  Boundary.knots = range(national_data$temp, na.rm = TRUE))
 
@@ -994,14 +993,13 @@ mh_add_national_data <- function(df_list,
     temp_avg = mean(national_data$temp),
     temp_range = diff(range(national_data$temp, na.rm = TRUE)))
 
-  mmpredall <- predict(mm,datanew,vcov=T,format="list")
+  mmpredall <- predict(mm, datanew, vcov = TRUE, format = "list")
 
-  minpercnat <- (1:50)[which.min((bvar%*%mmpredall$fit)[1:50,])]
+  minpercnat <- (1:50)[which.min((bvar %*% mmpredall$fit)[1:50, ])]
 
-  minpercreg[country] <- minpercnat
+  minpercreg[[country]] <- minpercnat
 
   return(list(df_list, cb_list, minpercreg, mmpredall))
-
 }
 
 
@@ -1024,7 +1022,7 @@ mh_add_national_data <- function(df_list,
 #'
 #' @return A list containing predictions by region.
 #'
-#' @export
+#' @keywords internal
 mh_predict_nat <- function(df_list,
                            var_fun = "bs",
                            var_per = c(25,50,75),
@@ -1181,7 +1179,7 @@ mh_plot_power <- function(power_list,
 #' @returns Dataframe containing cumulative relative risk and confidence
 #' intervals from analysis.
 #'
-#' @export
+#' @keywords internal
 mh_rr_results <- function(pred_list,
                           df_list,
                           attr_thr = 97.5,
@@ -1244,7 +1242,7 @@ mh_rr_results <- function(pred_list,
 #' @returns Plots of cumulative lag exposure-response function with histogram of
 #' temperature distribution for each region
 #'
-#' @export
+#' @keywords internal
 mh_plot_rr <- function(df_list,
                        pred_list,
                        attr_thr = 97.5,
@@ -1272,7 +1270,7 @@ mh_plot_rr <- function(df_list,
 
     grid <- c(min(length(pred_list), 3), ceiling(length(pred_list) / 3))
 
-    output_path <- file.path(path_config$output_folder_path, "suicides_rr_plot.pdf")
+    output_path <- file.path(output_folder_path, "suicides_rr_plot.pdf")
     pdf(output_path, width=max(10,grid[1]*5.5), height=max(7, grid[2]*4))
 
     layout_ids <- seq_len(grid[1] * grid[2])
@@ -1388,7 +1386,7 @@ mh_plot_rr <- function(df_list,
 #'
 #' @return A list containing attributable numbers per region
 #'
-#' @export
+#' @keywords internal
 mh_attr <- function(df_list,
                     cb_list,
                     pred_list,
@@ -1397,15 +1395,15 @@ mh_attr <- function(df_list,
 
   attr_list <- list()
 
-  for (reg in names(df_list)){
+  for (reg in names(df_list)) {
 
     region_data <- df_list[[reg]]
     cb <- cb_list[[reg]]
     pred <- pred_list[[reg]]
     minperc <- minpercreg[reg]
 
-    cen <- quantile(region_data$temp, minperc/100, na.rm = TRUE)
-    min_range <- quantile(region_data$temp, attr_thr/100, na.rm = TRUE)
+    cen <- quantile(region_data$temp, minperc / 100, na.rm = TRUE)
+    min_range <- quantile(region_data$temp, attr_thr / 100, na.rm = TRUE)
     max_range <- max(region_data$temp, na.rm = TRUE)
 
     c(af, af_lower_ci, af_upper_ci,
@@ -1463,10 +1461,10 @@ mh_attr <- function(df_list,
 #'   fractions, numbers and rates by calendar month and area.
 #'   }
 #'
-#' @export
+#' @keywords internal
 mh_attr_tables <- function(attr_list,
                            country = "National",
-                           meta_analysis = FALSE){
+                           meta_analysis = FALSE) {
 
   attr_res <- do.call(rbind, lapply(attr_list, `[[`, "results")) %>%
     mutate(year = as.numeric(as.character(year)))
@@ -1478,12 +1476,13 @@ mh_attr_tables <- function(attr_list,
 
   res_list <- list()
 
-  groupings <- list(monthly = rlang::quos(month, region),
-                    yearly = rlang::quos(year, region),
-                    overall = rlang::quos(region))
+  groupings <- list(
+    monthly = rlang::quos(.data$month, .data$region),
+    yearly  = rlang::quos(.data$year, .data$region),
+    overall = rlang::quos(.data$region)
+  )
 
-  for (grp_name in names(groupings)){
-
+  for (grp_name in names(groupings)) {
 
     # Group rows
     grouped <- attr_res %>%
@@ -1512,16 +1511,10 @@ mh_attr_tables <- function(attr_list,
         af_upper_ci = an_upper_ci / suicides * 100,
         ar = an / population * 100000,
         ar_lower_ci = an_lower_ci / population * 100000,
-        ar_upper_ci = an_upper_ci / population * 100000,
-        #across(c(an, an_lower_ci, an_upper_ci,
-        #         ar, ar_lower_ci, ar_upper_ci,
-        #         af, af_lower_ci, af_upper_ci),
-        #       ~ ifelse(abs(.) < 1, signif(., 2), round(., 2)))
-      ) %>%
+        ar_upper_ci = an_upper_ci / population * 100000) %>%
       select(-sim_rows, -sim_sum)
 
     res_list[[grp_name]] <- grouped
-
 
   }
 
@@ -1537,12 +1530,11 @@ mh_attr_tables <- function(attr_list,
   attr_yr_list <- attr_yr_list[region_order]
 
   attr_mth_list <- res_list[["monthly"]] %>%
-    mutate(month = month.name[month]) %>%
+    dplyr::mutate(month = month.name[.data$month]) %>%
     aggregate_by_column("region")
   attr_mth_list <- attr_mth_list[region_order]
 
   return(list(res_attr_tot, attr_yr_list, attr_mth_list))
-
 }
 
 
@@ -1562,7 +1554,7 @@ mh_attr_tables <- function(attr_list,
 #'
 #' @return Plots of total attributable fractions and rates by area
 #'
-#' @export
+#' @keywords internal
 mh_plot_attr_totals <- function(df_list,
                               res_attr_tot,
                               save_fig = FALSE,
@@ -1690,7 +1682,7 @@ mh_plot_attr_totals <- function(df_list,
 #'
 #' @return Plots of yearly attributable fractions per area
 #'
-#' @export
+#' @keywords internal
 mh_plot_af_yearly <- function(attr_yr_list,
                               save_fig = FALSE,
                               output_folder_path = NULL,
@@ -1802,7 +1794,7 @@ mh_plot_af_yearly <- function(attr_yr_list,
 #'
 #' @return Plots of yearly attributable rates per area
 #'
-#' @export
+#' @keywords internal
 mh_plot_ar_yearly <- function(attr_yr_list,
                               save_fig = FALSE,
                               output_folder_path = NULL,
@@ -1919,7 +1911,7 @@ mh_plot_ar_yearly <- function(attr_yr_list,
 #'
 #' @return Plots of attributable fractions by calendar month per area
 #'
-#' @export
+#' @keywords internal
 mh_plot_af_monthly <- function(attr_mth_list,
                                df_list,
                                country = "National",
@@ -2049,7 +2041,7 @@ mh_plot_af_monthly <- function(attr_mth_list,
 #'
 #' @return Plots of attributable rates by calendar month per area
 #'
-#' @export
+#' @keywords internal
 mh_plot_ar_monthly <- function(attr_mth_list,
                                df_list,
                                country = "National",
@@ -2176,7 +2168,7 @@ mh_plot_ar_monthly <- function(attr_mth_list,
 #' Defaults to NULL.
 #' @param power_list A list containing power information by area.
 #'
-#' @export
+#' @keywords internal
 mh_save_results <- function(rr_results,
                             res_attr_tot,
                             attr_yr_list,
@@ -2195,13 +2187,13 @@ mh_save_results <- function(rr_results,
       output_folder_path, "suicides_attr_tot_results.csv"), row.names = FALSE)
 
     res_attr_yr <- do.call(rbind, attr_yr_list) %>%
-      select(region, everything())
+      select("region", everything())
 
     write.csv(res_attr_yr, file = file.path(
       output_folder_path, "suicides_attr_yr_results.csv"), row.names = FALSE)
 
     res_attr_mth <- do.call(rbind, attr_mth_list) %>%
-      select(region, everything())
+      select("region", everything())
 
     write.csv(res_attr_mth, file = file.path(
       output_folder_path, "suicides_attr_mth_results.csv"), row.names = FALSE)

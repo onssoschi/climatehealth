@@ -1,39 +1,100 @@
-### (c) Antonio Gasparrini 2015-2017
-#
 ################################################################################
 # FUNCTION FOR COMPUTING ATTRIBUTABLE MEASURES FROM DLNM
-#   REQUIRES dlnm VERSION 2.2.0 AND ON
+#   RE-IMPLEMENTED TO INCLUDE INTERNAL LOGIC FROM DLNM:
+#     - getcoef
+#     - getvcov
+#     - getlink
+#     - seqlag
+#     - mkXpred
+#
+# (c) Antonio Gasparrini 2015–2017
+# Adapted and extended for standalone use without ::: calls
+# Original sources:
+#   - https://github.com/gasparrini/2014_gasparrini_BMCmrm_Rcodedata
+#   - https://cran.r-project.org/package=dlnm
 ################################################################################
-#
-# DISCLAIMER:
-#   THE CODE COMPOSING THIS FUNCTION HAS NOT BEEN SYSTEMATICALLY TESTED. THE
-#   PRESENCE OF BUGS CANNOT BE RULED OUT. ALSO, ALTHOUGH WRITTEN GENERICALLY
-#   FOR WORKING IN DIFFERENT SCENARIOS AND DATA, THE FUNCTION HAS NOT BEEN
-#   TESTED IN CONTEXTS DIFFERENT THAN THE EXAMPLE INCLUDED IN THE PAPER.
-#   IT IS RESPONSIBILITY OF THE USER TO CHECK THE RELIABILITY OF THE RESULTS IN
-#   DIFFERENT APPLICATIONS.
-#
-# Version: 25 January 2017
-# AN UPDATED VERSION CAN BE FOUND AT:
-#   https://github.com/gasparrini/2014_gasparrini_BMCmrm_Rcodedata
-#
-################################################################################
-# SEE THE PDF WITH A DETAILED DOCUMENTATION AT www.ag-myresearch.com
-#
-#   - x: AN EXPOSURE VECTOR OR (ONLY FOR dir="back") A MATRIX OF LAGGED EXPOSURES
-#   - basis: THE CROSS-BASIS COMPUTED FROM x
-#   - cases: THE CASES VECTOR OR (ONLY FOR dir="forw") THE MATRIX OF FUTURE CASES
-#   - model: THE FITTED MODEL
-#   - coef, vcov: COEF AND VCOV FOR basis IF model IS NOT PROVIDED
-#   - model.link: LINK FUNCTION IF model IS NOT PROVIDED
-#   - type: EITHER "an" OR "af" FOR ATTRIBUTABLE NUMBER OR FRACTION
-#   - dir: EITHER "back" OR "forw" FOR BACKWARD OR FORWARD PERSPECTIVES
-#   - tot: IF TRUE, THE TOTAL ATTRIBUTABLE RISK IS COMPUTED
-#   - cen: THE REFERENCE VALUE USED AS COUNTERFACTUAL SCENARIO
-#   - range: THE RANGE OF EXPOSURE. IF NULL, THE WHOLE RANGE IS USED
-#   - sim: IF SIMULATION SAMPLES SHOULD BE RETURNED. ONLY FOR tot=TRUE
-#   - nsim: NUMBER OF SIMULATION SAMPLES
-################################################################################
+
+getcoef <- function(model, class) {
+  # EXTRACT COEF
+  # NB: gam, gee AND geeglm HAVE CLASS glm AS WELL
+  coef <- if(any(class%in%c("glm","gam","coxph"))) coef(model) else
+    if(any(class%in%c("lme","lmerMod","glmerMod","lmerModLmerTest"))) lme4::fixef(model) else
+      tryCatch(coef(model),error=function(w) "error")
+  if(identical(coef,"error")) stop("methods for coef() and vcov() must ",
+    "exist for the class of object 'model'. If not, extract them manually and ",
+    "use the arguments 'coef' and 'vcov'")
+  return(coef)
+}
+
+getvcov <- function(model, class) {
+  # EXTRACT VCOV
+  # NB: gam, gee AND geeglm HAVE CLASS glm AS WELL
+  vcov <- if(any(class%in%c("lm","glm","lme","coxph")) &&
+      !identical(class,c("gee","glm"))) vcov(model) else if(identical(class,c("gee","glm")))
+        model$robust.variance else if(any(class%in%c("lmerMod","glmerMod","lmerModLmerTest")))
+            as.matrix(vcov(model)) else tryCatch(vcov(model),error=function(w) "error")
+  if(identical(vcov,"error")) stop("methods for coef() and vcov() must ",
+    "exist for the class of object 'model'. If not, extract them manually and ",
+    "use the arguments 'coef' and 'vcov'")
+  return(vcov)
+}
+
+getlink <- function(model, class, model.link=NULL) {
+  # IF PROVIDED, JUST RETURN
+  if(!is.null(model.link)) return(model.link)
+  # OTHERWISE, EXTRACT FROM MODEL (IF AVAILABLE)
+  link <- if(all(class%in%c("lm")) || all(class%in%c("lme")) ||
+    any(class%in%"nlme") || any(class%in%"lmerMod")) "identity" else
+    if(any(class %in% c("clogit"))) "logit" else
+    if(any(class %in% c("coxph"))) "log" else
+    if(any(class %in% c("glm")) || any(class %in% c("glmmPQL")))
+    model$family$link else if(any(class %in% c("glmerMod")))
+    model@resp$family$link else NA
+  return(link)
+}
+
+seqlag <- function(lag, by=1) seq(from=lag[1], to=lag[2], by=by)
+
+mkXpred <- function(type, basis, at, predvar, predlag, cen) {
+  # CREATE THE MATRIX OF TRANSFORMED CENTRED VARIABLES (DEPENDENT ON TYPE)
+  # CREATE VECTORIZED LAGGED VALUES
+  varvec <- if(is.matrix(at)) as.numeric(at) else rep(at,length(predlag))
+  lagvec <- rep(predlag,each=length(predvar))
+  if(type=="cb") {
+    # IF STANDARD CROSS-BASIS, CREATE MARGINAL BASIS AND CALL TENSOR
+    # NB: ORDER OF BASIS MATRICES IN TENSOR CHANGED SINCE VERSION 2.2.4
+    # CENTERING APPLIED ONLY MARGINALLY TO VAR DIMENSION
+    basisvar <- do.call("onebasis", c(list(x=varvec),attr(basis,"argvar")))
+    basislag <- do.call("onebasis", c(list(x=lagvec),attr(basis,"arglag")))
+    if(!is.null(cen)) {
+      basiscen <- do.call("onebasis",c(list(x=cen),attr(basis,"argvar")))
+      basisvar <- scale(basisvar,center=basiscen,scale=FALSE)
+    }
+    Xpred <- mgcv::tensor.prod.model.matrix(list(basisvar,basislag))
+  } else if(type=="one") {
+    # IF ONEBASIS, SIMPLY CALL THE FUNCTION WITH PROPER ARGUMENTS
+    ind <- match(c("fun",names(formals(attr(basis,"fun")))),
+      names(attributes(basis)),nomatch=0)
+    basisvar <- do.call("onebasis",c(list(x=varvec),attributes(basis)[ind]))
+    if(!is.null(cen)) {
+      basiscen <- do.call("onebasis",c(list(x=cen),attributes(basis)[ind]))
+      basisvar <- scale(basisvar,center=basiscen,scale=FALSE)
+    }
+    Xpred <- basisvar
+  } else {
+    # FINALLY, IF GAM, CALL PredictMat WITH PROPER DATA
+    # CENTERING APPLIED TO THE TENSOR PRODUCT (NOT EFFICIENT BUT EASIER)
+    data <- list(varvec, lagvec)
+    names(data) <- basis$term
+    Xpred <- mgcv::PredictMat(basis, data, n=length(varvec))
+    if(!is.null(cen)) {
+      data[[1]] <- rep(cen,length(varvec))
+      cbcen <- mgcv::PredictMat(basis,data,n=length(varvec))
+      Xpred <- Xpred-cbcen
+    }
+  }
+  return(Xpred)
+}
 
 #' FUNCTION FOR COMPUTING ATTRIBUTABLE MEASURES FROM DLNM
 #'
@@ -59,7 +120,10 @@
 #'
 #' @return Attributable Numbers and Fractions
 #'
-#' @export
+#' @keywords internal
+#'
+#' @importFrom dlnm onebasis
+#' @importFrom splines bs
 attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
                    type="af",dir="back",tot=TRUE,cen,range=NULL,sim=FALSE,nsim=5000) {
   ################################################################################
@@ -111,6 +175,7 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
     if(dir=="forw")
       cases <- rowMeans(as.matrix(tsModel::Lag(cases,-seq(lag[1],lag[2]))))
   }
+
   #
   ################################################################################
   #
@@ -119,11 +184,11 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
     cond <- paste0(name,"[[:print:]]*v[0-9]{1,2}\\.l[0-9]{1,2}")
     if(ncol(basis)==1L) cond <- name
     model.class <- class(model)
-    coef <- dlnm:::getcoef(model,model.class)
+    coef <- getcoef(model,model.class)
     ind <- grep(cond,names(coef))
     coef <- coef[ind]
-    vcov <- dlnm:::getvcov(model,model.class)[ind,ind,drop=FALSE]
-    model.link <- dlnm:::getlink(model,model.class)
+    vcov <- getvcov(model,model.class)[ind,ind,drop=FALSE]
+    model.link <- getlink(model,model.class)
     if(!model.link %in% c("log","logit"))
       stop("'model' must have a log or logit link function")
   }
@@ -135,19 +200,19 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
   #
   # PREPARE THE ARGUMENTS FOR TH BASIS TRANSFORMATION
   predvar <- if(typebasis=="one") x else seq(NROW(at))
-  predlag <- if(typebasis=="one") 0 else dlnm:::seqlag(lag)
+  predlag <- if(typebasis=="one") 0 else seqlag(lag)
   #
   # CREATE THE MATRIX OF TRANSFORMED CENTRED VARIABLES (DEPENDENT ON typebasis)
   if(typebasis=="cb") {
-    Xpred <- dlnm:::mkXpred(typebasis,basis,at,predvar,predlag,cen)
+    Xpred <- mkXpred(typebasis,basis,at,predvar,predlag,cen)
     Xpredall <- 0
     for (i in seq(length(predlag))) {
       ind <- seq(length(predvar))+length(predvar)*(i-1)
       Xpredall <- Xpredall + Xpred[ind,,drop=FALSE]
     }
   } else {
-    basis <- do.call(dlnm::onebasis,c(list(x=x),attr(basis,"argvar")))
-    Xpredall <- dlnm:::mkXpred(typebasis,basis,x,predvar,predlag,cen)
+    basis <- do.call("onebasis",c(list(x=x),attr(basis,"argvar")))
+    Xpredall <- mkXpred(typebasis,basis,x,predvar,predlag,cen)
   }
   #
   # CHECK DIMENSIONS
@@ -238,8 +303,10 @@ attrdl <- function(x,basis,cases,model=NULL,coef=NULL,vcov=NULL,model.link=NULL,
 #'  \item Attributable Numbers upper confidence intervals
 #'  \item Simulation matrix of attributable numbers
 #'  }
-#' @export
+#' @keywords internal
 #'
+#' @importFrom dlnm onebasis
+#' @importFrom splines bs
 an_attrdl <- function(
     x,
     basis,
@@ -256,7 +323,6 @@ an_attrdl <- function(
 
   # CHECK type AND dir
   dir <- match.arg(dir,c("back","forw"))
-
   # Remove centering value from basis
   attributes(basis)$argvar$cen <- NULL
   # SELECT RANGE (FORCE TO CENTERING VALUE OTHERWISE, MEANING NULL RISK)
@@ -264,8 +330,8 @@ an_attrdl <- function(
   # COMPUTE THE MATRIX OF
   #   - LAGGED EXPOSURES IF dir="back"
   #   - CONSTANT EXPOSURES ALONG LAGS IF dir="forw"
-  lag <- attr(basis,"lag")
-  at <- if(dir=="back") tsModel:::Lag(x,seq(lag[1],lag[2])) else
+  lag <- attr(basis, "lag")
+  at <- if(dir=="back") tsModel::Lag(x,seq(lag[1],lag[2])) else
     matrix(rep(x,diff(lag)+1),length(x))
   # NUMBER USED FOR THE CONTRIBUTION AT EACH TIME IN FORWARD TYPE
   #   - IF PROVIDED AS A TIME SERIES, COMPUTE THE FORWARD MOVING AVERAGE
@@ -274,7 +340,7 @@ an_attrdl <- function(
   if(NROW(cases)!=NROW(at)) stop("'x' and 'cases' not consistent")
   den <- sum(cases,na.rm=TRUE)
   if(dir=="forw"){
-    cases <- rowMeans(as.matrix(tsModel:::Lag(cases,-seq(lag[1],lag[2]))))
+    cases <- rowMeans(as.matrix(tsModel::Lag(cases,-seq(lag[1],lag[2]))))
   }
   #
 
@@ -283,19 +349,19 @@ an_attrdl <- function(
 
   # PREPARE THE ARGUMENTS FOR TH BASIS TRANSFORMATION
   predvar <- if(typebasis=="one") x else seq(NROW(at))
-  predlag <- if(typebasis=="one") 0 else dlnm:::seqlag(lag)
+  predlag <- if(typebasis=="one") 0 else seqlag(lag)
 
   # CREATE THE MATRIX OF TRANSFORMED CENTRED VARIABLES (DEPENDENT ON typebasis)
   if(typebasis=="cb") {
-    Xpred <- dlnm:::mkXpred(typebasis,basis,at,predvar,predlag,cen)
+    Xpred <- mkXpred(typebasis,basis,at,predvar,predlag,cen)
     Xpredall <- 0
     for (i in seq(length(predlag))) {
       ind <- seq(length(predvar))+length(predvar)*(i-1)
       Xpredall <- Xpredall + Xpred[ind,,drop=FALSE]
     }
   } else {
-    basis <- do.call(dlnm::onebasis,c(list(x=x),attr(basis,"argvar")))
-    Xpredall <- dlnm:::mkXpred(typebasis,basis,x,predvar,predlag,cen)
+    basis <- do.call("onebasis",c(list(x=x),attr(basis,"argvar")))
+    Xpredall <- mkXpred(typebasis,basis,x,predvar,predlag,cen)
   }
 
   # CHECK DIMENSIONS

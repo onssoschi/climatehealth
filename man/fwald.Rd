@@ -18,3 +18,4 @@ A number. The p-value of the explanatory variable.
 \description{
 A function to calculate p-values for an explanatory variable.
 }
+\keyword{internal}

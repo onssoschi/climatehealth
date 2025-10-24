@@ -10,6 +10,7 @@
 .Renviron
 ..Rcheck
 renv
+lib
 
 # Common Data Files
 *.csv
@@ -27,3 +28,5 @@ renv
 
 # Test Data Exclusions
 !inst/testdata/*
+_snaps
+

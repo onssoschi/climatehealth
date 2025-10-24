@@ -41,3 +41,4 @@ A list of dataframes with formatted and renamed columns.
 Reads in a CSV file for a daily time series of health and climate
 data, renames columns and creates stratum for case-crossover analysis.
 }
+\keyword{internal}
