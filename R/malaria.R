@@ -1,16 +1,19 @@
-#' R-code for Malaria disease cases attributable to extreme precipitation
-#' and extreme temperature
+#' R-code for Malaria incidence attributable to extreme rainfall and extreme temperature
 
 #' Read in and format country map data
 #'
-#' @description: Read in a shape file, rename columns and create the
+#' @description: Read in a shape file for the map data, rename columns and create the
 #' adjacency matrix for spatiotemporal analysis.
 #'
-#' @param map_path The path to the country's shape file "sf" data.
-#' @param region_col Character. The region column in the dataset.
-#' @param district_col Character. The district column in the dataset.
-#' @param geometry_col  Character. The geometry column in the dataset.
+#' @param map_path The path to the country's shape file "sf" for the map data.
+#' @param region_col Character. Name of the region column in the dataframe that
+#' contain the region name.
+#' @param district_col Character. Name of the district column in the dataframe
+#' that contains the district names.
+#' @param geometry_col  Character. The geometry column in the dataframe that
+#' contains the geolocalisation information.
 #' @param output_dir  Character. The path to output the processed map data to.
+#' Default to Null
 #'
 #' @return
 #' \itemize{
@@ -31,6 +34,7 @@ load_and_process_map <- function(map_path,
            district = !!sym(district_col),
            geometry = !!sym(geometry_col)) %>%
     mutate(geometry = sf::st_make_valid(geometry))
+
   # Create adjacency matrix
   nb_file <- if (!is.null(output_dir)) file.path(output_dir, "nbfile") else NULL
   g_file <- if (!is.null(output_dir)) file.path(output_dir, "map.graph")
@@ -42,9 +46,11 @@ load_and_process_map <- function(map_path,
     nb.map <- spdep::poly2nb(sf::as_Spatial(map$geometry), snap = 1e-4)
     if (!is.null(nb_file)) spdep::write.nb.gal(nb.map, nb_file)
   }
+
   if (is.null(output_dir) || !file.exists(g_file)) {
     spdep::nb2INLA(g_file, nb.map)
   }
+
   return(list(map = map, nb.map = nb.map, graph_file = g_file))
 }
 
@@ -91,7 +97,8 @@ load_and_process_data <- function(health_data_path,
                  "rds" = read_rds(health_data_path),
                  "csv" = read_csv(health_data_path, show_col_types = FALSE),
                  "xlsx" = readxl::read_excel(health_data_path),
-                 stop("Unsupported file type: must be .rds, .csv, or .xlsx"))
+                 stop("Unsupported file type: must be .rds, .csv, or .xlsx")
+  )
 
   # create date columns if needed
   if (is.null(date_col) & (is.null(month_col) | is.null(year_col))) {
@@ -99,14 +106,21 @@ load_and_process_data <- function(health_data_path,
   }
   if (!is.null(date_col)) {
     data <- data %>% rename(
-      date = date_col) %>%
-      mutate(year = lubridate::year(date),
-             month = lubridate::month(date))
+      date = date_col
+    ) %>%
+      mutate(
+        year = lubridate::year(date),
+        month = lubridate::month(date)
+      )
   }
   data <- data %>% rename(
-    year = year_col, month = month_col, region = region_col,
-    district = district_col, Malaria = Malaria_case_col,
-    tot_pop = tot_pop_col) %>% select(
+    year = year_col,
+    month = month_col,
+    region = region_col,
+    district = district_col,
+    Malaria = Malaria_case_col,
+    tot_pop = tot_pop_col
+  ) %>% select(
     all_of(c("region", "district", "year", "month", "Malaria", "tot_pop"))
   )
   return(data)
@@ -159,7 +173,7 @@ load_and_process_climatedata <- function(climate_data_path,
                                          rainfall_col,
                                          r_humidity_col,
                                          runoff_col= NULL,
-                                         cvh_col = NULL,
+                                         ndvi_col = NULL,
                                          spi_col = NULL,
                                          max_lag = 4){
 
@@ -171,13 +185,15 @@ load_and_process_climatedata <- function(climate_data_path,
                  "rds" = readr::read_rds(climate_data_path),
                  "csv" = readr::read_csv(climate_data_path, show_col_types = FALSE),
                  "xlsx" = readxl::read_excel(climate_data_path),
-                 stop("Unsupported file type: must be .rds, .csv, or .xlsx"))
+                 stop("Unsupported file type: must be .rds, .csv, or .xlsx")
+                 )
+
 
   # Map columns to standard names, excluding NULLs
   var_map <- list(district = district_col, year = year_col, month = month_col,
                   tmin = tmin_col, tmean = tmean_col, tmax = tmax_col,
                   rainfall = rainfall_col, r_humidity = r_humidity_col,
-                  runoff = runoff_col, cvh = cvh_col, spi = spi_col)
+                  runoff = runoff_col, ndvi = ndvi_col, spi = spi_col)
 
   var_map <- var_map[!sapply(var_map, is.null)]
   selected_cols <- as.character(var_map)
@@ -195,10 +211,11 @@ load_and_process_climatedata <- function(climate_data_path,
     }
     return(df)
   }
+
   # Determine variables to lag
   vars_to_lag <- intersect(names(rename_vec),
                            c("tmin", "tmean", "tmax", "rainfall",
-                             "r_humidity", "runoff", "cvh","spi"))
+                             "r_humidity", "runoff", "ndvi","spi"))
 
   # Create lagged data
   lagged_data <- lapply(vars_to_lag,
@@ -275,7 +292,7 @@ combine_health_climate_data <- function(health_data_path,
                                         r_humidity_col,
                                         geometry_col,
                                         runoff_col = NULL,
-                                        cvh_col = NULL,
+                                        ndvi_col = NULL,
                                         spi_col = NULL,
                                         max_lag = 4,
                                         output_dir = NULL){
@@ -289,7 +306,7 @@ combine_health_climate_data <- function(health_data_path,
   climate_data <- load_and_process_climatedata(climate_data_path, district_col,
                                                year_col, month_col, tmin_col,
                                                tmean_col, tmax_col, rainfall_col,
-                                               r_humidity_col, runoff_col,cvh_col,
+                                               r_humidity_col, runoff_col,ndvi_col,
                                                spi_col, max_lag)
 
   map_data <- load_and_process_map(map_path, region_col, district_col,
@@ -326,7 +343,9 @@ combine_health_climate_data <- function(health_data_path,
   summary_stats <- list(tmin = summary(data$tmin),
                         tmax = summary(data$tmax),
                         rainfall = summary(data$rainfall),
-                        rhumidity = summary(data$r_humidity))
+                        rhumidity = summary(data$r_humidity)
+                        )
+
   # Return combined
   return_list <- list(
     map = map,
@@ -334,7 +353,7 @@ combine_health_climate_data <- function(health_data_path,
     graph_file = map_data$graph_file,
     data = data, grid_data = grid_data,
     summary = summary_stats
-  )
+    )
   return(return_list)
 }
 
@@ -406,7 +425,7 @@ plot_health_climate_timeseries <- function(data,
   p <- ggplot2::ggplot(agg, ggplot2::aes(x = date, y = value)) +
     ggplot2::geom_line(ggplot2::aes(color = if (!is.null(group_var)) group), linewidth = 1) +
     ggplot2::facet_wrap(~variable, scales = "free_y", ncol = 1) +
-    ggplot2::scale_x_date(date_breaks = "6 month", date_labels = "%Y-%m") +
+    ggplot2::scale_x_date(date_breaks = "2 month", date_labels = "%Y-%m") +
     ggplot2::labs(title = title_text, x = "date", y = "Value") +
     ggplot2::theme_minimal() +
     ggplot2::theme(legend.title = ggplot2::element_blank(),
@@ -421,17 +440,15 @@ plot_health_climate_timeseries <- function(data,
   return(p)
 }
 
-#' Create cross-basis matrices for DLNM analysis
+#' Create a cross-basis matrix set for DLNM analysis
 #'
-#' @description
-#' Generates cross-basis matrices for lagged climate variables in a dataset,
-#' for use in Distributed Lag Nonlinear Models (DLNM).
+#' @description Creates cross-basis matrix for each climate variable.
 #'
-#' @param data A dataset returned from \code{combine_health_climate_data()},
-#' including lagged variables like \code{tmax_lag1}, \code{tmin_lag1}, etc.
+#' @param data The dataset containing district_code, region_code and year
+#' columns from the combine_health_climate_data() function.
 #'
-#' @return A named list of cross-basis matrices for available climate variables:
-#' maximum temperature, minimum temperature, rainfall, relative humidity, etc.
+#' @return A list of cross-basis matrices including the basis matrix for maximum
+#' temperature, minimun temperature, cumulative rainfall, and relative humidity.
 #'
 #' @export
 set_cross_basis <- function(data) {
@@ -440,7 +457,7 @@ set_cross_basis <- function(data) {
                                                value = TRUE))))
   var_defs <- list(tmax = "tmax_lag", tmin = "tmin_lag", tmean = "tmean_lag",
                    rainfall = "rainfall_lag", r_humidity = "r_humidity_lag",
-                   runoff = "runoff_lag", cvh = "cvh_lag", spi = "spi_lag")
+                   runoff = "runoff_lag", ndvi = "ndvi_lag", spi = "spi_lag")
 
   vars <- lapply(names(var_defs), function(var) {
     cols <- c(var, paste0(var_defs[[var]], 1:nlag))
@@ -607,6 +624,7 @@ run_inla_models <- function(combined_data,
                             save_csv = FALSE,
                             family = "poisson",
                             config = FALSE) {
+
   if (save_csv && is.null(output_dir)) stop("output_dir must be provided if save_csv = TRUE")
 
   if (!requireNamespace("INLA", quietly = TRUE)) {
@@ -619,6 +637,8 @@ run_inla_models <- function(combined_data,
   graph_file <- combined_data$graph_file
 
   prior <- list(prec = list(prior = "pc.prec", param = c(0.5 / 0.31, 0.01)))
+
+  # Base model structure
   base_formula <- Malaria ~ 1 +
     f(month, replicate = region_index, model = "rw1", cyclic = TRUE,
       constr = TRUE, scale.model = TRUE, hyper = prior) +
@@ -628,34 +648,43 @@ run_inla_models <- function(combined_data,
   if (is.null(basis_matrices_choices)) basis_matrices_choices <- character(0)
 
   valid_basis <- Filter(function(x) !is.null(basis[[x]]), basis_matrices_choices)
-  basis_terms <- if (length(valid_basis) > 0) paste0("basis$", valid_basis)
-  else character()
+  basis_terms <- if (length(valid_basis) > 0) paste0("basis$", valid_basis) else character()
   raw_vars <- intersect(inla_param, names(data))
   all_terms <- c(basis_terms, raw_vars)
 
   full_formula <- if (length(all_terms) > 0)
-    update(base_formula, as.formula(paste("~ . +",
-                                          paste(all_terms,
-                                                collapse = " + "))))
+    update(base_formula, as.formula(paste("~ . +", paste(all_terms, collapse = " + "))))
   else base_formula
 
+  # Optional control.family for NB
+  cfam <- NULL
+  if (tolower(family) %in% c("nbinomial", "nbinomial2")) {
+    cfam <- list(hyper = list(theta = list(prior = "loggamma", param = c(1, 0.01))))
+  }
+
+  # Fitting helper
   fit <- function(f) INLA::inla.rerun(INLA::inla(
-    f, data = data, family = family, offset = log(data$E),
+    f,
+    data = data,
+    family = family,
+    offset = log(data$E),
+    control.family = cfam,
     control.inla = list(strategy = "adaptive"),
     control.compute = list(dic = TRUE, config = config,
                            cpo = TRUE, return.marginals = FALSE),
     control.fixed = list(correlation.matrix = TRUE, prec.intercept = 1, prec = 1),
-    control.predictor = list(link = 1, compute = TRUE), verbose = FALSE))
+    control.predictor = list(link = 1, compute = TRUE),
+    verbose = FALSE
+  ))
 
   baseline_model <- fit(base_formula)
   model <- fit(full_formula)
 
   if (save_csv) {
-    save(model,
-         file = file.path(output_dir,
-                          paste0("model_with_",
-                                 paste(c(valid_basis, raw_vars),
-                                       collapse = "_"), ".csv")))
+    save(model, file = file.path(output_dir,
+                                 paste0("model_with_",
+                                        paste(c(valid_basis, raw_vars),
+                                              collapse = "_"), ".RData")))
   }
 
   dic_table <- data.table::data.table(
@@ -663,10 +692,11 @@ run_inla_models <- function(combined_data,
     DIC = round(model$dic$dic, 0),
     LogScore = round(mean(-log(model$cpo$cpo[model$cpo$failure == 0]), na.rm = TRUE), 3),
     LPML = round(sum(log(model$cpo$cpo[model$cpo$failure == 0]), na.rm = TRUE), 2)
-  )
+    )
 
   list(model = model, baseline_model = baseline_model, dic_table = dic_table)
 }
+
 
 #' Visualise monthly random effects for selected INLA model
 #'
@@ -723,8 +753,7 @@ plot_monthly_random_effects <- function(combined_data,
 
   # Save plot
   if (save_fig){
-    ggplot2::ggsave(file.path(output_dir, "monthly_random_effects.pdf"),
-                    plot = p, height = 30, width = 25, units = "cm")
+    ggplot2::ggsave(file.path(output_dir, "monthly_random_effects.pdf"), plot = p, height = 30, width = 25, units = "cm")
   }
   return(p)
 }
@@ -976,8 +1005,8 @@ contour_plot <- function(data,
 #' @export
 plot_rr_map <- function(combined_data,
                         model,
-                        param_term = "tmax",
-                        level = "District",
+                        param_term,
+                        level,
                         filter_year = NULL,
                         output_dir = NULL,
                         save_fig = FALSE) {
@@ -1103,9 +1132,9 @@ plot_relative_risk <- function(data,
       ),
       ggplot2::aes(x, y)
     ) +
-      ggplot2::geom_line(color = "red", linewidth = 1) +
-      ggplot2::geom_ribbon(ggplot2::aes(ymin = ymin, ymax = ymax), fill = "red", alpha = 0.3) +
-      ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "blue", linewidth = 0.5) +
+      ggplot2::geom_line(color = "blue", linewidth = 1) +
+      ggplot2::geom_ribbon(ggplot2::aes(ymin = ymin, ymax = ymax), fill = "blue", alpha = 0.3) +
+      ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "gray", linewidth = 0.5) +
       ggplot2::labs(title = title, x = param_term, y = "Relative Risk") +
       ggplot2::theme_minimal() +
       ggplot2::theme(plot.title = ggplot2::element_text(size = 9))
@@ -1302,6 +1331,8 @@ plot_relative_risk <- function(data,
 #' Can take one of the following values: "country", "region", or "district".
 #' @param param_threshold Numeric. Threshold above which exposure is considered,
 #' "attributable". Can take floats. Defaults to 1.
+#' @param group_by_year logical. this gives the possibility of grouping by year
+#' when doing the attribution calculation. Default to FALSE.
 #' @param filter_year Integer. The year to filter to data to. Defaults to NULL.
 #' @param save_csv Logical. Whether to save the generated attribution metrics to file.
 #' Default is `FALSE`.
@@ -1318,10 +1349,12 @@ attribution_calculation <- function(data,
                                     level,
                                     param_threshold = 1,
                                     filter_year = NULL,
+                                    group_by_year = FALSE,
                                     output_dir = NULL,
                                     save_csv = FALSE) {
 
   level <- tolower(level)
+
   # Get model coefficients
   coef_mean <- model$summary.fixed$mean
   vcov_full <- model$misc$lincomb.derived.covariance.matrix
@@ -1353,7 +1386,7 @@ attribution_calculation <- function(data,
 
     get_metrics <- function(rr_obs) {
       valid <- which(rr_obs > param_threshold & !is.na(rr_obs))
-      if (length(valid) == 0 || tot_pop == 0 || is.na(tot_pop)) return(c(0, 0, 0))  # Changed NA to 0
+      if (length(valid) == 0 || tot_pop == 0 || is.na(tot_pop)) return(c(0, 0, 0))
       af <- 1 - 1 / mean(rr_obs[valid])
       an <- af * sum(total_cases[valid], na.rm = TRUE)
       ar <- (an / tot_pop) * 1e5
@@ -1378,11 +1411,11 @@ attribution_calculation <- function(data,
     )
   }
 
-  # Grouping variables
+  # Define grouping variables dynamically
   grp_vars <- switch(level,
-                     "country" = c("year", "month"),
-                     "region"  = c("region", "year", "month"),
-                     "district"= c("region", "district", "year", "month"),
+                     "country" = if (group_by_year) c("year") else c("year", "month"),
+                     "region"  = if (group_by_year) c("region", "year") else c("region", "year", "month"),
+                     "district"= if (group_by_year) c("region", "district", "year") else c("region", "district", "year", "month"),
                      stop("Invalid level. Choose 'country', 'region', or 'district'."))
 
   # Compute predictions and metrics
@@ -1424,11 +1457,12 @@ attribution_calculation <- function(data,
                      AR_per_100k_UCI = r$AR_per_100k_UCI)
     })
 
-  # Save if needed
+  # Save results if requested
   if (save_csv && !is.null(output_dir)) {
     if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
     readr::write_csv(res, file.path(output_dir,
-                                    paste0("attribution_", level, "_", param_term, ".csv")))
+                                    paste0("attribution_", level, "_", param_term,
+                                           if (group_by_year) "_yearly.csv" else "_monthly.csv")))
   }
 
   return(res)
@@ -1487,19 +1521,19 @@ plot_attribution_metric <- function(attr_data,
     AR_per_100k = "AR (per 100,000 population)",
     AR_Fraction = "Attributable Fraction (%)",
     AR_Number = "Attributable Number"
-  )
+    )
 
   title_lookup <- c(
     AR_per_100k = paste0("Malaria cases per 100,000 attributable to ", param_label, " (95% CI)"),
-    AR_Fraction = paste0("Attributable Fraction (%) due to ", param_label, " (95% CI)"),
+    AR_Fraction = paste0("Malaria Attributable Fraction (%) due to ", param_label, " (95% CI)"),
     AR_Number = paste0("Number of Malaria cases attributable to ", param_label, " (95% CI)")
-  )
+    )
 
   formatter_lookup <- list(
     AR_per_100k = scales::label_comma(),
     AR_Fraction = scales::label_comma(),
     AR_Number = scales::label_comma()
-  )
+    )
 
   aggregate_attr_data <- function(data, group_var) {
     dplyr::group_by(data, .data[[group_var]]) %>%
@@ -1524,36 +1558,42 @@ plot_attribution_metric <- function(attr_data,
     uci_col <- paste0(metric, "_UCI")
     x_var <- if (level %in% c("region", "district") && is.null(filter_year)) level else "year"
 
-    required_cols <- c(x_var, metric, lci_col, uci_col)
-    if (level %in% c("region", "district") && !is.null(filter_year)) {
-      required_cols <- c(required_cols, level)
-    }
-
-    missing_cols <- setdiff(required_cols, names(attr_data))
-    if (length(missing_cols) > 0) {
-      warning("Skipping '", metric, "' due to missing columns: ", paste(missing_cols, collapse = ", "))
-      return(NULL)
-    }
-
-    attr_data_plot <- attr_data %>%
-      dplyr::filter(!is.na(.data[[metric]]),
-                    !is.na(.data[[lci_col]]),
-                    !is.na(.data[[uci_col]]))
-
     title <- title_lookup[[metric]]
     y_formatter <- formatter_lookup[[metric]]
     y_label <- y_title_lookup[[metric]]
 
-    # Country-level time series when filter_year is NULL
+    attr_data_plot <- attr_data %>%
+      dplyr::filter(!is.na(.data[[metric]]))
+
+    # --- Country-level plot with CI ---
     if (level == "country" && is.null(filter_year)) {
       attr_data_plot$year <- factor(attr_data_plot$year)
+
+      # adjust y limits based on metric
+      y_limits <- if (metric == "AR_Fraction") {
+        c(0, 1.2*max(attr_data_plot[[metric]], na.rm = TRUE))
+      } else if (metric == "AR_Number") {
+        c(0, 1.2*max(attr_data_plot[[metric]], na.rm = TRUE))
+      } else {
+        c(0, 1.2*max(attr_data_plot[[metric]], na.rm = TRUE))
+      }
+
+      # Add AF value in parentheses for AN only
+      attr_data_plot <- attr_data_plot %>%
+        mutate(label_text = if (metric == "AR_Number") {
+          paste0(round(.data[[metric]], 1), " (", round(AR_Fraction, 2), "%)")
+        } else {
+          round(.data[[metric]], 1)
+        })
+
       p <- ggplot(attr_data_plot, aes(x = year, y = .data[[metric]], group = 1)) +
         geom_line(color = "steelblue", linewidth = 1) +
         geom_point(color = "steelblue", size = 2) +
         geom_ribbon(aes(ymin = .data[[lci_col]], ymax = .data[[uci_col]]),
                     alpha = 0.2, fill = "steelblue") +
+        geom_text(aes(label = label_text), vjust = -0.5, size = 2) +
         labs(title = title, y = y_label, x = "Year") +
-        scale_y_continuous(labels = y_formatter) +
+        scale_y_continuous(labels = y_formatter, limits = y_limits) +
         theme_minimal(base_size = 10) +
         theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"))
 
@@ -1565,25 +1605,36 @@ plot_attribution_metric <- function(attr_data,
       return(p)
     }
 
-    # region/district bar plot logic
+    # --- Region/District (no CI) bar plots ---
     if (level %in% c("region", "district") && is.null(filter_year)) {
       attr_data_plot <- attr_data_plot %>%
-        dplyr::arrange(dplyr::desc(.data[[metric]])) %>%
-        dplyr::mutate(!!level := factor(.data[[level]], levels = unique(.data[[level]])))
+        arrange(desc(.data[[metric]])) %>%
+        mutate(!!level := factor(.data[[level]], levels = unique(.data[[level]]))) %>%
+        mutate(label_text = if (metric == "AR_Number") {
+          paste0(round(.data[[metric]], 1), " (", round(.data$AR_Fraction, 2), "%)")
+        } else {
+          paste0(round(.data[[metric]], 1))
+        })
 
-      max_y <- max(attr_data_plot[[uci_col]], na.rm = TRUE)
+      # dynamic y-axis limits
+      max_y <- max(attr_data_plot[[metric]], na.rm = TRUE)
+      y_limits <- if (metric == "AR_Fraction") {
+        c(0, 1.2*max(attr_data_plot[[metric]], na.rm = TRUE))
+      } else if (metric == "AR_Number") {
+        c(0, 1.2*max(attr_data_plot[[metric]], na.rm = TRUE))
+      } else {
+        c(0, 1.2*max(attr_data_plot[[metric]], na.rm = TRUE))
+      }
 
       district_plots <- attr_data_plot %>%
         split(ceiling(seq_along(attr_data_plot[[level]]) / 30)) %>%
         purrr::map(~ {
           ggplot(.x, aes(x = .data[[level]], y = .data[[metric]])) +
-            geom_col(fill = "steelblue", width= 0.6) +
-            geom_errorbar(aes(ymin = .data[[lci_col]], ymax = .data[[uci_col]], color = "95% CI"),
-                          width = 0.2) +
+            geom_col(fill = "steelblue", width = 0.6) +
+            geom_text(aes(label = label_text), hjust = -0.1, size = 2.8) +
             coord_flip() +
             labs(x = tools::toTitleCase(level), y = y_label) +
-            scale_y_continuous(labels = y_formatter, limits = c(0, max_y)) +
-            scale_color_manual(name = "", values = c("95% CI" = "black")) +
+            scale_y_continuous(labels = y_formatter, limits = y_limits) +
             theme_minimal(base_size = 10) +
             theme(axis.text.y = element_text(size = 7),
                   plot.title = element_text(hjust = 0.5, size = 9))
@@ -1606,14 +1657,21 @@ plot_attribution_metric <- function(attr_data,
       return(district_plots)
     }
 
-    # Region/district with multi-year grouped bar plot logic
-    if (!is.null(filter_year) && length(filter_year) > 2 && level %in% c("region", "district")) {
+    # --- Region/District grouped by year (no CI) ---
+    if (!is.null(filter_year) && length(filter_year) >= 1 && level %in% c("region", "district")) {
       attr_data_plot <- attr_data_plot %>%
         group_by(.data[[level]], year) %>%
         summarise(
+          AR_Fraction = mean(AR_Fraction, na.rm = TRUE),
           across(matches("^AR_Number(_LCI|_UCI)?$"), ~ sum(.x, na.rm = TRUE)),
-          across(matches("^AR_(Fraction|per_100k)(_LCI|_UCI)?$"), ~ mean(.x, na.rm = TRUE)),
-          .groups = "drop")
+          across(matches("^AR_(per_100k)(_LCI|_UCI)?$"), ~ mean(.x, na.rm = TRUE)),
+          .groups = "drop"
+        ) %>%
+        mutate(label_text = if (metric == "AR_Number") {
+          paste0(round(.data[[metric]], 1), " (", round(.data$AR_Fraction, 2), "%)")
+        } else {
+          paste0(round(.data[[metric]], 2))
+        })
 
       level_vals <- attr_data_plot %>%
         group_by(.data[[level]]) %>%
@@ -1622,29 +1680,39 @@ plot_attribution_metric <- function(attr_data,
         pull(.data[[level]])
 
       attr_data_plot[[level]] <- factor(attr_data_plot[[level]], levels = level_vals)
-      y_min <- min(attr_data_plot[[paste0(metric, "_LCI")]], na.rm = TRUE)
-      y_max <- max(attr_data_plot[[paste0(metric, "_UCI")]], na.rm = TRUE)
-      split_levels <- split(level_vals, ceiling(seq_along(level_vals) / 30))
+      split_levels <- split(level_vals, ceiling(seq_along(level_vals) / 20))
 
       group_plots <- purrr::map(split_levels, function(subset_levels) {
         df <- filter(attr_data_plot, .data[[level]] %in% subset_levels)
+
+        # dynamic limits again
+        max_y <- max(df[[metric]], na.rm = TRUE)
+        y_limits <- if (metric == "AR_Fraction") {
+          c(0, 1.2*max(attr_data_plot[[metric]], na.rm = TRUE))
+        } else if (metric == "AR_Number") {
+          c(0, 1.2*max(attr_data_plot[[metric]], na.rm = TRUE))
+        } else {
+          c(0, 1.2*max(attr_data_plot[[metric]], na.rm = TRUE))
+        }
+
         ggplot(df, aes(x = .data[[level]], y = .data[[metric]], fill = factor(year))) +
           geom_col(position = position_dodge(width = 0.8)) +
-          geom_errorbar(
-            aes(ymin = .data[[paste0(metric, "_LCI")]], ymax = .data[[paste0(metric, "_UCI")]],
-                color = "95% CI"), position = position_dodge(0.8), width = 0.25) +
-          scale_color_manual(name = "", values = c("95% CI" = "black")) +
-          labs( x = tools::toTitleCase(level), y = y_label, fill = "Year") +
+          geom_text(aes(label = label_text),
+                    position = position_dodge(width = 0.8), vjust = -0.3, size = 2.5) +
+          scale_y_continuous(labels = y_formatter, limits = y_limits) +
+          labs(x = tools::toTitleCase(level), y = y_label, fill = "Year") +
+          {if (length(unique(df$year)) == 1) {
+            scale_fill_manual(values = c("steelblue"))
+          } else {scale_fill_brewer(palette = "Set2")}} +
           theme_minimal(base_size = 8) +
           theme(axis.text.x = element_text(angle = 70, hjust = 1, size = 8),
                 axis.text.y = element_text(size = 8),
-                plot.margin = margin(t = 5, r = 5, b = 50, l = 5)) +
-          coord_cartesian(ylim = c(y_min, y_max))
+                plot.margin = margin(t = 5, r = 5, b = 50, l = 5))
       })
 
       if (save_fig && !is.null(output_dir)) {
         if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
-        pdf_file <- file.path(output_dir, paste0("plot_", metric, "_", param_term, "_", "Year_",level, ".pdf"))
+        pdf_file <- file.path(output_dir, paste0("plot_", metric, "_", param_term, "_Year_", level, ".pdf"))
         pdf(pdf_file, width = 11, height = 8)
         for (i in seq_along(group_plots)) {
           merged <- patchwork::wrap_plots(group_plots[i], ncol = 1) +
@@ -1704,6 +1772,8 @@ plot_attribution_metric <- function(attr_data,
 #' @param param_threshold Numeric. Threshold above which exposure is considered,
 #' "attributable". Can take floats. Defaults to 1.
 #' @param filter_year Integer. The year to filter to data to. Defaults to NULL.
+#' @param group_by_year logical. this gives the possibility of grouping by year
+#' when doing the attribution calculation. Default to FALSE
 #' @param family Character. The probability distribution for the response
 #' variable. The user may also have thepossibility to choose "nbinomial" for a
 #' negative binomial distribution. Defaults to "poisson".
@@ -1741,17 +1811,18 @@ Malaria_do_analysis <- function(health_data_path,
                                 rainfall_col,
                                 r_humidity_col,
                                 runoff_col,
-                                geometry_col,
+                                geometry_col= "geometry",
                                 spi_col = NULL,
-                                cvh_col = NULL,
+                                ndvi_col = NULL,
                                 max_lag = 4,
                                 basis_matrices_choices,
-                                inla_param,
+                                inla_param ,
                                 param_term,
                                 level,
                                 param_threshold = 1,
-                                filter_year = NULL,
+                                filter_year =NULL, #c(2022,2023, 2024),
                                 family = "poisson",
+                                group_by_year = FALSE,
                                 config = FALSE,
                                 save_csv = FALSE,
                                 save_fig = FALSE,
@@ -1761,7 +1832,7 @@ Malaria_do_analysis <- function(health_data_path,
   if (is.null(output_dir) & (save_fig | save_csv)) {
     stop("'output_dir' must be provided is 'save_fig' or save_csv' are TRUE.")
   }
-  #check_file_exists(output_dir, TRUE)
+  check_file_exists(output_dir, TRUE)
 
   # level validation
   level <- tolower(level)
@@ -1793,7 +1864,7 @@ Malaria_do_analysis <- function(health_data_path,
                                                r_humidity_col,
                                                geometry_col,
                                                runoff_col,
-                                               cvh_col,
+                                               ndvi_col,
                                                spi_col,
                                                max_lag,
                                                output_dir)
@@ -1822,34 +1893,35 @@ Malaria_do_analysis <- function(health_data_path,
 
   #check for multicolinearity
   VIF<- check_vif(combined_data$data, inla_param, basis_matrices_choices)
+
   # fitting the model
   inla_result <- run_inla_models(combined_data,
                                  basis_matrices_choices,
-                                 inla_param,
+                                 inla_param=inla_param,
                                  output_dir=output_dir,
                                  save_csv=save_csv,
                                  family=family,
-                                 config=config
-                                 )
+                                 config=config)
 
-  # Seasonality
+  # seasonality plot
   reff_plot_monthly <- plot_monthly_random_effects(combined_data,
                                                    model=inla_result$model,
                                                    output_dir=output_dir,
-                                                   save_fig=save_fig
-                                                   )
+                                                   save_fig=save_fig )
 
   # spatial random effect
   reff_plot_yearly <- plot_yearly_spatial_random_effect(combined_data,
                                                         model=inla_result$model,
                                                         output_dir=output_dir,
-                                                        save_fig=save_fig
-                                                        )
-
+                                                        save_fig=save_fig)
   # contour plots
-  contour_plot <- contour_plot(combined_data$data, param_term, model=inla_result$model,
-                               level=level, output_dir=output_dir,
-                               save_fig=save_fig, filter_year=filter_year)
+  contour_plot <- contour_plot(combined_data$data,
+                               param_term,
+                               model=inla_result$model,
+                               level=level,
+                               output_dir=output_dir,
+                               save_fig=save_fig,
+                               filter_year=filter_year)
 
   # rr map plots
   rr_map_plot <- plot_rr_map(combined_data,
@@ -1861,27 +1933,28 @@ Malaria_do_analysis <- function(health_data_path,
                              save_fig=save_fig)
 
   # relative rist plot
-  rr_data <- plot_relative_risk(combined_data$data,
-                                param_term=param_term,
-                                model=inla_result$model,
-                                level=level,
-                                filter_year=filter_year,
-                                output_dir=output_dir,
-                                save_csv=save_csv,
-                                save_fig=save_fig
-                                )
+  rr_data <- plot_relative_risk( combined_data$data,
+                                 param_term=param_term,
+                                 model=inla_result$model,
+                                 level=level,
+                                 filter_year=filter_year,
+                                 output_dir=output_dir,
+                                 save_csv=save_csv,
+                                 save_fig=save_fig)
   rr_plot <- rr_data[["plots"]]
   rr_df <- rr_data[["RR"]]
 
   # attribution fraction and number
-  attr_frac_num <- attribution_calculation(combined_data$data,
-                                           param_term=param_term,
-                                           model=inla_result$model,
-                                           param_threshold=param_threshold,
-                                           level= level,
-                                           filter_year=filter_year,
-                                           save_csv=save_csv,
-                                           output_dir=output_dir)
+  attr_frac_num <- attribution_calculation(
+    combined_data$data,
+    param_term=param_term,
+    model=inla_result$model,
+    param_threshold=param_threshold,
+    level= level,
+    filter_year=filter_year,
+    group_by_year = group_by_year,
+    save_csv=save_csv,
+    output_dir=output_dir)
 
   plot_AR_Num <-plot_attribution_metric(attr_data = attr_frac_num,
                                         param_term=param_term,
@@ -1907,8 +1980,8 @@ Malaria_do_analysis <- function(health_data_path,
                                              save_fig =save_fig,
                                              output_dir = output_dir)
 
-  res <- list(plot_Malaria, plot_tmax, plot_rainfall, inla_result, reff_plot_monthly,
-              reff_plot_yearly, contour_plot, rr_map_plot,
+  res <- list(plot_Malaria, plot_tmax, plot_rainfall, inla_result,
+              reff_plot_monthly,reff_plot_yearly, contour_plot, rr_map_plot,
               rr_plot, rr_df, attr_frac_num, plot_AR_Num,plot_AR_Fr,
               plot_AR_per_100k)
 
