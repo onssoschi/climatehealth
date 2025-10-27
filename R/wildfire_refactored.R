@@ -311,7 +311,7 @@ load_wildfire_data <- function(
 #'
 #' @keywords internal
 get_lags_and_means <- function(data, lagcol, nlags) {
-    lag_cols <- paste0(lagcol, "_l", 0:num)
+    lag_cols <- paste0(lagcol, "_l", 0:nlags)
     # create lagged columns
     for (i in seq_along(lag_cols)) {
         data[[lag_cols[i]]] <- dplyr::lag(data[[lagcol]], i)
@@ -453,4 +453,601 @@ time_stratify <- function(data) {
     df_all <- do.call(rbind, df)
     row.names(df_all) <- NULL
     return(df_all)
+}
+
+#' Save descriptive statistics
+#'
+#' @description Generates summary statistics for climate and health data and 
+#' saves them to the specified file path.
+#'
+#' @param data Dataframe containing a daily time series of climate and health
+#' data
+#' @param variables Character or character vector with variable to produce
+#' summary statistics for. Must include at least 1 variable.
+#' @param bin_width Integer. Width of each bin in a histogram of the outcome
+#' variable. Defaults to 5.
+#' @param output_dir Character. The directory to output descriptive stats to.
+#' Must exist and will not be automatically created. Defaults to ".".
+#'
+#' @returns Prints summary statistics and a histogram of the the outcome
+#' variable
+#'
+#' @keywords internal
+descriptive_stats <- function(
+    data,
+    variables,
+    bin_width = 5,
+    output_dir = "."
+) {
+    # validate and define file paths
+    if (!file.exists(output_dir)) stop("Output directory does not exist.")
+    hist_fpath <- file.path(output_dir, "health_outcome_hist.png")
+    summary_fpath <- file.path(output_dir, "variable_summaries.csv")
+    # create and save hist
+    png(filename = hist_fpath)
+    hist(
+        data$health_outcome,
+        breaks = seq(
+            0,
+            max(data$health_outcome, na.rm = TRUE) + bin_width,
+            by = bin_width
+        ),
+        main = "Health outcome",
+        xlab = "Health outcome"
+    )
+    dev.off()
+    # create summaries, combine and output
+    summary_list <- lapply(variables, function(var) {
+        stats <- summary(data[[var]])
+        data.frame(
+            variable = var,
+            statistic = names(stats),
+            value = as.vector(stats),
+            stringsAsFactors = FALSE
+        )
+    })
+    summary_df <- do.call(rbind, summary_list)
+    write.csv(summary_df, file = summary_fpath, row.names = FALSE)
+}
+
+#' Creates a scatter plot.
+#'
+#' @description Produces a ggplot2 scatterplot of two variables x versus y.
+#'
+#' @param data Dataframe containing a daily time series of climate and health
+#' data
+#' @param xvar x variable
+#' @param yvar y variable
+#'
+#' @returns Prints a ggplot2 scatterplot of x versus y
+#'
+#' @keywords internal
+plot_scatter <- function(data, xvar, yvar) {
+  ggplot2::ggplot(data = data, ggplot2::aes(x = {{xvar}}, y = {{yvar}})) +
+    ggplot2::geom_point() +
+    ggplot2::geom_smooth() +
+    ggplot2::theme_bw()
+}
+
+#' Check variance inflation factors of predictor variables using a linear model
+#'
+#' @description Checks variance inflation factors of predictor variables using a
+#' linear model of the predictor variables on the health outcome. Prints stats
+#' if print_vif==TRUE. Raises a warning if VIF for a variables is > 2.
+#'
+#' @param data Dataframe containing a daily time series of climate and health
+#' data.
+#' @param predictors Character vector with each of the predictors to include
+#' in the model. Must contain at least 2 variables.
+#' @param print_vif Bool, whether or not to print VIF for each predictor.
+#' Defaults to FALSE.
+#'
+#' @returns Variance inflation factor statistics for each predictor variable.
+#'
+#' @keywords internal
+check_wildfire_vif <- function(data, predictors, print_vif = FALSE) {
+    # input validation
+    if (!is.character(predictors) || !is.vector(predictors))) {
+        stop("Please provide predictor variable names as a character vector")
+    }
+    if (length(predictors) < 2) {
+        stop("Please provide at least two predictor variables")
+    }
+    # Get VIF
+    formula <- paste("health_outcome ~", paste(predictors, collapse = "+"))
+    model <- lm(formula, data = data)
+    vif_mod <- car::vif(model)
+    if (print_vif) print(paste0("Variance inflation factor:\n", vif_mod))
+    for (var in names(vif_mod)) {
+        if (vif_mod[[var]] >= 2) {
+            warning(paste0(
+                "Variance inflation factor for ", var, " is >= 2. Investigation is",
+                " suggested."
+            ))
+        }
+    }
+    return(vif_mod)
+}
+
+get_wildfire_lag_columns <- function(data) {
+    lags <- c("mean_PM_FRP")
+    lag_nums <- c("mean_PM_FRP" = 0)
+    lagged_wf_cols <- grep(
+        "^mean_PM_FRP_l\\d+_mean$", colnames(data), value = TRUE
+    )
+    if (length(lagged_wf_cols)) {
+        matched_lags <- as.integer(
+            sub("^mean_PM_FRP_l(\\d+)_mean$", "\\1", matched_cols)
+        )
+        lags <- c(lags, matched_cols)
+        lag_nums <- c(lag_nums, setNames(matched_lags, matched_cols))
+    }
+    return(list(col_names=lags, lag_nums=lag_nums))
+}
+
+#' Fit quasipoisson regression models for different lags using a time-stratified
+#' case-crossover approach.
+#'
+#' @description Fits quasipoisson regression models using \link[gnm]{gnm}
+#'
+#' @param data Dataframe containing a daily time series of climate and health
+#' data from which to fit models.
+#' @param scale_factor Numeric. The value to divide the wildfire PM2.5
+#' concentration variables by for alternative interpretation of outputs.
+#' Corresponds to the unit increase in wildfire PM2.5 to give the model
+#' estimates and relative risks (e.g. scale_factor = 10 corresponds to estimates
+#' and relative risks representing impacts of a 10 unit increase in wildfire 
+#' PM2.5). Setting this parameter to 0 or 1 leaves the variable unscaled.
+#' @param wildfire_lag Integer. The maximum number of days for which to 
+#' calculate lagged results for wildfire PM2.5. Default is 3.
+#' @param save_fig Bool. Whether or not to save a figure showing residuals vs
+#' fitted values for each lag. Defaults to FALSE.
+#' @param output_folder_path String. Where to save the figure. Defaults to NULL.
+#' @param print_model_summaries Bool. Whether to print the model summaries to
+#' console. Defaults to FALSE.
+#'
+#' @returns Dataframe of relative risk and confidence intervals for
+#' each lag of wildfire-related PM2.5
+#'
+#' @keywords internal
+casecrossover_quasipoisson <- function(
+    data,
+    scale_factor_wildfire_pm = 10,
+    save_fig = TRUE,
+    output_folder_path = NULL,
+    print_model_summaries = TRUE
+) {
+    # scale wildfire PM if neccessary
+    if (scale_factor_wildfire_pm > 0) {
+        data <- data %>%
+        dplyr::mutate(
+            dplyr::across(
+            "mean_PM_FRP" | matches("^mean_PM_FRP_l\\d+_mean$"),
+            ~ . / scale_factor_wildfire_pm
+            )
+        )
+    }
+    # define lag columns
+    lag_cols <- get_wildfire_lag_columns(data=data)
+    lags <- lag_cols$col_names
+    lag_nums <- lag_cols$lag_nums
+    # get results
+    results <- list()
+    if (save_fig==T) {
+        grid <- create_grid(length(lags))
+        output_path <- file.path(
+            output_folder_path,
+            "wildfires_residuals_vs_fit_plot.pdf"
+        )
+        pdf(output_path, width=grid[1]*4, height=grid[2]*4)
+        par(mfrow=c(grid[1],  grid[2]))
+    }
+    for (i in lags) {
+        number <- lag_nums[[i]]
+        # create model
+        formula <- as.formula(
+            paste("health_outcome ~ splines::ns(tmean, df = 6) +", i)
+        )
+        model <- gnm::gnm(
+            formula,
+            data = data,
+            family = quasipoisson,
+            subset = ind > 0,
+            eliminate = stratum
+        )
+        # print summaries if required
+        if (print_model_summaries) {
+            print(Epi::ci.exp(model, subset = i))
+            print(summary(model))
+            print(paste0(
+                Epi::ci.exp(model, subset = i), "\n",
+                summary(model),
+                "\nRatio of residual deviance to degrees of freedom: ",
+                model$deviance / model$df.residual
+            ))
+        }
+        # get residuals and plot (if needed)
+        devresid <- resid(model, type = "deviance")
+        if (save_fig==T) {
+            plot(devresid ~ model$fitted.values, main = i, col="#f25574")
+        }
+        coef_pm <- summary(model)$coefficients[i, "Estimate"]
+        se_pm <- summary(model)$coefficients[i, "Std. Error"]
+
+        relative_risk <- exp(coef_pm)
+        ci_lower <- exp(coef_pm - 1.96 * se_pm)
+        ci_upper <- exp(coef_pm + 1.96 * se_pm)
+
+        results[[i]] <- c(lag = number, relative_risk = relative_risk,
+                        ci_lower = ci_lower, ci_upper = ci_upper)
+    }
+    # save figure
+    if (save_fig==TRUE) {
+        dev.off()
+    }
+    # create results df and return
+    results <- as.data.frame(do.call(rbind, results))
+    rownames(results) <- NULL
+    return(results)
+}
+
+#' QAIC calculation
+#' 
+#' @param data Dataframe containing a daily time series of climate and health
+#' data from which to fit models.
+#' @param print_results Logical. Whether or not to print model summaries and 
+#' pearson dispersion statistics. Defaults to FALSE.
+#'
+#' @returns Dataframe containing QAIC results for each lag.
+#'
+#' @keywords internal 
+calculate_qaic <- function(
+    data,
+    print_results = FALSE
+) {
+
+    qaic_results <- list()
+    # get WF lag columns
+    lag_cols <- get_wildfire_lag_columns(data=data)
+    lags <- lag_cols$col_names
+    lag_nums <- lag_cols$lag_nums
+    for (i in lags) {
+        # define model
+        number <- lag_nums[[i]]
+        formula <- as.formula(
+            paste("health_outcome ~ splines::ns(tmean, df = 6) +", i)
+        )
+        model <- gnm::gnm(formula,
+                        data = data,
+                        family = quasipoisson,
+                        subset = ind > 0,
+                        eliminate = stratum)
+        pearson_chisq <- sum(residuals(model, type = "pearson")^2, na.rm = TRUE)
+        dispersion <- pearson_chisq / model$df.residual
+        # Number of estimated parameters
+        k <- length(coef(model))
+        # Dispersion parameter
+        phi <- summary(model)$dispersion
+        # Log-likelihood approximation
+        ll <- -0.5*model$deviance
+        # QAIC formula
+        qaic <- -2 * ll + 2 * phi * k
+        if (print_results==TRUE) {
+            print(paste("QAIC for", i, "=", qaic))
+            print(paste("Pearson dispersion statistic:", round(dispersion,3)))
+        }
+        qaic_results[[i]] <- qaic
+    }
+    return(qaic_results)
+}
+
+#' Relative risk estimates across PM2.5 concentrations for a specified lag.
+#'
+#' @description Computes relative risk and confidence intervals across a range
+#' of PM2.5 concentrations for a specified wildfire-related lag, using 
+#' log-linear extrapolation from a reference estimate.
+#'
+#' @param relative_risk_overall Data frame containing relative risk estimates 
+#' and confidence intervals for wildfire-related PM2.5 exposure at different 
+#' lags. Must include columns: 'lag', 'relative_risk', 'ci_lower', and 
+#' 'ci_upper'.
+#' @param scale_factor_wildfire_pm Numeric. Scaling factor used to normalize 
+#' PM2.5 values to the unit of exposure used in the original relative risk 
+#' estimate.
+#' @param wildfire_lag Integer. Lag day to filter from the input data for 
+#' extrapolation. Defaults to 0.
+#' @param pm_vals Numeric vector. PM2.5 concentrations over which to compute 
+#' relative risk. Defaults to seq(0, 50, by = 1).
+#'
+#' @return A dataframe with columns: 'pm_levels', 'relative_risk', 'ci_lower',
+#' and 'ci_upper', representing estimated relative risk and 95% confidence 
+#' intervals across the specified PM2.5 levels.
+#' 
+#' @keywords internal
+generate_rr_pm_overall <- function(
+    relative_risk_overall,
+    scale_factor_wildfire_pm,
+    wildfire_lag = 0,
+    pm_vals = seq(0, 50, by = 1)
+) {
+    # filter by lag
+    data_lagged <- subset(relative_risk_overall, lag == wildfire_lag)
+    rr <- data_lagged$relative_risk
+    ci_low <- data_lagged$ci_lower
+    ci_up <- data_lagged$ci_upper
+    # calculate beta and SE
+    coef_pm <- log(rr)
+    se_pm <- (log(ci_up) - log(ci_low)) / (2 * 1.96)
+    # adjust for scale factor
+    rr_vals <- exp(coef_pm * (pm_vals / scale_factor_wildfire_pm))
+    rr_lower <- exp(
+        (coef_pm - 1.96 * se_pm) * (pm_vals / scale_factor_wildfire_pm)
+    )
+    rr_upper <- exp(
+        (coef_pm + 1.96 * se_pm) * (pm_vals / scale_factor_wildfire_pm)
+    )
+    # create results df
+    rr_pm_table <- data.frame(
+        pm_levels = pm_vals,
+        relative_risk = round(rr_vals, 4),
+        ci_lower = round(rr_lower, 4),
+        ci_upper = round(rr_upper, 4)
+    )
+    return(rr_pm_table)
+}
+
+#' Plot relative risk results by region.
+#'
+#' @description Plots relative risk and confidence intervals for each lag value
+#' of wildfire-related PM2.5.
+#'
+#' @param results Dataframe of relative risk and confidence intervals for
+#' each lag of wildfire-related PM2.5
+#' @param wildfire_lag Integer. The maximum number of days for which to plot the
+#' lags for wildfire PM2.5. Defaults to 3.
+#' @param by_region Bool. Whether to plot RR(relative risk) by region.
+#' Defaults to FALSE
+#' @param save_fig Boolean. Whether to save the generated plot. 
+#' Defaults to FALSE.
+#' @param output_folder_path Path to folder where plots should be saved.
+#'
+#' @returns Plot of relative risk and confidence intervals for each lag of
+#' wildfire-related PM2.5
+#'
+#' @keywords internal
+plot_RR <- function(
+    rr_data,
+    wildfire_lag = 3,
+    by_region = FALSE,
+    save_fig = FALSE,
+    output_folder_path = NULL
+) {
+    # input validation
+    if (save_fig && is.null(output_folder_path)) {
+        stop("No output path provided when save_fig==T.")
+    }
+    # plot by region if needed
+    if (relative_risk_by_region) {
+        df_list <- split(rr_data, f = rr_data$region_name)
+        plots_list <- list()
+        if (save_fig) {
+            pdf(
+                file.path(output_folder_path, "wildfire_rr_by_region.pdf"),
+                width = 8, height = 8
+            )
+        }
+        for (i in seq(df_list)) {
+            region_results <- df_list[[i]]
+            region_name <- region_results$region_name[1]
+            region_plot <- plot_RR_core(
+                rr_data = region_results,
+                output_folder_path = output_folder_path,
+                wildfire_lag = wildfire_lag,
+                save_fig = FALSE,
+                region_name = region_name
+            )
+            plots_list[[i]] <- region_plot
+            print(region_plot)
+        }
+        if (save_fig) dev.off()
+        return(plots_list)
+
+    }
+    # Plot overall RR
+    plot <- plot_RR_core(
+        rr_data = rr_data,
+        output_folder_path = output_folder_path,
+        wildfire_lag = wildfire_lag,
+        save_fig = save_fig
+    )
+    return(plot)
+}
+
+#' Core functionality for plotting results of relative risk analysis.
+#'
+#' @description Plots relative risk and confidence intervals for each lag value
+#' of wildfire-related PM2.5.
+#'
+#' @param results Dataframe of relative risk and confidence intervals for
+#' each lag of wildfire-related PM2.5.
+#' @param save_fig Boolean. Whether to save the plot as an output. 
+#' Defaults to FALSE.
+#' @param wildfire_lag Integer. The maximum number of days for which to plot the
+#' lags for wildfire PM2.5. Defaults to 3.
+#' @param output_folder_path Path to folder where plots should be saved.
+#' Defaults to NULL.
+#' @param region_name Character. The name of the region.
+#' Defaults to 'All regions'.
+#'
+#' @returns Plot of relative risk and confidence intervals for each lag of
+#' wildfire-related PM2.5.
+#'
+#' @keywords internal
+plot_RR_core <- function(
+    rr_data,
+    save_fig = FALSE,
+    wildfire_lag = 3,
+    output_folder_path = NULL,
+    region_name = "All regions"
+) {
+    # input validation
+    if (save_fig && is.null(output_folder_path)) {
+        stop("No output path provided when save_fig==T.")
+    }
+    # generate labels
+    labels <- c("0 days")
+    if (wildfire_lag > 0) {
+        additional_labels <- sapply(
+            1:wildfire_lag,
+            function(lag) paste("0-", lag, " days", sep = "")
+        )
+        labels <- c(labels, additional_labels)
+    }
+    # plot RR data
+    plot <- ggplot2::ggplot(
+        data = rr_data,
+        ggplot2::aes(
+            x = lag, y = relative_risk, ymin = ci_lower, ymax = ci_upper
+        )
+    ) +
+    ggplot2::geom_point(size = 3) +
+    ggplot2::geom_errorbar(width = 0.5, size = 1) +
+    ggplot2::geom_hline(yintercept = 1, lty = 2) +
+    ggplot2::xlab("Lag") +
+    ggplot2::ylab("Relative risk") +
+    ggplot2::ggtitle(paste("Wildfire PM2.5: ", region_name, sep = "")) +
+    ggplot2::scale_x_continuous(
+        breaks = seq(0, wildfire_lag, 1), labels = labels
+    ) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(
+        axis.text = ggplot2::element_text(size = 18),
+        axis.title = ggplot2::element_text(size = 18)
+    )
+    # save figure if neccessary
+    if (save_fig == TRUE) {
+        # Create ouutput path and PDF
+        formatted_region_name <- gsub(" ", "_", tolower(region_name))
+        file_name <- paste(
+            "wildfire_rr_", formatted_region_name, ".pdf", sep = ""
+        )
+        pdf(file.path(output_folder_path, file_name), width = 8, height = 8)
+        # Add to figure
+        print(plot)
+        dev.off()
+    }
+    return(plot)
+}
+
+#' Save results of wildfire related analysis
+#'
+#' @description Saves a CSV file of relative risk and confidence intervals for
+#' each lag value of wildfire-related PM2.5. Also optionally save results of
+#' attributable numbers/fractions.
+#'
+#' @param results Dataframe of relative risk and confidence intervals for
+#' each lag of wildfire-related PM2.5.
+#' @param an_ar_results Dataframe containing attributable number/fraction
+#' results. Defaults to NULL.
+#' @param output_folder_path Path to folder where results should be saved.
+#'
+#' @keywords internal
+save_rr_results <- function(
+    rr_results,
+    an_ar_results = NULL,
+    output_folder_path
+) {
+    # Input validation
+    if (is.null(output_folder_path)) stop("Output directory required.")
+    if (!file.exists(output_folder_path)) stop("Output directory does not exist")
+    # Save RR results
+    write.csv(
+        rr_results, file = file.path(output_folder_path, "wildfire_rr.csv")
+    )
+    # conditionally save AN/AR results
+    if (!is.null(an_ar_results)) {
+        write.csv(
+            an_ar_results,
+            file = file.path(output_folder_path, "wildfire_an_ar.csv")
+        )
+    }
+}
+
+#' Passes data to casecrossover_quasipoisson to calculate RR.
+#'
+#' @description Splits data by region if relative_risk_by_region config option is
+#' TRUE. If true data for each individual region is passed to casecrossover_quasipoisson
+#' to calculate RR by region. If false RR is calculated for the entire dataset.
+#'
+#' @param data Dataframe containing a daily time series of climate and health
+#' data from which to fit models.
+#' @param scale_factor Numeric. The value to divide the wildfire PM2.5
+#' concentration variables by for alternative interpretation of outputs.
+#' Corresponds to the unit increase in wildfire PM2.5 to give the model
+#' estimates and relative risks (e.g. scale_factor = 10 corresponds to estimates
+#' and relative risks representing impacts of a 10 unit increase in wildfire PM2.5)
+#' Setting this parameter to 0 or 1 leaves the variable unscaled.
+#' @param wildfire_lag Integer. The maximum number of days for which to calculate
+#' lagged results for wildfire PM2.5. Default is 3.
+#' @param calc_relative_risk_by_region Bool. Whether to calculate Relative Risk by region.
+#' Default: FALSE
+#' @param save_fig Bool. Whether or not to save a figure showing residuals vs
+#' fitted values for each lag. Defaults to FALSE.
+#' @param output_folder_path String. Where to save the figure. Defaults to NULL.
+#' @param print_model_summaries Bool. Whether to print the model summaries to
+#' console. Defaults to FALSE.
+#'
+#' @returns Dataframe of relative risk and confidence intervals for
+#' each lag of wildfire-related PM2.5. Split by region if calc_relative_risk_by_region
+#' set to TRUE.
+#'
+#' @keywords internal
+calculate_wilfire_rr_by_region <- function(
+    data,
+    scale_factor_wildfire_pm,
+    wildfire_lag,
+    calc_relative_risk_by_region = FALSE,
+    save_fig = FALSE,
+    output_folder_path = NULL,
+    print_model_summaries = FALSE
+) {
+    if(calc_relative_risk_by_region){
+
+        df_list <- split(data, f = data$regnames)
+
+        results_list <- list()
+
+        for (i in seq(df_list)) {
+
+        region_data <- df_list[[i]]
+        region_name <- names(df_list)[i] # Get region name
+
+        region_results <- casecrossover_quasipoisson(data = region_data,
+                                                    scale_factor_wildfire_pm = scale_factor_wildfire_pm,
+                                                    wildfire_lag = wildfire_lag,
+                                                    output_folder_path = output_folder_path,
+                                                    save_fig = save_fig,
+                                                    print_model_summaries = print_model_summaries)
+
+        region_results$region_name <- region_name
+
+        results_list[[i]] <- region_results
+
+        }
+
+        results_all <- do.call(rbind, results_list)
+        row.names(results_all) <- NULL
+
+        return(results_all)
+
+    }
+    results <- casecrossover_quasipoisson(data = data,
+                                            scale_factor_wildfire_pm = scale_factor_wildfire_pm,
+                                            wildfire_lag = wildfire_lag,
+                                            output_folder_path = output_folder_path,
+                                            save_fig = save_fig,
+                                            print_model_summaries = print_model_summaries)
+
+    return(results)
+
 }
