@@ -54,6 +54,8 @@ check_has_rtools <- function() {
 #'
 #' On non-Windows systems, the package is installed normally from the repository.
 #'
+#' @param os The current operating system. Defaults to \code{.Platform$OS.type}.
+#' 
 #' @return Invisibly returns \code{NULL}. The function is called for its side effect.
 #'
 #' @examples
@@ -62,11 +64,14 @@ check_has_rtools <- function() {
 #' }
 #'
 #' @export
-install_INLA <- function() {
+install_INLA <- function(os = .Platform$OS.type) {
+  # Install fmesher
+  message("Installing fmesher as INLA is dependent on it...\n")
+  install.packages("fmesher")
+  # Install INLA
   message("Installing INLA from its official repository...\n")
-
   # Detect OS and install INLA accordingly
-  if (.Platform$OS.type == "windows") {
+  if (os == "windows") {
     # Ensure rtools is installed
     check_has_rtools()
 
@@ -84,3 +89,38 @@ install_INLA <- function() {
   if (requireNamespace("INLA", quietly=T)) message("INLA succesfully installed.")
 }
 
+#' Install the terra Package from the CRAN Archive
+#'
+#' This function installs the \code{terra} package at version 1.8-60 from the 
+#' CRAN archive.
+#'
+#' @details
+#' On Windows systems, the function verifies that Rtools is installed using
+#' \code{pkgbuild::has_build_tools()}. If Rtools is missing, it displays a warning
+#' and aborts the installation. The function then forces installation from source.
+#'
+#' @param os The current operating system. Defaults to \code{.Platform$OS.type}.
+#' 
+#' @return Invisibly returns \code{NULL}. The function is called for its side effect.
+#'
+#' @examples
+#' \dontrun{
+#' install_terra()
+#' }
+#'
+#' @export
+install_terra <- function(os = .Platform$OS.type) {
+  message("Installing terra==1.8-60 from the CRAN archive...\n")
+
+  # Install from source tarball
+  tarball <- "https://cran.r-project.org/src/contrib/Archive/terra/terra_1.8-60.tar.gz"
+  # Check for RTools on Windows
+  if (os == "windows") {
+    # Ensure rtools is installed
+    check_has_rtools()
+  }
+  install.packages(
+    tarball, repos = NULL, type = "source"
+  )
+  if (requireNamespace("terra", quietly=T)) message("terra==1.8-60 succesfully installed.")
+}
