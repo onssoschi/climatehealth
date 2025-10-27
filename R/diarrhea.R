@@ -1979,6 +1979,8 @@ diarrhea_do_analysis <- function(health_data_path,
     save_csv=save_csv,
     output_dir=output_dir)
 
+  # attribution Plots, AN
+
   plot_AR_Num <-plot_attribution_metric(attr_data = attr_frac_num,
                                         param_term=param_term,
                                         level= level,
@@ -1986,6 +1988,7 @@ diarrhea_do_analysis <- function(health_data_path,
                                         filter_year = filter_year,
                                         save_fig =save_fig,
                                         output_dir = output_dir)
+  # attribution Plots, AF
 
   plot_AR_Fr <-plot_attribution_metric(attr_data = attr_frac_num,
                                        param_term=param_term,
@@ -1994,6 +1997,7 @@ diarrhea_do_analysis <- function(health_data_path,
                                        filter_year = filter_year,
                                        save_fig =save_fig,
                                        output_dir = output_dir)
+  # attribution Plots, AR
 
   plot_AR_per_100k <-plot_attribution_metric(attr_data = attr_frac_num,
                                              param_term=param_term,
@@ -2002,6 +2006,7 @@ diarrhea_do_analysis <- function(health_data_path,
                                              metrics = "AR_per_100k",
                                              save_fig =save_fig,
                                              output_dir = output_dir)
+  #return results
 
   res <- list(plot_diarrhea, plot_tmax, plot_rainfall, inla_result,
               reff_plot_monthly,reff_plot_yearly, contour_plot, rr_map_plot,
