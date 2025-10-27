@@ -646,10 +646,8 @@ casecrossover_quasipoisson <- function(data,
 
 }
 
-#'
-#'
-#'
-#QAIC calculation
+
+#' QAIC calculation
 #' @param data Dataframe containing a daily time series of climate and health
 #' data from which to fit models.
 #' @param wildfire_lag Integer. The maximum number of days for which to calculate
