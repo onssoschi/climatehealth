@@ -7,13 +7,15 @@ outcome using a time-stratified case-crossover approach.}
 \usage{
 wildfire_do_analysis(
   health_path,
-  join_wildfire_data = FALSE,
+  join_wildfire_data = TRUE,
   ncdf_path = NULL,
   shp_path = NULL,
   date_col,
   region_col,
   mean_temperature_col,
   health_outcome_col,
+  rh_col = NULL,
+  wind_speed_col = NULL,
   pm_2_5_col = NULL,
   wildfire_lag = 3,
   temperature_lag = 1,
@@ -58,6 +60,12 @@ that contains the mean temperature column.}
 contains the health outcome count column (e.g. number of deaths, hospital
 admissions)}
 
+\item{rh_col}{Character. Name of the column containing relative humidity
+values. Defaults to NULL.}
+
+\item{wind_speed_col}{Character. Name of the column containing wind speed.
+Defaults to NULL.}
+
 \item{pm_2_5_col}{Character. The name of the column containing PM2.5 values
 in micrograms. Thsi is only required if health data isn't joined. Defaults to NULL.}
 
@@ -99,6 +107,9 @@ for each predictor. Defaults to FALSE.}
 
 \item{print_model_summaries}{Bool. Whether to print the model summaries to
 console. Defaults to FALSE.}
+
+\item{output_AF_AN}{Bool. Whether to create attributable fraction and
+attributable number output. Only works id relative_risk_by_region = TRUE.}
 }
 \value{
 Dataframe of relative risk and confidence intervals for
