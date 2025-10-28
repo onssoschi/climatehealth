@@ -10,10 +10,10 @@ summarise_AF_AN(data)
 \item{data}{Dataframe containing daily data including calculated AF and AN.}
 }
 \value{
-Dataframe containing summarised AF and AN data, by year and region
+Dataframe containing summarised AF and AN data, by year and region.
 }
 \description{
-Takes daily data with attributable fraction and attributable number
-and summarises by year and region
+Takes daily data with attributable fraction and attributable
+number and summarises by year and region.
 }
 \keyword{internal}
