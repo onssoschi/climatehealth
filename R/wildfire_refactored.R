@@ -975,22 +975,22 @@ save_rr_results <- function(
 
 #' Passes data to casecrossover_quasipoisson to calculate RR.
 #'
-#' @description Splits data by region if relative_risk_by_region config option is
-#' TRUE. If true data for each individual region is passed to casecrossover_quasipoisson
+#' @description Splits data by region if relative_risk_by_region==TRUE.
+#' If T, data for each individual region is passed to casecrossover_quasipoisson
 #' to calculate RR by region. If false RR is calculated for the entire dataset.
 #'
 #' @param data Dataframe containing a daily time series of climate and health
 #' data from which to fit models.
-#' @param scale_factor Numeric. The value to divide the wildfire PM2.5
-#' concentration variables by for alternative interpretation of outputs.
+#' @param scale_factor_wildfire_pm Numeric. The value to divide the wildfire 
+#' PM2.5 concentration variables by for alternative interpretation of outputs.
 #' Corresponds to the unit increase in wildfire PM2.5 to give the model
 #' estimates and relative risks (e.g. scale_factor = 10 corresponds to estimates
-#' and relative risks representing impacts of a 10 unit increase in wildfire PM2.5)
-#' Setting this parameter to 0 or 1 leaves the variable unscaled.
+#' and relative risks representing impacts of a 10 unit increase in wildfire 
+#' PM2.5). Setting this parameter to 0 or 1 leaves the variable unscaled.
 #' @param wildfire_lag Integer. The maximum number of days for which to calculate
-#' lagged results for wildfire PM2.5. Default is 3.
-#' @param calc_relative_risk_by_region Bool. Whether to calculate Relative Risk by region.
-#' Default: FALSE
+#' lagged results for wildfire PM2.5. Defaults to 3.
+#' @param calc_relative_risk_by_region Bool. Whether to calculate Relative Risk 
+#' by region. Defaults to FALSE.
 #' @param save_fig Bool. Whether or not to save a figure showing residuals vs
 #' fitted values for each lag. Defaults to FALSE.
 #' @param output_folder_path String. Where to save the figure. Defaults to NULL.
@@ -1011,43 +1011,160 @@ calculate_wilfire_rr_by_region <- function(
     output_folder_path = NULL,
     print_model_summaries = FALSE
 ) {
-    if(calc_relative_risk_by_region){
-
+    # input validation
+    if (save_fig && is.null(output_folder_path)) {
+        stop("No output path provided when save_fig==T.")
+    }
+    if (calc_relative_risk_by_region && !("regnames" %in% names(data))) {
+        stop("data must contain 'regnames' column for region level RR data.")
+    }
+    if(calc_relative_risk_by_region) {
+        # split dataset and create output list
         df_list <- split(data, f = data$regnames)
-
         results_list <- list()
-
+        # Get region level RR data
         for (i in seq(df_list)) {
-
-        region_data <- df_list[[i]]
-        region_name <- names(df_list)[i] # Get region name
-
-        region_results <- casecrossover_quasipoisson(data = region_data,
-                                                    scale_factor_wildfire_pm = scale_factor_wildfire_pm,
-                                                    wildfire_lag = wildfire_lag,
-                                                    output_folder_path = output_folder_path,
-                                                    save_fig = save_fig,
-                                                    print_model_summaries = print_model_summaries)
-
-        region_results$region_name <- region_name
-
-        results_list[[i]] <- region_results
-
+            region_data <- df_list[[i]]
+            region_name <- names(df_list)[i]
+            region_results <- casecrossover_quasipoisson(
+                data = region_data,
+                scale_factor_wildfire_pm = scale_factor_wildfire_pm,
+                wildfire_lag = wildfire_lag,
+                output_folder_path = output_folder_path,
+                save_fig = save_fig,
+                print_model_summaries = print_model_summaries
+            )
+            region_results$region_name <- region_name
+            results_list[[i]] <- region_results
         }
-
+        # combine all regions and return
         results_all <- do.call(rbind, results_list)
         row.names(results_all) <- NULL
-
         return(results_all)
 
     }
-    results <- casecrossover_quasipoisson(data = data,
-                                            scale_factor_wildfire_pm = scale_factor_wildfire_pm,
-                                            wildfire_lag = wildfire_lag,
-                                            output_folder_path = output_folder_path,
-                                            save_fig = save_fig,
-                                            print_model_summaries = print_model_summaries)
-
+    # calculate and return dataset level RR
+    results <- casecrossover_quasipoisson(
+        data=data,
+        scale_factor_wildfire_pm=scale_factor_wildfire_pm,
+        wildfire_lag=wildfire_lag,
+        output_folder_path=output_folder_path,
+        save_fig=save_fig,
+        print_model_summaries=print_model_summaries
+    )
     return(results)
+}
 
+#' Calculate attributable numbers and fraction of a given health outcome.
+#'
+#' @description Takes a calculated RR and upper and lower CIs, and applies these
+#' to the input data to calculate attributable fraction and attributable number,
+#' along with upper and lower CIs, for each day in the input data. Uses Lag 1 RR
+#' and lower/upper CIs.
+#'
+#' @param data Dataframe containing a daily time series of climate and health
+#' data that was used to obtain rr_data.
+#' @param rr_data Dataframe containing relative risk and confidence intervals, 
+#' calculated from input data.
+#'
+#' @returns A dataframe containing a daily timseries of AF and AN, including 
+#' upper and lower confidence intervals.
+#'
+#' @keywords internal
+calculate_daily_AF_AN <- function(data, rr_data){
+    # dissagregate data into region level
+    df_list <- split(data, f = data$regnames)
+    # calculate values for each region
+    for (i in seq(df_list)) {
+        region_data <- df_list[[i]]
+        region_name <- names(df_list)[i]
+        # obtain RR values inc. CIs
+        RR_value <- rr_data %>%
+            filter(.data$lag == 0, .data$region_name == !!region_name) %>%
+            pull(.data$relative_risk)
+        RR_CI_lower <- rr_data %>%
+            filter(.data$lag == 0, .data$region_name == !!region_name) %>%
+            pull(.data$ci_lower)
+
+        RR_CI_upper <- rr_data %>%
+            filter(.data$lag == 0, .data$region_name == !!region_name) %>%
+            pull(.data$ci_upper)
+        # Calculate daily rescaled_RR, AF and AN
+        region_data <- region_data %>%
+            mutate(
+                rescaled_RR = exp((log(.data$RR_value) / 10) * .data$mean_PM_FRP),
+                attributable_fraction = (.data$rescaled_RR - 1) / .data$rescaled_RR,
+                attributable_number = .data$attributable_fraction * .data$health_outcome
+            )
+        # Repeat for upper/lower CIs
+        region_data <- region_data %>%
+            mutate(
+                rescaled_CI_upper = exp((log(.data$RR_CI_upper) / 10) * .data$mean_PM_FRP),
+                attributable_fraction_upper = (.data$rescaled_CI_upper - 1) / .data$rescaled_CI_upper,
+                attributable_number_upper = .data$attributable_fraction_upper * .data$health_outcome
+            )
+        region_data <- region_data %>%
+            mutate(
+                rescaled_CI_lower = exp((log(.data$RR_CI_lower) / 10) *.data$ mean_PM_FRP),
+                attributable_fraction_lower = (.data$rescaled_CI_lower - 1) / .data$rescaled_CI_lower,
+                attributable_number_lower = .data$attributable_fraction_lower * .data$health_outcome
+            )
+        df_list[[i]] <- region_data
+    }
+    # combine region level data and return
+    df_all <- do.call(rbind, df_list)
+    row.names(df_all) <- NULL
+    return(df_all)
+}
+
+#' Summarise AF and AN numbers by region and year
+#'
+#' @description Takes daily data with attributable fraction and attributable 
+#' number and summarises by year and region.
+#'
+#' @param data Dataframe containing daily data including calculated AF and AN.
+#'
+#' @returns Dataframe containing summarised AF and AN data, by year and region.
+#'
+#' @keywords internal
+summarise_AF_AN <- function(data) {
+    # Z-score for 95% CI
+    z <- 1.96
+    # Calculate standard errors and variances for AN and AF
+    data <- data %>%
+    mutate(
+        se_AN = (
+            .data$attributable_number_upper - .data$attributable_number_lower
+        ) / (2 * z),
+        var_AN = .data$se_AN^2,
+        se_AF = (
+            .data$attributable_fraction_upper - .data$attributable_fraction_lower
+        ) / (2 * z),
+        var_AF = .data$se_AF^2
+    )
+    yearly_summary <- data %>%
+        group_by(regnames, year, month) %>%
+        summarise(
+            population = mean(.data$pop, na.rm = TRUE),
+            total_attributable_number = sum(.data$attributable_number, na.rm = TRUE),
+            total_variance_AN = sum(.data$var_AN, na.rm = TRUE),
+            average_attributable_fraction = mean(.data$attributable_fraction, na.rm = TRUE),
+            variance_AF_mean = sum(.data$var_AF, na.rm = TRUE) / n(),
+            .groups = "drop"
+        ) %>%
+        mutate(
+            # Confidence intervals for total AN
+            se_total_AN = sqrt(.data$total_variance_AN),
+            lower_ci_attributable_number = .data$total_attributable_number - z * .data$se_total_AN,
+            upper_ci_attributable_number = .data$total_attributable_number + z * .data$se_total_AN,
+            # Confidence intervals for average AF
+            se_AF_mean = sqrt(variance_AF_mean),
+            lower_ci_attributable_fraction = .data$average_attributable_fraction - z * .data$se_AF_mean,
+            upper_ci_attributable_fraction = .data$average_attributable_fraction + z * .data$se_AF_mean,
+            # Deaths per 100k
+            deaths_per_100k = (.data$total_attributable_number / .data$population) * 100000,
+            lower_ci_deaths_per_100k = (.data$lower_ci_attributable_number / .data$population) * 100000,
+            upper_ci_deaths_per_100k = (.data$upper_ci_attributable_number / .data$population) * 100000
+        )
+    return(yearly_summary)
 }
