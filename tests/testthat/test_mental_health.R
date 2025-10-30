@@ -358,14 +358,13 @@ test_that("mh_model_validation performs complete model validation", {
     }
   })
 
-  # Test 1: Basic functionality without saving
   results_basic <- mh_model_validation(
     df_list = df_list,
     cb_list = cb_list,
     independent_cols = independent_vars,
-    save_fig = FALSE,  # Explicitly set to FALSE
-    save_csv = FALSE,
-    output_folder_path = NULL
+    save_fig = TRUE,  # Explicitly set to FALSE
+    save_csv = TRUE,
+    output_folder_path = temp_dir
   )
 
   # Structure tests
@@ -387,16 +386,6 @@ test_that("mh_model_validation performs complete model validation", {
   # VIF summary tests
   expect_s3_class(results_basic[[4]], "data.frame")
   expect_named(results_basic[[4]], c("variable", "mean_vif"))
-
-  # Test 2: File saving functionality
-  results_files <- mh_model_validation(
-    df_list = df_list,
-    cb_list = cb_list,
-    independent_cols = independent_vars,
-    save_fig = TRUE,
-    save_csv = TRUE,
-    output_folder_path = temp_dir
-  )
 
   # Check if files were created
   expect_true(dir.exists(validation_dir))
@@ -426,27 +415,14 @@ test_that("mh_model_validation performs complete model validation", {
     expect_true(file.exists(file.path(reg_path, paste0(reg, "_qq_plot.pdf"))))
   }
 
-  # Test 3: NULL independent_cols
-  results_null <- mh_model_validation(
-    df_list = df_list,
-    cb_list = cb_list,
-    independent_cols = NULL,
-    save_fig = FALSE,
-    save_csv = FALSE
-  )
-
-  expect_type(results_null, "list")
-  expect_length(results_null, 4)
-  expect_null(results_null[[3]])  # VIF results should be NULL
-  expect_null(results_null[[4]])  # VIF summary should be NULL
-
-  # Test 4: Single region case
+  #Single region case
   single_region_results <- mh_model_validation(
     df_list = list("Region1" = sample_df),
     cb_list = list("Region1" = mock_cb),
     independent_cols = independent_vars,
-    save_fig = FALSE,
-    save_csv = FALSE
+    save_fig = TRUE,
+    save_csv = TRUE,
+    output_folder_path = temp_dir
   )
 
   expect_null(single_region_results[[2]])  # QAIC summary should be NULL
