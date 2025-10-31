@@ -9,7 +9,7 @@ extract_means_for_geography(ncdf_path, shapefile_path)
 \arguments{
 \item{ncdf_path}{Path to a NetCDF file}
 
-\item{shp_path}{Path to a shapefile .shp of the geographical boundaries for
+\item{shapefile_path}{Path to a shapefile .shp of the geographical boundaries for
 which to extract mean values of wildfire-related PM2.5}
 }
 \value{
@@ -28,3 +28,4 @@ PM2.5 concentration from the Finnish Meteorological Institute's SILAM-CTM
 model. This is available open-source:
 https://doi.org/10.57707/fmi-b2share.d1cac971b3224d438d5304e945e9f16c.
 }
+\keyword{internal}

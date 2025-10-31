@@ -2,66 +2,94 @@
 % Please edit documentation in R/descriptive_stats.R
 \name{common_descriptive_stats_api}
 \alias{common_descriptive_stats_api}
-\title{The function used to create desciprtive stats via an API endpoint}
+\title{Create Descriptive Statistics via an API Endpoint}
 \usage{
 common_descriptive_stats_api(
   data,
   aggregation_column = NULL,
+  population_col = NULL,
   dataset_title,
   dependent_col,
   independent_cols,
+  columns = NULL,
+  units = NULL,
+  select_all_numeric = T,
   plot_correlation = T,
   plot_dist_hists = T,
   plot_ma = T,
   plot_na_counts = T,
   plot_scatter = T,
+  plot_box = T,
+  plot_seasonal = T,
+  plot_regional = T,
+  plot_total = T,
   correlation_method = NULL,
-  dist_columns = NULL,
   ma_days = NULL,
-  ma_sides = 2,
+  ma_sides = 1,
   ma_columns = NULL,
   timeseries_col = NULL,
+  detect_outliers = T,
+  calculate_rate = T,
   output_path
 )
 }
 \arguments{
-\item{data}{The dataset used for descriptive stats (as a vector)}
+\item{data}{The dataset used for descriptive stats (as a vector).}
 
-\item{aggregation_column}{The column to use for aggregating the dataset into smaller subsets}
+\item{aggregation_column}{Character. The column to use for aggregating the dataset into smaller subsets.}
 
-\item{dataset_title}{The datasets title used for outputs}
+\item{population_col}{Character. The column containing the population.}
 
-\item{dependent_col}{The dependent column}
+\item{dataset_title}{Character. The dataset's title used for outputs.}
 
-\item{independent_cols}{A vector of independent columns}
+\item{dependent_col}{Character. The dependent column.}
 
-\item{plot_correlation}{Whether to plot a correlation matrix}
+\item{independent_cols}{Character vector. The independent columns.}
 
-\item{plot_dist_hists}{Whether to plot histograms showing column distributions}
+\item{columns}{Character vector. Specific columns to use for analysis.}
 
-\item{plot_ma}{Whether to plot moving averages over a timeseries}
+\item{units}{Named character vector. A named character vector of units for each variable.}
 
-\item{plot_na_counts}{Whether to plot counts of NAs in each column}
+\item{select_all_numeric}{Logical. Whether to select all numeric columns.}
 
-\item{plot_scatter}{Whether to plot the dependent column against the independent columns}
+\item{plot_correlation}{Logical. Whether to plot a correlation matrix.}
 
-\item{correlation_method}{The correlation method. One of 'pearson', 'spearman', 'kendall'}
+\item{plot_dist_hists}{Logical. Whether to plot histograms showing column distributions.}
 
-\item{dist_columns}{The columns to plot distributions for}
+\item{plot_ma}{Logical. Whether to plot moving averages over a timeseries.}
 
-\item{ma_days}{The number of days to use in moving average calculations}
+\item{plot_na_counts}{Logical. Whether to plot counts of NAs in each column.}
 
-\item{ma_sides}{The number of sides to use in moving average calculations (1 or2)}
+\item{plot_scatter}{Logical. Whether to plot the dependent column against the independent columns.}
 
-\item{ma_columns}{A vector of columns to plot moving average for}
+\item{plot_box}{Logical. Whether to generate box plots for selected columns.}
 
-\item{timeseries_col}{The column used as the timerseries for moving averages}
+\item{plot_seasonal}{Logical. Whether to plot seasonal trends of the variables in columns.}
 
-\item{output_path}{The path to save outputs to}
+\item{plot_regional}{Logical. Whether to plot regional trends of the variables in columns.}
+
+\item{plot_total}{Logical. Whether to plot the total of the dependent column per year.}
+
+\item{correlation_method}{Character. The correlation method. One of 'pearson', 'spearman', 'kendall'.}
+
+\item{ma_days}{Integer. The number of days to use in moving average calculations.}
+
+\item{ma_sides}{Integer. The number of sides to use in moving average calculations (1 or 2).}
+
+\item{ma_columns}{Character vector. Columns to plot moving average for.}
+
+\item{timeseries_col}{Character. The column used as the timeseries for moving averages.}
+
+\item{detect_outliers}{Logical. Whether to have a table of outliers.}
+
+\item{calculate_rate}{Logical. Whether to plot a rate based metric of the dependent column per year.}
+
+\item{output_path}{Character. The path to save outputs to.}
 }
 \value{
-The full directory path that the descriptive stats are saved to.
+Character vector. The full directory path that the descriptive stats are saved to.
 }
 \description{
-The function used to create desciprtive stats via an API endpoint
+Create Descriptive Statistics via an API Endpoint
 }
+\keyword{internal}

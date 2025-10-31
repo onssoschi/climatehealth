@@ -2,52 +2,94 @@
 % Please edit documentation in R/descriptive_stats.R
 \name{common_descriptive_stats}
 \alias{common_descriptive_stats}
-\title{The wrapper function to compute descriptive stats for the heat and cold indicator.}
+\title{Wrapper Function to Compute Descriptive Statistics for Heat and Cold Indicators}
 \usage{
 common_descriptive_stats(
   dataset_title,
   df_list,
   output_path,
+  aggregation_column = NULL,
+  population_col = NULL,
   plot_corr_matrix = F,
   correlation_method = "pearson",
   plot_dist = F,
-  dist_columns = c(),
   plot_ma = F,
   ma_days = 100,
-  ma_sides = 2,
+  ma_sides = 1,
   ma_columns = c(),
   timeseries_col = NULL,
   dependent_col,
   independent_cols,
+  columns = NULL,
+  units = NULL,
+  select_all_numeric = F,
   plot_na_counts = F,
-  plot_scatter = F
+  plot_scatter = F,
+  plot_box = F,
+  plot_seasonal = F,
+  plot_regional = F,
+  plot_total = F,
+  detect_outliers = F,
+  calculate_rate = F
 )
 }
 \arguments{
-\item{dataset_title}{String. The title for the dataset being used.}
+\item{dataset_title}{Character. The title for the dataset being used.}
 
-\item{df_list}{list(dataframe) A list of input dataframes.}
+\item{df_list}{List of dataframes. A list of input dataframes.}
 
-\item{output_path}{string. The path to write outputs to.}
+\item{output_path}{Character. The path to write outputs to.}
 
-\item{correlation_method}{string. The correlation method used in ds.}
+\item{aggregation_column}{Character. The column to use for aggregating the dataset into smaller subsets of regions.}
 
-\item{dist_columns}{vector. The columns to plot distributions for.}
+\item{population_col}{Character. The column containing the population.}
 
-\item{ma_days}{int. The number of days to use for a moving average.}
+\item{plot_corr_matrix}{Logical. Whether or not to plot correlation matrix.}
 
-\item{ma_sides}{int. The number of sides to use for a moving average (1 or 2).}
+\item{correlation_method}{Character. The correlation method. One of 'pearson', 'spearman', 'kendall'.}
 
-\item{ma_columns}{vector. Additional columns to plot moving average for. Dependent done by default.}
+\item{plot_dist}{Logical. Whether or not to plot distribution histograms.}
 
-\item{dependent_col}{str. The column in the data containing the dependent var.}
+\item{plot_ma}{Logical. Whether to plot moving averages over a timeseries.}
 
-\item{independent_cols}{str. The column in the data containing the independent var.}
+\item{ma_days}{Integer. The number of days to use for a moving average.}
 
-\item{use_individual_dfs}{bool. Whether or not to use all dfs or concat them into one.}
+\item{ma_sides}{Integer. The number of sides to use for a moving average (1 or 2).}
 
-\item{title}{string. title used for the plots in the ds.}
+\item{ma_columns}{Character vector. Additional columns to plot moving average for. Dependent done by default.}
+
+\item{timeseries_col}{Character. The column used as the timeseries for moving averages.}
+
+\item{dependent_col}{Character. The column in the data containing the dependent variable.}
+
+\item{independent_cols}{Character vector. The columns in the data containing the independent variables.}
+
+\item{columns}{Character vector. Specific columns to use for analysis.}
+
+\item{units}{Named character vector. A named character vector of units for each variable.}
+
+\item{select_all_numeric}{Logical. Whether to select all numerical columns for plotting.}
+
+\item{plot_na_counts}{Logical. Whether to plot NA counts.}
+
+\item{plot_scatter}{Logical. Whether to plot scatter plots.}
+
+\item{plot_box}{Logical. Whether to plot box plots.}
+
+\item{plot_seasonal}{Logical. Whether to plot seasonal plots.}
+
+\item{plot_regional}{Logical. Whether to plot regional plots.}
+
+\item{plot_total}{Logical. Whether to plot total health outcomes per year.}
+
+\item{detect_outliers}{Logical. Whether to output a table containing outlier information.}
+
+\item{calculate_rate}{Logical. Whether to calculate the rate of health outcomes per 100k people.}
+}
+\value{
+Character vector. The output directory path and summary directory name.
 }
 \description{
-The wrapper function to compute descriptive stats for the heat and cold indicator.
+Wrapper Function to Compute Descriptive Statistics for Heat and Cold Indicators
 }
+\keyword{internal}

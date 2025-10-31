@@ -17,3 +17,4 @@ A list of dataframes, split up based on the value of column_name.
 \description{
 Split dataframe into multiple dataframes, based on a columns value.
 }
+\keyword{internal}

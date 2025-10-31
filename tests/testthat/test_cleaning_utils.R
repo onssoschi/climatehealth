@@ -1,4 +1,3 @@
-library(lubridate)
 # Tests for cleaning_utils.R
 
 # Tests for reformat_data
@@ -10,7 +9,7 @@ test_that(
   "Test that reformat_data converts a column to datetype.",
   {
     test_df <- reformat_data(date_test_df, T, c(), F)
-    valid <- is.Date(test_df$date[[1]])
+    valid <- inherits(test_df$date[[1]], "Date")
     expect_true(valid, info = "reformat_data was expected to turn date column to 'Date' type.")
   }
 )

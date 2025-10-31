@@ -12,12 +12,18 @@ save_results(
 )
 }
 \arguments{
-\item{output_folder_path}{Path to folder where results should be saved.}
-
-\item{results}{Dataframe of relative risk and confidence intervals for
+\item{rr_results}{Dataframe. Relative risk and confidence intervals for
 each lag of wildfire-related PM2.5}
+
+\item{output_AN_AR}{Bool. Whether or not to output attributable numbers and
+fractions. Defaults to TRUE.}
+
+\item{an_ar_results}{Dataframe. The AN/AR results. Defaults to NULL.}
+
+\item{output_folder_path}{Path to folder where results should be saved.}
 }
 \description{
 Saves a CSV file of relative risk and confidence intervals for
 each lag value of wildfire-related PM2.5
 }
+\keyword{internal}

@@ -8,6 +8,9 @@
 .RData
 .RDataTmp
 .Renviron
+..Rcheck
+renv
+lib
 
 # Common Data Files
 *.csv
@@ -23,10 +26,7 @@
 *.xls
 *.rds
 
-# Output Folders
-tests/testthat/testdata/*
-
 # Test Data Exclusions
-!tests/testthat/config.yml
-!tests/testthat/testdata/regEngWalesPop.csv
-!new_tests/testthat/testdata/*
+!inst/testdata/*
+_snaps
+

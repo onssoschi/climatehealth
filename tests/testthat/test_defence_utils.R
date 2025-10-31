@@ -15,7 +15,7 @@ test_that(
 )
 
 # Tests for raises in is_list_of_dfs().
-with_parameters_test_that(
+patrick::with_parameters_test_that(
   "Test that the raises (stop) in is_list_of_dfs work correctly.",
   {
     expect_error(is_list_of_dfs(input_data, param_nm = param), regexp = error_msg)
@@ -35,7 +35,7 @@ with_parameters_test_that(
 
 # Test that is_list_of_dfs() returns FALSE.
 
-with_parameters_test_that(
+patrick::with_parameters_test_that(
   "Test that the raises (stop) in is_list_of_dfs work correctly.",
   {
     expect_false(

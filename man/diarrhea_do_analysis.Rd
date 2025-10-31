@@ -2,7 +2,9 @@
 % Please edit documentation in R/diarrhea.R
 \name{diarrhea_do_analysis}
 \alias{diarrhea_do_analysis}
-\title{Run Full Diarrhea-Climate Analysis Pipeline}
+\title{Code for calculating Diarrhea disease cases attributable to extreme
+precipitation and extreme temperature
+Run Full Diarrhea-Climate Analysis Pipeline}
 \usage{
 diarrhea_do_analysis(
   health_data_path,
@@ -10,7 +12,7 @@ diarrhea_do_analysis(
   map_path,
   region_col,
   district_col,
-  date_col,
+  date_col = NULL,
   year_col,
   month_col,
   diarrhea_case_col,
@@ -24,6 +26,7 @@ diarrhea_do_analysis(
   geometry_col,
   spi_col = NULL,
   max_lag = 2,
+  inla_param,
   basis_matrices_choices,
   param_term,
   level,
@@ -32,6 +35,7 @@ diarrhea_do_analysis(
   family = "poisson",
   config = FALSE,
   save_csv = FALSE,
+  save_model = FALSE,
   save_fig = FALSE,
   output_dir = NULL
 )
@@ -80,6 +84,10 @@ Precipitation Index. Defaults to NULL.}
 \item{max_lag}{Numeric. Maximum lag to consider in the model
 (typically 2 to 4). Defaults to 2.}
 
+\item{inla_param}{A character vector specifying the confounding exposures to
+be included in the model. Possible values are "tmax","tmin", "rainfall",
+"r_humidity", and "runoff".}
+
 \item{basis_matrices_choices}{Character vector specifying basis matrix
 parameters to include in the model (e.g., "tmax", "tmin", "rainfall",
 "r_humidity", "spi").}
@@ -100,7 +108,11 @@ negative binomial distribution. Defaults to "poisson".}
 
 \item{config}{Boolean. Enable additional model configurations. Defaults to FALSE.}
 
-\item{save_fig}{Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.}
+\item{save_csv}{Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.}
+
+\item{save_model}{Boolean. If TRUE, saves the INLA model. Defaults to FALSE.}
+
+\item{save_fig}{Boolean. If TRUE, saves the generated plots. Defaults to FALSE.}
 
 \item{output_dir}{Character. The path to the directory where outputs
 (e.g., plots, maps, datasets) should be saved.}

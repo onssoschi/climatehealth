@@ -1,9 +1,5 @@
 # Functions to help clean and aggregate input data.
-
-library(dplyr) # used to load pipe operator
-library(rlang) # used to load sym function
-# TODO: consider splitting this up into smaller functions
-
+# Cleaning Utilities
 
 #' Reformat a dataframe using various different cleaning techniques.
 #'
@@ -19,7 +15,7 @@ library(rlang) # used to load sym function
 #'
 #' @return The cleaned/reformatted data frame.
 #'
-#' @export
+#' @keywords internal
 reformat_data <- function(
     df,
     reformat_date = TRUE,
@@ -55,7 +51,7 @@ reformat_data <- function(
 #'
 #' @return A list of dataframes, split up based on the value of column_name.
 #'
-#' @export
+#' @keywords internal
 aggregate_by_column <- function(df, column_name) {
   unique_values <- sort(as.character(unique(df[[column_name]])))
   aggregated_dfs <- lapply(

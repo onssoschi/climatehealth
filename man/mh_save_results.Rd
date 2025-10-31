@@ -4,11 +4,26 @@
 \alias{mh_save_results}
 \title{Save results of analysis - Mental Health}
 \usage{
-mh_save_results(results, output_folder_path = NULL)
+mh_save_results(
+  rr_results,
+  res_attr_tot,
+  attr_yr_list,
+  attr_mth_list,
+  output_folder_path = NULL
+)
 }
 \arguments{
-\item{results}{Dataframe containing cumulative relative risk and confidence
+\item{rr_results}{Dataframe containing cumulative relative risk and confidence
 intervals from analysis.}
+
+\item{res_attr_tot}{Matrix containing total attributable fractions, numbers and rates for each
+area over the whole time series.}
+
+\item{attr_yr_list}{A list of matrices containing yearly estimates of attributable
+fractions, numbers and rates by area}
+
+\item{attr_mth_list}{A list of data frames containing total attributable
+fractions, numbers and rates by calendar month and area.}
 
 \item{output_folder_path}{Path to folder where results should be saved.
 Defaults to NULL.}
@@ -17,3 +32,4 @@ Defaults to NULL.}
 Saves a CSV file of cumulative relative risk and
 confidence intervals.
 }
+\keyword{internal}

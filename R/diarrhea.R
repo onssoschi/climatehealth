@@ -1786,6 +1786,9 @@ plot_attribution_metric <- function(attr_data,
 #' Precipitation Index. Defaults to NULL.
 #' @param max_lag Numeric. Maximum lag to consider in the model
 #' (typically 2 to 4). Defaults to 2.
+#' @param inla_param A character vector specifying the confounding exposures to
+#' be included in the model. Possible values are "tmax","tmin", "rainfall",
+#' "r_humidity", and "runoff".
 #' @param basis_matrices_choices Character vector specifying basis matrix
 #' parameters to include in the model (e.g., "tmax", "tmin", "rainfall",
 #' "r_humidity", "spi").
@@ -1801,8 +1804,9 @@ plot_attribution_metric <- function(attr_data,
 #' variable. The user may also have thepossibility to choose "nbinomial" for a
 #' negative binomial distribution. Defaults to "poisson".
 #' @param config Boolean. Enable additional model configurations. Defaults to FALSE.
+#' @param save_csv Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.
+#' @param save_model Boolean. If TRUE, saves the INLA model. Defaults to FALSE.
 #' @param save_fig Boolean. If TRUE, saves the generated plots. Defaults to FALSE.
-#' @param save_fig Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.
 #' @param output_dir Character. The path to the directory where outputs
 #' (e.g., plots, maps, datasets) should be saved.
 #'
@@ -1847,12 +1851,13 @@ diarrhea_do_analysis <- function(health_data_path,
                                  family = "poisson",
                                  config = FALSE,
                                  save_csv = FALSE,
+                                 save_model = FALSE,
                                  save_fig = FALSE,
                                  output_dir = NULL){
 
   # Simple output validation
   if (is.null(output_dir) & (save_fig | save_csv)) {
-    stop("'output_dir' must be provided is 'save_fig' or save_csv' are TRUE.")
+    stop("'output_dir' must be provided if 'save_fig' or save_csv' are TRUE.")
   }
   check_file_exists(output_dir, TRUE)
 
@@ -1863,32 +1868,40 @@ diarrhea_do_analysis <- function(health_data_path,
     stop(paste0("Level must be one of ", paste0(acceptable_levels, collapse=", ")))
   }
 
-  # Input validation
-  check_file_exists(health_data_path, TRUE)
-  check_file_exists(climate_data_path, TRUE)
-  check_file_exists(map_path, TRUE)
+  # Input validation (IF makes API exception)
+  if (is.character(health_data_path)) {
+    check_file_exists(health_data_path, TRUE)
+  }
+  if (is.character(climate_data_path)) {
+    check_file_exists(climate_data_path, TRUE)
+  }
+  check_file_exists(map_path, TRUE)#
 
-  # get combined data
-  combined_data <- combine_health_climate_data(health_data_path,
-                                               climate_data_path,
-                                               map_path,
-                                               region_col,
-                                               district_col,
-                                               date_col,
-                                               year_col,
-                                               month_col,
-                                               diarrhea_case_col,
-                                               tot_pop_col,
-                                               tmin_col,
-                                               tmean_col,
-                                               tmax_col,
-                                               rainfall_col,
-                                               r_humidity_col,
-                                               geometry_col,
-                                               runoff_col,
-                                               spi_col,
-                                               max_lag,
-                                               output_dir)
+  # Get combined data
+  combined_data <- combine_health_climate_data(
+    health_data_path,
+    climate_data_path,
+    map_path,
+    region_col,
+    district_col,
+    date_col,
+    year_col,
+    month_col,
+    diarrhea_case_col,
+    "diarrhea",
+    tot_pop_col,
+    tmin_col,
+    tmean_col,
+    tmax_col,
+    rainfall_col,
+    r_humidity_col,
+    geometry_col,
+    runoff_col,
+    NULL,
+    spi_col,
+    max_lag,
+    output_dir
+  )
 
   #plot time seris
   plot_diarrhea<-plot_health_climate_timeseries(combined_data$data,
@@ -1904,66 +1917,83 @@ diarrhea_do_analysis <- function(health_data_path,
                                             save_fig = save_fig,
                                             output_dir = output_dir)
 
-  plot_rainfall<-plot_health_climate_timeseries(combined_data$data,
-                                                param_term= "rainfall",
-                                                level = "country",
-                                                filter_year = filter_year,
-                                                save_fig = save_fig,
-                                                output_dir = output_dir)
+  # Create base matrice
+  basis <- set_cross_basis(combined_data$data, FALSE)
 
-  # create base matrice
-  basis <- set_cross_basis(combined_data$data)
+  # Check for multicolinearity
+  if (save_csv) {
+    VIF <- check_and_write_vif(
+      data=combined_data$data,
+      inla_param=inla_param,
+      basis_matrices_choices=basis_matrices_choices,
+      case_type="diarrhea",
+      output_dir=output_dir
+    )
+  } else {
+    VIF <- check_diseases_vif(
+      data=combined_data$data,
+      inla_param=inla_param,
+      basis_matrices_choices=basis_matrices_choices,
+      case_type="diarrhea"
+    )
+  }
 
   #check for multicolinearity
   VIF<- check_vif(combined_data$data, inla_param, basis_matrices_choices)
 
-  # fitting the model
-  inla_result <- run_inla_models(combined_data,
-                                 basis_matrices_choices,
-                                 inla_param=inla_param,
-                                 output_dir=output_dir,
-                                 save_csv=save_csv,
-                                 family=family,
-                                 config=config)
+  # Plot seasonality
+  reff_plot_monthly <- plot_monthly_random_effects(
+    combined_data=combined_data,
+    model=inla_result$model,
+    output_dir=output_dir,
+    save_fig=save_fig
+  )
 
-  # seasonality plot
-  reff_plot_monthly <- plot_monthly_random_effects(combined_data,
-                                                   model=inla_result$model,
-                                                   output_dir=output_dir,
-                                                   save_fig=save_fig )
+  # Spatial random effect
+  reff_plot_yearly <- plot_yearly_spatial_random_effect(
+    combined_data=combined_data,
+    model=inla_result$model,
+    case_type="diarrhea",
+    save_fig=save_fig,
+    output_dir=output_dir
+  )
 
-  # spatial random effect
-  reff_plot_yearly <- plot_yearly_spatial_random_effect(combined_data,
-                                                        model=inla_result$model,
-                                                        output_dir=output_dir,
-                                                        save_fig=save_fig)
-  # contour plots
-  contour_plot <- contour_plot(combined_data$data,
-                               param_term,
-                               model=inla_result$model,
-                               level=level,
-                               output_dir=output_dir,
-                               save_fig=save_fig,
-                               filter_year=filter_year)
+  # Contour plots
+  contour_plot_diarrhea <- contour_plot(
+    data=combined_data$data,
+    param_term=param_term,
+    model=inla_result$model,
+    level=level,
+    filter_year=filter_year,
+    case_type="diarrhea",
+    save_fig=save_fig,
+    output_dir=output_dir
+  )
 
-  # rr map plots
-  rr_map_plot <- plot_rr_map(combined_data,
-                             param_term,
-                             model=inla_result$model,
-                             level="district",
-                             filter_year=filter_year,
-                             output_dir=output_dir,
-                             save_fig=save_fig)
+  # Relative risk map plots
+  rr_map_plot <- plot_rr_map(
+    combined_data=combined_data,
+    model=inla_result$model,
+    param_term=param_term,
+    level=level,
+    filter_year=filter_year,
+    case_type="diarrhea",
+    output_dir=output_dir,
+    save_fig=save_fig
+  )
 
-  # relative rist plot
-  rr_data <- plot_relative_risk( combined_data$data,
-                                 param_term=param_term,
-                                 model=inla_result$model,
-                                 level=level,
-                                 filter_year=filter_year,
-                                 output_dir=output_dir,
-                                 save_csv=save_csv,
-                                 save_fig=save_fig)
+  # Relative risk plot
+  rr_data <- plot_relative_risk(
+    data=combined_data$data,
+    model=inla_result$model,
+    param_term=param_term,
+    level=level,
+    filter_year=filter_year,
+    case_type="diarrhea",
+    output_dir=output_dir,
+    save_csv=save_csv,
+    save_fig=save_fig
+  )
   rr_plot <- rr_data[["plots"]]
   rr_df <- rr_data[["RR"]]
 

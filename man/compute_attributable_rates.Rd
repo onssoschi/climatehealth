@@ -15,7 +15,7 @@ region comprising dates, deaths, and temperatures.}
 \item{matsim}{A matrix (numeric). Total (glob),
 cold and heat-attributable deaths per region from reduced coefficients.}
 
-\item{arraysim`}{An array (numeric). Total (glob),
+\item{arraysim}{An array (numeric). Total (glob),
 cold and heat-attributable deaths per region for 1000 simulations.
 Used to derive confidence intervals.}
 }
@@ -30,3 +30,4 @@ Used to derive confidence intervals.}
 \description{
 Compute attributable rates
 }
+\keyword{internal}

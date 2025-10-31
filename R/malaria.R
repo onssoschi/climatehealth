@@ -1734,7 +1734,7 @@ plot_attribution_metric <- function(attr_data,
 #' Run Full Malaria-Climate Analysis Pipeline
 #'
 #' @description
-#' The `Malaria_do_analysis` function runs the complete analysis workflow
+#' The `malaria_do_analysis` function runs the complete analysis workflow
 #' by combining multiple functions to analyze the association between Malaria
 #' cases and climate variables. It processes health, climate, and spatial data,
 #' fits models, generates plots, and calculates attributable risk.
@@ -1747,7 +1747,7 @@ plot_attribution_metric <- function(attr_data,
 #' @param date_col Character. Name of the column containing the date. Defaults to NULL.
 #' @param year_col Character. Name of the column containing the year.
 #' @param month_col Character. Name of the column containing the month.
-#' @param Malaria_case_col Character. Name of the column containing Malaria case counts.
+#' @param malaria_case_col Character. Name of the column containing Malaria case counts.
 #' @param tot_pop_col Character. Name of the column containing total population.
 #' @param tmin_col Character. Name of the column containing minimum temperature.
 #' @param tmean_col Character. Name of the column containing mean temperature.
@@ -1761,11 +1761,15 @@ plot_attribution_metric <- function(attr_data,
 #' (usually "geometry").
 #' @param spi_col Character. Name of the column containing the Standardized
 #' Precipitation Index. Defaults to NULL.
+#' @param cvh_col Character. Name of the column containing CVH.
 #' @param max_lag Numeric. Maximum lag to consider in the model
 #' (typically 2 to 4). Defaults to 2.
 #' @param basis_matrices_choices Character vector specifying basis matrix
 #' parameters to include in the model (e.g., "tmax", "tmin", "rainfall",
 #' "r_humidity", "spi").
+#' @param inla_param A character vector specifying the confounding exposures to
+#' be included in the model. Possible values are "tmax","tmin", "rainfall",
+#' "r_humidity", and "runoff".
 #' @param param_term Character vector specifying the exposure variables of interest
 #' (e.g., "tmax", "rainfall").
 #' @param level Character. Spatial disaggregation level: "country", "region", or "district".
@@ -1778,8 +1782,9 @@ plot_attribution_metric <- function(attr_data,
 #' variable. The user may also have thepossibility to choose "nbinomial" for a
 #' negative binomial distribution. Defaults to "poisson".
 #' @param config Boolean. Enable additional model configurations. Defaults to FALSE.
+#' @param save_csv Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.
+#' @param save_model Boolean. If TRUE, saves the INLA model. Defaults to FALSE.
 #' @param save_fig Boolean. If TRUE, saves the generated plots. Defaults to FALSE.
-#' @param save_fig Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.
 #' @param output_dir Character. The path to the directory where outputs
 #' (e.g., plots, maps, datasets) should be saved.
 #'
@@ -1841,9 +1846,13 @@ Malaria_do_analysis <- function(health_data_path,
     stop(paste0("Level must be one of ", paste0(acceptable_levels, collapse=", ")))
   }
 
-  # Input validation
-  check_file_exists(health_data_path, TRUE)
-  check_file_exists(climate_data_path, TRUE)
+  # Input validation (IF makes API exception)
+  if (is.character(health_data_path)) {
+    check_file_exists(health_data_path, TRUE)
+  }
+  if (is.character(climate_data_path)) {
+    check_file_exists(climate_data_path, TRUE)
+  }
   check_file_exists(map_path, TRUE)
 
   # get combined data
@@ -1882,14 +1891,8 @@ Malaria_do_analysis <- function(health_data_path,
                                             save_fig = save_fig,
                                             output_dir = output_dir)
 
-  plot_rainfall<-plot_health_climate_timeseries(combined_data$data,
-                                                param_term= "rainfall",
-                                                level = "country",
-                                                filter_year = filter_year,
-                                                save_fig = save_fig,
-                                                output_dir = output_dir)
-  # create base matrice
-  basis <- set_cross_basis(combined_data$data)
+  # Create base matrice
+  basis <- set_cross_basis(combined_data$data, TRUE)
 
   #check for multicolinearity
   VIF<- check_vif(combined_data$data, inla_param, basis_matrices_choices)
@@ -1944,13 +1947,12 @@ Malaria_do_analysis <- function(health_data_path,
   rr_plot <- rr_data[["plots"]]
   rr_df <- rr_data[["RR"]]
 
-  # attribution fraction and number
+  # Attributable fractions and numbers
   attr_frac_num <- attribution_calculation(
     combined_data$data,
     param_term=param_term,
     model=inla_result$model,
     param_threshold=param_threshold,
-    level= level,
     filter_year=filter_year,
     group_by_year = group_by_year,
     save_csv=save_csv,
@@ -1992,5 +1994,3 @@ Malaria_do_analysis <- function(health_data_path,
 
   return(res)
 }
-
-Malaria_do_analysis()
