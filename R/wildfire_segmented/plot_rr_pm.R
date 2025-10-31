@@ -42,8 +42,10 @@ ggplot(data, aes(x = pm_levels, y = relative_risk)) +
     )
 
 
-p <- plot_rr_with_ci(data,
-                     title = "Cardiovascular mortality - Nice")
+p <- plot_rr_with_ci(
+  data,
+  title = "Cardiovascular mortality - Nice"
+)
 
 ############
 library(ggplot2)
@@ -51,10 +53,12 @@ library(dplyr)
 library(patchwork)
 install.packages("patchwork")
 # Define the plotting function
-plot_rr_with_ci <- function(data,
-                            title = "mortality",
-                            x_label = "PM2.5 (ug/m3)",
-                            y_label = "Relative Risk") {
+plot_rr_with_ci <- function(
+  data,
+  title = "All-cause mortality",
+  x_label = "PM2.5 (ug/m3)",
+  y_label = "Relative Risk"
+) {
   ggplot(data, aes(x = pm_levels, y = relative_risk)) +
     geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper), alpha = 0.2, fill = "#4d7789") +
     geom_line(color = "#003c57", size = 1) +
@@ -74,7 +78,7 @@ plot_rr_with_ci <- function(data,
 
 # Create separate plots for each region
 plots <- data %>%
-  split(.$region_name) %>%
+  split(.data$region_name) %>%
   lapply(function(df) plot_rr_with_ci(df, title = unique(df$region_name)))
 
 # Combine all plots into one panel
