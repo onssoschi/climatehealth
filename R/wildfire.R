@@ -1173,6 +1173,30 @@ summarise_AF_AN <- function(data) {
     return(yearly_summary)
 }
 
+#' Plot aggregated attributable fractions across years and regions
+#'
+#' Generates a PDF containing one or more plots of average attributable
+#' fractions over time. If by_region is TRUE, the function creates separate
+#' plots for each region in regnames. All plots are saved to a single PDF
+#' file named "aggregated_AN.pdf" in the specified output_dir.
+#'
+#' @param data A data frame containing annual attributable fraction estimates.
+#' Must include columns: year, average_attributable_fraction,
+#' lower_ci_attributable_fraction, upper_ci_attributable_fraction. If
+#' by_region is TRUE, must also include regnames.
+#' @param by_region Logical. If TRUE, plots are generated per region using
+#' regnames. Defaults to FALSE.
+#' @param output_dir Character. Directory path where the PDF file will be
+#' saved. Must exist. Defaults to ".".
+#'
+#' @return No return value. A PDF file is created.
+#' 
+#' @keywords internal
+#'
+#' @examples
+#' \dontrun{
+#' plot_aggregated_AN(data = my_df, by_region = TRUE, output_dir = "plots")
+#' }
 plot_aggregated_AN <- function(data, by_region = FALSE, output_dir = ".") {
   # input validation
   expected_cols <- c(
@@ -1206,6 +1230,24 @@ plot_aggregated_AN <- function(data, by_region = FALSE, output_dir = ".") {
   dev.off()
 }
 
+#' Create a plot of annual attributable fractions with CI
+#'
+#' Aggregates annual average attributable fraction estimates and generates a
+#' ggplot showing the central estimate and CI.
+#'
+#' @param data A data frame with columns: year, average_attributable_fraction,
+#' lower_ci_attributable_fraction, and upper_ci_attributable_fraction.
+#' @param region_name Optional character string used to label the plot title
+#' with a region name. Defaeults to NULL.
+#' @return A ggplot object showing annual attributable rates with confidence
+#' intervals.
+#' 
+#' @keywords internal
+#'
+#' @examples
+#' \dontrun{
+#' plot_aggregated_AN_core(data = my_df, region_name = "Wales")
+#' }
 plot_aggregated_AN_core <- function(data, region_name = NULL) {
   # aggregate AN/AR data
   agg_data <- data %>%
@@ -1240,6 +1282,26 @@ plot_aggregated_AN_core <- function(data, region_name = NULL) {
   return(plot_agg_an)
 }
 
+#' Join monthly PM2.5 estimates with attributable risk data by region and time
+#'
+#' Aggregates PM2.5 data to monthly averages by region and joins it with
+#' attributable risk data using year, month, and regnames as keys.
+#'
+#' @param pm_data A data frame with columns: year, month, regnames, mean_PM_FRP.
+#' Represents monthly PM2.5 estimates.
+#' @param an_ar_data A data frame with columns: year, month, regnames. 
+#' Represents attributable risk or fraction data to be joined with PM2.5
+#' estimates.
+#'
+#' @return A data frame with monthly average PM2.5 values joined to attributable
+#' risk data.
+#' 
+#' @keywords internal
+#'
+#' @examples
+#' \dontrun{
+#' join_ar_and_pm_monthly(pm_data = pm_df, an_ar_data = ar_df)
+#' }
 join_ar_and_pm_monthly <- function(
   pm_data,
   an_ar_data
@@ -1268,6 +1330,26 @@ join_ar_and_pm_monthly <- function(
   return(joined_data)
 }
 
+#' Plot monthly deaths and PM2.5 concentrations with dual y-axes
+#'
+#' Aggregates data by month and creates a dual-axis plot showing average
+#' deaths per 100,000 and mean PM2.5 concentrations.
+#'
+#' @param data A data frame with columns: month_name, deaths_per_100k, and
+#' monthly_avg_pm25. Month names must match month.abb.
+#' @param save_outputs Logical. If TRUE, saves the plot as PNG and the
+#' aggregated data as CSV. Defaults to FALSE.
+#' @param output_dir Character. Directory path where outputs are saved if
+#' save_outputs is TRUE. Must exist. Defaults to NULL.
+#'
+#' @return No return value. Generates a plot and optionally saves files.
+#' 
+#' @keywords internal
+#'
+#' @examples
+#' \dontrun{
+#' plot_ar_pm_monthly(data = my_df, save_outputs = TRUE, output_dir = "outputs")
+#' }
 plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
   # validate inputs
   if (save_outputs==TRUE && is.null(output_dir)) {
@@ -1327,6 +1409,118 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
     dev.off()
     write.csv(aggregated_data, paste0(fpath, ".csv"))
   }
+}
+
+#' Plot relative risk by PM2.5 levels for all regions and individually
+#'
+#' Generates one or more plots showing relative risk estimates across PM2.5
+#' levels. If multiple regions are present, plots are created per region and
+#' for all regions combined. Optionally saves the output as a PDF.
+#'
+#' @param data A data frame with columns: pm_levels, relative_risk, ci_lower,
+#' ci_upper, and regnames.
+#' @param save_fig Logical. If TRUE, saves the plot(s) as a PDF file in
+#' output_dir. Defaults to FALSE.
+#' @param output_dir Character. Directory path where the PDF file will be
+#' saved if save_fig is TRUE. Must exist. Defaults to NULL.
+#'
+#' @return No return value. Generates one or more plots and optionally saves
+#' them to disk.
+#' 
+#' @keywords internal
+#'
+#' @examples
+#' \dontrun{
+#' plot_rr_by_pm(data = rr_df, save_fig = TRUE, output_dir = "outputs")
+#' }
+plot_rr_by_pm <- function(
+  data,
+  save_fig = FALSE,
+  output_dir = NULL
+) {
+  # input validation
+  if (save_outputs==TRUE && is.null(output_dir)) {
+    stop("'output_dir' must be provded to save outputs.")
+  }
+  if (!file.exists(output_dir)) {
+    stop("'output_dir' must exist on disk to save outputs.")
+  }
+  exp_cols <- c(
+    "pm_levels",
+    "relative_risk",
+    "ci_lower",
+    "ci_upper",
+    "regnames"
+  )
+  if (!all(exp_cols %in% colnames(data))) {
+    stop("'data' must contain these columns: ", paste0(exp_cols, collapse=", "))
+  }
+  # plotting logic
+  fpath <- file.path(output_dir, "rr_by_pm.pdf")
+  if (save_fig) pdf(fpath)
+  # Plot region is more than one region is available
+  if (length(unique(data$regnames) > 1)) {
+    for (region in unique(data$regnames)) {
+      p <- plot_rr_by_pm_core(
+        data=data[data$regnames==region, ],
+        region_name=as.character(region)
+      )
+      print(p)
+    }
+  }
+  # Plot all regions combined
+  p <- plot_rr_by_pm_core(data)
+  print(p)
+  if (save_fig) dev.off()
+}
+
+#' Create a relative risk plot across PM2.5 levels for a single region
+#'
+#' Generates a ggplot showing relative risk estimates and confidence intervals
+#' across PM2.5 levels for a given region.
+#'
+#' @param data A data frame with columns: pm_levels, relative_risk, ci_lower,
+#' and ci_upper.
+#' @param region_name Optional character string used to label the plot title
+#' with a region name. Defaults to "All Regions".
+#'
+#' @return A ggplot object showing relative risk and CI.
+#' 
+#' @keywords internal
+#'
+#' @examples
+#' \dontrun{
+#' plot_rr_by_pm_core(data = rr_df, region_name = "Wales")
+#' }
+plot_rr_by_pm_core <- function(
+  data,
+  region_name = "All Regions"
+) {
+  # create plot object
+  title <- paste0("All-cause mortality", " (", region_name, ")")
+  p <- ggplot2::ggplot(data, ggplot2::aes(x = pm_levels, y = relative_risk)) +
+    ggplot2::geom_ribbon(
+      ggplot2::aes(ymin = ci_lower, ymax = ci_upper),
+      alpha = 0.2,
+      fill = "#4d7789"
+    ) +
+    ggplot2::geom_line(color = "#003c57", size = 1) +
+    ggplot2::scale_y_continuous(
+      limits = c(-1, 12),
+      breaks = seq(-1, 12, by = 1),
+      labels = scales::number_format(accuracy = 5)
+    ) +
+    ggplot2::labs(title = title, x = "PM2.5 (ug/m3)", y = "Relative Risk") +
+    ggplot2::theme_minimal(base_size = 14) +
+    ggplot2::theme(
+      axis.line = ggplot2::element_line(size = 0.5, colour = "black"),
+      plot.background = ggplot2::element_rect(color = "#222222", size = 1),
+      panel.border = ggplot2::element_rect(
+        color = "#222222",
+        fill = NA,
+        size = 0.5)
+    )
+  return(p)
 }
 
 #' Run pipeline to analyse the impact of wildfire-related PM2.5 on a health
