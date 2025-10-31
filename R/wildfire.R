@@ -643,9 +643,15 @@ casecrossover_quasipoisson <- function(
     for (i in lags) {
         number <- lag_nums[[i]]
         # create model
-        formula <- as.formula(
-            paste("health_outcome ~ splines::ns(tmean, df = 6) +", i)
-        )
+        formula_parts <- c("health_outcome ~ splines::ns(tmean, df = 6)", i)
+        if (!all(is.na(df$rh))) {
+            formula_parts <- c(formula_parts, "splines::ns(rh, df = 3)")
+        }
+        if (!all(is.na(df$wind_speed))) {
+            formula_parts <- c(formula_parts, "splines::ns(wind_speed, df = 3)")
+        }
+        formula <- as.formula(paste(formula_parts, collapse = " + "))
+
         model <- gnm::gnm(
             formula,
             data = data,
@@ -1167,6 +1173,162 @@ summarise_AF_AN <- function(data) {
     return(yearly_summary)
 }
 
+plot_aggregated_AN <- function(data, by_region = FALSE, output_dir = ".") {
+  # input validation
+  expected_cols <- c(
+    "year",
+    "average_attributable_fraction",
+    "lower_ci_attributable_fraction",
+    "upper_ci_attributable_fraction"
+  )
+  if (by_region==TRUE) expected_cols <- c(expected_cols, "regnames")
+  if (!all(expected_cols %in% colnames(data))) {
+    stop(
+      "'data' must contain the following columns: ",
+      paste(expected_cols, collapse = ", ")
+    )
+  }
+  if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
+  # set up plot
+  fpath <- file.path(output_dir, "aggregated_AN.pdf")
+  pdf(fpath, width = 8, height = 8)
+  # plot for full dataset
+  p <- plot_aggregated_AN_core(data=data, region_name="All Regions")
+  print(p)
+  # plot for regions (conditional)
+  if (by_region==TRUE) {
+    for (region in unique(data$regnames)) {
+      region_data <- data[data$regnames==region, ]
+      p <- plot_aggregated_AN_core(data=region_data, region_name=region)
+      print(p)
+    }
+  }
+  dev.off()
+}
+
+plot_aggregated_AN_core <- function(data, region_name = NULL) {
+  # aggregate AN/AR data
+  agg_data <- data %>%
+    group_by(.data$year) %>%
+    summarise(
+      sum_total_deaths = mean(.data$average_attributable_fraction, na.rm = TRUE),
+      lower_ci = mean(.data$lower_ci_attributable_fraction, na.rm = TRUE),
+      upper_ci = mean(.data$upper_ci_attributable_fraction, na.rm = TRUE)
+    )
+  # create output plot
+  title <- "Deaths (per 100K) attributable to Wildfire smoke-related PM2.5"
+  if (!is.null(region_name)) title <- paste0(title, " (", region_name, ")")
+  plot_agg_an <- ggplot2::ggplot(
+      agg_data,
+      ggplot2::aes(x = year, y = sum_total_deaths)
+    ) +
+    ggplot2::geom_ribbon(
+      ggplot2::aes(ymin = lower_ci, ymax = upper_ci),
+      alpha = 0.2,
+      fill = "#4d7789"
+    ) +
+    ggplot2::geom_line(color = "#003c57", size = 1) +
+    ggplot2::theme_minimal(base_size = 14) +
+    ggplot2::labs(
+      title = title,
+      x = "Year",
+      y = "Attributable Rate (per 100K)"
+    ) +
+    ggplot2::theme(
+      axis.line = ggplot2::element_line(size = 0.5, colour = "black")
+    )
+  return(plot_agg_an)
+}
+
+join_ar_and_pm_monthly <- function(
+  pm_data,
+  an_ar_data
+) {
+  exp_cols_ar <- c("year", "month", "regnames")
+  exp_cols_pm <- c("year", "month", "regnames", "mean_PM_FRP")
+  if (!all(exp_cols_ar %in% an_ar_data)) {
+    stop(paste0("an_ar_data needs the columns: ",
+        paste(exp_cols_ar, collapse=", ")))
+  }
+  if (!all(exp_cols_pm %in% pm_data)) {
+    stop(paste0("an_ar_data needs the columns: ",
+        paste(exp_cols_pm, collapse=", ")))
+  }
+  monthly_pm25 <- data %>%
+    group_by(.data$regnames, .data$year, .data$month) %>%
+    summarise(
+      monthly_avg_pm25 = mean(.data$mean_PM_FRP, na.rm = TRUE),
+      .groups = "drop"
+    )
+  joined_data <- left_join(
+    pred_data,
+    monthly_pm25,
+    by = c("year", "month", "regnames")
+  )
+  return(joined_data)
+}
+
+plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
+  # validate inputs
+  if (save_outputs==TRUE && is.null(output_dir)) {
+    stop("'output_dir' must be provded to save outputs.")
+  }
+  if (!file.exists(output_dir)) {
+    stop("'output_dir' must exist on disk to save outputs.")
+  }
+  # Aggregate data across all regions by year
+  aggregated_data <- data %>%
+    group_by(month_name) %>%
+    summarise(
+      mean_deaths_per_100k = mean(deaths_per_100k, na.rm = TRUE),
+      mean_pm = mean(monthly_avg_pm25, na.rm = TRUE)
+    ) %>%
+    mutate(month_name = factor(month_name, levels = month.abb))
+  # Calculate scaling factor
+  scale_factor <- max(aggregated_data$mean_deaths_per_100k) / max(aggregated_data$mean_pm)
+  # Plot results
+  fpath <- file.path(output_dir, "ar_and_pm_monthly_average")
+  if (save_fig) {
+    png(paste0(fpath, ".png"))
+  }
+  plot_ar_pm <- ggplot2::ggplot(
+      aggregated_data,
+      ggplot2::aes(x = month_name)
+    ) +
+    ggplot2::geom_bar(
+      ggplot2::aes(y = mean_deaths_per_100k),
+      stat = "identity",
+      fill = "#003c57",
+      alpha = 0.7
+    ) +
+    ggplot2::geom_line(
+      ggplot2::aes(y = mean_pm * scale_factor, group = 1),
+      color = "red", 
+      size = 1
+    ) +
+    ggplot2::geom_point(
+      ggplot2::aes(y = mean_pm * scale_factor), color = "red", size = 1) +
+    ggplot2::scale_y_continuous(
+      name = "Deaths per 100,000 population",
+      sec.axis = ggplot2::sec_axis(
+        ~ . / scale_factor, name = "Mean PM2.5(µg/m³)"
+      )
+    ) +
+    ggplot2::labs(
+      title = "Monthly Deaths and Mean PM2.5 Concentration - England (2003-2021)",
+      x = "Month"
+    ) +
+    ggplot2::theme_light() +
+    ggplot2::theme(
+      axis.line = ggplot2::element_line(size = 0.5, colour = "black")
+    )
+  print(plot_ar_pm)
+  if (save_outputs) {
+    dev.off()
+    write.csv(aggregated_data, paste0(fpath, ".csv"))
+  }
+}
+
 #' Run pipeline to analyse the impact of wildfire-related PM2.5 on a health
 #' outcome using a time-stratified case-crossover approach.
 #'
@@ -1279,6 +1441,8 @@ wildfire_do_analysis <- function(
         wind_speed_col = wind_speed_col,
         pm_2_5_col = pm_2_5_col
     )
+    # Create raw pm dataframe for late
+    pm_data <- data[c("month", "year", "regnames", "mean_PM_FRP")]
     # Create lagged variables
     data <- create_lagged_variables(
         data = data,
@@ -1320,11 +1484,20 @@ wildfire_do_analysis <- function(
     )
     # Obtain and plot attributable numbers/fractions
     af_an_results = NULL
+    ar_pm_monthly = NULL
     if (calc_relative_risk_by_region) {
+        # get AN/AR
         daily_AF_AN <- calculate_daily_AF_AN(data = data, rr_data = rr_results)
         af_an_results <- summarise_AF_AN(data = daily_AF_AN)
+        # Plot aggregated AN for all regions and individual regions
+        if (save_fig) {
+            plot_aggregated_AN(af_an_results, T, output_folder_path)
+            plot_aggregated_AN(af_an_results, F, output_folder_path)
+        }
+        # Plot AR and PM monthly values
+        ar_pm_monthly <- join_ar_and_pm_monthly(pm_data, af_an_results)
+        plot_ar_pm_monthly(ar_pm_monthly, save_fig, output_folder_path)
     }
-    # TODO: add plotting
     # Save outputs (conditionally)
     if (save_csv == TRUE) {
         save_wildfire_results(
@@ -1333,5 +1506,9 @@ wildfire_do_analysis <- function(
             output_folder_path = output_folder_path
         )
     }
-    return(list(rr_results, af_an_results))
+    return(list(
+        RR_results=rr_results,
+        AF_AN_results=af_an_results,
+        AR_PM_monthly=ar_pm_monthly
+    ))
 }
