@@ -7,7 +7,6 @@
 calculate_wilfire_rr_by_region(
   data,
   scale_factor_wildfire_pm,
-  wildfire_lag,
   calc_relative_risk_by_region = FALSE,
   save_fig = FALSE,
   output_folder_path = NULL,
@@ -24,9 +23,6 @@ Corresponds to the unit increase in wildfire PM2.5 to give the model
 estimates and relative risks (e.g. scale_factor = 10 corresponds to estimates
 and relative risks representing impacts of a 10 unit increase in wildfire
 PM2.5). Setting this parameter to 0 or 1 leaves the variable unscaled.}
-
-\item{wildfire_lag}{Integer. The maximum number of days for which to calculate
-lagged results for wildfire PM2.5. Defaults to 3.}
 
 \item{calc_relative_risk_by_region}{Bool. Whether to calculate Relative Risk
 by region. Defaults to FALSE.}

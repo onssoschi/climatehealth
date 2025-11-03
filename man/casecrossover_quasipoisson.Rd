@@ -17,6 +17,13 @@ casecrossover_quasipoisson(
 \item{data}{Dataframe containing a daily time series of climate and health
 data from which to fit models.}
 
+\item{scale_factor_wildfire_pm}{Numeric. The value to divide the wildfire PM2.5
+concentration variables by for alternative interpretation of outputs.
+Corresponds to the unit increase in wildfire PM2.5 to give the model
+estimates and relative risks (e.g. scale_factor = 10 corresponds to estimates
+and relative risks representing impacts of a 10 unit increase in wildfire
+PM2.5). Setting this parameter to 0 or 1 leaves the variable unscaled.}
+
 \item{save_fig}{Bool. Whether or not to save a figure showing residuals vs
 fitted values for each lag. Defaults to FALSE.}
 
@@ -24,16 +31,6 @@ fitted values for each lag. Defaults to FALSE.}
 
 \item{print_model_summaries}{Bool. Whether to print the model summaries to
 console. Defaults to FALSE.}
-
-\item{scale_factor}{Numeric. The value to divide the wildfire PM2.5
-concentration variables by for alternative interpretation of outputs.
-Corresponds to the unit increase in wildfire PM2.5 to give the model
-estimates and relative risks (e.g. scale_factor = 10 corresponds to estimates
-and relative risks representing impacts of a 10 unit increase in wildfire
-PM2.5). Setting this parameter to 0 or 1 leaves the variable unscaled.}
-
-\item{wildfire_lag}{Integer. The maximum number of days for which to
-calculate lagged results for wildfire PM2.5. Default is 3.}
 }
 \value{
 Dataframe of relative risk and confidence intervals for

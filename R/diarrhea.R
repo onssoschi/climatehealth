@@ -98,6 +98,7 @@ diarrhea_do_analysis <- function(health_data_path,
                                  save_model = FALSE,
                                  save_fig = FALSE,
                                  output_dir = NULL){
+
   # Simple output validation
   if (is.null(output_dir) & (save_fig | save_csv)) {
     stop("'output_dir' must be provided if 'save_fig' or save_csv' are TRUE.")
