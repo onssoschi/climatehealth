@@ -49,6 +49,7 @@ an_attrdl(
 \item Attributable Numbers
 \item Attributable Numbers lower confidence intervals
 \item Attributable Numbers upper confidence intervals
+\item Simulation matrix of attributable numbers
 }
 }
 \description{

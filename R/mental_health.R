@@ -116,10 +116,10 @@ mh_pop_totals <- function(df_list,
 #'
 #' @keywords internal
 mh_create_crossbasis <- function(df_list,
-                              var_fun = "bs", #TODO What if natural spline (degree won't be needed as cubic) - if statement
+                              var_fun = "bs",
                               var_degree = 2,
                               var_per = c(25,50,75),
-                              lag_fun = "strata", #TODO same as above
+                              lag_fun = "strata",
                               lag_breaks = 1,
                               lag_days = 2) {
 
@@ -152,7 +152,7 @@ mh_create_crossbasis <- function(df_list,
 #' @param independent_cols Additional independent variables to test in model validation
 #' as confounders.
 #'
-#' @return
+#' @returns
 #'  \itemize{
 #'   \item `qaic_results` A dataframe of QAIC and dispersion metrics for each model
 #'   combination.
@@ -247,34 +247,45 @@ mh_model_combo_res <- function(df_list,
 #'
 #' @param df_list A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
-#' @param independent_cols Additional independent variables to test in model validation
+#' @param independent_cols Additional independent variables to test in model validation.
 #'
-#' @return A list. Variance inflation factors for each independent variables by region.
+#' @returns A list. Variance inflation factors for each independent variables by region.
 #'
 #' @keywords internal
-mh_vif <- function(
-  df_list,
-  independent_cols = NULL
-){
+mh_vif <- function(df_list,
+                   independent_cols = NULL){
+
+  all_combos <- unlist(lapply(1:length(independent_cols), function(i) {
+    combn(independent_cols, i, simplify = FALSE)
+  }), recursive = FALSE)
 
   vif_list <- list()
 
   for (reg in names(df_list)){
 
     region_data <- df_list[[reg]]
+    reg_vif <- list()
 
-    formula_str <- paste(paste('suicides ~ temp'), paste("+", paste(independent_cols, collapse = " + ")))
+    for (combo in all_combos){
 
-    vif_model <- glm(as.formula(formula_str), data = region_data, family = quasipoisson())
-    vif_values <- car::vif(vif_model)
+      formula_str <- paste(paste('suicides ~ temp'), paste(combo, collapse = " + "), sep = " + ")
 
-    vif_df <- data.frame(
-      variable = names(vif_values),
-      vif = as.numeric(vif_values),
-      stringsAsFactors = FALSE
-    )
+      vif_model <- glm(as.formula(formula_str), data = region_data, family = quasipoisson())
+      vif_values <- car::vif(vif_model)
 
-    vif_list[[reg]] <- vif_df
+      var_combo <- paste0("temp_", paste(combo, collapse = "_"))
+
+      vif_df <- data.frame(region = reg,
+                           variable_combo = var_combo,
+                           variable = names(vif_values),
+                           vif = as.numeric(vif_values),
+                           stringsAsFactors = FALSE)
+
+      reg_vif[[var_combo]] <- vif_df
+
+    }
+
+    vif_list[[reg]] <- do.call(rbind, reg_vif)
 
   }
 
@@ -300,7 +311,7 @@ mh_vif <- function(
 #' @param output_folder_path Path to folder where plots should be saved.
 #' Defaults to NULL.
 #'
-#' @return
+#' @returns
 #'   \itemize{
 #'   \item `qaic_results` A dataframe of QAIC and dispersion metrics for each model combination and geography.
 #'   \item `qaic_summary` A dataframe with the mean QAIC and dispersion metrics for each model combination.
@@ -335,7 +346,7 @@ mh_model_validation <- function(df_list = df_list,
     vif_list <- mh_vif(df_list = df_list,
                        independent_cols = independent_cols)
 
-    vif_results <- dplyr::bind_rows(vif_list, .id = "Region")
+    vif_results <- do.call(rbind, vif_list)
 
     if (save_csv == TRUE) {
 
@@ -363,7 +374,7 @@ mh_model_validation <- function(df_list = df_list,
     if (!is.null(vif_results)){
 
       vif_summary <- vif_results %>%
-        dplyr::group_by(.data$variable) %>%
+        dplyr::group_by(.data$variable_combo, .data$variable) %>%
         dplyr::summarise(mean_vif = mean(.data$vif, na.rm = TRUE))
 
       if (save_csv == TRUE){
@@ -531,6 +542,33 @@ mh_model_validation <- function(df_list = df_list,
 
     dev.off()
 
+    if (save_fig == TRUE){
+
+      grid <- c(min(length(formula_list), 2), ceiling(length(formula_list) / 3) * 2)
+      output_path <- file.path(output_folder_main, paste0(named_label, "_residuals_acf_pacf.pdf"))
+      pdf(output_path, width = grid[1]*5.5, height = grid[2]*4.5)
+
+      par(mfrow=c(grid[2], grid[1]), oma = c(0, 0, 5, 0))
+
+    }
+
+    for (i in names(formula_list)){
+
+      residuals_clean <- na.omit(formula_list[[i]]$residuals)
+      acf(residuals_clean, main = paste0("ACF: ", unique(formula_list[[i]]$formula)), col = "#7A855C")
+      pacf(residuals_clean, main = paste0("PACF: ", unique(formula_list[[i]]$formula)), col = "#7A855C")
+
+    }
+
+    if (save_fig == TRUE){
+
+      title <- paste0("Autocorrelation and Partial Autocorrelation of Residuals:\n", reg)
+      mtext(title, outer = TRUE, cex = 1.5, line = 0.5, font = 2)
+
+    }
+
+    dev.off()
+
   }
 
   return(list(qaic_results, qaic_summary, vif_results, vif_summary))
@@ -627,7 +665,7 @@ mh_casecrossover_dlnm <- function(df_list,
 #' @param model_list List of models produced from case-crossover and DLNM
 #' analysis.
 #'
-#' @return
+#' @returns
 #'  \itemize{
 #'   \item `coef_` A matrix of coefficients for the reduced model.
 #'   \item `vcov_` A list. Covariance matrices for each region for the reduced model.
@@ -680,7 +718,7 @@ mh_reduce_cumulative <- function(df_list,
 #' @param output_folder_path Path to folder where results should be saved.
 #' Defaults to NULL.
 #'
-#' @return
+#' @returns
 #' \itemize{
 #'   \item `mm` A model object. A multivariate meta-analysis model.
 #'   \item `blup` A list. BLUP (best linear unbiased predictions) from the
@@ -782,7 +820,7 @@ mh_meta_analysis <- function(df_list,
 #'
 #' @keywords internal
 mh_min_suicide_temp <- function(df_list,
-                                   var_fun = "splines",
+                                   var_fun = "bs",
                                    var_per = c(25,50,75),
                                    var_degree = 2,
                                    blup = blup,
@@ -846,7 +884,7 @@ mh_min_suicide_temp <- function(df_list,
 #' @param vcov_ A list. Covariance matrices for each region for the reduced model.
 #' @param meta_analysis Boolean. Whether to perform a meta-analysis.
 #'
-#' @return A list containing predictions by region
+#' @returns A list containing predictions by region
 #'
 #' @keywords internal
 mh_predict_reg <- function(df_list,
@@ -928,7 +966,7 @@ mh_predict_reg <- function(df_list,
 #' @param mm A model object. A multivariate meta-analysis model.
 #' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
 #'
-#' @return
+#' @returns
 #' \itemize{
 #'   \item `df_list` List. A list of data frames for each region and nation.
 #'   \item `cb_list` List. A list of cross-basis matrices by region and nation.
@@ -1020,7 +1058,7 @@ mh_add_national_data <- function(df_list,
 #' @param pred_list A list containing predictions from the model by region.
 #' @param country Character. Name of country for national level estimates.
 #'
-#' @return A list containing predictions by region.
+#' @returns A list containing predictions by region.
 #'
 #' @keywords internal
 mh_predict_nat <- function(df_list,
@@ -1062,7 +1100,7 @@ mh_predict_nat <- function(df_list,
 #' Power calculation
 #'
 #' @description Produce a power statistic by area for the attributable threshold
-#' as a reference.
+#' and a above as a reference.
 #'
 #' @param df_list A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
@@ -1071,13 +1109,13 @@ mh_predict_nat <- function(df_list,
 #' @param attr_thr Integer. Percentile at which to define the temperature threshold for
 #' calculating attributable risk.
 #'
-#' @return A list containing power information by area.
+#' @returns A list containing power information by area.
 #'
-#' @export
+#' @keywords internal
 mh_power_list <- function(df_list = df_list,
                           pred_list = pred_list,
                           minpercreg = minpercreg,
-                          attr_thr){
+                          attr_thr = 97.5){
 
   power_list <- list()
   alpha <- 0.05
@@ -1087,8 +1125,6 @@ mh_power_list <- function(df_list = df_list,
     region_data <- df_list[[reg]]
     pred <- pred_list[[reg]]
     min_st <- round(quantile(region_data$temp, minpercreg[reg]/100, na.rm = TRUE), 1)
-
-    # Compute power with attr_thr as a reference value for log coefficient and se
 
     thresh_temp <- round(quantile(region_data$temp, attr_thr/100, na.rm = TRUE), 1)
 
@@ -1102,7 +1138,7 @@ mh_power_list <- function(df_list = df_list,
     rownames(coef_effect_with_se) <- NULL
 
     power_df <- data.frame(region = reg,
-                           threshold_temp = coef_effect_with_se$temperature,
+                           temperature = coef_effect_with_se$temperature,
                            cen = min_st,
                            log_rr = coef_effect_with_se$log_rr,
                            se = coef_effect_with_se$se,
@@ -1124,6 +1160,22 @@ mh_power_list <- function(df_list = df_list,
 }
 
 
+#' Plot power
+#'
+#' @description Plots the power statistic for each reference temperature at and above
+#' the attributable risk threshold for each area.
+#'
+#' @param power_list A list containing power information by area.
+#' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
+#' FALSE.
+#' @param output_folder_path Path to folder where plots should be saved.
+#' Defaults to NULL.
+#' @param country Character. Name of country for national level estimates.
+#'
+#' @returns Plots of power by temperature for the attributable threshold and above
+#' for each area.
+#'
+#' @keywords internal
 mh_plot_power <- function(power_list,
                           save_fig = FALSE,
                           output_folder_path = NULL,
@@ -1138,9 +1190,9 @@ mh_plot_power <- function(power_list,
 
   for (reg in names(power_list)) {
     df <- power_list[[reg]]
-    df <- df[order(df$threshold_temp), ]
+    df <- df[order(df$temperature), ]
 
-    plot(x = df$threshold_temp,
+    plot(x = df$temperature,
          y = df$power,
          type = "l",
          xlab = "Temperature",
@@ -1384,7 +1436,7 @@ mh_plot_rr <- function(df_list,
 #' @param attr_thr Integer. Percentile at which to define the temperature threshold for
 #' calculating attributable risk.
 #'
-#' @return A list containing attributable numbers per region
+#' @returns A list containing attributable numbers per region
 #'
 #' @keywords internal
 mh_attr <- function(df_list,
@@ -1451,7 +1503,7 @@ mh_attr <- function(df_list,
 #' @param country Character. Name of country for national level estimates.
 #' @param meta_analysis Boolean. Whether to perform a meta-analysis.
 #'
-#' @return
+#' @returns
 #' \itemize{
 #'   \item `res_attr_tot` Dataframe. Total attributable fractions, numbers and
 #'   rates for each area over the whole time series.
@@ -1552,7 +1604,7 @@ mh_attr_tables <- function(attr_list,
 #' Defaults to NULL.
 #' @param country Character. Name of country for national level estimates.
 #'
-#' @return Plots of total attributable fractions and rates by area
+#' @returns Plots of total attributable fractions and rates by area
 #'
 #' @keywords internal
 mh_plot_attr_totals <- function(df_list,
@@ -1680,7 +1732,7 @@ mh_plot_attr_totals <- function(df_list,
 #' Defaults to NULL.
 #' @param country Character. Name of country for national level estimates.
 #'
-#' @return Plots of yearly attributable fractions per area
+#' @returns Plots of yearly attributable fractions per area
 #'
 #' @keywords internal
 mh_plot_af_yearly <- function(attr_yr_list,
@@ -1792,7 +1844,7 @@ mh_plot_af_yearly <- function(attr_yr_list,
 #' Defaults to NULL.
 #' @param country Character. Name of country for national level estimates.
 #'
-#' @return Plots of yearly attributable rates per area
+#' @returns Plots of yearly attributable rates per area
 #'
 #' @keywords internal
 mh_plot_ar_yearly <- function(attr_yr_list,
@@ -1909,7 +1961,7 @@ mh_plot_ar_yearly <- function(attr_yr_list,
 #' @param output_folder_path Path to folder where plots should be saved.
 #' Defaults to NULL.
 #'
-#' @return Plots of attributable fractions by calendar month per area
+#' @returns Plots of attributable fractions by calendar month per area
 #'
 #' @keywords internal
 mh_plot_af_monthly <- function(attr_mth_list,
@@ -2039,7 +2091,7 @@ mh_plot_af_monthly <- function(attr_mth_list,
 #' @param output_folder_path Path to folder where plots should be saved.
 #' Defaults to NULL.
 #'
-#' @return Plots of attributable rates by calendar month per area
+#' @returns Plots of attributable rates by calendar month per area
 #'
 #' @keywords internal
 mh_plot_ar_monthly <- function(attr_mth_list,
@@ -2213,11 +2265,14 @@ mh_save_results <- function(rr_results,
 }
 
 
-#' Run pipeline to analyse the impact of extreme heat on suicides using a time-
-#' stratified case-crossover approach with distributed lag non-linear model
+#' Full analysis pipeline for the suicides and extreme heat indicator
 #'
-#' @description Runs full analysis pipeline for analysis of the impact of
-#' extreme heat on suicides
+#' @description Runs the full pipeline to analyse the impact of extreme heat
+#' on suicides using a time-stratified case-crossover approach with distributed
+#' lag non-linear model. This function generates relative risk of the
+#' suicide-temperature association as well as attributable numbers, rates and
+#' fractions of suicides to a specified temperature threshold. Model validation
+#' statistics are also provided.
 #'
 #' @param data_path Path to a csv file containing a daily time series of data
 #' for a particular health outcome and climate variables, which may be
@@ -2233,9 +2288,8 @@ mh_save_results <- function(rr_results,
 #' admissions).
 #' @param population_col Character. Name of the column in the dataframe that
 #' contains the population estimate coloumn.
-#' @param independent_cols Additional independent variables to test in model validation
-#' @param control_cols A list of confounders to include in the final model adjustment.
-#' Defaults to NULL if none.
+#' @param country Character. Name of country for national level estimates.
+#' @param meta_analysis Boolean. Whether to perform a meta-analysis.
 #' @param var_fun Character. Exposure function for argvar
 #' (see dlnm::crossbasis). Defaults to 'bs'.
 #' @param var_degree Integer. Degree of the piecewise polynomial for argvar
@@ -2248,23 +2302,83 @@ mh_save_results <- function(rr_results,
 #' (see dlnm:crossbasis). Defaults to 1.
 #' @param lag_days Integer. Maximum lag. Defaults to 2.
 #' (see dlnm:crossbasis).
+#' @param independent_cols Additional independent variables to test in model validation
+#' @param control_cols A list of confounders to include in the final model adjustment.
+#' Defaults to NULL if none.
+#' @param cenper Integer. Value for the percentile in calculating the centering
+#' value 0-100. Defaults to 50.
+#' @param attr_thr Integer. Percentile at which to define the temperature threshold for
+#' calculating attributable risk.
 #' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
 #' FALSE.
 #' @param save_csv Boolean. Whether to save the results as a CSV. Defaults to
 #' FALSE.
-#' @param cenper Integer. Value for the percentile in calculating the centering
-#' value 0-100. Defaults to 50.
-#' @param country Character. Name of country for national level estimates.
-#' @param meta_analysis Boolean. Whether to perform a meta-analysis.
-#' @param attr_thr Integer. Percentile at which to define the temperature threshold for
-#' calculating attributable risk.
 #' @param output_folder_path Path to folder where plots and/or CSV should be
 #' saved. Defaults to NULL.
 #'
-#' @return
+#' @details
+#' This analysis pipeline requires a daily time series of temperature and suicide
+#' deaths with population values as a minimum. This is then processed using a
+#' conditional Poisson case-crossover analysis with distributed lag non-linear
+#' model and optional meta-analysis. Meta-analysis is recommended if the input
+#' data is disaggregated by area.
+#'
+#' The model parameters have default values, which are recommended to keep as based
+#' on existing studies. However, if desired these can be adjusted for sensitivity
+#' analysis.
+#'
+#' Model validation testing is provided as a standard output from the pipeline so
+#' a user can assess the quality of the model. If a user has additional independent
+#' variables these can be specified as `independent_cols` and assessed within
+#' different model combinations in the outputs of this testing. These can be added
+#' in the final model via `control_cols`.
+#'
+#' For attributable deaths the default is to use extreme heat as a threshold,
+#' defined as the 97.5th percentile of temperature over the corresponding time
+#' period for each geography. This can be adjusted if desired, following review of
+#' the relative risk association between temperature and suicides, using `attr_thr`.
+#'
+#' Further details on the input data requirements, methodology, quality information
+#' and guidance on interpreting outputs can be found in the accompanying published
+#' \href{https://doi.org/10.5281/zenodo.14050224}{Zenodo documentation}.
+#'
+#' @references
+#' \enumerate{
+#'  \item Pearce M, Watkins E, Glickman M, Lewis B, Ingole V. Standards for Official Statistics on
+#'  Climate-Health Interactions (SOSCHI): Suicides attributed to extreme heat: methodology.
+#'  Zenodo; 2024. Available from: \url{https://doi.org/10.5281/zenodo.14050224}
+#'  \item Gasparrini A, Guo Y, Hashizume M, Lavigne E, Zanobetti A, Schwartz J, et al. Mortality
+#'  risk attributable to high and low ambient temperature: a multicountry observational study.
+#'  Lancet. 2015 Jul;386(9991):369–75. Available from: \url{https://linkinghub.elsevier.com/retrieve/pii/S0140673614621140}
+#'  \item Kim Y, Kim H, Gasparrini A, Armstrong B, Honda Y, Chung Y, et al. Suicide and Ambient
+#'  Temperature: A Multi-Country Multi-City Study. Environ Health Perspect. 2019 Nov;127(11):1–10.
+#'  Available from: \url{https://ehp.niehs.nih.gov/doi/10.1289/EHP4898}
+#'  \item Gasparrini A, Armstrong B. Reducing and meta-analysing estimates from distributed lag
+#'  non-linear models. BMC Med Res Methodol. 2013 Jan 9;13:1. Available from: \url{https://doi.org/10.1186/1471-2288-13-1}
+#'	\item Gasparrini A, Armstrong B, Kenward MG. Multivariate meta‐analysis for non‐linear and
+#'	other multi‐parameter associations. Stat Med. 2012 Dec 20;31(29):3821–39.
+#'	Available from: \url{https://doi.org/10.1002/sim.5471}
+#'	\item Sera F, Armstrong B, Blangiardo M, Gasparrini A. An extended mixed‐effects framework
+#'	for meta‐analysis. Stat Med. 2019 Dec 20;38(29):5429–44. Available from: \url{https://doi.org/10.1002/sim.8362}
+#'	\item Gasparrini A, Leone M. Attributable risk from distributed lag models.
+#'	BMC Med Res Methodol. 2014 Dec 23;14(1):55.
+#'	Available from: \url{https://bmcmedresmethodol.biomedcentral.com/articles/10.1186/1471-2288-14-55}
+#'	}
+#'
+#' @returns
 #' \itemize{
+#'   \item `qaic_results` A dataframe of QAIC and dispersion metrics for each model
+#'   combination and geography.
+#'   \item `qaic_summary` A dataframe with the mean QAIC and dispersion metrics for
+#'   each model combination.
+#'   \item `vif_results` A dataframe. Variance inflation factors for each independent
+#'   variables by region.
+#'   \item `vif_summary` A dataframe with the mean variance inflation factors for
+#'   each independent variable.
+#'   \item `meta_test_res` A dataframe of results from statistical tests on the meta model.
+#'   \item `power_list` A list containing power information by area.
 #'   \item `rr_results` Dataframe containing cumulative relative risk and confidence
-#' intervals from analysis.
+#'   intervals from analysis.
 #'   \item `res_attr_tot` Dataframe. Total attributable fractions, numbers and
 #'   rates for each area over the whole time series.
 #'   \item `attr_yr_list` List. Dataframes containing yearly estimates of
@@ -2273,6 +2387,29 @@ mh_save_results <- function(rr_results,
 #'   fractions, numbers and rates by calendar month and area.
 #'   }
 #'
+#' @examples
+#' suicides_heat_do_analysis(data_path = "data/inputs/daily_suicides_climate_E_2001_2023.csv",
+#'                           date_col = "date",
+#'                           region_col = "region",
+#'                           temperature_col = "tmean",
+#'                           health_outcome_col = "suicides",
+#'                           population_col = "pop",
+#'                           country = "England",
+#'                           meta_analysis = TRUE,
+#'                           var_fun = "bs",
+#'                           var_degree = 2,
+#'                           var_per = c(25,50,75),
+#'                           lag_fun = "strata",
+#'                           lag_breaks = 1,
+#'                           lag_days = 2,
+#'                           independent_cols = c("rainfall", "humidity"),
+#'                           control_cols = NULL,
+#'                           cenper = 50,
+#'                           attr_thr = 97.5,
+#'                           save_fig = TRUE,
+#'                           save_csv = TRUE,
+#'                           output_folder_path = "data/outputs/england_analysis")
+#'
 #' @export
 suicides_heat_do_analysis <- function(data_path,
                                       date_col,
@@ -2280,40 +2417,40 @@ suicides_heat_do_analysis <- function(data_path,
                                       temperature_col,
                                       health_outcome_col,
                                       population_col,
-                                      independent_cols = NULL,
-                                      control_cols = NULL,
+                                      country = "National",
+                                      meta_analysis = FALSE,
                                       var_fun = "bs",
                                       var_degree = 2,
                                       var_per = c(25,50,75),
                                       lag_fun = "strata",
                                       lag_breaks = 1,
                                       lag_days = 2,
+                                      independent_cols = NULL,
+                                      control_cols = NULL,
+                                      cenper = 50,
+                                      attr_thr = 97.5,
                                       save_fig = FALSE,
                                       save_csv = FALSE,
-                                      cenper = 50,
-                                      country = "National",
-                                      meta_analysis = FALSE,
-                                      attr_thr = 97.5,
                                       output_folder_path = NULL) {
 
   df_list <- mh_read_and_format_data(data_path = data_path,
-                             date_col = date_col,
-                             region_col = region_col,
-                             temperature_col = temperature_col,
-                             health_outcome_col = health_outcome_col,
-                             population_col = population_col)
+                                     date_col = date_col,
+                                     region_col = region_col,
+                                     temperature_col = temperature_col,
+                                     health_outcome_col = health_outcome_col,
+                                     population_col = population_col)
 
   pop_list <- mh_pop_totals(df_list = df_list,
                             country = country,
                             meta_analysis = meta_analysis)
 
   cb_list <- mh_create_crossbasis(df_list = df_list,
-                               var_fun = var_fun,
-                               var_degree = var_degree,
-                               var_per = var_per,
-                               lag_fun = lag_fun,
-                               lag_breaks = lag_breaks,
-                               lag_days = lag_days)
+                                  var_fun = var_fun,
+                                  var_degree = var_degree,
+                                  var_per = var_per,
+                                  lag_fun = lag_fun,
+                                  lag_breaks = lag_breaks,
+                                  lag_days = lag_days)
 
   c(qaic_results, qaic_summary,
     vif_results, vif_summary) %<-% mh_model_validation(df_list = df_list,
@@ -2342,7 +2479,12 @@ suicides_heat_do_analysis <- function(data_path,
                                                      save_csv = save_csv,
                                                      output_folder_path = output_folder_path)
 
-  } else blup <- NULL
+  } else {
+
+      blup <- NULL
+      meta_test_res <- NULL
+
+  }
 
   minpercreg <- mh_min_suicide_temp(df_list = df_list,
                                     var_fun = var_fun,
@@ -2364,18 +2506,19 @@ suicides_heat_do_analysis <- function(data_path,
 
   if (meta_analysis == TRUE){
 
-    c(df_list, cb_list, minpercreg, mmpredall) %<-% mh_add_national_data(df_list = df_list,
-                                                                         pop_list = pop_list,
-                                                                         var_fun = var_fun,
-                                                                         var_per = var_per,
-                                                                         var_degree = var_degree,
-                                                                         lag_fun = lag_fun,
-                                                                         lag_breaks = lag_breaks,
-                                                                         lag_days = lag_days,
-                                                                         country = country,
-                                                                         cb_list = cb_list,
-                                                                         mm = mm,
-                                                                         minpercreg = minpercreg)
+    c(df_list, cb_list,
+      minpercreg, mmpredall) %<-% mh_add_national_data(df_list = df_list,
+                                                       pop_list = pop_list,
+                                                       var_fun = var_fun,
+                                                       var_per = var_per,
+                                                       var_degree = var_degree,
+                                                       lag_fun = lag_fun,
+                                                       lag_breaks = lag_breaks,
+                                                       lag_days = lag_days,
+                                                       country = country,
+                                                       cb_list = cb_list,
+                                                       mm = mm,
+                                                       minpercreg = minpercreg)
 
     pred_list <- mh_predict_nat(df_list = df_list,
                                 var_fun = var_fun,
@@ -2388,6 +2531,21 @@ suicides_heat_do_analysis <- function(data_path,
 
   }
 
+  power_list <- mh_power_list(df_list = df_list,
+                              pred_list = pred_list,
+                              minpercreg = minpercreg,
+                              attr_thr = attr_thr)
+
+  mh_plot_power(power_list = power_list,
+                save_fig = save_fig,
+                output_folder_path = output_folder_path,
+                country = country)
+
+  rr_results <- mh_rr_results(pred_list = pred_list,
+                              df_list = df_list,
+                              attr_thr = attr_thr,
+                              minpercreg = minpercreg)
+
   mh_plot_rr(df_list = df_list,
              pred_list = pred_list,
              attr_thr = attr_thr,
@@ -2395,11 +2553,6 @@ suicides_heat_do_analysis <- function(data_path,
              country = country,
              save_fig = save_fig,
              output_folder_path = output_folder_path)
-
-  rr_results <- mh_rr_results(pred_list,
-                              df_list,
-                              attr_thr = attr_thr,
-                              minpercreg = minpercreg)
 
   attr_list <- mh_attr(df_list = df_list,
                        cb_list = cb_list,
@@ -2448,10 +2601,13 @@ suicides_heat_do_analysis <- function(data_path,
                     res_attr_tot = res_attr_tot,
                     attr_yr_list = attr_yr_list,
                     attr_mth_list = attr_mth_list,
+                    power_list = power_list,
                     output_folder_path = output_folder_path)
 
   }
 
-  return(list(rr_results, res_attr_tot, attr_yr_list, attr_mth_list))
+  return(list(qaic_results, qaic_summary, vif_results, vif_summary,
+              meta_test_res, power_list, rr_results, res_attr_tot,
+              attr_yr_list, attr_mth_list))
 
 }
