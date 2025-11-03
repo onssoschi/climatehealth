@@ -644,10 +644,10 @@ casecrossover_quasipoisson <- function(
         number <- lag_nums[[i]]
         # create model
         formula_parts <- c("health_outcome ~ splines::ns(tmean, df = 6)", i)
-        if (!all(is.na(df$rh))) {
+        if (!all(is.na(data$rh))) {
             formula_parts <- c(formula_parts, "splines::ns(rh, df = 3)")
         }
-        if (!all(is.na(df$wind_speed))) {
+        if (!all(is.na(data$wind_speed))) {
             formula_parts <- c(formula_parts, "splines::ns(wind_speed, df = 3)")
         }
         formula <- as.formula(paste(formula_parts, collapse = " + "))
@@ -709,7 +709,6 @@ calculate_qaic <- function(
     data,
     print_results = FALSE
 ) {
-
     qaic_results <- list()
     # get WF lag columns
     lag_cols <- get_wildfire_lag_columns(data=data)
@@ -718,9 +717,15 @@ calculate_qaic <- function(
     for (i in lags) {
         # define model
         number <- lag_nums[[i]]
-        formula <- as.formula(
-            paste("health_outcome ~ splines::ns(tmean, df = 6) +", i)
-        )
+        # create model formula
+        formula_parts <- c("health_outcome ~ splines::ns(tmean, df = 6)", i)
+        if (!all(is.na(data$rh))) {
+            formula_parts <- c(formula_parts, "splines::ns(rh, df = 3)")
+        }
+        if (!all(is.na(data$wind_speed))) {
+            formula_parts <- c(formula_parts, "splines::ns(wind_speed, df = 3)")
+        }
+        formula <- as.formula(paste(formula_parts, collapse = " + "))
         model <- gnm::gnm(formula,
                         data = data,
                         family = quasipoisson,
@@ -743,61 +748,6 @@ calculate_qaic <- function(
         qaic_results[[i]] <- qaic
     }
     return(qaic_results)
-}
-
-#' Relative risk estimates across PM2.5 concentrations for a specified lag.
-#'
-#' @description Computes relative risk and confidence intervals across a range
-#' of PM2.5 concentrations for a specified wildfire-related lag, using 
-#' log-linear extrapolation from a reference estimate.
-#'
-#' @param relative_risk_overall Data frame containing relative risk estimates 
-#' and confidence intervals for wildfire-related PM2.5 exposure at different 
-#' lags. Must include columns: 'lag', 'relative_risk', 'ci_lower', and 
-#' 'ci_upper'.
-#' @param scale_factor_wildfire_pm Numeric. Scaling factor used to normalize 
-#' PM2.5 values to the unit of exposure used in the original relative risk 
-#' estimate.
-#' @param wildfire_lag Integer. Lag day to filter from the input data for 
-#' extrapolation. Defaults to 0.
-#' @param pm_vals Numeric vector. PM2.5 concentrations over which to compute 
-#' relative risk. Defaults to seq(0, 50, by = 1).
-#'
-#' @return A dataframe with columns: 'pm_levels', 'relative_risk', 'ci_lower',
-#' and 'ci_upper', representing estimated relative risk and 95% confidence 
-#' intervals across the specified PM2.5 levels.
-#' 
-#' @keywords internal
-generate_rr_pm_overall <- function(
-    relative_risk_overall,
-    scale_factor_wildfire_pm,
-    wildfire_lag = 0,
-    pm_vals = seq(0, 50, by = 1)
-) {
-    # filter by lag
-    data_lagged <- subset(relative_risk_overall, lag == wildfire_lag)
-    rr <- data_lagged$relative_risk
-    ci_low <- data_lagged$ci_lower
-    ci_up <- data_lagged$ci_upper
-    # calculate beta and SE
-    coef_pm <- log(rr)
-    se_pm <- (log(ci_up) - log(ci_low)) / (2 * 1.96)
-    # adjust for scale factor
-    rr_vals <- exp(coef_pm * (pm_vals / scale_factor_wildfire_pm))
-    rr_lower <- exp(
-        (coef_pm - 1.96 * se_pm) * (pm_vals / scale_factor_wildfire_pm)
-    )
-    rr_upper <- exp(
-        (coef_pm + 1.96 * se_pm) * (pm_vals / scale_factor_wildfire_pm)
-    )
-    # create results df
-    rr_pm_table <- data.frame(
-        pm_levels = pm_vals,
-        relative_risk = round(rr_vals, 4),
-        ci_lower = round(rr_lower, 4),
-        ci_upper = round(rr_upper, 4)
-    )
-    return(rr_pm_table)
 }
 
 #' Plot relative risk results by region.
@@ -830,16 +780,11 @@ plot_RR <- function(
     if (save_fig && is.null(output_folder_path)) {
         stop("No output path provided when save_fig==T.")
     }
+    # create list to collect plots    
+    plots <- ()
     # plot by region if needed
     if (relative_risk_by_region) {
         df_list <- split(rr_data, f = rr_data$region_name)
-        plots_list <- list()
-        if (save_fig) {
-            pdf(
-                file.path(output_folder_path, "wildfire_rr_by_region.pdf"),
-                width = 8, height = 8
-            )
-        }
         for (i in seq(df_list)) {
             region_results <- df_list[[i]]
             region_name <- region_results$region_name[1]
@@ -850,21 +795,30 @@ plot_RR <- function(
                 save_fig = FALSE,
                 region_name = region_name
             )
-            plots_list[[i]] <- region_plot
+            plotss[[i]] <- region_plot
             print(region_plot)
         }
-        if (save_fig) dev.off()
-        return(plots_list)
-
     }
     # Plot overall RR
     plot <- plot_RR_core(
         rr_data = rr_data,
         output_folder_path = output_folder_path,
         wildfire_lag = wildfire_lag,
-        save_fig = save_fig
+        save_fig = FALSE,
+        region_name = "All Regions"
     )
-    return(plot)
+    plots[length(plots)+1] <- plot
+    # combine and save
+    combined_plots <- wrap_plots(plots)
+    if (save_fig) {
+        ggsave(
+            filename = file.path(output_folder_path, "wildfire_rr.pdf"),
+            plot = combined_plots,
+            width = 8,
+            height = 8 * length(plots)
+        )
+    }
+    return(combined_plots)
 }
 
 #' Core functionality for plotting results of relative risk analysis.
@@ -1109,7 +1063,7 @@ calculate_daily_AF_AN <- function(data, rr_data){
             )
         region_data <- region_data %>%
             mutate(
-                rescaled_CI_lower = exp((log(.data$RR_CI_lower) / 10) *.data$ mean_PM_FRP),
+                rescaled_CI_lower = exp((log(.data$RR_CI_lower) / 10) * .data$mean_PM_FRP),
                 attributable_fraction_lower = (.data$rescaled_CI_lower - 1) / .data$rescaled_CI_lower,
                 attributable_number_lower = .data$attributable_fraction_lower * .data$health_outcome
             )
@@ -1316,14 +1270,14 @@ join_ar_and_pm_monthly <- function(
     stop(paste0("an_ar_data needs the columns: ",
         paste(exp_cols_pm, collapse=", ")))
   }
-  monthly_pm25 <- data %>%
+  monthly_pm25 <- pm_data %>%
     group_by(.data$regnames, .data$year, .data$month) %>%
     summarise(
       monthly_avg_pm25 = mean(.data$mean_PM_FRP, na.rm = TRUE),
       .groups = "drop"
     )
   joined_data <- left_join(
-    pred_data,
+    an_ar_data,
     monthly_pm25,
     by = c("year", "month", "regnames")
   )
@@ -1370,9 +1324,7 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
   scale_factor <- max(aggregated_data$mean_deaths_per_100k) / max(aggregated_data$mean_pm)
   # Plot results
   fpath <- file.path(output_dir, "ar_and_pm_monthly_average")
-  if (save_fig) {
-    png(paste0(fpath, ".png"))
-  }
+  if (save_fig) png(paste0(fpath, ".png"))
   plot_ar_pm <- ggplot2::ggplot(
       aggregated_data,
       ggplot2::aes(x = month_name)
@@ -1409,6 +1361,61 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
     dev.off()
     write.csv(aggregated_data, paste0(fpath, ".csv"))
   }
+}
+
+#' Relative risk estimates across PM2.5 concentrations for a specified lag.
+#'
+#' @description Computes relative risk and confidence intervals across a range
+#' of PM2.5 concentrations for a specified wildfire-related lag, using 
+#' log-linear extrapolation from a reference estimate.
+#'
+#' @param relative_risk_overall Data frame containing relative risk estimates 
+#' and confidence intervals for wildfire-related PM2.5 exposure at different 
+#' lags. Must include columns: 'lag', 'relative_risk', 'ci_lower', and 
+#' 'ci_upper'.
+#' @param scale_factor_wildfire_pm Numeric. Scaling factor used to normalize 
+#' PM2.5 values to the unit of exposure used in the original relative risk 
+#' estimate.
+#' @param wildfire_lag Integer. Lag day to filter from the input data for 
+#' extrapolation. Defaults to 0.
+#' @param pm_vals Numeric vector. PM2.5 concentrations over which to compute 
+#' relative risk. Defaults to seq(0, 50, by = 1).
+#'
+#' @return A dataframe with columns: 'pm_levels', 'relative_risk', 'ci_lower',
+#' and 'ci_upper', representing estimated relative risk and 95% confidence 
+#' intervals across the specified PM2.5 levels.
+#' 
+#' @keywords internal
+generate_rr_pm_overall <- function(
+    relative_risk_overall,
+    scale_factor_wildfire_pm,
+    wildfire_lag = 0,
+    pm_vals = seq(0, 50, by = 1)
+) {
+    # filter by lag
+    data_lagged <- subset(relative_risk_overall, lag == wildfire_lag)
+    rr <- data_lagged$relative_risk
+    ci_low <- data_lagged$ci_lower
+    ci_up <- data_lagged$ci_upper
+    # calculate beta and SE
+    coef_pm <- log(rr)
+    se_pm <- (log(ci_up) - log(ci_low)) / (2 * 1.96)
+    # adjust for scale factor
+    rr_vals <- exp(coef_pm * (pm_vals / scale_factor_wildfire_pm))
+    rr_lower <- exp(
+        (coef_pm - 1.96 * se_pm) * (pm_vals / scale_factor_wildfire_pm)
+    )
+    rr_upper <- exp(
+        (coef_pm + 1.96 * se_pm) * (pm_vals / scale_factor_wildfire_pm)
+    )
+    # create results df
+    rr_pm_table <- data.frame(
+        pm_levels = pm_vals,
+        relative_risk = round(rr_vals, 4),
+        ci_lower = round(rr_lower, 4),
+        ci_upper = round(rr_upper, 4)
+    )
+    return(rr_pm_table)
 }
 
 #' Plot relative risk by PM2.5 levels for all regions and individually
@@ -1455,9 +1462,8 @@ plot_rr_by_pm <- function(
   if (!all(exp_cols %in% colnames(data))) {
     stop("'data' must contain these columns: ", paste0(exp_cols, collapse=", "))
   }
-  # plotting logic
-  fpath <- file.path(output_dir, "rr_by_pm.pdf")
-  if (save_fig) pdf(fpath)
+  # Collect Plots
+  all_plots <- list()
   # Plot region is more than one region is available
   if (length(unique(data$regnames) > 1)) {
     for (region in unique(data$regnames)) {
@@ -1465,13 +1471,21 @@ plot_rr_by_pm <- function(
         data=data[data$regnames==region, ],
         region_name=as.character(region)
       )
-      print(p)
+      all_plots[[length(all_plots) + 1]] <- p
     }
   }
   # Plot all regions combined
   p <- plot_rr_by_pm_core(data)
-  print(p)
-  if (save_fig) dev.off()
+  all_plots[[length(all_plots) + 1]] <- p
+  
+  # combine and save
+  combined_plots <- wrap_plots(all_plots)
+  if (save_fig) {
+    fpath <- file.path(output_dir, "rr_by_pm.pdf")
+    ggsave(fpath, combined_plot, width = 10, height = 12)
+  } else {
+    print(combined_plot)
+  }
 }
 
 #' Create a relative risk plot across PM2.5 levels for a single region
@@ -1651,6 +1665,12 @@ wildfire_do_analysis <- function(
     )
     # Stratify data by time period
     data <- time_stratify(data = data)
+    # Calculate QAIC
+    qaic <- calculate_qaic(data = data, print_results = print_model_summaries)
+    if (save_csv==TRUE) {
+        fpath <- file.path(output_folder_path, "wildfire_model_qaic.csv")
+        write.csv(qaic, fpath, row.names = FALSE)
+    }
     # Conditionally check VIF
     if (!is.null(predictors_vif)) {
         check_wildfire_vif(
