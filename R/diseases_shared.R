@@ -207,7 +207,6 @@ load_and_process_climatedata <- function(
   spi_col = NULL,
   max_lag = 4
 ){
-
   if (is.data.frame(climate_data_path)) {
     data <- climate_data_path
   } else {
