@@ -1,7 +1,7 @@
 #' Code for calculating Diarrhea disease cases attributable to extreme
 #' precipitation and extreme temperature
 
-#' Run Full Diarrhea-Climate Analysis Pipeline
+#' Run Full diarrhea-Climate Analysis Pipeline
 #'
 #' @description
 #' The `diarrhea_do_analysis` function runs the complete analysis workflow
@@ -9,51 +9,58 @@
 #' cases and climate variables. It processes health, climate, and spatial data,
 #' fits models, generates plots, and calculates attributable risk.
 #'
-#' @param health_data_path Data frame containing the processed health data.
-#' @param climate_data_path Data frame containing the processed climate data.
-#' @param map_path Data frame containing the spatial map data (shapefile or equivalent).
-#' @param region_col Character. Name of the column containing region names.
-#' @param district_col Character. Name of the column containing district names.
-#' @param date_col Character. Name of the column containing the date. Defaults to NULL.
-#' @param year_col Character. Name of the column containing the year.
-#' @param month_col Character. Name of the column containing the month.
-#' @param diarrhea_case_col Character. Name of the column containing diarrhea case counts.
-#' @param tot_pop_col Character. Name of the column containing total population.
-#' @param tmin_col Character. Name of the column containing minimum temperature.
-#' @param tmean_col Character. Name of the column containing mean temperature.
-#' @param tmax_col Character. Name of the column containing maximum temperature.
-#' @param rainfall_col Character. Name of the column containing cumulative
-#' monthly rainfall.
-#' @param r_humidity_col Character. Name of the column containing relative humidity.
-#' @param runoff_col Character. Name of the column containing monthly runoff
-#' data.
-#' @param geometry_col Character. Name of the geometry column in the shapefile
-#' (usually "geometry").
-#' @param spi_col Character. Name of the column containing the Standardized
-#' Precipitation Index. Defaults to NULL.
-#' @param max_lag Numeric. Maximum lag to consider in the model
-#' (typically 2 to 4). Defaults to 2.
-#' @param inla_param A character vector specifying the confounding exposures to
-#' be included in the model. Possible values are "tmax","tmin", "rainfall",
-#' "r_humidity", and "runoff".
-#' @param basis_matrices_choices Character vector specifying basis matrix
-#' parameters to include in the model (e.g., "tmax", "tmin", "rainfall",
-#' "r_humidity", "spi").
-#' @param param_term Character vector specifying the exposure variables of interest
-#' (e.g., "tmax", "rainfall").
-#' @param level Character. Spatial disaggregation level: "country", "region", or "district".
-#' @param param_threshold Numeric. Threshold above which exposure is considered,
-#' "attributable". Can take floats. Defaults to 1.
-#' @param filter_year Integer. The year to filter to data to. Defaults to NULL.
-#' @param family Character. The probability distribution for the response
-#' variable. The user may also have thepossibility to choose "nbinomial" for a
-#' negative binomial distribution. Defaults to "poisson".
-#' @param config Boolean. Enable additional model configurations. Defaults to FALSE.
-#' @param save_csv Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.
-#' @param save_model Boolean. If TRUE, saves the INLA model. Defaults to FALSE.
-#' @param save_fig Boolean. If TRUE, saves the generated plots. Defaults to FALSE.
-#' @param output_dir Character. The path to the directory where outputs
-#' (e.g., plots, maps, datasets) should be saved.
+#' @param health_data_path Character. Path to the processed health data file.
+#' @param climate_data_path Character. Path to the processed climate data file.
+#' @param map_path Character. Path to the spatial data file (e.g., shapefile).
+#' @param region_col Character. Column name for the region variable.
+#' @param district_col Character. Column name for the district variable.
+#' @param date_col Character (optional). Column name for the date variable.
+#' Defaults to `NULL`.
+#' @param year_col Character. Column name for the year variable.
+#' @param month_col Character. Column name for the month variable.
+#' @param case_col Character. Column name for diarrhea case counts.
+#' @param case_type Character. Type of malaria cases (e.g., `"diarrhea"`,
+#' `"diarrhea_under_five"`).
+#' @param tot_pop_col Character. Column name for total population.
+#' @param tmin_col Character. Column name for minimum temperature.
+#' @param tmean_col Character. Column name for mean temperature.
+#' @param tmax_col Character. Column name for maximum temperature.
+#' @param rainfall_col Character. Column name for cumulative monthly rainfall.
+#' @param r_humidity_col Character. Column name for relative humidity.
+#' @param runoff_col Character. Column name for monthly runoff data.
+#' @param geometry_col Character. Column name of the geometry column in the
+#' shapefile (usually `"geometry"`).
+#' @param spi_col Character (optional). Column name for the Standardized
+#' Precipitation Index (SPI). Defaults to `NULL`.
+#' @param ndvi_col Character (optional). Column name for the Normalized Difference
+#' Vegetation Index (NDVI). Defaults to `NULL`.
+#' @param max_lag Numeric. Maximum temporal lag to include in the distributed
+#' lag model (e.g., `2`–`4`). Defaults to `4`.
+#' @param basis_matrices_choices Character vector. Specifies which climate variables
+#' to include in the basis matrix (e.g., `c("tmax", "rainfall", "r_humidity")`).
+#' @param inla_param Character vector. Specifies exposure variables included in
+#' the INLA model (e.g., `c("tmin", "rainfall", "r_humidity")`).
+#' @param param_term Character or vector. Exposure variable(s) of primary interest
+#' for relative risk and attribution (e.g., `"tmax"`, `"rainfall"`).
+#' @param level Character. Spatial disaggregation level; must be one of
+#' `"country"`, `"region"`, or `"district"`.
+#' @param param_threshold Numeric. Threshold above which exposure is considered
+#' “attributable.” Defaults to `1`.
+#' @param filter_year Integer or vector (optional). Year(s) to filter the data by.
+#' Defaults to `NULL`.
+#' @param family Character. Probability distribution for the outcome variable.
+#' Options include `"poisson"` (default) and `"nbinomial"` for a negative binomial model.
+#' @param group_by_year Logical. Whether to group attributable metrics by year.
+#' Defaults to `FALSE`.
+#' @param config Logical. Whether to enable additional INLA model configurations.
+#'  Defaults to `TRUE`.
+#' @param save_csv Logical. If `TRUE`, saves intermediate datasets to CSV.
+#' Defaults to `TRUE`.
+#' @param save_model Logical. If `TRUE`, saves fitted INLA model results.
+#' Defaults to `TRUE`.
+#' @param save_fig Logical. If `TRUE`, saves generated plots. Defaults to `TRUE`.
+#' @param output_dir Character. Directory where output files (plots, datasets, maps)
+#' are saved. Defaults to `NULL`.
 #'
 #' @return A list containing:
 #' \itemize{
@@ -75,7 +82,8 @@ diarrhea_do_analysis <- function(health_data_path,
                                  date_col= NULL,
                                  year_col,
                                  month_col,
-                                 diarrhea_case_col,
+                                 case_col,
+                                 case_type,
                                  tot_pop_col,
                                  tmin_col,
                                  tmean_col,
@@ -85,17 +93,19 @@ diarrhea_do_analysis <- function(health_data_path,
                                  runoff_col,
                                  geometry_col,
                                  spi_col = NULL,
+                                 ndvi_col = NULL,
                                  max_lag = 2,
-                                 inla_param,
                                  basis_matrices_choices,
+                                 inla_param,
                                  param_term,
                                  level,
                                  param_threshold = 1,
                                  filter_year = NULL,
                                  family = "poisson",
+                                 group_by_year = FALSE,
                                  config = FALSE,
                                  save_csv = FALSE,
-                                 save_model = FALSE,
+                                 save_model=FALSE,
                                  save_fig = FALSE,
                                  output_dir = NULL){
 
@@ -121,32 +131,29 @@ diarrhea_do_analysis <- function(health_data_path,
   }
   check_file_exists(map_path, TRUE)#
 
-  # Get combined data
-  combined_data <- combine_health_climate_data(
-    health_data_path,
-    climate_data_path,
-    map_path,
-    region_col,
-    district_col,
-    date_col,
-    year_col,
-    month_col,
-    diarrhea_case_col,
-    "diarrhea",
-    tot_pop_col,
-    tmin_col,
-    tmean_col,
-    tmax_col,
-    rainfall_col,
-    r_humidity_col,
-    geometry_col,
-    runoff_col,
-    NULL,
-    spi_col,
-    max_lag,
-    output_dir
-  )
-
+  # get combined data
+  combined_data <- combine_health_climate_data(health_data_path,
+                                               climate_data_path,
+                                               map_path,
+                                               region_col,
+                                               district_col,
+                                               date_col,
+                                               year_col,
+                                               month_col,
+                                               case_col,
+                                               case_type,
+                                               tot_pop_col,
+                                               tmin_col,
+                                               tmean_col,
+                                               tmax_col,
+                                               rainfall_col,
+                                               r_humidity_col,
+                                               geometry_col,
+                                               runoff_col,
+                                               ndvi_col,
+                                               spi_col,
+                                               max_lag,
+                                               output_dir)
   # Plot time series
   plot_diarrhea <- NULL
   plot_tmax <- NULL
@@ -154,7 +161,7 @@ diarrhea_do_analysis <- function(health_data_path,
   if (level=="country") {
     plot_diarrhea <- plot_health_climate_timeseries(
       combined_data$data,
-      param_term= level,
+      param_term = "diarrhea",
       level = "country",
       case_type = "diarrhea",
       filter_year = filter_year,
@@ -163,8 +170,8 @@ diarrhea_do_analysis <- function(health_data_path,
     )
     plot_tmax <- plot_health_climate_timeseries(
       combined_data$data,
-      param_term= "tmax",
-      level = level,
+      param_term = "tmax",
+      level = "country",
       case_type = "diarrhea",
       filter_year = filter_year,
       save_fig = save_fig,
@@ -172,17 +179,16 @@ diarrhea_do_analysis <- function(health_data_path,
     )
     plot_rainfall <- plot_health_climate_timeseries(
       combined_data$data,
-      param_term= "rainfall",
-      level = level,
+      param_term = "rainfall",
+      level = "country",
       case_type = "diarrhea",
       filter_year = filter_year,
       save_fig = save_fig,
       output_dir = output_dir
     )
   }
-
-  # Create base matrice
-  basis <- set_cross_basis(combined_data$data, FALSE)
+  # create base matrice
+  basis <- set_cross_basis(combined_data$data, max_lag)
 
   # Check for multicolinearity
   if (save_csv) {
@@ -202,7 +208,7 @@ diarrhea_do_analysis <- function(health_data_path,
     )
   }
 
-  # Fit the model
+  # Fitting the model
   inla_result <- run_inla_models(
     combined_data=combined_data,
     basis_matrices_choices=basis_matrices_choices,
@@ -216,7 +222,7 @@ diarrhea_do_analysis <- function(health_data_path,
 
   # Plot seasonality
   reff_plot_monthly <- plot_monthly_random_effects(
-    combined_data=combined_data,
+    combined_data,
     model=inla_result$model,
     output_dir=output_dir,
     save_fig=save_fig
@@ -230,7 +236,6 @@ diarrhea_do_analysis <- function(health_data_path,
     save_fig=save_fig,
     output_dir=output_dir
   )
-
   # Contour plots
   contour_plot_diarrhea <- contour_plot(
     data=combined_data$data,
@@ -248,7 +253,7 @@ diarrhea_do_analysis <- function(health_data_path,
     combined_data=combined_data,
     model=inla_result$model,
     param_term=param_term,
-    level=level,
+    level="district",
     filter_year=filter_year,
     case_type="diarrhea",
     output_dir=output_dir,
@@ -270,70 +275,60 @@ diarrhea_do_analysis <- function(health_data_path,
   rr_plot <- rr_data[["plots"]]
   rr_df <- rr_data[["RR"]]
 
-  # Attributable fractions and numbers
+  # attribution fraction and number
   attr_frac_num <- attribution_calculation(
     combined_data$data,
     param_term=param_term,
     model=inla_result$model,
-    level=level,
     param_threshold=param_threshold,
-    filter_year=filter_year,
+    level= level,
     case_type="diarrhea",
-    output_dir=output_dir,
-    save_csv=save_csv
-  )
-
-  #AN, AF, and AR plot
-  plot_AR_Num <- plot_attribution_metric(
-    attr_data=attr_frac_num,
-    level=level,
-    metrics="AR_Number",
     filter_year=filter_year,
-    param_term=param_term,
-    case_type="diarrhea",
-    save_fig=save_fig,
-    output_dir=output_dir
-  )
+    group_by_year = group_by_year,
+    save_csv=save_csv,
+    output_dir=output_dir)
 
-  plot_AR_Fr <- plot_attribution_metric(
-    attr_data=attr_frac_num,
-    level=level,
-    metrics="AR_Fraction",
-    filter_year=filter_year,
-    param_term=param_term,
-    case_type="diarrhea",
-    save_fig=save_fig,
-    output_dir=output_dir
-  )
+  plot_AR_Num <-plot_attribution_metric(attr_data = attr_frac_num,
+                                        param_term=param_term,
+                                        level= level,
+                                        metrics = "AR_Number",
+                                        case_type="diarrhea",
+                                        filter_year = filter_year,
+                                        save_fig =save_fig,
+                                        output_dir = output_dir)
 
-  plot_AR_per_100k <- plot_attribution_metric(
-    attr_data=attr_frac_num,
-    level=level,
-    metrics="AR_per_100k",
-    filter_year=filter_year,
-    param_term=param_term,
-    case_type="diarrhea",
-    save_fig=save_fig,
-    output_dir=output_dir
-  )
+  plot_AR_Fr <-plot_attribution_metric(attr_data = attr_frac_num,
+                                       param_term=param_term,
+                                       level= level,
+                                       metrics = "AR_Fraction",
+                                       case_type="diarrhea",
+                                       filter_year = filter_year,
+                                       save_fig =save_fig,
+                                       output_dir = output_dir)
 
-  res <- list(
-    plot_diarrhea = plot_diarrhea,
-    plot_tmax = plot_tmax,
-    plot_rainfall = plot_rainfall,
-    VIF = VIF,
-    inla_result = inla_result,
-    reff_plot_monthly = reff_plot_monthly,
-    reff_plot_yearly = reff_plot_yearly,
-    contour_plot = contour_plot_diarrhea,
-    rr_map_plot = rr_map_plot,
-    rr_plot = rr_plot,
-    rr_df = rr_df,
-    attr_frac_num = attr_frac_num,
-    plot_AR_Num = plot_AR_Num,
-    plot_AR_Fr = plot_AR_Fr,
-    plot_AR_per_100k = plot_AR_per_100k
-  )
+  plot_AR_per_100k <-plot_attribution_metric(attr_data = attr_frac_num,
+                                             param_term=param_term,
+                                             level= level,
+                                             filter_year = filter_year,
+                                             metrics = "AR_per_100k",
+                                             case_type="diarrhea",
+                                             save_fig =save_fig,
+                                             output_dir = output_dir)
+
+  res <- list(plot_diarrhea = plot_diarrhea,
+              plot_tmax = plot_tmax,
+              plot_rainfall = plot_rainfall,
+              inla_result = inla_result,
+              reff_plot_monthly = reff_plot_monthly,
+              reff_plot_yearly = reff_plot_yearly,
+              contour_plot = contour_plot_diarrhea,
+              rr_map_plot = rr_map_plot,
+              rr_plot = rr_plot,
+              rr_df = rr_df,
+              attr_frac_num = attr_frac_num,
+              plot_AR_num = plot_AR_Num,
+              plot_AR_frac = plot_AR_Fr,
+              plot_AR_per_100k = plot_AR_per_100k)
 
   return(res)
 }
