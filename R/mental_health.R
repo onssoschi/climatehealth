@@ -1484,7 +1484,7 @@ mh_attr <- function(df_list,
         an = an,
         an_lower_ci = an_lower_ci,
         an_upper_ci = an_upper_ci,
-        ar = (an / population) * 100000,
+        ar = (an / .data$population) * 100000,
         ar_lower_ci = (an_lower_ci / population) * 100000,
         ar_upper_ci = (an_upper_ci / population) * 100000
       )
@@ -2411,6 +2411,7 @@ mh_save_results <- function(rr_results,
 #'                           save_csv = TRUE,
 #'                           output_folder_path = "data/outputs/england_analysis")
 #'}
+#' 
 #' @export
 suicides_heat_do_analysis <- function(data_path,
                                       date_col,

@@ -148,6 +148,7 @@ and guidance on interpreting outputs can be found in the accompanying published
 \href{https://doi.org/10.5281/zenodo.14050224}{Zenodo documentation}.
 }
 \examples{
+\dontrun{
 suicides_heat_do_analysis(data_path = "data/inputs/daily_suicides_climate_E_2001_2023.csv",
                           date_col = "date",
                           region_col = "region",
@@ -169,6 +170,7 @@ suicides_heat_do_analysis(data_path = "data/inputs/daily_suicides_climate_E_2001
                           save_fig = TRUE,
                           save_csv = TRUE,
                           output_folder_path = "data/outputs/england_analysis")
+}
 
 }
 \references{
