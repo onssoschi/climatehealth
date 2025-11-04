@@ -716,7 +716,7 @@ calculate_qaic <- function(
         # define model
         number <- lag_nums[[i]]
         # create model formula
-        formula_parts <- c("health_outcome ~ splines::ns(tmean, df = 6)", i)
+        formula_parts <- c("health_outcome ~ ns.tmean", i)
         if (!all(is.na(data$rh))) {
             formula_parts <- c(formula_parts, "splines::ns(rh, df = 3)")
         }
