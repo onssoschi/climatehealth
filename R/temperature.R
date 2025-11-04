@@ -186,9 +186,16 @@ hc_model_combo_res <- function(df_list,
   } else(transformed_vars <- NULL)
 
   # EW poss no need to apply ns to independents - check literature whether should be controlled with splines
-  all_combos <- unlist(lapply(0:length(transformed_vars), function(i) {
-    combn(transformed_vars, i, simplify = FALSE)
-  }), recursive = FALSE)
+  if (!is.null(transformed_vars)) {
+    all_combos <- c(
+      list(list()), # Create empty list to allow case where independent_cols = NULL
+      unlist(lapply(1:length(transformed_vars), function(i) {
+        combn(transformed_vars, i, simplify = FALSE)
+      }), recursive = FALSE)
+    )
+  } else {
+    all_combos <- list(list())  # Only base formula
+  }
 
   for (geog in names(df_list)) {
 
@@ -303,11 +310,57 @@ hc_vif <- function(df_list,
 
 }
 
+#' Run ADF test and produce PACF plots for each model combo
+#'
+#' @description Run augmented Dickey-Fuller test for stationarity of dependent variable
+#'  and produce partial autocorrelation function plot of residuals for each model combo
+#'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular geography.
+#'
+#' @return adf_result for each geography.
+#'
+#' @export
+hc_adf <- function(df_list) {
+
+  # Load required libraries
+  if (!requireNamespace("tseries", quietly = TRUE)) install.packages("tseries")
+  if (!requireNamespace("forecast", quietly = TRUE)) install.packages("forecast")
+
+  library(tseries)
+  library(forecast)
+
+
+    adf_list <- list()
+
+    for (geog in names(df_list)){
+
+      geog_data <- df_list[[geog]]
+
+      # Perform Augmented Dickey-Fuller Test - values can only be missing in first and last rows of series
+      # null hypothesis = time series is non stationary
+      adf_test_res <- adf.test(geog_data$dependent)
+      cat("ADF Test for", geog, ":\n")
+      print(adf_test_res)
+
+      adf_df <- data.frame(
+        adf_test_stat = as.numeric(adf_test_res$statistic),
+        lag_order = as.numeric(adf_test_res$parameter),
+        p_value = as.numeric(adf_test_res$p.value),
+        stringsAsFactors = FALSE
+      )
+
+      adf_list[[geog]] <- adf_df
+    }
+
+  return(adf_list)
+}
+
 
 #' Model Validation Assessment
 #'
 #' @description Produces results on QAIC for each model combination, variance inflation
-#' factor for each independent variable, and plots for residuals to assess the models
+#' factor for each independent variable, ADF test for stationarity, and plots for residuals to assess the models
 #'
 #' @param df_list A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular geography.
@@ -325,8 +378,9 @@ hc_vif <- function(df_list,
 #'   \itemize{
 #'   \item `qaic_results` A dataframe of QAIC and dispersion metrics for each model combination and geography.
 #'   \item `qaic_summary` A dataframe with the mean QAIC and dispersion metrics for each model combination.
-#'   \item `vif_results` A dataframe. Variance inflation factors for each independent variables by geography.
+#'   \item `vif_results` A dataframe of variance inflation factors for each independent variables by geography.
 #'   \item `vif_summary` A dataframe with the mean variance inflation factors for each independent variable.
+#'   \item `adf_results` A dataframe of ADF test results for each geography.
 #'   }
 #'
 #' @export
@@ -338,11 +392,11 @@ hc_model_validation <- function(df_list = df_list,
                                 save_csv = FALSE,
                                 output_folder_path = NULL){
 
+  # QAIC results to csv
   c(qaic_results, residuals_list) %<-% hc_model_combo_res(df_list = df_list,
                                                           cb_list = cb_list,
                                                           dfseas = dfseas,
                                                           independent_cols = independent_cols)
-
   if (save_csv == TRUE){
 
     dir.create(file.path(
@@ -353,6 +407,7 @@ hc_model_validation <- function(df_list = df_list,
 
   }
 
+  # VIF results to csv by geog
   if (!is.null(independent_cols)) {
 
     vif_list <- hc_vif(df_list = df_list,
@@ -369,6 +424,19 @@ hc_model_validation <- function(df_list = df_list,
 
   } else vif_results <- NULL
 
+  # ADF test results to csv by geog
+    adf_list <- hc_adf(df_list = df_list)
+
+    adf_results <- dplyr::bind_rows(adf_list, .id = "Geography")
+
+    if (save_csv == TRUE) {
+
+      write.csv(adf_results, file = file.path(
+        output_folder_path, "model_validation", "adf_results.csv"), row.names = FALSE)
+
+    }
+
+  # Produce and write csv of mean QAIC and VIF results
   if (length(df_list) > 1){
 
     qaic_summary <- qaic_results %>%
@@ -400,6 +468,8 @@ hc_model_validation <- function(df_list = df_list,
 
   } else qaic_summary <- vif_summary <- NULL
 
+
+  # Model validation plots
   if (save_fig == TRUE){
 
     # Shorten the labels to a fixed length
@@ -554,9 +624,36 @@ hc_model_validation <- function(df_list = df_list,
 
     dev.off()
 
+    # PACF plot
+    if (save_fig == TRUE){
+
+      grid <- c(min(length(formula_list), 3), ceiling(length(formula_list) / 3))
+      output_path <- file.path(output_folder_main, paste0(named_label, "_pacf.pdf"))
+      pdf(output_path, width = grid[1]*5.5, height = grid[2]*4.5)
+
+      par(mfrow=c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
+
+    }
+
+    for (i in names(formula_list)){
+
+      residuals_clean <- na.omit(formula_list[[i]]$residuals)
+      pacf(residuals_clean, main = unique(formula_list[[i]]$formula), col = "#7A855C")
+
+      if (save_fig == TRUE){
+
+        title <- paste0("Partial autocorrelation function: ", geog)
+        mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+
+      }
+
+    }
+
+    dev.off()
+
   }
 
-  return(list(qaic_results, qaic_summary, vif_results, vif_summary))
+  return(list(qaic_results, qaic_summary, vif_results, vif_summary, adf_results))
 
 }
 
@@ -617,9 +714,18 @@ hc_quasipoisson_dlnm <- function(df_list,
                         paste(base_independent_cols,
                               collapse = " + "))
 
-  formula <- as.formula(paste(base_formula,
-                              paste("+", paste(control_cols,
-                                               collapse = " + "))))
+
+  if (is.null(control_cols)){
+
+    formula <- as.formula(paste(base_formula))
+
+  } else {
+
+    formula <- as.formula(paste(base_formula,
+                                paste("+", paste(control_cols,
+                                                 collapse = " + "))))
+  }
+
 
   # Run model
   for(geog in names(df_list)){
@@ -795,7 +901,6 @@ hc_meta_analysis <- function(df_list,
                          S = vcov_,
                          data = as.data.frame(names(df_list)),
                          method = "reml"
-                         #, control = list(showiter = FALSE) - EW: left from original heat and cold code, check what it does
   )
 
   # Obtain BLUPs
@@ -873,7 +978,7 @@ hc_meta_analysis <- function(df_list,
 hc_min_mortality_temp <- function(df_list,
                                   var_fun = "bs",
                                   var_per = c(10,75,90),
-                                  var_degree = 8,
+                                  var_degree = 2,
                                   blup = blup,
                                   coef_,
                                   meta_analysis = FALSE) {
@@ -975,10 +1080,10 @@ hc_min_mortality_temp <- function(df_list,
 #' @return A list containing predictions by region
 #'
 #' @export
-hc_predict <- function(df_list,
+hc_predict_subnat <- function(df_list,
                            var_fun = "bs",
                            var_per = c(10,75,90),
-                           var_degree = 8,
+                           var_degree = 2,
                            minpercgeog_,
                            blup,
                            coef_,
@@ -1203,6 +1308,189 @@ hc_predict_nat <- function(df_list,
 }
 
 
+#' Power calculation
+#'
+#' @description Produce a power statistic by area for the attributable threshold
+#' as a reference.
+#'
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param pred_list A list containing predictions from the model by region.
+#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
+#' @param attr_thr Integer. Percentile at which to define the temperature threshold for
+#' calculating attributable risk.
+#'
+#' @return A list containing power information by area.
+#'
+#' @export
+hc_power_list <- function(df_list = df_list,
+                          pred_list = pred_list,
+                          minpercgeog_ = minpercgeog_,
+                          attr_thr_high = 97.5,
+                          attr_thr_low = 2.5){
+
+  power_list_high <- list()
+  power_list_low <- list()
+  alpha <- 0.05
+
+  # Power for high temperature
+  for(geog in names(df_list)){
+
+    geog_data <- df_list[[geog]]
+    pred <- pred_list[[geog]]
+    mmt <- round(quantile(geog_data$temp, minpercgeog_[geog]/100, na.rm = TRUE), 1)
+
+    # Compute power for each .1 degree of temperature greater/less than or equal to the high and low temperature thresholds
+
+    thresh_temp_high <- round(quantile(geog_data$temp, attr_thr_high/100, na.rm = TRUE), 1)
+
+    coef_effect_with_se <- data.frame(temperature = round(pred$predvar, 1),
+                                      log_rr = pred$allfit,
+                                      se = pred$allse)
+
+    coef_effect_with_se <- coef_effect_with_se %>%
+      dplyr::filter(temperature >= thresh_temp_high)
+
+    rownames(coef_effect_with_se) <- NULL
+
+    power_df_high <- data.frame(geog = geog,
+                                temperature = coef_effect_with_se$temperature,
+                                mmt = mmt,
+                                log_rr = coef_effect_with_se$log_rr,
+                                se = coef_effect_with_se$se,
+                                z_alpha = qnorm(1 - alpha / 2))
+
+    power_df_high <- power_df_high %>%
+      mutate(power = pnorm(log_rr / se - z_alpha) + (1 - pnorm(log_rr / se + z_alpha))) %>%
+      select(-z_alpha) %>%
+      mutate(log_rr = round(log_rr, 2),
+             se = round(se, 2),
+             power = round(power * 100, 1))
+
+    power_list_high[[geog]] <- power_df_high
+
+  }
+
+  # Power for low temperature
+  for(geog in names(df_list)){
+
+    geog_data <- df_list[[geog]]
+    pred <- pred_list[[geog]]
+    mmt <- round(quantile(geog_data$temp, minpercgeog_[geog]/100, na.rm = TRUE), 1)
+
+    # Compute power for each .1 degree of temperature greater/less than or equal to the high and low temperature thresholds
+
+    thresh_temp_low <- round(quantile(geog_data$temp, attr_thr_low/100, na.rm = TRUE), 1)
+
+    coef_effect_with_se <- data.frame(temperature = round(pred$predvar, 1),
+                                      log_rr = pred$allfit,
+                                      se = pred$allse)
+
+    coef_effect_with_se <- coef_effect_with_se %>%
+      dplyr::filter(temperature <= thresh_temp_low)
+
+    rownames(coef_effect_with_se) <- NULL
+
+    power_df_low <- data.frame(geog = geog,
+                               temperature = coef_effect_with_se$temperature,
+                               mmt = mmt,
+                               log_rr = coef_effect_with_se$log_rr,
+                               se = coef_effect_with_se$se,
+                               z_alpha = qnorm(1 - alpha / 2))
+
+    power_df_low <- power_df_low %>%
+      mutate(power = pnorm(log_rr / se - z_alpha) + (1 - pnorm(log_rr / se + z_alpha))) %>%
+      select(-z_alpha) %>%
+      mutate(log_rr = round(log_rr, 2),
+             se = round(se, 2),
+             power = round(power * 100, 1))
+
+    power_list_low[[geog]] <- power_df_low
+
+  }
+
+  return(list(power_list_high, power_list_low))
+
+}
+
+
+hc_plot_power <- function(power_list_high,
+                          power_list_low,
+                          save_fig = FALSE,
+                          output_folder_path = NULL,
+                          country = "National") {
+
+  # High temperature
+  if (output_config$save_fig == TRUE) {
+    grid <- c(min(length(power_list_high), 3), ceiling(length(power_list_high) / 3))
+    output_path <- file.path(path_config$output_folder_path, "model_validation", "power_vs_high_temperature.pdf")
+    pdf(output_path, width = max(10, grid[1]*5.5), height = max(7, grid[2]*4.5))
+    par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0), mar = c(8, 4, 5, 4))
+  }
+
+  for (geog in names(power_list_high)) {
+    df <- power_list_high[[geog]]
+    df <- df[order(df$temperature), ]
+
+    plot(x = df$temperature,
+         y = df$power,
+         type = "l",
+         xlab = "Temperature",
+         ylab = "Power (%)",
+         main = geog,
+         col = "#C75E70",
+         ylim = c(0, 100),
+         lwd = 2)
+
+    abline(h = 80,
+           col = "black",
+           lty = 2)
+
+  }
+
+  if (output_config$save_fig == TRUE) {
+    title <- paste0("Power vs. high temperatures by geography, ", model_config$country)
+    mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+    dev.off()
+  }
+
+
+  # Low temperature
+  if (output_config$save_fig == TRUE) {
+    grid <- c(min(length(power_list_low), 3), ceiling(length(power_list_low) / 3))
+    output_path <- file.path(path_config$output_folder_path, "model_validation", "power_vs_low_temperature.pdf")
+    pdf(output_path, width = max(10, grid[1]*5.5), height = max(7, grid[2]*4.5))
+    par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0), mar = c(8, 4, 5, 4))
+  }
+
+  for (geog in names(power_list_low)) {
+    df <- power_list_low[[geog]]
+    df <- df[order(df$temperature), ]
+
+    plot(x = df$temperature,
+         y = df$power,
+         type = "l",
+         xlab = "Temperature",
+         ylab = "Power (%)",
+         main = geog,
+         col = "#296991",
+         ylim = c(0, 100),
+         lwd = 2)
+
+    abline(h = 80,
+           col = "black",
+           lty = 2)
+
+  }
+
+  if (output_config$save_fig == TRUE) {
+    title <- paste0("Power vs. low temperatures by geography, ", model_config$country)
+    mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+    dev.off()
+  }
+}
+
+
 #' Produce cumulative relative risk results of analysis
 #'
 #' @description Produces cumulative relative risk and confidence intervals
@@ -1214,18 +1502,37 @@ hc_predict_nat <- function(df_list,
 #' intervals from analysis.
 #'
 #' @export
-hc_rr_results <- function(pred_list) {
+hc_rr_results <- function(pred_list,
+                          df_list,
+                          attr_thr_high = 97.5,
+                          attr_thr_low = 2.5) {
 
   rr_results <- bind_rows(lapply(names(pred_list), function(geog_name) {
 
     geog_pred <- pred_list[[geog_name]]
+    geog_temp <- df_list[[geog_name]]$temp
+
+    mmt <- quantile(geog_temp, minpercgeog_[geog_name] / 100, na.rm = TRUE)
+    attr_thr_high_temp <- quantile(geog_temp, attr_thr_high / 100, na.rm = TRUE)
+    attr_thr_low_temp <- quantile(geog_temp, attr_thr_low / 100, na.rm = TRUE)
+
+    temp_rounded <- round(geog_temp, 1)
+    temp_freq_table <- table(temp_rounded)
+
+    pred_temp_rounded <- round(geog_pred$predvar, 1)
+    temp_freq <- as.numeric(temp_freq_table[as.character(pred_temp_rounded)])
+    temp_freq[is.na(temp_freq)] <- 0  # Replace NAs with 0 for bins not present
 
     df <- data.frame(
       Area = geog_name,
-      Temperature = geog_pred$predvar,
-      RR = geog_pred$allRRfit,
-      RR_lower_CI = geog_pred$allRRlow,
-      RR_upper_CI = geog_pred$allRRhigh
+      MMT = round(mmt, 1),
+      Attr_Threshold_High_Temp = round(attr_thr_high_temp, 1),
+      Attr_Threshold_Ligh_Temp = round(attr_thr_low_temp, 1),
+      Temperature = round(geog_pred$predvar, 1),
+      Temp_Frequency = temp_freq,
+      RR = round(geog_pred$allRRfit, 2),
+      RR_lower_CI = round(geog_pred$allRRlow, 2),
+      RR_upper_CI = round(geog_pred$allRRhigh, 2)
     )
 
     return(df)
@@ -2850,6 +3157,8 @@ hc_save_results <- function(rr_results,
                             res_attr_tot,
                             attr_yr_list,
                             attr_mth_list,
+                            power_list_high,
+                            power_list_low,
                             output_folder_path = NULL) {
 
   if (!is.null(output_folder_path)) {
@@ -2874,7 +3183,16 @@ hc_save_results <- function(rr_results,
     write.csv(res_attr_mth, file = file.path(
       output_folder_path, "mortality_attr_mth_results.csv"), row.names = FALSE)
 
-    #TODO also in wildfire functions, generalise and put in files.utils
+    res_power_high <- do.call(rbind, power_list_high)
+
+    write.csv(res_power_high, file = file.path(
+      output_folder_path, "model_validation", "mortality_high_temp_power_results.csv"), row.names = FALSE)
+
+    res_power_low <- do.call(rbind, power_list_low)
+
+    write.csv(res_power_low, file = file.path(
+      output_folder_path, "model_validation", "mortality_low_temp_power_results.csv"), row.names = FALSE)
+
 
   } else {
 
@@ -2903,7 +3221,7 @@ hc_save_results <- function(rr_results,
 #' contains the health outcome count column (e.g. number of deaths, hospital
 #' admissions).
 #' @param population_col Character. Name of the column in the dataframe that
-#' contains the population estimate coloumn.
+#' contains the population estimate column.
 #' @param independent_cols Additional independent variables to test in model validation
 #' @param control_cols A list of confounders to include in the final model adjustment.
 #' Defaults to NULL if none.
@@ -3059,6 +3377,22 @@ temp_mortality_do_analysis <- function(input_csv_path,
 
   }
 
+  c(power_list_high, power_list_low) <- hc_power_list(df_list = df_list, # EW: repeats same loop twice for high and low thresholds, could be streamlined
+                                                      pred_list = pred_list,
+                                                      minpercgeog_ = minpercgeog_,
+                                                      attr_thr_high = attr_thr_high,
+                                                      attr_thr_low = attr_thr_low)
+
+  hc_plot_power(power_list_high = power_list_high,# EW: repeats same loop twice for high and low thresholds, could be streamlined
+                power_list_low = power_list_low,
+                save_fig = save_fig,
+                output_folder_path = output_folder_path,
+                country = country)
+
+
+  rr_results <- hc_rr_results(pred_list) # EW: has name differences inside function
+
+
   hc_plot_rr(df_list = df_list,
              pred_list = pred_list,
              attr_thr_high = attr_thr_high, #EW: additional threshold to MH
@@ -3068,7 +3402,6 @@ temp_mortality_do_analysis <- function(input_csv_path,
              save_fig = save_fig,
              output_folder_path = output_folder_path)
 
-  rr_results <- hc_rr_results(pred_list) # EW: has name differences inside function
 
   attr_list <- hc_attr(df_list = df_list,
                        cb_list = cb_list,
