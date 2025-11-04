@@ -216,7 +216,7 @@ hc_model_combo_res <- function(df_list,
     }
 
     # define the base independent cols
-      base_independent_cols <- c(
+    base_independent_cols <- c(
       'cb',
       'dow',
       paste0('splines::ns(date, df = ', dfseas, ' * length(unique(year)))')
@@ -331,27 +331,27 @@ hc_adf <- function(df_list) {
   library(forecast)
 
 
-    adf_list <- list()
+  adf_list <- list()
 
-    for (geog in names(df_list)){
+  for (geog in names(df_list)){
 
-      geog_data <- df_list[[geog]]
+    geog_data <- df_list[[geog]]
 
-      # Perform Augmented Dickey-Fuller Test - values can only be missing in first and last rows of series
-      # null hypothesis = time series is non stationary
-      adf_test_res <- adf.test(geog_data$dependent)
-      cat("ADF Test for", geog, ":\n")
-      print(adf_test_res)
+    # Perform Augmented Dickey-Fuller Test - values can only be missing in first and last rows of series
+    # null hypothesis = time series is non stationary
+    adf_test_res <- adf.test(geog_data$dependent)
+    cat("ADF Test for", geog, ":\n")
+    print(adf_test_res)
 
-      adf_df <- data.frame(
-        adf_test_stat = as.numeric(adf_test_res$statistic),
-        lag_order = as.numeric(adf_test_res$parameter),
-        p_value = as.numeric(adf_test_res$p.value),
-        stringsAsFactors = FALSE
-      )
+    adf_df <- data.frame(
+      adf_test_stat = as.numeric(adf_test_res$statistic),
+      lag_order = as.numeric(adf_test_res$parameter),
+      p_value = as.numeric(adf_test_res$p.value),
+      stringsAsFactors = FALSE
+    )
 
-      adf_list[[geog]] <- adf_df
-    }
+    adf_list[[geog]] <- adf_df
+  }
 
   return(adf_list)
 }
@@ -425,16 +425,16 @@ hc_model_validation <- function(df_list = df_list,
   } else vif_results <- NULL
 
   # ADF test results to csv by geog
-    adf_list <- hc_adf(df_list = df_list)
+  adf_list <- hc_adf(df_list = df_list)
 
-    adf_results <- dplyr::bind_rows(adf_list, .id = "Geography")
+  adf_results <- dplyr::bind_rows(adf_list, .id = "Geography")
 
-    if (save_csv == TRUE) {
+  if (save_csv == TRUE) {
 
-      write.csv(adf_results, file = file.path(
-        output_folder_path, "model_validation", "adf_results.csv"), row.names = FALSE)
+    write.csv(adf_results, file = file.path(
+      output_folder_path, "model_validation", "adf_results.csv"), row.names = FALSE)
 
-    }
+  }
 
   # Produce and write csv of mean QAIC and VIF results
   if (length(df_list) > 1){
@@ -1081,14 +1081,14 @@ hc_min_mortality_temp <- function(df_list,
 #'
 #' @export
 hc_predict_subnat <- function(df_list,
-                           var_fun = "bs",
-                           var_per = c(10,75,90),
-                           var_degree = 2,
-                           minpercgeog_,
-                           blup,
-                           coef_,
-                           vcov_,
-                           meta_analysis = FALSE){
+                              var_fun = "bs",
+                              var_per = c(10,75,90),
+                              var_degree = 2,
+                              minpercgeog_,
+                              blup,
+                              coef_,
+                              vcov_,
+                              meta_analysis = FALSE){
 
   if (meta_analysis == TRUE){
 
@@ -1930,10 +1930,10 @@ hc_attr_tables <- function(attr_list,
 #'
 #' @export
 hc_plot_attr_heat_totals <- function(df_list,
-                                res_attr_tot,
-                                save_fig = FALSE,
-                                output_folder_path = NULL,
-                                country = "National"){
+                                     res_attr_tot,
+                                     save_fig = FALSE,
+                                     output_folder_path = NULL,
+                                     country = "National"){
 
   if (save_fig == TRUE){
 
@@ -2189,9 +2189,9 @@ hc_plot_attr_cold_totals <- function(df_list,
 #'
 #' @export
 hc_plot_af_heat_yearly <- function(attr_yr_list,
-                              save_fig = FALSE,
-                              output_folder_path = NULL,
-                              country = "National"){
+                                   save_fig = FALSE,
+                                   output_folder_path = NULL,
+                                   country = "National"){
 
   if (save_fig == TRUE){
 
@@ -2413,9 +2413,9 @@ hc_plot_af_cold_yearly <- function(attr_yr_list,
 #'
 #' @export
 hc_plot_ar_heat_yearly <- function(attr_yr_list,
-                              save_fig = FALSE,
-                              output_folder_path = NULL,
-                              country = "National"){
+                                   save_fig = FALSE,
+                                   output_folder_path = NULL,
+                                   country = "National"){
 
   if (save_fig == TRUE){
 
@@ -2641,11 +2641,11 @@ hc_plot_ar_cold_yearly <- function(attr_yr_list,
 #'
 #' @export
 hc_plot_af_heat_monthly <- function(attr_mth_list,
-                               df_list,
-                               country = "National",
-                               attr_thr_high = 97.5,
-                               save_fig = FALSE,
-                               output_folder_path = NULL){
+                                    df_list,
+                                    country = "National",
+                                    attr_thr_high = 97.5,
+                                    save_fig = FALSE,
+                                    output_folder_path = NULL){
 
 
   if (save_fig == TRUE){
@@ -2900,11 +2900,11 @@ hc_plot_af_cold_monthly <- function(attr_mth_list,
 #'
 #' @export
 hc_plot_ar_heat_monthly <- function(attr_mth_list,
-                               df_list,
-                               country = "National",
-                               attr_thr_high = 97.5,
-                               save_fig = FALSE,
-                               output_folder_path = NULL){
+                                    df_list,
+                                    country = "National",
+                                    attr_thr_high = 97.5,
+                                    save_fig = FALSE,
+                                    output_folder_path = NULL){
 
   if (save_fig == TRUE){
 
@@ -3264,33 +3264,33 @@ hc_save_results <- function(rr_results,
 #'
 #' @export
 temp_mortality_do_analysis <- function(input_csv_path,
-                                      date_col,
-                                      geography_col,
-                                      temperature_col,
-                                      dependent_col,
-                                      population_col,
-                                      independent_cols = NULL,
-                                      control_cols = NULL,
-                                      var_fun = "bs",
-                                      var_degree = 2,
-                                      var_per = c(10,75,90),
-                                      lagn = 21,
-                                      lagnk = 3,
-                                      dfseas = 8,
-                                      save_fig = FALSE,
-                                      save_csv = FALSE,
-                                      country = "National",
-                                      meta_analysis = FALSE,
-                                      attr_thr_high = 97.5,
-                                      attr_thr_low = 2.5,
-                                      output_folder_path = NULL) {
+                                       date_col,
+                                       geography_col,
+                                       temperature_col,
+                                       dependent_col,
+                                       population_col,
+                                       independent_cols = NULL,
+                                       control_cols = NULL,
+                                       var_fun = "bs",
+                                       var_degree = 2,
+                                       var_per = c(10,75,90),
+                                       lagn = 21,
+                                       lagnk = 3,
+                                       dfseas = 8,
+                                       save_fig = FALSE,
+                                       save_csv = FALSE,
+                                       country = "National",
+                                       meta_analysis = FALSE,
+                                       attr_thr_high = 97.5,
+                                       attr_thr_low = 2.5,
+                                       output_folder_path = NULL) {
 
   df_list <- hc_read_data(data_path = data_path,
-                                     date_col = date_col,
-                                     geography_col = geograpphy_col,
-                                     temperature_col = temperature_col,
-                                     dependent_col = dependent_col,
-                                     population_col = population_col)
+                          date_col = date_col,
+                          geography_col = geograpphy_col,
+                          temperature_col = temperature_col,
+                          dependent_col = dependent_col,
+                          population_col = population_col)
 
   pop_list <- mh_pop_totals(df_list = df_list, #EW: same as MH but pop vs population name difference
                             country = country,
@@ -3335,36 +3335,36 @@ temp_mortality_do_analysis <- function(input_csv_path,
   } else blup <- NULL
 
   c(minpercgeog_, mintempgeog_) <- hc_min_mortality_temp(df_list = df_list,
-                                                        var_fun = var_fun,
-                                                        var_per = var_per,
-                                                        var_degree = var_degree,
-                                                        blup = blup,
-                                                        coef_ = coef_,
-                                                        meta_analysis = meta_analysis)
+                                                         var_fun = var_fun,
+                                                         var_per = var_per,
+                                                         var_degree = var_degree,
+                                                         blup = blup,
+                                                         coef_ = coef_,
+                                                         meta_analysis = meta_analysis)
 
   pred_list <- hc_predict(df_list = df_list, #EW: think can use MH function
-                              var_fun = var_fun,
-                              var_per = var_per,
-                              var_degree = var_degree,
-                              minpercgeog_ = minpercgeog_, #EW: name difference
-                              blup = blup,
-                              coef_ = coef_,
-                              vcov_ = vcov_,
-                              meta_analysis = meta_analysis)
+                          var_fun = var_fun,
+                          var_per = var_per,
+                          var_degree = var_degree,
+                          minpercgeog_ = minpercgeog_, #EW: name difference
+                          blup = blup,
+                          coef_ = coef_,
+                          vcov_ = vcov_,
+                          meta_analysis = meta_analysis)
 
   if (meta_analysis == TRUE){
 
     c(df_list, cb_list, minpercgeog_, mmpredall) %<-% hc_add_national_data(df_list = df_list, #EW: different model to MH
-                                                                         pop_list = pop_list,
-                                                                         var_fun = var_fun,
-                                                                         var_per = var_per,
-                                                                         var_degree = var_degree,
-                                                                         lagn = lagn,
-                                                                         lagnk = lagnk,
-                                                                         country = country,
-                                                                         cb_list = cb_list,
-                                                                         mm = mm,
-                                                                         minpercgeog_ = minpercgeog_)
+                                                                           pop_list = pop_list,
+                                                                           var_fun = var_fun,
+                                                                           var_per = var_per,
+                                                                           var_degree = var_degree,
+                                                                           lagn = lagn,
+                                                                           lagnk = lagnk,
+                                                                           country = country,
+                                                                           cb_list = cb_list,
+                                                                           mm = mm,
+                                                                           minpercgeog_ = minpercgeog_)
 
     pred_list <- mh_predict_nat(df_list = df_list, # EW: think can use MH function
                                 var_fun = var_fun,
@@ -3414,7 +3414,7 @@ temp_mortality_do_analysis <- function(input_csv_path,
                                                                    country = country,
                                                                    meta_analysis = meta_analysis)
 
-#EW: plots all diff to MH due to extra threshold
+  #EW: plots all diff to MH due to extra threshold
   hc_plot_attr_totals(df_list = df_list,
                       res_attr_tot = res_attr_tot,
                       save_fig = save_fig,

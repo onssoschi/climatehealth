@@ -23,3 +23,4 @@ Prints variance inflation factors for each predictor variable.
 Checks variance inflation factors of predictor variables using a
 linear model of the predictor variables on the health outcome.
 }
+\keyword{internal}

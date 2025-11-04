@@ -48,3 +48,4 @@ See: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/glm
 \description{
 Define regression model
 }
+\keyword{internal}

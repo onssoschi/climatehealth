@@ -56,3 +56,4 @@ A function to calculate attributable numbers and fractions derived from
 (c) Antonio Gasparrini 2015-2017. Modifications to produce daily values with
 confidence intervals.
 }
+\keyword{internal}

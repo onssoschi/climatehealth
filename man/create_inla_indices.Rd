@@ -21,3 +21,4 @@ The modified data with the created indices.
 district index, and year index. This function create these indices using the
 dataset, ndistrict and nregion defined above.
 }
+\keyword{internal}

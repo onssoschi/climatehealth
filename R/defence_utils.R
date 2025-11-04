@@ -12,7 +12,7 @@
 #'
 #' @return Whether or not the item passed (list_) is a list of dfs.
 #'
-#' @export
+#' @keywords internal
 is_list_of_dfs <- function(list_,
                            raise = TRUE,
                            param_nm = "df_list") {

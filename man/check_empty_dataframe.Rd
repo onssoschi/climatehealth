@@ -15,3 +15,4 @@ NULL. No return if the dataframe is not empty.
 \description{
 Checks if a dataframe is empty, and raises an error if it is.
 }
+\keyword{internal}

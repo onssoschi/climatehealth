@@ -28,3 +28,4 @@ THe monthly random effects plot.
 Generates and saves a plot of monthly random effects for different
 regions, visualizing their contribution to Malaria Incidence Rate.
 }
+\keyword{internal}

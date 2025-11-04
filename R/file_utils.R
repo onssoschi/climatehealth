@@ -11,7 +11,7 @@
 #'
 #' @return 'exists'. Whether or not the file exists on disk.
 #'
-#' @export
+#' @keywords internal
 check_file_exists <- function(fpath, raise = TRUE) {
   # assert if the file exists
   exists <- file.exists(fpath)
@@ -36,7 +36,7 @@ check_file_exists <- function(fpath, raise = TRUE) {
 #'
 #' @return Whether or not the passed file has a valid file extension.
 #'
-#' @export
+#' @keywords internal
 check_file_extension <- function(
     fpath,
     expected_ext,
@@ -72,11 +72,11 @@ check_file_extension <- function(
 #' @param input_csv_path The path to the csv to read as a dataframe.
 #'
 #' @return A dataframe containing the data from the csv.
-#' @export
+#' @keywords internal
 #'
 #' @examples input_csv_path = "directory/file_name.csv"
 #'
-#' @export
+#' @keywords internal
 read_input_data <- function(input_csv_path) {
   if (is.list(input_csv_path)) {
     df <- data.frame(input_csv_path)
@@ -106,11 +106,7 @@ read_input_data <- function(input_csv_path) {
 #'
 #' @return Character. The path with the expected file extension.
 #'
-#' @examples
-#' enforce_file_extension("output", "pdf")
-#' enforce_file_extension("report.txt", ".pdf")
-#'
-#' @export
+#' @keywords internal
 enforce_file_extension <- function(path, file_extension) {
   # Normalise the file ext
   if (!startsWith(file_extension, ".")) {

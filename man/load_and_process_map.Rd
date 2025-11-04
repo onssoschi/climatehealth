@@ -34,3 +34,4 @@ load_and_process_map(
 : Read in a shape file, rename columns and create the
 adjacency matrix for spatiotemporal analysis.
 }
+\keyword{internal}

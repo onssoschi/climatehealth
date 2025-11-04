@@ -17,3 +17,4 @@ Dataframe. A summary of NA values in the dataset.
 \description{
 Create a summary of all NA values in a dataset.
 }
+\keyword{internal}

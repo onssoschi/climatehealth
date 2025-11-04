@@ -29,3 +29,4 @@ The filtered dataframe.
 \description{
 Filter the dataframe based on the relative risk distribution.
 }
+\keyword{internal}

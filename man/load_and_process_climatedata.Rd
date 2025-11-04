@@ -69,3 +69,4 @@ columns and create lag variable for spatiotemporal and DLNM analysis. The
 climate data should start a year before a start year in the health data to
 allow the lag variables calculation.
 }
+\keyword{internal}

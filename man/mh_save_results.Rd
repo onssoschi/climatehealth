@@ -32,3 +32,4 @@ Defaults to NULL.}
 Saves a CSV file of cumulative relative risk and
 confidence intervals.
 }
+\keyword{internal}

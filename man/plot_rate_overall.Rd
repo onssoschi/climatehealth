@@ -29,3 +29,4 @@ plot_rate_overall(
 \description{
 Plot the rate of a dependent variable per 100,000 population per year.
 }
+\keyword{internal}

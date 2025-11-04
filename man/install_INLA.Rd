@@ -4,7 +4,10 @@
 \alias{install_INLA}
 \title{Install the INLA Package from Its Official Repository}
 \usage{
-install_INLA()
+install_INLA(os = .Platform$OS.type)
+}
+\arguments{
+\item{os}{The current operating system. Defaults to \code{.Platform$OS.type}.}
 }
 \value{
 Invisibly returns \code{NULL}. The function is called for its side effect.

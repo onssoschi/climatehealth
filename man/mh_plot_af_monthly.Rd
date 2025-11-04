@@ -38,3 +38,4 @@ Plots of attributable fractions by calendar month per area
 Plot attributable fractions grouped over the whole time series by
 calendar month to explore seasonality.
 }
+\keyword{internal}

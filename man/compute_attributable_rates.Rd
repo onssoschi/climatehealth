@@ -30,3 +30,4 @@ Used to derive confidence intervals.}
 \description{
 Compute attributable rates
 }
+\keyword{internal}

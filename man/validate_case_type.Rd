@@ -10,9 +10,10 @@ validate_case_type(case_type)
 \item{case_type}{Character. The value of the case_type parameter.}
 }
 \value{
-Character. The lowere case_type.
+Character. The lower case_type.
 }
 \description{
 Ensures that the case_type parameter is either malaria or
 diarrhea to comply with supported indicators.
 }
+\keyword{internal}
