@@ -32,3 +32,4 @@ plot_scatter_grid(
 \description{
 Plot a grid of scatter graphs comparing one column to various others.
 }
+\keyword{internal}

@@ -17,3 +17,4 @@ List with coefficient and standard error.
 \description{
 Extracts the coefficient and standard error of the GAM model.
 }
+\keyword{internal}

@@ -22,3 +22,4 @@ Dataframe with additional columns for temperature spline
 \description{
 Generates temperature splines for each region
 }
+\keyword{internal}

@@ -49,3 +49,4 @@ Splits data by region if relative_risk_by_region config option is
 TRUE. If true data for each individual region is passed to casecrossover_quasipoisson
 to calculate RR by region. If false RR is calculated for the entire dataset.
 }
+\keyword{internal}

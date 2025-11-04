@@ -26,3 +26,4 @@ combination.
 Runs every combination of model based on user selected additional
 independent variables and returns model diagnostic checks for each.
 }
+\keyword{internal}

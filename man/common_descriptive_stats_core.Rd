@@ -83,3 +83,4 @@ None. Outputs are written to files.
 \description{
 Core Functionality for Producing Descriptive Statistics
 }
+\keyword{internal}

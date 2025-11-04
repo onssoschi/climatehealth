@@ -25,3 +25,4 @@ Dataframe with lag-specific results including AF and AN.
 \description{
 Analyze multiple lag structures with AF and AN
 }
+\keyword{internal}

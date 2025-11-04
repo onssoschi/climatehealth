@@ -18,3 +18,4 @@ The new column label containing units (if col in units).
 \description{
 Append the units to a column label.
 }
+\keyword{internal}

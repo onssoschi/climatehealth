@@ -25,3 +25,4 @@ that are wider than tall, minimizing empty cells while maintaining visual balanc
 For plot counts exceeding 400, the function will return a 20x20 grid.
 Consider whether such large grids are appropriate for your visualization needs.
 }
+\keyword{internal}

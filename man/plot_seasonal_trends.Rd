@@ -32,3 +32,4 @@ plot_seasonal_trends(
 \description{
 Plot seasonal trends of a health outcome and climate by month.
 }
+\keyword{internal}

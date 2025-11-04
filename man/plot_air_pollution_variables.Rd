@@ -27,3 +27,4 @@ and health data}
 \description{
 Produces a ggplot2 scatterplot of two variables x versus y.
 }
+\keyword{internal}

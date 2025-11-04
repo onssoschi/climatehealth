@@ -62,3 +62,4 @@ Reads in a CSV file for a daily time series of climate, environmental
 and health data and renames them to standardised names. This function
 creates year, month, day, and day of week columns derived from the date.
 }
+\keyword{internal}

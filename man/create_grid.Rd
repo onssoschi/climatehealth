@@ -17,3 +17,4 @@ This function calculates the minimum grid size required to plot X amount of
 plots on a a figure. For example, 6 plots would require a 3x2, where as 7
 would require a 3x3, and so on.
 }
+\keyword{internal}

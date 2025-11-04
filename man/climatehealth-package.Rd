@@ -4,12 +4,36 @@
 \name{climatehealth-package}
 \alias{climatehealth}
 \alias{climatehealth-package}
-\title{climatehealth: Package for Calculating Climate-Health Indicators}
+\title{climatehealth: Measuring the climate-health relationship}
 \description{
-R code allowing users to calculate climate-health indicators.
+\subsection{Overview}{
+
+This package provides a suite of analysis functions for measuring the relationship
+between various climate factors (indicators) and health outcomes.
+}
+
+\subsection{Included Indicators}{
+\itemize{
+\item Heat and Cold
+\item Wildfires
+\item Mental Health
+\item Air Pollution
+\item Waterborne Diseases
+\item Vectorborne Diseases
+}
+}
+
+\subsection{License}{
+
+MIT
+}
+
+\subsection{See Also}{
+
+TBC
+}
 }
 \author{
 \strong{Maintainer}: Charlie Browning \email{charlie.browning@ons.gov.uk}
 
 }
-\keyword{internal}

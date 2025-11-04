@@ -53,3 +53,4 @@ Reads in a csv file containing a monthly time series of health
 outcomes and population data. Renames columns and creates time variables for
 spatiotemporal analysis.
 }
+\keyword{internal}

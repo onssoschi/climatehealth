@@ -33,3 +33,4 @@ The yearly space random effect plot
 Generates and saves plots of yearly spatial random effect at
 district level.
 }
+\keyword{internal}
