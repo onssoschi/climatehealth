@@ -399,7 +399,7 @@ create_temperature_splines <- function(
     for (i in seq_along(df_list)) {
         region_data <- df_list[[i]]
         region_data$ns.tmean <- splines::ns(
-            x = region_data[["tmean"]],
+            x = region_data[[lagcol]],
             df = degrees_freedom
         )
         df_list[[i]] <- region_data
@@ -641,9 +641,8 @@ casecrossover_quasipoisson <- function(
         par(mfrow=c(grid[1],  grid[2]))
     }
     for (i in lags) {
-        number <- lag_nums[[i]]
         # create model
-        formula_parts <- c("health_outcome ~ splines::ns(tmean, df = 6)", i)
+        formula_parts <- c("health_outcome ~ ns.tmean", i)
         if (!all(is.na(data$rh))) {
             formula_parts <- c(formula_parts, "splines::ns(rh, df = 3)")
         }
@@ -651,7 +650,6 @@ casecrossover_quasipoisson <- function(
             formula_parts <- c(formula_parts, "splines::ns(wind_speed, df = 3)")
         }
         formula <- as.formula(paste(formula_parts, collapse = " + "))
-
         model <- gnm::gnm(
             formula,
             data = data,
@@ -976,7 +974,7 @@ save_wildfire_results <- function(
 #' set to TRUE.
 #'
 #' @keywords internal
-calculate_wilfire_rr_by_region <- function(
+calculate_wildfire_rr_by_region <- function(
     data,
     scale_factor_wildfire_pm,
     calc_relative_risk_by_region = FALSE,
@@ -1735,7 +1733,7 @@ wildfire_do_analysis <- function(
         )
     }
     # Obtain and plot RR values
-    rr_results <- calculate_wilfire_rr_by_region(
+    rr_results <- calculate_wildfire_rr_by_region(
         data = data,
         scale_factor_wildfire_pm = scale_factor_wildfire_pm,
         wildfire_lag = wildfire_lag,
