@@ -554,9 +554,9 @@ mh_model_validation <- function(df_list = df_list,
 
     for (i in names(formula_list)){
 
-      residuals_clean <- na.omit(formula_list[[i]]$residuals)
-      acf(residuals_clean, main = paste0("ACF: ", unique(formula_list[[i]]$formula)), col = "#7A855C")
-      pacf(residuals_clean, main = paste0("PACF: ", unique(formula_list[[i]]$formula)), col = "#7A855C")
+      residuals_clean <- stats::na.omit(formula_list[[i]]$residuals)
+      stats::acf(residuals_clean, main = paste0("ACF: ", unique(formula_list[[i]]$formula)), col = "#7A855C")
+      stats::pacf(residuals_clean, main = paste0("PACF: ", unique(formula_list[[i]]$formula)), col = "#7A855C")
 
     }
 
@@ -1133,7 +1133,7 @@ mh_power_list <- function(df_list = df_list,
                                       se = pred$allse)
 
     coef_effect_with_se <- coef_effect_with_se %>%
-      dplyr::filter(temperature >= thresh_temp)
+      dplyr::filter(.data$temperature >= thresh_temp)
 
     rownames(coef_effect_with_se) <- NULL
 
@@ -1142,14 +1142,16 @@ mh_power_list <- function(df_list = df_list,
                            cen = min_st,
                            log_rr = coef_effect_with_se$log_rr,
                            se = coef_effect_with_se$se,
-                           z_alpha = qnorm(1 - alpha / 2))
+                           z_alpha = stats::qnorm(1 - alpha / 2))
 
     power_df <- power_df %>%
-      mutate(power = pnorm(log_rr / se - z_alpha) + (1 - pnorm(log_rr / se + z_alpha))) %>%
-      select(-z_alpha) %>%
-      mutate(log_rr = round(log_rr, 2),
-             se = round(se, 2),
-             power = round(power * 100, 1))
+      mutate(power = stats::pnorm(
+        .data$log_rr / .data$se - .data$z_alpha) + (1 - stats::pnorm(.data$log_rr / .data$se + .data$z_alpha))
+      ) %>%
+      select(all_of(c(-"z_alpha"))) %>%
+      mutate(log_rr = round(.data$log_rr, 2),
+             se = round(.data$se, 2),
+             power = round(.data$power * 100, 1))
 
     power_list[[reg]] <- power_df
 
@@ -1458,39 +1460,38 @@ mh_attr <- function(df_list,
     min_range <- quantile(region_data$temp, attr_thr / 100, na.rm = TRUE)
     max_range <- max(region_data$temp, na.rm = TRUE)
 
-    c(af, af_lower_ci, af_upper_ci,
-      an, an_lower_ci, an_upper_ci,
-      ansim_mat)  %<-% an_attrdl(x = region_data$temp,
-                                 basis = cb,
-                                 cases = region_data$suicides,
-                                 coef = pred$coefficients,
-                                 vcov = pred$vcov,
-                                 dir = "forw",
-                                 cen = cen,
-                                 range = c(min_range, max_range),
-                                 tot = FALSE,
-                                 nsim = 1000)
-
+    c(
+      af, af_lower_ci, af_upper_ci, an, an_lower_ci, an_upper_ci, ansim_mat
+    )  %<-% an_attrdl(
+      x = region_data$temp,
+      basis = cb,
+      cases = region_data$suicides,
+      coef = pred$coefficients,
+      vcov = pred$vcov,
+      dir = "forw",
+      cen = cen,
+      range = c(min_range, max_range),
+      tot = FALSE,
+      nsim = 1000
+    )
     results <- region_data %>%
-      select(region, date, temp, year, month, suicides, population) %>%
-      mutate(threshold_temp = round(min_range, 1),
-             af = af,
-             af_lower_ci = af_lower_ci,
-             af_upper_ci = af_upper_ci,
-             an = an,
-             an_lower_ci = an_lower_ci,
-             an_upper_ci = an_upper_ci,
-             ar = (an / population) * 100000,
-             ar_lower_ci = (an_lower_ci / population) * 100000,
-             ar_upper_ci = (an_upper_ci / population) * 100000)
-
+      select(all_of(c("region", "date", "temp", "year", "month", "suicides", "population"))) %>%
+      mutate(
+        threshold_temp = round(min_range, 1),
+        af = af,
+        af_lower_ci = af_lower_ci,
+        af_upper_ci = af_upper_ci,
+        an = an,
+        an_lower_ci = an_lower_ci,
+        an_upper_ci = an_upper_ci,
+        ar = (an / population) * 100000,
+        ar_lower_ci = (an_lower_ci / population) * 100000,
+        ar_upper_ci = (an_upper_ci / population) * 100000
+      )
     attr_list[[reg]] <- list(results = results,
                              ansim_mat = ansim_mat)
-
   }
-
   return(attr_list)
-
 }
 
 
@@ -1514,12 +1515,13 @@ mh_attr <- function(df_list,
 #'   }
 #'
 #' @keywords internal
-mh_attr_tables <- function(attr_list,
-                           country = "National",
-                           meta_analysis = FALSE) {
-
+mh_attr_tables <- function(
+  attr_list,
+  country = "National",
+  meta_analysis = FALSE
+) {
   attr_res <- do.call(rbind, lapply(attr_list, `[[`, "results")) %>%
-    mutate(year = as.numeric(as.character(year)))
+    mutate(year = as.numeric(as.character(.data$year)))
 
   ansim_mats <- lapply(attr_list, `[[`, "ansim_mat")
   ansim_all <- do.call(rbind, ansim_mats)
@@ -1535,41 +1537,39 @@ mh_attr_tables <- function(attr_list,
   )
 
   for (grp_name in names(groupings)) {
-
     # Group rows
     grouped <- attr_res %>%
       group_by(!!!groupings[[grp_name]]) %>%
       summarise(
-        population = round(mean(population, na.rm = TRUE), 0),
-        temp = round(mean(temp, na.rm = TRUE), 1),
-        threshold_temp = mean(threshold_temp, na.rm = TRUE),
-        suicides = sum(suicides, na.rm = TRUE),
-        an = sum(an, na.rm = TRUE),
-        sim_rows = list(sim_index)
+        population = round(mean(.data$population, na.rm = TRUE), 0),
+        temp = round(mean(.data$temp, na.rm = TRUE), 1),
+        threshold_temp = mean(.data$threshold_temp, na.rm = TRUE),
+        suicides = sum(.data$suicides, na.rm = TRUE),
+        an = sum(.data$an, na.rm = TRUE),
+        sim_rows = list(.data$sim_index)
       )
 
     # Compute CI from simulation matrix
     grouped <- grouped %>%
       rowwise() %>%
       mutate(
-        sim_sum = list(colSums(ansim_all[unlist(sim_rows), , drop = FALSE], na.rm = TRUE)),
-        an_lower_ci = quantile(unlist(sim_sum), probs = 0.025, na.rm = TRUE),
-        an_upper_ci = quantile(unlist(sim_sum), probs = 0.975, na.rm = TRUE)
+        sim_sum = list(colSums(ansim_all[unlist(.data$sim_rows), , drop = FALSE], na.rm = TRUE)),
+        an_lower_ci = quantile(unlist(.data$sim_sum), probs = 0.025, na.rm = TRUE),
+        an_upper_ci = quantile(unlist(.data$sim_sum), probs = 0.975, na.rm = TRUE)
       ) %>%
       ungroup() %>%
       mutate(
-        af = an / suicides * 100,
-        af_lower_ci = an_lower_ci / suicides * 100,
-        af_upper_ci = an_upper_ci / suicides * 100,
-        ar = an / population * 100000,
-        ar_lower_ci = an_lower_ci / population * 100000,
-        ar_upper_ci = an_upper_ci / population * 100000) %>%
-      select(-sim_rows, -sim_sum)
+        af = .data$an / .data$suicides * 100,
+        af_lower_ci = .data$an_lower_ci / .data$suicides * 100,
+        af_upper_ci = .data$an_upper_ci / .data$suicides * 100,
+        ar = .data$an / .data$population * 100000,
+        ar_lower_ci = .data$an_lower_ci / .data$population * 100000,
+        ar_upper_ci = .data$an_upper_ci / .data$population * 100000) %>%
+      select(all_of(c(-"sim_rows", -"sim_sum")))
 
     res_list[[grp_name]] <- grouped
 
   }
-
   if (meta_analysis == TRUE){
 
     region_order <- c(sort(setdiff(names(attr_list), country)), country)
@@ -1583,7 +1583,7 @@ mh_attr_tables <- function(attr_list,
 
   attr_mth_list <- res_list[["monthly"]] %>%
     dplyr::mutate(month = month.name[.data$month]) %>%
-    aggregate_by_column("region")
+      aggregate_by_column("region")
   attr_mth_list <- attr_mth_list[region_order]
 
   return(list(res_attr_tot, attr_yr_list, attr_mth_list))
@@ -2388,6 +2388,7 @@ mh_save_results <- function(rr_results,
 #'   }
 #'
 #' @examples
+#' \dontrun{
 #' suicides_heat_do_analysis(data_path = "data/inputs/daily_suicides_climate_E_2001_2023.csv",
 #'                           date_col = "date",
 #'                           region_col = "region",
@@ -2409,7 +2410,7 @@ mh_save_results <- function(rr_results,
 #'                           save_fig = TRUE,
 #'                           save_csv = TRUE,
 #'                           output_folder_path = "data/outputs/england_analysis")
-#'
+#'}
 #' @export
 suicides_heat_do_analysis <- function(data_path,
                                       date_col,
