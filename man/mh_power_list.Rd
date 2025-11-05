@@ -2,14 +2,9 @@
 % Please edit documentation in R/mental_health.R
 \name{mh_power_list}
 \alias{mh_power_list}
-\title{Power calculation}
+\title{Mental Health Power calculation}
 \usage{
-mh_power_list(
-  df_list = df_list,
-  pred_list = pred_list,
-  minpercreg = minpercreg,
-  attr_thr = 97.5
-)
+mh_power_list(df_list, pred_list, minpercreg, attr_thr = 97.5)
 }
 \arguments{
 \item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
@@ -20,13 +15,13 @@ and climate variables which may be disaggregated by a particular region.}
 \item{minpercreg}{Vector. Percentile of maximum suicide temperature for each region.}
 
 \item{attr_thr}{Integer. Percentile at which to define the temperature threshold for
-calculating attributable risk.}
+calculating attributable risk. Defaults to 97.5.}
 }
 \value{
 A list containing power information by area.
 }
 \description{
 Produce a power statistic by area for the attributable threshold
-and a above as a reference.
+and above as a reference.
 }
 \keyword{internal}
