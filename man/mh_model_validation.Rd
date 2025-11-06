@@ -5,8 +5,8 @@
 \title{Model Validation Assessment}
 \usage{
 mh_model_validation(
-  df_list = df_list,
-  cb_list = cb_list,
+  df_list,
+  cb_list,
   independent_cols = NULL,
   save_fig = FALSE,
   save_csv = FALSE,
