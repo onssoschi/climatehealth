@@ -1750,14 +1750,14 @@ wildfire_do_analysis <- function(
         output_folder_path = output_folder_path
     )   
     # Plot RR by PM2.5 levels
-    rr_pm_overall <- generate_rr_pm_overall(
+    rr_pm <- generate_rr_pm_all(
         relative_risk_overall = rr_results,
-        scale_factor_wildfire_pm = scale_factor_wildfire_pm,
+        scale_factor_wildfire_pm,
         wildfire_lag = wildfire_lag,
-        pm_vals = seq(0, 25, by = 1)
+        pm_vals = seq(0, 50, by = 1)
     )
     plot_rr_by_pm(
-        data = rr_pm_overall,
+        data = rr_pm,
         save_fig = save_fig,
         output_dir = output_folder_path
     )
