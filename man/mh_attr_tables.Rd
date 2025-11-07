@@ -9,9 +9,11 @@ mh_attr_tables(attr_list, country = "National", meta_analysis = FALSE)
 \arguments{
 \item{attr_list}{A list containing attributable numbers per region.}
 
-\item{country}{Character. Name of country for national level estimates.}
+\item{country}{Character. Name of country for national level estimates.
+Defaults to 'National'.}
 
-\item{meta_analysis}{Boolean. Whether to perform a meta-analysis.}
+\item{meta_analysis}{Boolean. Whether to perform a meta-analysis. Defaults
+to FALSE.}
 }
 \value{
 \itemize{
