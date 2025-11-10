@@ -680,8 +680,12 @@ casecrossover_quasipoisson <- function(
         ci_lower <- exp(coef_pm - 1.96 * se_pm)
         ci_upper <- exp(coef_pm + 1.96 * se_pm)
 
-        results[[i]] <- c(lag = number, relative_risk = relative_risk,
-                        ci_lower = ci_lower, ci_upper = ci_upper)
+        results[[i]] <- c(
+            lag = as.integer(lag_nums[i]),
+            relative_risk = relative_risk,
+            ci_lower = ci_lower,
+            ci_upper = ci_upper
+        )
     }
     # save figure
     if (save_fig==TRUE) {
@@ -929,6 +933,7 @@ plot_RR_core <- function(
 save_wildfire_results <- function(
     rr_results,
     an_ar_results = NULL,
+    annual_af_an_results = NULL,
     output_folder_path
 ) {
     # Input validation
@@ -942,7 +947,11 @@ save_wildfire_results <- function(
     if (!is.null(an_ar_results)) {
         write.csv(
             an_ar_results,
-            file = file.path(output_folder_path, "wildfire_an_ar.csv")
+            file = file.path(output_folder_path, "wildfire_an_ar_monthly.csv")
+        )
+        write.csv(
+            annual_af_an_results,
+            file = file.path(output_folder_path, "wildfire_an_ar_yearly.csv")
         )
     }
 }
@@ -1093,11 +1102,17 @@ calculate_daily_AF_AN <- function(data, rr_data) {
 #' number and summarises by year and region.
 #'
 #' @param data Dataframe containing daily data including calculated AF and AN.
+#' @param monthly Bool. Whether to summarise by month as well as year and region.
+#' Defaults to TRUE.
 #'
-#' @returns Dataframe containing summarised AF and AN data, by year and region.
+#' @returns Dataframe containing summarised AF and AN data, by year, region and
+#' optionall month (if monthly==T).
 #'
 #' @keywords internal
-summarise_AF_AN <- function(data) {
+summarise_AF_AN <- function(data, monthly=TRUE) {
+    # determine group columns
+    group_cols <- c("regnames", "year")
+    if (monthly) group_cols <- c(group_cols, "month")
     # Z-score for 95% CI
     z <- 1.96
     # Calculate standard errors and variances for AN and AF
@@ -1112,8 +1127,8 @@ summarise_AF_AN <- function(data) {
             ) / (2 * z),
             var_AF = .data$se_AF^2
         )
-    yearly_summary <- data %>%
-        group_by(regnames, year, month) %>%
+    summary <- data %>%
+        group_by(across(all_of(group_cols))) %>%
         summarise(
             population = mean(.data$pop, na.rm = TRUE),
             total_attributable_number = sum(.data$attributable_number, na.rm = TRUE),
@@ -1136,10 +1151,14 @@ summarise_AF_AN <- function(data) {
             lower_ci_deaths_per_100k = (.data$lower_ci_attributable_number / .data$population) * 100000,
             upper_ci_deaths_per_100k = (.data$upper_ci_attributable_number / .data$population) * 100000,
             year = as.numeric(as.character(.data$year)),
-            regnames = as.character(.data$regnames),
+            regnames = as.character(.data$regnames)
+        )
+    if (monthly) {
+        summary <- summary %>% mutate(
             month = as.numeric(as.character(.data$month))
         )
-    return(yearly_summary)
+    }
+    return(summary)
 }
 
 #' Plot aggregated attributable fractions across years and regions
@@ -1184,7 +1203,7 @@ plot_aggregated_AN <- function(data, by_region = FALSE, output_dir = ".") {
   }
   if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
   # set up plot
-  pname <- "aggregated_AN"
+  pname <- "aggregated_AR"
   if (by_region) pname <- paste0(pname, "_by_region")
   fpath <- file.path(output_dir, paste0(pname, ".pdf"))
   plots <- list()
@@ -1340,52 +1359,86 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
   data$month_name <- month.abb[data$month]
   # Aggregate data across all regions by year
   aggregated_data <- data %>%
+    group_by(month_name, regnames) %>%
+    summarise(
+      mean_deaths_per_100k = mean(deaths_per_100k, na.rm = TRUE),
+      mean_pm = mean(monthly_avg_pm25, na.rm = TRUE)
+    ) %>%
+    mutate(month_name = factor(month_name, levels = month.abb))
+  all_regions_agg <- data %>%
     group_by(month_name) %>%
     summarise(
       mean_deaths_per_100k = mean(deaths_per_100k, na.rm = TRUE),
       mean_pm = mean(monthly_avg_pm25, na.rm = TRUE)
     ) %>%
     mutate(month_name = factor(month_name, levels = month.abb))
+  all_regions_agg$regnames <- "All Regions"
+  aggregated_data <- rbind(all_regions_agg, aggregated_data)
   # Calculate scaling factor
   scale_factor <- max(aggregated_data$mean_deaths_per_100k) / max(aggregated_data$mean_pm)
   # Plot results
-  fpath <- file.path(output_dir, "ar_and_pm_monthly_average")
-  if (save_outputs) png(paste0(fpath, ".png"))
-  plot_ar_pm <- ggplot2::ggplot(
-      aggregated_data,
-      ggplot2::aes(x = month_name)
-    ) +
-    ggplot2::geom_bar(
-      ggplot2::aes(y = mean_deaths_per_100k),
-      stat = "identity",
-      fill = "#003c57",
-      alpha = 0.7
-    ) +
-    ggplot2::geom_line(
-      ggplot2::aes(y = mean_pm * scale_factor, group = 1),
-      color = "red", 
-      size = 1
-    ) +
-    ggplot2::geom_point(
-      ggplot2::aes(y = mean_pm * scale_factor), color = "red", size = 1) +
-    ggplot2::scale_y_continuous(
-      name = "Deaths per 100,000 population",
-      sec.axis = ggplot2::sec_axis(
-        ~ . / scale_factor, name = "Mean PM2.5(µg/m³)"
-      )
-    ) +
-    ggplot2::labs(
-      title = "Monthly Deaths and Mean PM2.5 Concentration - England (2003-2021)",
-      x = "Month"
-    ) +
-    ggplot2::theme_light() +
-    ggplot2::theme(
-      axis.line = ggplot2::element_line(size = 0.5, colour = "black")
+  all_plots = c()
+  for (reg in unique(aggregated_data$regnames)) {
+    region_data <- subset(
+        aggregated_data,
+        aggregated_data$regnames == reg
     )
-  print(plot_ar_pm)
+    title <- paste0(
+        "Monthly Deaths and Mean PM2.5 Concentration - ",
+        reg, "(", min(data$year), max(data$year), ")"
+    )
+    plot_ar_pm <- ggplot2::ggplot(
+            region_data,
+            ggplot2::aes(x = month_name)
+        ) +
+        ggplot2::geom_bar(
+            ggplot2::aes(y = mean_deaths_per_100k),
+            stat = "identity",
+            fill = "#003c57",
+            alpha = 0.7
+        ) +
+        ggplot2::geom_line(
+            ggplot2::aes(y = mean_pm * scale_factor, group = 1),
+            color = "red", 
+            size = 1
+        ) +
+        ggplot2::geom_point(
+            ggplot2::aes(y = mean_pm * scale_factor), color = "red", size = 1
+        ) +
+        ggplot2::scale_y_continuous(
+            name = "Deaths per 100,000 population",
+            sec.axis = ggplot2::sec_axis(
+                    ~ . / scale_factor, name = "Mean PM2.5(µg/m³)"
+            )
+        ) +
+        ggplot2::labs(
+            title = title,
+            x = "Month"
+        ) +
+        ggplot2::theme_light() +
+        ggplot2::theme(
+            axis.line = ggplot2::element_line(size = 0.5, colour = "black")
+        )
+    all_plots[[length(all_plots) + 1]] <- plot_ar_pm
+  }
+  combined_plots <- patchwork::wrap_plots(all_plots)
   if (save_outputs) {
-    dev.off()
-    write.csv(aggregated_data, paste0(fpath, ".csv"))
+    fpath <- file.path(output_dir, "ar_and_pm_monthly_average")
+    ggplot2::ggsave(
+        paste0(fpath, ".png"),
+        combined_plots,
+        width = length(all_plots)*5,
+        height = length(all_plots)*4,
+        limitsize = FALSE
+    )
+    sorted_data <- aggregated_data[
+        order(
+            aggregated_data$regnames,
+            match(aggregated_data$month_name, month.abb)
+        ),
+    ]
+    sorted_data <- sorted_data %>% select(all_of(c("regnames", "month_name", "mean_deaths_per_100k", "mean_pm")))
+    write.csv(sorted_data, paste0(fpath, ".csv"), row.names = FALSE)
   }
 }
 
@@ -1444,28 +1497,34 @@ generate_rr_pm_overall <- function(
     return(rr_pm_table)
 }
 
-generate_rr_pm_all <- function(
+generate_rr_pm_by_region <- function(
     relative_risk_overall,
     scale_factor_wildfire_pm,
     wildfire_lag = 0,
     pm_vals = seq(0, 50, by = 1)
 ) {
-    results_list <- list()
-    df_list <- split(relative_risk_overall, f = relative_risk_overall$region_name)
-    for (i in seq_along(df_list)) {
-        region_data <- df_list[[i]]
-        rr_pm_table <- generate_rr_pm_overall(
-            relative_risk_overall = region_data,
+    results <- list()
+    regions <- unique(relative_risk_overall$region_name)
+    for (reg in regions) {
+        region_df <- subset(
+            relative_risk_overall,
+            relative_risk_overall$region_name == reg
+        )
+        reg_df <<- region_df
+        rr_pm_region <- generate_rr_pm_overall(
+            relative_risk_overall = region_df,
             scale_factor_wildfire_pm = scale_factor_wildfire_pm,
             wildfire_lag = wildfire_lag,
             pm_vals = pm_vals
         )
-        rr_pm_table$region_name <- names(df_list)[i]
-        results_list[[i]] <- rr_pm_table
+        results[[reg]] <- cbind(
+            region_name = reg,
+            rr_pm_region
+        )
     }
-    all_results <- do.call(rbind, results_list)
-    row.names(all_results) <- NULL
-    return(all_results)
+    results_all <- do.call(rbind, results)
+    row.names(results_all) <- NULL
+    return (results_all)
 }
 
 #' Plot relative risk by PM2.5 levels for all regions and individually
@@ -1781,7 +1840,8 @@ wildfire_do_analysis <- function(
         save_wildfire_results(
             rr_results = rr_results,
             an_ar_results = af_an_results,
-            output_folder_path = output_folder_path
+            output_folder_path = output_folder_path,
+            output_folder_path = path_config$output_folder_path
         )
     }
     return(list(
