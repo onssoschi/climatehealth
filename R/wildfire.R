@@ -1649,6 +1649,105 @@ plot_rr_by_pm_core <- function(
   return(p)
 }
 
+plot_ar_by_region <- function(data, output_dir = ".") {
+    # validation
+    if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
+    exp_cols <- c(
+        "regnames",
+        "deaths_per_100k",
+        "lower_ci_deaths_per_100k",
+        "upper_ci_deaths_per_100k"
+    )
+    if (!(all(exp_cols %in% colnames(data)))) {
+        stop(
+            "'data' must contain the following columns: ",
+            paste(expected_cols, collapse = ", ")
+        )
+    }
+    # aggregate dataset
+    aggregated_data <- data %>%
+        group_by(regnames) %>%
+        summarise(
+            mean_deaths_per_100k = mean(deaths_per_100k, na.rm = TRUE),
+            mean_lower_ci_deaths_per_100k = mean(
+                lower_ci_deaths_per_100k, na.rm = TRUE
+            ),
+            mean_upper_ci_deaths_per_100k = mean(
+                upper_ci_deaths_per_100k, na.rm = TRUE
+            )
+        )
+    # draw plot and save
+    p <- ggplot2::ggplot(
+            aggregated_data,
+            ggplot2::aes(
+                x = forcats::fct_reorder(regnames, mean_deaths_per_100k, .desc = TRUE),
+                y = mean_deaths_per_100k
+            )
+        ) +
+        ggplot2::geom_col(fill = "#003c57") +
+        ggplot2::labs(
+            title = "Deaths per 100k attributable to Wildfire-specific PM2.5",
+            x = "Regions",
+            y = "AR (per 100k population)"
+        ) +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+    # save plot
+    ggplot2::ggsave(
+        file.path(output_dir, "ar_by_region.png"),
+        p,
+        width = 8,
+        height = 6
+    )
+    return (p)
+}
+
+plot_an_by_region <- function(data, output_dir = ".") {
+    # validation
+    if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
+    exp_cols <- c(
+        "regnames",
+        "total_attributable_number"
+    )
+    if (!(all(exp_cols %in% colnames(data)))) {
+        stop(
+            "'data' must contain the following columns: ",
+            paste(expected_cols, collapse = ", ")
+        )
+    }
+    # aggregate dataset
+    aggregated_data <- data %>%
+        group_by(regnames) %>%
+        summarise(
+            sum_total_an = sum(total_attributable_number, na.rm = TRUE),
+        )
+    # draw plot and save
+    p <- ggplot2::ggplot(
+            aggregated_data,
+            ggplot2::aes(
+                x = forcats::fct_reorder(regnames, sum_total_an, .desc = TRUE),
+                y = sum_total_an
+            )
+        ) +
+        ggplot2::geom_col(fill = "#003c57") +
+        ggplot2::labs(
+            title = "Total attributable number to Wildfire smoke-related PM2.5",
+            x = "Regions",
+            y = "Attributable Number of Deaths"
+        ) +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+    # save plot
+    ggplot2::ggsave(
+        file.path(output_dir, "an_by_region.png"),
+        p,
+        width = 8,
+        height = 6
+    )
+    return (p)
+}
+
+
 #' Run pipeline to analyse the impact of wildfire-related PM2.5 on a health
 #' outcome using a time-stratified case-crossover approach.
 #'
@@ -1835,6 +1934,8 @@ wildfire_do_analysis <- function(
         ar_pm_monthly <- join_ar_and_pm_monthly(pm_data, af_an_results)
         plot_ar_pm_monthly(ar_pm_monthly, save_fig, output_folder_path)
     }
+    # Plot AR by region
+    plot_ar_by_region(data=af_an_results, output_dir=output_folder_path)
     # Save outputs (conditionally)
     if (save_csv == TRUE) {
         save_wildfire_results(

@@ -16,6 +16,7 @@ Imports:
     dlnm,
     dplyr (>= 1.1.4),
     Epi (>= 2.59),
+    forcats,
     exactextractr,
     ggplot2 (>= 3.5.2),
     gnm (>= 1.1-5),
