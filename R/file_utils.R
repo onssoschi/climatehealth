@@ -41,8 +41,7 @@ check_file_extension <- function(
     fpath,
     expected_ext,
     param_nm = "fpath",
-    raise = TRUE
-  ) {
+    raise = TRUE) {
   # obtain and normalise file extensions
   expected_ext <- tolower(gsub("\\.", "", expected_ext))
   found_ext <- tools::file_ext(fpath)
@@ -64,7 +63,6 @@ check_file_extension <- function(
   } else {
     return(valid)
   }
-
 }
 
 #' Read a csv file into memory as a data frame.
@@ -74,14 +72,12 @@ check_file_extension <- function(
 #' @return A dataframe containing the data from the csv.
 #' @keywords internal
 #'
-#' @examples input_csv_path = "directory/file_name.csv"
+#' @examples input_csv_path <- "directory/file_name.csv"
 #'
 #' @keywords internal
 read_input_data <- function(input_csv_path) {
   if (is.list(input_csv_path)) {
     df <- data.frame(input_csv_path)
-
-
   } else if (is.character(input_csv_path)) {
     check_file_extension(input_csv_path, ".csv", "input_csv_path")
     check_file_exists(input_csv_path, raise = TRUE)
@@ -116,6 +112,5 @@ enforce_file_extension <- function(path, file_extension) {
   if (!endsWith(path, file_extension)) {
     path <- paste0(tools::file_path_sans_ext(path), file_extension)
   }
-  return (path)
+  return(path)
 }
-
