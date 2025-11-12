@@ -13,6 +13,9 @@ plot_RR(
 )
 }
 \arguments{
+\item{rr_data}{Dataframe of relative risk and confidence intervals for
+each lag of wildfire-related PM2.5}
+
 \item{wildfire_lag}{Integer. The maximum number of days for which to plot the
 lags for wildfire PM2.5. Defaults to 3.}
 
@@ -23,9 +26,6 @@ Defaults to FALSE}
 Defaults to FALSE.}
 
 \item{output_folder_path}{Path to folder where plots should be saved.}
-
-\item{results}{Dataframe of relative risk and confidence intervals for
-each lag of wildfire-related PM2.5}
 }
 \value{
 Plot of relative risk and confidence intervals for each lag of
