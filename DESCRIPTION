@@ -63,7 +63,7 @@ Suggests:
     mockery,
     openxlsx,
     patrick,
-    terra (<= 1.8-60),
+    terra,
     testthat (>= 3.2.1.1),
     withr
 Config/rcmdcheck/ignore-inconsequential-notes: true
