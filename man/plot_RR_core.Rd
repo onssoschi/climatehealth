@@ -9,7 +9,8 @@ plot_RR_core(
   save_fig = FALSE,
   wildfire_lag = 3,
   output_folder_path = NULL,
-  region_name = "All regions"
+  region_name = "All regions",
+  ylims = NULL
 )
 }
 \arguments{

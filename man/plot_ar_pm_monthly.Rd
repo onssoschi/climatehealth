@@ -7,7 +7,7 @@
 plot_ar_pm_monthly(data, save_outputs = FALSE, output_dir = NULL)
 }
 \arguments{
-\item{data}{A data frame with columns: month_name, deaths_per_100k, and
+\item{data}{A data frame with columns: month, deaths_per_100k, and
 monthly_avg_pm25. Month names must match month.abb.}
 
 \item{save_outputs}{Logical. If TRUE, saves the plot as PNG and the

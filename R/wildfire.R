@@ -567,7 +567,7 @@ check_wildfire_vif <- function(
     region_data <- subset(data, data$regnames==reg)
     model <- lm(formula, data = region_data)
     vif_mod <- car::vif(model)
-    if (print_vif) print(paste0("Variance inflation factor:\n", vif_mod))
+    if (print_vif) print(paste0("Variance inflation factor: ", vif_mod))
     for (var in names(vif_mod)) {
         if (vif_mod[[var]] >= 2) {
             warning(paste0(
@@ -782,9 +782,10 @@ calculate_qaic <- function(
             print(paste("QAIC for", i, "=", qaic))
             print(paste("Pearson dispersion statistic:", round(dispersion, 3)))
         }
-        qaic_results[[i]] <- qaic
+        qaic_results[[paste0("qaic_at_lag_", lag_nums[[i]])]] <- qaic
+        qaic_results[[paste0("pearson_dispersion_at_lag_", lag_nums[[i]])]] <- round(dispersion, 3)
     }
-    all_results[[reg]] <- as.data.frame(as.list(qaic_results))
+    all_results[[reg]] <- as.data.frame(qaic_results)
     all_results[[reg]]$region <- reg
   }
   results_df <- do.call(rbind, all_results)
@@ -1542,6 +1543,26 @@ generate_rr_pm_overall <- function(
   return(rr_pm_table)
 }
 
+#' Generate Relative Risk Estimates by Region
+#'
+#' Computes relative risk estimates for wildfire-specific PM2.5 exposure across regions
+#' by applying a scaling factor and lag to PM values.
+#'
+#' @param relative_risk_overall Data frame containing relative risk estimates
+#' and confidence intervals for wildfire-related PM2.5 exposure at different
+#' lags. Must include columns: 'lag', 'relative_risk', 'ci_lower', and
+#' 'ci_upper'.
+#' @param scale_factor_wildfire_pm Numeric. Scaling factor used to normalize
+#' PM2.5 values to the unit of exposure used in the original relative risk
+#' estimate.
+#' @param wildfire_lag Integer. Lag day to filter from the input data for
+#' extrapolation. Defaults to 0.
+#' @param pm_vals Numeric vector. PM2.5 concentrations over which to compute
+#' relative risk. Defaults to seq(0, 50, by = 1).
+#'
+#' @return A data frame with relative risk estimates for each region and PM value.
+#'
+#' @keywords internal
 generate_rr_pm_by_region <- function(
     relative_risk_overall,
     scale_factor_wildfire_pm,
@@ -1652,6 +1673,8 @@ plot_rr_by_pm <- function(
 #' and ci_upper.
 #' @param region_name Optional character string used to label the plot title
 #' with a region name. Defaults to "All Regions".
+#' @param ylims Numeric vector of length 2 specifying y-axis limits. Defaults to
+#' c(-2, 2).
 #'
 #' @return A ggplot object showing relative risk and CI.
 #'
@@ -1692,6 +1715,24 @@ plot_rr_by_pm_core <- function(
   return(p)
 }
 
+#' Plot Attributable Risk by Region
+#'
+#' Aggregates wildfire-specific PM2.5 attributable risk (deaths per 100k) by region
+#' and creates a bar plot showing the mean attributable risk per region.
+#'
+#' @param data A data frame containing columns:
+#'   \itemize{
+#'     \item \code{regnames}: Region names.
+#'     \item \code{deaths_per_100k}: Numeric values of deaths per 100k population.
+#'     \item \code{lower_ci_deaths_per_100k}: Lower bound of confidence interval.
+#'     \item \code{upper_ci_deaths_per_100k}: Upper bound of confidence interval.
+#'   }
+#' @param output_dir A character string specifying the directory where the plot will be saved.
+#'   Defaults to the current working directory (\code{"."}).
+#'
+#' @return A \code{ggplot} object representing the bar plot.
+#'
+#' @keywords internal
 plot_ar_by_region <- function(data, output_dir = ".") {
   # validation
   if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
@@ -1747,6 +1788,22 @@ plot_ar_by_region <- function(data, output_dir = ".") {
   return(p)
 }
 
+#' Plot Total Attributable Number by Region
+#'
+#' Aggregates wildfire smoke-related PM2.5 attributable numbers by region and
+#' creates a bar plot showing the total attributable number of deaths per region.
+#'
+#' @param data A data frame containing columns:
+#'   \itemize{
+#'     \item \code{regnames}: Region names.
+#'     \item \code{total_attributable_number}: Numeric values of attributable numbers.
+#'   }
+#' @param output_dir A character string specifying the directory where the plot will be saved.
+#'   Defaults to the current working directory (\code{"."}).
+#'
+#' @return A \code{ggplot} object representing the bar plot.
+#'
+#' @keywords internal
 plot_an_by_region <- function(data, output_dir = ".") {
   # validation
   if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
@@ -1805,7 +1862,7 @@ plot_an_by_region <- function(data, output_dir = ".") {
 #' join_wildfire_data = TRUE to join these data.
 #' @param join_wildfire_data Boolean. If TRUE, a daily time series of
 #' wildfire-related PM2.5 concentration is joined to the health data. If FALSE,
-#' the data set is loaded without any additional joins.
+#' the data set is loaded without any additional joins. Defaults to FALSE.
 #' @param ncdf_path Path to a NetCDF file containing a daily time series of
 #' gridded wildfire-related PM2.5 concentration data.
 #' @param shp_path Path to a shapefile .shp of the geographical boundaries for
@@ -1868,7 +1925,7 @@ plot_an_by_region <- function(data, output_dir = ".") {
 #' @export
 wildfire_do_analysis <- function(
     health_path,
-    join_wildfire_data = TRUE,
+    join_wildfire_data = FALSE,
     ncdf_path = NULL,
     shp_path = NULL,
     date_col,
@@ -1925,11 +1982,12 @@ wildfire_do_analysis <- function(
   # Stratify data by time period
   data <- time_stratify(data = data)
   # Calculate QAIC
-  qaic <- calculate_qaic(data = data, print_results = print_model_summaries)
-  if (save_csv == TRUE) {
-    fpath <- file.path(output_folder_path, "wildfire_model_qaic.csv")
-    write.csv(qaic, fpath, row.names = FALSE)
-  }
+  calculate_qaic(
+    data = data,
+    save_csv = save_csv,
+    output_folder_path = output_folder_path,
+    print_results = print_model_summaries
+  )
   # Conditionally check VIF
   if (!is.null(predictors_vif)) {
     check_wildfire_vif(
@@ -1944,7 +2002,6 @@ wildfire_do_analysis <- function(
   rr_results <- calculate_wildfire_rr_by_region(
     data = data,
     scale_factor_wildfire_pm = scale_factor_wildfire_pm,
-    wildfire_lag = wildfire_lag,
     calc_relative_risk_by_region = calc_relative_risk_by_region,
     save_fig = save_fig,
     output_folder_path = output_folder_path,
@@ -1958,11 +2015,11 @@ wildfire_do_analysis <- function(
     output_folder_path = output_folder_path
   )
   # Plot RR by PM2.5 levels
-  rr_pm <- generate_rr_pm_all(
+  rr_pm <- generate_rr_pm_by_region(
     relative_risk_overall = rr_results,
-    scale_factor_wildfire_pm,
+    scale_factor_wildfire_pm = scale_factor_wildfire_pm,
     wildfire_lag = wildfire_lag,
-    pm_vals = seq(0, 50, by = 1)
+    pm_vals = seq(0, 50, by = 2)
   )
   plot_rr_by_pm(
     data = rr_pm,
@@ -1971,11 +2028,13 @@ wildfire_do_analysis <- function(
   )
   # Obtain and plot attributable numbers/fractions
   af_an_results <- NULL
+  annual_af_an_results <- NULL
   ar_pm_monthly <- NULL
   if (calc_relative_risk_by_region) {
     # get AN/AR
     daily_AF_AN <- calculate_daily_AF_AN(data = data, rr_data = rr_results)
     af_an_results <- summarise_AF_AN(data = daily_AF_AN)
+    annual_af_an_results <- summarise_AF_AN(data = daily_AF_AN, monthly = FALSE)
     # Plot aggregated AN for all regions and individual regions
     if (save_fig) {
       plot_aggregated_AN(af_an_results, TRUE, output_folder_path)
@@ -1991,8 +2050,8 @@ wildfire_do_analysis <- function(
     save_wildfire_results(
       rr_results = rr_results,
       an_ar_results = af_an_results,
-      output_folder_path = output_folder_path,
-      output_folder_path = path_config$output_folder_path
+      annual_af_an_results = annual_af_an_results,
+      output_folder_path = output_folder_path
     )
   }
   return(list(

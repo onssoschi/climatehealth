@@ -149,27 +149,29 @@ and guidance on interpreting outputs can be found in the accompanying published
 }
 \examples{
 \dontrun{
-suicides_heat_do_analysis(data_path = "data/inputs/daily_suicides_climate_E_2001_2023.csv",
-                          date_col = "date",
-                          region_col = "region",
-                          temperature_col = "tmean",
-                          health_outcome_col = "suicides",
-                          population_col = "pop",
-                          country = "England",
-                          meta_analysis = TRUE,
-                          var_fun = "bs",
-                          var_degree = 2,
-                          var_per = c(25,50,75),
-                          lag_fun = "strata",
-                          lag_breaks = 1,
-                          lag_days = 2,
-                          independent_cols = c("rainfall", "humidity"),
-                          control_cols = NULL,
-                          cenper = 50,
-                          attr_thr = 97.5,
-                          save_fig = TRUE,
-                          save_csv = TRUE,
-                          output_folder_path = "data/outputs/england_analysis")
+suicides_heat_do_analysis(
+  data_path = "data/inputs/daily_suicides_climate_E_2001_2023.csv",
+  date_col = "date",
+  region_col = "region",
+  temperature_col = "tmean",
+  health_outcome_col = "suicides",
+  population_col = "pop",
+  country = "England",
+  meta_analysis = TRUE,
+  var_fun = "bs",
+  var_degree = 2,
+  var_per = c(25, 50, 75),
+  lag_fun = "strata",
+  lag_breaks = 1,
+  lag_days = 2,
+  independent_cols = c("rainfall", "humidity"),
+  control_cols = NULL,
+  cenper = 50,
+  attr_thr = 97.5,
+  save_fig = TRUE,
+  save_csv = TRUE,
+  output_folder_path = "data/outputs/england_analysis"
+)
 }
 
 }

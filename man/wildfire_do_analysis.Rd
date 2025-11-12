@@ -7,7 +7,7 @@ outcome using a time-stratified case-crossover approach.}
 \usage{
 wildfire_do_analysis(
   health_path,
-  join_wildfire_data = TRUE,
+  join_wildfire_data = FALSE,
   ncdf_path = NULL,
   shp_path = NULL,
   date_col,
@@ -39,7 +39,7 @@ join_wildfire_data = TRUE to join these data.}
 
 \item{join_wildfire_data}{Boolean. If TRUE, a daily time series of
 wildfire-related PM2.5 concentration is joined to the health data. If FALSE,
-the data set is loaded without any additional joins.}
+the data set is loaded without any additional joins. Defaults to FALSE.}
 
 \item{ncdf_path}{Path to a NetCDF file containing a daily time series of
 gridded wildfire-related PM2.5 concentration data.}
