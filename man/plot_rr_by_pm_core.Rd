@@ -4,7 +4,7 @@
 \alias{plot_rr_by_pm_core}
 \title{Create a relative risk plot across PM2.5 levels for a single region}
 \usage{
-plot_rr_by_pm_core(data, region_name = "All Regions")
+plot_rr_by_pm_core(data, region_name = "All Regions", ylims = c(-2, 2))
 }
 \arguments{
 \item{data}{A data frame with columns: pm_levels, relative_risk, ci_lower,
@@ -12,6 +12,9 @@ and ci_upper.}
 
 \item{region_name}{Optional character string used to label the plot title
 with a region name. Defaults to "All Regions".}
+
+\item{ylims}{Numeric vector of length 2 specifying y-axis limits. Defaults to
+c(-2, 2).}
 }
 \value{
 A ggplot object showing relative risk and CI.

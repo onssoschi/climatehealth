@@ -4,7 +4,13 @@
 \alias{check_wildfire_vif}
 \title{Check variance inflation factors of predictor variables using a linear model}
 \usage{
-check_wildfire_vif(data, predictors, print_vif = FALSE)
+check_wildfire_vif(
+  data,
+  predictors,
+  save_csv = FALSE,
+  output_folder_path = NULL,
+  print_vif = FALSE
+)
 }
 \arguments{
 \item{data}{Dataframe containing a daily time series of climate and health
@@ -12,6 +18,10 @@ data.}
 
 \item{predictors}{Character vector with each of the predictors to include
 in the model. Must contain at least 2 variables.}
+
+\item{save_csv}{Bool. Whether or not to save the VIF results to a CSV.}
+
+\item{output_folder_path}{String. Where to save the CSV file to (if save_csv==T).}
 
 \item{print_vif}{Bool, whether or not to print VIF for each predictor.
 Defaults to FALSE.}

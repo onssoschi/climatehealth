@@ -4,7 +4,12 @@
 \alias{save_wildfire_results}
 \title{Save results of wildfire related analysis}
 \usage{
-save_wildfire_results(rr_results, an_ar_results = NULL, output_folder_path)
+save_wildfire_results(
+  rr_results,
+  an_ar_results = NULL,
+  annual_af_an_results = NULL,
+  output_folder_path
+)
 }
 \arguments{
 \item{an_ar_results}{Dataframe containing attributable number/fraction
