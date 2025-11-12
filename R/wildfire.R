@@ -169,7 +169,7 @@ extract_means_for_geography <- function(
 #'
 #' @param climate_data Character. Dataframe containing a daily time series of
 #' climate data, which may be disaggregated by region.
-#' @param health_path Character. Path to a CSV file containing a daily time
+#' @param health_data Character. Path to a CSV file containing a daily time
 #' series of data for a particular health outcome, which may be disaggregated by
 #' region.
 #' @param region_col Character. Name of the region column in both datasets.
@@ -207,7 +207,7 @@ join_health_and_climate_data <- function(
       regnames = as.factor(.data[[region_col]])
     )
 
-  return(df_paired)
+  return(df_joined)
 }
 
 #' Load wildfire and health data
@@ -280,7 +280,7 @@ load_wildfire_data <- function(
   # Obtain wildfire data
   wildfire_df <- extract_means_for_geography(
     ncdf_path = ncdf_path,
-    shapefile_path = shp_path,
+    shp_path = shp_path,
     region_col = region_col
   )
   # Join wildfire data to climate data
@@ -290,7 +290,7 @@ load_wildfire_data <- function(
     region_col = region_col,
     date_col = date_col
   )
-  return(wildfire_data)
+  return(joined_df)
 }
 
 #' Create lagged columns and provide the mean value.
@@ -423,7 +423,7 @@ time_stratify <- function(data) {
   required_cols <- c("month", "year", "dow", "regnames", "health_outcome")
   if (!all(required_cols %in% colnames(data))) {
     stop(
-      paste("data must include columns:", paste(required_col, collapse = ", "))
+      paste("data must include columns:", paste(required_cols, collapse = ", "))
     )
   }
   # Create stratified columns
@@ -564,23 +564,23 @@ check_wildfire_vif <- function(
   # Loop regions
   vif_results <- list()
   for (reg in unique(data$regnames)) {
-    region_data <- subset(data, data$regnames==reg)
+    region_data <- subset(data, data$regnames == reg)
     model <- lm(formula, data = region_data)
     vif_mod <- car::vif(model)
     if (print_vif) print(paste0("Variance inflation factor: ", vif_mod))
     for (var in names(vif_mod)) {
-        if (vif_mod[[var]] >= 2) {
-            warning(paste0(
-                "Variance inflation factor for ", var, " is >= 2. Investigation is",
-                " suggested."
-            ))
-        }
-        vif_results[[reg]] <- data.frame(
-            region = reg,
-            formula = formula,
-            var = var,
-            VIF = vif_mod
-        )
+      if (vif_mod[[var]] >= 2) {
+        warning(paste0(
+          "Variance inflation factor for ", var, " is >= 2. Investigation is",
+          " suggested."
+        ))
+      }
+      vif_results[[reg]] <- data.frame(
+        region = reg,
+        formula = formula,
+        var = var,
+        VIF = vif_mod
+      )
     }
   }
   # conditionally save VIF results
@@ -675,10 +675,10 @@ casecrossover_quasipoisson <- function(
     formula <- as.formula(paste(formula_parts, collapse = " + "))
     model <- gnm::gnm(
       formula,
-      data = data,
+      data = data$data,
       family = quasipoisson,
-      subset = ind > 0,
-      eliminate = stratum
+      subset = data$ind > 0,
+      eliminate = data$stratum
     )
     # print summaries if required
     if (print_model_summaries) {
@@ -749,41 +749,41 @@ calculate_qaic <- function(
   # create results holder and loop regions
   all_results <- list()
   for (reg in unique(data$regnames)) {
-    region_data <- subset(data, data$regnames==reg)
+    region_data <- subset(data, data$regnames == reg)
     for (i in lags) {
-        # define model
-        number <- lag_nums[[i]]
-        # create model formula
-        formula_parts <- c("health_outcome ~ ns.tmean", i)
-        if (!all(is.na(data$rh))) {
-            formula_parts <- c(formula_parts, "splines::ns(rh, df = 3)")
-        }
-        if (!all(is.na(data$wind_speed))) {
-            formula_parts <- c(formula_parts, "splines::ns(wind_speed, df = 3)")
-        }
-        formula <- as.formula(paste(formula_parts, collapse = " + "))
-        model <- gnm::gnm(formula,
-            data = region_data,
-            family = quasipoisson,
-            subset = ind > 0,
-            eliminate = stratum
-        )
-        pearson_chisq <- sum(residuals(model, type = "pearson")^2, na.rm = TRUE)
-        dispersion <- pearson_chisq / model$df.residual
-        # Number of estimated parameters
-        k <- length(coef(model))
-        # Dispersion parameter
-        phi <- summary(model)$dispersion
-        # Log-likelihood approximation
-        ll <- -0.5 * model$deviance
-        # QAIC formula
-        qaic <- -2 * ll + 2 * phi * k
-        if (print_results == TRUE) {
-            print(paste("QAIC for", i, "=", qaic))
-            print(paste("Pearson dispersion statistic:", round(dispersion, 3)))
-        }
-        qaic_results[[paste0("qaic_at_lag_", lag_nums[[i]])]] <- qaic
-        qaic_results[[paste0("pearson_dispersion_at_lag_", lag_nums[[i]])]] <- round(dispersion, 3)
+      # define model
+      number <- lag_nums[[i]]
+      # create model formula
+      formula_parts <- c("health_outcome ~ ns.tmean", i)
+      if (!all(is.na(data$rh))) {
+        formula_parts <- c(formula_parts, "splines::ns(rh, df = 3)")
+      }
+      if (!all(is.na(data$wind_speed))) {
+        formula_parts <- c(formula_parts, "splines::ns(wind_speed, df = 3)")
+      }
+      formula <- as.formula(paste(formula_parts, collapse = " + "))
+      model <- gnm::gnm(formula,
+        data = region_data,
+        family = quasipoisson,
+        subset = region_data$ind > 0,
+        eliminate = region_data$stratum
+      )
+      pearson_chisq <- sum(residuals(model, type = "pearson")^2, na.rm = TRUE)
+      dispersion <- pearson_chisq / model$df.residual
+      # Number of estimated parameters
+      k <- length(coef(model))
+      # Dispersion parameter
+      phi <- summary(model)$dispersion
+      # Log-likelihood approximation
+      ll <- -0.5 * model$deviance
+      # QAIC formula
+      qaic <- -2 * ll + 2 * phi * k
+      if (print_results == TRUE) {
+        print(paste("QAIC for", i, "=", qaic))
+        print(paste("Pearson dispersion statistic:", round(dispersion, 3)))
+      }
+      qaic_results[[paste0("qaic_at_lag_", lag_nums[[i]])]] <- qaic
+      qaic_results[[paste0("pearson_dispersion_at_lag_", lag_nums[[i]])]] <- round(dispersion, 3)
     }
     all_results[[reg]] <- as.data.frame(qaic_results)
     all_results[[reg]]$region <- reg
@@ -802,7 +802,7 @@ calculate_qaic <- function(
 #' @description Plots relative risk and confidence intervals for each lag value
 #' of wildfire-related PM2.5.
 #'
-#' @param results Dataframe of relative risk and confidence intervals for
+#' @param rr_data Dataframe of relative risk and confidence intervals for
 #' each lag of wildfire-related PM2.5
 #' @param wildfire_lag Integer. The maximum number of days for which to plot the
 #' lags for wildfire PM2.5. Defaults to 3.
@@ -879,7 +879,7 @@ plot_RR <- function(
 #' @description Plots relative risk and confidence intervals for each lag value
 #' of wildfire-related PM2.5.
 #'
-#' @param results Dataframe of relative risk and confidence intervals for
+#' @param rr_data Dataframe of relative risk and confidence intervals for
 #' each lag of wildfire-related PM2.5.
 #' @param save_fig Boolean. Whether to save the plot as an output.
 #' Defaults to FALSE.
@@ -925,7 +925,10 @@ plot_RR_core <- function(
   plot <- ggplot2::ggplot(
     data = rr_data,
     ggplot2::aes(
-      x = lag, y = relative_risk, ymin = ci_lower, ymax = ci_upper
+      x = lag,
+      y = rr_data$relative_risk,
+      ymin = rr_data$ci_lower,
+      ymax = rr_data$ci_upper
     )
   ) +
     ggplot2::geom_point(size = 3) +
@@ -967,7 +970,7 @@ plot_RR_core <- function(
 #' each lag value of wildfire-related PM2.5. Also optionally save results of
 #' attributable numbers/fractions.
 #'
-#' @param results Dataframe of relative risk and confidence intervals for
+#' @param rr_results Dataframe of relative risk and confidence intervals for
 #' each lag of wildfire-related PM2.5.
 #' @param an_ar_results Dataframe containing attributable number/fraction
 #' results. Defaults to NULL.
@@ -1186,7 +1189,7 @@ summarise_AF_AN <- function(data, monthly = TRUE) {
       lower_ci_attributable_number = .data$total_attributable_number - z * .data$se_total_AN,
       upper_ci_attributable_number = .data$total_attributable_number + z * .data$se_total_AN,
       # Confidence intervals for average AF
-      se_AF_mean = sqrt(variance_AF_mean),
+      se_AF_mean = sqrt(.data$variance_AF_mean),
       lower_ci_attributable_fraction = .data$average_attributable_fraction - z * .data$se_AF_mean,
       upper_ci_attributable_fraction = .data$average_attributable_fraction + z * .data$se_AF_mean,
       # Deaths per 100k
@@ -1290,7 +1293,7 @@ plot_aggregated_AN <- function(data, by_region = FALSE, output_dir = ".") {
 plot_aggregated_AN_core <- function(data, region_name = NULL) {
   # aggregate AN/AR data
   agg_data <- data %>%
-    group_by(year) %>%
+    group_by(.data$year) %>%
     summarise(
       sum_total_deaths = mean(.data$average_attributable_fraction, na.rm = TRUE),
       lower_ci = mean(.data$lower_ci_attributable_fraction, na.rm = TRUE),
@@ -1302,10 +1305,10 @@ plot_aggregated_AN_core <- function(data, region_name = NULL) {
   if (!is.null(region_name)) title <- paste0(title, " (", region_name, ")")
   plot_agg_an <- ggplot2::ggplot(
     agg_data,
-    ggplot2::aes(x = year, y = sum_total_deaths)
+    ggplot2::aes(x = agg_data$year, y = agg_data$sum_total_deaths)
   ) +
     ggplot2::geom_ribbon(
-      ggplot2::aes(ymin = lower_ci, ymax = upper_ci),
+      ggplot2::aes(ymin = agg_data$lower_ci, ymax = agg_data$upper_ci),
       alpha = 0.2,
       fill = "#4d7789"
     ) +
@@ -1404,19 +1407,19 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
   data$month_name <- month.abb[data$month]
   # Aggregate data across all regions by year
   aggregated_data <- data %>%
-    group_by(month_name, regnames) %>%
+    group_by(.data$month_name, .data$regnames) %>%
     summarise(
-      mean_deaths_per_100k = mean(deaths_per_100k, na.rm = TRUE),
-      mean_pm = mean(monthly_avg_pm25, na.rm = TRUE)
+      mean_deaths_per_100k = mean(.data$deaths_per_100k, na.rm = TRUE),
+      mean_pm = mean(.data$monthly_avg_pm25, na.rm = TRUE)
     ) %>%
-    mutate(month_name = factor(month_name, levels = month.abb))
+    mutate(month_name = factor(.data$month_name, levels = month.abb))
   all_regions_agg <- data %>%
-    group_by(month_name) %>%
+    group_by(.data$month_name) %>%
     summarise(
-      mean_deaths_per_100k = mean(deaths_per_100k, na.rm = TRUE),
-      mean_pm = mean(monthly_avg_pm25, na.rm = TRUE)
+      mean_deaths_per_100k = mean(.data$deaths_per_100k, na.rm = TRUE),
+      mean_pm = mean(.data$monthly_avg_pm25, na.rm = TRUE)
     ) %>%
-    mutate(month_name = factor(month_name, levels = month.abb))
+    mutate(month_name = factor(.data$month_name, levels = month.abb))
   all_regions_agg$regnames <- "All Regions"
   aggregated_data <- rbind(all_regions_agg, aggregated_data)
   # Calculate scaling factor
@@ -1434,28 +1437,28 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
     )
     plot_ar_pm <- ggplot2::ggplot(
       region_data,
-      ggplot2::aes(x = month_name)
+      ggplot2::aes(x = region_data$month_name)
     ) +
       ggplot2::geom_bar(
-        ggplot2::aes(y = mean_deaths_per_100k),
+        ggplot2::aes(y = region_data$mean_deaths_per_100k),
         stat = "identity",
         fill = "#003c57",
         alpha = 0.7
       ) +
       ggplot2::geom_line(
-        ggplot2::aes(y = mean_pm * scale_factor, group = 1),
+        ggplot2::aes(y = region_data$mean_pm * scale_factor, group = 1),
         color = "red",
         size = 1
       ) +
       ggplot2::geom_point(
-        ggplot2::aes(y = mean_pm * scale_factor),
+        ggplot2::aes(y = region_data$mean_pm * scale_factor),
         color = "red", size = 1
       ) +
       ggplot2::scale_y_continuous(
         name = "Deaths per 100,000 population",
         sec.axis = ggplot2::sec_axis(
           ~ . / scale_factor,
-          name = "Mean PM2.5(µg/m³)"
+          name = "Mean PM2.5 (ug/m^3)"
         )
       ) +
       ggplot2::labs(
@@ -1575,7 +1578,6 @@ generate_rr_pm_by_region <- function(
       relative_risk_overall,
       relative_risk_overall$region_name == reg
     )
-    reg_df <<- region_df
     rr_pm_region <- generate_rr_pm_overall(
       relative_risk_overall = region_df,
       scale_factor_wildfire_pm = scale_factor_wildfire_pm,
@@ -1660,7 +1662,7 @@ plot_rr_by_pm <- function(
       limitsize = FALSE
     )
   } else {
-    print(combined_plot)
+    print(combined_plots)
   }
 }
 
@@ -1690,9 +1692,9 @@ plot_rr_by_pm_core <- function(
     ylims = c(-2, 2)) {
   # create plot object
   title <- paste0("All-cause mortality", " (", region_name, ")")
-  p <- ggplot2::ggplot(data, ggplot2::aes(x = pm_levels, y = relative_risk)) +
+  p <- ggplot2::ggplot(data, ggplot2::aes(x = data$pm_levels, y = data$relative_risk)) +
     ggplot2::geom_ribbon(
-      ggplot2::aes(ymin = ci_lower, ymax = ci_upper),
+      ggplot2::aes(ymin = data$ci_lower, ymax = data$ci_upper),
       alpha = 0.2,
       fill = "#4d7789"
     ) +
@@ -1745,20 +1747,20 @@ plot_ar_by_region <- function(data, output_dir = ".") {
   if (!(all(exp_cols %in% colnames(data)))) {
     stop(
       "'data' must contain the following columns: ",
-      paste(expected_cols, collapse = ", ")
+      paste(exp_cols, collapse = ", ")
     )
   }
   # aggregate dataset
   aggregated_data <- data %>%
-    group_by(regnames) %>%
+    group_by(.data$regnames) %>%
     summarise(
-      mean_deaths_per_100k = mean(deaths_per_100k, na.rm = TRUE),
+      mean_deaths_per_100k = mean(.data$deaths_per_100k, na.rm = TRUE),
       mean_lower_ci_deaths_per_100k = mean(
-        lower_ci_deaths_per_100k,
+        .data$lower_ci_deaths_per_100k,
         na.rm = TRUE
       ),
       mean_upper_ci_deaths_per_100k = mean(
-        upper_ci_deaths_per_100k,
+        .data$upper_ci_deaths_per_100k,
         na.rm = TRUE
       )
     )
@@ -1766,8 +1768,12 @@ plot_ar_by_region <- function(data, output_dir = ".") {
   p <- ggplot2::ggplot(
     aggregated_data,
     ggplot2::aes(
-      x = forcats::fct_reorder(regnames, mean_deaths_per_100k, .desc = TRUE),
-      y = mean_deaths_per_100k
+      x = forcats::fct_reorder(
+        aggregated_data$regnames,
+        aggregated_data$mean_deaths_per_100k,
+        .desc = TRUE
+      ),
+      y = aggregated_data$mean_deaths_per_100k
     )
   ) +
     ggplot2::geom_col(fill = "#003c57") +
@@ -1814,21 +1820,21 @@ plot_an_by_region <- function(data, output_dir = ".") {
   if (!(all(exp_cols %in% colnames(data)))) {
     stop(
       "'data' must contain the following columns: ",
-      paste(expected_cols, collapse = ", ")
+      paste(exp_cols, collapse = ", ")
     )
   }
   # aggregate dataset
   aggregated_data <- data %>%
-    group_by(regnames) %>%
+    group_by(.data$regnames) %>%
     summarise(
-      sum_total_an = sum(total_attributable_number, na.rm = TRUE),
+      sum_total_an = sum(.data$total_attributable_number, na.rm = TRUE),
     )
   # draw plot and save
   p <- ggplot2::ggplot(
     aggregated_data,
     ggplot2::aes(
-      x = forcats::fct_reorder(regnames, sum_total_an, .desc = TRUE),
-      y = sum_total_an
+      x = forcats::fct_reorder(aggregated_data$regnames, aggregated_data$sum_total_an, .desc = TRUE),
+      y = aggregated_data$sum_total_an
     )
   ) +
     ggplot2::geom_col(fill = "#003c57") +
@@ -1895,8 +1901,6 @@ plot_an_by_region <- function(data, output_dir = ".") {
 #' include in the model. Must contain at least 2 variables. Defaults to NULL.
 #' @param calc_relative_risk_by_region Bool. Whether to calculate Relative Risk by region.
 #' Default: FALSE
-#' @param output_AF_AN Bool. Whether to create attributable fraction and
-#' attributable number output. Only works id relative_risk_by_region = TRUE.
 #' @param scale_factor_wildfire_pm Numeric. The value to divide the wildfire
 #' PM2.5 concentration variables by for alternative interpretation of outputs.
 #' Corresponds to the unit increase in wildfire PM2.5 to give the model

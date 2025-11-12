@@ -1437,8 +1437,8 @@ mh_attr <- function(
         an_lower_ci = an_lower_ci,
         an_upper_ci = an_upper_ci,
         ar = (an / .data$population) * 100000,
-        ar_lower_ci = (an_lower_ci / population) * 100000,
-        ar_upper_ci = (an_upper_ci / population) * 100000
+        ar_lower_ci = (an_lower_ci / .data$population) * 100000,
+        ar_upper_ci = (an_upper_ci / .data$population) * 100000
       )
     attr_list[[reg]] <- list(
       results = results,
