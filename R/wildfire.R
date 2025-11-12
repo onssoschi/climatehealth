@@ -535,34 +535,60 @@ plot_scatter <- function(data, xvar, yvar) {
 #' data.
 #' @param predictors Character vector with each of the predictors to include
 #' in the model. Must contain at least 2 variables.
+#' @param save_csv Bool. Whether or not to save the VIF results to a CSV.
+#' @param output_folder_path String. Where to save the CSV file to (if save_csv==T).
 #' @param print_vif Bool, whether or not to print VIF for each predictor.
 #' Defaults to FALSE.
 #'
 #' @returns Variance inflation factor statistics for each predictor variable.
 #'
 #' @keywords internal
-check_wildfire_vif <- function(data, predictors, print_vif = FALSE) {
+check_wildfire_vif <- function(
+    data,
+    predictors,
+    save_csv = FALSE,
+    output_folder_path = NULL,
+    print_vif = FALSE) {
   # input validation
+  if (is.null(output_folder_path) && save_csv == TRUE) {
+    stop("No output path provided when save_csv==T.")
+  }
   if (!is.character(predictors) || !is.vector(predictors)) {
     stop("Please provide predictor variable names as a character vector")
   }
   if (length(predictors) < 2) {
     stop("Please provide at least two predictor variables")
   }
-  # Get VIF
+  # Define Formula
   formula <- paste("health_outcome ~", paste(predictors, collapse = "+"))
-  model <- lm(formula, data = data)
-  vif_mod <- car::vif(model)
-  if (print_vif) print(paste0("Variance inflation factor:\n", vif_mod))
-  for (var in names(vif_mod)) {
-    if (vif_mod[[var]] >= 2) {
-      warning(paste0(
-        "Variance inflation factor for ", var, " is >= 2. Investigation is",
-        " suggested."
-      ))
+  # Loop regions
+  vif_results <- list()
+  for (reg in unique(data$regnames)) {
+    region_data <- subset(data, data$regnames==reg)
+    model <- lm(formula, data = region_data)
+    vif_mod <- car::vif(model)
+    if (print_vif) print(paste0("Variance inflation factor:\n", vif_mod))
+    for (var in names(vif_mod)) {
+        if (vif_mod[[var]] >= 2) {
+            warning(paste0(
+                "Variance inflation factor for ", var, " is >= 2. Investigation is",
+                " suggested."
+            ))
+        }
+        vif_results[[reg]] <- data.frame(
+            region = reg,
+            formula = formula,
+            var = var,
+            VIF = vif_mod
+        )
     }
   }
-  return(vif_mod)
+  # conditionally save VIF results
+  results_df <- unique(do.call(rbind, vif_results))
+  if (save_csv) {
+    fpath <- file.path(output_folder_path, "model_validation", "vif_results.csv")
+    write.csv(results_df, fpath, row.names = FALSE)
+  }
 }
 
 get_wildfire_lag_columns <- function(data) {
@@ -631,6 +657,7 @@ casecrossover_quasipoisson <- function(
     grid <- create_grid(length(lags))
     output_path <- file.path(
       output_folder_path,
+      "model_validation",
       "wildfires_residuals_vs_fit_plot.pdf"
     )
     pdf(output_path, width = grid[1] * 4, height = grid[2] * 4)
@@ -697,6 +724,8 @@ casecrossover_quasipoisson <- function(
 #'
 #' @param data Dataframe containing a daily time series of climate and health
 #' data from which to fit models.
+#' @param save_csv Bool. Whether or not to save the VIF results to a CSV.
+#' @param output_folder_path String. Where to save the CSV file to (if save_csv==T).
 #' @param print_results Logical. Whether or not to print model summaries and
 #' pearson dispersion statistics. Defaults to FALSE.
 #'
@@ -705,47 +734,66 @@ casecrossover_quasipoisson <- function(
 #' @keywords internal
 calculate_qaic <- function(
     data,
+    save_csv = FALSE,
+    output_folder_path = NULL,
     print_results = FALSE) {
+  # input validation
+  if (is.null(output_folder_path) && save_csv == TRUE) {
+    stop("No output path provided when save_csv==T.")
+  }
   qaic_results <- list()
   # get WF lag columns
   lag_cols <- get_wildfire_lag_columns(data = data)
   lags <- lag_cols$col_names
   lag_nums <- lag_cols$lag_nums
-  for (i in lags) {
-    # define model
-    number <- lag_nums[[i]]
-    # create model formula
-    formula_parts <- c("health_outcome ~ ns.tmean", i)
-    if (!all(is.na(data$rh))) {
-      formula_parts <- c(formula_parts, "splines::ns(rh, df = 3)")
+  # create results holder and loop regions
+  all_results <- list()
+  for (reg in unique(data$regnames)) {
+    region_data <- subset(data, data$regnames==reg)
+    for (i in lags) {
+        # define model
+        number <- lag_nums[[i]]
+        # create model formula
+        formula_parts <- c("health_outcome ~ ns.tmean", i)
+        if (!all(is.na(data$rh))) {
+            formula_parts <- c(formula_parts, "splines::ns(rh, df = 3)")
+        }
+        if (!all(is.na(data$wind_speed))) {
+            formula_parts <- c(formula_parts, "splines::ns(wind_speed, df = 3)")
+        }
+        formula <- as.formula(paste(formula_parts, collapse = " + "))
+        model <- gnm::gnm(formula,
+            data = region_data,
+            family = quasipoisson,
+            subset = ind > 0,
+            eliminate = stratum
+        )
+        pearson_chisq <- sum(residuals(model, type = "pearson")^2, na.rm = TRUE)
+        dispersion <- pearson_chisq / model$df.residual
+        # Number of estimated parameters
+        k <- length(coef(model))
+        # Dispersion parameter
+        phi <- summary(model)$dispersion
+        # Log-likelihood approximation
+        ll <- -0.5 * model$deviance
+        # QAIC formula
+        qaic <- -2 * ll + 2 * phi * k
+        if (print_results == TRUE) {
+            print(paste("QAIC for", i, "=", qaic))
+            print(paste("Pearson dispersion statistic:", round(dispersion, 3)))
+        }
+        qaic_results[[i]] <- qaic
     }
-    if (!all(is.na(data$wind_speed))) {
-      formula_parts <- c(formula_parts, "splines::ns(wind_speed, df = 3)")
-    }
-    formula <- as.formula(paste(formula_parts, collapse = " + "))
-    model <- gnm::gnm(formula,
-      data = data,
-      family = quasipoisson,
-      subset = ind > 0,
-      eliminate = stratum
-    )
-    pearson_chisq <- sum(residuals(model, type = "pearson")^2, na.rm = TRUE)
-    dispersion <- pearson_chisq / model$df.residual
-    # Number of estimated parameters
-    k <- length(coef(model))
-    # Dispersion parameter
-    phi <- summary(model)$dispersion
-    # Log-likelihood approximation
-    ll <- -0.5 * model$deviance
-    # QAIC formula
-    qaic <- -2 * ll + 2 * phi * k
-    if (print_results == TRUE) {
-      print(paste("QAIC for", i, "=", qaic))
-      print(paste("Pearson dispersion statistic:", round(dispersion, 3)))
-    }
-    qaic_results[[i]] <- qaic
+    all_results[[reg]] <- as.data.frame(as.list(qaic_results))
+    all_results[[reg]]$region <- reg
   }
-  return(qaic_results)
+  results_df <- do.call(rbind, all_results)
+  results_df <- results_df %>% select(c("region", setdiff(names(results_df), "region")))
+  if (save_csv == TRUE) {
+    fpath <- file.path(output_folder_path, "model_validation", "qaic_results.csv")
+    write.csv(results_df, fpath, row.names = FALSE)
+  }
+  return(results_df)
 }
 
 #' Plot relative risk results by region.
@@ -1181,7 +1229,6 @@ summarise_AF_AN <- function(data, monthly = TRUE) {
 #' }
 plot_aggregated_AN <- function(data, by_region = FALSE, output_dir = ".") {
   # input validation
-  an_data <<- data
   expected_cols <- c(
     "year",
     "average_attributable_fraction",
@@ -1843,6 +1890,10 @@ wildfire_do_analysis <- function(
     output_folder_path = NULL,
     print_vif = FALSE,
     print_model_summaries = FALSE) {
+  # Setup additional output DIR
+  if (!file.exists(file.path(output_folder_path, "model_validation"))) {
+    dir.create(file.path(output_folder_path, "model_validation"), recursive = TRUE)
+  }
   # Read and combine datasets
   data <- load_wildfire_data(
     health_path = health_path,
@@ -1884,6 +1935,8 @@ wildfire_do_analysis <- function(
     check_wildfire_vif(
       data = data,
       predictors = predictors_vif,
+      save_csv = save_csv,
+      output_folder_path = output_folder_path,
       print_vif = print_vif
     )
   }
