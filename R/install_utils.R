@@ -20,24 +20,24 @@
 #'
 #' @keywords internal
 check_has_rtools <- function() {
-    # Create temp dir
-    temp_dir <- tempdir()
-    temp_file <- file.path(temp_dir, "test.c")
-    temp_file <- normalizePath(temp_file, winslash = "\\", mustWork = FALSE)
+  # Create temp dir
+  temp_dir <- tempdir()
+  temp_file <- file.path(temp_dir, "test.c")
+  temp_file <- normalizePath(temp_file, winslash = "\\", mustWork = FALSE)
 
-    # Try to run an rtools dependent command
-    result <- pkgbuild::check_build_tools(debug=TRUE)
-    # catch errors and warn users
-    if (!any(grepl("TRUE", result, ignore.case = TRUE))) {
-        stop(paste0(
-            "\n",
-            "Rtools is required to install INLA from source on Windows.\n\n",
-            "Please download and install the correct version for your R setup from:\n",
-            "https://cran.r-project.org/bin/windows/Rtools/\n\n",
-            "After installing Rtools, restart R and try again."
-        ))
-    }
-    return(T)
+  # Try to run an rtools dependent command
+  result <- pkgbuild::check_build_tools(debug = TRUE)
+  # catch errors and warn users
+  if (!any(grepl("TRUE", result, ignore.case = TRUE))) {
+    stop(paste0(
+      "\n",
+      "Rtools is required to install INLA from source on Windows.\n\n",
+      "Please download and install the correct version for your R setup from:\n",
+      "https://cran.r-project.org/bin/windows/Rtools/\n\n",
+      "After installing Rtools, restart R and try again."
+    ))
+  }
+  return(T)
 }
 
 #' Install the INLA Package from Its Official Repository
@@ -55,7 +55,7 @@ check_has_rtools <- function() {
 #' On non-Windows systems, the package is installed normally from the repository.
 #'
 #' @param os The current operating system. Defaults to \code{.Platform$OS.type}.
-#' 
+#'
 #' @return Invisibly returns \code{NULL}. The function is called for its side effect.
 #'
 #' @examples
@@ -78,7 +78,8 @@ install_INLA <- function(os = .Platform$OS.type) {
     # Install from source tarball
     tarball <- "https://inla.r-inla-download.org/R/stable/bin/windows/contrib/4.4/INLA_24.12.11.zip"
     install.packages(
-        tarball, repos = NULL, type = "source"
+      tarball,
+      repos = NULL, type = "source"
     )
   } else {
     install.packages(
@@ -86,12 +87,12 @@ install_INLA <- function(os = .Platform$OS.type) {
       repos = "https://inla.r-inla-download.org/R/stable"
     )
   }
-  if (requireNamespace("INLA", quietly=T)) message("INLA succesfully installed.")
+  if (requireNamespace("INLA", quietly = T)) message("INLA succesfully installed.")
 }
 
 #' Install the terra Package from the CRAN Archive
 #'
-#' This function installs the \code{terra} package at version 1.8-60 from the 
+#' This function installs the \code{terra} package at version 1.8-60 from the
 #' CRAN archive.
 #'
 #' @details
@@ -100,7 +101,7 @@ install_INLA <- function(os = .Platform$OS.type) {
 #' and aborts the installation. The function then forces installation from source.
 #'
 #' @param os The current operating system. Defaults to \code{.Platform$OS.type}.
-#' 
+#'
 #' @return Invisibly returns \code{NULL}. The function is called for its side effect.
 #'
 #' @examples
@@ -120,7 +121,8 @@ install_terra <- function(os = .Platform$OS.type) {
     check_has_rtools()
   }
   install.packages(
-    tarball, repos = NULL, type = "source"
+    tarball,
+    repos = NULL, type = "source"
   )
-  if (requireNamespace("terra", quietly=T)) message("terra==1.8-60 succesfully installed.")
+  if (requireNamespace("terra", quietly = T)) message("terra==1.8-60 succesfully installed.")
 }
