@@ -12,13 +12,13 @@ save_wildfire_results(
 )
 }
 \arguments{
+\item{rr_results}{Dataframe of relative risk and confidence intervals for
+each lag of wildfire-related PM2.5.}
+
 \item{an_ar_results}{Dataframe containing attributable number/fraction
 results. Defaults to NULL.}
 
 \item{output_folder_path}{Path to folder where results should be saved.}
-
-\item{results}{Dataframe of relative risk and confidence intervals for
-each lag of wildfire-related PM2.5.}
 }
 \description{
 Saves a CSV file of relative risk and confidence intervals for

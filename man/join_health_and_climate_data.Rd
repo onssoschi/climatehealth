@@ -16,6 +16,10 @@ join_health_and_climate_data(
 \item{climate_data}{Character. Dataframe containing a daily time series of
 climate data, which may be disaggregated by region.}
 
+\item{health_data}{Character. Path to a CSV file containing a daily time
+series of data for a particular health outcome, which may be disaggregated by
+region.}
+
 \item{region_col}{Character. Name of the region column in both datasets.
 Defaults to 'regnames'}
 
@@ -25,10 +29,6 @@ Defaults to 'date'}
 \item{exposure_col}{Character. Name of the column in the climate data
 containing the exposure column (e.g., PM2.5) in kilograms. Defaults to
 'mean_PM_FRP'.}
-
-\item{health_path}{Character. Path to a CSV file containing a daily time
-series of data for a particular health outcome, which may be disaggregated by
-region.}
 }
 \value{
 Dataframe containing a daily time series of the joined

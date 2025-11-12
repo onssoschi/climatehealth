@@ -14,6 +14,9 @@ plot_RR_core(
 )
 }
 \arguments{
+\item{rr_data}{Dataframe of relative risk and confidence intervals for
+each lag of wildfire-related PM2.5.}
+
 \item{save_fig}{Boolean. Whether to save the plot as an output.
 Defaults to FALSE.}
 
@@ -25,9 +28,6 @@ Defaults to NULL.}
 
 \item{region_name}{Character. The name of the region.
 Defaults to 'All regions'.}
-
-\item{results}{Dataframe of relative risk and confidence intervals for
-each lag of wildfire-related PM2.5.}
 }
 \value{
 Plot of relative risk and confidence intervals for each lag of
