@@ -8,14 +8,14 @@
 #' @param case_type Character. The value of the case_type parameter.
 #'
 #' @return Character. The lower case_type.
-#' 
+#'
 #' @keywords internal
 validate_case_type <- function(case_type) {
   # Ensure case_type is an accepted type
   accepted_cases <- c("diarrhea", "malaria")
   case_type <- tolower(case_type)
   if (!(case_type %in% accepted_cases)) {
-    stop("'case_type' must be one of ", paste0(accepted_cases, collapse=", "))
+    stop("'case_type' must be one of ", paste0(accepted_cases, collapse = ", "))
   }
   return(case_type)
 }
@@ -50,16 +50,15 @@ validate_case_type <- function(case_type) {
 #'
 #' @keywords internal
 load_and_process_data <- function(
-  health_data_path,
-  region_col,
-  district_col,
-  date_col = NULL,
-  year_col = NULL,
-  month_col = NULL,
-  case_col,
-  case_type,
-  tot_pop_col
-) {
+    health_data_path,
+    region_col,
+    district_col,
+    date_col = NULL,
+    year_col = NULL,
+    month_col = NULL,
+    case_col,
+    case_type,
+    tot_pop_col) {
   # Create dataframe from vector/list if data comes from the API
   if (is.data.frame(health_data_path)) {
     data <- health_data_path
@@ -67,10 +66,10 @@ load_and_process_data <- function(
     ext <- tolower(xfun::file_ext(health_data_path))
     # Load data based on file extension
     data <- switch(ext,
-                   "rds" = readr::read_rds(health_data_path),
-                   "csv" = readr::read_csv(health_data_path, show_col_types = FALSE),
-                   "xlsx" = readxl::read_excel(health_data_path),
-                   stop("Unsupported file type: must be .rds, .csv, or .xlsx")
+      "rds" = readr::read_rds(health_data_path),
+      "csv" = readr::read_csv(health_data_path, show_col_types = FALSE),
+      "xlsx" = readxl::read_excel(health_data_path),
+      stop("Unsupported file type: must be .rds, .csv, or .xlsx")
     )
   }
 
@@ -82,9 +81,10 @@ load_and_process_data <- function(
     stop("If no date column is provided, you must provide both the year and the month columns.")
   }
   if (!is.null(date_col)) {
-    data <- data %>% rename(
-      date = date_col
-    ) %>%
+    data <- data %>%
+      rename(
+        date = date_col
+      ) %>%
       mutate(
         year = lubridate::year(date),
         month = lubridate::month(date)
@@ -93,16 +93,18 @@ load_and_process_data <- function(
 
   # Rename columns accordingly
   case_sym <- rlang::sym(case_type)
-  data <- data %>% rename(
-    year = year_col,
-    month = month_col,
-    region = region_col,
-    district = district_col,
-    !!case_sym := case_col,
-    tot_pop = tot_pop_col
-  ) %>% select(
-    all_of(c("region", "district", "year", "month", case_type, "tot_pop"))
-  )
+  data <- data %>%
+    rename(
+      year = year_col,
+      month = month_col,
+      region = region_col,
+      district = district_col,
+      !!case_sym := case_col,
+      tot_pop = tot_pop_col
+    ) %>%
+    select(
+      all_of(c("region", "district", "year", "month", case_type, "tot_pop"))
+    )
   return(data)
 }
 
@@ -126,22 +128,26 @@ load_and_process_data <- function(
 #'
 #' @keywords internal
 load_and_process_map <- function(
-  map_path,
-  region_col,
-  district_col,
-  geometry_col,
-  output_dir = NULL
-){
+    map_path,
+    region_col,
+    district_col,
+    geometry_col,
+    output_dir = NULL) {
   # Load and process map
   map <- sf::read_sf(map_path) %>%
-    select(region = !!sym(region_col),
-           district = !!sym(district_col),
-           geometry = !!sym(geometry_col)) %>%
+    select(
+      region = !!sym(region_col),
+      district = !!sym(district_col),
+      geometry = !!sym(geometry_col)
+    ) %>%
     mutate(geometry = sf::st_make_valid(.data$geometry))
   # Create adjacency matrix
   nb_file <- if (!is.null(output_dir)) file.path(output_dir, "nbfile") else NULL
-  g_file <- if (!is.null(output_dir)) file.path(output_dir, "map.graph")
-  else tempfile(pattern = "map", fileext = ".graph")
+  g_file <- if (!is.null(output_dir)) {
+    file.path(output_dir, "map.graph")
+  } else {
+    tempfile(pattern = "map", fileext = ".graph")
+  }
 
   if (!is.null(nb_file) && file.exists(nb_file)) {
     nb.map <- spdep::read.gal(nb_file)
@@ -193,39 +199,39 @@ load_and_process_map <- function(
 #'
 #' @keywords internal
 load_and_process_climatedata <- function(
-  climate_data_path,
-  district_col,
-  year_col,
-  month_col,
-  tmin_col,
-  tmean_col,
-  tmax_col,
-  rainfall_col,
-  r_humidity_col,
-  runoff_col = NULL,
-  cvh_col = NULL,
-  spi_col = NULL,
-  max_lag = 4
-){
-
+    climate_data_path,
+    district_col,
+    year_col,
+    month_col,
+    tmin_col,
+    tmean_col,
+    tmax_col,
+    rainfall_col,
+    r_humidity_col,
+    runoff_col = NULL,
+    cvh_col = NULL,
+    spi_col = NULL,
+    max_lag = 4) {
   if (is.data.frame(climate_data_path)) {
     data <- climate_data_path
   } else {
     ext <- tolower(xfun::file_ext(climate_data_path))
     # Load data based on file extension
     data <- switch(ext,
-                   "rds" = readr::read_rds(climate_data_path),
-                   "csv" = readr::read_csv(climate_data_path, show_col_types = FALSE),
-                   "xlsx" = readxl::read_excel(climate_data_path),
-                   stop("Unsupported file type: must be .rds, .csv, or .xlsx")
+      "rds" = readr::read_rds(climate_data_path),
+      "csv" = readr::read_csv(climate_data_path, show_col_types = FALSE),
+      "xlsx" = readxl::read_excel(climate_data_path),
+      stop("Unsupported file type: must be .rds, .csv, or .xlsx")
     )
   }
 
   # Map columns to standard names, excluding NULLs
-  var_map <- list(district = district_col, year = year_col, month = month_col,
-                  tmin = tmin_col, tmean = tmean_col, tmax = tmax_col,
-                  rainfall = rainfall_col, r_humidity = r_humidity_col,
-                  runoff = runoff_col, cvh = cvh_col, spi = spi_col)
+  var_map <- list(
+    district = district_col, year = year_col, month = month_col,
+    tmin = tmin_col, tmean = tmean_col, tmax = tmax_col,
+    rainfall = rainfall_col, r_humidity = r_humidity_col,
+    runoff = runoff_col, cvh = cvh_col, spi = spi_col
+  )
 
   var_map <- var_map[!sapply(var_map, is.null)]
   selected_cols <- as.character(var_map)
@@ -257,17 +263,25 @@ load_and_process_climatedata <- function(
   }
 
   # Determine variables to lag
-  vars_to_lag <- intersect(names(rename_vec),
-                           c("tmin", "tmean", "tmax", "rainfall",
-                             "r_humidity", "runoff", "spi"))
+  vars_to_lag <- intersect(
+    names(rename_vec),
+    c(
+      "tmin", "tmean", "tmax", "rainfall",
+      "r_humidity", "runoff", "spi"
+    )
+  )
 
   # Create lagged data
-  lagged_data <- lapply(vars_to_lag,
-                        function(var) create_lags(climate_data, var, max_lag))
+  lagged_data <- lapply(
+    vars_to_lag,
+    function(var) create_lags(climate_data, var, max_lag)
+  )
 
   # Bind all
-  final_data <- dplyr::bind_cols(climate_data[c("district", "year", "month")],
-                                 lagged_data)
+  final_data <- dplyr::bind_cols(
+    climate_data[c("district", "year", "month")],
+    lagged_data
+  )
 
   return(final_data)
 }
@@ -322,29 +336,28 @@ load_and_process_climatedata <- function(
 #'
 #' @keywords internal
 combine_health_climate_data <- function(
-  health_data_path,
-  climate_data_path,
-  map_path,
-  region_col,
-  district_col,
-  date_col,
-  year_col,
-  month_col,
-  case_col,
-  case_type,
-  tot_pop_col,
-  tmin_col,
-  tmean_col,
-  tmax_col,
-  rainfall_col,
-  r_humidity_col,
-  geometry_col,
-  runoff_col = NULL,
-  cvh_col = NULL,
-  spi_col = NULL,
-  max_lag = 2,
-  output_dir = NULL
-) {
+    health_data_path,
+    climate_data_path,
+    map_path,
+    region_col,
+    district_col,
+    date_col,
+    year_col,
+    month_col,
+    case_col,
+    case_type,
+    tot_pop_col,
+    tmin_col,
+    tmean_col,
+    tmax_col,
+    rainfall_col,
+    r_humidity_col,
+    geometry_col,
+    runoff_col = NULL,
+    cvh_col = NULL,
+    spi_col = NULL,
+    max_lag = 2,
+    output_dir = NULL) {
   case_type <- validate_case_type(case_type)
 
   health_data <- load_and_process_data(
@@ -451,20 +464,23 @@ combine_health_climate_data <- function(
 #'
 #' @keywords internal
 plot_health_climate_timeseries <- function(
-  data,
-  param_term,
-  level = "country",
-  case_type,
-  filter_year = NULL,
-  save_fig = FALSE,
-  output_dir = NULL
-) {
+    data,
+    param_term,
+    level = "country",
+    case_type,
+    filter_year = NULL,
+    save_fig = FALSE,
+    output_dir = NULL) {
   case_type <- validate_case_type(case_type)
 
   vars_all <- c(case_type, "tmin", "tmean", "tmax", "rainfall")
-  if (length(param_term)>1) vars_to_plot <- param_term
-  else if (param_term == "all") vars_to_plot <- vars_all
-  else vars_to_plot <- param_term
+  if (length(param_term) > 1) {
+    vars_to_plot <- param_term
+  } else if (param_term == "all") {
+    vars_to_plot <- vars_all
+  } else {
+    vars_to_plot <- param_term
+  }
 
   if (!is.null(filter_year)) {
     data <- data %>% dplyr::filter(.data$year %in% filter_year)
@@ -476,10 +492,11 @@ plot_health_climate_timeseries <- function(
   if (length(missing)) stop("Missing columns: ", paste(missing, collapse = ", "))
 
   group_var <- switch(tolower(level),
-                      country = NULL,
-                      region = "region",
-                      district = "district",
-                      stop("Invalid level"))
+    country = NULL,
+    region = "region",
+    district = "district",
+    stop("Invalid level")
+  )
 
   group_cols <- c("date", group_var)
 
@@ -489,10 +506,10 @@ plot_health_climate_timeseries <- function(
       dplyr::across(
         dplyr::all_of(vars_to_plot),
         ~ if (level == "country") {
-            if (cur_column() == case_type) sum(.x, na.rm = TRUE) else mean(.x, na.rm = TRUE)
-          } else {
-            mean(.x, na.rm = TRUE)
-          }
+          if (cur_column() == case_type) sum(.x, na.rm = TRUE) else mean(.x, na.rm = TRUE)
+        } else {
+          mean(.x, na.rm = TRUE)
+        }
       ),
       .groups = "drop"
     ) %>%
@@ -519,7 +536,7 @@ plot_health_climate_timeseries <- function(
       ggplot2::aes(color = if (!is.null(group_var)) .data$group),
       linewidth = 1
     ) +
-    ggplot2::facet_wrap(~.data$variable, scales = "free_y", ncol = 1) +
+    ggplot2::facet_wrap(~ .data$variable, scales = "free_y", ncol = 1) +
     ggplot2::scale_x_date(date_breaks = "6 month", date_labels = "%Y-%m") +
     ggplot2::labs(title = title_text, x = "date", y = "Value") +
     ggplot2::theme_minimal() +
@@ -551,13 +568,15 @@ plot_health_climate_timeseries <- function(
 #' maximum temperature, minimum temperature, rainfall, relative humidity, etc.
 #'
 #' @keywords internal
-set_cross_basis <- function(data, include_cvh=FALSE) {
-
+set_cross_basis <- function(data, include_cvh = FALSE) {
   nlag <- ncol(dplyr::select(data, all_of(grep("^tmax_lag", names(data),
-                                               value = TRUE))))
-  var_defs <- list(tmax = "tmax_lag", tmin = "tmin_lag", tmean = "tmean_lag",
-                   rainfall = "rainfall_lag", r_humidity = "r_humidity_lag",
-                   runoff = "runoff_lag", spi = "spi_lag")
+    value = TRUE
+  ))))
+  var_defs <- list(
+    tmax = "tmax_lag", tmin = "tmin_lag", tmean = "tmean_lag",
+    rainfall = "rainfall_lag", r_humidity = "r_humidity_lag",
+    runoff = "runoff_lag", spi = "spi_lag"
+  )
   if (include_cvh) var_defs$cvh <- "cvh_lag"
 
   vars <- lapply(names(var_defs), function(var) {
@@ -611,10 +630,10 @@ create_inla_indices <- function(data, case_type) {
   # define the offset variable based on the population data
   overall_rate <- sum(data[[case_type]], na.rm = TRUE) / sum(data$tot_pop, na.rm = TRUE)
   data$E <- overall_rate * data$tot_pop # Expected counts
-  data$SIR <- data[[case_type]] / data$E  # Standardized Incidence Ratio
+  data$SIR <- data[[case_type]] / data$E # Standardized Incidence Ratio
 
   # Create district index
-  data$district_index <- rep(1:ndistrict, length.out = nrow(data))  # Ensure correct length
+  data$district_index <- rep(1:ndistrict, length.out = nrow(data)) # Ensure correct length
 
   # Assign district indices based on unique district codes
   unique_districts <- unique(data$district_code)
@@ -623,7 +642,7 @@ create_inla_indices <- function(data, case_type) {
   }
 
   # Create region index
-  data$region_index <- NA  # Initialize
+  data$region_index <- NA # Initialize
 
   # Assign region indices based on unique region codes
   unique_regions <- unique(data$region_code)
@@ -632,7 +651,7 @@ create_inla_indices <- function(data, case_type) {
   }
 
   # Create year index (first_year is the First year in the data set, is set to 1)
-  data$year_index <- data$year - (min(data$year)-1)
+  data$year_index <- data$year - (min(data$year) - 1)
 
   return(data)
 }
@@ -667,20 +686,19 @@ check_diseases_vif <- function(
     data,
     inla_param,
     basis_matrices_choices,
-    case_type
-) {
+    case_type) {
   # validate case type
   case_type <- validate_case_type(case_type)
-  include_cvh <- ifelse(case_type=="malaria", TRUE, FALSE)
+  include_cvh <- ifelse(case_type == "malaria", TRUE, FALSE)
   # get inla indices and cross basis
-  data  <- create_inla_indices(data, case_type)
+  data <- create_inla_indices(data, case_type)
   basis <- set_cross_basis(data, include_cvh)
   # assign variables
   vars_basis <- Filter(Negate(is.null), basis[basis_matrices_choices])
-  vars_data  <- setdiff(inla_param, basis_matrices_choices)
+  vars_data <- setdiff(inla_param, basis_matrices_choices)
   # detect missing values are raise errors
   miss_basis <- setdiff(basis_matrices_choices, names(vars_basis))
-  miss_data  <- setdiff(vars_data, names(data))
+  miss_data <- setdiff(vars_data, names(data))
   if (length(miss_basis)) {
     stop("Missing in basis: ", paste(miss_basis, collapse = ", "))
   }
@@ -740,32 +758,31 @@ check_diseases_vif <- function(
 #'
 #' @keywords internal
 check_and_write_vif <- function(
-  data,
-  inla_param,
-  basis_matrices_choices,
-  case_type,
-  output_dir
-) {
+    data,
+    inla_param,
+    basis_matrices_choices,
+    case_type,
+    output_dir) {
   # Calculate VIF
   VIF <- check_diseases_vif(
-    data=data,
-    inla_param=inla_param,
-    basis_matrices_choices=basis_matrices_choices,
-    case_type=case_type
+    data = data,
+    inla_param = inla_param,
+    basis_matrices_choices = basis_matrices_choices,
+    case_type = case_type
   )
   # Create output DF
   VIF$vif <- rbind(
     data.frame(VIF$vif),
     data.frame(
-      row.names=c("condition_number", "interpretation"),
-      VIF.vif=c(VIF$condition_number, VIF$interpretation)
+      row.names = c("condition_number", "interpretation"),
+      VIF.vif = c(VIF$condition_number, VIF$interpretation)
     )
   )
   # Create FPATH
   fpath <- file.path(output_dir, "VIF_results.csv")
   file_connection <- file(fpath)
   # Write to file
-  write.csv(file=fpath, VIF$vif)
+  write.csv(file = fpath, VIF$vif)
   # Return values
   return(VIF)
 }
@@ -797,15 +814,14 @@ check_and_write_vif <- function(
 #'
 #' @keywords internal
 run_inla_models <- function(
-  combined_data,
-  basis_matrices_choices,
-  inla_param,
-  case_type,
-  output_dir = NULL,
-  save_model = FALSE,
-  family = "poisson",
-  config = FALSE
-) {
+    combined_data,
+    basis_matrices_choices,
+    inla_param,
+    case_type,
+    output_dir = NULL,
+    save_model = FALSE,
+    family = "poisson",
+    config = FALSE) {
   if (save_model && is.null(output_dir)) stop("output_dir must be provided if save_csv = TRUE")
 
   case_type <- validate_case_type(case_type)
@@ -818,7 +834,7 @@ run_inla_models <- function(
   }
 
   data <- create_inla_indices(combined_data$data, case_type)
-  include_cvh <- ifelse(case_type=="malaria", TRUE, FALSE)
+  include_cvh <- ifelse(case_type == "malaria", TRUE, FALSE)
   basis <- set_cross_basis(combined_data$data, include_cvh)
   graph_file <- combined_data$graph_file
 
@@ -826,46 +842,69 @@ run_inla_models <- function(
   ct_sym <- as.name(case_type)
   base_formula <- substitute(
     case_type ~ 1 +
-      f(month, replicate = region_index, model = "rw1", cyclic = TRUE,
-        constr = TRUE, scale.model = TRUE, hyper = prior) +
-      f(district_index, model = "bym2", replicate = year_index,
-        graph = graph_file, scale.model = TRUE, hyper = prior),
+      f(month,
+        replicate = region_index, model = "rw1", cyclic = TRUE,
+        constr = TRUE, scale.model = TRUE, hyper = prior
+      ) +
+      f(district_index,
+        model = "bym2", replicate = year_index,
+        graph = graph_file, scale.model = TRUE, hyper = prior
+      ),
     list(case_type = ct_sym)
-
   )
   base_formula <- as.formula(base_formula)
 
   if (is.null(basis_matrices_choices)) basis_matrices_choices <- character(0)
 
   valid_basis <- Filter(function(x) !is.null(basis[[x]]), basis_matrices_choices)
-  basis_terms <- if (length(valid_basis) > 0) paste0("basis$", valid_basis)
-  else character()
+  basis_terms <- if (length(valid_basis) > 0) {
+    paste0("basis$", valid_basis)
+  } else {
+    character()
+  }
   raw_vars <- intersect(inla_param, names(data))
   all_terms <- c(basis_terms, raw_vars)
 
-  full_formula <- if (length(all_terms) > 0)
-    update(base_formula, as.formula(paste("~ . +",
-                                          paste(all_terms,
-                                                collapse = " + "))))
-  else base_formula
+  full_formula <- if (length(all_terms) > 0) {
+    update(base_formula, as.formula(paste(
+      "~ . +",
+      paste(all_terms,
+        collapse = " + "
+      )
+    )))
+  } else {
+    base_formula
+  }
 
-  fit <- function(f) INLA::inla.rerun(INLA::inla(
-    f, data = data, family = family, offset = log(data$E),
-    control.inla = list(strategy = "adaptive"),
-    control.compute = list(dic = TRUE, config = config,
-                           cpo = TRUE, return.marginals = FALSE),
-    control.fixed = list(correlation.matrix = TRUE, prec.intercept = 1, prec = 1),
-    control.predictor = list(link = 1, compute = TRUE), verbose = FALSE))
+  fit <- function(f) {
+    INLA::inla.rerun(INLA::inla(
+      f,
+      data = data, family = family, offset = log(data$E),
+      control.inla = list(strategy = "adaptive"),
+      control.compute = list(
+        dic = TRUE, config = config,
+        cpo = TRUE, return.marginals = FALSE
+      ),
+      control.fixed = list(correlation.matrix = TRUE, prec.intercept = 1, prec = 1),
+      control.predictor = list(link = 1, compute = TRUE), verbose = FALSE
+    ))
+  }
 
   baseline_model <- fit(base_formula)
   model <- fit(full_formula)
 
   if (save_model) {
     save(model,
-         file = file.path(output_dir,
-                          paste0("model_with_",
-                                 paste(c(valid_basis, raw_vars),
-                                       collapse = "_"), ".csv")))
+      file = file.path(
+        output_dir,
+        paste0(
+          "model_with_",
+          paste(c(valid_basis, raw_vars),
+            collapse = "_"
+          ), ".csv"
+        )
+      )
+    )
   }
 
   dic_table <- data.table::data.table(
@@ -893,11 +932,10 @@ run_inla_models <- function(
 #'
 #' @keywords internal
 plot_monthly_random_effects <- function(
-  combined_data,
-  model,
-  save_fig = FALSE,
-  output_dir = NULL
-) {
+    combined_data,
+    model,
+    save_fig = FALSE,
+    output_dir = NULL) {
   if (save_fig & is.null(output_dir)) {
     stop("output_dir must be provided if save_fig = TRUE")
   }
@@ -947,7 +985,7 @@ plot_monthly_random_effects <- function(
       labels = c("Jan", "Apr", "Jul", "Oct")
     ) +
     ggplot2::theme_bw() +
-    ggplot2::facet_wrap(~.data$region)
+    ggplot2::facet_wrap(~ .data$region)
 
   if (save_fig) {
     ggplot2::ggsave(
@@ -977,12 +1015,11 @@ plot_monthly_random_effects <- function(
 #'
 #' @keywords internal
 plot_yearly_spatial_random_effect <- function(
-  combined_data,
-  model,
-  case_type,
-  save_fig = FALSE,
-  output_dir = NULL
-) {
+    combined_data,
+    model,
+    case_type,
+    save_fig = FALSE,
+    output_dir = NULL) {
   # Validate case type
   case_type <- validate_case_type(case_type)
   # Validate output_dir if saving
@@ -990,7 +1027,7 @@ plot_yearly_spatial_random_effect <- function(
     stop("output_dir must be provided if save_fig = TRUE")
   }
   # Prepare data
-  data <- create_inla_indices(combined_data$data, case_type=case_type)
+  data <- create_inla_indices(combined_data$data, case_type = case_type)
   grid_data <- combined_data$grid_data
   map <- combined_data$map
   ntime <- length(unique(data$time))
@@ -998,10 +1035,10 @@ plot_yearly_spatial_random_effect <- function(
   ndistrict <- length(unique(data$district_code))
   # Extract spatial random effects
   space <- data.table::data.table(model$summary.random$district_index)
-  space$year <- rep(min(data$year):max(data$year), each = 2 * ndistrict, length.out=nrow(space))
-  space$re <- rep(c(rep(1, ndistrict), rep(2, ndistrict)), nyear, length.out=nrow(space))
+  space$year <- rep(min(data$year):max(data$year), each = 2 * ndistrict, length.out = nrow(space))
+  space$re <- rep(c(rep(1, ndistrict), rep(2, ndistrict)), nyear, length.out = nrow(space))
   space <- space[space$re == 1, ]
-  space$district_code <- rep(unique(data$district_code), nyear, length.out=nrow(space))
+  space$district_code <- rep(unique(data$district_code), nyear, length.out = nrow(space))
   # Merge with spatial map
   space <- left_join(map, space, by = c("district_code" = "district_code"))
   # Plot
@@ -1019,7 +1056,8 @@ plot_yearly_spatial_random_effect <- function(
   # Save if required
   if (save_fig) {
     ggplot2::ggsave(file.path(output_dir, "spatial_random_effects_per_year.pdf"),
-                    plot = space_effects, height = 30, width = 25, units = "cm")
+      plot = space_effects, height = 30, width = 25, units = "cm"
+    )
   }
 
   return(space_effects)
@@ -1047,15 +1085,14 @@ get_predictions <- function(
     param_term,
     model,
     level,
-    case_type
-){
+    case_type) {
   # Validate case type
   case_type <- validate_case_type(case_type)
   # loading the best model
   data <- create_inla_indices(data, case_type)
 
   # getting basis matrices
-  include_cvh <- ifelse(case_type=="malaria", TRUE, FALSE)
+  include_cvh <- ifelse(case_type == "malaria", TRUE, FALSE)
   basis_matrices <- set_cross_basis(data, include_cvh)
 
   # Extract full coef and vcov for the region
@@ -1065,39 +1102,45 @@ get_predictions <- function(
   # Find positions of terms associated with tmax crossbasis
   indt <- grep(paste("basis", param_term, sep = "_"), model$names.fixed)
 
-  if (level == "country"){
+  if (level == "country") {
     # Extract predictions from the tmax DLNM centered on overall mean Tmax
-    predt <- dlnm::crosspred(basis_matrices[[param_term]], coef = coef[indt],
-                             vcov = vcov[indt, indt], model.link = "log",
-                             bylag = 0.25, cen = round(mean(data[[param_term]],
-                                                            na.rm = TRUE), 0))
-
-  } else if (tolower(level) == "region"){
+    predt <- dlnm::crosspred(basis_matrices[[param_term]],
+      coef = coef[indt],
+      vcov = vcov[indt, indt], model.link = "log",
+      bylag = 0.25, cen = round(mean(data[[param_term]],
+        na.rm = TRUE
+      ), 0)
+    )
+  } else if (tolower(level) == "region") {
     # Iterate over unique regions
     regions <- unique(data$region)
     predt <- regions %>%
-      lapply(function(regi){
+      lapply(function(regi) {
         region_data <- subset(data, data$region == regi)
         # Extract predictions from the tmax DLNM centered on overall mean Tmax
         mean_param <- round(mean(region_data[[param_term]], na.rm = TRUE), 0)
-        predt <- dlnm::crosspred(basis_matrices[[param_term]], coef = coef[indt],
-                                 vcov = vcov[indt, indt],
-                                 model.link = "log", bylag = 0.25, cen = mean_param)
+        predt <- dlnm::crosspred(basis_matrices[[param_term]],
+          coef = coef[indt],
+          vcov = vcov[indt, indt],
+          model.link = "log", bylag = 0.25, cen = mean_param
+        )
         return(predt)
       })
     names(predt) <- regions
-  } else if (tolower(level) == "district"){
+  } else if (tolower(level) == "district") {
     # Iterate over unique districts
     districts <- unique(data$district)
     predt <- districts %>%
-      lapply(function(dist){
+      lapply(function(dist) {
         # Filter data for the current district
         district_data <- data %>% filter(data$district == dist)
         # Extract predictions from the tmax DLNM centered on overall mean Tmax
         mean_param <- round(mean(district_data[[param_term]], na.rm = TRUE), 0)
-        predt <- dlnm::crosspred(basis_matrices[[param_term]], coef = coef[indt],
-                                 vcov = vcov[indt, indt],
-                                 model.link = "log", bylag = 0.25, cen = mean_param)
+        predt <- dlnm::crosspred(basis_matrices[[param_term]],
+          coef = coef[indt],
+          vcov = vcov[indt, indt],
+          model.link = "log", bylag = 0.25, cen = mean_param
+        )
       })
     names(predt) <- districts
   }
@@ -1127,15 +1170,14 @@ get_predictions <- function(
 #'
 #' @keywords internal
 contour_plot <- function(
-  data,
-  param_term,
-  model,
-  level,
-  filter_year = NULL,
-  case_type,
-  save_fig = FALSE,
-  output_dir = NULL
-) {
+    data,
+    param_term,
+    model,
+    level,
+    filter_year = NULL,
+    case_type,
+    save_fig = FALSE,
+    output_dir = NULL) {
   case_type <- validate_case_type(case_type)
   if (save_fig && is.null(output_dir)) {
     stop("'output_dir' must be provided if save_fig = TRUE")
@@ -1145,7 +1187,7 @@ contour_plot <- function(
     if (!"year" %in% names(data)) stop("'year' column not found in data.")
     data <- filter(data, .data$year %in% filter_year)
   }
-  predt <- get_predictions(data, param_term=param_term, model=model, level=level, case_type=case_type)
+  predt <- get_predictions(data, param_term = param_term, model = model, level = level, case_type = case_type)
 
   plot_contour <- function(x, y, z, title) {
     nlag <- max(x)
@@ -1159,7 +1201,8 @@ contour_plot <- function(
       x, y, z,
       xlab = "Lag (Month)",
       ylab = ifelse(param_term == "tmax", "Temperature (\u00b0C)",
-                    ifelse(param_term == "rainfall", "Rainfall (mm)", param_term)),
+        ifelse(param_term == "rainfall", "Rainfall (mm)", param_term)
+      ),
       main = title,
       col = cols,
       levels = levels,
@@ -1170,14 +1213,18 @@ contour_plot <- function(
     )
   }
 
-  nlag <- data %>% select(contains(param_term)) %>% ncol() - 1
+  nlag <- data %>%
+    select(contains(param_term)) %>%
+    ncol() - 1
   lag_seq <- seq(0, nlag, 0.25)
 
   if (save_fig) {
     output_file <- file.path(
       output_dir,
-      paste0("contour_plot_", param_term, "_", level,
-             if (!is.null(filter_year)) paste0("_", paste(filter_year, collapse = "_")), ".pdf")
+      paste0(
+        "contour_plot_", param_term, "_", level,
+        if (!is.null(filter_year)) paste0("_", paste(filter_year, collapse = "_")), ".pdf"
+      )
     )
     pdf(output_file, width = 8, height = 8)
   }
@@ -1188,7 +1235,8 @@ contour_plot <- function(
     groups <- if (tolower(level) == "region") unique(data$region) else unique(data$district)
     for (grp in groups) {
       plot_contour(lag_seq, predt[[grp]]$predvar, t(predt[[grp]]$matRRfit),
-                   title = paste("Contour Plot for", grp))
+        title = paste("Contour Plot for", grp)
+      )
     }
   }
 
@@ -1222,15 +1270,14 @@ contour_plot <- function(
 #'
 #' @keywords internal
 plot_rr_map <- function(
-  combined_data,
-  model,
-  param_term = "tmax",
-  level = "District",
-  filter_year = NULL,
-  case_type,
-  output_dir = NULL,
-  save_fig = FALSE
-) {
+    combined_data,
+    model,
+    param_term = "tmax",
+    level = "District",
+    filter_year = NULL,
+    case_type,
+    output_dir = NULL,
+    save_fig = FALSE) {
   # Ensure case_type is valid
   case_type <- validate_case_type(case_type)
 
@@ -1283,9 +1330,14 @@ plot_rr_map <- function(
 
   # Save to file if needed
   if (save_fig) {
-    ggplot2::ggsave(file.path(output_dir,
-                              paste0("RR_map_", param_term, "_", level, "_all_years.pdf")),
-                    combined_plot, width = 14, height = 10)
+    ggplot2::ggsave(
+      file.path(
+        output_dir,
+        paste0("RR_map_", param_term, "_", level, "_all_years.pdf")
+      ),
+      combined_plot,
+      width = 14, height = 10
+    )
   }
 
   return(combined_plot)
@@ -1317,16 +1369,15 @@ plot_rr_map <- function(
 #'
 #' @keywords internal
 plot_relative_risk <- function(
-  data,
-  model,
-  param_term,
-  level = "country",
-  filter_year = NULL,
-  case_type,
-  output_dir = NULL,
-  save_csv = FALSE,
-  save_fig = FALSE
-) {
+    data,
+    model,
+    param_term,
+    level = "country",
+    filter_year = NULL,
+    case_type,
+    output_dir = NULL,
+    save_csv = FALSE,
+    save_fig = FALSE) {
   case_type <- validate_case_type(case_type)
   if (!"year" %in% names(data)) stop("'year' column not found in data.")
   if (is.null(filter_year)) filter_year <- sort(unique(data$year))
@@ -1339,11 +1390,15 @@ plot_relative_risk <- function(
 
   output_pdf <- if (save_fig) {
     file.path(output_dir, paste0("RR_", param_term, "_", level, "_all_plots.pdf"))
-  } else NULL
+  } else {
+    NULL
+  }
 
   csv_output_path <- if (save_csv) {
     file.path(output_dir, paste0("RR_", param_term, "_", level, "_all_plots.csv"))
-  } else NULL
+  } else {
+    NULL
+  }
 
   build_plot <- function(pred, title) {
     ggplot2::ggplot(
@@ -1357,9 +1412,12 @@ plot_relative_risk <- function(
     ) +
       ggplot2::geom_line(color = "red", linewidth = 1) +
       ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$ymin, ymax = .data$ymax),
-                           fill = "red", alpha = 0.3) +
-      ggplot2::geom_hline(yintercept = 1, linetype = "dashed",
-                          color = "gray", linewidth = 0.5) +
+        fill = "red", alpha = 0.3
+      ) +
+      ggplot2::geom_hline(
+        yintercept = 1, linetype = "dashed",
+        color = "gray", linewidth = 0.5
+      ) +
       ggplot2::labs(title = title, x = param_term, y = "Relative Risk") +
       ggplot2::theme_minimal() +
       ggplot2::theme(plot.title = ggplot2::element_text(size = 9))
@@ -1389,16 +1447,22 @@ plot_relative_risk <- function(
         color = "red", linewidth = 1
       ) +
       ggplot2::geom_ribbon(
-        data = dplyr::tibble(x = pred$predvar,
-                             ymin = pred$allRRlow,
-                             ymax = pred$allRRhigh),
+        data = dplyr::tibble(
+          x = pred$predvar,
+          ymin = pred$allRRlow,
+          ymax = pred$allRRhigh
+        ),
         ggplot2::aes(x = .data$x, ymin = .data$ymin, ymax = .data$ymax),
         fill = "red", alpha = 0.3
       ) +
-      ggplot2::geom_hline(yintercept = 1, linetype = "dashed",
-                          color = "gray", linewidth = 0.5) +
-      ggplot2::geom_vline(xintercept = rr_range, linetype = "dotted",
-                          color = "blue", linewidth = 0.8) +
+      ggplot2::geom_hline(
+        yintercept = 1, linetype = "dashed",
+        color = "gray", linewidth = 0.5
+      ) +
+      ggplot2::geom_vline(
+        xintercept = rr_range, linetype = "dotted",
+        color = "blue", linewidth = 0.8
+      ) +
       ggplot2::scale_x_continuous(limits = x_limits, breaks = x_breaks) +
       ggplot2::labs(title = "Relative Risk Curve", y = "Relative Risk") +
       ggplot2::theme_minimal() +
@@ -1420,11 +1484,15 @@ plot_relative_risk <- function(
     y_limits <- range(y_breaks)
 
     hist_plot <- ggplot2::ggplot(data_all, ggplot2::aes(x = !!param_sym)) +
-      ggplot2::geom_histogram(binwidth = 1, boundary = 0,
-                              fill = "skyblue", color = "black", alpha = 0.6) +
+      ggplot2::geom_histogram(
+        binwidth = 1, boundary = 0,
+        fill = "skyblue", color = "black", alpha = 0.6
+      ) +
       ggplot2::scale_x_continuous(limits = x_limits, breaks = x_breaks) +
-      ggplot2::scale_y_continuous(name = "Frequency", limits = y_limits,
-                                  breaks = y_breaks, position = "right") +
+      ggplot2::scale_y_continuous(
+        name = "Frequency", limits = y_limits,
+        breaks = y_breaks, position = "right"
+      ) +
       ggplot2::labs(x = param_term) +
       ggplot2::theme_minimal() +
       ggplot2::theme(axis.title.y = ggplot2::element_text(color = "skyblue"))
@@ -1441,12 +1509,13 @@ plot_relative_risk <- function(
     if (save_csv && !is.null(csv_output_path)) {
       utils::write.csv(
         dplyr::tibble(
-          predvar  = pred$predvar,
+          predvar = pred$predvar,
           allRRfit = pred$allRRfit,
           allRRlow = pred$allRRlow,
-          allRRhigh= pred$allRRhigh
+          allRRhigh = pred$allRRhigh
         ),
-        csv_output_path, row.names = FALSE
+        csv_output_path,
+        row.names = FALSE
       )
     }
 
@@ -1456,8 +1525,10 @@ plot_relative_risk <- function(
   if (level %in% c("region", "district")) {
     group_plots <- list()
     for (yr in filter_year) {
-      preds <- get_predictions(dplyr::filter(data, .data$year == yr),
-                               param_term, model, level, case_type)
+      preds <- get_predictions(
+        dplyr::filter(data, .data$year == yr),
+        param_term, model, level, case_type
+      )
       all_predictions[[as.character(yr)]] <- preds
       for (grp in names(preds)) {
         p <- build_plot(preds[[grp]], paste0(grp, " (", yr, ")"))
@@ -1474,11 +1545,18 @@ plot_relative_risk <- function(
           print(
             patchwork::wrap_plots(page, ncol = 2, nrow = 3) +
               patchwork::plot_annotation(
-                title    = paste("Exposure-Response Curves by",
-                                 tools::toTitleCase(level)),
-                subtitle = if (is.null(filter_year)) "All Years Combined"
-                           else paste(param_term, "Years:",
-                                      paste(filter_year, collapse = ", "))
+                title = paste(
+                  "Exposure-Response Curves by",
+                  tools::toTitleCase(level)
+                ),
+                subtitle = if (is.null(filter_year)) {
+                  "All Years Combined"
+                } else {
+                  paste(
+                    param_term, "Years:",
+                    paste(filter_year, collapse = ", ")
+                  )
+                }
               )
           )
         }
@@ -1492,12 +1570,12 @@ plot_relative_risk <- function(
         dplyr::bind_rows(lapply(names(preds), function(grp) {
           df <- preds[[grp]]
           dplyr::tibble(
-            year     = yr,
-            group    = grp,
-            predvar  = df$predvar,
+            year = yr,
+            group = grp,
+            predvar = df$predvar,
             allRRfit = df$allRRfit,
             allRRlow = df$allRRlow,
-            allRRhigh= df$allRRhigh
+            allRRhigh = df$allRRhigh
           )
         }))
       }))
@@ -1537,16 +1615,15 @@ plot_relative_risk <- function(
 #'
 #' @keywords internal
 attribution_calculation <- function(
-  data,
-  param_term,
-  model,
-  level,
-  param_threshold = 1,
-  filter_year = NULL,
-  case_type,
-  output_dir = NULL,
-  save_csv = FALSE
-) {
+    data,
+    param_term,
+    model,
+    level,
+    param_threshold = 1,
+    filter_year = NULL,
+    case_type,
+    output_dir = NULL,
+    save_csv = FALSE) {
   case_type <- validate_case_type(case_type)
   level <- tolower(level)
 
@@ -1564,19 +1641,21 @@ attribution_calculation <- function(
 
   # Create INLA indices and basis matrices
   data <- create_inla_indices(data, case_type)
-  include_cvh <- ifelse(case_type=="malaria", TRUE, FALSE)
+  include_cvh <- ifelse(case_type == "malaria", TRUE, FALSE)
   basis_matrices <- set_cross_basis(data, include_cvh)
 
   # Function to compute metrics given prediction object
   compute_metrics_from_pred <- function(df, pred) {
     df <- df[!is.na(df[[param_term]]) & !is.na(df[[case_type]]) & !is.na(df$tot_pop), ]
-    if (nrow(df) == 0) return(NULL)
+    if (nrow(df) == 0) {
+      return(NULL)
+    }
 
     ref_temp <- pred$predvar[which.min(abs(pred$allRRfit - 1))]
 
     # Safe interpolation
-    rr_obs_fit  <- approx(pred$predvar, pred$allRRfit,  xout = df[[param_term]], rule = 2)$y
-    rr_obs_low  <- approx(pred$predvar, pred$allRRlow,  xout = df[[param_term]], rule = 2)$y
+    rr_obs_fit <- approx(pred$predvar, pred$allRRfit, xout = df[[param_term]], rule = 2)$y
+    rr_obs_low <- approx(pred$predvar, pred$allRRlow, xout = df[[param_term]], rule = 2)$y
     rr_obs_high <- approx(pred$predvar, pred$allRRhigh, xout = df[[param_term]], rule = 2)$y
 
     total_cases <- df[[case_type]]
@@ -1584,7 +1663,9 @@ attribution_calculation <- function(
 
     get_metrics <- function(rr_obs) {
       valid <- which(rr_obs > param_threshold & !is.na(rr_obs))
-      if (length(valid) == 0 || tot_pop == 0 || is.na(tot_pop)) return(c(0, 0, 0))  # Changed NA to 0
+      if (length(valid) == 0 || tot_pop == 0 || is.na(tot_pop)) {
+        return(c(0, 0, 0))
+      } # Changed NA to 0
       af <- 1 - 1 / mean(rr_obs[valid])
       an <- af * sum(total_cases[valid], na.rm = TRUE)
       ar <- (an / tot_pop) * 1e5
@@ -1611,55 +1692,68 @@ attribution_calculation <- function(
 
   # Grouping variables
   grp_vars <- switch(level,
-                     "country" = c("year", "month"),
-                     "region"  = c("region", "year", "month"),
-                     "district"= c("region", "district", "year", "month"),
-                     stop("Invalid level. Choose 'country', 'region', or 'district'."))
+    "country" = c("year", "month"),
+    "region" = c("region", "year", "month"),
+    "district" = c("region", "district", "year", "month"),
+    stop("Invalid level. Choose 'country', 'region', or 'district'.")
+  )
 
   # Compute predictions and metrics
   res <- data %>%
     dplyr::group_by(across(all_of(grp_vars))) %>%
     dplyr::group_split() %>%
-    purrr::map_dfr(~{
+    purrr::map_dfr(~ {
       df_group <- .x
 
       mean_param <- switch(level,
-                           "country"  = round(mean(data[[param_term]], na.rm = TRUE), 0),
-                           "region"   = round(mean(df_group[[param_term]], na.rm = TRUE), 0),
-                           "district" = round(mean(df_group[[param_term]], na.rm = TRUE), 0))
+        "country"  = round(mean(data[[param_term]], na.rm = TRUE), 0),
+        "region"   = round(mean(df_group[[param_term]], na.rm = TRUE), 0),
+        "district" = round(mean(df_group[[param_term]], na.rm = TRUE), 0)
+      )
 
-      pred <- tryCatch({
-        dlnm::crosspred(basis_matrices[[param_term]],
-                        coef = coef_mean[indt],
-                        vcov = vcov_full[indt, indt],
-                        model.link = "log",
-                        bylag = 0.25,
-                        cen = mean_param)
-      }, error = function(e) NULL)
+      pred <- tryCatch(
+        {
+          dlnm::crosspred(basis_matrices[[param_term]],
+            coef = coef_mean[indt],
+            vcov = vcov_full[indt, indt],
+            model.link = "log",
+            bylag = 0.25,
+            cen = mean_param
+          )
+        },
+        error = function(e) NULL
+      )
 
-      if (is.null(pred)) return(NULL)
+      if (is.null(pred)) {
+        return(NULL)
+      }
 
       r <- compute_metrics_from_pred(df_group, pred)
-      if (is.null(r)) return(NULL)
+      if (is.null(r)) {
+        return(NULL)
+      }
 
       tibble::tibble(!!!df_group[1, grp_vars],
-                     MRT = r$MRT,
-                     AR_Number = r$AR_Number,
-                     AR_Number_LCI = r$AR_Number_LCI,
-                     AR_Number_UCI = r$AR_Number_UCI,
-                     AR_Fraction = r$AR_Fraction,
-                     AR_Fraction_LCI = r$AR_Fraction_LCI,
-                     AR_Fraction_UCI = r$AR_Fraction_UCI,
-                     AR_per_100k = r$AR_per_100k,
-                     AR_per_100k_LCI = r$AR_per_100k_LCI,
-                     AR_per_100k_UCI = r$AR_per_100k_UCI)
+        MRT = r$MRT,
+        AR_Number = r$AR_Number,
+        AR_Number_LCI = r$AR_Number_LCI,
+        AR_Number_UCI = r$AR_Number_UCI,
+        AR_Fraction = r$AR_Fraction,
+        AR_Fraction_LCI = r$AR_Fraction_LCI,
+        AR_Fraction_UCI = r$AR_Fraction_UCI,
+        AR_per_100k = r$AR_per_100k,
+        AR_per_100k_LCI = r$AR_per_100k_LCI,
+        AR_per_100k_UCI = r$AR_per_100k_UCI
+      )
     })
 
   # Save if needed
   if (save_csv && !is.null(output_dir)) {
     if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
-    readr::write_csv(res, file.path(output_dir,
-                                    paste0("attribution_", level, "_", param_term, ".csv")))
+    readr::write_csv(res, file.path(
+      output_dir,
+      paste0("attribution_", level, "_", param_term, ".csv")
+    ))
   }
 
   return(res)
@@ -1714,15 +1808,14 @@ attribution_calculation <- function(
 #'
 #' @keywords internal
 plot_attribution_metric <- function(
-  attr_data,
-  level = c("country", "region", "district"),
-  metrics = c("AR_Number", "AR_Fraction", "AR_per_100k"),
-  filter_year = NULL,
-  param_term,
-  case_type,
-  save_fig = FALSE,
-  output_dir = NULL
-) {
+    attr_data,
+    level = c("country", "region", "district"),
+    metrics = c("AR_Number", "AR_Fraction", "AR_per_100k"),
+    filter_year = NULL,
+    param_term,
+    case_type,
+    save_fig = FALSE,
+    output_dir = NULL) {
   # validation
   if (is.null(param_term)) stop("'param_term' must be provided.")
   case_type <- validate_case_type(case_type)
@@ -1734,9 +1827,10 @@ plot_attribution_metric <- function(
   metrics <- match.arg(metrics, several.ok = TRUE)
 
   param_label <- switch(tolower(param_term),
-                        tmax = "Extreme Temperature",
-                        rainfall = "Extreme Rainfall",
-                        param_term)
+    tmax = "Extreme Temperature",
+    rainfall = "Extreme Rainfall",
+    param_term
+  )
 
   if (!is.null(filter_year)) {
     if (!"year" %in% names(attr_data)) stop("'year' column not found in data.")
@@ -1797,9 +1891,11 @@ plot_attribution_metric <- function(
     }
 
     attr_data_plot <- attr_data %>%
-      dplyr::filter(!is.na(.data[[metric]]),
-                    !is.na(.data[[lci_col]]),
-                    !is.na(.data[[uci_col]]))
+      dplyr::filter(
+        !is.na(.data[[metric]]),
+        !is.na(.data[[lci_col]]),
+        !is.na(.data[[uci_col]])
+      )
 
     title <- title_lookup[[metric]]
     y_formatter <- formatter_lookup[[metric]]
@@ -1811,7 +1907,8 @@ plot_attribution_metric <- function(
         ggplot2::geom_line(color = "steelblue", linewidth = 1) +
         ggplot2::geom_point(color = "steelblue", size = 2) +
         ggplot2::geom_ribbon(ggplot2::aes(ymin = .data[[lci_col]], ymax = .data[[uci_col]]),
-                             alpha = 0.2, fill = "steelblue") +
+          alpha = 0.2, fill = "steelblue"
+        ) +
         ggplot2::labs(title = title, y = y_label, x = "Year") +
         ggplot2::scale_y_continuous(labels = y_formatter) +
         ggplot2::theme_minimal(base_size = 10) +
@@ -1819,8 +1916,10 @@ plot_attribution_metric <- function(
 
       if (save_fig && !is.null(output_dir)) {
         if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
-        ggplot2::ggsave(filename = file.path(output_dir, paste0("plot_", metric, "_", param_term, "_country.pdf")),
-                        plot = p, width = 8, height = 5)
+        ggplot2::ggsave(
+          filename = file.path(output_dir, paste0("plot_", metric, "_", param_term, "_country.pdf")),
+          plot = p, width = 8, height = 5
+        )
       }
       return(p)
     }
@@ -1838,14 +1937,17 @@ plot_attribution_metric <- function(
           ggplot2::ggplot(.x, ggplot2::aes(x = .data[[level]], y = .data[[metric]])) +
             ggplot2::geom_col(fill = "steelblue", width = 0.6) +
             ggplot2::geom_errorbar(ggplot2::aes(ymin = .data[[lci_col]], ymax = .data[[uci_col]], color = "95% CI"),
-                                   width = 0.2) +
+              width = 0.2
+            ) +
             ggplot2::coord_flip() +
             ggplot2::labs(x = tools::toTitleCase(level), y = y_label) +
             ggplot2::scale_y_continuous(labels = y_formatter, limits = c(0, max_y)) +
             ggplot2::scale_color_manual(name = "", values = c("95% CI" = "black")) +
             ggplot2::theme_minimal(base_size = 10) +
-            ggplot2::theme(axis.text.y = ggplot2::element_text(size = 7),
-                           plot.title = ggplot2::element_text(hjust = 0.5, size = 9))
+            ggplot2::theme(
+              axis.text.y = ggplot2::element_text(size = 7),
+              plot.title = ggplot2::element_text(hjust = 0.5, size = 9)
+            )
         })
 
       if (save_fig && !is.null(output_dir)) {
@@ -1874,7 +1976,7 @@ plot_attribution_metric <- function(
           .groups = "drop"
         )
 
-            level_vals <- attr_data_plot %>%
+      level_vals <- attr_data_plot %>%
         dplyr::group_by(.data[[level]]) %>%
         dplyr::summarise(avg = mean(.data[[metric]], na.rm = TRUE), .groups = "drop") %>%
         dplyr::arrange(dplyr::desc(.data$avg)) %>%
@@ -1930,6 +2032,3 @@ plot_attribution_metric <- function(
 
   return(plots)
 }
-
-
-
