@@ -675,7 +675,7 @@ casecrossover_quasipoisson <- function(
     formula <- as.formula(paste(formula_parts, collapse = " + "))
     model <- gnm::gnm(
       formula,
-      data = data$data,
+      data = data,
       family = quasipoisson,
       subset = data$ind > 0,
       eliminate = data$stratum
@@ -866,8 +866,8 @@ plot_RR <- function(
     ggplot2::ggsave(
       filename = file.path(output_folder_path, "wildfire_rr.pdf"),
       plot = combined_plots,
-      width = 5 * length(combined_plots),
-      height = 4 * length(combined_plots),
+      width = if (length(combined_plots) == 1) 8 else 5 * length(combined_plots),
+      height = if (length(combined_plots) == 1) 8 else 4 * length(combined_plots),
       limitsize = FALSE
     )
   }
@@ -926,9 +926,9 @@ plot_RR_core <- function(
     data = rr_data,
     ggplot2::aes(
       x = lag,
-      y = rr_data$relative_risk,
-      ymin = rr_data$ci_lower,
-      ymax = rr_data$ci_upper
+      y = .data$relative_risk,
+      ymin = .data$ci_lower,
+      ymax = .data$ci_upper
     )
   ) +
     ggplot2::geom_point(size = 3) +
@@ -1305,10 +1305,10 @@ plot_aggregated_AN_core <- function(data, region_name = NULL) {
   if (!is.null(region_name)) title <- paste0(title, " (", region_name, ")")
   plot_agg_an <- ggplot2::ggplot(
     agg_data,
-    ggplot2::aes(x = agg_data$year, y = agg_data$sum_total_deaths)
+    ggplot2::aes(x = .data$year, y = .data$sum_total_deaths)
   ) +
     ggplot2::geom_ribbon(
-      ggplot2::aes(ymin = agg_data$lower_ci, ymax = agg_data$upper_ci),
+      ggplot2::aes(ymin = .data$lower_ci, ymax = .data$upper_ci),
       alpha = 0.2,
       fill = "#4d7789"
     ) +
@@ -1373,7 +1373,7 @@ join_ar_and_pm_monthly <- function(
     monthly_pm25,
     by = c("year", "month", "regnames")
   )
-  return(joined_data)
+  return (joined_data)
 }
 
 #' Plot monthly deaths and PM2.5 concentrations with dual y-axes
@@ -1426,6 +1426,7 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
   scale_factor <- max(aggregated_data$mean_deaths_per_100k) / max(aggregated_data$mean_pm)
   # Plot results
   all_plots <- c()
+  ag <<- aggregated_data
   for (reg in unique(aggregated_data$regnames)) {
     region_data <- subset(
       aggregated_data,
@@ -1433,25 +1434,25 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
     )
     title <- paste0(
       "Monthly Deaths and Mean PM2.5 Concentration - ",
-      reg, "(", min(data$year), max(data$year), ")"
+      reg, " (", min(data$year), " - ", max(data$year), ")"
     )
     plot_ar_pm <- ggplot2::ggplot(
       region_data,
-      ggplot2::aes(x = region_data$month_name)
+      ggplot2::aes(x = .data$month_name)
     ) +
       ggplot2::geom_bar(
-        ggplot2::aes(y = region_data$mean_deaths_per_100k),
+        ggplot2::aes(y = .data$mean_deaths_per_100k),
         stat = "identity",
         fill = "#003c57",
         alpha = 0.7
       ) +
       ggplot2::geom_line(
-        ggplot2::aes(y = region_data$mean_pm * scale_factor, group = 1),
+        ggplot2::aes(y = .data$mean_pm * scale_factor, group = 1),
         color = "red",
         size = 1
       ) +
       ggplot2::geom_point(
-        ggplot2::aes(y = region_data$mean_pm * scale_factor),
+        ggplot2::aes(y = .data$mean_pm * scale_factor),
         color = "red", size = 1
       ) +
       ggplot2::scale_y_continuous(
@@ -1657,8 +1658,8 @@ plot_rr_by_pm <- function(
     ggplot2::ggsave(
       fpath,
       combined_plots,
-      width = length(all_plots) * 5,
-      height = length(all_plots) * 4,
+      width = if (length(combined_plots) == 1) 8 else 5 * length(combined_plots),
+      height = if (length(combined_plots) == 1) 8 else 4 * length(combined_plots),
       limitsize = FALSE
     )
   } else {
@@ -1692,9 +1693,9 @@ plot_rr_by_pm_core <- function(
     ylims = c(-2, 2)) {
   # create plot object
   title <- paste0("All-cause mortality", " (", region_name, ")")
-  p <- ggplot2::ggplot(data, ggplot2::aes(x = data$pm_levels, y = data$relative_risk)) +
+  p <- ggplot2::ggplot(data, ggplot2::aes(x = .data$pm_levels, y = .data$relative_risk)) +
     ggplot2::geom_ribbon(
-      ggplot2::aes(ymin = data$ci_lower, ymax = data$ci_upper),
+      ggplot2::aes(ymin = .data$ci_lower, ymax = .data$ci_upper),
       alpha = 0.2,
       fill = "#4d7789"
     ) +
@@ -1769,21 +1770,29 @@ plot_ar_by_region <- function(data, output_dir = ".") {
     aggregated_data,
     ggplot2::aes(
       x = forcats::fct_reorder(
-        aggregated_data$regnames,
-        aggregated_data$mean_deaths_per_100k,
+        .data$regnames,
+        .data$mean_deaths_per_100k,
         .desc = TRUE
       ),
-      y = aggregated_data$mean_deaths_per_100k
+      y = .data$mean_deaths_per_100k
     )
-  ) +
+    ) +
     ggplot2::geom_col(fill = "#003c57") +
     ggplot2::labs(
-      title = "Deaths per 100k attributable to Wildfire-specific PM2.5",
-      x = "Regions",
-      y = "AR (per 100k population)"
+        title = "Deaths per 100k attributable to Wildfire-specific PM2.5",
+        x = "Regions",
+        y = "AR (per 100k population)"
     ) +
-    ggplot2::theme_minimal() +
-    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+    ggplot2::theme_minimal(base_family = "sans") +
+    ggplot2::theme(
+        plot.background = ggplot2::element_rect(fill = "white", color = NA),
+        panel.background = ggplot2::element_rect(fill = "white", color = NA),
+        axis.text = ggplot2::element_text(color = "black"),
+        axis.title = ggplot2::element_text(color = "black"),
+        plot.title = ggplot2::element_text(color = "black"),
+        axis.line = ggplot2::element_line(size = 0.5, colour = "black"),
+        axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+    )
   # save plot
   ggplot2::ggsave(
     file.path(output_dir, "ar_by_region.png"),
@@ -1833,8 +1842,8 @@ plot_an_by_region <- function(data, output_dir = ".") {
   p <- ggplot2::ggplot(
     aggregated_data,
     ggplot2::aes(
-      x = forcats::fct_reorder(aggregated_data$regnames, aggregated_data$sum_total_an, .desc = TRUE),
-      y = aggregated_data$sum_total_an
+      x = forcats::fct_reorder(.data$regnames, .data$sum_total_an, .desc = TRUE),
+      y = .data$sum_total_an
     )
   ) +
     ggplot2::geom_col(fill = "#003c57") +
@@ -1843,8 +1852,17 @@ plot_an_by_region <- function(data, output_dir = ".") {
       x = "Regions",
       y = "Attributable Number of Deaths"
     ) +
-    ggplot2::theme_minimal() +
-    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+    ggplot2::theme_minimal(base_family = "sans") +
+    ggplot2::theme(
+        plot.background = ggplot2::element_rect(fill = "white", color = NA),
+        panel.background = ggplot2::element_rect(fill = "white", color = NA),
+        axis.text = ggplot2::element_text(color = "black"),
+        axis.title = ggplot2::element_text(color = "black"),
+        plot.title = ggplot2::element_text(color = "black"),
+        axis.line = ggplot2::element_line(size = 0.5, colour = "black"),
+        axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+    )
+
   # save plot
   ggplot2::ggsave(
     file.path(output_dir, "an_by_region.png"),
@@ -2046,9 +2064,16 @@ wildfire_do_analysis <- function(
     # Plot AR and PM monthly values
     ar_pm_monthly <- join_ar_and_pm_monthly(pm_data, af_an_results)
     plot_ar_pm_monthly(ar_pm_monthly, save_fig, output_folder_path)
+    # Plot AR/AN by region
+    plot_ar_by_region(
+        data=af_an_results,
+        output_dir=output_folder_path
+    )
+    plot_an_by_region(
+        data=af_an_results,
+        output_dir=output_folder_path
+    )
   }
-  # Plot AR by region
-  plot_ar_by_region(data = af_an_results, output_dir = output_folder_path)
   # Save outputs (conditionally)
   if (save_csv == TRUE) {
     save_wildfire_results(
