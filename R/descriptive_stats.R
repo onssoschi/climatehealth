@@ -1,13 +1,13 @@
 # Utilities to allow for statistics to be derived from datasets
 
 #' Check if a dataframe is empty.
-#' @description 
+#' @description
 #' Checks if a dataframe is empty, and raises an error if it is.
-#' 
+#'
 #' @param df Dataframe. The dataframe to check.
-#' 
+#'
 #' @return NULL. No return if the dataframe is not empty.
-#' 
+#'
 #' @keywords internal
 check_empty_dataframe <- function(df) {
   if (!is.data.frame(df) || nrow(df) == 0 || ncol(df) == 0) {
@@ -27,8 +27,7 @@ check_empty_dataframe <- function(df) {
 create_correlation_matrix <- function(
     df,
     columns = NULL,
-    correlation_method = "pearson"
-) {
+    correlation_method = "pearson") {
   # check if the dataframe is populated
   check_empty_dataframe(df)
   # use all columns if columns=NULL
@@ -48,14 +47,14 @@ create_correlation_matrix <- function(
   # assert that the chosen correlation method is valid
   correlation_method <- tolower(correlation_method)
   VALID_METHODS <- c("pearson", "kendall", "spearman")
-  if (!(correlation_method %in%  VALID_METHODS)) {
+  if (!(correlation_method %in% VALID_METHODS)) {
     stop("Chosen correlation method is invalid. Must be one of; pearson, kendall, spearman")
   }
   # calculate correlation
   corr_df <- df %>%
     select(all_of(columns)) %>%
     cor(method = correlation_method)
-  return (corr_df)
+  return(corr_df)
 }
 
 
@@ -132,8 +131,7 @@ create_column_summaries <- function(df, columns = NULL) {
 #' @keywords internal
 create_na_summary <- function(
     df,
-    columns = NULL
-) {
+    columns = NULL) {
   # check if the dataframe is populated
   check_empty_dataframe(df)
   # use all columns if columns=NULL
@@ -156,7 +154,7 @@ create_na_summary <- function(
   na_summary <- data.frame(
     column = columns,
     na_count = na_count,
-    na_proportion = (round(na_percent, 2)/100)
+    na_proportion = (round(na_percent, 2) / 100)
   )
   rownames(na_summary) <- NULL
   return(na_summary)
@@ -241,30 +239,29 @@ label_with_unit <- function(col, units) {
 #'
 #' @keywords internal
 common_descriptive_stats_core <- function(
-  dataset_title,
-  df,
-  output_path,
-  title,
-  aggregation_column = NULL,
-  population_col = NULL,
-  plot_corr_matrix = F,
-  correlation_method = "pearson",
-  plot_dist = F,
-  dependent_col,
-  independent_cols = c(),
-  columns = NULL,
-  units = NULL,
-  select_all_numeric = F,
-  plot_na_counts = F,
-  plot_scatter = F,
-  plot_box = F,
-  plot_seasonal = F,
-  plot_regional = F,
-  plot_total = F,
-  timeseries_col = "date",
-  detect_outliers = F,
-  calculate_rate = F
-) {
+    dataset_title,
+    df,
+    output_path,
+    title,
+    aggregation_column = NULL,
+    population_col = NULL,
+    plot_corr_matrix = F,
+    correlation_method = "pearson",
+    plot_dist = F,
+    dependent_col,
+    independent_cols = c(),
+    columns = NULL,
+    units = NULL,
+    select_all_numeric = F,
+    plot_na_counts = F,
+    plot_scatter = F,
+    plot_box = F,
+    plot_seasonal = F,
+    plot_regional = F,
+    plot_total = F,
+    timeseries_col = "date",
+    detect_outliers = F,
+    calculate_rate = F) {
   raise_if_null("dependent_col", dependent_col)
 
   # get dataframe summary
@@ -281,7 +278,7 @@ common_descriptive_stats_core <- function(
   selected_cols <- unique(c(selected_cols, independent_cols, dependent_col))
 
   # plot box plots
-  if (plot_box==T) {
+  if (plot_box == T) {
     boxplot_title <- paste0("Boxplots for the ", stringr::str_to_title(dataset_title), " Dataset \n(", title, ")")
     boxplot_path <- file.path(output_path, "boxplots.pdf")
 
@@ -298,7 +295,7 @@ common_descriptive_stats_core <- function(
       boxplot_title,
       save_plot = TRUE,
       output_path = boxplot_path
-      )
+    )
   }
 
   # plot correlation matrix
@@ -308,19 +305,20 @@ common_descriptive_stats_core <- function(
     plot_correlation_matrix(
       full_corr,
       paste0(
-      "Correlation Matrix for the ",
-      stringr::str_to_title(dataset_title),
-      " Dataset \n(",
-      title,
-      ", Method: ",
-      stringr::str_to_title(correlation_method),
-      ")"),
+        "Correlation Matrix for the ",
+        stringr::str_to_title(dataset_title),
+        " Dataset \n(",
+        title,
+        ", Method: ",
+        stringr::str_to_title(correlation_method),
+        ")"
+      ),
       corr_path
     )
   }
 
   # Column distributions
-  if (plot_dist==T) {
+  if (plot_dist == T) {
     dist_path <- file.path(output_path, "column_distributions.pdf")
 
     xlabs <- sapply(columns, function(col) {
@@ -340,7 +338,7 @@ common_descriptive_stats_core <- function(
   }
   # Count NAs and visualise
   na_counts_path <- file.path(output_path, "na_counts.pdf")
-  if (plot_na_counts==T) {
+  if (plot_na_counts == T) {
     na_summary <- create_na_summary(df)
     pdf(na_counts_path)
     par(mar = c(8, 4, 4, 4) + 0.1)
@@ -374,7 +372,7 @@ common_descriptive_stats_core <- function(
 
   # Dependent vs independent variables
   scatter_path <- file.path(output_path, "dependent_vs_independents.pdf")
-  if (plot_scatter==T) {
+  if (plot_scatter == T) {
     plot_scatter_grid(
       df,
       dependent_col,
@@ -451,7 +449,7 @@ common_descriptive_stats_core <- function(
       outlier_rows <- df[apply(df[, outlier_flag_cols, drop = FALSE], 1, any), ]
     } else {
       warning("No valid outlier flag columns found in the dataframe.")
-      outlier_rows <- df[FALSE, ]  # empty dataframe with same structure
+      outlier_rows <- df[FALSE, ] # empty dataframe with same structure
     }
 
     # Always include timeseries_col and region
@@ -463,7 +461,7 @@ common_descriptive_stats_core <- function(
       base_cols <- c(base_cols, aggregation_column)
     }
     selected_cols <- unique(c(base_cols, outlier_columns, outlier_flag_cols))
-    selected_cols <- intersect(selected_cols, names(outlier_rows))  # Ensure they exist
+    selected_cols <- intersect(selected_cols, names(outlier_rows)) # Ensure they exist
 
     # Create and save the outlier table
     outlier_table <- outlier_rows[, selected_cols, drop = FALSE]
@@ -532,38 +530,37 @@ common_descriptive_stats_core <- function(
 #'
 #' @keywords internal
 common_descriptive_stats <- function(
-  dataset_title,
-  df_list,
-  output_path,
-  aggregation_column = NULL,
-  population_col = NULL,
-  plot_corr_matrix = F,
-  correlation_method = "pearson",
-  plot_dist = F,
-  plot_ma = F,
-  ma_days = 100,
-  ma_sides = 1,
-  ma_columns = c(),
-  timeseries_col = NULL,
-  dependent_col,
-  independent_cols,
-  columns = NULL,
-  units = NULL,
-  select_all_numeric = F,
-  plot_na_counts = F,
-  plot_scatter = F,
-  plot_box = F,
-  plot_seasonal = F,
-  plot_regional = F,
-  plot_total = F,
-  detect_outliers = F,
-  calculate_rate = F
-) {
+    dataset_title,
+    df_list,
+    output_path,
+    aggregation_column = NULL,
+    population_col = NULL,
+    plot_corr_matrix = F,
+    correlation_method = "pearson",
+    plot_dist = F,
+    plot_ma = F,
+    ma_days = 100,
+    ma_sides = 1,
+    ma_columns = c(),
+    timeseries_col = NULL,
+    dependent_col,
+    independent_cols,
+    columns = NULL,
+    units = NULL,
+    select_all_numeric = F,
+    plot_na_counts = F,
+    plot_scatter = F,
+    plot_box = F,
+    plot_seasonal = F,
+    plot_regional = F,
+    plot_total = F,
+    detect_outliers = F,
+    calculate_rate = F) {
   # validate output path
   check_file_exists(output_path)
-  normalised_title = tolower(gsub(" ", "_", dataset_title))
+  normalised_title <- tolower(gsub(" ", "_", dataset_title))
   output_path <- file.path(output_path, paste0(normalised_title, "_descriptive_stats"))
-  if (!check_file_exists(output_path, raise=F)) {
+  if (!check_file_exists(output_path, raise = F)) {
     dir.create(output_path)
   }
   # combine all smaller df's into one
@@ -603,28 +600,28 @@ common_descriptive_stats <- function(
     ma_vars <- c(ma_columns, dependent_col)
     for (col_i in seq_along(ma_vars)) {
       for (i in seq_along(df_list)) {
-      region_name <- names(df_list)[i]
-      region_folder <- file.path(output_path, region_name)
+        region_name <- names(df_list)[i]
+        region_folder <- file.path(output_path, region_name)
 
-      # Create the folder if it doesn't exist
-      if (!dir.exists(region_folder)) {
-        dir.create(region_folder, recursive = TRUE)
-      }
+        # Create the folder if it doesn't exist
+        if (!dir.exists(region_folder)) {
+          dir.create(region_folder, recursive = TRUE)
+        }
 
-      fname <- paste0(ma_vars[[col_i]], "_moving_average.pdf")
-      file_path <- file.path(region_folder, fname)
+        fname <- paste0(ma_vars[[col_i]], "_moving_average.pdf")
+        file_path <- file.path(region_folder, fname)
 
-      pdf(file_path)
-      plot_moving_average(
-        df_list[[i]],
-        timeseries_col,
-        ma_vars[[col_i]],
-        ma_days,
-        ma_sides,
-        units = units,
-        paste0("Moving average for the ", stringr::str_to_title(dataset_title), " Dataset \n(", region_name, ")")
-      )
-      dev.off()
+        pdf(file_path)
+        plot_moving_average(
+          df_list[[i]],
+          timeseries_col,
+          ma_vars[[col_i]],
+          ma_days,
+          ma_sides,
+          units = units,
+          paste0("Moving average for the ", stringr::str_to_title(dataset_title), " Dataset \n(", region_name, ")")
+        )
+        dev.off()
       }
     }
   }
@@ -666,7 +663,7 @@ common_descriptive_stats <- function(
       calculate_rate = calculate_rate
     )
   }
-  return (c(output_path, paste0(normalised_title, "_descriptive_stats")))
+  return(c(output_path, paste0(normalised_title, "_descriptive_stats")))
 }
 
 #' Raise an Error if a Parameter's Value is NULL
@@ -716,71 +713,70 @@ raise_if_null <- function(param_nm, value) {
 #'
 #' @keywords internal
 common_descriptive_stats_api <- function(
-  data,
-  aggregation_column = NULL,
-  population_col = NULL,
-  dataset_title,
-  dependent_col,
-  independent_cols,
-  columns = NULL,
-  units = NULL,
-  select_all_numeric = T,
-  plot_correlation = T,
-  plot_dist_hists = T,
-  plot_ma = T,
-  plot_na_counts = T,
-  plot_scatter = T,
-  plot_box = T,
-  plot_seasonal = T,
-  plot_regional = T,
-  plot_total = T,
-  correlation_method = NULL,
-  ma_days = NULL,
-  ma_sides = 1,
-  ma_columns = NULL,
-  timeseries_col = NULL,
-  detect_outliers =T,
-  calculate_rate = T,
-  output_path
-) {
+    data,
+    aggregation_column = NULL,
+    population_col = NULL,
+    dataset_title,
+    dependent_col,
+    independent_cols,
+    columns = NULL,
+    units = NULL,
+    select_all_numeric = T,
+    plot_correlation = T,
+    plot_dist_hists = T,
+    plot_ma = T,
+    plot_na_counts = T,
+    plot_scatter = T,
+    plot_box = T,
+    plot_seasonal = T,
+    plot_regional = T,
+    plot_total = T,
+    correlation_method = NULL,
+    ma_days = NULL,
+    ma_sides = 1,
+    ma_columns = NULL,
+    timeseries_col = NULL,
+    detect_outliers = T,
+    calculate_rate = T,
+    output_path) {
   # Parameter Checks
-  if(plot_ma) {
-  raise_if_null("ma_days", ma_days)
-  raise_if_null("ma_sides", ma_sides)
-  raise_if_null("ma_columns", ma_columns)
-  raise_if_null("timeseries_col", timeseries_col)
-  ma_days <- as.numeric(ma_days)
-  ma_sides <- as.numeric(ma_sides)
+  if (plot_ma) {
+    raise_if_null("ma_days", ma_days)
+    raise_if_null("ma_sides", ma_sides)
+    raise_if_null("ma_columns", ma_columns)
+    raise_if_null("timeseries_col", timeseries_col)
+    ma_days <- as.numeric(ma_days)
+    ma_sides <- as.numeric(ma_sides)
   }
-  if(plot_correlation) {
+  if (plot_correlation) {
     raise_if_null("correlation_method", correlation_method)
   }
 
   # Convert data to the correct format
   df <- read_input_data(data)
   # Check columns
-  exp_columns = c(
+  exp_columns <- c(
     dependent_col,
     independent_cols
   )
   for (col in 1:length(exp_columns)) {
-  if (!(exp_columns[col] %in% colnames(df))) {
-    stop(paste0("Column '", exp_columns[col], "' not in passed dataset."))
-  }
+    if (!(exp_columns[col] %in% colnames(df))) {
+      stop(paste0("Column '", exp_columns[col], "' not in passed dataset."))
+    }
   }
   # Reformat Date
   if (!is.null(timeseries_col)) {
-  df <- df %>%
-    dplyr::mutate(
-    !!rlang::sym(timeseries_col) :=
-      as.Date(!!rlang::sym(timeseries_col), tryFormats = c("%d/%m/%Y", "%Y-%m-%d"))
-    )
+    df <- df %>%
+      dplyr::mutate(
+        !!rlang::sym(timeseries_col) :=
+          as.Date(!!rlang::sym(timeseries_col), tryFormats = c("%d/%m/%Y", "%Y-%m-%d"))
+      )
   }
   # Full dataset under All and per region
   df_list <- list(All = df)
   # Split per region
   if (!is.null(aggregation_column)) {
-  region_list <- aggregate_by_column(df, aggregation_column)
+    region_list <- aggregate_by_column(df, aggregation_column)
     df_list <- c(df_list, region_list)
   }
 
@@ -813,5 +809,5 @@ common_descriptive_stats_api <- function(
     detect_outliers = detect_outliers,
     calculate_rate = calculate_rate
   )
-  return (final_paths)
+  return(final_paths)
 }
