@@ -15,17 +15,20 @@ mh_plot_rr(
 )
 }
 \arguments{
-\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
-and climate variables which may be disaggregated by a particular region.}
+\item{df_list}{A list of dataframes containing daily timeseries data for a
+health outcome and climate variables which may be disaggregated by a
+particular region.}
 
 \item{pred_list}{A list containing predictions from the model by region.}
 
-\item{attr_thr}{Integer. Percentile at which to define the temperature threshold for
-calculating attributable risk.}
+\item{attr_thr}{Integer. Percentile at which to define the temperature
+threshold for calculating attributable risk. Defaults to 97.5.}
 
-\item{minpercreg}{Vector. Percentile of minimum suicide temperature for each area.}
+\item{minpercreg}{Vector. Percentile of minimum suicide temperature for each
+area.}
 
-\item{country}{Character. Name of country for national level estimates.}
+\item{country}{Character. Name of country for national level estimates.
+Defaults to 'National'.}
 
 \item{save_fig}{Boolean. Whether to save the plot as an output. Defaults to
 FALSE.}

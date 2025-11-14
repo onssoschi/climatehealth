@@ -78,41 +78,39 @@
 #' }
 #'
 #' @export
-Malaria_do_analysis <- function(health_data_path,
-                                climate_data_path,
-                                map_path,
-                                region_col,
-                                district_col,
-                                date_col= NULL,
-                                year_col,
-                                month_col,
-                                case_col,
-                                case_type,
-                                tot_pop_col,
-                                tmin_col,
-                                tmean_col,
-                                tmax_col,
-                                rainfall_col,
-                                r_humidity_col,
-                                runoff_col,
-                                geometry_col,
-                                spi_col = NULL,
-                                ndvi_col = NULL,
-                                max_lag = 4,
-                                basis_matrices_choices,
-                                inla_param,
-                                param_term,
-                                level,
-                                param_threshold = 1,
-                                filter_year = NULL,
-                                family = "poisson",
-                                group_by_year = FALSE,
-                                config = FALSE,
-                                save_csv = FALSE,
-                                save_model=FALSE,
-                                save_fig = FALSE,
-                                output_dir = NULL){
-
+malaria_do_analysis <- function(
+    health_data_path,
+    climate_data_path,
+    map_path,
+    region_col,
+    district_col,
+    date_col = NULL,
+    year_col,
+    month_col,
+    malaria_case_col,
+    tot_pop_col,
+    tmin_col,
+    tmean_col,
+    tmax_col,
+    rainfall_col,
+    r_humidity_col,
+    runoff_col,
+    geometry_col,
+    spi_col = NULL,
+    ndvi_col = NULL,
+    max_lag = 4,
+    basis_matrices_choices,
+    inla_param,
+    param_term,
+    level,
+    param_threshold = 1,
+    filter_year = NULL,
+    family = "poisson",
+    config = FALSE,
+    save_csv = FALSE,
+    save_model = FALSE,
+    save_fig = FALSE,
+    output_dir = NULL) {
   # Simple output validation
   if (is.null(output_dir) & (save_fig | save_csv)) {
     stop("'output_dir' must be provided is 'save_fig' or save_csv' are TRUE.")
@@ -121,9 +119,9 @@ Malaria_do_analysis <- function(health_data_path,
 
   # level validation
   level <- tolower(level)
-  acceptable_levels = c("country", "region", "district")
+  acceptable_levels <- c("country", "region", "district")
   if (!(level %in% acceptable_levels)) {
-    stop(paste0("Level must be one of ", paste0(acceptable_levels, collapse=", ")))
+    stop(paste0("Level must be one of ", paste0(acceptable_levels, collapse = ", ")))
   }
 
   # Input validation (IF makes API exception)
@@ -162,30 +160,33 @@ Malaria_do_analysis <- function(health_data_path,
   plot_malaria <- NULL
   plot_tmax <- NULL
   plot_rainfall <- NULL
-  if (level=="country") {
-    plot_malaria <- plot_health_climate_timeseries(combined_data$data,
-                                                   param_term = "malaria",
-                                                   level = "country",
-                                                   case_type = "malaria",
-                                                   filter_year = filter_year,
-                                                   save_fig = save_fig,
-                                                   output_dir = output_dir
-                                                   )
-    plot_tmax <- plot_health_climate_timeseries(combined_data$data,
-                                                param_term = "tmax",
-                                                level = "country",
-                                                case_type = "malaria",
-                                                filter_year = filter_year,
-                                                save_fig = save_fig,
-                                                output_dir = output_dir
-                                                )
-    plot_rainfall <- plot_health_climate_timeseries(combined_data$data,
-                                                    param_term = "rainfall",
-                                                    level = "country",
-                                                    case_type = "malaria",
-                                                    filter_year = filter_year,
-                                                    save_fig = save_fig,
-                                                    output_dir = output_dir
+  if (level == "country") {
+    plot_malaria <- plot_health_climate_timeseries(
+      combined_data$data,
+      param_term = "malaria",
+      level = "country",
+      case_type = "malaria",
+      filter_year = filter_year,
+      save_fig = save_fig,
+      output_dir = output_dir
+    )
+    plot_tmax <- plot_health_climate_timeseries(
+      combined_data$data,
+      param_term = "tmax",
+      level = "country",
+      case_type = "malaria",
+      filter_year = filter_year,
+      save_fig = save_fig,
+      output_dir = output_dir
+    )
+    plot_rainfall <- plot_health_climate_timeseries(
+      combined_data$data,
+      param_term = "rainfall",
+      level = "country",
+      case_type = "malaria",
+      filter_year = filter_year,
+      save_fig = save_fig,
+      output_dir = output_dir
     )
   }
   # create base matrice
@@ -194,84 +195,84 @@ Malaria_do_analysis <- function(health_data_path,
   # Check for multicolinearity
   if (save_csv) {
     VIF <- check_and_write_vif(
-      data=combined_data$data,
-      inla_param=inla_param,
-      basis_matrices_choices=basis_matrices_choices,
-      case_type="malaria",
-      output_dir=output_dir
+      data = combined_data$data,
+      inla_param = inla_param,
+      basis_matrices_choices = basis_matrices_choices,
+      case_type = "malaria",
+      output_dir = output_dir
     )
   } else {
     VIF <- check_diseases_vif(
-      data=combined_data$data,
-      inla_param=inla_param,
-      basis_matrices_choices=basis_matrices_choices,
-      case_type="malaria"
+      data = combined_data$data,
+      inla_param = inla_param,
+      basis_matrices_choices = basis_matrices_choices,
+      case_type = "malaria"
     )
   }
 
   # Fitting the model
   inla_result <- run_inla_models(
-    combined_data=combined_data,
-    basis_matrices_choices=basis_matrices_choices,
-    inla_param=inla_param,
+    combined_data = combined_data,
+    basis_matrices_choices = basis_matrices_choices,
+    inla_param = inla_param,
     case_type = "malaria",
-    output_dir=output_dir,
-    save_model=save_model,
-    family=family,
-    config=config
+    output_dir = output_dir,
+    save_model = save_model,
+    family = family,
+    config = config
   )
 
   # Plot seasonality
   reff_plot_monthly <- plot_monthly_random_effects(
     combined_data,
-    model=inla_result$model,
-    output_dir=output_dir,
-    save_fig=save_fig
+    model = inla_result$model,
+    output_dir = output_dir,
+    save_fig = save_fig
   )
 
   # Spatial random effect
   reff_plot_yearly <- plot_yearly_spatial_random_effect(
-    combined_data=combined_data,
-    model=inla_result$model,
-    case_type="malaria",
-    save_fig=save_fig,
-    output_dir=output_dir
+    combined_data = combined_data,
+    model = inla_result$model,
+    case_type = "malaria",
+    save_fig = save_fig,
+    output_dir = output_dir
   )
   # Contour plots
   contour_plot_malaria <- contour_plot(
-    data=combined_data$data,
-    param_term=param_term,
-    model=inla_result$model,
-    level=level,
-    filter_year=filter_year,
-    case_type="malaria",
-    save_fig=save_fig,
-    output_dir=output_dir
+    data = combined_data$data,
+    param_term = param_term,
+    model = inla_result$model,
+    level = level,
+    filter_year = filter_year,
+    case_type = "malaria",
+    save_fig = save_fig,
+    output_dir = output_dir
   )
 
   # Relative risk map plots
   rr_map_plot <- plot_rr_map(
-    combined_data=combined_data,
-    model=inla_result$model,
-    param_term=param_term,
-    level="district",
-    filter_year=filter_year,
-    case_type="malaria",
-    output_dir=output_dir,
-    save_fig=save_fig
+    combined_data = combined_data,
+    model = inla_result$model,
+    param_term = param_term,
+    level = level,
+    filter_year = filter_year,
+    case_type = "malaria",
+    output_dir = output_dir,
+    save_fig = save_fig
   )
 
   # Relative risk plot
   rr_data <- plot_relative_risk(
-    data=combined_data$data,
-    model=inla_result$model,
-    param_term=param_term,
-    level=level,
-    filter_year=filter_year,
-    case_type="malaria",
-    output_dir=output_dir,
-    save_csv=save_csv,
-    save_fig=save_fig
+    data = combined_data$data,
+    model = inla_result$model,
+    param_term = param_term,
+    level = level,
+    filter_year = filter_year,
+    case_type = "malaria",
+    output_dir = output_dir,
+    save_csv = save_csv,
+    save_fig = save_fig
   )
   rr_plot <- rr_data[["plots"]]
   rr_df <- rr_data[["RR"]]

@@ -107,5 +107,5 @@ Modified from Gasparrini A et al. (2015)
 The Lancet. 2015;386(9991):369-375.
 }
 \seealso{
-\link[dlnm:dlnm-package]{dlnm::dlnm} package
+\link{dlnm} package
 }

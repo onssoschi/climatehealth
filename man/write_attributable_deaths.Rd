@@ -58,7 +58,7 @@ Write the attributable deaths and temperature for each regions,
 with empirical CI estimated using the re-centered bases.
 }
 \examples{
-output_folder_path = 'myfolder/output/'
+output_folder_path <- "myfolder/output/"
 
 }
 \keyword{internal}
