@@ -1,7 +1,7 @@
 #' @title climatehealth: Measuring the climate-health relationship
 #'
 #' @description
-#' 
+#'
 #' ## Overview
 #' This package provides a suite of analysis functions for measuring the relationship
 #' between various climate factors (indicators) and health outcomes.
@@ -51,5 +51,3 @@
 ## usethis namespace: start
 ## usethis namespace: end
 NULL
-
-
