@@ -18,19 +18,21 @@ plot_health_climate_timeseries(
 \item{data}{A data frame containing the combined health and climate data.}
 
 \item{param_term}{Character. The variable to plot (e.g., tmax,
-tmean, tmin). Use "all" to include all available variables.}
+tmean, tmin, Malaria). Use "all" to include all available variables.}
 
 \item{level}{Character. Aggregation level: one of "country", "region", or "district".
 Defaults to "country".}
 
 \item{case_type}{Character. The type of disease that the case column refers
-to. Must be one of 'diarrhea' or 'malaria'}
+to. Must be one of 'diarrhea' or 'malaria'.}
 
 \item{filter_year}{Optional numeric vector to filter data by year(s). Defaults to NULL.}
 
 \item{save_fig}{Boolean. Whether to save the figure as a PDF. Defaults to FALSE.}
 
 \item{output_dir}{Character. Directory path to save the figure. Default to NULL}
+
+\item{year}{Optional numeric vector to filter data by year(s). Defaults to NULL.}
 }
 \value{
 A ggplot object.

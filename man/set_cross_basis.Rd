@@ -2,20 +2,20 @@
 % Please edit documentation in R/diseases_shared.R
 \name{set_cross_basis}
 \alias{set_cross_basis}
-\title{Create cross-basis matrices for DLNM analysis}
+\title{Create a cross-basis matrix set for DLNM analysis}
 \usage{
-set_cross_basis(data, include_cvh = FALSE)
+set_cross_basis(data, max_lag, include_ndvi = FALSE)
 }
 \arguments{
 \item{data}{A dataset returned from \code{combine_health_climate_data()},
 including lagged variables like \code{tmax_lag1}, \code{tmin_lag1}, etc.}
 
-\item{include_cvh}{Logical. Whether or not to include the cvh column in
-the var definitions. Needed for Malaria.}
+\item{max_lag}{Character. Number corresponding to the maximum lag to be
+considered for the delay effect. It should be between 2 an 4. Defaults to 2.}
 }
 \value{
-A named list of cross-basis matrices for available climate variables:
-maximum temperature, minimum temperature, rainfall, relative humidity, etc.
+A list of cross-basis matrices including the basis matrix for maximum
+temperature, minimun temperature, cumulative rainfall, and relative humidity.
 }
 \description{
 Generates cross-basis matrices for lagged climate variables in a dataset,

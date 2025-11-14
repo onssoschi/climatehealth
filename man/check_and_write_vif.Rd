@@ -14,19 +14,19 @@ check_and_write_vif(
 )
 }
 \arguments{
-\item{data}{A data frame from the \code{combined_health_climate_data()} function,
-containing the columns: \code{rainfall}, \code{r_humidity}, \code{runoff}, \code{tmin},
+\item{data}{A data frame from \code{combined_health_climate_data()} function,
+containing the columns: \code{tmax},\code{rainfall}, \code{r_humidity}, \code{runoff}, \code{tmin},\code{ndvi},
 and must be compatible with \code{set_cross_basis()} for generating DLNM matrices.}
 
-\item{inla_param}{A character vector specifying the confounding exposures to
-be included in the model. Possible values are "tmax","tmin", "rainfall",
-"r_humidity", and "runoff".}
+\item{inla_param}{Character vector of parameter names representing all
+climate variables to consider excluding the \code{basis_matrices_choices} parameter.}
 
-\item{basis_matrices_choices}{A character vector specifying the basis matrix
-parameters to be included in the model. Possible values are "tmax" and "rainfall".}
+\item{basis_matrices_choices}{Character vector specifying the main exposure variables
+that should be included as DLNM basismatrices, and should be excluded from the \code{inla_param}.
+It might be \code{tmax}for temperature exposure and \code{rainfall} if rainfall exposure.}
 
 \item{case_type}{Character. The type of disease that the case column refers
-to. Must be one of 'diarrhea' or 'malaria'}
+to. Must be one of 'diarrhea' or 'malaria'.}
 
 \item{output_dir}{Character. The output directory to save the VIF results to.
 Results are saved as 'VIF_results.csv'.}
@@ -41,7 +41,7 @@ A list with:
 }
 \description{
 This function checks for multicollinearity among DLNM basis variables
-(specifically tmax) and selected confounders (rainfall, r_humidity, runoff, tmin)
-using the Variance Inflation Factor (VIF) and condition number (Kappa).
+(specifically tmax and rainfall) and selected confounders (r_humidity, runoff,
+tmin, ndvi) using the Variance Inflation Factor (VIF) and condition number (Kappa).
 }
 \keyword{internal}

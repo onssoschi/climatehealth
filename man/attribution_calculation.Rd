@@ -2,7 +2,7 @@
 % Please edit documentation in R/diseases_shared.R
 \name{attribution_calculation}
 \alias{attribution_calculation}
-\title{Attribution calculation for maximum temperature}
+\title{Calculate Attributable Metrics for Climate-Health Associations.}
 \usage{
 attribution_calculation(
   data,
@@ -10,44 +10,60 @@ attribution_calculation(
   model,
   level,
   param_threshold = 1,
+  max_lag,
   filter_year = NULL,
+  group_by_year = FALSE,
   case_type,
   output_dir = NULL,
   save_csv = FALSE
 )
 }
 \arguments{
-\item{data}{Data list from combine_health_climate_data() function.}
+\item{data}{A data frame or list returned by the \code{combine_health_climate_data()}
+function, containing health outcome, population, and exposure data.}
 
-\item{param_term}{A character vector or list containing parameter terms such
-as "tmax" (maximum temperature) and "rainfall" (precipitation).
-Default to "tmax"}
+\item{param_term}{Character. The exposure variable term to evaluate (e.g.,\code{"tmax"} for
+maximum temperature, \code{"rainfall"} for precipitation). Defaults to \code{"tmax"}.}
 
-\item{model}{The fitted model from run_inla_models() function.}
+\item{model}{The fitted INLA model object returned by the \code{run_inla_models()} function.}
 
-\item{level}{Character. The spatial disaggregation level.
-Can take one of the following values: "country", "region", or "district".}
+\item{level}{Character. The spatial disaggregation level. Can take one of
+the following values: \code{"country"}, \code{"region"}, or \code{"district"}.}
 
-\item{param_threshold}{Numeric. Threshold above which exposure is considered,
-"attributable". Can take floats. Defaults to 1.}
+\item{param_threshold}{Numeric. Threshold above which relative risks (RR) are
+considered attributable. Defaults to \code{1}.}
 
 \item{filter_year}{Integer. The year to filter to data to. Defaults to NULL.}
 
-\item{case_type}{Character. The type of disease that the case column refers
-to. Must be one of 'diarrhea' or 'malaria'}
+\item{group_by_year}{Logical. Whether to aggregate results by year (\code{TRUE}) or
+by year and month (\code{FALSE}). Defaults to \code{FALSE}.}
 
-\item{output_dir}{Character. Directory path to save the output metrics if
-save_csv = TRUE. Defaults to NULL.}
+\item{case_type}{Character. The type of disease that the case column refers
+to. Must be one of \code{"diarrhea"} or \code{"malaria"}.}
+
+\item{output_dir}{Optional. Directory path to save the output metrics if
+\code{save_fig = TRUE}}
 
 \item{save_csv}{Logical. Whether to save the generated attribution metrics to file.
-Defaults to FALSE.}
+Default is \code{FALSE}.}
 }
 \value{
-Results containing the attributable number and fraction at the chosen
-dissagregation level.
+A tibble containing the following columns:
+\itemize{
+\item Grouping variables depending on the \code{level} and \code{group_by_year} settings.
+\item \code{MRT}: Minimum risk temperature (or equivalent reference exposure).
+\item \code{AR_Number}, \code{AR_Number_LCI}, \code{AR_Number_UCI}: Estimated, lower, and upper
+bounds of the attributable number of cases.
+\item \code{AR_Fraction}, \code{AR_Fraction_LCI}, \code{AR_Fraction_UCI}: Estimated, lower, and
+upper bounds of the attributable fraction (\%).
+\item \code{AR_per_100k}, \code{AR_per_100k_LCI}, \code{AR_per_100k_UCI}: Estimated, lower, and
+upper bounds of the attributable rate per 100,000 population.
+}
 }
 \description{
-The attribution calculation uses the attrdl function from
-Gasparini and DNLM package
+Computes the attributable number, fraction, and rate of cases associated with
+specific exposure variables (e.g., temperature or rainfall) using fitted INLA models.
+The function estimates these metrics at the desired spatial aggregation level
+(country, region, or district) and optionally disaggregates by month or year.
 }
 \keyword{internal}
