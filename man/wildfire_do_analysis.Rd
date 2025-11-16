@@ -14,6 +14,8 @@ wildfire_do_analysis(
   region_col,
   mean_temperature_col,
   health_outcome_col,
+  rh_col = NULL,
+  wind_speed_col = NULL,
   pm_2_5_col = NULL,
   wildfire_lag = 3,
   temperature_lag = 1,
@@ -37,7 +39,7 @@ join_wildfire_data = TRUE to join these data.}
 
 \item{join_wildfire_data}{Boolean. If TRUE, a daily time series of
 wildfire-related PM2.5 concentration is joined to the health data. If FALSE,
-the data set is loaded without any additional joins.}
+the data set is loaded without any additional joins. Defaults to FALSE.}
 
 \item{ncdf_path}{Path to a NetCDF file containing a daily time series of
 gridded wildfire-related PM2.5 concentration data.}
@@ -57,6 +59,12 @@ that contains the mean temperature column.}
 \item{health_outcome_col}{Character. Name of the column in the dataframe that
 contains the health outcome count column (e.g. number of deaths, hospital
 admissions)}
+
+\item{rh_col}{Character. Name of the column containing relative humidity
+values. Defaults to NULL.}
+
+\item{wind_speed_col}{Character. Name of the column containing wind speed.
+Defaults to NULL.}
 
 \item{pm_2_5_col}{Character. The name of the column containing PM2.5 values
 in micrograms. Thsi is only required if health data isn't joined. Defaults to NULL.}
