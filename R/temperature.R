@@ -778,7 +778,7 @@ compute_attributable_deaths <- function(df_list,
       dplyr::mutate(
         heatwave_temp = ifelse(.data$heatwave_flag == 1, .data$temp, mintempregions[i])
       ) %>%
-      dplyr::select(all_of(c(-"high_heat_flag", -"heatwave_flag")))
+      dplyr::select(-dplyr::all_of(c("high_heat_flag", "heatwave_flag")))
 
     matsim[i, "glob_cold"] <- attrdl(x = data_output_year$temp,
                                      basis = cb,
@@ -1741,7 +1741,7 @@ plot_and_write_relative_risk_all <- function(df_list,
 #'
 #' @details Modified from Gasparrini A et al. (2015)
 #' The Lancet. 2015;386(9991):369-375.
-#' 
+#'
 #' @importFrom zeallot %<-%
 #'
 #' @param input_csv_path_ Path to a CSV contain
