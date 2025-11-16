@@ -4,16 +4,20 @@
 \alias{summarise_AF_AN}
 \title{Summarise AF and AN numbers by region and year}
 \usage{
-summarise_AF_AN(data)
+summarise_AF_AN(data, monthly = TRUE)
 }
 \arguments{
 \item{data}{Dataframe containing daily data including calculated AF and AN.}
+
+\item{monthly}{Bool. Whether to summarise by month as well as year and region.
+Defaults to TRUE.}
 }
 \value{
-Dataframe containing summarised AF and AN data, by year and region
+Dataframe containing summarised AF and AN data, by year, region and
+optionall month (if monthly==T).
 }
 \description{
-Takes daily data with attributable fraction and attributable number
-and summarises by year and region
+Takes daily data with attributable fraction and attributable
+number and summarises by year and region.
 }
 \keyword{internal}
