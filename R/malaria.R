@@ -66,15 +66,9 @@
 #' @return A named list containing:
 #' \itemize{
 #'   \item `inla_result` – Fitted INLA model object and summaries.
-#'   \item `plot_malaria`, `plot_tmax`, `plot_rainfall` – Exploratory time-series plots.
-#'   \item `reff_plot_monthly` – Monthly random effects plot.
-#'   \item `reff_plot_yearly` – Yearly spatial random effects plot.
-#'   \item `contour_plot` – Exposure–response contour plot.
-#'   \item `rr_map_plot` – Spatial relative risk map.
-#'   \item `rr_plot`, `rr_df` – Relative risk plot and associated data.
+#'   \item `VIF` – Variance Inflation Factor results for multicollinearity assessment.
+#'   \item `rr_df` – Relative risk results dataset.
 #'   \item `attr_frac_num` – Attributable risk summary table.
-#'   \item `plot_AR_num`, `plot_AR_frac`, `plot_AR_per_100k` – Plots of attributable
-#'   number, fraction, and rate.
 #' }
 #'
 #' @export
@@ -122,7 +116,10 @@ malaria_do_analysis <- function(
   level <- tolower(level)
   acceptable_levels <- c("country", "region", "district")
   if (!(level %in% acceptable_levels)) {
-    stop(paste0("Level must be one of ", paste0(acceptable_levels, collapse = ", ")))
+    stop(paste0(
+      "Level must be one of ",
+      paste0(acceptable_levels, collapse = ", ")
+    ))
   }
 
   # Input validation (IF makes API exception)
@@ -148,35 +145,32 @@ malaria_do_analysis <- function(
 
   # Get combined data
   combined_data <- combine_health_climate_data(
-    health_data_path,
-    climate_data_path,
-    map_path,
-    region_col,
-    district_col,
-    date_col,
-    year_col,
-    month_col,
-    malaria_case_col,
-    "malaria",
-    tot_pop_col,
-    tmin_col,
-    tmean_col,
-    tmax_col,
-    rainfall_col,
-    r_humidity_col,
-    geometry_col,
-    runoff_col,
-    ndvi_col,
-    spi_col,
-    max_lag,
-    output_dir
+    health_data_path = health_data_path,
+    climate_data_path = climate_data_path,
+    map_path = map_path,
+    region_col = region_col,
+    district_col = district_col,
+    date_col = date_col,
+    year_col = year_col,
+    month_col = month_col,
+    case_col = malaria_case_col,
+    case_type = "malaria",
+    tot_pop_col = tot_pop_col,
+    tmin_col = tmin_col,
+    tmean_col = tmean_col,
+    tmax_col = tmax_col,
+    rainfall_col = rainfall_col,
+    r_humidity_col = r_humidity_col,
+    geometry_col = geometry_col,
+    runoff_col = runoff_col,
+    ndvi_col = ndvi_col,
+    spi_col = spi_col,
+    max_lag = max_lag,
+    output_dir = output_dir
   )
   # Plot time series
-  plot_malaria <- NULL
-  plot_tmax <- NULL
-  plot_rainfall <- NULL
   if (level == "country") {
-    plot_malaria <- plot_health_climate_timeseries(
+    plot_health_climate_timeseries(
       combined_data$data,
       param_term = "malaria",
       level = "country",
@@ -185,7 +179,7 @@ malaria_do_analysis <- function(
       save_fig = save_fig,
       output_dir = output_dir
     )
-    plot_tmax <- plot_health_climate_timeseries(
+    plot_health_climate_timeseries(
       combined_data$data,
       param_term = "tmax",
       level = "country",
@@ -194,7 +188,7 @@ malaria_do_analysis <- function(
       save_fig = save_fig,
       output_dir = output_dir
     )
-    plot_rainfall <- plot_health_climate_timeseries(
+    plot_health_climate_timeseries(
       combined_data$data,
       param_term = "rainfall",
       level = "country",
@@ -204,12 +198,6 @@ malaria_do_analysis <- function(
       output_dir = output_dir
     )
   }
-  # create base matrice
-  basis <- set_cross_basis(
-    data = combined_data$data,
-    nlag = max_lag,
-    include_ndvi = TRUE
-  )
 
   # Check for multicolinearity
   if (save_csv) {
@@ -245,7 +233,7 @@ malaria_do_analysis <- function(
   )
 
   # Plot seasonality
-  reff_plot_monthly <- plot_monthly_random_effects(
+  plot_monthly_random_effects(
     combined_data,
     model = inla_result$model,
     output_dir = output_dir,
@@ -253,7 +241,7 @@ malaria_do_analysis <- function(
   )
 
   # Spatial random effect
-  reff_plot_yearly <- plot_yearly_spatial_random_effect(
+  plot_yearly_spatial_random_effect(
     combined_data = combined_data,
     model = inla_result$model,
     case_type = "malaria",
@@ -261,7 +249,7 @@ malaria_do_analysis <- function(
     output_dir = output_dir
   )
   # Contour plots
-  contour_plot_malaria <- contour_plot(
+  contour_plot(
     data = combined_data$data,
     param_term = param_term,
     max_lag = max_lag,
@@ -274,7 +262,7 @@ malaria_do_analysis <- function(
   )
 
   # Relative risk map plots
-  rr_map_plot <- plot_rr_map(
+  plot_rr_map(
     combined_data = combined_data,
     model = inla_result$model,
     param_term = param_term,
@@ -299,7 +287,6 @@ malaria_do_analysis <- function(
     save_csv = save_csv,
     save_fig = save_fig
   )
-  rr_plot <- rr_data[["plots"]]
   rr_df <- rr_data[["RR"]]
 
   # attribution fraction and number
@@ -316,8 +303,7 @@ malaria_do_analysis <- function(
     output_dir = output_dir
   )
   # Attributable number plots
-
-  plot_AR_Num <- plot_attribution_metric(
+  plot_attribution_metric(
     attr_data = attr_frac_num,
     param_term = param_term,
     level = level,
@@ -327,8 +313,8 @@ malaria_do_analysis <- function(
     save_fig = save_fig,
     output_dir = output_dir
   )
-  # attributable fraction plots
-  plot_AR_Fr <- plot_attribution_metric(
+  # Attributable fraction plots
+  plot_attribution_metric(
     attr_data = attr_frac_num,
     param_term = param_term,
     level = level,
@@ -339,7 +325,7 @@ malaria_do_analysis <- function(
     output_dir = output_dir
   )
   # Attributable rate plots
-  plot_AR_per_100k <- plot_attribution_metric(
+  plot_attribution_metric(
     attr_data = attr_frac_num,
     param_term = param_term,
     level = level,
@@ -349,59 +335,12 @@ malaria_do_analysis <- function(
     save_fig = save_fig,
     output_dir = output_dir
   )
-  # Return results
+  # structure and return results
   res <- list(
-    plot_malaria = plot_malaria,
-    plot_tmax = plot_tmax,
-    plot_rainfall = plot_rainfall,
     inla_result = inla_result,
-    reff_plot_monthly = reff_plot_monthly,
-    reff_plot_yearly = reff_plot_yearly,
-    contour_plot = contour_plot_malaria,
-    rr_map_plot = rr_map_plot,
-    rr_plot = rr_plot,
+    VIF = VIF,
     rr_df = rr_df,
-    attr_frac_num = attr_frac_num,
-    plot_AR_num = plot_AR_Num,
-    plot_AR_frac = plot_AR_Fr,
-    plot_AR_per_100k = plot_AR_per_100k
+    an_ar_results = attr_frac_num
   )
-
   return(res)
 }
-
-malaria_do_analysis(
-  health_data_path = "../climatehealth_pipelines/data/inputs/diseases/test_health_data_malaria.xlsx",
-  climate_data_path = "../climatehealth_pipelines/data/inputs/diseases/test_climate_data.xlsx",
-  map_path = "../climatehealth_pipelines/data/inputs/diseases/Gha_geodata",
-  region_col = "Region",
-  district_col = "District",
-  date_col = NULL,
-  year_col = "Year",
-  month_col = "Month",
-  malaria_case_col = "malaria_ud_five",
-  tot_pop_col = "pop_tot",
-  tmin_col = "tmin",
-  tmean_col = "tmean",
-  tmax_col = "tmax",
-  rainfall_col = "rainfall",
-  r_humidity_col = "r_humidity",
-  runoff_col = "runoff",
-  geometry_col = "geometry",
-  spi_col = NULL,
-  ndvi_col = NULL,
-  max_lag = 2,
-  basis_matrices_choices = c("rainfall"),
-  inla_param = c("tmin", "tmax", "r_humidity", "runoff"),
-  param_term = "rainfall",
-  level = "Region",
-  group_by_year = FALSE,
-  param_threshold = 1,
-  filter_year = NULL,
-  family = "poisson",
-  config = TRUE,
-  save_csv = TRUE,
-  save_model = TRUE,
-  save_fig = TRUE,
-  output_dir = "../climatehealth_pipelines/data/outputs"
-)
