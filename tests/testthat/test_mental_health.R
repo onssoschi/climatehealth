@@ -111,8 +111,12 @@ test_that("Test mh_pop_totals", {
       year = structure(1:3, levels = c("2022", "2024", "2023"), class = "factor"),
       population = c(2150, 2350, 2050)), row.names = c(NA, -3L), class = "data.frame")))
 
-  expect_equal(mh_pop_totals(mh_pop_totals_list, meta_analysis = FALSE), mh_pop_totals_control_list, label = "mh_pop_totals(mh_pop_totals_list, meta_analysis = FALSE)")
-  expect_equal(mh_pop_totals(mh_pop_totals_list, meta_analysis = TRUE), mh_pop_totals_national_control_list, label = "mh_pop_totals(mh_pop_totals_list, meta_analysis = TRUE)")
+  expect_equal(mh_pop_totals(mh_pop_totals_list, meta_analysis = FALSE),
+               mh_pop_totals_control_list,
+               label = "mh_pop_totals(mh_pop_totals_list, meta_analysis = FALSE)")
+  expect_equal(mh_pop_totals(mh_pop_totals_list, meta_analysis = TRUE),
+               mh_pop_totals_national_control_list,
+               label = "mh_pop_totals(mh_pop_totals_list, meta_analysis = TRUE)")
 })
 
 test_that("mh_create_crossbasis creates correct cross-basis matrices", {
@@ -427,4 +431,503 @@ test_that("mh_model_validation performs complete model validation", {
 
   expect_null(single_region_results[[2]])  # QAIC summary should be NULL
   expect_null(single_region_results[[4]])  # VIF summary should be NULL
+})
+
+test_that("mh_casecrossover_dlnm fits case-crossover DLNM models correctly", {
+  # Setup test data with sufficient observations
+  set.seed(123)
+  n_days <- 100
+
+  # Create sample data with relevant variables
+  sample_df <- data.frame(
+    date = seq.Date(from = as.Date("2023-01-01"),
+                    length.out = n_days,
+                    by = "day"),
+    temp = rnorm(n_days, mean = 23, sd = 2),
+    suicides = rpois(n_days, lambda = 10),
+    humidity = rnorm(n_days, mean = 70, sd = 10),
+    pollution = rnorm(n_days, mean = 50, sd = 15),
+    stratum = factor(rep(1:20, each = 5)),
+    ind = rep(1, n_days)
+  )
+
+  # Create regional data structure
+  df_list <- list(
+    "Region1" = sample_df,
+    "Region2" = sample_df
+  )
+
+  # Create mock cross-basis matrix for DLNM
+  mock_cb <- matrix(rnorm(n_days * 6), nrow = n_days)
+  colnames(mock_cb) <- paste0("v", 1:6)
+  class(mock_cb) <- c("crossbasis", "matrix")
+  attr(mock_cb, "df") <- c(3, 2)
+  attr(mock_cb, "range") <- range(sample_df$temp)
+  attr(mock_cb, "lag") <- c(0, 3)
+
+  cb_list <- list(
+    "Region1" = mock_cb,
+    "Region2" = mock_cb
+  )
+
+  # Test 1: Basic functionality with multiple control variables
+  control_cols <- c("humidity", "pollution")
+  models <- mh_casecrossover_dlnm(df_list, control_cols, cb_list)
+
+  # Check basic structure
+  expect_type(models, "list")
+  expect_named(models, c("Region1", "Region2"))
+  expect_s3_class(models$Region1, "gnm")
+
+  # Check model components for each region
+  for (reg in names(models)) {
+    model <- models[[reg]]
+    formula_str <- paste(deparse(model$formula), collapse = " ")
+
+    # Check formula includes all control variables as splines
+    expect_true(all(sapply(control_cols,
+                           function(x) grepl(paste0("splines::ns\\(", x, ",\\s*df\\s*=\\s*3"), formula_str))))
+
+    # Verify model family
+    expect_equal(model$family$family, "quasipoisson")
+
+    # Check data dimensions
+    expect_equal(nrow(model$data), sum(df_list[[reg]]$ind > 0))
+
+    # Verify spline terms in model
+    terms <- attr(terms(model), "term.labels")
+    expect_true(all(sapply(control_cols,
+                           function(x) any(grepl(paste0("ns\\(", x), terms)))))
+  }
+
+  # Test 2: Verify NULL control variables case
+  models_no_controls <- mh_casecrossover_dlnm(df_list, NULL, cb_list)
+  expect_type(models_no_controls, "list")
+  for (reg in names(models_no_controls)) {
+    model <- models_no_controls[[reg]]
+    formula_str <- paste(deparse(model$formula), collapse = " ")
+    expect_equal(formula_str, "suicides ~ cb")
+  }
+
+  # Test 3: Verify single control variable handling
+  single_control <- "humidity"
+  models_single <- mh_casecrossover_dlnm(df_list, single_control, cb_list)
+
+  expect_type(models_single, "list")
+  for (reg in names(models_single)) {
+    model <- models_single[[reg]]
+    formula_str <- paste(deparse(model$formula), collapse = " ")
+    expect_true(grepl(paste0("splines::ns\\(", single_control, ",\\s*df\\s*=\\s*3"),
+                      formula_str))
+  }
+
+  # Test 4: Verify error handling for invalid input
+  expect_error(
+    mh_casecrossover_dlnm(df_list, control_cols = 123, cb_list),
+    "'control_cols' expected a vector of strings or a string"
+  )
+
+  # Test 5: Verify model fit properties
+  for (reg in names(models)) {
+    model <- models[[reg]]
+    # Check model convergence
+    expect_true(!is.null(coef(model)))
+    # Verify residuals computation
+    expect_true(!is.null(residuals(model)))
+    # Check fitted values are valid for Poisson family
+    expect_true(all(fitted(model) > 0))
+  }
+})
+
+test_that("mh_reduce_cumulative produces expected output with valid inputs", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Create sample data for two regions
+  n_days <- 100
+  temp_data1 <- rnorm(n_days, mean = 20, sd = 5)
+  temp_data2 <- rnorm(n_days, mean = 22, sd = 4)
+
+  df_list <- list(
+    region1 = data.frame(temp = temp_data1,
+                         outcome = rpois(n_days, lambda = 10)),
+    region2 = data.frame(temp = temp_data2,
+                         outcome = rpois(n_days, lambda = 12))
+  )
+
+  # Create crossbasis objects with simplified structure
+  cb_list <- list()
+  model_list <- list()
+
+  # Specify knots positions based on var_per
+  var_per <- c(25, 50, 75)
+  var_degree <- 2
+
+  for(reg in names(df_list)) {
+    # Create crossbasis with specific structure
+    cb_list[[reg]] <- dlnm::crossbasis(
+      df_list[[reg]]$temp,
+      lag = 0,  # No lag for simplicity
+      argvar = list(
+        fun = "bs",  # Using bs (B-spline) instead of ns as it accepts degree parameter
+        knots = quantile(df_list[[reg]]$temp, var_per/100),
+        degree = var_degree
+      ),
+      arglag = list(fun = "lin")  # Simple linear lag
+    )
+
+    # Fit simple model
+    model_list[[reg]] <- glm(
+      outcome ~ cb_list[[reg]],
+      family = poisson(),
+      data = df_list[[reg]]
+    )
+  }
+
+  # Test the function
+  result <- mh_reduce_cumulative(
+    df_list = df_list,
+    var_per = var_per,
+    var_degree = var_degree,
+    cenper = 50,
+    cb_list = cb_list,
+    model_list = model_list
+  )
+
+  # Structure tests
+  expect_type(result, "list")
+  expect_length(result, 2)
+  expect_true(is.matrix(result[[1]]))
+  expect_true(is.list(result[[2]]))
+
+  # Dimension tests
+  expect_equal(nrow(result[[1]]), length(df_list))
+  expect_equal(ncol(result[[1]]), length(var_per) + var_degree)
+  expect_equal(names(result[[2]]), names(df_list))
+
+  # Content tests
+  expect_true(all(!is.na(result[[1]])))  # No NA in coefficients
+  expect_true(all(sapply(result[[2]], is.matrix)))  # All vcov elements are matrices
+
+  # Test with missing values
+  df_list$region1$temp[1] <- NA
+  expect_error(
+    mh_reduce_cumulative(df_list, cb_list = cb_list, model_list = model_list),
+    NA
+  )
+})
+
+test_that("mh_meta_analysis performs meta-analysis correctly", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Create test data
+  n_regions <- 3
+  n_days <- 100
+  n_coef <- 4
+
+  # Generate df_list with known properties
+  df_list <- lapply(1:n_regions, function(i) {
+    data.frame(
+      temp = rnorm(n_days, mean = 20 + i*2, sd = 3),  # Different means for each region
+      outcome = rpois(n_days, lambda = 10 + i)
+    )
+  })
+  names(df_list) <- paste0("region", 1:n_regions)
+
+  # Generate coefficient matrix with known structure
+  coef_ <- matrix(
+    rnorm(n_regions * n_coef, mean = 0, sd = 0.5),
+    nrow = n_regions,
+    ncol = n_coef,
+    dimnames = list(names(df_list))
+  )
+
+  # Generate vcov list with positive definite matrices
+  vcov_ <- lapply(1:n_regions, function(i) {
+    m <- matrix(runif(n_coef^2), n_coef, n_coef)
+    # Make symmetric positive definite
+    m <- m %*% t(m)
+    return(m)
+  })
+  names(vcov_) <- names(df_list)
+
+  # Create temporary directory for CSV output test
+  temp_dir <- tempdir()
+
+  # Run function with various configurations
+  result_basic <- mh_meta_analysis(df_list, coef_, vcov_)
+  result_with_csv <- mh_meta_analysis(df_list, coef_, vcov_,
+                                      save_csv = TRUE,
+                                      output_folder_path = temp_dir)
+
+  # Structure tests
+  expect_type(result_basic, "list")
+  expect_length(result_basic, 3)
+  expect_s3_class(result_basic[[1]], "mixmeta")
+  expect_type(result_basic[[2]], "list")
+  expect_s3_class(result_basic[[3]], "data.frame")
+
+  # Content tests
+  expect_equal(names(result_basic[[2]]), names(df_list))
+  expect_equal(nrow(result_basic[[3]]), 5)  # 5 test results
+  expect_true(all(result_basic[[3]]$test == c(
+    "Temp_avg Wald p-value",
+    "Temp_range Wald p-value",
+    "Cochrane Q test p-value",
+    "I2 (%)",
+    "AIC"
+  )))
+
+  # CSV output test
+  expect_true(file.exists(file.path(temp_dir, "meta_model_stat_test_results.csv")))
+
+  # Error handling tests
+  expect_error(
+    mh_meta_analysis(df_list, coef_, vcov_, save_csv = TRUE),
+    "Output path not specified"
+  )
+
+  # Clean up
+  unlink(file.path(temp_dir, "meta_model_stat_test_results.csv"))
+})
+
+test_that("mh_min_suicide_temp correctly generates minpercreg", {
+  # Set seed for reproducibility
+  set.seed(3728)
+
+  # Create test data
+  n_regions <- 3
+  n_days <- 100
+  n_coef <- 5
+
+  # Generate df_list with known properties
+  df_list <- lapply(1:n_regions, function(i) {
+    data.frame(
+      temp = rnorm(n_days, mean = 20 + i*2, sd = 3),  # Different means for each region
+      outcome = rpois(n_days, lambda = 10 + i)
+    )
+  })
+  names(df_list) <- paste0("region", 1:n_regions)
+
+  # Generate coefficient matrix with known structure
+  coef_ <- matrix(
+    rnorm(n_regions * n_coef, mean = 0, sd = 0.5),
+    nrow = n_regions,
+    ncol = n_coef,
+    dimnames = list(names(df_list))
+  )
+
+  # Generate vcov list with positive definite matrices
+  vcov_ <- lapply(1:n_regions, function(i) {
+    m <- matrix(runif(n_coef^2), n_coef, n_coef)
+    # Make symmetric positive definite
+    m <- m %*% t(m)
+    return(m)
+  })
+  names(vcov_) <- names(df_list)
+
+  control_minpercreg <- c(region1 = 46L, region2 = 26L, region3 = 3L)
+
+  test_minpercreg <- mh_min_suicide_temp(df_list,
+                                  var_fun = "bs",
+                                  var_per = c(25,50,75),
+                                  var_degree = 2,
+                                  blup = blup,
+                                  coef_,
+                                  meta_analysis = FALSE)
+
+  expect_identical(test_minpercreg, control_minpercreg)
+})
+
+test_that("mh_predict_reg produces expected output", {
+  # Create test data
+  n_regions <- 2
+  n_days <- 10
+  n_coef <- 5
+
+  # Generate df_list with known properties
+  df_list <- lapply(1:n_regions, function(i) {
+    data.frame(
+      temp = rnorm(n_days, mean = 20 + i*2, sd = 3),  # Different means for each region
+
+      outcome = rpois(n_days, lambda = 10 + i)
+    )
+  })
+  names(df_list) <- paste0("region", 1:n_regions)
+
+  # Generate coefficient matrix with known structure
+  coef_ <- matrix(
+    rnorm(n_regions * n_coef, mean = 0, sd = 0.5),
+    nrow = n_regions,
+    ncol = n_coef,
+    dimnames = list(names(df_list))
+  )
+
+  # Generate vcov list with positive definite matrices
+  vcov_ <- lapply(1:n_regions, function(i) {
+    m <- matrix(runif(n_coef^2), n_coef, n_coef)
+    # Make symmetric positive definite
+    m <- m %*% t(m)
+    return(m)
+  })
+  names(vcov_) <- names(df_list)
+
+  minpercreg <- c(region1 = 46L, region2 = 26L, region3 = 34L)
+
+  test_mh_predict_reg <- mh_predict_reg(df_list,
+                                           var_fun = "bs",
+                                           var_per = c(25,50,75),
+                                           var_degree = 2,
+                                           minpercreg,
+                                           blup,
+                                           coef_,
+                                           vcov_,
+                                           meta_analysis = FALSE)
+
+    #
+    expect_type(test_mh_predict_reg, "list")
+
+    expect_named(test_mh_predict_reg, names(df_list))
+
+    expect_true(all(sapply(test_mh_predict_reg, function(x) inherits(x, "crosspred"))))
+
+    required_components <- c("predvar", "cen", "lag", "bylag", "coefficients", "vcov", "matfit", "matse",
+                             "allfit", "allse", "matRRfit", "matRRlow", "matRRhigh", "allRRfit", "allRRlow", "allRRhigh",
+                             "ci.level", "model.class", "model.link")
+
+    for (i in seq(from = 1, to = length(test_mh_predict_reg), by = 1)) {
+      expect_true(all(required_components %in% names(test_mh_predict_reg[[i]])))
+    }
+
+    # model only predicts to within 0.1 degrees so tolerance set to that
+    for (region in names(df_list)) {
+      region_data <- df_list[[region]]
+      pred <- test_mh_predict_reg[[region]]
+      expect_equal(min(pred$predvar), min(region_data$temp, na.rm = TRUE), tolerance=0.1)
+      expect_equal(max(pred$predvar), max(region_data$temp, na.rm = TRUE), tolerance=0.1)
+    }
+
+    for (region in names(df_list)) {
+      region_data <- df_list[[region]]
+      expected_cen <- quantile(region_data$temp, minpercreg[region]/100, na.rm = TRUE)
+      actual_cen <- test_mh_predict_reg[[region]]$cen
+      expect_equal(actual_cen, expected_cen)
+    }
+
+    for (pred in test_mh_predict_reg) {
+      expect_equal(length(pred$allfit), length(pred$predvar))
+      expect_equal(length(pred$allse), length(pred$predvar))
+    }
+})
+
+test_that("test mh_add_national_data", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Parameters
+  n_regions <- 3
+  n_days <- 30
+  start_date <- as.Date("2020-01-01")
+  dates <- seq(start_date, by = "day", length.out = n_days)
+  years <- lubridate::year(dates)
+
+  # Generate df_list
+  df_list <- lapply(1:n_regions, function(i) {
+    data.frame(
+      date = dates,
+      year = years,
+      temp = rnorm(n_days, mean = 15 + i * 2, sd = 5),
+      suicides = rpois(n_days, lambda = 5 + i),
+      population = sample(100000:200000, n_days, replace = TRUE),
+      region = paste0("region", i)
+    )
+  })
+  names(df_list) <- paste0("region", 1:n_regions)
+
+  # Generate pop_list
+  pop_list <- lapply(names(df_list), function(region) {
+    data.frame(
+      year = unique(years),
+      population = sample(100000:200000, length(unique(years)), replace = TRUE)
+    )
+  })
+  names(pop_list) <- names(df_list)
+
+  # Add national population
+  pop_list[["National"]] <- data.frame(
+    year = unique(years),
+    population = sample(500000:600000, length(unique(years)), replace = TRUE)
+  )
+
+  # Create a temporary national dataset to determine basis dimension
+  temp_nat <- do.call(rbind, df_list)
+  temp_cb <- dlnm::onebasis(
+    x = quantile(temp_nat$temp, 1:99 / 100),
+    fun = "bs",
+    knots = quantile(temp_nat$temp, c(0.25, 0.5, 0.75)),
+    degree = 2,
+    Boundary.knots = range(temp_nat$temp)
+  )
+  n_basis <- ncol(temp_cb)
+
+  # Generate synthetic coefficients and vcov for mvmeta
+  coef_mat <- matrix(rnorm(n_regions * n_basis), ncol = n_basis)
+  vcov_list <- replicate(n_regions, diag(n_basis), simplify = FALSE)
+  names(vcov_list) <- names(df_list)
+
+  # Fit mvmeta model
+  mm <- mvmeta::mvmeta(coef_mat, vcov_list, method = "reml")
+
+  # Generate cb_list
+  cb_list <- lapply(df_list, function(df) {
+    dlnm::crossbasis(
+      df$temp,
+      lag = 2,
+      argvar = list(fun = "bs", knots = quantile(df$temp, c(0.25, 0.5, 0.75))),
+      arglag = list(fun = "strata", breaks = 1)
+    )
+  })
+
+  # Generate minpercreg
+  minpercreg <- setNames(sample(20:80, n_regions, replace = TRUE), names(df_list))
+
+  result <- mh_add_national_data(df_list, pop_list, cb_list = cb_list, mm = mm, minpercreg = minpercreg)
+
+
+  expect_type(result, "list")
+  expect_length(result, 4)
+  expect_named(result, NULL)  # unnamed list
+
+  df_out <- result[[1]]
+  expect_true("National" %in% names(df_out))
+  nat_df <- df_out[["National"]]
+
+  expect_s3_class(nat_df, "data.frame")
+  expect_true(all(c("date", "temp", "suicides", "population", "year", "month", "region") %in% names(nat_df)))
+  expect_equal(nrow(nat_df), length(unique(df_list[[1]]$date)))
+  expect_true(all(nat_df$region == "National"))
+
+  cb_out <- result[[2]]
+  expect_true("National" %in% names(cb_out))
+  nat_cb <- cb_out[["National"]]
+
+  expect_s3_class(nat_cb, "crossbasis")
+  expect_true(all(c("argvar", "arglag") %in% names(attributes(nat_cb))))
+  expect_equal(attr(nat_cb, "argvar")$fun, "bs")
+  expect_equal(attr(nat_cb, "arglag")$fun, "strata")
+
+  minperc_out <- result[[3]]
+  expect_true("National" %in% names(minperc_out))
+  expect_true(is.numeric(minperc_out[["National"]]))
+  expect_true(minperc_out[["National"]] >= 1 && minperc_out[["National"]] <= 50)
+
+  mmpredall <- result[[4]]
+
+  expect_type(mmpredall, "list")
+  expect_true(all(c("fit", "vcov") %in% names(mmpredall)))
+  expect_true(is.numeric(mmpredall$fit))
+  expect_true(is.matrix(mmpredall$vcov))
+  expect_equal(length(mmpredall$fit), ncol(mmpredall$vcov))
+
 })
