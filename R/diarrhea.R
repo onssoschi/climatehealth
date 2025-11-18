@@ -60,15 +60,12 @@
 #' @param output_dir Character. Directory where output files (plots, datasets, maps)
 #' are saved. Defaults to `NULL`.
 #'
-#' @return A list containing:
+#' @return A named list containing:
 #' \itemize{
-#'   \item Model output from INLA
-#'   \item Monthly random effects plot
-#'   \item Yearly random effects plot
-#'   \item Contour plot
-#'   \item Relative risk map
-#'   \item Relative risk plot
-#'   \item Attributable fraction and number summary
+#'   \item `inla_result` – Fitted INLA model object and summaries.
+#'   \item `VIF` – Variance Inflation Factor results for multicollinearity assessment.
+#'   \item `rr_df` – Relative risk results dataset.
+#'   \item `an_ar_results` – Attributable risk summary table.
 #' }
 #'
 #' @export
@@ -163,11 +160,8 @@ diarrhea_do_analysis <- function(health_data_path,
     output_dir = output_dir
   )
   # Plot time series
-  plot_diarrhea <- NULL
-  plot_tmax <- NULL
-  plot_rainfall <- NULL
   if (level == "country") {
-    plot_diarrhea <- plot_health_climate_timeseries(
+    plot_health_climate_timeseries(
       combined_data$data,
       param_term = "diarrhea",
       level = level,
@@ -176,7 +170,7 @@ diarrhea_do_analysis <- function(health_data_path,
       save_fig = save_fig,
       output_dir = output_dir
     )
-    plot_tmax <- plot_health_climate_timeseries(
+    plot_health_climate_timeseries(
       combined_data$data,
       param_term = "tmax",
       level = level,
@@ -185,7 +179,7 @@ diarrhea_do_analysis <- function(health_data_path,
       save_fig = save_fig,
       output_dir = output_dir
     )
-    plot_rainfall <- plot_health_climate_timeseries(
+    plot_health_climate_timeseries(
       combined_data$data,
       param_term = "rainfall",
       level = level,
@@ -195,13 +189,6 @@ diarrhea_do_analysis <- function(health_data_path,
       output_dir = output_dir
     )
   }
-  # create base matrice
-  basis <- set_cross_basis(
-    data = combined_data$data,
-    nlag = max_lag,
-    include_ndvi = FALSE
-  )
-
   # Check for multicolinearity
   if (save_csv) {
     VIF <- check_and_write_vif(
@@ -236,7 +223,7 @@ diarrhea_do_analysis <- function(health_data_path,
   )
 
   # Plot seasonality
-  reff_plot_monthly <- plot_monthly_random_effects(
+  plot_monthly_random_effects(
     combined_data = combined_data,
     model = inla_result$model,
     output_dir = output_dir,
@@ -244,7 +231,7 @@ diarrhea_do_analysis <- function(health_data_path,
   )
 
   # Spatial random effect
-  reff_plot_yearly <- plot_yearly_spatial_random_effect(
+  plot_yearly_spatial_random_effect(
     combined_data = combined_data,
     model = inla_result$model,
     case_type = "diarrhea",
@@ -252,7 +239,7 @@ diarrhea_do_analysis <- function(health_data_path,
     output_dir = output_dir
   )
   # Contour plots
-  contour_plot_diarrhea <- contour_plot(
+  contour_plot(
     data = combined_data$data,
     param_term = param_term,
     max_lag = max_lag,
@@ -265,7 +252,7 @@ diarrhea_do_analysis <- function(health_data_path,
   )
 
   # Relative risk map plots
-  rr_map_plot <- plot_rr_map(
+  plot_rr_map(
     combined_data = combined_data,
     model = inla_result$model,
     param_term = param_term,
@@ -290,7 +277,6 @@ diarrhea_do_analysis <- function(health_data_path,
     save_csv = save_csv,
     save_fig = save_fig
   )
-  rr_plot <- rr_data[["plots"]]
   rr_df <- rr_data[["RR"]]
 
   # attribution fraction and number
@@ -308,7 +294,7 @@ diarrhea_do_analysis <- function(health_data_path,
     output_dir = output_dir
   )
 
-  plot_AR_Num <- plot_attribution_metric(
+  plot_attribution_metric(
     attr_data = attr_frac_num,
     param_term = param_term,
     level = level,
@@ -319,7 +305,7 @@ diarrhea_do_analysis <- function(health_data_path,
     output_dir = output_dir
   )
 
-  plot_AR_Fr <- plot_attribution_metric(
+  plot_attribution_metric(
     attr_data = attr_frac_num,
     param_term = param_term,
     level = level,
@@ -330,7 +316,7 @@ diarrhea_do_analysis <- function(health_data_path,
     output_dir = output_dir
   )
 
-  plot_AR_per_100k <- plot_attribution_metric(
+  plot_attribution_metric(
     attr_data = attr_frac_num,
     param_term = param_term,
     level = level,
@@ -342,20 +328,10 @@ diarrhea_do_analysis <- function(health_data_path,
   )
 
   res <- list(
-    plot_diarrhea = plot_diarrhea,
-    plot_tmax = plot_tmax,
-    plot_rainfall = plot_rainfall,
     inla_result = inla_result,
-    reff_plot_monthly = reff_plot_monthly,
-    reff_plot_yearly = reff_plot_yearly,
-    contour_plot = contour_plot_diarrhea,
-    rr_map_plot = rr_map_plot,
-    rr_plot = rr_plot,
+    VIF = VIF,
     rr_df = rr_df,
-    attr_frac_num = attr_frac_num,
-    plot_AR_num = plot_AR_Num,
-    plot_AR_frac = plot_AR_Fr,
-    plot_AR_per_100k = plot_AR_per_100k
+    an_ar_results = attr_frac_num
   )
   return(res)
 }

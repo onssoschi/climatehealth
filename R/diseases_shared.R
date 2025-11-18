@@ -619,13 +619,14 @@ set_cross_basis <- function(data, nlag = 2, include_ndvi = FALSE) {
   names(vars) <- names(var_defs)
   vars <- vars[!sapply(vars, is.null)]
 
-  lagknot <- dlnm::equalknots(0:nlag, 1)
+  nk <- ifelse("diarrhea" %in% colnames(data), 2, 1)
+  print(nk)
 
   basis_matrices <- lapply(names(vars), function(var) {
     x <- vars[[var]]
     cb <- dlnm::crossbasis(
       x,
-      argvar = list(fun = "ns", knots = dlnm::equalknots(x[[1]], 1)),
+      argvar = list(fun = "ns", knots = dlnm::equalknots(x[[1]], nk)),
       arglag = list(fun = "ns", knots = nlag / 2)
     )
     colnames(cb) <- paste0("basis_", var, ".", colnames(cb))
