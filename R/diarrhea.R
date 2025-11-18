@@ -101,7 +101,7 @@ diarrhea_do_analysis <- function(health_data_path,
                                  group_by_year = FALSE,
                                  config = FALSE,
                                  save_csv = FALSE,
-                                 save_model=FALSE,
+                                 save_model = FALSE,
                                  save_fig = FALSE,
                                  output_dir = NULL) {
   # Simple output validation
@@ -131,9 +131,11 @@ diarrhea_do_analysis <- function(health_data_path,
     output_dir,
     paste0("diarrhea_analysis_", format(Sys.time(), "%d_%m_%Y_%H_%M"))
   )
-  if (!is.null(new_fpath)) (
-    dir.create(new_fpath)
-  )
+  if (!is.null(new_fpath)) {
+    (
+      dir.create(new_fpath)
+    )
+  }
   output_dir <- new_fpath
 
   # get combined data
@@ -294,57 +296,66 @@ diarrhea_do_analysis <- function(health_data_path,
   # attribution fraction and number
   attr_frac_num <- attribution_calculation(
     combined_data$data,
-    param_term=param_term,
-    model=inla_result$model,
-    param_threshold=param_threshold,
+    param_term = param_term,
+    model = inla_result$model,
+    param_threshold = param_threshold,
     max_lag = max_lag,
-    level= level,
-    case_type="diarrhea",
-    filter_year=filter_year,
+    level = level,
+    case_type = "diarrhea",
+    filter_year = filter_year,
     group_by_year = group_by_year,
-    save_csv=save_csv,
-    output_dir=output_dir)
+    save_csv = save_csv,
+    output_dir = output_dir
+  )
 
-  plot_AR_Num <-plot_attribution_metric(attr_data = attr_frac_num,
-                                        param_term=param_term,
-                                        level= level,
-                                        metrics = "AR_Number",
-                                        case_type="diarrhea",
-                                        filter_year = filter_year,
-                                        save_fig =save_fig,
-                                        output_dir = output_dir)
+  plot_AR_Num <- plot_attribution_metric(
+    attr_data = attr_frac_num,
+    param_term = param_term,
+    level = level,
+    metrics = "AR_Number",
+    case_type = "diarrhea",
+    filter_year = filter_year,
+    save_fig = save_fig,
+    output_dir = output_dir
+  )
 
-  plot_AR_Fr <- plot_attribution_metric(attr_data = attr_frac_num,
-                                       param_term=param_term,
-                                       level= level,
-                                       metrics = "AR_Fraction",
-                                       case_type="diarrhea",
-                                       filter_year = filter_year,
-                                       save_fig =save_fig,
-                                       output_dir = output_dir)
+  plot_AR_Fr <- plot_attribution_metric(
+    attr_data = attr_frac_num,
+    param_term = param_term,
+    level = level,
+    metrics = "AR_Fraction",
+    case_type = "diarrhea",
+    filter_year = filter_year,
+    save_fig = save_fig,
+    output_dir = output_dir
+  )
 
-  plot_AR_per_100k <- plot_attribution_metric(attr_data = attr_frac_num,
-                                             param_term=param_term,
-                                             level= level,
-                                             filter_year = filter_year,
-                                             metrics = "AR_per_100k",
-                                             case_type="diarrhea",
-                                             save_fig =save_fig,
-                                             output_dir = output_dir)
+  plot_AR_per_100k <- plot_attribution_metric(
+    attr_data = attr_frac_num,
+    param_term = param_term,
+    level = level,
+    filter_year = filter_year,
+    metrics = "AR_per_100k",
+    case_type = "diarrhea",
+    save_fig = save_fig,
+    output_dir = output_dir
+  )
 
-  res <- list(plot_diarrhea = plot_diarrhea,
-              plot_tmax = plot_tmax,
-              plot_rainfall = plot_rainfall,
-              inla_result = inla_result,
-              reff_plot_monthly = reff_plot_monthly,
-              reff_plot_yearly = reff_plot_yearly,
-              contour_plot = contour_plot_diarrhea,
-              rr_map_plot = rr_map_plot,
-              rr_plot = rr_plot,
-              rr_df = rr_df,
-              attr_frac_num = attr_frac_num,
-              plot_AR_num = plot_AR_Num,
-              plot_AR_frac = plot_AR_Fr,
-              plot_AR_per_100k = plot_AR_per_100k)
+  res <- list(
+    plot_diarrhea = plot_diarrhea,
+    plot_tmax = plot_tmax,
+    plot_rainfall = plot_rainfall,
+    inla_result = inla_result,
+    reff_plot_monthly = reff_plot_monthly,
+    reff_plot_yearly = reff_plot_yearly,
+    contour_plot = contour_plot_diarrhea,
+    rr_map_plot = rr_map_plot,
+    rr_plot = rr_plot,
+    rr_df = rr_df,
+    attr_frac_num = attr_frac_num,
+    plot_AR_num = plot_AR_Num,
+    plot_AR_frac = plot_AR_Fr,
+    plot_AR_per_100k = plot_AR_per_100k
+  )
   return(res)
 }

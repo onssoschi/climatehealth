@@ -45,17 +45,19 @@ load_and_process_map <- function(map_path,
                                  region_col,
                                  district_col,
                                  geometry_col,
-                                 output_dir = NULL){
+                                 output_dir = NULL) {
   # Load and process map
   map <- sf::read_sf(map_path) %>%
-    select(region = !!sym(region_col),
-           district = !!sym(district_col),
-           geometry = !!sym(geometry_col)) %>%
+    select(
+      region = !!sym(region_col),
+      district = !!sym(district_col),
+      geometry = !!sym(geometry_col)
+    ) %>%
     mutate(geometry = sf::st_make_valid(geometry))
 
   # Create adjacency matrix
   nb_file <- if (!is.null(output_dir)) file.path(output_dir, "nbfile") else NULL
-  g_file <- if (!is.null(output_dir)) file.path(output_dir, "map.graph")else tempfile(pattern = "map", fileext = ".graph")
+  g_file <- if (!is.null(output_dir)) file.path(output_dir, "map.graph") else tempfile(pattern = "map", fileext = ".graph")
 
   if (!is.null(nb_file) && file.exists(nb_file)) {
     nb.map <- spdep::read.gal(nb_file)
@@ -306,7 +308,7 @@ load_and_process_climatedata <- function(
         dplyr::across(
           .cols = all_of(var),
           .fns = list(!!!setNames(
-            lapply(1:max_lag, function(i) ~dplyr::lag(., i)),
+            lapply(1:max_lag, function(i) ~ dplyr::lag(., i)),
             paste0("lag", 1:max_lag)
           ))
         )
@@ -315,9 +317,13 @@ load_and_process_climatedata <- function(
     return(df)
   }
   # Variables to lag
-  vars_to_lag <- intersect(names(rename_vec),
-                           c("tmin", "tmean", "tmax", "rainfall",
-                             "r_humidity", "runoff", "ndvi", "spi"))
+  vars_to_lag <- intersect(
+    names(rename_vec),
+    c(
+      "tmin", "tmean", "tmax", "rainfall",
+      "r_humidity", "runoff", "ndvi", "spi"
+    )
+  )
 
   # Create lagged versions for each variable
   for (var in vars_to_lag) {
@@ -406,19 +412,25 @@ combine_health_climate_data <- function(
     output_dir = NULL) {
   case_type <- validate_case_type(case_type)
   # Load data
-  health_data <- load_and_process_data(health_data_path, region_col,
-                                       district_col, date_col, year_col,
-                                       month_col, case_col,case_type,
-                                       tot_pop_col)
+  health_data <- load_and_process_data(
+    health_data_path, region_col,
+    district_col, date_col, year_col,
+    month_col, case_col, case_type,
+    tot_pop_col
+  )
 
-  climate_data <- load_and_process_climatedata(climate_data_path, district_col,
-                                               year_col, month_col, tmin_col,
-                                               tmean_col, tmax_col, rainfall_col,
-                                               r_humidity_col, runoff_col,ndvi_col,
-                                               spi_col, max_lag)
+  climate_data <- load_and_process_climatedata(
+    climate_data_path, district_col,
+    year_col, month_col, tmin_col,
+    tmean_col, tmax_col, rainfall_col,
+    r_humidity_col, runoff_col, ndvi_col,
+    spi_col, max_lag
+  )
 
-  map_data <- load_and_process_map(map_path, region_col, district_col,
-                                   geometry_col, output_dir)
+  map_data <- load_and_process_map(
+    map_path, region_col, district_col,
+    geometry_col, output_dir
+  )
 
   joinby_vars <- c("district", "year", "month")
   data <- health_data %>%
@@ -1270,10 +1282,14 @@ contour_plot <- function(
 
   if (tolower(level) == "country") {
     plot_contour(lag_seq, predt$predvar, t(predt$matRRfit),
-                 title = "Contour Plot for Country")
+      title = "Contour Plot for Country"
+    )
   } else {
-    groups <- if (tolower(level) == "region") unique(data$region)
-    else unique(data$district)
+    groups <- if (tolower(level) == "region") {
+      unique(data$region)
+    } else {
+      unique(data$district)
+    }
     for (grp in groups) {
       plot_contour(lag_seq, predt[[grp]]$predvar, t(predt[[grp]]$matRRfit),
         title = paste("Contour Plot for", grp)
@@ -1344,10 +1360,12 @@ plot_rr_map <- function(
       level,
       case_type
     )
-    if ("allRRfit" %in% names(pred)) pred <- list(national=pred)
+    if ("allRRfit" %in% names(pred)) pred <- list(national = pred)
     purrr::map_dfr(names(pred), function(name) {
       vals <- pred[[name]]
-      if (anyNA(vals$allRRfit)) return(NULL)
+      if (anyNA(vals$allRRfit)) {
+        return(NULL)
+      }
       tibble(!!grouping_var := name, RR = median(vals$allRRfit, na.rm = TRUE))
     })
   }
@@ -1367,8 +1385,10 @@ plot_rr_map <- function(
       ) +
       ggplot2::theme_minimal() +
       ggplot2::labs(title = paste("Year:", years[i]), subtitle = paste("Exposure:", param_term)) +
-      ggplot2::theme(axis.text = ggplot2::element_blank(),
-                     axis.ticks = ggplot2::element_blank(), panel.grid = ggplot2::element_blank())
+      ggplot2::theme(
+        axis.text = ggplot2::element_blank(),
+        axis.ticks = ggplot2::element_blank(), panel.grid = ggplot2::element_blank()
+      )
   })
 
   # Combine all plots
@@ -1456,7 +1476,9 @@ plot_relative_risk <- function(
   }
 
   build_plot <- function(pred, title) {
-    if (anyNA(pred$allRRfit)) return(NULL)
+    if (anyNA(pred$allRRfit)) {
+      return(NULL)
+    }
     ggplot2::ggplot(
       dplyr::tibble(
         x = pred$predvar,
@@ -1495,10 +1517,14 @@ plot_relative_risk <- function(
       param_sym <- rlang::sym(param_term)
 
       rr_plot <- ggplot2::ggplot() +
-        ggplot2::geom_line(data = dplyr::tibble(x = pred$predvar, y = pred$allRRfit),
-                           ggplot2::aes(x = x, y = y), color = "red", linewidth = 1) +
-        ggplot2::geom_ribbon(data = dplyr::tibble(x = pred$predvar, ymin = pred$allRRlow, ymax = pred$allRRhigh),
-                             ggplot2::aes(x = x, ymin = ymin, ymax = ymax), fill = "red", alpha = 0.3) +
+        ggplot2::geom_line(
+          data = dplyr::tibble(x = pred$predvar, y = pred$allRRfit),
+          ggplot2::aes(x = x, y = y), color = "red", linewidth = 1
+        ) +
+        ggplot2::geom_ribbon(
+          data = dplyr::tibble(x = pred$predvar, ymin = pred$allRRlow, ymax = pred$allRRhigh),
+          ggplot2::aes(x = x, ymin = ymin, ymax = ymax), fill = "red", alpha = 0.3
+        ) +
         ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "gray", linewidth = 0.5) +
         ggplot2::scale_x_continuous(limits = x_limits, breaks = x_breaks) +
         ggplot2::labs(title = "Relative Risk Curve (All Years Combined)", y = "Relative Risk") +
@@ -1546,7 +1572,8 @@ plot_relative_risk <- function(
             allRRlow = pred$allRRlow,
             allRRhigh = pred$allRRhigh
           ),
-          csv_output_path, row.names = FALSE
+          csv_output_path,
+          row.names = FALSE
         )
       }
 
@@ -1632,8 +1659,11 @@ plot_relative_risk <- function(
             patchwork::wrap_plots(page, ncol = 2, nrow = 3) +
               patchwork::plot_annotation(
                 title = paste("Exposure-Response Curves by", tools::toTitleCase(level)),
-                subtitle = if (is.null(filter_year)) "All Years Combined"
-                else paste(param_term, "Years:", paste(filter_year, collapse = ", "))
+                subtitle = if (is.null(filter_year)) {
+                  "All Years Combined"
+                } else {
+                  paste(param_term, "Years:", paste(filter_year, collapse = ", "))
+                }
               )
           )
         }
@@ -1715,7 +1745,6 @@ attribution_calculation <- function(data,
                                     case_type,
                                     output_dir = NULL,
                                     save_csv = FALSE) {
-
   case_type <- validate_case_type(case_type)
   level <- tolower(level)
 
@@ -1784,10 +1813,11 @@ attribution_calculation <- function(data,
 
   # Define grouping variables dynamically
   grp_vars <- switch(level,
-                     "country" = if (group_by_year) c("year") else c("year", "month"),
-                     "region"  = if (group_by_year) c("region", "year") else c("region", "year", "month"),
-                     "district"= if (group_by_year) c("region", "district", "year") else c("region", "district", "year", "month"),
-                     stop("Invalid level. Choose 'country', 'region', or 'district'."))
+    "country" = if (group_by_year) c("year") else c("year", "month"),
+    "region" = if (group_by_year) c("region", "year") else c("region", "year", "month"),
+    "district" = if (group_by_year) c("region", "district", "year") else c("region", "district", "year", "month"),
+    stop("Invalid level. Choose 'country', 'region', or 'district'.")
+  )
 
   # Compute predictions and metrics
   res <- data %>%
@@ -1841,9 +1871,13 @@ attribution_calculation <- function(data,
   # Save results if requested
   if (save_csv && !is.null(output_dir)) {
     if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
-    readr::write_csv(res, file.path(output_dir,
-                                    paste0("attribution_", level, "_", param_term,
-                                           if (group_by_year) "_yearly.csv" else "_monthly.csv")))
+    readr::write_csv(res, file.path(
+      output_dir,
+      paste0(
+        "attribution_", level, "_", param_term,
+        if (group_by_year) "_yearly.csv" else "_monthly.csv"
+      )
+    ))
   }
 
   return(res)
@@ -1986,11 +2020,11 @@ plot_attribution_metric <- function(
 
       # adjust y limits based on metric
       y_limits <- if (metric == "AR_Fraction") {
-        c(0, 1.8*max(attr_data_plot[[metric]], na.rm = TRUE))
+        c(0, 1.8 * max(attr_data_plot[[metric]], na.rm = TRUE))
       } else if (metric == "AR_Number") {
-        c(0, 1.8*max(attr_data_plot[[metric]], na.rm = TRUE))
+        c(0, 1.8 * max(attr_data_plot[[metric]], na.rm = TRUE))
       } else {
-        c(0, 1.8*max(attr_data_plot[[metric]], na.rm = TRUE))
+        c(0, 1.8 * max(attr_data_plot[[metric]], na.rm = TRUE))
       }
 
       # Add AF value in parentheses for AN only
@@ -2005,7 +2039,8 @@ plot_attribution_metric <- function(
         ggplot2::geom_line(color = "steelblue", linewidth = 1) +
         ggplot2::geom_point(color = "steelblue", size = 2) +
         ggplot2::geom_ribbon(ggplot2::aes(ymin = .data[[lci_col]], ymax = .data[[uci_col]]),
-                             alpha = 0.2, fill = "steelblue") +
+          alpha = 0.2, fill = "steelblue"
+        ) +
         ggplot2::geom_text(ggplot2::aes(label = label_text), vjust = -0.5, size = 2) +
         ggplot2::labs(title = title, y = y_label, x = "Year") +
         ggplot2::scale_y_continuous(labels = y_formatter, limits = y_limits) +
@@ -2036,11 +2071,11 @@ plot_attribution_metric <- function(
       # dynamic y-axis limits
       max_y <- max(attr_data_plot[[metric]], na.rm = TRUE)
       y_limits <- if (metric == "AR_Fraction") {
-        c(0, 1.8*max(attr_data_plot[[metric]], na.rm = TRUE))
+        c(0, 1.8 * max(attr_data_plot[[metric]], na.rm = TRUE))
       } else if (metric == "AR_Number") {
-        c(0, 1.8*max(attr_data_plot[[metric]], na.rm = TRUE))
+        c(0, 1.8 * max(attr_data_plot[[metric]], na.rm = TRUE))
       } else {
-        c(0, 1.8*max(attr_data_plot[[metric]], na.rm = TRUE))
+        c(0, 1.8 * max(attr_data_plot[[metric]], na.rm = TRUE))
       }
 
       district_plots <- attr_data_plot %>%
@@ -2107,26 +2142,33 @@ plot_attribution_metric <- function(
         # dynamic limits again
         max_y <- max(df[[metric]], na.rm = TRUE)
         y_limits <- if (metric == "AR_Fraction") {
-          c(0, 1.8*max(attr_data_plot[[metric]], na.rm = TRUE))
+          c(0, 1.8 * max(attr_data_plot[[metric]], na.rm = TRUE))
         } else if (metric == "AR_Number") {
-          c(0, 1.8*max(attr_data_plot[[metric]], na.rm = TRUE))
+          c(0, 1.8 * max(attr_data_plot[[metric]], na.rm = TRUE))
         } else {
-          c(0, 1.8*max(attr_data_plot[[metric]], na.rm = TRUE))
+          c(0, 1.8 * max(attr_data_plot[[metric]], na.rm = TRUE))
         }
 
         ggplot(df, aes(x = .data[[level]], y = .data[[metric]], fill = factor(year))) +
           geom_col(position = position_dodge(width = 0.8)) +
           geom_text(aes(label = label_text),
-                    position = position_dodge(width = 0.8), vjust = -0.3, size = 2.5) +
+            position = position_dodge(width = 0.8), vjust = -0.3, size = 2.5
+          ) +
           scale_y_continuous(labels = y_formatter, limits = y_limits) +
           labs(x = tools::toTitleCase(level), y = y_label, fill = "Year") +
-          {if (length(unique(df$year)) == 1) {
-            scale_fill_manual(values = c("steelblue"))
-          } else {scale_fill_brewer(palette = "Set2")}} +
+          {
+            if (length(unique(df$year)) == 1) {
+              scale_fill_manual(values = c("steelblue"))
+            } else {
+              scale_fill_brewer(palette = "Set2")
+            }
+          } +
           theme_minimal(base_size = 8) +
-          theme(axis.text.x = element_text(angle = 70, hjust = 1, size = 8),
-                axis.text.y = element_text(size = 8),
-                plot.margin = margin(t = 5, r = 5, b = 50, l = 5))
+          theme(
+            axis.text.x = element_text(angle = 70, hjust = 1, size = 8),
+            axis.text.y = element_text(size = 8),
+            plot.margin = margin(t = 5, r = 5, b = 50, l = 5)
+          )
       })
 
       if (save_fig && !is.null(output_dir)) {
