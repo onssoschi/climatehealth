@@ -4,14 +4,17 @@
 \alias{set_cross_basis}
 \title{Create a cross-basis matrix set for DLNM analysis}
 \usage{
-set_cross_basis(data, max_lag, include_ndvi = FALSE)
+set_cross_basis(data, nlag = 2, include_ndvi = FALSE)
 }
 \arguments{
 \item{data}{A dataset returned from \code{combine_health_climate_data()},
 including lagged variables like \code{tmax_lag1}, \code{tmin_lag1}, etc.}
 
-\item{max_lag}{Character. Number corresponding to the maximum lag to be
+\item{nlag}{Character. Number corresponding to the maximum lag to be
 considered for the delay effect. It should be between 2 an 4. Defaults to 2.}
+
+\item{include_ndvi}{Logical. Whether or not to include NDVI in the var
+definitions. Often TRUE if vectorborne (malaria) analysis.}
 }
 \value{
 A list of cross-basis matrices including the basis matrix for maximum

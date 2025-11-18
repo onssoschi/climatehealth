@@ -8,6 +8,7 @@ plot_relative_risk(
   data,
   model,
   param_term,
+  max_lag,
   level = "country",
   filter_year = NULL,
   case_type,
@@ -24,6 +25,9 @@ plot_relative_risk(
 \item{param_term}{A character vector or list containing parameter terms such
 as \code{tmax} (temperature exposure) and \code{rainfall} (rainfall exposure).
 Default to \code{tmax}.}
+
+\item{max_lag}{Character. Number corresponding to the maximum lag to be
+considered for the delay effect. It should be between 2 an 4.}
 
 \item{level}{A character vector specifying the geographical disaggregation.
 Can take one of the following values: \code{country}, \code{region}, or \code{district}.

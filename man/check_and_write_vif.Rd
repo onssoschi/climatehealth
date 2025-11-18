@@ -8,6 +8,7 @@ to file.}
 check_and_write_vif(
   data,
   inla_param,
+  max_lag,
   basis_matrices_choices,
   case_type,
   output_dir
@@ -20,6 +21,9 @@ and must be compatible with \code{set_cross_basis()} for generating DLNM matrice
 
 \item{inla_param}{Character vector of parameter names representing all
 climate variables to consider excluding the \code{basis_matrices_choices} parameter.}
+
+\item{max_lag}{Character. Number corresponding to the maximum lag to be
+considered for the delay effect. It should be between 2 an 4.}
 
 \item{basis_matrices_choices}{Character vector specifying the main exposure variables
 that should be included as DLNM basismatrices, and should be excluded from the \code{inla_param}.

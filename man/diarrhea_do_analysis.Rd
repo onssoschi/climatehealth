@@ -15,8 +15,7 @@ diarrhea_do_analysis(
   date_col = NULL,
   year_col,
   month_col,
-  case_col,
-  case_type,
+  diarrhea_case_col,
   tot_pop_col,
   tmin_col,
   tmean_col,
@@ -26,7 +25,6 @@ diarrhea_do_analysis(
   runoff_col,
   geometry_col,
   spi_col = NULL,
-  ndvi_col = NULL,
   max_lag = 2,
   basis_matrices_choices,
   inla_param,
@@ -61,10 +59,7 @@ Defaults to \code{NULL}.}
 
 \item{month_col}{Character. Column name for the month variable.}
 
-\item{case_col}{Character. Column name for diarrhea case counts.}
-
-\item{case_type}{Character. Type of malaria cases (e.g., \code{"diarrhea"},
-\code{"diarrhea_under_five"}).}
+\item{diarrhea_case_col}{Character. Column name for diarrhea case counts.}
 
 \item{tot_pop_col}{Character. Column name for total population.}
 
@@ -85,9 +80,6 @@ shapefile (usually \code{"geometry"}).}
 
 \item{spi_col}{Character (optional). Column name for the Standardized
 Precipitation Index (SPI). Defaults to \code{NULL}.}
-
-\item{ndvi_col}{Character (optional). Column name for the Normalized Difference
-Vegetation Index (NDVI). Defaults to \code{NULL}.}
 
 \item{max_lag}{Numeric. Maximum temporal lag to include in the distributed
 lag model (e.g., \code{2}–\code{4}). Defaults to \code{4}.}
@@ -131,15 +123,12 @@ Defaults to \code{TRUE}.}
 are saved. Defaults to \code{NULL}.}
 }
 \value{
-A list containing:
+A named list containing:
 \itemize{
-\item Model output from INLA
-\item Monthly random effects plot
-\item Yearly random effects plot
-\item Contour plot
-\item Relative risk map
-\item Relative risk plot
-\item Attributable fraction and number summary
+\item \code{inla_result} – Fitted INLA model object and summaries.
+\item \code{VIF} – Variance Inflation Factor results for multicollinearity assessment.
+\item \code{rr_df} – Relative risk results dataset.
+\item \code{an_ar_results} – Attributable risk summary table.
 }
 }
 \description{

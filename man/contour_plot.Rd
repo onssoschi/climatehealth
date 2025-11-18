@@ -8,6 +8,7 @@ region or district level for each disease cases type (\code{diarrhea} and \code{
 contour_plot(
   data,
   param_term,
+  max_lag,
   model,
   level,
   filter_year = NULL,
@@ -22,6 +23,9 @@ contour_plot(
 \item{param_term}{A character vector or list containing parameter terms such
 as \code{tmax} (temperature exposure) and \code{rainfall}(rainfall exposure).
 Default to \code{tmax}.}
+
+\item{max_lag}{Character. Number corresponding to the maximum lag to be
+considered for the delay effect. It should be between 2 an 4.}
 
 \item{model}{The fitted model from the \code{run_inla_models()} function.}
 
