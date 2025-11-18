@@ -34,6 +34,7 @@ malaria_do_analysis(
   param_threshold = 1,
   filter_year = NULL,
   family = "poisson",
+  group_by_year = FALSE,
   config = FALSE,
   save_csv = FALSE,
   save_model = FALSE,
@@ -58,6 +59,8 @@ Defaults to \code{NULL}.}
 \item{year_col}{Character. Column name for the year variable.}
 
 \item{month_col}{Character. Column name for the month variable.}
+
+\item{malaria_case_col}{Character. Column name for malaria case counts.}
 
 \item{tot_pop_col}{Character. Column name for total population.}
 
@@ -106,6 +109,9 @@ Defaults to \code{NULL}.}
 \item{family}{Character. Probability distribution for the outcome variable.
 Options include \code{"poisson"} (default) and \code{"nbinomial"} for a negative binomial model.}
 
+\item{group_by_year}{Logical. Whether to group attributable metrics by year.
+Defaults to \code{FALSE}.}
+
 \item{config}{Logical. Whether to enable additional INLA model configurations.
 Defaults to \code{TRUE}.}
 
@@ -119,28 +125,14 @@ Defaults to \code{TRUE}.}
 
 \item{output_dir}{Character. Directory where output files (plots, datasets, maps)
 are saved. Defaults to \code{NULL}.}
-
-\item{case_col}{Character. Column name for malaria case counts.}
-
-\item{case_type}{Character. Type of malaria cases (e.g., \code{"malaria"},
-\code{"malaria_under_five"}).}
-
-\item{group_by_year}{Logical. Whether to group attributable metrics by year.
-Defaults to \code{FALSE}.}
 }
 \value{
 A named list containing:
 \itemize{
 \item \code{inla_result} – Fitted INLA model object and summaries.
-\item \code{plot_malaria}, \code{plot_tmax}, \code{plot_rainfall} – Exploratory time-series plots.
-\item \code{reff_plot_monthly} – Monthly random effects plot.
-\item \code{reff_plot_yearly} – Yearly spatial random effects plot.
-\item \code{contour_plot} – Exposure–response contour plot.
-\item \code{rr_map_plot} – Spatial relative risk map.
-\item \code{rr_plot}, \code{rr_df} – Relative risk plot and associated data.
+\item \code{VIF} – Variance Inflation Factor results for multicollinearity assessment.
+\item \code{rr_df} – Relative risk results dataset.
 \item \code{attr_frac_num} – Attributable risk summary table.
-\item \code{plot_AR_num}, \code{plot_AR_frac}, \code{plot_AR_per_100k} – Plots of attributable
-number, fraction, and rate.
 }
 }
 \description{

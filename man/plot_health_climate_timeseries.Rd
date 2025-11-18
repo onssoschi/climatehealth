@@ -31,8 +31,6 @@ to. Must be one of 'diarrhea' or 'malaria'.}
 \item{save_fig}{Boolean. Whether to save the figure as a PDF. Defaults to FALSE.}
 
 \item{output_dir}{Character. Directory path to save the figure. Default to NULL}
-
-\item{year}{Optional numeric vector to filter data by year(s). Defaults to NULL.}
 }
 \value{
 A ggplot object.

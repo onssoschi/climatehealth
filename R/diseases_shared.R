@@ -297,13 +297,13 @@ load_and_process_climatedata <- function(
 
   # Ensure time order if possible
   climate_data <- climate_data %>%
-    dplyr::arrange(district, year, month)
+    dplyr::arrange(.data$district, .data$year, .data$month)
 
   # Function to create lagged variables by district
   create_lags <- function(df, var, max_lag) {
     df <- df %>%
-      dplyr::group_by(district) %>%
-      dplyr::arrange(year, month, .by_group = TRUE) %>%
+      dplyr::group_by(.data$district) %>%
+      dplyr::arrange(.data$year, .data$month, .by_group = TRUE) %>%
       dplyr::mutate(
         dplyr::across(
           .cols = all_of(var),
@@ -492,7 +492,7 @@ combine_health_climate_data <- function(
 #' @param filter_year Optional numeric vector to filter data by year(s). Defaults to NULL.
 #' @param case_type Character. The type of disease that the case column refers
 #' to. Must be one of 'diarrhea' or 'malaria'.
-#' @param year Optional numeric vector to filter data by year(s). Defaults to NULL.
+#' @param filter_year Optional numeric vector to filter data by year(s). Defaults to NULL.
 #' @param save_fig Boolean. Whether to save the figure as a PDF. Defaults to FALSE.
 #' @param output_dir Character. Directory path to save the figure. Default to NULL
 #'
@@ -596,8 +596,10 @@ plot_health_climate_timeseries <- function(
 #'
 #' @param data A dataset returned from \code{combine_health_climate_data()},
 #' including lagged variables like \code{tmax_lag1}, \code{tmin_lag1}, etc.
-#' @param max_lag Character. Number corresponding to the maximum lag to be
+#' @param nlag Character. Number corresponding to the maximum lag to be
 #' considered for the delay effect. It should be between 2 an 4. Defaults to 2.
+#' @param include_ndvi Logical. Whether or not to include NDVI in the var
+#' definitions. Often TRUE if vectorborne (malaria) analysis.
 #'
 #' @return A list of cross-basis matrices including the basis matrix for maximum
 #' temperature, minimun temperature, cumulative rainfall, and relative humidity.
@@ -620,7 +622,6 @@ set_cross_basis <- function(data, nlag = 2, include_ndvi = FALSE) {
   vars <- vars[!sapply(vars, is.null)]
 
   nk <- ifelse("diarrhea" %in% colnames(data), 2, 1)
-  print(nk)
 
   basis_matrices <- lapply(names(vars), function(var) {
     x <- vars[[var]]
@@ -702,6 +703,8 @@ create_inla_indices <- function(data, case_type) {
 #' and must be compatible with `set_cross_basis()` for generating DLNM matrices.
 #' @param inla_param Character vector of parameter names representing all
 #' climate variables to consider excluding the `basis_matrices_choices` parameter.
+#' @param max_lag Character. Number corresponding to the maximum lag to be
+#' considered for the delay effect. It should be between 2 an 4.
 #' @param basis_matrices_choices Character vector specifying the main exposure variables
 #' that should be included as DLNM basismatrices, and should be excluded from the `inla_param`.
 #' It might be `tmax`for temperature exposure and `rainfall` if rainfall exposure.
@@ -775,6 +778,8 @@ check_diseases_vif <- function(
 #' and must be compatible with `set_cross_basis()` for generating DLNM matrices.
 #' @param inla_param Character vector of parameter names representing all
 #' climate variables to consider excluding the `basis_matrices_choices` parameter.
+#' @param max_lag Character. Number corresponding to the maximum lag to be
+#' considered for the delay effect. It should be between 2 an 4.
 #' @param basis_matrices_choices Character vector specifying the main exposure variables
 #' that should be included as DLNM basismatrices, and should be excluded from the `inla_param`.
 #' It might be `tmax`for temperature exposure and `rainfall` if rainfall exposure.
@@ -836,6 +841,8 @@ check_and_write_vif <- function(
 #' @param inla_param A character vector specifying the confounding exposures to
 #' be included in the model. Possible values are `tmax`,`tmin`, `rainfall`,
 #' `r_humidity`, `runoff`, `ndvi`, Etc.
+#' @param max_lag Character. Number corresponding to the maximum lag to be
+#' considered for the delay effect. It should be between 2 an 4.
 #' @param case_type Character. The type of disease that the case column refers
 #' to. Must be one of `diarrhea` or `malaria`.
 #' @param output_dir Character. The path to save model output to.  Defaults to NULL.
@@ -928,7 +935,6 @@ run_inla_models <- function(
 
   baseline_model <- fit(base_formula)
   model <- fit(full_formula)
-
   if (save_model) {
     save(model,
       file = file.path(
@@ -1112,6 +1118,8 @@ plot_yearly_spatial_random_effect <- function(
 #' @param data Data list from `combine_health_climate_data()` function.
 #' @param param_term A character vector or list containing parameter terms such
 #' as `tmax` (maximum temperature) and `rainfall` (rainfall exposure).
+#' @param max_lag Character. Number corresponding to the maximum lag to be
+#' considered for the delay effect. It should be between 2 an 4.
 #' @param model The fitted model from run_inla_models() function.
 #' @param level Character. The spatial disaggregation level.
 #' Can take one of the following values: `country`, `region`, or `district`.
@@ -1200,6 +1208,8 @@ get_predictions <- function(
 #' @param param_term A character vector or list containing parameter terms such
 #' as `tmax` (temperature exposure) and `rainfall`(rainfall exposure).
 #' Default to `tmax`.
+#' @param max_lag Character. Number corresponding to the maximum lag to be
+#' considered for the delay effect. It should be between 2 an 4.
 #' @param model The fitted model from the `run_inla_models()` function.
 #' @param level A character vector specifying the geographical disaggregation.
 #' Can take one of the following values: "country", "region", or "district".
@@ -1230,7 +1240,7 @@ contour_plot <- function(
 
   if (!is.null(filter_year)) {
     if (!"year" %in% names(data)) stop("'year' column not found in data.")
-    data <- filter(data, year %in% filter_year)
+    data <- filter(data, .data$year %in% filter_year)
   }
   predt <- get_predictions(
     data,
@@ -1314,6 +1324,8 @@ contour_plot <- function(
 #' @param param_term A character vector or list specifying the climate parameters
 #' (e.g., `tmax` for maximum temperature, `rainfall` for precipitation) to
 #' include in the map. Defaults to `tmax`.
+#' @param max_lag Character. Number corresponding to the maximum lag to be
+#' considered for the delay effect. It should be between 2 an 4.
 #' @param level A character string indicating the spatial aggregation level.
 #' Options are `region` or `district`. Defaults to `District`.
 #' @param case_type Character. The type of disease that the case column refers
@@ -1354,7 +1366,7 @@ plot_rr_map <- function(
   # Get RR data for each year
   get_rr_df <- function(yr) {
     pred <- get_predictions(
-      filter(data, year == yr),
+      filter(data, data$year == yr),
       param_term,
       max_lag,
       model,
@@ -1379,7 +1391,7 @@ plot_rr_map <- function(
   plots <- lapply(seq_along(years), function(i) {
     map_rr <- left_join(map, rr_list[[i]], by = grouping_var)
     ggplot2::ggplot(map_rr) +
-      ggplot2::geom_sf(ggplot2::aes(fill = RR), color = "black", size = 0.2) +
+      ggplot2::geom_sf(ggplot2::aes(fill = .data$RR), color = "black", size = 0.2) +
       ggplot2::scale_fill_gradient2(
         low = "blue", mid = "white", high = "red",
         midpoint = 1, limits = rr_range, na.value = "grey80", name = "RR"
@@ -1426,6 +1438,8 @@ plot_rr_map <- function(
 #' @param param_term A character vector or list containing parameter terms such
 #' as `tmax` (temperature exposure) and `rainfall` (rainfall exposure).
 #' Default to `tmax`.
+#' @param max_lag Character. Number corresponding to the maximum lag to be
+#' considered for the delay effect. It should be between 2 an 4.
 #' @param level A character vector specifying the geographical disaggregation.
 #' Can take one of the following values: `country`, `region`, or `district`.
 #' Default to `country`.
@@ -1487,7 +1501,7 @@ plot_relative_risk <- function(
         ymin = pred$allRRlow,
         ymax = pred$allRRhigh
       ),
-      ggplot2::aes(x, y)
+      ggplot2::aes(.data$x, .data$y)
     ) +
       ggplot2::geom_line(color = "red", linewidth = 1) +
       ggplot2::geom_ribbon(ggplot2::aes(ymin = .data$ymin, ymax = .data$ymax),
@@ -1520,11 +1534,11 @@ plot_relative_risk <- function(
       rr_plot <- ggplot2::ggplot() +
         ggplot2::geom_line(
           data = dplyr::tibble(x = pred$predvar, y = pred$allRRfit),
-          ggplot2::aes(x = x, y = y), color = "red", linewidth = 1
+          ggplot2::aes(x = .data$x, y = .data$y), color = "red", linewidth = 1
         ) +
         ggplot2::geom_ribbon(
           data = dplyr::tibble(x = pred$predvar, ymin = pred$allRRlow, ymax = pred$allRRhigh),
-          ggplot2::aes(x = x, ymin = ymin, ymax = ymax), fill = "red", alpha = 0.3
+          ggplot2::aes(x = .data$x, ymin = .data$ymin, ymax = .data$ymax), fill = "red", alpha = 0.3
         ) +
         ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "gray", linewidth = 0.5) +
         ggplot2::scale_x_continuous(limits = x_limits, breaks = x_breaks) +
@@ -1583,7 +1597,7 @@ plot_relative_risk <- function(
 
     filter_year <- sort(unique(filter_year))
     plots <- lapply(filter_year, function(yr) {
-      pred <- get_predictions(dplyr::filter(data, year == yr), param_term, max_lag, model, level, case_type)
+      pred <- get_predictions(dplyr::filter(data, .data$year == yr), param_term, max_lag, model, level, case_type)
       all_predictions[[as.character(yr)]] <- pred
       build_plot(pred, as.character(yr))
     }) %>% purrr::keep(~ !is.null(.))
@@ -1633,7 +1647,7 @@ plot_relative_risk <- function(
     } else {
       for (yr in filter_year) {
         preds <- get_predictions(
-          dplyr::filter(data, year == yr),
+          dplyr::filter(data, .data$year == yr),
           param_term,
           max_lag,
           model,
@@ -1712,6 +1726,8 @@ plot_relative_risk <- function(
 #' the following values: `"country"`, `"region"`, or `"district"`.
 #' @param param_threshold Numeric. Threshold above which relative risks (RR) are
 #' considered attributable. Defaults to `1`.
+#' @param max_lag Character. Number corresponding to the maximum lag to be
+#' considered for the delay effect. It should be between 2 an 4.
 #' @param filter_year Integer. The year to filter to data to. Defaults to NULL.
 #' @param group_by_year Logical. Whether to aggregate results by year (`TRUE`) or
 #' by year and month (`FALSE`). Defaults to `FALSE`.
@@ -1758,7 +1774,7 @@ attribution_calculation <- function(data,
   # Filter years if needed
   if (!is.null(filter_year)) {
     stopifnot("year" %in% names(data), all(filter_year %in% unique(data$year)))
-    data <- dplyr::filter(data, year %in% filter_year)
+    data <- dplyr::filter(data, .data$year %in% filter_year)
   }
 
   # Create INLA indices and basis matrices
@@ -1935,7 +1951,7 @@ attribution_calculation <- function(data,
 #' @keywords internal
 plot_attribution_metric <- function(
     attr_data,
-    level = c("country", "region", "district"),
+    level = "country",
     metrics = c("AR_Number", "AR_Fraction", "AR_per_100k"),
     filter_year = NULL,
     param_term,
@@ -1960,7 +1976,7 @@ plot_attribution_metric <- function(
 
   if (!is.null(filter_year)) {
     if (!"year" %in% names(attr_data)) stop("'year' column not found in data.")
-    attr_data <- dplyr::filter(attr_data, year %in% filter_year)
+    attr_data <- dplyr::filter(attr_data, .data$year %in% filter_year)
   }
 
   y_title_lookup <- c(
@@ -1998,7 +2014,6 @@ plot_attribution_metric <- function(
       attr_data <- aggregate_attr_data(attr_data, level)
     }
   }
-
   plots <- purrr::map(metrics, function(metric) {
     lci_col <- paste0(metric, "_LCI")
     uci_col <- paste0(metric, "_UCI")
@@ -2030,19 +2045,19 @@ plot_attribution_metric <- function(
 
       # Add AF value in parentheses for AN only
       attr_data_plot <- attr_data_plot %>%
-        mutate(label_text = if (metric == "AR_Number") {
-          paste0(round(.data[[metric]], 1), " (", round(AR_Fraction, 2), "%)")
+        mutate(label_text = if (metric == "AR_Fraction") {
+          paste0(round(.data[[metric]], 1), " (", round(.data$AR_Fraction, 2), "%)")
         } else {
           round(.data[[metric]], 1)
         })
 
-      p <- ggplot2::ggplot(attr_data_plot, ggplot2::aes(x = year, y = .data[[metric]], group = 1)) +
+      p <- ggplot2::ggplot(attr_data_plot, ggplot2::aes(x = .data$year, y = .data[[metric]], group = 1)) +
         ggplot2::geom_line(color = "steelblue", linewidth = 1) +
         ggplot2::geom_point(color = "steelblue", size = 2) +
         ggplot2::geom_ribbon(ggplot2::aes(ymin = .data[[lci_col]], ymax = .data[[uci_col]]),
           alpha = 0.2, fill = "steelblue"
         ) +
-        ggplot2::geom_text(ggplot2::aes(label = label_text), vjust = -0.5, size = 2) +
+        ggplot2::geom_text(ggplot2::aes(label = .data$label_text), vjust = -0.5, size = 2) +
         ggplot2::labs(title = title, y = y_label, x = "Year") +
         ggplot2::scale_y_continuous(labels = y_formatter, limits = y_limits) +
         ggplot2::theme_minimal(base_size = 10) +
@@ -2063,7 +2078,7 @@ plot_attribution_metric <- function(
       attr_data_plot <- attr_data_plot %>%
         dplyr::arrange(dplyr::desc(.data[[metric]])) %>%
         dplyr::mutate(!!level := factor(.data[[level]], levels = unique(.data[[level]]))) %>%
-        dplyr::mutate(label_text = if (metric == "AR_Number") {
+        dplyr::mutate(label_text = if (metric == "AR_Fraction") {
           paste0(round(.data[[metric]], 1), " (", round(.data$AR_Fraction, 2), "%)")
         } else {
           paste0(round(.data[[metric]], 1))
@@ -2084,7 +2099,7 @@ plot_attribution_metric <- function(
         purrr::map(~ {
           ggplot2::ggplot(.x, ggplot2::aes(x = .data[[level]], y = .data[[metric]])) +
             ggplot2::geom_col(fill = "steelblue", width = 0.6) +
-            ggplot2::geom_text(ggplot2::aes(label = label_text), hjust = -0.1, size = 2.8) +
+            ggplot2::geom_text(ggplot2::aes(label = .data$label_text), hjust = -0.1, size = 2.8) +
             ggplot2::coord_flip() +
             ggplot2::labs(x = tools::toTitleCase(level), y = y_label) +
             ggplot2::scale_y_continuous(labels = y_formatter, limits = y_limits) +
@@ -2115,14 +2130,14 @@ plot_attribution_metric <- function(
     # --- Region/District grouped by year (no CI) ---
     if (!is.null(filter_year) && length(filter_year) >= 1 && level %in% c("region", "district")) {
       attr_data_plot <- attr_data_plot %>%
-        group_by(.data[[level]], year) %>%
+        group_by(.data[[level]], .data$year) %>%
         summarise(
-          AR_Fraction = mean(AR_Fraction, na.rm = TRUE),
+          AR_Fraction = mean(.data$AR_Fraction, na.rm = TRUE),
           across(matches("^AR_Number(_LCI|_UCI)?$"), ~ sum(.x, na.rm = TRUE)),
           across(matches("^AR_(per_100k)(_LCI|_UCI)?$"), ~ mean(.x, na.rm = TRUE)),
           .groups = "drop"
         ) %>%
-        mutate(label_text = if (metric == "AR_Number") {
+        mutate(label_text = if (metric == "AR_Fraction") {
           paste0(round(.data[[metric]], 1), " (", round(.data$AR_Fraction, 2), "%)")
         } else {
           paste0(round(.data[[metric]], 2))
@@ -2131,7 +2146,7 @@ plot_attribution_metric <- function(
       level_vals <- attr_data_plot %>%
         group_by(.data[[level]]) %>%
         summarise(avg = mean(.data[[metric]], na.rm = TRUE), .groups = "drop") %>%
-        arrange(desc(avg)) %>%
+        arrange(desc(.data$avg)) %>%
         pull(.data[[level]])
 
       attr_data_plot[[level]] <- factor(attr_data_plot[[level]], levels = level_vals)
@@ -2150,25 +2165,25 @@ plot_attribution_metric <- function(
           c(0, 1.8 * max(attr_data_plot[[metric]], na.rm = TRUE))
         }
 
-        ggplot(df, aes(x = .data[[level]], y = .data[[metric]], fill = factor(year))) +
-          geom_col(position = position_dodge(width = 0.8)) +
-          geom_text(aes(label = label_text),
-            position = position_dodge(width = 0.8), vjust = -0.3, size = 2.5
+        ggplot2::ggplot(df, ggplot2::aes(x = .data[[level]], y = .data[[metric]], fill = factor(.data$year))) +
+          ggplot2::geom_col(position = ggplot2::position_dodge(width = 0.8)) +
+          ggplot2::geom_text(ggplot2::aes(label = .data$label_text),
+            position = ggplot2::position_dodge(width = 0.8), vjust = -0.3, size = 2.5
           ) +
-          scale_y_continuous(labels = y_formatter, limits = y_limits) +
-          labs(x = tools::toTitleCase(level), y = y_label, fill = "Year") +
+          ggplot2::scale_y_continuous(labels = y_formatter, limits = y_limits) +
+          ggplot2::labs(x = tools::toTitleCase(level), y = y_label, fill = "Year") +
           {
             if (length(unique(df$year)) == 1) {
-              scale_fill_manual(values = c("steelblue"))
+              ggplot2::scale_fill_manual(values = c("steelblue"))
             } else {
-              scale_fill_brewer(palette = "Set2")
+              ggplot2::scale_fill_brewer(palette = "Set2")
             }
           } +
-          theme_minimal(base_size = 8) +
-          theme(
-            axis.text.x = element_text(angle = 70, hjust = 1, size = 8),
-            axis.text.y = element_text(size = 8),
-            plot.margin = margin(t = 5, r = 5, b = 50, l = 5)
+          ggplot2::theme_minimal(base_size = 8) +
+          ggplot2::theme(
+            axis.text.x = ggplot2::element_text(angle = 70, hjust = 1, size = 8),
+            axis.text.y = ggplot2::element_text(size = 8),
+            plot.margin = ggplot2::margin(t = 5, r = 5, b = 50, l = 5)
           )
       })
 
@@ -2180,7 +2195,7 @@ plot_attribution_metric <- function(
           merged <- patchwork::wrap_plots(group_plots[i], ncol = 1) +
             patchwork::plot_annotation(
               title = paste(title, "by Year and", tools::toTitleCase(level)),
-              theme = theme(plot.title = element_text(size = 10, face = "bold", hjust = 0.5))
+              theme = ggplot2::theme(plot.title = ggplot2::element_text(size = 10, face = "bold", hjust = 0.5))
             )
           print(merged)
         }

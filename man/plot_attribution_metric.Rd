@@ -6,7 +6,7 @@
 \usage{
 plot_attribution_metric(
   attr_data,
-  level = c("country", "region", "district"),
+  level = "country",
   metrics = c("AR_Number", "AR_Fraction", "AR_per_100k"),
   filter_year = NULL,
   param_term,

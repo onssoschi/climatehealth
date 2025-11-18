@@ -8,6 +8,7 @@ plot_rr_map(
   combined_data,
   model,
   param_term = "tmax",
+  max_lag,
   level = "District",
   filter_year = NULL,
   case_type,
@@ -24,6 +25,9 @@ function. This list should include both the health-climate data and the map data
 \item{param_term}{A character vector or list specifying the climate parameters
 (e.g., \code{tmax} for maximum temperature, \code{rainfall} for precipitation) to
 include in the map. Defaults to \code{tmax}.}
+
+\item{max_lag}{Character. Number corresponding to the maximum lag to be
+considered for the delay effect. It should be between 2 an 4.}
 
 \item{level}{A character string indicating the spatial aggregation level.
 Options are \code{region} or \code{district}. Defaults to \code{District}.}

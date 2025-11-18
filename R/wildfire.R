@@ -1426,7 +1426,6 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
   scale_factor <- max(aggregated_data$mean_deaths_per_100k) / max(aggregated_data$mean_pm)
   # Plot results
   all_plots <- c()
-  ag <<- aggregated_data
   for (reg in unique(aggregated_data$regnames)) {
     region_data <- subset(
       aggregated_data,
