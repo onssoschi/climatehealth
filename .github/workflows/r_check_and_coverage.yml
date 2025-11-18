@@ -43,6 +43,7 @@ jobs:
             "devtools", "roxygen2", "remotes", "patrick", "pak", "covr", "DT",
             "htmltools", "mockery", "openxlsx"
           ))
+          install.packages("terra", repos="https://rspatial.r-universe.dev")
           install.packages("fmesher")
           install.packages(
             "INLA",

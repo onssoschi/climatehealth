@@ -13,14 +13,13 @@
 #' @keywords internal
 create_grid <- function(plot_count) {
   est <- sqrt(plot_count)
-  if (est==floor(est)){
+  if (est == floor(est)) {
     x <- y <- est
   } else {
     base <- est - floor(est)
-    if (base < 0.5){
+    if (base < 0.5) {
       y <- floor(est)
-    }
-    else {
+    } else {
       y <- floor(est) + 1
     }
     x <- floor(est) + 1
@@ -43,9 +42,11 @@ plot_correlation_matrix <- function(matrix_, title, output_path) {
   matrix_ <- round(matrix_, 3)
   # draw and save correlation matrix
   png(output_path, width = 1000)
-  gplots::heatmap.2(x=as.matrix(matrix_), Rowv = FALSE, Colv = FALSE, dendrogram = "none",
-                    cellnote = matrix_, notecol = "black", notecex = 2, cexRow = 2, cexCol = 2,
-                    trace = "none", key = FALSE, margins = c(11, 11), main = title)
+  gplots::heatmap.2(
+    x = as.matrix(matrix_), Rowv = FALSE, Colv = FALSE, dendrogram = "none",
+    cellnote = matrix_, notecol = "black", notecex = 2, cexRow = 2, cexCol = 2,
+    trace = "none", key = FALSE, margins = c(11, 11), main = title
+  )
   dev.off()
 }
 
@@ -67,8 +68,7 @@ plot_distributions <- function(
     title,
     xlabs = NULL,
     save_hists = FALSE,
-    output_path = NULL
-    ) {
+    output_path = NULL) {
   # create a pdf if a save is selected
   if (save_hists == T) {
     # normalise output path
@@ -116,7 +116,7 @@ plot_distributions <- function(
 get_alpha_colour <- function(hex, alpha) {
   rgb_vals <- col2rgb(hex)
   alpha_colour <- rgb(rgb_vals[1, ] / 255, rgb_vals[2, ] / 255, rgb_vals[3, ] /
-                        255, alpha = alpha)
+    255, alpha = alpha)
   return(alpha_colour)
 }
 
@@ -143,8 +143,7 @@ plot_moving_average <- function(
     title,
     save_plot = FALSE,
     output_path = "",
-    units = NULL
-) {
+    units = NULL) {
   # Create a PDF if saving is requested
   if (save_plot == TRUE) {
     output_path <- enforce_file_extension(output_path, ".pdf")
@@ -185,11 +184,13 @@ plot_moving_average <- function(
     stats::filter(x, rep(1 / n, n), sides = sides)
   }
 
-  col_name <- paste0("MA_",
-                     as.character(ma_days),
-                     "days_",
-                     as.character(ma_sides),
-                     "sides")
+  col_name <- paste0(
+    "MA_",
+    as.character(ma_days),
+    "days_",
+    as.character(ma_sides),
+    "sides"
+  )
   df[[col_name]] <- ma(df[[value_col]], ma_days, ma_sides)
 
   # plot moving average
@@ -235,10 +236,11 @@ plot_scatter_grid <- function(
     title,
     save_scatters = FALSE,
     output_path = "",
-    units = NULL
-) {
+    units = NULL) {
   all_columns <- c(main_col, comparison_cols)
-  if (length(all_columns) < 2) return()
+  if (length(all_columns) < 2) {
+    return()
+  }
 
   df <- df %>% dplyr::select(all_of(all_columns))
 
@@ -293,8 +295,7 @@ plot_boxplots <- function(
     title = "Boxplots",
     ylabs = NULL,
     save_plot = FALSE,
-    output_path = NULL
-) {
+    output_path = NULL) {
   # Select columns based on user input
   if (!is.null(columns)) {
     selected_cols <- columns
@@ -322,12 +323,13 @@ plot_boxplots <- function(
     ylab <- if (!is.null(ylabs) && length(ylabs) >= i) ylabs[i] else col_name
 
     boxplot(df[[col_name]],
-            main = paste0("Boxplot of '", col_name, "'"),
-            col = "#27a0cc",
-            border = "#003c57",
-            outline = TRUE,
-            horizontal = FALSE,
-            ylab = ylab)
+      main = paste0("Boxplot of '", col_name, "'"),
+      col = "#27a0cc",
+      border = "#003c57",
+      outline = TRUE,
+      horizontal = FALSE,
+      ylab = ylab
+    )
   }
   # Add overall title
   mtext(title, outer = TRUE, cex = 1.6, line = 1, font = 2, col = "black")
@@ -356,8 +358,7 @@ plot_seasonal_trends <- function(
     title = "Seasonal Trends",
     ylabs = NULL,
     save_plot = FALSE,
-    output_path = ""
-) {
+    output_path = "") {
   # Ensure date column is Date type
   df[[date_col]] <- as.Date(df[[date_col]])
 
@@ -416,8 +417,7 @@ plot_regional_trends <- function(
     title = "Regional Trends",
     ylabs = NULL,
     save_plot = FALSE,
-    output_path = ""
-) {
+    output_path = "") {
   # Set up PDF output if needed
   if (save_plot) {
     output_path <- enforce_file_extension(output_path, ".pdf")
@@ -475,13 +475,12 @@ plot_regional_trends <- function(
 #'
 #' @keywords internal
 plot_rate_overall <- function(
-  df,
-  dependent_col,
-  population_col,
-  date_col,
-  save_rate = FALSE,
-  output_path = NULL
-) {
+    df,
+    dependent_col,
+    population_col,
+    date_col,
+    save_rate = FALSE,
+    output_path = NULL) {
   # Clean numeric columns
   df[[population_col]] <- as.numeric(gsub(",", "", df[[population_col]]))
   df[[dependent_col]] <- as.numeric(df[[dependent_col]])
@@ -540,8 +539,7 @@ plot_total_variables_by_year <- function(
     date_col,
     variables,
     save_total = FALSE,
-    output_path = ""
-) {
+    output_path = "") {
   # Convert date column to Date and extract year
   df[[date_col]] <- as.Date(df[[date_col]])
   df$Year <- lubridate::year(df[[date_col]])
@@ -557,7 +555,7 @@ plot_total_variables_by_year <- function(
 
   # Plot each variable
   for (var in variables) {
-    p <-  ggplot2::ggplot(yearly_totals, ggplot2::aes(x = .data$Year, y = .data[[var]])) +
+    p <- ggplot2::ggplot(yearly_totals, ggplot2::aes(x = .data$Year, y = .data[[var]])) +
       ggplot2::geom_line(color = "#27a0cc", linewidth = 1.2) +
       ggplot2::geom_point(color = "#27a0cc", size = 2) +
       ggplot2::labs(

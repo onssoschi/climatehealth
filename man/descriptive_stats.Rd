@@ -2,9 +2,9 @@
 % Please edit documentation in R/wildfire.R
 \name{descriptive_stats}
 \alias{descriptive_stats}
-\title{Show descriptive statistics}
+\title{Save descriptive statistics}
 \usage{
-descriptive_stats(data, variables, bin_width = 5)
+descriptive_stats(data, variables, bin_width = 5, output_dir = ".")
 }
 \arguments{
 \item{data}{Dataframe containing a daily time series of climate and health
@@ -14,13 +14,17 @@ data}
 summary statistics for. Must include at least 1 variable.}
 
 \item{bin_width}{Integer. Width of each bin in a histogram of the outcome
-variable. Default is 5.}
+variable. Defaults to 5.}
+
+\item{output_dir}{Character. The directory to output descriptive stats to.
+Must exist and will not be automatically created. Defaults to ".".}
 }
 \value{
 Prints summary statistics and a histogram of the the outcome
 variable
 }
 \description{
-Generates summary statistics for climate and health data.
+Generates summary statistics for climate and health data and
+saves them to the specified file path.
 }
 \keyword{internal}

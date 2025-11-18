@@ -9,6 +9,7 @@ mh_save_results(
   res_attr_tot,
   attr_yr_list,
   attr_mth_list,
+  power_list,
   output_folder_path = NULL
 )
 }
@@ -24,6 +25,8 @@ fractions, numbers and rates by area}
 
 \item{attr_mth_list}{A list of data frames containing total attributable
 fractions, numbers and rates by calendar month and area.}
+
+\item{power_list}{A list containing power information by area.}
 
 \item{output_folder_path}{Path to folder where results should be saved.
 Defaults to NULL.}
