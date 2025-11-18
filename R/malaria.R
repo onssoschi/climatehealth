@@ -139,34 +139,38 @@ malaria_do_analysis <- function(
     output_dir,
     paste0("malaria_analysis_", format(Sys.time(), "%d_%m_%Y_%H_%M"))
   )
-  if (!is.null(new_fpath)) (
-    dir.create(new_fpath)
-  )
+  if (!is.null(new_fpath)) {
+    (
+      dir.create(new_fpath)
+    )
+  }
   output_dir <- new_fpath
 
   # Get combined data
-  combined_data <- combine_health_climate_data(health_data_path,
-                                               climate_data_path,
-                                               map_path,
-                                               region_col,
-                                               district_col,
-                                               date_col,
-                                               year_col,
-                                               month_col,
-                                               malaria_case_col,
-                                               "malaria",
-                                               tot_pop_col,
-                                               tmin_col,
-                                               tmean_col,
-                                               tmax_col,
-                                               rainfall_col,
-                                               r_humidity_col,
-                                               geometry_col,
-                                               runoff_col,
-                                               ndvi_col,
-                                               spi_col,
-                                               max_lag,
-                                               output_dir)
+  combined_data <- combine_health_climate_data(
+    health_data_path,
+    climate_data_path,
+    map_path,
+    region_col,
+    district_col,
+    date_col,
+    year_col,
+    month_col,
+    malaria_case_col,
+    "malaria",
+    tot_pop_col,
+    tmin_col,
+    tmean_col,
+    tmax_col,
+    rainfall_col,
+    r_humidity_col,
+    geometry_col,
+    runoff_col,
+    ndvi_col,
+    spi_col,
+    max_lag,
+    output_dir
+  )
   # Plot time series
   plot_malaria <- NULL
   plot_tmax <- NULL
@@ -300,59 +304,68 @@ malaria_do_analysis <- function(
 
   # attribution fraction and number
   attr_frac_num <- attribution_calculation(combined_data$data,
-                                           param_term=param_term,
-                                           model=inla_result$model,
-                                           param_threshold=param_threshold,
-                                           max_lag=max_lag,
-                                           level= level,
-                                           case_type="malaria",
-                                           filter_year=filter_year,
-                                           group_by_year = group_by_year,
-                                           save_csv=save_csv,
-                                           output_dir=output_dir)
-  #Attributable number plots
+    param_term = param_term,
+    model = inla_result$model,
+    param_threshold = param_threshold,
+    max_lag = max_lag,
+    level = level,
+    case_type = "malaria",
+    filter_year = filter_year,
+    group_by_year = group_by_year,
+    save_csv = save_csv,
+    output_dir = output_dir
+  )
+  # Attributable number plots
 
-  plot_AR_Num <-plot_attribution_metric(attr_data = attr_frac_num,
-                                        param_term=param_term,
-                                        level= level,
-                                        metrics = "AR_Number",
-                                        case_type="malaria",
-                                        filter_year = filter_year,
-                                        save_fig =save_fig,
-                                        output_dir = output_dir)
-  #attributable fraction plots
-  plot_AR_Fr <-plot_attribution_metric(attr_data = attr_frac_num,
-                                       param_term=param_term,
-                                       level= level,
-                                       metrics = "AR_Fraction",
-                                       case_type="malaria",
-                                       filter_year = filter_year,
-                                       save_fig =save_fig,
-                                       output_dir = output_dir)
+  plot_AR_Num <- plot_attribution_metric(
+    attr_data = attr_frac_num,
+    param_term = param_term,
+    level = level,
+    metrics = "AR_Number",
+    case_type = "malaria",
+    filter_year = filter_year,
+    save_fig = save_fig,
+    output_dir = output_dir
+  )
+  # attributable fraction plots
+  plot_AR_Fr <- plot_attribution_metric(
+    attr_data = attr_frac_num,
+    param_term = param_term,
+    level = level,
+    metrics = "AR_Fraction",
+    case_type = "malaria",
+    filter_year = filter_year,
+    save_fig = save_fig,
+    output_dir = output_dir
+  )
   # Attributable rate plots
-  plot_AR_per_100k <-plot_attribution_metric(attr_data = attr_frac_num,
-                                             param_term=param_term,
-                                             level= level,
-                                             filter_year = filter_year,
-                                             metrics = "AR_per_100k",
-                                             case_type="malaria",
-                                             save_fig =save_fig,
-                                             output_dir = output_dir)
+  plot_AR_per_100k <- plot_attribution_metric(
+    attr_data = attr_frac_num,
+    param_term = param_term,
+    level = level,
+    filter_year = filter_year,
+    metrics = "AR_per_100k",
+    case_type = "malaria",
+    save_fig = save_fig,
+    output_dir = output_dir
+  )
   # Return results
-  res <- list(plot_malaria = plot_malaria,
-              plot_tmax = plot_tmax,
-              plot_rainfall = plot_rainfall,
-              inla_result = inla_result,
-              reff_plot_monthly = reff_plot_monthly,
-              reff_plot_yearly = reff_plot_yearly,
-              contour_plot = contour_plot_malaria,
-              rr_map_plot = rr_map_plot,
-              rr_plot = rr_plot,
-              rr_df = rr_df,
-              attr_frac_num = attr_frac_num,
-              plot_AR_num = plot_AR_Num,
-              plot_AR_frac = plot_AR_Fr,
-              plot_AR_per_100k = plot_AR_per_100k)
+  res <- list(
+    plot_malaria = plot_malaria,
+    plot_tmax = plot_tmax,
+    plot_rainfall = plot_rainfall,
+    inla_result = inla_result,
+    reff_plot_monthly = reff_plot_monthly,
+    reff_plot_yearly = reff_plot_yearly,
+    contour_plot = contour_plot_malaria,
+    rr_map_plot = rr_map_plot,
+    rr_plot = rr_plot,
+    rr_df = rr_df,
+    attr_frac_num = attr_frac_num,
+    plot_AR_num = plot_AR_Num,
+    plot_AR_frac = plot_AR_Fr,
+    plot_AR_per_100k = plot_AR_per_100k
+  )
 
   return(res)
 }
