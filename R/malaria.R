@@ -106,6 +106,7 @@ malaria_do_analysis <- function(
     param_threshold = 1,
     filter_year = NULL,
     family = "poisson",
+    group_by_year = FALSE,
     config = FALSE,
     save_csv = FALSE,
     save_model = FALSE,
@@ -133,6 +134,16 @@ malaria_do_analysis <- function(
   }
   check_file_exists(map_path, TRUE)
 
+  # Create a centralised output dir
+  new_fpath <- file.path(
+    output_dir,
+    paste0("malaria_analysis_", format(Sys.time(), "%d_%m_%Y_%H_%M"))
+  )
+  if (!is.null(new_fpath)) (
+    dir.create(new_fpath)
+  )
+  output_dir <- new_fpath
+
   # Get combined data
   combined_data <- combine_health_climate_data(health_data_path,
                                                climate_data_path,
@@ -142,8 +153,8 @@ malaria_do_analysis <- function(
                                                date_col,
                                                year_col,
                                                month_col,
-                                               case_col,
-                                               case_type,
+                                               malaria_case_col,
+                                               "malaria",
                                                tot_pop_col,
                                                tmin_col,
                                                tmean_col,
@@ -190,13 +201,18 @@ malaria_do_analysis <- function(
     )
   }
   # create base matrice
-  basis <- set_cross_basis(combined_data$data, max_lag)
+  basis <- set_cross_basis(
+    data = combined_data$data,
+    nlag = max_lag,
+    include_ndvi = TRUE
+  )
 
   # Check for multicolinearity
   if (save_csv) {
     VIF <- check_and_write_vif(
       data = combined_data$data,
       inla_param = inla_param,
+      max_lag = max_lag,
       basis_matrices_choices = basis_matrices_choices,
       case_type = "malaria",
       output_dir = output_dir
@@ -205,6 +221,7 @@ malaria_do_analysis <- function(
     VIF <- check_diseases_vif(
       data = combined_data$data,
       inla_param = inla_param,
+      max_lag = max_lag,
       basis_matrices_choices = basis_matrices_choices,
       case_type = "malaria"
     )
@@ -216,6 +233,7 @@ malaria_do_analysis <- function(
     basis_matrices_choices = basis_matrices_choices,
     inla_param = inla_param,
     case_type = "malaria",
+    max_lag = max_lag,
     output_dir = output_dir,
     save_model = save_model,
     family = family,
@@ -242,6 +260,7 @@ malaria_do_analysis <- function(
   contour_plot_malaria <- contour_plot(
     data = combined_data$data,
     param_term = param_term,
+    max_lag = max_lag,
     model = inla_result$model,
     level = level,
     filter_year = filter_year,
@@ -255,6 +274,7 @@ malaria_do_analysis <- function(
     combined_data = combined_data,
     model = inla_result$model,
     param_term = param_term,
+    max_lag = max_lag,
     level = level,
     filter_year = filter_year,
     case_type = "malaria",
@@ -267,6 +287,7 @@ malaria_do_analysis <- function(
     data = combined_data$data,
     model = inla_result$model,
     param_term = param_term,
+    max_lag = max_lag,
     level = level,
     filter_year = filter_year,
     case_type = "malaria",
@@ -282,6 +303,7 @@ malaria_do_analysis <- function(
                                            param_term=param_term,
                                            model=inla_result$model,
                                            param_threshold=param_threshold,
+                                           max_lag=max_lag,
                                            level= level,
                                            case_type="malaria",
                                            filter_year=filter_year,
@@ -334,3 +356,39 @@ malaria_do_analysis <- function(
 
   return(res)
 }
+
+malaria_do_analysis(
+  health_data_path = "../climatehealth_pipelines/data/inputs/diseases/test_health_data_malaria.xlsx",
+  climate_data_path = "../climatehealth_pipelines/data/inputs/diseases/test_climate_data.xlsx",
+  map_path = "../climatehealth_pipelines/data/inputs/diseases/Gha_geodata",
+  region_col = "Region",
+  district_col = "District",
+  date_col = NULL,
+  year_col = "Year",
+  month_col = "Month",
+  malaria_case_col = "malaria_ud_five",
+  tot_pop_col = "pop_tot",
+  tmin_col = "tmin",
+  tmean_col = "tmean",
+  tmax_col = "tmax",
+  rainfall_col = "rainfall",
+  r_humidity_col = "r_humidity",
+  runoff_col = "runoff",
+  geometry_col = "geometry",
+  spi_col = NULL,
+  ndvi_col = NULL,
+  max_lag = 2,
+  basis_matrices_choices = c("rainfall"),
+  inla_param = c("tmin", "tmax", "r_humidity", "runoff"),
+  param_term = "rainfall",
+  level = "Region",
+  group_by_year = FALSE,
+  param_threshold = 1,
+  filter_year = NULL,
+  family = "poisson",
+  config = TRUE,
+  save_csv = TRUE,
+  save_model = TRUE,
+  save_fig = TRUE,
+  output_dir = "../climatehealth_pipelines/data/outputs"
+)

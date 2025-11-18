@@ -260,7 +260,7 @@ load_and_process_climatedata <- function(
     rainfall_col,
     r_humidity_col,
     runoff_col = NULL,
-    ndvi = NULL,
+    ndvi_col = NULL,
     spi_col = NULL,
     max_lag = 4) {
   if (is.data.frame(climate_data_path)) {
@@ -591,7 +591,8 @@ plot_health_climate_timeseries <- function(
 #' temperature, minimun temperature, cumulative rainfall, and relative humidity.
 #'
 #' @keywords internal
-set_cross_basis <- function(data, max_lag, include_ndvi = FALSE) {
+set_cross_basis <- function(data, nlag = 2, include_ndvi = FALSE) {
+  # define vars
   var_defs <- list(
     tmax = "tmax_lag", tmin = "tmin_lag", tmean = "tmean_lag",
     rainfall = "rainfall_lag", r_humidity = "r_humidity_lag",
@@ -600,20 +601,20 @@ set_cross_basis <- function(data, max_lag, include_ndvi = FALSE) {
   if (include_ndvi) var_defs$ndvi <- "ndvi_lag"
 
   vars <- lapply(names(var_defs), function(var) {
-    cols <- c(var, paste0(var_defs[[var]], 1:max_lag))
+    cols <- c(var, paste0(var_defs[[var]], 1:nlag))
     if (all(cols %in% names(data))) dplyr::select(data, all_of(cols)) else NULL
   })
   names(vars) <- names(var_defs)
   vars <- vars[!sapply(vars, is.null)]
 
-  lagknot <- dlnm::equalknots(0:max_lag, 1)
+  lagknot <- dlnm::equalknots(0:nlag, 1)
 
   basis_matrices <- lapply(names(vars), function(var) {
     x <- vars[[var]]
     cb <- dlnm::crossbasis(
       x,
       argvar = list(fun = "ns", knots = dlnm::equalknots(x[[1]], 1)),
-      arglag = list(fun = "ns", knots = max_lag / 2)
+      arglag = list(fun = "ns", knots = nlag / 2)
     )
     colnames(cb) <- paste0("basis_", var, ".", colnames(cb))
     cb
@@ -622,7 +623,6 @@ set_cross_basis <- function(data, max_lag, include_ndvi = FALSE) {
   names(basis_matrices) <- names(vars)
   return(basis_matrices)
 }
-
 
 #' Create indices for INLA models
 #'
@@ -706,6 +706,7 @@ create_inla_indices <- function(data, case_type) {
 check_diseases_vif <- function(
     data,
     inla_param,
+    max_lag,
     basis_matrices_choices,
     case_type) {
   # validate case type
@@ -713,7 +714,7 @@ check_diseases_vif <- function(
   include_ndvi <- ifelse(case_type == "malaria", TRUE, FALSE)
   # get inla indices and cross basis
   data <- create_inla_indices(data, case_type)
-  basis <- set_cross_basis(data, include_ndvi)
+  basis <- set_cross_basis(data, max_lag, include_ndvi)
   # assign variables
   vars_basis <- Filter(Negate(is.null), basis[basis_matrices_choices])
   vars_data <- setdiff(inla_param, basis_matrices_choices)
@@ -780,6 +781,7 @@ check_diseases_vif <- function(
 check_and_write_vif <- function(
     data,
     inla_param,
+    max_lag,
     basis_matrices_choices,
     case_type,
     output_dir) {
@@ -787,6 +789,7 @@ check_and_write_vif <- function(
   VIF <- check_diseases_vif(
     data = data,
     inla_param = inla_param,
+    max_lag = max_lag,
     basis_matrices_choices = basis_matrices_choices,
     case_type = case_type
   )
@@ -837,6 +840,7 @@ run_inla_models <- function(
     combined_data,
     basis_matrices_choices,
     inla_param,
+    max_lag,
     case_type,
     output_dir = NULL,
     save_model = FALSE,
@@ -854,7 +858,7 @@ run_inla_models <- function(
 
   data <- create_inla_indices(combined_data$data, case_type)
   include_ndvi <- ifelse(case_type == "malaria", TRUE, FALSE)
-  basis <- set_cross_basis(combined_data$data, include_ndvi)
+  basis <- set_cross_basis(combined_data$data, max_lag, include_ndvi)
   graph_file <- combined_data$graph_file
 
   prior <- list(prec = list(prior = "pc.prec", param = c(0.5 / 0.31, 0.01)))
@@ -1107,6 +1111,7 @@ plot_yearly_spatial_random_effect <- function(
 get_predictions <- function(
     data,
     param_term,
+    max_lag,
     model,
     level,
     case_type) {
@@ -1117,7 +1122,7 @@ get_predictions <- function(
 
   # getting basis matrices
   include_ndvi <- ifelse(case_type == "malaria", TRUE, FALSE)
-  basis_matrices <- set_cross_basis(data, include_ndvi)
+  basis_matrices <- set_cross_basis(data, max_lag, include_ndvi)
 
   # Extract full coef and vcov for the region
   coef <- model$summary.fixed$mean
@@ -1198,6 +1203,7 @@ get_predictions <- function(
 contour_plot <- function(
     data,
     param_term,
+    max_lag,
     model,
     level,
     filter_year = NULL,
@@ -1213,7 +1219,14 @@ contour_plot <- function(
     if (!"year" %in% names(data)) stop("'year' column not found in data.")
     data <- filter(data, year %in% filter_year)
   }
-  predt <- get_predictions(data, param_term = param_term, model = model, level = level, case_type = case_type)
+  predt <- get_predictions(
+    data,
+    param_term = param_term,
+    max_lag = max_lag,
+    model = model,
+    level = level,
+    case_type = case_type
+  )
 
   plot_contour <- function(x, y, z, title) {
     nlag <- max(x)
@@ -1301,6 +1314,7 @@ plot_rr_map <- function(
     combined_data,
     model,
     param_term = "tmax",
+    max_lag,
     level = "District",
     filter_year = NULL,
     case_type,
@@ -1322,7 +1336,15 @@ plot_rr_map <- function(
 
   # Get RR data for each year
   get_rr_df <- function(yr) {
-    pred <- get_predictions(filter(data, year == yr), param_term, model, level, case_type)
+    pred <- get_predictions(
+      filter(data, year == yr),
+      param_term,
+      max_lag,
+      model,
+      level,
+      case_type
+    )
+    if ("allRRfit" %in% names(pred)) pred <- list(national=pred)
     purrr::map_dfr(names(pred), function(name) {
       vals <- pred[[name]]
       if (anyNA(vals$allRRfit)) return(NULL)
@@ -1404,6 +1426,7 @@ plot_relative_risk <- function(
     data,
     model,
     param_term,
+    max_lag,
     level = "country",
     filter_year = NULL,
     case_type,
@@ -1461,7 +1484,7 @@ plot_relative_risk <- function(
   if (level == "country") {
     if (is.null(filter_year)) {
       data_all <- data
-      pred <- get_predictions(data_all, param_term, model, level, case_type)
+      pred <- get_predictions(data_all, param_term, max_lag, model, level, case_type)
       if (is.list(pred) && !is.null(names(pred)) && length(pred) == 1) {
         pred <- pred[[1]]
       }
@@ -1532,7 +1555,7 @@ plot_relative_risk <- function(
 
     filter_year <- sort(unique(filter_year))
     plots <- lapply(filter_year, function(yr) {
-      pred <- get_predictions(dplyr::filter(data, year == yr), param_term, model, level, case_type)
+      pred <- get_predictions(dplyr::filter(data, year == yr), param_term, max_lag, model, level, case_type)
       all_predictions[[as.character(yr)]] <- pred
       build_plot(pred, as.character(yr))
     }) %>% purrr::keep(~ !is.null(.))
@@ -1571,7 +1594,7 @@ plot_relative_risk <- function(
     group_plots <- list()
 
     if (is.null(filter_year)) {
-      preds <- get_predictions(data, param_term, model, level, case_type)
+      preds <- get_predictions(data, param_term, max_lag, model, level, case_type)
       all_predictions[["All Years"]] <- preds
       for (grp in names(preds)) {
         p <- build_plot(preds[[grp]], grp)
@@ -1581,8 +1604,14 @@ plot_relative_risk <- function(
       }
     } else {
       for (yr in filter_year) {
-        preds <- get_predictions(dplyr::filter(data, year == yr), param_term,
-                                 model, level, case_type)
+        preds <- get_predictions(
+          dplyr::filter(data, year == yr),
+          param_term,
+          max_lag,
+          model,
+          level,
+          case_type
+        )
         all_predictions[[as.character(yr)]] <- preds
         for (grp in names(preds)) {
           p <- build_plot(preds[[grp]], paste0(grp, " (", yr, ")"))

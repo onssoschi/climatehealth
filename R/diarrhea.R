@@ -32,8 +32,6 @@
 #' shapefile (usually `"geometry"`).
 #' @param spi_col Character (optional). Column name for the Standardized
 #' Precipitation Index (SPI). Defaults to `NULL`.
-#' @param ndvi_col Character (optional). Column name for the Normalized Difference
-#' Vegetation Index (NDVI). Defaults to `NULL`.
 #' @param max_lag Numeric. Maximum temporal lag to include in the distributed
 #' lag model (e.g., `2`–`4`). Defaults to `4`.
 #' @param basis_matrices_choices Character vector. Specifies which climate variables
@@ -82,8 +80,7 @@ diarrhea_do_analysis <- function(health_data_path,
                                  date_col = NULL,
                                  year_col,
                                  month_col,
-                                 case_col,
-                                 case_type,
+                                 diarrhea_case_col,
                                  tot_pop_col,
                                  tmin_col,
                                  tmean_col,
@@ -93,7 +90,6 @@ diarrhea_do_analysis <- function(health_data_path,
                                  runoff_col,
                                  geometry_col,
                                  spi_col = NULL,
-                                 ndvi_col = NULL,
                                  max_lag = 2,
                                  basis_matrices_choices,
                                  inla_param,
@@ -128,31 +124,42 @@ diarrhea_do_analysis <- function(health_data_path,
   if (is.character(climate_data_path)) {
     check_file_exists(climate_data_path, TRUE)
   }
-  check_file_exists(map_path, TRUE) #
+  check_file_exists(map_path, TRUE)
+
+  # Create a centralised output dir
+  new_fpath <- file.path(
+    output_dir,
+    paste0("diarrhea_analysis_", format(Sys.time(), "%d_%m_%Y_%H_%M"))
+  )
+  if (!is.null(new_fpath)) (
+    dir.create(new_fpath)
+  )
+  output_dir <- new_fpath
 
   # get combined data
-  combined_data <- combine_health_climate_data(health_data_path,
-                                               climate_data_path,
-                                               map_path,
-                                               region_col,
-                                               district_col,
-                                               date_col,
-                                               year_col,
-                                               month_col,
-                                               case_col,
-                                               case_type,
-                                               tot_pop_col,
-                                               tmin_col,
-                                               tmean_col,
-                                               tmax_col,
-                                               rainfall_col,
-                                               r_humidity_col,
-                                               geometry_col,
-                                               runoff_col,
-                                               ndvi_col,
-                                               spi_col,
-                                               max_lag,
-                                               output_dir)
+  combined_data <- combine_health_climate_data(
+    health_data_path = health_data_path,
+    climate_data_path = climate_data_path,
+    map_path = map_path,
+    region_col = region_col,
+    district_col = district_col,
+    date_col = date_col,
+    year_col = year_col,
+    month_col = month_col,
+    case_col = diarrhea_case_col,
+    case_type = "diarrhea",
+    tot_pop_col = tot_pop_col,
+    tmin_col = tmin_col,
+    tmean_col = tmean_col,
+    tmax_col = tmax_col,
+    rainfall_col = rainfall_col,
+    r_humidity_col = r_humidity_col,
+    geometry_col = geometry_col,
+    runoff_col = runoff_col,
+    spi_col = spi_col,
+    max_lag = max_lag,
+    output_dir = output_dir
+  )
   # Plot time series
   plot_diarrhea <- NULL
   plot_tmax <- NULL
@@ -187,13 +194,18 @@ diarrhea_do_analysis <- function(health_data_path,
     )
   }
   # create base matrice
-  basis <- set_cross_basis(combined_data$data, max_lag)
+  basis <- set_cross_basis(
+    data = combined_data$data,
+    nlag = max_lag,
+    include_ndvi = FALSE
+  )
 
   # Check for multicolinearity
   if (save_csv) {
     VIF <- check_and_write_vif(
       data = combined_data$data,
       inla_param = inla_param,
+      max_lag = max_lag,
       basis_matrices_choices = basis_matrices_choices,
       case_type = "diarrhea",
       output_dir = output_dir
@@ -202,6 +214,7 @@ diarrhea_do_analysis <- function(health_data_path,
     VIF <- check_diseases_vif(
       data = combined_data$data,
       inla_param = inla_param,
+      max_lag = max_lag,
       basis_matrices_choices = basis_matrices_choices,
       case_type = "diarrhea"
     )
@@ -213,6 +226,7 @@ diarrhea_do_analysis <- function(health_data_path,
     basis_matrices_choices = basis_matrices_choices,
     inla_param = inla_param,
     case_type = "diarrhea",
+    max_lag = max_lag,
     output_dir = output_dir,
     save_model = save_model,
     family = family,
@@ -239,6 +253,7 @@ diarrhea_do_analysis <- function(health_data_path,
   contour_plot_diarrhea <- contour_plot(
     data = combined_data$data,
     param_term = param_term,
+    max_lag = max_lag,
     model = inla_result$model,
     level = level,
     filter_year = filter_year,
@@ -252,6 +267,7 @@ diarrhea_do_analysis <- function(health_data_path,
     combined_data = combined_data,
     model = inla_result$model,
     param_term = param_term,
+    max_lag = max_lag,
     level = level,
     filter_year = filter_year,
     case_type = "diarrhea",
@@ -264,6 +280,7 @@ diarrhea_do_analysis <- function(health_data_path,
     data = combined_data$data,
     model = inla_result$model,
     param_term = param_term,
+    max_lag = max_lag,
     level = level,
     filter_year = filter_year,
     case_type = "diarrhea",
@@ -280,6 +297,7 @@ diarrhea_do_analysis <- function(health_data_path,
     param_term=param_term,
     model=inla_result$model,
     param_threshold=param_threshold,
+    max_lag = max_lag,
     level= level,
     case_type="diarrhea",
     filter_year=filter_year,
@@ -296,7 +314,7 @@ diarrhea_do_analysis <- function(health_data_path,
                                         save_fig =save_fig,
                                         output_dir = output_dir)
 
-  plot_AR_Fr <-plot_attribution_metric(attr_data = attr_frac_num,
+  plot_AR_Fr <- plot_attribution_metric(attr_data = attr_frac_num,
                                        param_term=param_term,
                                        level= level,
                                        metrics = "AR_Fraction",
@@ -305,7 +323,7 @@ diarrhea_do_analysis <- function(health_data_path,
                                        save_fig =save_fig,
                                        output_dir = output_dir)
 
-  plot_AR_per_100k <-plot_attribution_metric(attr_data = attr_frac_num,
+  plot_AR_per_100k <- plot_attribution_metric(attr_data = attr_frac_num,
                                              param_term=param_term,
                                              level= level,
                                              filter_year = filter_year,
@@ -328,6 +346,5 @@ diarrhea_do_analysis <- function(health_data_path,
               plot_AR_num = plot_AR_Num,
               plot_AR_frac = plot_AR_Fr,
               plot_AR_per_100k = plot_AR_per_100k)
-
   return(res)
 }
