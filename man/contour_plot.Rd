@@ -2,11 +2,13 @@
 % Please edit documentation in R/diseases_shared.R
 \name{contour_plot}
 \alias{contour_plot}
-\title{Create a contour plot at country, region or district level.}
+\title{Create and plot the exposure-lag-response relationship (contour plot) at country,
+region or district level for each disease cases type (\code{diarrhea} and \code{malaria}).}
 \usage{
 contour_plot(
   data,
   param_term,
+  max_lag,
   model,
   level,
   filter_year = NULL,
@@ -16,21 +18,24 @@ contour_plot(
 )
 }
 \arguments{
-\item{data}{Data list from combine_health_climate_data() function.}
+\item{data}{Data list from \code{combine_health_climate_data()} function.}
 
 \item{param_term}{A character vector or list containing parameter terms such
-as "tmax" (maximum temperature) and "rainfall" (precipitation).
-Default to "tmax"}
+as \code{tmax} (temperature exposure) and \code{rainfall}(rainfall exposure).
+Default to \code{tmax}.}
 
-\item{model}{The fitted model from run_inla_models() function.}
+\item{max_lag}{Character. Number corresponding to the maximum lag to be
+considered for the delay effect. It should be between 2 an 4.}
 
-\item{level}{A character vector specifying the spatial disaggregation level.
+\item{model}{The fitted model from the \code{run_inla_models()} function.}
+
+\item{level}{A character vector specifying the geographical disaggregation.
 Can take one of the following values: "country", "region", or "district".}
 
 \item{filter_year}{Integer. The year to filter to data to. Defaults to NULL.}
 
 \item{case_type}{Character. The type of disease that the case column refers
-to. Must be one of 'diarrhea' or 'malaria'}
+to. Must be one of \code{diarrhea} or \code{malaria}.}
 
 \item{save_fig}{Boolean. Whether to save the outputted plot. Defaults to
 FALSE.}
@@ -41,7 +46,7 @@ FALSE.}
 contour plot at country, Region and District level
 }
 \description{
-: Generates a contour plot showing the lag exposure effect of
-maximum temperature (tmax) and cumulative rainfall on Malaria cases.
+: Generates a contour plot showing the exposure-lag-response
+relationship of the exposure \code{tmax} and \code{rainfall} and the diseases case type.
 }
 \keyword{internal}

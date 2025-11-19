@@ -11,6 +11,14 @@ load_and_process_map(
   geometry_col,
   output_dir = NULL
 )
+
+load_and_process_map(
+  map_path,
+  region_col,
+  district_col,
+  geometry_col,
+  output_dir = NULL
+)
 }
 \arguments{
 \item{map_path}{The path to the country's shape file "sf" data.}
@@ -29,8 +37,17 @@ load_and_process_map(
 \item 'nb.map'
 \item 'graph_file'
 }
+
+\itemize{
+\item 'map' The processed map
+\item 'nb.map'
+\item 'graph_file'
+}
 }
 \description{
+: Read in a shape file, rename columns and create the
+adjacency matrix for spatiotemporal analysis.
+
 : Read in a shape file, rename columns and create the
 adjacency matrix for spatiotemporal analysis.
 }

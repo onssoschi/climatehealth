@@ -4,21 +4,24 @@
 \alias{get_predictions}
 \title{A function to predict relative risk at country, region, and district level}
 \usage{
-get_predictions(data, param_term, model, level, case_type)
+get_predictions(data, param_term, max_lag, model, level, case_type)
 }
 \arguments{
-\item{data}{Data list from combine_health_climate_data() function.}
+\item{data}{Data list from \code{combine_health_climate_data()} function.}
 
 \item{param_term}{A character vector or list containing parameter terms such
-as "tmax" (maximum temperature) and "rainfall" (precipitation).}
+as \code{tmax} (maximum temperature) and \code{rainfall} (rainfall exposure).}
+
+\item{max_lag}{Character. Number corresponding to the maximum lag to be
+considered for the delay effect. It should be between 2 an 4.}
 
 \item{model}{The fitted model from run_inla_models() function.}
 
 \item{level}{Character. The spatial disaggregation level.
-Can take one of the following values: "country", "region", or "district".}
+Can take one of the following values: \code{country}, \code{region}, or \code{district}.}
 
 \item{case_type}{Character. The type of disease that the case column refers
-to. Must be one of 'diarrhea' or 'malaria'}
+to. Must be one of \code{diarrhea} or \code{malaria}.}
 }
 \value{
 A dataframe containing cumulative relative risk at the chosen level.
