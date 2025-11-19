@@ -2,7 +2,7 @@
 % Please edit documentation in R/diseases_shared.R
 \name{load_and_process_data}
 \alias{load_and_process_data}
-\title{Read in and format health data}
+\title{Read in and format health data - diseases cases type}
 \usage{
 load_and_process_data(
   health_data_path,
@@ -17,9 +17,9 @@ load_and_process_data(
 )
 }
 \arguments{
-\item{health_data_path}{Path to a csv file containing a monthly time series
-of data for disease outcomes, which may be disaggregated by sex (under five
-case or above five case), and by Region and District.}
+\item{health_data_path}{Path to a csv file containing a monthly time series of data
+for health outcome case type, which may be disaggregated by sex (under five case or
+above five case), and by Region and District.}
 
 \item{region_col}{Character. Name of the column in the dataframe that contains
 the region names.}
@@ -40,7 +40,7 @@ the month.}
 that contains the disease cases to be considered.}
 
 \item{case_type}{Character. The type of disease that the case column refers
-to. Must be one of 'diarrhea' or 'malaria'}
+to. Must be one of 'diarrhea' or 'malaria'.}
 
 \item{tot_pop_col}{Character. Name of the column in the dataframe that contains
 the total population.}
@@ -49,7 +49,7 @@ the total population.}
 A dataframe with formatted and renamed columns.
 }
 \description{
-Reads in a csv file containing a monthly time series of health
+Read in a csv file containing a monthly time series of health
 outcomes and population data. Renames columns and creates time variables for
 spatiotemporal analysis.
 }
