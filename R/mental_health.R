@@ -1098,7 +1098,7 @@ mh_power_list <- function(
       mutate(power = stats::pnorm(
         .data$log_rr / .data$se - .data$z_alpha
       ) + (1 - stats::pnorm(.data$log_rr / .data$se + .data$z_alpha))) %>%
-      select(all_of(c(-"z_alpha"))) %>%
+      select(-all_of("z_alpha")) %>%
       mutate(
         log_rr = round(.data$log_rr, 2),
         se = round(.data$se, 2),
