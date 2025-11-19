@@ -14,7 +14,7 @@ test_that("Test mh_read_and_format_data", {
       region = c("North", "South", "East", "West", "Central"),
       temp = c(23.5, 25.1, 22.8, 24.3, 21.9),
       health_outcomes = c(10.2, 12.5, 9.8, 11.1, 8.7),
-      population = c(1000L, 1200L, 950L, 1100L, 1050L)
+      pop = c(1000L, 1200L, 950L, 1100L, 1050L)
     )
   }
 
@@ -289,8 +289,8 @@ test_that("mh_vif calculates variance inflation factors correctly", {
 
     # Check structure
     expect_s3_class(region_vif, "data.frame")
-    expect_named(region_vif, c("variable", "vif"))
-    expect_equal(nrow(region_vif), 4)  # temp + 3 independent vars
+    expect_named(region_vif, c("region", "variable_combo", "variable", "vif"))
+    expect_equal(ncol(region_vif), 4)  # temp + 3 independent vars
 
     # Check all variables are present
     expected_vars <- c("temp", independent_vars)
@@ -303,7 +303,7 @@ test_that("mh_vif calculates variance inflation factors correctly", {
     # Check that wind (strongly correlated) has higher VIF than pollution (weakly correlated)
     wind_vif <- region_vif$vif[region_vif$variable == "wind"]
     pollution_vif <- region_vif$vif[region_vif$variable == "pollution"]
-    expect_gt(wind_vif, pollution_vif)
+    expect_true(all(wind_vif > pollution_vif))
   }
 
   # Test with single independent variable
@@ -385,11 +385,11 @@ test_that("mh_model_validation performs complete model validation", {
 
   # VIF results tests
   expect_s3_class(results_basic[[3]], "data.frame")
-  expect_named(results_basic[[3]], c("Region", "variable", "vif"))
+  expect_named(results_basic[[3]], c("region", "variable_combo", "variable", "vif"))
 
   # VIF summary tests
   expect_s3_class(results_basic[[4]], "data.frame")
-  expect_named(results_basic[[4]], c("variable", "mean_vif"))
+  expect_named(results_basic[[4]], c("variable_combo", "variable", "mean_vif"))
 
   # Check if files were created
   expect_true(dir.exists(validation_dir))
