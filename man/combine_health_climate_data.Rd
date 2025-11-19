@@ -23,9 +23,9 @@ combine_health_climate_data(
   r_humidity_col,
   geometry_col,
   runoff_col = NULL,
-  cvh_col = NULL,
+  ndvi_col = NULL,
   spi_col = NULL,
-  max_lag = 2,
+  max_lag,
   output_dir = NULL
 )
 }
@@ -55,7 +55,7 @@ the Month.}
 that contains the disease cases to be considered.}
 
 \item{case_type}{Character. The type of disease that the case column refers
-to. Must be one of 'diarrhea' or 'malaria'}
+to. Must be one of 'diarrhea' or 'malaria'.}
 
 \item{tot_pop_col}{Character. Name of the column in the dataframe that
 contains the total population.}
@@ -81,13 +81,14 @@ contains the relative humidity.}
 \item{runoff_col}{Character. Name of the column in the dataframe that
 contains the monthly runoff water data. Defaults to NULL.}
 
-\item{cvh_col}{Character. Name of column containing CHV.}
+\item{ndvi_col}{Character. Name of column containing the Normalized Difference
+Vegetation Index (ndvi) data. Defaults to NULL.}
 
 \item{spi_col}{Character. Name of the column in the dataframe that
 contains the standardized precipitation index. Defaults to NULL.}
 
 \item{max_lag}{Character. Number corresponding to the maximum lag to be
-considered for the delay effect. It should be between 2 an 4. Defaults to 2.}
+considered for the delay effect. It should be between 2 an 4.}
 
 \item{output_dir}{Path to folder where the processed map data should be
 saved. Defaults to NULL.}
