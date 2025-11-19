@@ -722,7 +722,7 @@ air_pollution_meta_analysis <- function(data,
                                         var_name = "pm25",
                                         family = "quasipoisson") {
   
-  # Stage 0: Fit Regional Models
+  # Fit Regional Models
   region_results <- data %>%
     dplyr::group_by(.data$region) %>%
     tidyr::nest() %>%
@@ -735,7 +735,7 @@ air_pollution_meta_analysis <- function(data,
     ) %>%
     dplyr::ungroup()
   
-  # Stage 1: Extract Coefficients and Calculate AN/AF
+  # Extract Coefficients and Calculate AN/AF
   region_results <- region_results %>%
     dplyr::mutate(
       coef_results = purrr::map(.data$model, ~ extract_air_pollution_coef(.x, var_name)),
@@ -755,7 +755,7 @@ air_pollution_meta_analysis <- function(data,
     return(NULL)
   }
   
-  # Stage 2: Meta Analysis
+  # Meta Analysis
   meta_result <- metafor::rma(
     yi = region_results$coef_pm25,
     sei = region_results$se_pm25,
@@ -2132,7 +2132,7 @@ air_pollution_do_analysis <- function(data_path,
                                       save_outputs,
                                       reference_standards) {
   
-  # Step 1: Load data
+  # Load data
   data <- load_air_pollution_data(
     data_path = data_path,
     date_col = date_col,
@@ -2147,10 +2147,10 @@ air_pollution_do_analysis <- function(data_path,
     population_col = population_col
   )
   
-  # Step 2: Create lag variables
+  # Create lag variables
   data_with_lags <- create_air_pollution_lags(data, max_lag)
   
-  # Step 3: Descriptive statistics
+  # Descriptive statistics
   
   desc_stats <- air_pollution_descriptive_stats(
     data_with_lags,
@@ -2158,15 +2158,15 @@ air_pollution_do_analysis <- function(data_path,
     save_outputs = save_outputs
   )
   
-  # Step 4: Meta-analysis
+  # Meta-analysis
   
   meta_results <- air_pollution_meta_analysis(data_with_lags, var_name, family)
   
-  # Step 5: Lag analysis
+  # Lag analysis
   
   lag_results <- analyze_air_pollution_lags(data_with_lags, max_lag, family)
   
-  # Step 6: Create forest and lag plots
+  # Create forest and lag plots
   forest_plot <- plot_air_pollution_forest(
     meta_results,
     output_dir = output_dir,
@@ -2180,7 +2180,7 @@ air_pollution_do_analysis <- function(data_path,
     save_plot = save_outputs
   )
   
-  # Step 7: Distributed lag analysis (optional)
+  # Distributed lag analysis (optional)
   gam_results <- NULL
   gam_plots <- NULL
   
@@ -2196,7 +2196,7 @@ air_pollution_do_analysis <- function(data_path,
     save_plot = save_outputs
   )
   
-  # Step 8: Exposure-response plots (optional)
+  # Exposure-response plots (optional)
   exposure_response_plots <- NULL
   reference_specific_af_an <- NULL
   
@@ -2236,7 +2236,7 @@ air_pollution_do_analysis <- function(data_path,
     }
   }
   
-  # Step 9: Save results to CSV
+  # Save results to CSV
   if (save_outputs && !is.null(output_dir)) {
     
     dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
