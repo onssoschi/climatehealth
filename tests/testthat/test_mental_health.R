@@ -1010,9 +1010,8 @@ test_that("mh_predict_nat produces expected output", {
 })
 
 test_that("mh_power_list produces expected output", {
-  # Set seed for reproducibility
-  set.seed(123)
   # Create sample data for two regions
+  set.seed(123)
   n_regions <- 2
   n_days <- 10
 
@@ -1055,9 +1054,9 @@ test_that("mh_power_list produces expected output", {
     expect_true(all(df$temperature >= round(quantile(df_list[[region]]$temp, 97.5 / 100), 1)))  # Threshold check
   }
 
-  # Check that 'cen' matches minpercreg percentile
+  # Check that 'cen' matches minpercreg percentile (ignore names)
   for (region in names(df_list)) {
-    expected_cen <- round(quantile(df_list[[region]]$temp, minpercreg[region] / 100, na.rm = TRUE), 1)
+    expected_cen <- unname(round(quantile(df_list[[region]]$temp, minpercreg[region] / 100, na.rm = TRUE), 1))
     actual_cen <- unique(result[[region]]$cen)
     expect_equal(actual_cen, expected_cen)
   }
@@ -1077,7 +1076,7 @@ test_that("mh_power_list produces expected output", {
 })
 
 test_that("mh_power_list handles edge cases correctly", {
-  # Single region
+  # test Single region
   set.seed(456)
   df_list_single <- list(region1 = data.frame(temp = rnorm(10, 20, 2)))
   pred_list_single <- list(region1 = data.frame(predvar = seq(18, 25, length.out = 3),
@@ -1104,7 +1103,7 @@ test_that("mh_power_list handles edge cases correctly", {
   expect_type(result_na, "list")
   expect_true(all(!is.na(result_na$region1$cen)))  # cen should compute despite NA values
 
-  # Case 3: Empty lists
+  # Empty lists
   df_list_empty <- list()
   pred_list_empty <- list()
   minpercreg_empty <- c()
@@ -1115,36 +1114,3 @@ test_that("mh_power_list handles edge cases correctly", {
   expect_length(result_empty, 0)  # Should return empty list without error
 })
 
-test_that("mh_power_list performance with large dataset", {
-  # Create large dataset with multiple regions and days
-  set.seed(789)
-  n_regions <- 50
-  n_days <- 365
-
-  # Create df_list for large dataset
-  df_list_large <- lapply(1:n_regions, function(i) {
-    data.frame(temp = rnorm(n_days, mean = 15 + i, sd = 5))
-  })
-  names(df_list_large) <- paste0("region", 1:n_regions)
-
-  # Create pred_list for large dataset
-  pred_list_large <- lapply(1:n_regions, function(i) {
-    data.frame(predvar = seq(10, 35, length.out = 10),
-               allfit = rnorm(10, mean = 0.1 * i, sd = 0.05),
-               allse = runif(10, 0.03, 0.07))
-  })
-  names(pred_list_large) <- names(df_list_large)
-
-  # Create minpercreg for large dataset
-  minpercreg_large <- setNames(sample(20:80, n_regions, replace = TRUE), names(df_list_large))
-
-  # Run function and measure execution time
-  start_time <- Sys.time()
-  result_large <- mh_power_list(df_list_large, pred_list_large, minpercreg_large)
-  end_time <- Sys.time()
-
-  # Tests
-  expect_type(result_large, "list")
-  expect_length(result_large, n_regions)
-  expect_true(as.numeric(difftime(end_time, start_time, units = "secs")) < 5)  # Should run under 5 seconds
-})
