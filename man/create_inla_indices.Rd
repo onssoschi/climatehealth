@@ -7,11 +7,11 @@
 create_inla_indices(data, case_type)
 }
 \arguments{
-\item{data}{is the dataset containing district_code, region_code, and year
+\item{data}{is the dataframe containing district_code, region_code, and year
 columns from the combine_health_climate_data() function.}
 
 \item{case_type}{Character. The type of disease that the case column refers
-to. Must be one of 'diarrhea' or 'malaria'}
+to. Must be one of 'diarrhea' or 'malaria'.}
 }
 \value{
 The modified data with the created indices.
@@ -19,6 +19,6 @@ The modified data with the created indices.
 \description{
 : For the INLA model, there is a need to set-up regions index,
 district index, and year index. This function create these indices using the
-dataset, ndistrict and nregion defined above.
+dataset, ndistrict and nregion.
 }
 \keyword{internal}
