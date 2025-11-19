@@ -32,6 +32,7 @@ Imports:
     mvmeta (>= 1.0.3),
     ncdf4 (>= 1.24),
     patchwork,
+    patrick,
     pkgbuild,
     purrr,
     raster,
@@ -62,7 +63,6 @@ Suggests:
     INLA,
     mockery,
     openxlsx,
-    patrick,
     terra,
     testthat (>= 3.2.1.1),
     withr
