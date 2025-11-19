@@ -85,7 +85,6 @@ test_that("Test mh_read_and_format_data", {
   })
 
 
-
 # Test mh_pop_totals
 test_that("Test mh_pop_totals", {
   mh_pop_totals_df <- data.frame(
@@ -775,7 +774,8 @@ test_that("mh_predict_reg produces expected output", {
 
   minpercreg <- c(region1 = 46L, region2 = 26L, region3 = 34L)
 
-  test_mh_predict_reg <- mh_predict_reg(df_list,
+  # run function with suppressed warnings, as x values beyond boundary knots not a concern
+  test_mh_predict_reg <- suppressWarnings(mh_predict_reg(df_list,
                                            var_fun = "bs",
                                            var_per = c(25,50,75),
                                            var_degree = 2,
@@ -784,6 +784,7 @@ test_that("mh_predict_reg produces expected output", {
                                            coef_,
                                            vcov_,
                                            meta_analysis = FALSE)
+  )
 
     #
     expect_type(test_mh_predict_reg, "list")
@@ -894,7 +895,6 @@ test_that("test mh_add_national_data", {
 
   result <- mh_add_national_data(df_list, pop_list, cb_list = cb_list, mm = mm, minpercreg = minpercreg)
 
-
   expect_type(result, "list")
   expect_length(result, 4)
   expect_named(result, NULL)  # unnamed list
@@ -930,4 +930,221 @@ test_that("test mh_add_national_data", {
   expect_true(is.matrix(mmpredall$vcov))
   expect_equal(length(mmpredall$fit), ncol(mmpredall$vcov))
 
+})
+
+test_that("mh_predict_nat produces expected output", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Create mock national data
+  n_days <- 10
+  national_df <- data.frame(
+    date = as.Date("2000-01-01") + 0:(n_days - 1),
+    region = rep("National", n_days),
+    temp = rnorm(n_days, mean = 15, sd = 3),
+    hum = runif(n_days, 70, 90),
+    sun = runif(n_days, 2, 4),
+    rainfall = runif(n_days, 0, 10),
+    population = rep(2600000, n_days),
+    suicides = rpois(n_days, lambda = 1),
+    year = rep(2000, n_days),
+    month = rep(1, n_days),
+    dow = c("Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon"),
+    stratum = paste("National:2000:1", c("Sat","Sun","Mon","Tue","Wed","Thu","Fri","Sat","Sun","Mon"), sep=":"),
+    ind = 1:n_days
+  )
+
+  # df_list with National data
+  df_list <- list(National = national_df)
+
+  # Mock mmpredall
+  mmpredall <- list(
+    fit = c(y1 = -0.02, y2 = 0.12, y3 = 0.22, y4 = -0.52, y5 = 1.57),
+    vcov = {
+      m <- matrix(runif(25, 8, 20), nrow = 5)
+      dimnames(m) <- list(paste0("y", 1:5), paste0("y", 1:5))
+      m
+    }
+  )
+
+  # Mock minpercreg
+  minpercreg <- c(National = 37L)
+
+  # Empty pred_list
+  pred_list <- list()
+
+  # Run function
+  result <- suppressWarnings(mh_predict_nat(
+    df_list = df_list,
+    var_fun = "bs",
+    var_per = c(25, 50, 75),
+    var_degree = 2,
+    minpercreg = minpercreg,
+    mmpredall = mmpredall,
+    pred_list = pred_list,
+    country = "National"
+  ))
+
+  # Structure tests
+  expect_type(result, "list")
+  expect_named(result, "National")
+  expect_s3_class(result$National, "crosspred")
+
+  # Check required components in crosspred object
+  required_components <- c("predvar", "cen", "lag", "bylag", "coefficients", "vcov", "matfit", "matse",
+                           "allfit", "allse", "matRRfit", "matRRlow", "matRRhigh", "allRRfit", "allRRlow", "allRRhigh",
+                           "ci.level", "model.class", "model.link")
+  expect_true(all(required_components %in% names(result$National)))
+
+  # Check prediction range matches input temperature range (within tolerance)
+  expect_equal(min(result$National$predvar), min(national_df$temp, na.rm = TRUE), tolerance = 0.1)
+  expect_equal(max(result$National$predvar), max(national_df$temp, na.rm = TRUE), tolerance = 0.1)
+
+  # Check centering value
+  expected_cen <- stats::quantile(national_df$temp, minpercreg["National"] / 100, na.rm = TRUE)
+  expect_equal(result$National$cen, expected_cen)
+
+  # Check lengths of prediction vectors
+  expect_equal(length(result$National$allfit), length(result$National$predvar))
+  expect_equal(length(result$National$allse), length(result$National$predvar))
+})
+
+test_that("mh_power_list produces expected output", {
+  # Set seed for reproducibility
+  set.seed(123)
+  # Create sample data for two regions
+  n_regions <- 2
+  n_days <- 10
+
+  # Create df_list with temperature and outcome data
+  df_list <- lapply(1:n_regions, function(i) {
+    data.frame(
+      temp = rnorm(n_days, mean = 20 + i * 2, sd = 3),
+      outcome = rpois(n_days, lambda = 10 + i)
+    )
+  })
+  names(df_list) <- paste0("region", 1:n_regions)
+
+  # Create pred_list with prediction values for each region
+  pred_list <- lapply(1:n_regions, function(i) {
+    data.frame(
+      predvar = seq(15, 30, length.out = 5),
+      allfit = rnorm(5, mean = 0.2 * i, sd = 0.05),
+      allse = runif(5, 0.03, 0.07)
+    )
+  })
+  names(pred_list) <- names(df_list)
+
+  # Create minpercreg vector for percentile thresholds
+  minpercreg <- setNames(sample(20:60, n_regions, replace = TRUE), names(df_list))
+
+  # Run the function
+  result <- mh_power_list(df_list, pred_list, minpercreg, attr_thr = 97.5)
+
+  # Tests
+  expect_type(result, "list")
+  expect_named(result, names(df_list))
+  expect_true(all(sapply(result, is.data.frame)))
+
+  # Check required columns exist in each region's output
+  required_cols <- c("region", "temperature", "cen", "log_rr", "se", "power")
+  for (region in names(result)) {
+    df <- result[[region]]
+    expect_true(all(required_cols %in% names(df)))
+    expect_true(all(df$power >= 0 & df$power <= 100))  # Power should be between 0 and 100
+    expect_true(all(df$temperature >= round(quantile(df_list[[region]]$temp, 97.5 / 100), 1)))  # Threshold check
+  }
+
+  # Check that 'cen' matches minpercreg percentile
+  for (region in names(df_list)) {
+    expected_cen <- round(quantile(df_list[[region]]$temp, minpercreg[region] / 100, na.rm = TRUE), 1)
+    actual_cen <- unique(result[[region]]$cen)
+    expect_equal(actual_cen, expected_cen)
+  }
+
+  # Check rounding of log_rr and se
+  for (region in names(result)) {
+    df <- result[[region]]
+    expect_true(all(df$log_rr == round(df$log_rr, 2)))
+    expect_true(all(df$se == round(df$se, 2)))
+  }
+
+  # Check power is rounded to 1 decimal place
+  for (region in names(result)) {
+    df <- result[[region]]
+    expect_true(all(df$power == round(df$power, 1)))
+  }
+})
+
+test_that("mh_power_list handles edge cases correctly", {
+  # Single region
+  set.seed(456)
+  df_list_single <- list(region1 = data.frame(temp = rnorm(10, 20, 2)))
+  pred_list_single <- list(region1 = data.frame(predvar = seq(18, 25, length.out = 3),
+                                                allfit = c(0.1, 0.2, 0.3),
+                                                allse = c(0.05, 0.06, 0.07)))
+  minpercreg_single <- c(region1 = 50)
+
+  # Run function for single region
+  result_single <- mh_power_list(df_list_single, pred_list_single, minpercreg_single)
+  expect_type(result_single, "list")
+  expect_length(result_single, 1)
+  expect_named(result_single, "region1")
+  expect_true(all(c("region", "temperature", "cen", "log_rr", "se", "power") %in% names(result_single$region1)))
+
+  # Case 2: Missing values in temperature
+  df_list_na <- list(region1 = data.frame(temp = c(NA, 20, 22, NA, 25)))
+  pred_list_na <- list(region1 = data.frame(predvar = c(20, 22, 25),
+                                            allfit = c(0.1, 0.15, 0.2),
+                                            allse = c(0.05, 0.06, 0.07)))
+  minpercreg_na <- c(region1 = 50)
+
+  # Run function with NA values
+  result_na <- mh_power_list(df_list_na, pred_list_na, minpercreg_na)
+  expect_type(result_na, "list")
+  expect_true(all(!is.na(result_na$region1$cen)))  # cen should compute despite NA values
+
+  # Case 3: Empty lists
+  df_list_empty <- list()
+  pred_list_empty <- list()
+  minpercreg_empty <- c()
+
+  # Run function with empty inputs
+  result_empty <- mh_power_list(df_list_empty, pred_list_empty, minpercreg_empty)
+  expect_type(result_empty, "list")
+  expect_length(result_empty, 0)  # Should return empty list without error
+})
+
+test_that("mh_power_list performance with large dataset", {
+  # Create large dataset with multiple regions and days
+  set.seed(789)
+  n_regions <- 50
+  n_days <- 365
+
+  # Create df_list for large dataset
+  df_list_large <- lapply(1:n_regions, function(i) {
+    data.frame(temp = rnorm(n_days, mean = 15 + i, sd = 5))
+  })
+  names(df_list_large) <- paste0("region", 1:n_regions)
+
+  # Create pred_list for large dataset
+  pred_list_large <- lapply(1:n_regions, function(i) {
+    data.frame(predvar = seq(10, 35, length.out = 10),
+               allfit = rnorm(10, mean = 0.1 * i, sd = 0.05),
+               allse = runif(10, 0.03, 0.07))
+  })
+  names(pred_list_large) <- names(df_list_large)
+
+  # Create minpercreg for large dataset
+  minpercreg_large <- setNames(sample(20:80, n_regions, replace = TRUE), names(df_list_large))
+
+  # Run function and measure execution time
+  start_time <- Sys.time()
+  result_large <- mh_power_list(df_list_large, pred_list_large, minpercreg_large)
+  end_time <- Sys.time()
+
+  # Tests
+  expect_type(result_large, "list")
+  expect_length(result_large, n_regions)
+  expect_true(as.numeric(difftime(end_time, start_time, units = "secs")) < 5)  # Should run under 5 seconds
 })
