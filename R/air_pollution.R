@@ -406,7 +406,6 @@ air_pollution_descriptive_stats <- function(data,
       across(all_of(stat_vars), 
              list(
                min = ~round(min(.x, na.rm = TRUE), 2),
-               mean = ~round(mean(.x, na.rm = TRUE), 2),
                max = ~round(max(.x, na.rm = TRUE), 2),
                sd = ~round(sd(.x, na.rm = TRUE), 2),
                IQR = ~round(IQR(.x, na.rm = TRUE), 2),
@@ -421,7 +420,6 @@ air_pollution_descriptive_stats <- function(data,
       across(all_of(stat_vars), 
              list(
                min = ~round(min(.x, na.rm = TRUE), 2),
-               mean = ~round(mean(.x, na.rm = TRUE), 2),
                max = ~round(max(.x, na.rm = TRUE), 2),
                sd = ~round(sd(.x, na.rm = TRUE), 2),
                IQR = ~round(IQR(.x, na.rm = TRUE), 2),
@@ -637,12 +635,16 @@ fit_air_pollution_gam <- function(data,
   
   yr <- length(unique(data$year))
   dfseas <- 6
-  # Create Model Formula
+  
   GAM_formula <- as.formula(
     paste(
       "deaths ~ ", var_name,
-      "+ ns(time, df =", dfseas * yr, ") + ns(tmax, df = 3) + ns(humidity, df = 3)",
-      "+ ns(precipitation, df = 3) + ns(wind_speed) + dow + offset(log(population))"
+      "+ s(time, bs = 'cc', k =", dfseas * yr + 1, ")",
+      "+ s(tmax, bs = 'cr', k = 4)",
+      "+ s(humidity, bs = 'cr', k = 4)",
+      "+ s(precipitation, bs = 'cr', k = 4)",
+      "+ s(wind_speed, bs = 'cr', k = 4)",
+      "+ dow + offset(log(population))"
     )
   )
   
@@ -670,15 +672,15 @@ fit_air_pollution_gam <- function(data,
 #' @return List with coefficient and standard error.
 #'
 #' @keywords internal
-extract_air_pollution_coef <- function(model,
+extract_air_pollution_coef <- function(model_results,
                                        var_name = "pm25") {
-  if (is.null(model)) {
+  if (is.null(model_results)) {
     return(list(coef = NA, se = NA))
   }
   
   tryCatch(
     {
-      res <- summary(model)
+      res <- summary(model_results)
       coef_val <- res$p.coeff[var_name]
       se_val <- res$se[var_name]
       
@@ -824,8 +826,12 @@ analyze_air_pollution_lags <- function(data,
         lag_formula <- paste(all_lag_vars, collapse = " + ")
         formula_str <- paste(
           "deaths ~", lag_formula,
-          "+ ns(time, df =", dfseas * yr, ") + ns(tmax, df = 3) + ns(humidity, df = 3)",
-          "+ ns(precipitation, df = 3) + ns(wind_speed, df =3) + dow + offset(log(population))"
+          "+ s(time, bs = 'cc', k =", dfseas * yr + 1, ")",
+          "+ s(tmax, bs = 'cr', k = 4)",
+          "+ s(humidity, bs = 'cr', k = 4)",
+          "+ s(precipitation, bs = 'cr', k = 4)",
+          "+ s(wind_speed, bs = 'cr', k = 4)",
+          "+ dow + offset(log(population))"
         )
         
         GAM_formula <- as.formula(formula_str)
@@ -981,6 +987,215 @@ analyze_air_pollution_lags <- function(data,
   return(final_results)
 }
 
+#' Analyze region-specific distributed lag effects with AF/AN for a chosen
+#' PM2.5 reference. Calculates cumulative effects as sum of coefficients from that model.
+#'
+#' @param data Input data with lag variables.
+#' @param reference_pm25 Numeric. PM2.5 reference value. Defaults to 15.
+#' @param max_lag Integer. Maximum lag days. Defaults to 2
+#' @param family Character. Distribution family for GAM. Defaults to "quasipoisson".
+#'
+#' @return List with region-specific and meta-analysis results
+#'
+#' @keywords internal
+analyze_air_pollution_gam <- function(data,
+                                      reference_pm25 = 15,
+                                      max_lag = 2,
+                                      family = "quasipoisson") {
+  
+  regions <- unique(data$region)
+  
+  all_lag_vars <- c("pm25", paste0("pm25_lag", 1:max_lag))
+  individual_labels <- c("0", paste0("", 1:max_lag))
+  
+  region_results_list <- list()
+  
+  # Fit distributed lag model for each region
+  for (prov in regions) {
+    
+    prov_data <- data %>% dplyr::filter(.data$region == prov)
+    total_deaths_prov <- sum(prov_data$deaths, na.rm = TRUE)
+    
+    yr <- length(unique(prov_data$year))
+    dfseas <- 6
+    if (nrow(prov_data) < 500) {
+      message("  Skipping ", prov, " - insufficient data")
+      next
+    }
+    
+    lag_formula <- paste(all_lag_vars, collapse = " + ")
+    
+    formula_str <- paste(
+      "deaths ~", lag_formula,
+      "+ s(time, bs = 'cc', k =", dfseas * yr + 1, ")",
+      "+ s(tmax, bs = 'cr', k = 4)",
+      "+ s(humidity, bs = 'cr', k = 4)",
+      "+ s(precipitation, bs = 'cr', k = 4)",
+      "+ s(wind_speed, bs = 'cr', k = 4)",
+      "+ dow + offset(log(population))"
+    )
+    
+    GAM_formula <- as.formula(formula_str)
+    
+    model <- tryCatch({
+      mgcv::gam(GAM_formula, data = prov_data, family = family)
+    }, error = function(e) {
+      warning("  Model failed for ", prov, ": ", e$message)
+      return(NULL)
+    })
+    
+    if (is.null(model)) next
+    
+    # Initialize results for this region
+    prov_results <- data.frame(
+      lag_group = c(individual_labels, paste0("0-", max_lag)),
+      RR = NA,
+      LB = NA,
+      UB = NA,
+      AF = NA,
+      AN = NA,
+      region = prov,
+      stringsAsFactors = FALSE
+    )
+    
+    model_summary <- summary(model)
+    
+    lag_coefs <- numeric(length(all_lag_vars))
+    lag_ses <- numeric(length(all_lag_vars))
+    
+    for (i in seq_along(all_lag_vars)) {
+      var_name <- all_lag_vars[i]
+      
+      if (var_name %in% names(coef(model))) {
+        beta <- model_summary$p.coeff[var_name]
+        beta_se <- model_summary$se[var_name]
+        
+        lag_coefs[i] <- beta
+        lag_ses[i] <- beta_se
+        
+        beta_lower <- beta - 1.96 * beta_se
+        beta_upper <- beta + 1.96 * beta_se
+        
+        # Calculate RR and AF for this lag
+        pm_var <- prov_data[[var_name]]
+        deaths_var <- prov_data$deaths
+        above_ref <- pm_var > reference_pm25 & !is.na(pm_var) & !is.na(deaths_var)
+        
+        if (any(above_ref)) {
+          rr_t <- exp(beta * (pm_var[above_ref] - reference_pm25))
+          rr_t_lower <- exp(beta_lower * (pm_var[above_ref] - reference_pm25))
+          rr_t_upper <- exp(beta_upper * (pm_var[above_ref] - reference_pm25))
+          af_t <- (rr_t - 1) / rr_t
+          deaths_t <- deaths_var[above_ref]
+          
+          rr_overall <- sum(deaths_t * rr_t) / sum(deaths_t)
+          lb_overall <- sum(deaths_t * rr_t_lower) / sum(deaths_t)
+          ub_overall <- sum(deaths_t * rr_t_upper) / sum(deaths_t)
+          af_overall <- sum(deaths_t * af_t) / sum(deaths_var, na.rm = TRUE)
+          an_overall <- af_overall * sum(deaths_var, na.rm = TRUE)
+          
+          prov_results[i, c("RR", "LB", "UB", "AF", "AN")] <-
+            list(rr_overall, lb_overall, ub_overall, af_overall, an_overall)
+        }
+      }
+    }
+    
+    if (sum(!is.na(lag_coefs)) >= 2) {
+      
+      cumulative_coef <- sum(lag_coefs, na.rm = TRUE)
+      cumulative_se <- sqrt(sum(lag_ses^2, na.rm = TRUE))
+      
+      cumulative_beta_lower <- cumulative_coef - 1.96 * cumulative_se
+      cumulative_beta_upper <- cumulative_coef + 1.96 * cumulative_se
+      
+      # Use pm25 (lag 0) for exposure calculation
+      pm_var <- prov_data$pm25
+      deaths_var <- prov_data$deaths
+      above_ref <- pm_var > reference_pm25 & !is.na(pm_var) & !is.na(deaths_var)
+      
+      if (any(above_ref)) {
+        rr_t_cum <- exp(cumulative_coef * (pm_var[above_ref] - reference_pm25))
+        rr_t_lower_cum <- exp(cumulative_beta_lower * (pm_var[above_ref] - reference_pm25))
+        rr_t_upper_cum <- exp(cumulative_beta_upper * (pm_var[above_ref] - reference_pm25))
+        af_t_cum <- (rr_t_cum - 1) / rr_t_cum
+        deaths_t <- deaths_var[above_ref]
+        
+        rr_cum <- sum(deaths_t * rr_t_cum) / sum(deaths_t)
+        lb_cum <- sum(deaths_t * rr_t_lower_cum) / sum(deaths_t)
+        ub_cum <- sum(deaths_t * rr_t_upper_cum) / sum(deaths_t)
+        af_cum <- sum(deaths_t * af_t_cum) / sum(deaths_var, na.rm = TRUE)
+        an_cum <- af_cum * sum(deaths_var, na.rm = TRUE)
+        
+        # Add cumulative result
+        cum_idx <- length(all_lag_vars) + 1
+        prov_results[cum_idx, c("RR", "LB", "UB", "AF", "AN")] <-
+          list(rr_cum, lb_cum, ub_cum, af_cum, an_cum)
+      }
+    }
+    
+    region_results_list[[prov]] <- prov_results
+  }
+  
+  if (length(region_results_list) == 0) {
+    stop("No regions with sufficient data")
+  }
+  
+  region_gam_results <- do.call(rbind, region_results_list)
+  
+  # Meta-analysis across regions
+  all_lag_labels <- c(individual_labels, paste0("0-", max_lag))
+  
+  meta_gam_results <- data.frame(
+    lag_group = all_lag_labels,
+    RR = NA,
+    LB = NA,
+    UB = NA,
+    AF = NA,
+    AN = NA,
+    I2 = NA,
+    Q_p = NA
+  )
+  
+  for (lg in all_lag_labels) {
+    lag_data <- region_gam_results %>%
+      dplyr::filter(.data$lag_group == lg) %>%
+      dplyr::filter(!is.na(.data$RR) & .data$RR > 0)
+    
+    if (nrow(lag_data) < 2) {
+      warning("Insufficient regions for lag group ", lg)
+      next
+    }
+    
+    lag_data$yi <- log(lag_data$RR)
+    lag_data$sei <- (log(lag_data$UB) - log(lag_data$LB)) / (2 * 1.96)
+    
+    meta_res <- tryCatch({
+      metafor::rma(yi = lag_data$yi, sei = lag_data$sei, method = "REML")
+    }, error = function(e) {
+      warning("Meta-analysis failed for lag ", lg, ": ", e$message)
+      return(NULL)
+    })
+    
+    if (!is.null(meta_res)) {
+      pooled_rr <- exp(meta_res$b)
+      pooled_af <- mean(lag_data$AF, na.rm = TRUE)
+      pooled_an <- mean(lag_data$AN, na.rm = TRUE)
+      
+      meta_gam_results[meta_gam_results$lag_group == lg, "RR"] <- pooled_rr
+      meta_gam_results[meta_gam_results$lag_group == lg, "LB"] <- exp(meta_res$ci.lb)
+      meta_gam_results[meta_gam_results$lag_group == lg, "UB"] <- exp(meta_res$ci.ub)
+      meta_gam_results[meta_gam_results$lag_group == lg, "AF"] <- pooled_af
+      meta_gam_results[meta_gam_results$lag_group == lg, "AN"] <- pooled_an
+      meta_gam_results[meta_gam_results$lag_group == lg, "I2"] <- meta_res$I2
+      meta_gam_results[meta_gam_results$lag_group == lg, "Q_p"] <- meta_res$QEp
+    }
+  }
+  
+  return(list(
+    region_results = region_gam_results,
+    meta_results = meta_gam_results
+  ))
+}
 
 #' Save air pollution plot with standardized dimensions
 #'
@@ -1277,212 +1492,6 @@ calculate_air_pollution_af_an <- function(data,
 }
 
 
-#' Analyze region-specific distributed lag effects with AF/AN for a chosen
-#' PM2.5 reference. Calculates cumulative effects as sum of coefficients from that model.
-#'
-#' @param data Input data with lag variables.
-#' @param reference_pm25 Numeric. PM2.5 reference value. Defaults to 15.
-#' @param max_lag Integer. Maximum lag days. Defaults to 2
-#' @param family Character. Distribution family for GAM. Defaults to "quasipoisson".
-#'
-#' @return List with region-specific and meta-analysis results
-#'
-#' @keywords internal
-analyze_air_pollution_gam <- function(data,
-                                      reference_pm25 = 15,
-                                      max_lag = 2,
-                                      family = "quasipoisson") {
-  
-  regions <- unique(data$region)
-  
-  all_lag_vars <- c("pm25", paste0("pm25_lag", 1:max_lag))
-  individual_labels <- c("0", paste0("", 1:max_lag))
-  
-  region_results_list <- list()
-  
-  # Fit distributed lag model for each region
-  for (prov in regions) {
-    
-    prov_data <- data %>% dplyr::filter(.data$region == prov)
-    total_deaths_prov <- sum(prov_data$deaths, na.rm = TRUE)
-    
-    yr <- length(unique(prov_data$year))
-    dfseas <- 6
-    if (nrow(prov_data) < 500) {
-      message("  Skipping ", prov, " - insufficient data")
-      next
-    }
-    
-    lag_formula <- paste(all_lag_vars, collapse = " + ")
-    formula_str <- paste(
-      "deaths ~", lag_formula,
-      "+ ns(time, df =", dfseas * yr, ") + ns(tmax, df = 3) + ns(humidity, df = 3)",
-      "+ ns(precipitation, df = 3) + ns(wind_speed, df = 3) + dow + offset(log(population))"
-    )
-    
-    GAM_formula <- as.formula(formula_str)
-    
-    model <- tryCatch({
-      mgcv::gam(GAM_formula, data = prov_data, family = family)
-    }, error = function(e) {
-      warning("  Model failed for ", prov, ": ", e$message)
-      return(NULL)
-    })
-    
-    if (is.null(model)) next
-    
-    # Initialize results for this region
-    prov_results <- data.frame(
-      lag_group = c(individual_labels, paste0("0-", max_lag)),
-      RR = NA,
-      LB = NA,
-      UB = NA,
-      AF = NA,
-      AN = NA,
-      region = prov,
-      stringsAsFactors = FALSE
-    )
-    
-    model_summary <- summary(model)
-    
-    lag_coefs <- numeric(length(all_lag_vars))
-    lag_ses <- numeric(length(all_lag_vars))
-    
-    for (i in seq_along(all_lag_vars)) {
-      var_name <- all_lag_vars[i]
-      
-      if (var_name %in% names(coef(model))) {
-        beta <- model_summary$p.coeff[var_name]
-        beta_se <- model_summary$se[var_name]
-        
-        lag_coefs[i] <- beta
-        lag_ses[i] <- beta_se
-        
-        beta_lower <- beta - 1.96 * beta_se
-        beta_upper <- beta + 1.96 * beta_se
-        
-        # Calculate RR and AF for this lag
-        pm_var <- prov_data[[var_name]]
-        deaths_var <- prov_data$deaths
-        above_ref <- pm_var > reference_pm25 & !is.na(pm_var) & !is.na(deaths_var)
-        
-        if (any(above_ref)) {
-          rr_t <- exp(beta * (pm_var[above_ref] - reference_pm25))
-          rr_t_lower <- exp(beta_lower * (pm_var[above_ref] - reference_pm25))
-          rr_t_upper <- exp(beta_upper * (pm_var[above_ref] - reference_pm25))
-          af_t <- (rr_t - 1) / rr_t
-          deaths_t <- deaths_var[above_ref]
-          
-          rr_overall <- sum(deaths_t * rr_t) / sum(deaths_t)
-          lb_overall <- sum(deaths_t * rr_t_lower) / sum(deaths_t)
-          ub_overall <- sum(deaths_t * rr_t_upper) / sum(deaths_t)
-          af_overall <- sum(deaths_t * af_t) / sum(deaths_var, na.rm = TRUE)
-          an_overall <- af_overall * sum(deaths_var, na.rm = TRUE)
-          
-          prov_results[i, c("RR", "LB", "UB", "AF", "AN")] <-
-            list(rr_overall, lb_overall, ub_overall, af_overall, an_overall)
-        }
-      }
-    }
-    
-    if (sum(!is.na(lag_coefs)) >= 2) {
-      
-      cumulative_coef <- sum(lag_coefs, na.rm = TRUE)
-      cumulative_se <- sqrt(sum(lag_ses^2, na.rm = TRUE))
-      
-      cumulative_beta_lower <- cumulative_coef - 1.96 * cumulative_se
-      cumulative_beta_upper <- cumulative_coef + 1.96 * cumulative_se
-      
-      # Use pm25 (lag 0) for exposure calculation
-      pm_var <- prov_data$pm25
-      deaths_var <- prov_data$deaths
-      above_ref <- pm_var > reference_pm25 & !is.na(pm_var) & !is.na(deaths_var)
-      
-      if (any(above_ref)) {
-        rr_t_cum <- exp(cumulative_coef * (pm_var[above_ref] - reference_pm25))
-        rr_t_lower_cum <- exp(cumulative_beta_lower * (pm_var[above_ref] - reference_pm25))
-        rr_t_upper_cum <- exp(cumulative_beta_upper * (pm_var[above_ref] - reference_pm25))
-        af_t_cum <- (rr_t_cum - 1) / rr_t_cum
-        deaths_t <- deaths_var[above_ref]
-        
-        rr_cum <- sum(deaths_t * rr_t_cum) / sum(deaths_t)
-        lb_cum <- sum(deaths_t * rr_t_lower_cum) / sum(deaths_t)
-        ub_cum <- sum(deaths_t * rr_t_upper_cum) / sum(deaths_t)
-        af_cum <- sum(deaths_t * af_t_cum) / sum(deaths_var, na.rm = TRUE)
-        an_cum <- af_cum * sum(deaths_var, na.rm = TRUE)
-        
-        # Add cumulative result
-        cum_idx <- length(all_lag_vars) + 1
-        prov_results[cum_idx, c("RR", "LB", "UB", "AF", "AN")] <-
-          list(rr_cum, lb_cum, ub_cum, af_cum, an_cum)
-      }
-    }
-    
-    region_results_list[[prov]] <- prov_results
-  }
-  
-  if (length(region_results_list) == 0) {
-    stop("No regions with sufficient data")
-  }
-  
-  region_gam_results <- do.call(rbind, region_results_list)
-  
-  # Meta-analysis across regions
-  
-  all_lag_labels <- c(individual_labels, paste0("0-", max_lag))
-  
-  meta_gam_results <- data.frame(
-    lag_group = all_lag_labels,
-    RR = NA,
-    LB = NA,
-    UB = NA,
-    AF = NA,
-    AN = NA,
-    I2 = NA,
-    Q_p = NA
-  )
-  
-  for (lg in all_lag_labels) {
-    lag_data <- region_gam_results %>%
-      dplyr::filter(.data$lag_group == lg) %>%
-      dplyr::filter(!is.na(.data$RR) & .data$RR > 0)
-    
-    if (nrow(lag_data) < 2) {
-      warning("Insufficient regions for lag group ", lg)
-      next
-    }
-    
-    lag_data$yi <- log(lag_data$RR)
-    lag_data$sei <- (log(lag_data$UB) - log(lag_data$LB)) / (2 * 1.96)
-    
-    meta_res <- tryCatch({
-      metafor::rma(yi = lag_data$yi, sei = lag_data$sei, method = "REML")
-    }, error = function(e) {
-      warning("Meta-analysis failed for lag ", lg, ": ", e$message)
-      return(NULL)
-    })
-    
-    if (!is.null(meta_res)) {
-      pooled_rr <- exp(meta_res$b)
-      pooled_af <- mean(lag_data$AF, na.rm = TRUE)
-      pooled_an <- mean(lag_data$AN, na.rm = TRUE)
-      
-      meta_gam_results[meta_gam_results$lag_group == lg, "RR"] <- pooled_rr
-      meta_gam_results[meta_gam_results$lag_group == lg, "LB"] <- exp(meta_res$ci.lb)
-      meta_gam_results[meta_gam_results$lag_group == lg, "UB"] <- exp(meta_res$ci.ub)
-      meta_gam_results[meta_gam_results$lag_group == lg, "AF"] <- pooled_af
-      meta_gam_results[meta_gam_results$lag_group == lg, "AN"] <- pooled_an
-      meta_gam_results[meta_gam_results$lag_group == lg, "I2"] <- meta_res$I2
-      meta_gam_results[meta_gam_results$lag_group == lg, "Q_p"] <- meta_res$QEp
-    }
-  }
-  
-  return(list(
-    region_results = region_gam_results,
-    meta_results = meta_gam_results
-  ))
-}
-
 
 #' Plot GAM distributed lag results
 #'
@@ -1550,9 +1559,9 @@ plot_air_pollution_gam <- function(gam_results,
     ggplot2::ylim(global_y_min, global_y_max) +
     ggplot2::theme_bw() +
     ggplot2::theme(
-      plot.title = ggplot2::element_text(hjust = 0.5, size = 8),
-      axis.title = ggplot2::element_text(face = "bold", size = 5),
-      axis.text = ggplot2::element_text(size = 5),
+      plot.title = ggplot2::element_text(hjust = 0.5, size = 9),
+      axis.title = ggplot2::element_text(face = "bold", size = 7),
+      axis.text = ggplot2::element_text(size = 7),
       axis.text.x = ggplot2::element_text(angle = 45, hjust = 1),
       panel.border = ggplot2::element_rect(colour = "black", fill = NA, size = .5)
     )
@@ -1582,10 +1591,11 @@ plot_air_pollution_gam <- function(gam_results,
       ggplot2::ylim(global_y_min, global_y_max) +
       ggplot2::theme_bw() +
       ggplot2::theme(
-        plot.title = ggplot2::element_text(hjust = 0.5, size = 10),
-        axis.title = ggplot2::element_text(face = "bold", size = 8),
-        axis.text = ggplot2::element_text(size = 8),
-        panel.border = ggplot2::element_rect(colour = "black", fill = NA, size = 1)
+        plot.title = ggplot2::element_text(hjust = 0.5, size = 9),
+        axis.title = ggplot2::element_text(face = "bold", size = 7),
+        axis.text = ggplot2::element_text(size = 7),
+        axis.text.x = ggplot2::element_text(angle = 45, hjust = 1),
+        panel.border = ggplot2::element_rect(colour = "black", fill = NA, size = .5)
       )
     
     plots_list[[prov]] <- prov_plot
@@ -1618,22 +1628,45 @@ plot_air_pollution_gam <- function(gam_results,
 }
 
 
+#' Generate a grid size for a certain number of plots.
+#'
+#' @param n_plots The number of plots required for the grid.
+#'
+#' @return A list containing ncol and nrow values for the grid.
+#'
+#' @export
+calculate_air_pollution_grid_dims <- function(n_plots){
+  est <- sqrt(n_plots)
+  if (est == floor(est)){
+    x <- y <- est
+  } else {
+    base <- est - floor(est)
+    if (base < 0.5){
+      y <- floor(est)
+    }
+    else {
+      y <- floor(est) + 1
+    }
+    x <- floor(est) + 1
+  }
+  return(list(ncol = x, nrow = y))
+}
+
 #' Create exposure-response plots using GAM
 #'
 #' @param data_with_lags Data frame containing pre-processed data.
-#' Must include columns: region, date, deaths, population, pm25, tmax, humidity.
-#' @param meta_results List. Meta-analysis results from previous analysis (optional).
+#'   Must include columns: region, date, deaths, population, pm25, tmax, humidity.
+#' @param meta_results List. Meta-analysis results from previous analysis (required).
 #' @param reference_pm25 Numeric value specifying the reference PM2.5 concentration.
-#' Defaults to 15 (WHO guideline).
+#'   Defaults to 15 (WHO guideline).
 #' @param reference_name Character string describing the reference scenario.
-#' Defaults to "WHO".
+#'   Defaults to "WHO".
 #' @param output_file Character. Full path for output PNG file. If NULL, output path will
-#' default to 'air_pollution_results/(reference_name)_exposure_response_plots.png'.
+#'   default to 'air_pollution_results/(reference_name)_exposure_response_plots_gam.png'.
 #' @param var_name Character. Name of PM2.5 variable in dataset. Defaults to "pm25".
 #' @param family Character. Distribution family for GAM. Defaults to "quasipoisson".
 #'
-#' @return List containing predictions, meta model, and summary statistics
-#'
+#' @return List containing predictions, reference info, grid dims and max_ylim
 #' @keywords internal
 create_air_pollution_exposure_plots <- function(data_with_lags,
                                                 meta_results = NULL,
@@ -1642,429 +1675,221 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
                                                 output_file = NULL,
                                                 var_name = "pm25",
                                                 family = "quasipoisson") {
-  
-  dfseas <- 6
-  vardf <- 3
+  # Internal defaults
   plot_width_per_panel <- 4
   plot_height_per_panel <- 3.5
   res <- 150
   
-  # Validate essential columns
-  required_cols <- c("region", "date", "year", "deaths", "population", var_name)
-  missing_cols <- required_cols[!(required_cols %in% colnames(data_with_lags))]
-  if (length(missing_cols) > 0) {
-    stop(paste0(
-      "Missing required columns in 'data_with_lags': ",
-      paste(missing_cols, collapse = ", ")
-    ))
-  }
-  
   if (is.null(output_file)) {
-    output_file <- paste0(
-      "air_pollution_results/", tolower(reference_name),
-      "_exposure_response_plots_gam.png"
-    )
+    output_file <- paste0("air_pollution_results/", tolower(reference_name), "_exposure_response_plots_gam.png")
   }
-  
   dir.create(dirname(output_file), recursive = TRUE, showWarnings = FALSE)
   
-  confounders <- c("tmax", "tmean", "humidity", "precipitation", "wind_speed")
-  available_confounders <- confounders[confounders %in% names(data_with_lags)]
+  # Pooled beta & se (meta result)
+  pooled_beta <- as.numeric(meta_results$meta_result$beta)
+  pooled_se   <- as.numeric(meta_results$meta_result$se)
   
-  # Aggregate data by region, date, and year
-  data_aggreg <- data_with_lags %>%
-    dplyr::filter(!is.na(.data$date)) %>%
-    dplyr::group_by(.data$region, .data$date, .data$year) %>%
-    dplyr::summarise(
-      deaths = sum(.data$deaths, na.rm = TRUE),
-      pm25 = mean(.data[[var_name]], na.rm = TRUE),
-      population = sum(.data$population, na.rm = TRUE),
-      across(all_of(available_confounders), ~mean(.x, na.rm = TRUE)),
-      .groups = "drop"
-    ) %>%
-    dplyr::arrange(.data$region, .data$date) %>%
-    dplyr::group_by(.data$region) %>%
-    dplyr::mutate(days = dplyr::row_number()) %>%
-    dplyr::ungroup()
+  # prepare national prediction
+  pm25_global <- data_with_lags[[var_name]]
+  pm25_range_global <- range(pm25_global, na.rm = TRUE)
+  pm25_vals_nat <- seq(pm25_range_global[1], pm25_range_global[2], by = 0.1)
+  delta_nat <- pm25_vals_nat - reference_pm25
+  log_pred_nat <- pooled_beta * delta_nat
+  # se of predicted log-RR = |delta| * se(beta)  (normal approx)
+  se_log_pred_nat <- abs(delta_nat) * pooled_se
+  z <- stats::qnorm(0.975)
+  rr_pred_nat <- exp(log_pred_nat)
+  rr_low_nat  <- exp(log_pred_nat - z * se_log_pred_nat)
+  rr_high_nat <- exp(log_pred_nat + z * se_log_pred_nat)
   
-  plist <- split(data_aggreg, data_aggreg$region)
-  prov <- names(plist)
+  pred_national <- list(predvar = pm25_vals_nat, allRRfit = rr_pred_nat, allRRlow = rr_low_nat, allRRhigh = rr_high_nat)
   
-  yr <- length(unique(data_aggreg$year))
-  knots_values <- c(0.25, 0.5, 0.75)
+  # Prepare per-region predictions (no plotting yet) so we can get a unified ylim
+  plist <- as.character(meta_results$region_results$region)
+  n_regions <- length(plist)
+  predictions <- list(Nationwide = pred_national)
   
-  coef_matrix <- NULL
-  vcov_list <- vector("list", length(prov))
-  names(vcov_list) <- prov
-  region_deaths <- numeric(length(prov))
-  names(region_deaths) <- prov
-  region_pm25_ranges <- list()
+  # collect maximum upper CI across national + regions
+  all_rr_high_values <- rr_high_nat
   
-  all_pm25 <- unlist(lapply(plist, function(x) x$pm25))
-  pm25_range_global <- range(all_pm25, na.rm = TRUE)
-  
-  # Fit regional models
-  
-  for (j in 1:length(prov)) {
-    dat <- plist[[prov[j]]]
-    var1 <- dat$pm25
-    region_deaths[j] <- sum(dat$deaths, na.rm = TRUE)
-    region_pm25_ranges[[prov[j]]] <- range(var1, na.rm = TRUE)
-    
-    if (nrow(dat) < 100) {
-      warning("Insufficient data for region ", prov[j], ": ", nrow(dat), " observations")
-      next
+  # small safety: fallback for invalid SEs (zero/NA) to avoid absurdly narrow CI
+  safe_se <- function(se_val, pooled_se) {
+    if (is.na(se_val) || se_val <= 0) {
+      return(max(abs(pooled_se), 1e-6))
     }
-    
-    knots_pm25 <- quantile(var1, knots_values, na.rm = TRUE)
-    
-    # Build formula with available confounders
-    confounder_terms <- if (length(available_confounders) > 0) {
-      paste0("+ s(", available_confounders, ", bs = 'cr', k = 4)", collapse = " ")
-    } else {
-      ""
-    }
-    
-    fmla_prov <- as.formula(paste(
-      "deaths ~ offset(log(population)) +",
-      "bs(pm25, df =", vardf, ", knots = knots_pm25, Boundary.knots = pm25_range_global) +",
-      "s(days, bs = 'cc', k =", dfseas * yr + 1, ") +",
-      "factor(year)",
-      confounder_terms
-    ))
-    
-    mod <- tryCatch(
-      {
-        mgcv::gam(fmla_prov, data = dat, family = quasipoisson)
-      },
-      error = function(e) {
-        warning("Error fitting model for ", prov[j], ": ", e$message)
-        return(NULL)
+    return(se_val)
+  }
+  
+  for (j in seq_len(n_regions)) {
+    # extract region data safely
+    region_data_j <- meta_results$region_results$data[[j]]
+    var_j <- NULL
+    if (!is.null(region_data_j)) {
+      # region_data_j may be a tibble/data.frame
+      if (is.data.frame(region_data_j) && var_name %in% names(region_data_j)) {
+        var_j <- region_data_j[[var_name]]
+      } else if (is.vector(region_data_j) && names(region_data_j) == var_name) {
+        var_j <- region_data_j
       }
-    )
-    
-    if (is.null(mod)) next
-    
-    pm25_terms <- grep("^bs\\(pm25", names(coef(mod)), value = TRUE)
-    
-    if (length(pm25_terms) == 0) {
-      warning("No PM2.5 terms found for ", prov[j])
+    }
+    # skip empty region
+    if (is.null(var_j) || all(is.na(var_j))) {
+      # still record empty prediction placeholder
+      predictions[[plist[j]]] <- list(predvar = numeric(0), allRRfit = numeric(0), allRRlow = numeric(0), allRRhigh = numeric(0))
       next
     }
     
-    pm25_coefs <- coef(mod)[pm25_terms]
-    pm25_vcov <- vcov(mod)[pm25_terms, pm25_terms]
+    # region beta & se (with safety)
+    region_beta <- as.numeric(meta_results$region_results$coef_pm25[[j]])
+    region_se_raw <- as.numeric(meta_results$region_results$se_pm25[[j]])
+    region_se <- safe_se(region_se_raw, pooled_se)
     
-    if (is.null(coef_matrix)) {
-      actual_df <- length(pm25_coefs)
-      coef_matrix <- matrix(
-        data = NA, nrow = length(prov), ncol = actual_df,
-        dimnames = list(prov)
-      )
-    }
-    
-    # Ensure consistent dimensions
-    if (ncol(coef_matrix) == length(pm25_coefs)) {
-      coef_matrix[j, ] <- pm25_coefs
-      vcov_list[[j]] <- pm25_vcov
+    # region prediction grid
+    rng_j <- range(var_j, na.rm = TRUE)
+    if (diff(rng_j) == 0) {
+      pm25_vals_reg <- seq(rng_j[1] - 0.5, rng_j[1] + 0.5, by = 0.1)
     } else {
-      warning("Dimension mismatch for region ", prov[j], 
-              ": expected ", ncol(coef_matrix), " coefficients, got ", length(pm25_coefs))
+      pm25_vals_reg <- seq(rng_j[1], rng_j[2], by = 0.1)
     }
     
-    rm(dat, var1, knots_pm25, mod, pm25_coefs, pm25_vcov)
+    delta_reg <- pm25_vals_reg - reference_pm25
+    log_pred_reg <- region_beta * delta_reg
+    se_log_pred_reg <- abs(delta_reg) * region_se
+    rr_reg <- exp(log_pred_reg)
+    rr_low_reg <- exp(log_pred_reg - z * se_log_pred_reg)
+    rr_high_reg <- exp(log_pred_reg + z * se_log_pred_reg)
+    
+    predictions[[plist[j]]] <- list(predvar = pm25_vals_reg,
+                                    allRRfit = rr_reg,
+                                    allRRlow = rr_low_reg,
+                                    allRRhigh = rr_high_reg,
+                                    region_se_used = region_se,
+                                    region_beta = region_beta)
+    all_rr_high_values <- c(all_rr_high_values, rr_high_reg)
   }
   
-  valid_rows <- which(!apply(is.na(coef_matrix), 1, all))
-  if (length(valid_rows) < 2) {
-    stop("Insufficient regions with successful model fits for meta-analysis")
-  }
+  # unified ylim across all panels (national + all regions)
+  global_max_rr <- max(all_rr_high_values, na.rm = TRUE)
+  # make "nice" top limit
+  max_ylim <- ceiling(global_max_rr * 10) / 10
+  # pretty y ticks
+  y_seq <- pretty(c(0, max_ylim), n = 6)
   
-  # Meta-analysis
-  
-  meta_model <- tryCatch(
-    {
-      mixmeta::mixmeta(coef_matrix[valid_rows, ] ~ 1,
-                       S = vcov_list[valid_rows],
-                       control = list(showiter = FALSE)
-      )
-    },
-    error = function(e) {
-      stop("Error in meta-analysis: ", e$message)
-    }
-  )
-  
-  blup_results <- mixmeta::blup(meta_model, vcov = TRUE)
-  
-  pm25_pred_seq <- seq(pm25_range_global[1], pm25_range_global[2], by = 0.1)
-  
-  knots_national <- quantile(all_pm25, knots_values, na.rm = TRUE)
-  
-  # Create basis matrices with proper dimension handling
-  actual_df <- length(meta_model$coefficients)
-  
-  basis_national <- splines::bs(pm25_pred_seq, 
-                                df = actual_df, 
-                                knots = knots_national,
-                                Boundary.knots = pm25_range_global)
-  
-  # For reference value, ensure it's a matrix with proper dimensions
-  basis_ref <- splines::bs(rep(reference_pm25, actual_df), 
-                           df = actual_df, 
-                           knots = knots_national,
-                           Boundary.knots = pm25_range_global)
-  
-  # Take only the first row for reference (all rows are identical)
-  if (nrow(basis_ref) > 1) {
-    basis_ref <- basis_ref[1, , drop = FALSE]
-  }
-  
-  # Ensure all dimensions match
-  if (ncol(basis_national) != length(meta_model$coefficients) || 
-      ncol(basis_ref) != length(meta_model$coefficients)) {
-    stop(paste("Dimension mismatch:",
-               "basis_national cols:", ncol(basis_national),
-               "basis_ref cols:", ncol(basis_ref),
-               "coefficients:", length(meta_model$coefficients)))
-  }
-  
-  # Calculate relative risks with proper matrix operations
-  pred_national <- basis_national %*% meta_model$coefficients
-  ref_value <- basis_ref %*% meta_model$coefficients
-  
-  # Ensure ref_value is scalar for subtraction
-  if (length(ref_value) > 1) {
-    ref_value <- as.numeric(ref_value[1])
-  }
-  
-  log_rr_national <- as.vector(pred_national) - as.vector(ref_value)
-  rr_national <- exp(log_rr_national)
-  
-  # Calculate confidence intervals
-  se_national <- sqrt(diag(basis_national %*% meta_model$vcov %*% t(basis_national)))
-  se_ref <- sqrt(as.numeric(basis_ref %*% meta_model$vcov %*% t(basis_ref)))
-  se_total <- sqrt(se_national^2 + se_ref^2)
-  
-  rr_low <- exp(log_rr_national - 1.96 * se_total)
-  rr_high <- exp(log_rr_national + 1.96 * se_total)
-  
-  max_ylim <- ceiling(max(c(rr_high, 2.0), na.rm = TRUE) * 10) / 10
-  max_ylim <- max(max_ylim, 1.5)  # Ensure minimum of 1.5
-  
-  pred_national <- list(
-    predvar = pm25_pred_seq,
-    allRRfit = rr_national,
-    allRRlow = rr_low,
-    allRRhigh = rr_high
-  )
-  
-  n_regions <- length(valid_rows)
+  # Prepare plotting grid and PNG
   n_plots <- n_regions + 1
-  
-  # Simple grid calculation function
-  calculate_grid_dims <- function(n_plots) {
-    if (n_plots <= 3) {
-      return(list(nrow = 1, ncol = n_plots))
-    } else if (n_plots <= 6) {
-      return(list(nrow = 2, ncol = ceiling(n_plots / 2)))
-    } else if (n_plots <= 12) {
-      return(list(nrow = 3, ncol = ceiling(n_plots / 3)))
-    } else {
-      return(list(nrow = 4, ncol = ceiling(n_plots / 4)))
-    }
-  }
-  
-  grid_dims <- calculate_grid_dims(n_plots)
-  
-  # Create plots
+  grid_dims <- calculate_air_pollution_grid_dims(n_plots)
   fig_width <- plot_width_per_panel * grid_dims$ncol
   fig_height <- plot_height_per_panel * grid_dims$nrow
   
-  png(output_file,
-      width = fig_width * res, height = fig_height * res,
-      res = res, bg = "white"
-  )
+  png(output_file, width = fig_width * res, height = fig_height * res, res = res, bg = "white")
+  par(mfrow = c(grid_dims$nrow, grid_dims$ncol), mar = c(3, 3, 3, 3), oma = c(4, 4, 3, 1),
+      cex.main = 1.1, cex.lab = 0.9, cex.axis = 0.8, mgp = c(2, 0.7, 0), tcl = -0.3)
   
-  par(
-    mfrow = c(grid_dims$nrow, grid_dims$ncol), mar = c(3, 3, 3, 3),
-    oma = c(4, 4, 3, 1), cex.main = 1.1, cex.lab = 0.9, cex.axis = 0.8,
-    mgp = c(2, 0.7, 0), tcl = -0.3
-  )
-  
-  predictions <- list()
-  plot_count <- 0
-  
-  # Plot nationwide results
-  plot_count <- plot_count + 1
-  y_seq <- seq(0, max_ylim, by = 0.5)
-  
-  plot(pred_national$predvar, pred_national$allRRfit,
-       type = "l", ylab = "", ylim = c(0.0, max_ylim), xlab = "", 
-       xaxt = "n", yaxt = "n", main = "Nationwide", lwd = 2, col = "red"
-  )
-  
-  # Add confidence interval
-  polygon(c(pred_national$predvar, rev(pred_national$predvar)),
-          c(pred_national$allRRlow, rev(pred_national$allRRhigh)),
+  # Plot nationwide (using stored predictions)
+  plot(predictions$Nationwide$predvar, predictions$Nationwide$allRRfit, type = "l", ylab = "", ylim = c(0.0, max_ylim),
+       xlab = "", xaxt = "n", yaxt = "n", main = "Nationwide", lwd = 2, col = "red")
+  polygon(c(predictions$Nationwide$predvar, rev(predictions$Nationwide$predvar)),
+          c(predictions$Nationwide$allRRlow, rev(predictions$Nationwide$allRRhigh)),
           col = rgb(0, 0, 1, 0.2), border = NA)
-  
   abline(h = 1, col = "black", lwd = 1, lty = 1)
-  axis(2, at = y_seq, labels = format(y_seq, nsmall = 1), cex.axis = 0.8,
-       las = 1, tck = -0.02)
-  axis(1, at = seq(floor(min(all_pm25)), ceiling(max(all_pm25)), by = 20), 
+  axis(2, at = y_seq, labels = format(y_seq, nsmall = 1), cex.axis = 0.8, las = 1, tck = -0.02)
+  axis(1, at = seq(floor(min(predictions$Nationwide$predvar, na.rm = TRUE)),
+                   ceiling(max(predictions$Nationwide$predvar, na.rm = TRUE)), by = 20),
        cex.axis = 0.8, tck = -0.02)
   
-  # Add histogram
-  breaks <- c(min(all_pm25) - 1, seq(pm25_range_global[1], pm25_range_global[2], length = 30), 
-              max(all_pm25) + 1)
-  hist_data <- hist(all_pm25, breaks = breaks, plot = FALSE)
-  hist_data$density <- hist_data$density / max(hist_data$density) * 0.7
-  hist_scaling_factor <- max_ylim / 1.8
-  plot(hist_data,
-       ylim = c(0, max(hist_data$density) * hist_scaling_factor),
-       axes = FALSE, ann = FALSE,
-       col = rgb(0.8, 0.8, 0.8, 0.5),
-       border = rgb(0.7, 0.7, 0.7, 0.8),
-       breaks = breaks, freq = FALSE, add = TRUE
-  )
-  
-  counts <- pretty(hist_data$count, 3)
-  prop <- max(hist_data$density) / max(hist_data$counts)
-  axis(4, at = counts * prop, labels = counts, cex.axis = 0.8, las = 1, tck = -0.02)
+  # overlay histogram (scaled to occupy 2/5 of plot height)
+  breaks <- c(min(pm25_global, na.rm = TRUE) - 1,
+              seq(pm25_range_global[1], pm25_range_global[2], length = 30),
+              max(pm25_global, na.rm = TRUE) + 1)
+  hist_data <- hist(pm25_global, breaks = breaks, plot = FALSE)
+  max_count <- max(hist_data$counts, na.rm = TRUE)
+  if (max_count > 0) {
+    scale_target <- (2/5) * max_ylim
+    scale_factor <- scale_target / max_count
+    hist_data$density <- hist_data$counts * scale_factor
+    plot(hist_data, freq = FALSE, add = TRUE, axes = FALSE, ann = FALSE,
+         col = rgb(0.8, 0.8, 0.8, 0.5), border = rgb(0.7, 0.7, 0.7, 0.8))
+    counts_ticks <- pretty(hist_data$counts)
+    axis(4, at = counts_ticks * scale_factor, labels = counts_ticks, cex.axis = 0.8, las = 1, tck = -0.02)
+  }
   abline(v = reference_pm25, col = "red", lty = 2, lwd = 2)
-  abline(v = quantile(all_pm25, c(0.05, 0.95)), col = grey(0.5), lty = 3, lwd = 1.5)
+  abline(v = stats::quantile(pm25_global, c(0.05, 0.95), na.rm = TRUE),
+         col = grDevices::grey(0.5), lty = 3, lwd = 1.5)
   
-  predictions[["Nationwide"]] <- pred_national
-  
-  # Plot regional results
-  valid_regions <- prov[valid_rows]
-  
-  for (i in 1:length(valid_regions)) {
+  # Regional plots (use stored predictions)
+  plot_count <- 1
+  for (i in seq_along(plist)) {
+    region_name <- plist[i]
     plot_count <- plot_count + 1
-    region_name <- valid_regions[i]
-    dat <- plist[[region_name]]
-    var1 <- dat$pm25
-    
-    pm25_seq_region <- seq(min(var1, na.rm = TRUE), max(var1, na.rm = TRUE), by = 0.1)
-    knots_region <- quantile(var1, knots_values, na.rm = TRUE)
-    region_range <- range(var1, na.rm = TRUE)
-    
-    # Create basis matrices with consistent dimensions
-    basis_region <- splines::bs(pm25_seq_region, 
-                                df = actual_df, 
-                                knots = knots_region, 
-                                Boundary.knots = pm25_range_global)
-    
-    basis_ref_region <- splines::bs(rep(reference_pm25, actual_df), 
-                                    df = actual_df, 
-                                    knots = knots_region, 
-                                    Boundary.knots = pm25_range_global)
-    
-    if (nrow(basis_ref_region) > 1) {
-      basis_ref_region <- basis_ref_region[1, , drop = FALSE]
+    pred <- predictions[[region_name]]
+    var1 <- NULL
+    # attempt to get observed values for axes/histogram
+    region_data_i <- meta_results$region_results$data[[i]]
+    if (!is.null(region_data_i) && is.data.frame(region_data_i) && var_name %in% names(region_data_i)) {
+      var1 <- region_data_i[[var_name]]
     }
     
-    valid_idx <- which(prov[valid_rows] == region_name)
-    
-    # Predictions using BLUP with proper dimension handling
-    pred_region <- basis_region %*% blup_results[[valid_idx]]$blup
-    ref_value_region <- basis_ref_region %*% blup_results[[valid_idx]]$blup
-    
-    if (length(ref_value_region) > 1) {
-      ref_value_region <- as.numeric(ref_value_region[1])
+    # empty region handling
+    if (is.null(var1) || length(pred$predvar) == 0) {
+      plot.new()
+      title(main = region_name)
+      next
     }
     
-    log_rr_region <- as.vector(pred_region) - (ref_value_region)
-    rr_region <- exp(log_rr_region)
-    
-    se_region <- sqrt(diag(basis_region %*% blup_results[[valid_idx]]$vcov %*% 
-                             t(basis_region)))
-    se_ref_region <- sqrt(as.numeric(basis_ref_region %*% blup_results[[valid_idx]]$vcov %*% 
-                                       t(basis_ref_region)))
-    se_total_region <- sqrt(se_region^2 + se_ref_region^2)
-    
-    rr_low_region <- exp(log_rr_region - 1.96 * se_total_region)
-    rr_high_region <- exp(log_rr_region + 1.96 * se_total_region)
-    
-    # Plot
-    plot(pm25_seq_region, rr_region,
-         type = "l", ylim = c(0.0, max_ylim), lwd = 2, col = "red",
-         xaxt = "n", yaxt = "n", xlab = "", ylab = "",
-         main = region_name
-    )
-    
-    polygon(c(pm25_seq_region, rev(pm25_seq_region)),
-            c(rr_low_region, rev(rr_high_region)),
+    plot(pred$predvar, pred$allRRfit, type = "l", ylim = c(0.0, max_ylim), lwd = 2, col = "red",
+         xaxt = "n", yaxt = "n", xlab = "", ylab = "", main = region_name)
+    polygon(c(pred$predvar, rev(pred$predvar)), c(pred$allRRlow, rev(pred$allRRhigh)),
             col = rgb(0, 0, 1, 0.2), border = NA)
-    
     abline(h = 1, col = "black", lwd = 1, lty = 1)
-    axis(2, at = y_seq, labels = format(y_seq, nsmall = 1), cex.axis = 0.8,
-         las = 1, tck = -0.02)
-    axis(1, at = seq(floor(min(var1)), ceiling(max(var1)), by = 20),
+    axis(2, at = y_seq, labels = format(y_seq, nsmall = 1), cex.axis = 0.8, las = 1, tck = -0.02)
+    axis(1, at = seq(floor(min(var1, na.rm = TRUE)), ceiling(max(var1, na.rm = TRUE)), by = 20),
          cex.axis = 0.8, tck = -0.02)
     
-    # Add histogram
-    breaks_prov <- c(min(var1) - 1, seq(min(var1), max(var1), length = 30), 
-                     max(var1) + 1)
+    # histogram overlay for region (same 2/5 rule)
+    breaks_prov <- c(min(var1, na.rm = TRUE) - 1,
+                     seq(min(var1, na.rm = TRUE), max(var1, na.rm = TRUE), length = 30),
+                     max(var1, na.rm = TRUE) + 1)
     hist_prov <- hist(var1, breaks = breaks_prov, plot = FALSE)
-    hist_prov$density <- hist_prov$density / max(hist_prov$density) * 0.7
-    prop_prov <- max(hist_prov$density) / max(hist_prov$counts)
-    counts_prov <- pretty(hist_prov$count, 3)
-    
-    plot(hist_prov,
-         ylim = c(0, max(hist_prov$density) * hist_scaling_factor),
-         axes = FALSE, ann = FALSE,
-         col = rgb(0.8, 0.8, 0.8, 0.5),
-         border = rgb(0.7, 0.7, 0.7, 0.8),
-         breaks = breaks_prov, freq = FALSE, add = TRUE
-    )
-    
-    axis(4, at = counts_prov * prop_prov, labels = counts_prov, cex.axis = 0.8,
-         las = 1, tck = -0.02)
+    max_count_prov <- max(hist_prov$counts, na.rm = TRUE)
+    if (max_count_prov > 0) {
+      scale_target <- (2/5) * max_ylim
+      scale_factor_prov <- scale_target / max_count_prov
+      hist_prov$density <- hist_prov$counts * scale_factor_prov
+      
+      plot(hist_prov, freq = FALSE, add = TRUE, axes = FALSE, ann = FALSE,
+           col = rgb(0.8, 0.8, 0.8, 0.5), border = rgb(0.7, 0.7, 0.7, 0.8))
+      counts_prov_ticks <- pretty(hist_prov$counts)
+      axis(4, at = counts_prov_ticks * scale_factor_prov, labels = counts_prov_ticks,
+           cex.axis = 0.8, las = 1, tck = -0.02)
+    }
     abline(v = reference_pm25, col = "red", lty = 2, lwd = 2)
-    abline(v = quantile(var1, c(0.05, 0.95)), col = grey(0.5), lty = 3, lwd = 1.5)
-    
-    predictions[[region_name]] <- list(
-      predvar = pm25_seq_region,
-      allRRfit = rr_region,
-      allRRlow = rr_low_region,
-      allRRhigh = rr_high_region
-    )
+    abline(v = stats::quantile(var1, c(0.05, 0.95), na.rm = TRUE),
+           col = grDevices::grey(0.5), lty = 3, lwd = 1.5)
   }
   
-  # Fill remaining panels if needed
+  # fill empty panels
   if (plot_count < grid_dims$nrow * grid_dims$ncol) {
     remaining_panels <- (grid_dims$nrow * grid_dims$ncol) - plot_count
-    for (i in 1:remaining_panels) {
-      plot.new()
-    }
+    for (i in seq_len(remaining_panels)) plot.new()
   }
   
-  # Add labels
-  mtext(
-    text = "Daily PM2.5 (\u03bc\u0067\u002f\u006d\u00b3)", side = 1, line = 2.5, 
-    outer = TRUE, cex = 1.1
-  )
+  # labels and finish
+  mtext(text = "Daily PM2.5 (\u03bcg/m\u00b3)", side = 1, line = 2.5, outer = TRUE, cex = 1.1)
   mtext(text = "Relative risk", side = 2, line = 2.5, outer = TRUE, cex = 1.1)
-  mtext(
-    text = paste0(
-      reference_name, " (PM2.5 reference: ",
-      reference_pm25, " \u03bc\u0067\u002f\u006d\u00b3)"
-    ),
-    side = 3, line = 1, outer = TRUE, cex = 1.2, font = 2
-  )
+  mtext(text = paste0(reference_name, " (PM2.5 reference: ", reference_pm25, " \u03bcg/m\u00b3)"),
+        side = 3, line = 1, outer = TRUE, cex = 1.2, font = 2)
   
   dev.off()
   
   invisible(list(
     predictions = predictions,
-    meta_model = meta_model,
     reference_pm25 = reference_pm25,
     reference_name = reference_name,
     grid_dimensions = grid_dims,
     max_ylim = max_ylim
   ))
 }
+
 
 
 
@@ -2215,7 +2040,7 @@ air_pollution_do_analysis <- function(data_path,
       reference_specific_af_an[[ref_std$name]] <- ref_af_an
       
       meta_summary <- ref_af_an$meta_results %>%
-        filter(.data$lag_group == "0") %>%
+        filter(.data$lag_group == "0-7") %>%
         dplyr::select(all_of(c("AF", "AN")))
       
       plot_results <- create_air_pollution_exposure_plots(
