@@ -1114,3 +1114,274 @@ test_that("mh_power_list handles edge cases correctly", {
   expect_length(result_empty, 0)  # Should return empty list without error
 })
 
+test_that("mh_plot_power produces plots correctly", {
+  # Create sample power_list with two regions
+  power_list <- list(
+    region1 = data.frame(
+      region = "region1",
+      temperature = seq(20, 30, by = 2),
+      cen = 22,
+      log_rr = c(0.1, 0.15, 0.2, 0.25, 0.3, 0.35),
+      se = c(0.05, 0.05, 0.06, 0.06, 0.07, 0.07),
+      power = c(70, 75, 80, 85, 90, 95)
+    ),
+    region2 = data.frame(
+      region = "region2",
+      temperature = seq(18, 28, by = 2),
+      cen = 20,
+      log_rr = c(0.05, 0.1, 0.15, 0.2, 0.25, 0.3),
+      se = c(0.04, 0.05, 0.05, 0.06, 0.06, 0.07),
+      power = c(60, 65, 70, 75, 80, 85)
+    )
+  )
+
+  # Plot without saving (allow warnings)
+  expect_warning(mh_plot_power(power_list, save_fig = FALSE), NA)
+
+  # Plot with saving enabled
+  tmp_dir <- tempdir()
+  output_folder <- file.path(tmp_dir, "test_plots")
+  model_validation_dir <- file.path(output_folder, "model_validation")
+
+  # Cleanup before creating
+  if (dir.exists(model_validation_dir)) {
+    unlink(model_validation_dir, recursive = TRUE)
+  }
+
+  # Create directory only if it doesn't exist
+  if (!dir.exists(model_validation_dir)) {
+    dir.create(model_validation_dir, recursive = TRUE)
+  }
+
+  expect_warning(
+    mh_plot_power(power_list, save_fig = TRUE, output_folder_path = output_folder, country = "TestCountry"),
+    NA
+  )
+
+  # Check that the PDF file was created
+  output_path <- file.path(model_validation_dir, "power_vs_temperature.pdf")
+  expect_true(file.exists(output_path))
+  expect_gt(file.info(output_path)$size, 0)
+
+  # Cleanup after test
+  unlink(output_folder, recursive = TRUE)
+})
+
+test_that("mh_rr_results produces expected cumulative RR results", {
+  # Create sample data for two regions
+  set.seed(123)
+  n_regions <- 2
+  n_days <- 10
+
+  # Create df_list with temperature data
+  df_list <- lapply(1:n_regions, function(i) {
+    data.frame(
+      temp = rnorm(n_days, mean = 20 + i * 2, sd = 3),
+      outcome = rpois(n_days, lambda = 10 + i)
+    )
+  })
+  names(df_list) <- paste0("region", 1:n_regions)
+
+  # Create pred_list with prediction values for each region
+  pred_list <- lapply(1:n_regions, function(i) {
+    data.frame(
+      predvar = seq(15, 30, length.out = 5),
+      allRRfit = runif(5, 1, 2),
+      allRRlow = runif(5, 0.8, 1.2),
+      allRRhigh = runif(5, 2, 3)
+    )
+  })
+  names(pred_list) <- names(df_list)
+
+  # Create minpercreg vector for percentile thresholds
+  minpercreg <- setNames(sample(20:60, n_regions, replace = TRUE), names(df_list))
+
+  # Run the function
+  result <- suppressWarnings(mh_rr_results(pred_list, df_list, attr_thr = 97.5, minpercreg))
+
+  # Tests
+  expect_s3_class(result, "data.frame")
+  expect_true(nrow(result) > 0)
+
+  # Check required columns exist
+  required_cols <- c("Area", "MinST", "Attr_Threshold_Temp", "Temperature",
+                     "Temp_Frequency", "RR", "RR_lower_CI", "RR_upper_CI")
+  expect_true(all(required_cols %in% names(result)))
+
+  # Check that Area names match region names
+  expect_true(all(result$Area %in% names(df_list)))
+
+  # Check rounding of RR and confidence intervals
+  expect_true(all(result$RR == round(result$RR, 2)))
+  expect_true(all(result$RR_lower_CI == round(result$RR_lower_CI, 2)))
+  expect_true(all(result$RR_upper_CI == round(result$RR_upper_CI, 2)))
+
+  # Check Temp_Frequency is numeric and non-negative
+  expect_true(is.numeric(result$Temp_Frequency))
+  expect_true(all(result$Temp_Frequency >= 0))
+
+  # Check MinST and Attr_Threshold_Temp are correctly computed (ignore names)
+  for (region in names(df_list)) {
+    expected_min_st <- unname(round(quantile(df_list[[region]]$temp, minpercreg[region] / 100, na.rm = TRUE), 1))
+    actual_min_st <- unique(result[result$Area == region, "MinST"])
+    expect_equal(actual_min_st, expected_min_st)
+
+    expected_attr_thr <- unname(round(quantile(df_list[[region]]$temp, 97.5 / 100, na.rm = TRUE), 1))
+    actual_attr_thr <- unique(result[result$Area == region, "Attr_Threshold_Temp"])
+    expect_equal(actual_attr_thr, expected_attr_thr)
+  }
+})
+
+test_that("mh_rr_results handles edge cases correctly", {
+  # Single region
+  df_list_single <- list(region1 = data.frame(temp = rnorm(10, 20, 2)))
+  pred_list_single <- list(region1 = data.frame(predvar = seq(18, 25, length.out = 3),
+                                                allRRfit = c(1.1, 1.2, 1.3),
+                                                allRRlow = c(0.9, 1.0, 1.1),
+                                                allRRhigh = c(1.5, 1.6, 1.7)))
+  minpercreg_single <- c(region1 = 50)
+
+  result_single <- suppressWarnings(mh_rr_results(pred_list_single, df_list_single, minpercreg = minpercreg_single))
+  expect_s3_class(result_single, "data.frame")
+  expect_equal(unique(result_single$Area), "region1")
+
+  # Missing values in temperature
+  df_list_na <- list(region1 = data.frame(temp = c(NA, 20, 22, NA, 25)))
+  pred_list_na <- list(region1 = data.frame(predvar = c(20, 22, 25),
+                                            allRRfit = c(1.1, 1.2, 1.3),
+                                            allRRlow = c(0.9, 1.0, 1.1),
+                                            allRRhigh = c(1.5, 1.6, 1.7)))
+  minpercreg_na <- c(region1 = 50)
+
+  result_na <- suppressWarnings(mh_rr_results(pred_list_na, df_list_na, minpercreg = minpercreg_na))
+  expect_s3_class(result_na, "data.frame")
+  expect_true(all(!is.na(result_na$MinST)))  # MinST should compute despite NA values
+
+  # Empty lists
+  df_list_empty <- list()
+  pred_list_empty <- list()
+  minpercreg_empty <- c()
+
+  result_empty <- mh_rr_results(pred_list_empty, df_list_empty, minpercreg = minpercreg_empty)
+  expect_s3_class(result_empty, "data.frame")
+  expect_equal(nrow(result_empty), 0)  # Should return empty data frame without error
+})
+
+test_that("mh_plot_rr produces plots correctly", {
+  # Create sample df_list
+  set.seed(123)
+  df_list <- list(
+    Region1 = data.frame(
+      date = seq.Date(as.Date("2023-01-01"), by = "day", length.out = 10),
+      region = "Region1",
+      temp = rnorm(10, 20, 3),
+      suicides = rpois(10, lambda = 5),
+      population = rep(1000000, 10),
+      year = rep(2023, 10),
+      month = rep(1, 10)
+    )
+  )
+
+  # Generate dummy crosspred object with strong positive effect
+  temp_seq <- seq(-6, 6, length.out = 20)
+  basis <- onebasis(temp_seq, "lin")
+  coef <- 2  # large positive coefficient for RR values
+  vcov <- matrix(0.01)
+  pred_obj <- crosspred(basis, coef = coef, vcov = vcov, cen = 0, at = temp_seq)
+
+  # Wrap in list for mh_plot_rr
+  pred_list <- list(Region1 = pred_obj)
+
+  # minpercreg
+  minpercreg <- c(Region1 = 50)
+
+  # Plot without saving (expect warnings)
+  expect_warning(
+    mh_plot_rr(df_list, pred_list, attr_thr = 0, minpercreg, save_fig = FALSE)
+  )
+
+  # Plot with saving enabled (expect warnings)
+  tmp_dir <- tempdir()
+  output_folder <- file.path(tmp_dir, "test_rr_plots")
+  model_validation_dir <- file.path(output_folder, "model_validation")
+
+  if (dir.exists(model_validation_dir)) unlink(model_validation_dir, recursive = TRUE)
+  dir.create(model_validation_dir, recursive = TRUE)
+
+  expect_warning(
+    mh_plot_rr(df_list, pred_list, attr_thr = 0, minpercreg,
+               save_fig = TRUE, output_folder_path = output_folder, country = "TestCountry")
+  )
+
+  # Check PDF file exists and is non-empty
+  output_path <- file.path(output_folder, "suicides_rr_plot.pdf")
+  expect_true(file.exists(output_path))
+  expect_gt(file.info(output_path)$size, 0)
+
+  # Cleanup
+  unlink(output_folder, recursive = TRUE)
+})
+
+
+test_that("mh_attr produces expected output structure and values", {
+  # Create synthetic df_list with enough rows for lag calculations
+  set.seed(123)
+  df_list <- list(
+    Region1 = data.frame(
+      date = seq.Date(as.Date("2000-01-01"), by = "day", length.out = 30),
+      region = "Region 1",
+      temp = rnorm(30, 5, 2),
+      suicides = rpois(30, lambda = 2),
+      population = rep(2600000, 30),
+      year = rep(2000, 30),
+      month = rep(1, 30)
+    )
+  )
+
+  # Create cb_list mimicking crossbasis structure
+  cb <- matrix(rnorm(30 * 5), nrow = 30, ncol = 5)
+  class(cb) <- c("crossbasis", "matrix")
+  attr(cb, "df") <- c(5, 2)
+  attr(cb, "range") <- c(-5.9, 23.3)
+  attr(cb, "lag") <- c(0, 2)
+  attr(cb, "argvar") <- list(fun = "bs", knots = c(3.1, 8.5, 13.9), degree = 2)
+  attr(cb, "arglag") <- list(fun = "strata", breaks = 1)
+  cb_list <- list(Region1 = cb)
+
+  # Create pred_list with coefficients and vcov
+  pred_list <- list(
+    Region1 = list(
+      coefficients = c(-0.19, -0.30, -0.20, -0.14, -0.36),
+      vcov = diag(c(0.18, 0.11, 0.15, 0.12, 0.16))
+    )
+  )
+
+  # minpercreg
+  minpercreg <- c(Region1 = 37)
+
+  # Run mh_attr and check for errors
+  expect_error(
+    result <- mh_attr(df_list, cb_list, pred_list, minpercreg, attr_thr = 97.5),
+    NA
+  )
+
+  # Validate output structure
+  expect_type(result, "list")
+  expect_named(result, names(df_list))
+  expect_true(all(sapply(result, is.list)))
+
+  # Check that each region contains 'results' and 'ansim_mat'
+  for (region in names(result)) {
+    expect_true(all(c("results", "ansim_mat") %in% names(result[[region]])))
+
+    # Validate results data frame columns
+    df <- result[[region]]$results
+    expected_cols <- c("region", "date", "temp", "year", "month", "suicides", "population",
+                       "threshold_temp", "af", "af_lower_ci", "af_upper_ci",
+                       "an", "an_lower_ci", "an_upper_ci",
+                       "ar", "ar_lower_ci", "ar_upper_ci")
+    expect_true(all(expected_cols %in% names(df)))
+  }
+})
+
+
