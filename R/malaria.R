@@ -114,7 +114,7 @@ malaria_do_analysis <- function(
     # Create a centralised output dir
     new_fpath <- file.path(
       output_dir,
-      paste0("diarrhea_analysis_", format(Sys.time(), "%d_%m_%Y_%H_%M"))
+      paste0("malaria_analysis_", format(Sys.time(), "%d_%m_%Y_%H_%M"))
     )
     if (!is.null(new_fpath)) {
       (
