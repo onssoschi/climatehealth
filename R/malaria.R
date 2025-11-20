@@ -108,7 +108,21 @@ malaria_do_analysis <- function(
   if (is.null(output_dir) & (save_fig | save_csv)) {
     stop("'output_dir' must be provided is 'save_fig' or save_csv' are TRUE.")
   }
-  check_file_exists(output_dir, TRUE)
+  if (!is.null(output_dir)) {
+    # Check output dir exists
+    check_file_exists(output_dir, TRUE)
+    # Create a centralised output dir
+    new_fpath <- file.path(
+      output_dir,
+      paste0("diarrhea_analysis_", format(Sys.time(), "%d_%m_%Y_%H_%M"))
+    )
+    if (!is.null(new_fpath)) {
+      (
+        dir.create(new_fpath)
+      )
+    }
+    output_dir <- new_fpath
+  }
 
   # level validation
   level <- tolower(level)
@@ -128,18 +142,6 @@ malaria_do_analysis <- function(
     check_file_exists(climate_data_path, TRUE)
   }
   check_file_exists(map_path, TRUE)
-
-  # Create a centralised output dir
-  new_fpath <- file.path(
-    output_dir,
-    paste0("malaria_analysis_", format(Sys.time(), "%d_%m_%Y_%H_%M"))
-  )
-  if (!is.null(new_fpath)) {
-    (
-      dir.create(new_fpath)
-    )
-  }
-  output_dir <- new_fpath
 
   # Get combined data
   combined_data <- combine_health_climate_data(
