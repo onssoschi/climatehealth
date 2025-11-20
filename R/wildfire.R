@@ -50,7 +50,7 @@ read_and_format_data <- function(
   }
   # Date format identification
   date_function <- lubridate::ymd
-  if (grepl("^\\d{2}/\\d{2}/\\d{4}$", df[[date_col]][1])) {
+  if (grepl("^\\d{2}[-/]\\d{2}[-/]\\d{4}$", df[[date_col]][1])) {
     date_function <- lubridate::dmy
   }
   # Data set pre processing
@@ -199,7 +199,6 @@ join_health_and_climate_data <- function(
   # Ensure valid exposure column
   df_joined <- df_joined %>%
     dplyr::filter(!is.na(.data[[exposure_col]]))
-  df_joined[is.finite(.data[[exposure_col]]), ]
   # Convert exposure units from kg to microgram
   df_joined <- df_joined %>%
     dplyr::mutate(
@@ -270,8 +269,6 @@ load_wildfire_data <- function(
   )
   # Skip wildfire data join if not required
   if (!join_wildfire_data) {
-    # Validate exposure column
-    if (is.null(pm_2_5_col)) stop("PM2.5 column missing.")
     # Normalise column name
     health_df <- health_df %>%
       dplyr::rename(mean_PM_FRP = pm_2_5_col)
