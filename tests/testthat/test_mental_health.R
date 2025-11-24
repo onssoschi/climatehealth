@@ -1385,3 +1385,78 @@ test_that("mh_attr produces expected output structure and values", {
 })
 
 
+test_that("mh_attr_tables aggregates attributable estimates correctly", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Create mock attr_list for two regions
+  n_sim <- 100
+  ansim_mat_region1 <- matrix(stats::rpois(n_sim * 10, lambda = 2), nrow = 10)
+  ansim_mat_region2 <- matrix(stats::rpois(n_sim * 8, lambda = 3), nrow = 8)
+
+  results_region1 <- data.frame(
+    year = rep(2000:2001, each = 5),
+    month = rep(1:5, times = 2),
+    region = "region1",
+    population = rep(100000, 10),
+    temp = rnorm(10, mean = 15, sd = 3),
+    threshold_temp = rep(25, 10),
+    suicides = rep(10, 10),
+    an = rep(2, 10)
+  )
+
+  results_region2 <- data.frame(
+    year = rep(2000:2001, each = 4),
+    month = rep(1:4, times = 2),
+    region = "region2",
+    population = rep(120000, 8),
+    temp = rnorm(8, mean = 20, sd = 3),
+    threshold_temp = rep(28, 8),
+    suicides = rep(12, 8),
+    an = rep(3, 8)
+  )
+
+  attr_list <- list(
+    region1 = list(results = results_region1, ansim_mat = ansim_mat_region1),
+    region2 = list(results = results_region2, ansim_mat = ansim_mat_region2)
+  )
+
+  # Run function
+  result <- mh_attr_tables(attr_list, country = "National", meta_analysis = FALSE)
+
+  # Structure tests
+  expect_type(result, "list")
+  expect_length(result, 3)
+
+  res_attr_tot <- result[[1]]
+  attr_yr_list <- result[[2]]
+  attr_mth_list <- result[[3]]
+
+  # Check overall totals dataframe
+  expect_true(is.data.frame(res_attr_tot))
+  required_cols_tot <- c("region", "population", "temp", "threshold_temp", "suicides",
+                         "an", "an_lower_ci", "an_upper_ci", "af", "af_lower_ci", "af_upper_ci",
+                         "ar", "ar_lower_ci", "ar_upper_ci")
+  expect_true(all(required_cols_tot %in% names(res_attr_tot)))
+
+  # Check yearly list structure
+  expect_type(attr_yr_list, "list")
+  expect_named(attr_yr_list, c("region1", "region2"))
+  expect_true(all(sapply(attr_yr_list, is.data.frame)))
+
+  # Check monthly list structure
+  expect_type(attr_mth_list, "list")
+  expect_named(attr_mth_list, c("region1", "region2"))
+  expect_true(all(sapply(attr_mth_list, is.data.frame)))
+
+  # Validate CI calculations: upper CI should be >= lower CI
+  expect_true(all(res_attr_tot$an_upper_ci >= res_attr_tot$an_lower_ci))
+
+  # Validate AF and AR are positive
+  expect_true(all(res_attr_tot$af >= 0))
+  expect_true(all(res_attr_tot$ar >= 0))
+
+  # Check that month names are converted correctly in monthly list
+  expect_true(all(attr_mth_list$region1$month %in% month.name))
+})
+
