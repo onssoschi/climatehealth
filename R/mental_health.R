@@ -1521,7 +1521,7 @@ mh_attr_tables <- function(
         ar_lower_ci = .data$an_lower_ci / .data$population * 100000,
         ar_upper_ci = .data$an_upper_ci / .data$population * 100000
       ) %>%
-      select(all_of(c(-"sim_rows", -"sim_sum")))
+      select(-sim_rows, -sim_sum)
 
     res_list[[grp_name]] <- grouped
   }
