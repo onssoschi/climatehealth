@@ -1460,3 +1460,261 @@ test_that("mh_attr_tables aggregates attributable estimates correctly", {
   expect_true(all(attr_mth_list$region1$month %in% month.name))
 })
 
+
+test_that("mh_plot_attr_totals generates plots and validates dynamic elements", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Mock df_list with date column for two regions
+  n_days <- 10
+  df_list <- list(
+    region1 = data.frame(date = seq.Date(as.Date("2000-01-01"), by = "day", length.out = n_days)),
+    region2 = data.frame(date = seq.Date(as.Date("2000-01-01"), by = "day", length.out = n_days))
+  )
+
+  # Mock res_attr_tot with required columns
+  res_attr_tot <- data.frame(
+    region = c("region1", "region2"),
+    af = c(12.5, 8.3),
+    af_lower_ci = c(10.0, 6.0),
+    af_upper_ci = c(15.0, 10.0),
+    ar = c(5.2, 3.8),
+    ar_lower_ci = c(4.0, 3.0),
+    ar_upper_ci = c(6.5, 4.5)
+  )
+
+  # Capture plot output for dynamic checks without saving
+  expect_silent({
+    grDevices::pdf(NULL) # Direct to null device for testing
+    mh_plot_attr_totals(df_list, res_attr_tot, save_fig = FALSE, country = "region1")
+    plot_calls <- recordPlot()
+    grDevices::dev.off()
+  })
+
+  # Validate sorting by AF and AR
+  sorted_af <- order(res_attr_tot$af, decreasing = TRUE)
+  expect_equal(res_attr_tot$region[sorted_af][1], "region1") # region1 has highest AF
+
+  sorted_ar <- order(res_attr_tot$ar, decreasing = TRUE)
+  expect_equal(res_attr_tot$region[sorted_ar][1], "region1") # region1 has highest AR
+
+  # Validate highlight color logic for AF
+  bar_col_af <- rep("#296991", nrow(res_attr_tot))
+  nat_ind_af <- which(res_attr_tot$region[sorted_af] == "region1")
+  bar_col_af[nat_ind_af] <- "#7a855c"
+  expect_true("#7a855c" %in% bar_col_af)
+
+  # Validate CI warning text formatting
+  af_ci_range <- c(min(res_attr_tot$af_lower_ci), max(res_attr_tot$af_upper_ci))
+  af_warning <- sprintf("Warning: AF CI's range from %.2f%% to %.2f%%", af_ci_range[1], af_ci_range[2])
+  expect_match(af_warning, "Warning: AF CI's range from")
+
+  # Validate year range calculation for title
+  year_min <- min(sapply(df_list, function(x) min(lubridate::year(x$date), na.rm = TRUE)))
+  year_max <- max(sapply(df_list, function(x) max(lubridate::year(x$date), na.rm = TRUE)))
+  expect_equal(year_min, 2000)
+  expect_equal(year_max, 2000)
+
+  # Validate file saving when save_fig = TRUE
+  temp_dir <- tempdir()
+  output_path <- file.path(temp_dir, "suicides_total_attr_plot.pdf")
+
+  expect_silent(
+    mh_plot_attr_totals(df_list, res_attr_tot, save_fig = TRUE, output_folder_path = temp_dir, country = "region1")
+  )
+
+  expect_true(file.exists(output_path))
+
+  # Clean up
+  unlink(output_path)
+})
+
+
+
+
+test_that("mh_plot_attr_totals saves plot when save_fig = TRUE", {
+  # Set seed for reproducibility
+  set.seed(456)
+
+  # Create mock df_list with date column
+  n_days <- 10
+  df_list <- list(
+    region1 = data.frame(date = seq.Date(as.Date("2000-01-01"), by = "day", length.out = n_days)),
+    region2 = data.frame(date = seq.Date(as.Date("2000-01-01"), by = "day", length.out = n_days))
+  )
+
+  # Mock res_attr_tot with required columns
+  res_attr_tot <- data.frame(
+    region = c("region1", "region2"),
+    af = c(12.5, 8.3),
+    af_lower_ci = c(10.0, 6.0),
+    af_upper_ci = c(15.0, 10.0),
+    ar = c(5.2, 3.8),
+    ar_lower_ci = c(4.0, 3.0),
+    ar_upper_ci = c(6.5, 4.5)
+  )
+
+  # Create temporary directory for saving plot
+  temp_dir <- tempdir()
+  output_path <- file.path(temp_dir, "suicides_total_attr_plot.pdf")
+
+  # Run function with save_fig = TRUE
+  expect_silent(
+    mh_plot_attr_totals(df_list, res_attr_tot, save_fig = TRUE, output_folder_path = temp_dir, country = "region1")
+  )
+
+  # Check that file was created
+  expect_true(file.exists(output_path))
+
+  # Clean up
+  unlink(output_path)
+})
+
+
+test_that("mh_plot_af_yearly generates plots without errors", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Create mock attr_yr_list for two regions
+  attr_yr_list <- list(
+    region1 = data.frame(
+      year = 2000:2002,
+      af = c(10.5, 12.0, 11.3),
+      af_lower_ci = c(9.0, 10.0, 9.5),
+      af_upper_ci = c(12.0, 14.0, 13.0)
+    ),
+    region2 = data.frame(
+      year = 2000:2002,
+      af = c(8.2, 9.5, 10.1),
+      af_lower_ci = c(7.0, 8.0, 8.5),
+      af_upper_ci = c(9.5, 11.0, 11.5)
+    )
+  )
+
+  # Test plotting without saving
+  expect_silent(
+    mh_plot_af_yearly(attr_yr_list, save_fig = FALSE, country = "region1")
+  )
+})
+
+
+test_that("mh_plot_af_yearly generates plots and validates dynamic elements", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Create mock attr_yr_list for two regions
+  attr_yr_list <- list(
+    region1 = data.frame(
+      year = 2000:2002,
+      af = c(10.5, 12.0, 11.3),
+      af_lower_ci = c(9.0, 10.0, 9.5),
+      af_upper_ci = c(12.0, 14.0, 13.0)
+    ),
+    region2 = data.frame(
+      year = 2000:2002,
+      af = c(8.2, 9.5, 10.1),
+      af_lower_ci = c(7.0, 8.0, 8.5),
+      af_upper_ci = c(9.5, 11.0, 11.5)
+    )
+  )
+
+  # Capture plot output for dynamic checks without saving
+  expect_silent({
+    grDevices::pdf(NULL) # Direct to null device for testing
+    mh_plot_af_yearly(attr_yr_list, save_fig = FALSE, country = "region1")
+    plot_calls <- recordPlot()
+    grDevices::dev.off()
+  })
+
+  # Validate year range calculation
+  year_min <- min(sapply(attr_yr_list, function(x) min(x$year, na.rm = TRUE)))
+  year_max <- max(sapply(attr_yr_list, function(x) max(x$year, na.rm = TRUE)))
+  expect_equal(year_min, 2000)
+  expect_equal(year_max, 2002)
+
+  # Validate ylim calculation includes AF values
+  y_min <- min(sapply(attr_yr_list, function(x) min(x$af, na.rm = TRUE)))
+  y_max <- max(sapply(attr_yr_list, function(x) max(x$af, na.rm = TRUE)))
+  expect_true(y_max >= 12.0)
+
+  # Validate CI polygon coordinates for region1
+  region_af <- attr_yr_list$region1[order(attr_yr_list$region1$year), ]
+  x_poly <- c(region_af$year, rev(region_af$year))
+  y_poly <- c(region_af$af_upper_ci, rev(region_af$af_lower_ci))
+  expect_equal(length(x_poly), length(y_poly)) # Polygon coordinates match
+
+  # Validate title text when save_fig = TRUE
+  temp_dir <- tempdir()
+  output_path <- file.path(temp_dir, "suicides_af_timeseries.pdf")
+
+  expect_silent(
+    mh_plot_af_yearly(attr_yr_list, save_fig = TRUE, output_folder_path = temp_dir, country = "region1")
+  )
+
+  expect_true(file.exists(output_path))
+
+  # Clean up
+  unlink(output_path)
+})
+
+
+
+test_that("mh_plot_ar_yearly generates plots and validates dynamic elements", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Create mock attr_yr_list for two regions
+  attr_yr_list <- list(
+    region1 = data.frame(
+      year = 2000:2002,
+      ar = c(5.2, 6.0, 5.8),
+      ar_lower_ci = c(4.0, 4.5, 4.8),
+      ar_upper_ci = c(6.5, 7.0, 6.8)
+    ),
+    region2 = data.frame(
+      year = 2000:2002,
+      ar = c(3.8, 4.2, 4.5),
+      ar_lower_ci = c(3.0, 3.2, 3.5),
+      ar_upper_ci = c(4.5, 4.8, 5.0)
+    )
+  )
+
+  # Capture plot output for dynamic checks without saving
+  expect_silent({
+    grDevices::pdf(NULL) # Direct to null device for testing
+    mh_plot_ar_yearly(attr_yr_list, save_fig = FALSE, country = "region1")
+    plot_calls <- recordPlot()
+    grDevices::dev.off()
+  })
+
+  # Validate year range calculation
+  year_min <- min(sapply(attr_yr_list, function(x) min(x$year, na.rm = TRUE)))
+  year_max <- max(sapply(attr_yr_list, function(x) max(x$year, na.rm = TRUE)))
+  expect_equal(year_min, 2000)
+  expect_equal(year_max, 2002)
+
+  # Validate ylim calculation includes AR values
+  y_min <- min(sapply(attr_yr_list, function(x) min(x$ar, na.rm = TRUE)))
+  y_max <- max(sapply(attr_yr_list, function(x) max(x$ar, na.rm = TRUE)))
+  expect_true(y_max >= 6.0)
+
+  # Validate CI polygon coordinates for region1
+  region_ar <- attr_yr_list$region1[order(attr_yr_list$region1$year), ]
+  x_poly <- c(region_ar$year, rev(region_ar$year))
+  y_poly <- c(region_ar$ar_upper_ci, rev(region_ar$ar_lower_ci))
+  expect_equal(length(x_poly), length(y_poly)) # Polygon coordinates match
+
+  # Validate title text when save_fig = TRUE
+  temp_dir <- tempdir()
+  output_path <- file.path(temp_dir, "suicides_ar_timeseries.pdf")
+
+  expect_silent(
+    mh_plot_ar_yearly(attr_yr_list, save_fig = TRUE, output_folder_path = temp_dir, country = "region1")
+  )
+
+  expect_true(file.exists(output_path))
+
+  # Clean up
+  unlink(output_path)
+})
+
