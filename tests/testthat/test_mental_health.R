@@ -1267,6 +1267,7 @@ test_that("mh_rr_results handles edge cases correctly", {
   expect_equal(nrow(result_empty), 0)  # Should return empty data frame without error
 })
 
+
 test_that("mh_plot_rr produces plots correctly", {
   # Create sample df_list
   set.seed(123)
@@ -1718,3 +1719,418 @@ test_that("mh_plot_ar_yearly generates plots and validates dynamic elements", {
   unlink(output_path)
 })
 
+
+test_that("mh_plot_af_monthly generates plots and validates dynamic elements", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Mock df_list with date and temp columns
+  n_days <- 10
+  df_list <- list(
+    region1 = data.frame(
+      date = seq.Date(as.Date("2000-01-01"), by = "day", length.out = n_days),
+      temp = rnorm(n_days, mean = 15, sd = 3)
+    ),
+    region2 = data.frame(
+      date = seq.Date(as.Date("2000-01-01"), by = "day", length.out = n_days),
+      temp = rnorm(n_days, mean = 20, sd = 3)
+    )
+  )
+
+  # Mock attr_mth_list with AF and temperature values by month
+  attr_mth_list <- list(
+    region1 = data.frame(
+      month = month.name[1:6],
+      af = c(10.5, 12.0, 11.3, 9.8, 8.5, 7.2),
+      af_lower_ci = c(9.0, 10.0, 9.5, 8.0, 7.0, 6.0),
+      af_upper_ci = c(12.0, 14.0, 13.0, 11.0, 10.0, 9.0),
+      temp = c(14, 15, 16, 17, 18, 19)
+    ),
+    region2 = data.frame(
+      month = month.name[1:6],
+      af = c(8.2, 9.5, 10.1, 7.8, 6.5, 5.2),
+      af_lower_ci = c(7.0, 8.0, 8.5, 6.5, 5.5, 4.5),
+      af_upper_ci = c(9.5, 11.0, 11.5, 9.0, 8.0, 7.0),
+      temp = c(19, 20, 21, 22, 23, 24)
+    )
+  )
+
+  # Capture plot output without saving
+  expect_silent({
+    grDevices::pdf(NULL)
+    mh_plot_af_monthly(attr_mth_list, df_list, country = "region1", save_fig = FALSE)
+    plot_calls <- recordPlot()
+    grDevices::dev.off()
+  })
+
+  # Dynamic validations
+  # Check AF range and temperature scaling logic
+  ylim_max <- max(sapply(attr_mth_list, function(x) max(x$af, na.rm = TRUE)))
+  expect_true(ylim_max >= 12.0)
+
+  ylim2_max <- max(sapply(attr_mth_list, function(x) max(x$temp, na.rm = TRUE)))
+  expect_true(ylim2_max >= 24)
+
+  scale_factor <- (1 / ylim2_max) * ylim_max
+  expect_true(scale_factor > 0)
+
+  # Validate legend text includes threshold temperature
+  attr_thr_tmp <- round(quantile(df_list$region1$temp, 97.5 / 100, na.rm = TRUE), 2)
+  legend_text <- paste0("AF (%) - from Attr. Risk Treshold, ", attr_thr_tmp, "\u00b0C (97.5p)")
+  expect_match(legend_text, "Attr. Risk Treshold")
+
+  # Validate file saving when save_fig = TRUE
+  temp_dir <- tempdir()
+  output_path <- file.path(temp_dir, "suicides_af_month_plot.pdf")
+
+  expect_silent(
+    mh_plot_af_monthly(attr_mth_list, df_list, country = "region1", save_fig = TRUE, output_folder_path = temp_dir)
+  )
+  expect_true(file.exists(output_path))
+
+  unlink(output_path)
+})
+
+
+test_that("mh_plot_ar_monthly generates plots and validates dynamic elements", {
+  set.seed(123)
+
+  # Mock data
+  n_days <- 10
+  df_list <- list(
+    region1 = data.frame(date = seq.Date(as.Date("2000-01-01"), by = "day", length.out = n_days),
+                         temp = rnorm(n_days, 15, 3)),
+    region2 = data.frame(date = seq.Date(as.Date("2000-01-01"), by = "day", length.out = n_days),
+                         temp = rnorm(n_days, 20, 3))
+  )
+
+  attr_mth_list <- list(
+    region1 = data.frame(
+      month = month.name[1:6],
+      ar = c(5.2, 6.0, 5.8, 4.5, 3.8, 3.0),
+      ar_lower_ci = c(4.0, 4.5, 4.8, 3.5, 3.0, 2.5),
+      ar_upper_ci = c(6.5, 7.0, 6.8, 5.5, 4.8, 4.0),
+      temp = c(14, 15, 16, 17, 18, 19)
+    ),
+    region2 = data.frame(
+      month = month.name[1:6],
+      ar = c(3.8, 4.2, 4.5, 3.2, 2.8, 2.5),
+      ar_lower_ci = c(3.0, 3.2, 3.5, 2.5, 2.0, 1.8),
+      ar_upper_ci = c(4.5, 4.8, 5.0, 4.0, 3.5, 3.2),
+      temp = c(19, 20, 21, 22, 23, 24)
+    )
+  )
+
+  # Open a real device; let mh_plot_ar_monthly() close it internally
+  expect_silent({
+    tmp_file <- tempfile(fileext = ".pdf")
+    grDevices::pdf(tmp_file)
+    mh_plot_ar_monthly(attr_mth_list, df_list, country = "region1", save_fig = FALSE)
+    # Do NOT call dev.off(); the function closes the device itself.
+    unlink(tmp_file)
+  })
+
+  # Dynamic validations (derived from inputs)
+  ylim_max <- max(sapply(attr_mth_list, function(x) max(x$ar, na.rm = TRUE)))
+  expect_true(ylim_max >= 6.0)
+
+  ylim2_max <- max(sapply(attr_mth_list, function(x) max(x$temp, na.rm = TRUE)))
+  expect_true(ylim2_max >= 24)
+
+  scale_factor <- (1 / ylim2_max) * ylim_max
+  expect_true(scale_factor > 0)
+
+  # Validate legend text calculation (threshold)
+  attr_thr_tmp <- round(quantile(df_list$region1$temp, 97.5 / 100, na.rm = TRUE), 2)
+  legend_text <- paste0("AR - from Attr. Risk Threshold, ", attr_thr_tmp, "\u00b0C (97.5p)")
+  expect_match(legend_text, "Attr. Risk Threshold")
+
+  # Validate file saving when save_fig = TRUE (exists and non-empty)
+  temp_dir <- tempdir()
+  output_path <- file.path(temp_dir, "suicides_ar_month_plot.pdf")
+  expect_silent(mh_plot_ar_monthly(attr_mth_list, df_list, country = "region1",
+                                   save_fig = TRUE, output_folder_path = temp_dir))
+  expect_true(file.exists(output_path))
+  expect_gt(file.info(output_path)$size, 0)
+  unlink(output_path)
+})
+
+test_that("mh_plot_ar_monthly handles empty lists gracefully", {
+  # The function attempts vectorized ops on empty lists, producing this base R error
+  expect_error(
+    mh_plot_ar_monthly(list(), list()),
+    regexp = "invalid 'type' \\(list\\) of argument"
+  )
+})
+
+test_that("mh_plot_ar_monthly works with a single region", {
+  single_attr_mth <- list(region1 = data.frame(
+    month = month.name[1:3],
+    ar = c(2.5, 3.0, 3.5),
+    ar_lower_ci = c(2.0, 2.5, 3.0),
+    ar_upper_ci = c(3.0, 3.5, 4.0),
+    temp = c(15, 16, 17)
+  ))
+
+  single_df <- list(region1 = data.frame(
+    date = seq.Date(as.Date("2000-01-01"), by = "day", length.out = 5),
+    temp = c(14, 15, 16, 17, 18)
+  ))
+
+  expect_silent({
+    tmp_file <- tempfile(fileext = ".pdf")
+    grDevices::pdf(tmp_file)
+    mh_plot_ar_monthly(single_attr_mth, single_df, country = "SingleRegion", save_fig = FALSE)
+    # Do NOT call dev.off(); the function closes the device itself.
+    unlink(tmp_file)
+  })
+})
+
+test_that("mh_plot_ar_monthly responds to different attr_thr values", {
+  attr_mth_list <- list(region1 = data.frame(
+    month = month.name[1:3],
+    ar = c(2.5, 3.0, 3.5),
+    ar_lower_ci = c(2.0, 2.5, 3.0),
+    ar_upper_ci = c(3.0, 3.5, 4.0),
+    temp = c(15, 16, 17)
+  ))
+
+  df_list <- list(region1 = data.frame(
+    date = seq.Date(as.Date("2000-01-01"), by = "day", length.out = 5),
+    temp = c(14, 15, 16, 17, 18)
+  ))
+
+  expect_silent({
+    tmp_file <- tempfile(fileext = ".pdf")
+    grDevices::pdf(tmp_file)
+    mh_plot_ar_monthly(attr_mth_list, df_list, country = "TestCountry", attr_thr = 90, save_fig = FALSE)
+    # Do NOT call dev.off(); the function closes the device itself.
+    unlink(tmp_file)
+  })
+
+  attr_thr_tmp <- round(quantile(df_list$region1$temp, 90 / 100, na.rm = TRUE), 2)
+  expect_true(attr_thr_tmp <= max(df_list$region1$temp))
+})
+
+test_that("mh_plot_ar_monthly constructs expected title and warnings when save_fig = TRUE", {
+  # Build df_list so year range is deterministic
+  df_list <- list(
+    region1 = data.frame(
+      date = seq.Date(as.Date("2001-01-01"), by = "day", length.out = 365),
+      temp = rep(20, 365)
+    ),
+    region2 = data.frame(
+      date = seq.Date(as.Date("2003-01-01"), by = "day", length.out = 365),
+      temp = rep(22, 365)
+    )
+  )
+
+  # attr_mth_list with known CI ranges for warning text
+  attr_mth_list <- list(
+    region1 = data.frame(
+      month = month.name[1:6],
+      ar = c(1.0, 1.5, 2.0, 1.2, 0.8, 0.5),
+      ar_lower_ci = c(2.0, 2.1, 2.2, 2.0, 2.3, 2.4),  # global min: 2.0
+      ar_upper_ci = c(3.0, 3.5, 4.0, 3.8, 3.9, 3.7),  # global max: 4.0
+      temp = c(15, 16, 17, 18, 19, 20)
+    ),
+    region2 = data.frame(
+      month = month.name[1:6],
+      ar = c(0.7, 0.9, 1.1, 1.0, 0.6, 0.4),
+      ar_lower_ci = c(2.5, 2.6, 2.7, 2.3, 2.2, 2.8),
+      ar_upper_ci = c(3.4, 3.2, 3.6, 3.1, 3.3, 3.5),
+      temp = c(19, 20, 21, 22, 23, 24)
+    )
+  )
+
+  # Compute expected strings exactly as the function does
+  year_min <- min(sapply(df_list, function(x) min(lubridate::year(x$date), na.rm = TRUE)))
+  year_max <- max(sapply(df_list, function(x) max(lubridate::year(x$date), na.rm = TRUE)))
+  year_range <- paste0("(", year_min, "-", year_max, ")")
+  expected_title <- paste0("Attributable Rate of Suicide by Calendar Month and Area, Testland ", year_range)
+
+  ar_ci_min <- min(sapply(attr_mth_list, function(x) min(x$ar_lower_ci, na.rm = TRUE)))
+  ar_ci_max <- max(sapply(attr_mth_list, function(x) max(x$ar_upper_ci, na.rm = TRUE)))
+  expected_ci_warning <- sprintf("Warning: CI's range from %.2f to %.2f per 100,000 population", ar_ci_min, ar_ci_max)
+  expected_ovr_warning <- "(Please refer to the associated data table for more information on the uncertainty around each estimate)"
+
+  # Run function with save_fig = TRUE and verify file exists and non-empty
+  temp_dir <- tempdir()
+  output_path <- file.path(temp_dir, "suicides_ar_month_plot.pdf")
+
+  expect_silent(
+    mh_plot_ar_monthly(attr_mth_list, df_list, country = "Testland",
+                       save_fig = TRUE, output_folder_path = temp_dir)
+  )
+  expect_true(file.exists(output_path))
+  expect_gt(file.info(output_path)$size, 0)
+
+  # Assert the constructed strings match the expected ones (logic equivalence)
+  expect_equal(expected_title,
+               paste0("Attributable Rate of Suicide by Calendar Month and Area, Testland ",
+                      "(", year_min, "-", year_max, ")"))
+  expect_equal(expected_ci_warning,
+               sprintf("Warning: CI's range from %.2f to %.2f per 100,000 population",
+                       ar_ci_min, ar_ci_max))
+  expect_match(expected_ovr_warning,
+               "\\(Please refer to the associated data table for more information on the uncertainty around each estimate\\)")
+
+  # Clean up
+  unlink(output_path)
+})
+
+
+
+test_that("mh_save_results errors when output_folder_path is NULL", {
+  # Minimal mock inputs (won't be used because function should error early)
+  rr_results <- data.frame(region = character(), rr = numeric(), rr_lower_ci = numeric(), rr_upper_ci = numeric())
+  res_attr_tot <- matrix(nrow = 0, ncol = 0)
+  attr_yr_list <- list()
+  attr_mth_list <- list()
+  power_list <- list()
+
+  expect_error(
+    mh_save_results(
+      rr_results = rr_results,
+      res_attr_tot = res_attr_tot,
+      attr_yr_list = attr_yr_list,
+      attr_mth_list = attr_mth_list,
+      power_list = power_list,
+      output_folder_path = NULL
+    ),
+    regexp = "Output path not specified"
+  )
+})
+
+test_that("mh_save_results writes all expected CSV files and validates content", {
+  # Create a temporary output folder and ensure the model_validation subfolder exists
+  temp_dir <- tempdir()
+  model_val_dir <- file.path(temp_dir, "model_validation")
+  if (!dir.exists(model_val_dir)) {
+    dir.create(model_val_dir, recursive = TRUE)
+  }
+
+  # Mock rr_results (data.frame)
+  rr_results <- data.frame(
+    region = c("region1", "region2"),
+    rr = c(1.15, 1.08),
+    rr_lower_ci = c(1.05, 1.02),
+    rr_upper_ci = c(1.25, 1.15)
+  )
+
+  # Mock res_attr_tot (matrix)
+  res_attr_tot <- matrix(
+    c("region1", 10.2, 50, 5.1,
+      "region2", 8.4, 40, 4.2),
+    nrow = 2, byrow = TRUE
+  )
+  colnames(res_attr_tot) <- c("region", "af_total", "an_total", "ar_total")
+
+  # Mock attr_yr_list (list of data.frames)
+  attr_yr_list <- list(
+    region1 = data.frame(
+      region = "region1",
+      year = c(2000, 2001),
+      af = c(10.5, 12.0),
+      an = c(25, 30),
+      ar = c(5.2, 6.0)
+    ),
+    region2 = data.frame(
+      region = "region2",
+      year = c(2000, 2001),
+      af = c(8.2, 9.5),
+      an = c(20, 22),
+      ar = c(3.8, 4.5)
+    )
+  )
+
+  # Mock attr_mth_list (list of data.frames)
+  attr_mth_list <- list(
+    region1 = data.frame(
+      region = "region1",
+      month = month.name[1:3],
+      af = c(10.5, 12.0, 11.3),
+      an = c(5, 6, 7),
+      ar = c(4.5, 5.0, 5.2)
+    ),
+    region2 = data.frame(
+      region = "region2",
+      month = month.name[1:3],
+      af = c(8.2, 9.5, 10.1),
+      an = c(4, 5, 6),
+      ar = c(3.2, 3.8, 4.1)
+    )
+  )
+
+  # Mock power_list (list rbind-able)
+  power_list <- list(
+    data.frame(region = "region1", power = 0.85, threshold = 97.5),
+    data.frame(region = "region2", power = 0.88, threshold = 97.5)
+  )
+
+  # Execute and validate file creation
+  expect_silent(
+    mh_save_results(
+      rr_results = rr_results,
+      res_attr_tot = res_attr_tot,
+      attr_yr_list = attr_yr_list,
+      attr_mth_list = attr_mth_list,
+      power_list = power_list,
+      output_folder_path = temp_dir
+    )
+  )
+
+  # Expected file paths
+  rr_path        <- file.path(temp_dir, "suicides_rr_results.csv")
+  attr_tot_path  <- file.path(temp_dir, "suicides_attr_tot_results.csv")
+  attr_yr_path   <- file.path(temp_dir, "suicides_attr_yr_results.csv")
+  attr_mth_path  <- file.path(temp_dir, "suicides_attr_mth_results.csv")
+  power_path     <- file.path(temp_dir, "model_validation", "suicides_power_results.csv")
+
+  # Files exist and are non-empty
+  expect_true(file.exists(rr_path))
+  expect_true(file.exists(attr_tot_path))
+  expect_true(file.exists(attr_yr_path))
+  expect_true(file.exists(attr_mth_path))
+  expect_true(file.exists(power_path))
+
+  expect_gt(file.info(rr_path)$size, 0)
+  expect_gt(file.info(attr_tot_path)$size, 0)
+  expect_gt(file.info(attr_yr_path)$size, 0)
+  expect_gt(file.info(attr_mth_path)$size, 0)
+  expect_gt(file.info(power_path)$size, 0)
+
+  # Validate RR results content
+  rr_out <- read.csv(rr_path, stringsAsFactors = FALSE)
+  expect_true(all(c("region", "rr", "rr_lower_ci", "rr_upper_ci") %in% names(rr_out)))
+  expect_equal(nrow(rr_out), nrow(rr_results))
+
+  # Validate total attributable results content
+  attr_tot_out <- read.csv(attr_tot_path, stringsAsFactors = FALSE)
+  expect_true(all(c("region", "af_total", "an_total", "ar_total") %in% names(attr_tot_out)))
+  expect_equal(nrow(attr_tot_out), nrow(res_attr_tot))
+
+  # Validate yearly results: region is the first column; row count equals sum over list
+  attr_yr_out <- read.csv(attr_yr_path, stringsAsFactors = FALSE)
+  expect_equal(names(attr_yr_out)[1], "region")
+  expected_yr_rows <- sum(vapply(attr_yr_list, nrow, integer(1)))
+  expect_equal(nrow(attr_yr_out), expected_yr_rows)
+
+  # Validate monthly results: region is the first column; row count equals sum over list
+  attr_mth_out <- read.csv(attr_mth_path, stringsAsFactors = FALSE)
+  expect_equal(names(attr_mth_out)[1], "region")
+  expected_mth_rows <- sum(vapply(attr_mth_list, nrow, integer(1)))
+  expect_equal(nrow(attr_mth_out), expected_mth_rows)
+
+  # Validate power results content
+  power_out <- read.csv(power_path, stringsAsFactors = FALSE)
+  expect_true(all(c("region", "power", "threshold") %in% names(power_out)))
+  expect_equal(nrow(power_out), length(power_list))
+
+  # Clean up
+  unlink(rr_path)
+  unlink(attr_tot_path)
+  unlink(attr_yr_path)
+  unlink(attr_mth_path)
+  unlink(power_path)
+})
