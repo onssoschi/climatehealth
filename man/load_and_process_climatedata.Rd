@@ -15,7 +15,7 @@ load_and_process_climatedata(
   rainfall_col,
   r_humidity_col,
   runoff_col = NULL,
-  cvh_col = NULL,
+  ndvi_col = NULL,
   spi_col = NULL,
   max_lag = 4
 )
@@ -51,7 +51,8 @@ contains the relative humidity.}
 \item{runoff_col}{Character. Name of the column in the dataframe that
 contains the monthly runoff water data. Defaults to NULL.}
 
-\item{cvh_col}{Character. Name of column containing CHV.}
+\item{ndvi_col}{Character. Name of column containing the Normalized Difference
+Vegetation Index (ndvi) data. Defaults to NULL.}
 
 \item{spi_col}{Character. Name of the column in the dataframe that
 contains the standardized precipitation index. Defaults to NULL.}
