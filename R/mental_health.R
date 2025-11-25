@@ -42,11 +42,11 @@ mh_read_and_format_data <- function(
 
   df <- df %>%
     dplyr::rename(
-      date = date_col,
-      region = region_col,
-      temp = temperature_col,
-      suicides = health_outcome_col,
-      population = population_col
+      date = all_of(date_col),
+      region = all_of(region_col),
+      temp = all_of(temperature_col),
+      suicides = all_of(health_outcome_col),
+      population = all_of(population_col)
     ) %>%
     dplyr::mutate(
       date = as.Date(date, tryFormats = c("%d/%m/%Y", "%Y-%m-%d")),
@@ -926,7 +926,7 @@ mh_add_national_data <- function(
   national_data <- as.data.frame(do.call(rbind, df_list))
 
   nat_pop <- pop_list[[country]] %>%
-    dplyr::rename(nat_population = .data$population)
+    dplyr::rename(nat_population = all_of("population"))
 
   national_data <- national_data %>%
     dplyr::left_join(nat_pop, by = "year") %>%

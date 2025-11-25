@@ -1,5 +1,5 @@
 # Tests for diseases_shared.R
-# source("../../R/mental_health.R")
+source("../../R/mental_health.R")
 
 # Test mh_read_and_format_data
 test_that("Test mh_read_and_format_data", {
@@ -82,7 +82,7 @@ test_that("Test mh_read_and_format_data", {
     }
 
     expect_identical(mh_test_list, control_test_list)
-  })
+})
 
 
 # Test mh_pop_totals
