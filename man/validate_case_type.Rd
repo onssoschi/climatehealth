@@ -2,7 +2,7 @@
 % Please edit documentation in R/diseases_shared.R
 \name{validate_case_type}
 \alias{validate_case_type}
-\title{Ensure that the 'case_type' parameter is valid}
+\title{Ensure that the \code{case_type} parameter is valid}
 \usage{
 validate_case_type(case_type)
 }

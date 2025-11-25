@@ -8,6 +8,7 @@ plot_relative_risk(
   data,
   model,
   param_term,
+  max_lag,
   level = "country",
   filter_year = NULL,
   case_type,
@@ -22,17 +23,22 @@ plot_relative_risk(
 \item{model}{The fitted model from run_inla_models() function.}
 
 \item{param_term}{A character vector or list containing parameter terms such
-as "tmax" (maximum temperature) and "rainfall" (precipitation).
-Default to "tmax".}
+as \code{tmax} (temperature exposure) and \code{rainfall} (rainfall exposure).
+Default to \code{tmax}.}
 
-\item{level}{A character vector specifying the spatial disaggregation level.
-Can take one of the following values: "country", "region", or "district".
-Default to "country".}
+\item{max_lag}{Character. Number corresponding to the maximum lag to be
+considered for the delay effect. It should be between 2 an 4.}
 
-\item{filter_year}{Integer. The year to filter to data to. Defaults to NULL.}
+\item{level}{A character vector specifying the geographical disaggregation.
+Can take one of the following values: \code{country}, \code{region}, or \code{district}.
+Default to \code{country}.}
+
+\item{filter_year}{Integer. The year to filter to data to. This gives the
+possibility to user to have the plot for a specific year. When Defaults to NULL,
+it provides the plot by grouping all the years in the dataset.}
 
 \item{case_type}{Character. The type of disease that the case column refers
-to. Must be one of 'diarrhea' or 'malaria'}
+to. Must be one of \code{"diarrhea"} or \code{"malaria"}.}
 
 \item{output_dir}{Character. The path where the PDF file will be saved. Default to NULL.}
 
@@ -46,7 +52,7 @@ Defaults to FALSE.}
 Relative risk plot at country, region, and district levels.
 }
 \description{
-Plots the relative risk of diarrhea cases by the maximum
+Plots the relative risk of Malaria cases by the maximum
 temperature and cumulative rainfall at country, Region and District level
 }
 \keyword{internal}
