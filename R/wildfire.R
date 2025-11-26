@@ -420,7 +420,7 @@ time_stratify <- function(data) {
   required_cols <- c("month", "year", "dow", "regnames", "health_outcome")
   if (!all(required_cols %in% colnames(data))) {
     stop(
-      paste("data must include columns:", paste(required_cols, collapse = ", "))
+      paste("Data must include columns:", paste(required_cols, collapse = ", "))
     )
   }
   # Create stratified columns
@@ -503,25 +503,6 @@ descriptive_stats <- function(
   write.csv(summary_df, file = summary_fpath, row.names = FALSE)
 }
 
-#' Creates a scatter plot.
-#'
-#' @description Produces a ggplot2 scatterplot of two variables x versus y.
-#'
-#' @param data Dataframe containing a daily time series of climate and health
-#' data
-#' @param xvar x variable
-#' @param yvar y variable
-#'
-#' @returns Prints a ggplot2 scatterplot of x versus y
-#'
-#' @keywords internal
-plot_scatter <- function(data, xvar, yvar) {
-  ggplot2::ggplot(data = data, ggplot2::aes(x = {{ xvar }}, y = {{ yvar }})) +
-    ggplot2::geom_point() +
-    ggplot2::geom_smooth() +
-    ggplot2::theme_bw()
-}
-
 #' Check variance inflation factors of predictor variables using a linear model
 #'
 #' @description Checks variance inflation factors of predictor variables using a
@@ -564,12 +545,12 @@ check_wildfire_vif <- function(
     region_data <- subset(data, data$regnames == reg)
     model <- lm(formula, data = region_data)
     vif_mod <- car::vif(model)
-    if (print_vif) print(paste0("Variance inflation factor: ", vif_mod))
+    if (print_vif) print(paste0("Variance inflation factor: ", round(vif_mod, 4)))
     for (var in names(vif_mod)) {
       if (vif_mod[[var]] >= 2) {
         warning(paste0(
-          "Variance inflation factor for ", var, " is >= 2. Investigation is",
-          " suggested."
+          "Variance inflation factor for ", var, " is >= 2. ",
+          "Investigation is suggested."
         ))
       }
       vif_results[[reg]] <- data.frame(
@@ -713,6 +694,7 @@ casecrossover_quasipoisson <- function(
   }
   # create results df and return
   results <- as.data.frame(do.call(rbind, results))
+  results <- unique(results)
   rownames(results) <- NULL
   return(results)
 }
@@ -929,7 +911,7 @@ plot_RR_core <- function(
     )
   ) +
     ggplot2::geom_point(size = 3) +
-    ggplot2::geom_errorbar(width = 0.5, size = 1) +
+    ggplot2::geom_errorbar(width = 0.5, linewidth = 1) +
     ggplot2::geom_hline(yintercept = 1, lty = 2) +
     ggplot2::xlab("Lag") +
     ggplot2::ylab("Relative risk") +
@@ -985,17 +967,20 @@ save_wildfire_results <- function(
   # Save RR results
   write.csv(
     rr_results,
-    file = file.path(output_folder_path, "wildfire_rr.csv")
+    file = file.path(output_folder_path, "wildfire_rr.csv"),
+    row.names = FALSE
   )
   # conditionally save AN/AR results
   if (!is.null(an_ar_results)) {
     write.csv(
       an_ar_results,
-      file = file.path(output_folder_path, "wildfire_an_ar_monthly.csv")
+      file = file.path(output_folder_path, "wildfire_an_ar_monthly.csv"),
+      row.names = FALSE
     )
     write.csv(
       annual_af_an_results,
-      file = file.path(output_folder_path, "wildfire_an_ar_yearly.csv")
+      file = file.path(output_folder_path, "wildfire_an_ar_yearly.csv"),
+      row.names = FALSE
     )
   }
 }
@@ -1245,7 +1230,7 @@ plot_aggregated_AN <- function(data, by_region = FALSE, output_dir = ".") {
   }
   if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
   # set up plot
-  pname <- "aggregated_AR"
+  pname <- "aggregated_AN"
   if (by_region) pname <- paste0(pname, "_by_region")
   fpath <- file.path(output_dir, paste0(pname, ".pdf"))
   plots <- list()
@@ -1309,7 +1294,7 @@ plot_aggregated_AN_core <- function(data, region_name = NULL) {
       alpha = 0.2,
       fill = "#4d7789"
     ) +
-    ggplot2::geom_line(color = "#003c57", size = 1) +
+    ggplot2::geom_line(color = "#003c57", linewidth = 1) +
     ggplot2::theme_minimal(base_size = 14) +
     ggplot2::labs(
       title = title,
@@ -1317,7 +1302,7 @@ plot_aggregated_AN_core <- function(data, region_name = NULL) {
       y = "Attributable Rate (per 100K)"
     ) +
     ggplot2::theme(
-      axis.line = ggplot2::element_line(size = 0.5, colour = "black")
+      axis.line = ggplot2::element_line(linewidth = 0.5, colour = "black")
     )
   return(plot_agg_an)
 }
@@ -1349,7 +1334,7 @@ join_ar_and_pm_monthly <- function(
   exp_cols_pm <- c("year", "month", "regnames", "mean_PM_FRP")
   if (!all(exp_cols_ar %in% colnames(an_ar_data))) {
     stop(paste0(
-      "'an_ar_data' requries the columns: ",
+      "'an_ar_data' requires the columns: ",
       paste(exp_cols_ar, collapse = ", ")
     ))
   }
