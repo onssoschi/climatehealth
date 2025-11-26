@@ -316,10 +316,10 @@ test_that("plot_air_pollution_variables saves plot when save_plot = T and output
   )
 
 
-  PAPV_TEST_DATA <- data.frame(
-    deaths = rpois(10000, lambda = 5),
-    pm25   = round(runif(10000, min = 5, max = 80), 1)
-  )
+  # PAPV_TEST_DATA <- data.frame(
+  #   deaths = rpois(10000, lambda = 5),
+  #   pm25   = round(runif(10000, min = 5, max = 80), 1)
+  # )
 
   plot_air_pollution_variables(PAPV_TEST_DATA, xvar = "pm25", yvar = "deaths",
                                output_dir = tmp_dir, save_plot = TRUE)
@@ -333,7 +333,7 @@ test_that("plot_air_pollution_variables saves plot when save_plot = T and output
 
 })
 
-# Unit test 4
+# Unit test 4 (not working as the return object is NULL)
 test_that("plot_air_pollution_variables handles different x/y combinations", {
   PAPV_TEST_DATA = data.frame(pm25 = c(10, 20, 30),
                               deaths = c(1, 2, 3),
@@ -350,5 +350,40 @@ test_that("plot_air_pollution_variables handles different x/y combinations", {
   expect_equal(rlang::as_label(p2$mapping$x), "tmax")
   expect_equal(rlang::as_label(p1$mapping$y), "deaths")
   expect_equal(rlang::as_label(p2$mapping$y), "deaths")
+})
+
+# Test for fit_air_pollution_gam
+# Synthetic big dataset for testing
+FAPG_TEST_DATA <- data.frame(
+    deaths = rpois(600, lambda = 5),
+    pm25 = runif(600, 5, 80),
+    time = 1:600,
+    tmax = runif(600, -5, 40),
+    humidity = runif(600, 40, 90),
+    precipitation = runif(600, 0, 20),
+    dow = sample(letters[1:7], 600, replace = TRUE),
+    population = sample(100000:1000000, 600, replace = TRUE)
+  )
+
+# Unit test 1
+test_that("fit_air_pollution_gam returns NULL when datasset < 500 rows", {
+  FAPG_SMALL_TEST_DATA = FAPG_TEST_DATA[1:100, ]
+
+  expect_warning(
+    result <- fit_air_pollution_gam(FAPG_SMALL_TEST_DATA, var_name = "pm25"),
+    "Insufficient data"
+  )
+  expect_null(result)
+
+  expect_s3_class(result <- fit_air_pollution_gam(FAPG_TEST_DATA, var_name = "pm25"),
+                  "GAM")
+
+
+})
+
+
+test_that("Returns GAM object when data is sufficient", {
+  model <- fit_air_pollution_gam(FAPG_TEST_DATA, var_name = "pm25", family = "quasipoisson")
+  expect_s3_class(model, "gam")
 })
 
