@@ -316,8 +316,8 @@ fit_air_pollution_gam <- function(data,
   GAM_formula <- as.formula(
     paste(
       "deaths ~ ", var_name,
-      "+ ns(time, df = 7) + ns(tmax, df = 3) + ns(humidity, df = 3)",
-      "+ ns(precipitation, df = 3) + dow + offset(log(population))"
+      "+ splines::ns(time, df = 7) + splines::ns(tmax, df = 3) + splines::ns(humidity, df = 3)",
+      "+ splines::ns(precipitation, df = 3) + dow + offset(log(population))"
     )
   )
 
