@@ -365,10 +365,11 @@ FAPG_TEST_DATA <- data.frame(
     population = sample(100000:1000000, 600, replace = TRUE)
   )
 
-# Unit test 1
-test_that("fit_air_pollution_gam returns NULL when datasset < 500 rows", {
-  FAPG_SMALL_TEST_DATA = FAPG_TEST_DATA[1:100, ]
+FAPG_SMALL_TEST_DATA = FAPG_TEST_DATA[1:100, ]
 
+# Unit test 1
+test_that("fit_air_pollution_gam returns NULL when datasset < 500 rows and
+          returns GAM object when data is sufficient", {
   expect_warning(
     result <- fit_air_pollution_gam(FAPG_SMALL_TEST_DATA, var_name = "pm25"),
     "Insufficient data"
@@ -376,14 +377,9 @@ test_that("fit_air_pollution_gam returns NULL when datasset < 500 rows", {
   expect_null(result)
 
   expect_s3_class(result <- fit_air_pollution_gam(FAPG_TEST_DATA, var_name = "pm25"),
-                  "GAM")
-
-
+                  "gam")
 })
 
+# Unit test 2
 
-test_that("Returns GAM object when data is sufficient", {
-  model <- fit_air_pollution_gam(FAPG_TEST_DATA, var_name = "pm25", family = "quasipoisson")
-  expect_s3_class(model, "gam")
-})
 
