@@ -1171,3 +1171,178 @@ test_that(
         expect_equal(round(res$relative_risk, 3), c(1, 1.049, 1.1, 1.154, 1.21))
     }
 )
+
+# Tests for generate_rr_by_region
+
+test_that(
+    "generate_rr_pm_by_region works as expected.",
+    {
+        df <- data.frame(
+            lag = rep(c(0, 1, 2), 2),
+            region_name = c("A", "A", "A", "B", "B", "B"),
+            relative_risk = c(1.10, 1.25, 1.05, 1.01, 1.00, 1.003),
+            ci_lower = rep(c(1.02, 1.15, 0.98), 2),
+            ci_upper = rep(c(1.18, 1.35, 1.12), 2)
+        )
+        res <- generate_rr_pm_by_region(
+            relative_risk_overall = df,
+            scale_factor_wildfire_pm = 10,
+            wildfire_lag = 2,
+            pm_vals = seq(0, 20, by = 5)
+        )
+        expect_true(inherits(res, "data.frame"))
+        exp_columns <- c(
+            "region_name", "pm_levels", "relative_risk", "ci_lower", "ci_upper"
+        )
+        expect_true(all(exp_columns %in% colnames(res)))
+        expect_equal(c(rep("A", 5), rep("B", 5)), res$region_name)
+        expect_equal(rep(seq(0, 20, 5), 2), res$pm_levels)
+        exp_rel_risk <- c(
+            1, 1.0247, 1.0500, 1.0759, 1.1025, 1, 1.0015, 1.0030, 1.0045, 1.0060
+        )
+        expect_equal(exp_rel_risk, res$relative_risk)
+    }
+)
+
+# Tests for plot_rr_by_pm and plot_rr_by_pm_core
+
+test_that(
+    "plot_rr_by_pm raises an error when save_fig=T and output_dir=NULL.",
+    {
+        expect_error(
+            plot_rr_by_pm(
+                data = data.frame(test = c(1, 2)), 
+                save_fig = TRUE, 
+                output_dir = NULL
+            ),
+            "'output_dir' must be provided to save outputs."
+        )
+    }
+)
+
+test_that(
+    "plot_rr_by_pm raises an error when the output directory does not exist",
+    {
+        expect_error(
+            plot_rr_by_pm(data.frame(test = c(1, 2)), TRUE, "does/not/exist"),
+            "'output_dir' must exist on disk to save outputs."
+        )
+    }
+)
+
+RR_PM_DF <- data.frame(
+    region_name = rep("A", 4),
+    pm_levels = c(0, 5, 10, 15),
+    relative_risk = c(1, 1.0247, 1.0500, 1.0759),
+    ci_lower = c(0.98, 1.027, 1.053, 1.078),
+    ci_upper = c(1, 1.023, 1.045, 1.07)
+)
+
+test_that(
+    "plot_rr_by_pm raises an error if expected columns are missing.",
+    {
+        bad_df <- RR_PM_DF[, !(names(RR_PM_DF) %in% c("region_name"))]
+        expect_error(
+            plot_rr_by_pm(bad_df, FALSE, NULL),
+            "'data' must contain these columns: "
+        )
+    }
+)
+
+test_that(
+    "plot_rr_by_pm returns and saves plots as expected",
+    {
+        plot <- plot_rr_by_pm(
+            data = RR_PM_DF,
+            save_fig = TRUE,
+            output_dir = temp_dir
+        )
+        # validate return
+        expect_true(inherits(plot, "patchwork"))
+        expect_true(inherits(plot, "ggplot2::ggplot"))
+        expect_true(inherits(plot, "S7_object"))
+        expect_true(inherits(plot, "ggplot2::gg"))
+        # validate plot saved
+        expect_true(file.exists(file.path(temp_dir, "rr_by_pm.pdf")))
+    } 
+)
+
+# Tests for plot_ar_by_region
+
+AR_AN_TEST_DF <- data.frame(
+    regnames = c("A", "A", "A"),
+    deaths_per_100k = c(100, 105, 110),
+    lower_ci_deaths_per_100k = c(95, 100, 105),
+    upper_ci_deaths_per_100k = c(105, 110, 115),
+    total_attributable_number = c(200, 205, 210)
+)
+
+test_that(
+    "plot_ar_by_region raises an error if output_dir does not exist",
+    {
+        expect_error(
+            plot_ar_by_region(data = AR_AN_TEST_DF, "does/not/exist"),
+            "'output_dir' does not exist."
+        )
+    }
+)
+
+test_that(
+    "plot_ar_by_region raises an error if expected columns aren't present.",
+    {
+        bad_df <- AR_AN_TEST_DF[, !(names(AR_AN_TEST_DF) %in% c("regnames"))]
+        expect_error(
+            plot_ar_by_region(data = bad_df),
+            "'data' must contain the following columns: "
+        )
+    }
+)
+
+test_that(
+    "plot_ar_by_region returns plots and saves them as expected",
+    {
+        plot <- plot_ar_by_region(data = AR_AN_TEST_DF, output_dir = temp_dir)
+        # validate return
+        expect_true(inherits(plot, "ggplot2::ggplot"))
+        expect_true(inherits(plot, "S7_object"))
+        expect_true(inherits(plot, "ggplot2::gg"))
+        # validate plot saved
+        expect_true(file.exists(file.path(temp_dir, "ar_by_region.png")))
+    }
+)
+
+# Tets for plot_an_by_region
+
+test_that(
+    "plot_an_by_region raises an error if output_dir does not exist",
+    {
+        expect_error(
+            plot_an_by_region(data = AR_AN_TEST_DF, "does/not/exist"),
+            "'output_dir' does not exist."
+        )
+    }
+)
+
+test_that(
+    "plot_an_by_region raises an error if expected columns aren't present.",
+    {
+        bad_df <- AR_AN_TEST_DF[, !(names(AR_AN_TEST_DF) %in% c("total_attributable_number"))]
+        expect_error(
+            plot_an_by_region(data = bad_df),
+            "'data' must contain the following columns: "
+        )
+    }
+)
+
+test_that(
+    "plot_an_by_region returns plots and saves them as expected",
+    {
+        plot <- plot_an_by_region(data = AR_AN_TEST_DF, output_dir = temp_dir)
+        # validate return
+        expect_true(inherits(plot, "ggplot2::ggplot"))
+        expect_true(inherits(plot, "S7_object"))
+        expect_true(inherits(plot, "ggplot2::gg"))
+        # validate plot saved
+        expect_true(file.exists(file.path(temp_dir, "an_by_region.png")))
+    }
+)

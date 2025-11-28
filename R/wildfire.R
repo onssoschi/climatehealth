@@ -1605,9 +1605,9 @@ plot_rr_by_pm <- function(
     output_dir = NULL) {
   # input validation
   if (save_fig == TRUE && is.null(output_dir)) {
-    stop("'output_dir' must be provded to save outputs.")
+    stop("'output_dir' must be provided to save outputs.")
   }
-  if (!file.exists(output_dir)) {
+  if (save_fig == TRUE && !file.exists(output_dir)) {
     stop("'output_dir' must exist on disk to save outputs.")
   }
   exp_cols <- c(
@@ -1644,9 +1644,8 @@ plot_rr_by_pm <- function(
       height = if (length(combined_plots) == 1) 8 else 4 * length(combined_plots),
       limitsize = FALSE
     )
-  } else {
-    print(combined_plots)
   }
+  return (combined_plots)
 }
 
 #' Create a relative risk plot across PM2.5 levels for a single region
