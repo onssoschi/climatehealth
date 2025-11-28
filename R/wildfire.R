@@ -56,12 +56,12 @@ read_and_format_data <- function(
   # Data set pre processing
   df <- df %>%
     dplyr::rename(
-      date = date_col,
-      tmean = mean_temperature_col,
-      health_outcome = health_outcome_col,
-      regnames = region_col,
-      rh = rh_col,
-      wind_speed = wind_speed_col
+      date = all_of(date_col),
+      tmean = all_of(mean_temperature_col),
+      health_outcome = all_of(health_outcome_col),
+      regnames = all_of(region_col),
+      rh = all_of(rh_col),
+      wind_speed =all_of(wind_speed_col)
     ) %>%
     dplyr::mutate(
       date = date_function(date),
@@ -271,7 +271,7 @@ load_wildfire_data <- function(
   if (!join_wildfire_data) {
     # Normalise column name
     health_df <- health_df %>%
-      dplyr::rename(mean_PM_FRP = pm_2_5_col)
+      dplyr::rename(mean_PM_FRP = all_of(pm_2_5_col))
     return(health_df)
   }
   # Obtain wildfire data
@@ -1449,7 +1449,7 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
       ) +
       ggplot2::theme_light() +
       ggplot2::theme(
-        axis.line = ggplot2::element_line(size = 0.5, colour = "black")
+        axis.line = ggplot2::element_line(linewidth = 0.5, colour = "black")
       )
     all_plots[[length(all_plots) + 1]] <- plot_ar_pm
   }
@@ -1688,7 +1688,7 @@ plot_rr_by_pm_core <- function(
     ggplot2::labs(title = title, x = "PM2.5 (ug/m3)", y = "Relative Risk") +
     ggplot2::theme_minimal(base_size = 14) +
     ggplot2::theme(
-      axis.line = ggplot2::element_line(size = 0.5, colour = "black"),
+      axis.line = ggplot2::element_line(linewidth = 0.5, colour = "black"),
       plot.background = ggplot2::element_rect(color = "#222222", linewidth = 1),
       panel.border = ggplot2::element_rect(
         color = "#222222",
@@ -1771,7 +1771,7 @@ plot_ar_by_region <- function(data, output_dir = ".") {
       axis.text = ggplot2::element_text(color = "black"),
       axis.title = ggplot2::element_text(color = "black"),
       plot.title = ggplot2::element_text(color = "black"),
-      axis.line = ggplot2::element_line(size = 0.5, colour = "black"),
+      axis.line = ggplot2::element_line(linewidth = 0.5, colour = "black"),
       axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
     )
   # save plot
@@ -1840,7 +1840,7 @@ plot_an_by_region <- function(data, output_dir = ".") {
       axis.text = ggplot2::element_text(color = "black"),
       axis.title = ggplot2::element_text(color = "black"),
       plot.title = ggplot2::element_text(color = "black"),
-      axis.line = ggplot2::element_line(size = 0.5, colour = "black"),
+      axis.line = ggplot2::element_line(linewidth = 0.5, colour = "black"),
       axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
     )
 
