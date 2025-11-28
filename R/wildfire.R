@@ -643,7 +643,7 @@ casecrossover_quasipoisson <- function(
   }
   for (i in lags) {
     # create model
-    formula_parts <- c("health_outcome ~ ns.tmean", i)
+    formula_parts <- c("health_outcome ~ splines::ns(tmean, df = 6)", i)
     if (!all(is.na(data$rh))) {
       formula_parts <- c(formula_parts, "splines::ns(rh, df = 3)")
     }
@@ -662,7 +662,7 @@ casecrossover_quasipoisson <- function(
     if (print_model_summaries) {
       print(Epi::ci.exp(model, subset = i))
       print(summary(model))
-      print(paste0(
+      print(paste(
         Epi::ci.exp(model, subset = i), "\n",
         summary(model),
         "\nRatio of residual deviance to degrees of freedom: ",
@@ -733,7 +733,7 @@ calculate_qaic <- function(
       # define model
       number <- lag_nums[[i]]
       # create model formula
-      formula_parts <- c("health_outcome ~ ns.tmean", i)
+      formula_parts <- c("health_outcome ~ splines::ns(tmean, df = 6)", i)
       if (!all(is.na(data$rh))) {
         formula_parts <- c(formula_parts, "splines::ns(rh, df = 3)")
       }
