@@ -1472,6 +1472,7 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
     sorted_data <- sorted_data %>% select(all_of(c("regnames", "month_name", "mean_deaths_per_100k", "mean_pm")))
     write.csv(sorted_data, paste0(fpath, ".csv"), row.names = FALSE)
   }
+  return(combined_plots)
 }
 
 #' Relative risk estimates across PM2.5 concentrations for a specified lag.
