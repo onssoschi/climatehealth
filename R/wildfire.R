@@ -1689,11 +1689,11 @@ plot_rr_by_pm_core <- function(
     ggplot2::theme_minimal(base_size = 14) +
     ggplot2::theme(
       axis.line = ggplot2::element_line(size = 0.5, colour = "black"),
-      plot.background = ggplot2::element_rect(color = "#222222", size = 1),
+      plot.background = ggplot2::element_rect(color = "#222222", linewidth = 1),
       panel.border = ggplot2::element_rect(
         color = "#222222",
         fill = NA,
-        size = 0.5
+        linewidth = 0.5
       )
     )
   return(p)
