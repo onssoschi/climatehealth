@@ -1430,7 +1430,7 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
       ggplot2::geom_line(
         ggplot2::aes(y = .data$mean_pm * scale_factor, group = 1),
         color = "red",
-        size = 1
+        linewidth = 1
       ) +
       ggplot2::geom_point(
         ggplot2::aes(y = .data$mean_pm * scale_factor),
@@ -1680,7 +1680,7 @@ plot_rr_by_pm_core <- function(
       alpha = 0.2,
       fill = "#4d7789"
     ) +
-    ggplot2::geom_line(color = "#003c57", size = 1) +
+    ggplot2::geom_line(color = "#003c57", linewidth = 1) +
     ggplot2::scale_y_continuous(
       limits = ylims,
       labels = scales::number_format(accuracy = 0.01)

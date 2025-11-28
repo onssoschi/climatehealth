@@ -457,7 +457,11 @@ combine_health_climate_data <- function(
   map <- dplyr::left_join(map_data$map, grid_data, by = c("region", "district")) %>%
     dplyr::arrange(.data$region_code, .data$district_code)
 
-  grid_data <- dplyr::rename(grid_data, name = .data$region, code_num = .data$region_code)
+  grid_data <- dplyr::rename(
+    grid_data,
+    name = all_of("region"),
+    code_num = all_of("region_code")
+  )
 
   summary_stats <- list(
     tmin = summary(data$tmin),
