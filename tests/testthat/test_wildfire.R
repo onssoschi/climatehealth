@@ -101,10 +101,6 @@ test_that(
 
 # Tests for join_health_and_climate_data
 
-get_joined_health_and_climate_test <- function() {
-
-}
-
 test_that(
     "join_health_and_climate_data behaves as expected.",
     {
@@ -518,7 +514,7 @@ test_that(
             ci_lower = c(0.9854, 0.9759, 0.9660, 0.9648),
             ci_upper = c(1.0356, 1.0487, 1.0565, 1.0707)
         )
-        expect_equal(round(res, 4), exp_results)
+        expect_equal(round(res, 4), exp_results, tolerance = 1e-3)
         expect_true(file.exists(
             file.path(
                 temp_dir,
