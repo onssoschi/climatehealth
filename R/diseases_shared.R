@@ -136,7 +136,7 @@ load_and_process_data <- function(
   if (!is.null(date_col)) {
     data <- data %>%
       rename(
-        date = date_col
+        date = all_of(date_col)
       ) %>%
       mutate(
         year = lubridate::year(date),
@@ -147,12 +147,12 @@ load_and_process_data <- function(
   case_sym <- rlang::sym(case_type)
   data <- data %>%
     rename(
-      year = year_col,
-      month = month_col,
-      region = region_col,
-      district = district_col,
-      !!case_sym := case_col,
-      tot_pop = tot_pop_col
+      year = all_of(year_col),
+      month = all_of(month_col),
+      region = all_of(region_col),
+      district = all_of(district_col),
+      !!case_sym := all_of(case_col),
+      tot_pop = all_of(tot_pop_col)
     ) %>%
     select(
       all_of(c("region", "district", "year", "month", case_type, "tot_pop"))
