@@ -1,10 +1,6 @@
 # Tests for air_pollution.R
 source("R/air_pollution.R")
-<<<<<<< Updated upstream
-
-=======
 devtools::load_all()
->>>>>>> Stashed changes
 # Test for load_air_pollution_data
 # Unit test 1
 test_that("load_air_pollution_data works with standard column names", {
@@ -14,19 +10,11 @@ test_that("load_air_pollution_data works with standard column names", {
   LAPD_TEST_DATA <- data.frame(
     date = as.Date("2020-01-01") + 0:5,
     region = rep(c("RegionA", "RegionB"),each = 3),
-<<<<<<< Updated upstream
-    pm25 = c(10,12,23,35,25,15),
-    deaths = c(5,6,0,2,9,3),
-    humidity = c(80,75,25,67,34,45),
-    precipitation = c(0.2, 0.0,0.1,2.0,3,2),
-    tmax = c(10, 12,24,32,25,25),
-=======
     pm25 = c(10, 12, 23, 35, 25, 15),
     deaths = c(5, 6, 0, 2, 9, 3),
     humidity = c(80, 75, 25, 67, 34, 45),
     precipitation = c(0.2, 0.0, 0.1, 2.0, 3,2),
     tmax = c(10, 12, 24, 32, 25, 25),
->>>>>>> Stashed changes
     population = 100000,
     age = "all",
     sex = "both",
@@ -58,11 +46,7 @@ test_that("load_air_pollution_data returns expected columns and types", {
   # Create a minimal synthetic dataset
   LAPD_TEST_DATA <- data.frame(
     date = c("2024-01-01", "2024-01-02"),
-<<<<<<< Updated upstream
-    province = c("RegionA", "RegionB"),
-=======
     region = c("RegionA", "RegionB"),
->>>>>>> Stashed changes
     pm25 = c(12.5, 15.0),
     deaths = c(5, 6),
     humidity = c(80, 75),
@@ -104,29 +88,26 @@ test_that("load_air_pollution_data - Renaming works when custom column names pro
   expect_true(all(c("date", "region", "pm25", "deaths") %in% names(result)))
 })
 
-<<<<<<< Updated upstream
-=======
 
->>>>>>> Stashed changes
 test_that("load_air_pollution_data - Missing optional columns are filled with defaults",
-{
-  LAPD_TEST_DATA <- data.frame(
-    date = c("2024-01-01"),
-    province = c("RegionA"),
-    pm25 = c(12.5),
-    deaths = c(5),
-    humidity = c(80),
-    precipitation = c(0.2),
-    tmax = c(10)
-  )
+          {
+            LAPD_TEST_DATA <- data.frame(
+              date = c("2024-01-01"),
+              province = c("RegionA"),
+              pm25 = c(12.5),
+              deaths = c(5),
+              humidity = c(80),
+              precipitation = c(0.2),
+              tmax = c(10)
+            )
 
-  result <- load_air_pollution_data(LAPD_TEST_DATA)
+            result <- load_air_pollution_data(LAPD_TEST_DATA)
 
-  expect_equal(result$population, 1)
-  expect_equal(result$age, "all")
-  expect_equal(result$sex, "both")
-  expect_equal(result$urbanisation, "mixed")
-})
+            expect_equal(result$population, 1)
+            expect_equal(result$age, "all")
+            expect_equal(result$sex, "both")
+            expect_equal(result$urbanisation, "mixed")
+          })
 
 test_that("load_air_pollution_data - Date parsing works for DD/MM/YYYY format", {
   LAPD_TEST_DATA <- data.frame(
@@ -167,13 +148,8 @@ test_that("create_air_pollution_lags - Lag columns and average lag column are cr
   expect_equal(result$date, CAPL_TEST_DATA$date[3:5])
 
   # Check lag values
-<<<<<<< Updated upstream
-  expect_equal(result$pm25_lag1, c(20,30,40))
-  expect_equal(result$pm25_lag2, c(10,20,30))
-=======
   expect_equal(result$pm25_lag1, c(20, 30, 40))
   expect_equal(result$pm25_lag2, c(10, 20, 30))
->>>>>>> Stashed changes
 
   # Check average lag column
   expected_avg <- rowMeans(cbind(result$pm25, result$pm25_lag1, result$pm25_lag2))
@@ -196,21 +172,12 @@ test_that("create_air_pollution_lags works with multiple regions", {
   r1 <- result[result$region == "R1", ]
   r2 <- result[result$region == "R2", ]
 
-<<<<<<< Updated upstream
-  expect_equal(r1$pm25, c(2,3,4))
-  expect_equal(r1$pm25_lag1, c(1,2,3))
-
-
-  expect_equal(r2$pm25, c(20,30,40))
-  expect_equal(r2$pm25_lag1, c(10,20,30))
-=======
   expect_equal(r1$pm25, c(2, 3, 4))
   expect_equal(r1$pm25_lag1, c(1, 2, 3))
 
 
   expect_equal(r2$pm25, c(20, 30, 40))
   expect_equal(r2$pm25_lag1, c(10, 20, 30))
->>>>>>> Stashed changes
 
 })
 
@@ -261,54 +228,48 @@ test_that("create_air_pollution_lags - Non-exposure columns remain unchanged", {
 # Test for air_pollution_descriptive_stats
 # Unit test 1
 test_that("air_pollution_descriptive_stats returns correct structure and values",
- {
-  #minimal synthetic dataset with deaths and couple of numeric variables
-  APDS_TEST_DATA <- data.frame(
-    date = as.Date("2024-01-01") + 0:4,
-    region = factor(c("A", "B", "A", "B", "A")), # factor
-<<<<<<< Updated upstream
-    pm25 = c(10, 20, 30, 40,60),
-    humidity = c(80, 81, 82, 83, 85),
-    deaths = c(5, 6, 7, 8,4)
-=======
-    pm25 = c(10, 20, 30, 40, 60),
-    humidity = c(80, 81, 82, 83, 85),
-    deaths = c(5, 6, 7, 8, 4)
->>>>>>> Stashed changes
-  )
+          {
+            #minimal synthetic dataset with deaths and couple of numeric variables
+            APDS_TEST_DATA <- data.frame(
+              date = as.Date("2024-01-01") + 0:4,
+              region = factor(c("A", "B", "A", "B", "A")), # factor
+              pm25 = c(10, 20, 30, 40, 60),
+              humidity = c(80, 81, 82, 83, 85),
+              deaths = c(5, 6, 7, 8, 4)
+            )
 
-  result = air_pollution_descriptive_stats(data = APDS_TEST_DATA,
-                                           variables = c("pm25","humidity"))
+            result = air_pollution_descriptive_stats(data = APDS_TEST_DATA,
+                                                     variables = c("pm25","humidity"))
 
 
-  # 1. Return type should be a list with names matching variables
-  expect_type(result,"list")
-  expect_equal(sort(names(result)), sort(c("pm25","humidity")))
+            # 1. Return type should be a list with names matching variables
+            expect_type(result,"list")
+            expect_equal(sort(names(result)), sort(c("pm25","humidity")))
 
-  # 2. Each element should be the base R summary for that column
-  expect_equal(result$pm25, summary(APDS_TEST_DATA$pm25))
-  expect_equal(result$humidity, summary(APDS_TEST_DATA$humidity))
+            # 2. Each element should be the base R summary for that column
+            expect_equal(result$pm25, summary(APDS_TEST_DATA$pm25))
+            expect_equal(result$humidity, summary(APDS_TEST_DATA$humidity))
 
-  # 3. Summaries for numeric variable should have length 6
-  expect_equal(length(result$pm25), 6)
-  expect_equal(length(result$humidity), 6)
+            # 3. Summaries for numeric variable should have length 6
+            expect_equal(length(result$pm25), 6)
+            expect_equal(length(result$humidity), 6)
 
-  result1 <- air_pollution_descriptive_stats(APDS_TEST_DATA, variables = c("region", "pm25"))
+            result1 <- air_pollution_descriptive_stats(APDS_TEST_DATA, variables = c("region", "pm25"))
 
-  # Factor checks(Handles multiple variable types correctly)
-  expect_equal(result1$region, summary(APDS_TEST_DATA$region))
-})
+            # Factor checks(Handles multiple variable types correctly)
+            expect_equal(result1$region, summary(APDS_TEST_DATA$region))
+          })
 
 # Unit test 2
 test_that(
   "air_pollution_descriptive_stats throws error if save_outputs = TRUE but output_dir is NULL", {
     APDS_TEST_DATA <- data.frame(deaths = c(1, 2, 3))
-  expect_error(
-    air_pollution_descriptive_stats(APDS_TEST_DATA, variables = "deaths",
-                                    save_outputs = TRUE),
-    "An output directory must be passed"
-  )
-})
+    expect_error(
+      air_pollution_descriptive_stats(APDS_TEST_DATA, variables = "deaths",
+                                      save_outputs = TRUE),
+      "An output directory must be passed"
+    )
+  })
 
 # Unit test 3
 test_that("air_pollution_descriptive_stats creates output directory and files when save_outputs = TRUE", {
@@ -329,7 +290,7 @@ test_that("air_pollution_descriptive_stats creates output directory and files wh
 test_that("plot_air_pollution_variables creates a ggplot object and prints it", {
   PAPV_TEST_DATA <- data.frame(pm25 = c(10, 20, 30),
                                deaths = c(1, 2, 3)
-                               )
+  )
   p = plot_air_pollution_variables(PAPV_TEST_DATA, xvar = "pm25", yvar = "deaths", save_plot = FALSE)
 
 
@@ -377,11 +338,7 @@ test_that("plot_air_pollution_variables saves plot when save_plot = T and output
 test_that("plot_air_pollution_variables handles different x/y combinations", {
   PAPV_TEST_DATA = data.frame(pm25 = c(10, 20, 30),
                               deaths = c(1, 2, 3),
-<<<<<<< Updated upstream
-                              tmax = c(5,6,7)
-=======
                               tmax = c(5, 6, 7)
->>>>>>> Stashed changes
   )
 
   p1 = plot_air_pollution_variables(PAPV_TEST_DATA, xvar = "pm25", yvar = "deaths",
@@ -396,62 +353,39 @@ test_that("plot_air_pollution_variables handles different x/y combinations", {
   expect_equal(rlang::as_label(p2$mapping$y), "deaths")
 })
 
-<<<<<<< Updated upstream
-# Test for fit_air_pollution_gam
-=======
 # Test for fit_air_pollution_gam and extract_air_pollution_coef
->>>>>>> Stashed changes
 # Synthetic big dataset for testing
 FAPG_TEST_DATA <- data.frame(
-    deaths = rpois(600, lambda = 5),
-    pm25 = runif(600, 5, 80),
-    time = 1:600,
-    tmax = runif(600, -5, 40),
-    humidity = runif(600, 40, 90),
-    precipitation = runif(600, 0, 20),
-    dow = sample(letters[1:7], 600, replace = TRUE),
-    population = sample(100000:1000000, 600, replace = TRUE)
-  )
+  deaths = rpois(600, lambda = 5),
+  pm25 = runif(600, 5, 80),
+  time = 1:600,
+  tmax = runif(600, -5, 40),
+  humidity = runif(600, 40, 90),
+  precipitation = runif(600, 0, 20),
+  dow = sample(letters[1:7], 600, replace = TRUE),
+  population = sample(100000:1000000, 600, replace = TRUE)
+)
 
-<<<<<<< Updated upstream
-=======
 # Small dataset
->>>>>>> Stashed changes
 FAPG_SMALL_TEST_DATA = FAPG_TEST_DATA[1:100, ]
 
 # Unit test 1
 test_that("fit_air_pollution_gam returns NULL when datasset < 500 rows and
-<<<<<<< Updated upstream
-          returns GAM object when data is sufficient", {
-  expect_warning(
-    result <- fit_air_pollution_gam(FAPG_SMALL_TEST_DATA, var_name = "pm25"),
-    "Insufficient data"
-  )
-  expect_null(result)
-
-  expect_s3_class(result <- fit_air_pollution_gam(FAPG_TEST_DATA, var_name = "pm25"),
-                  "gam")
-})
-
-# Unit test 2
-
-X
-=======
           extract_air_pollution_coef returns NA when model is null", {
-  model <- fit_air_pollution_gam(FAPG_SMALL_TEST_DATA, var_name = "pm25")
+            model <- fit_air_pollution_gam(FAPG_SMALL_TEST_DATA, var_name = "pm25")
 
-  expect_warning(
-    model <- fit_air_pollution_gam(FAPG_SMALL_TEST_DATA, var_name = "pm25"),
-    "Insufficient data"
-  )
+            expect_warning(
+              model <- fit_air_pollution_gam(FAPG_SMALL_TEST_DATA, var_name = "pm25"),
+              "Insufficient data"
+            )
 
-  expect_null(model)
+            expect_null(model)
 
-  result <- extract_air_pollution_coef(model)
+            result <- extract_air_pollution_coef(model)
 
-  expect_equal(result$coef, NA)
-  expect_equal(result$se, NA)
-})
+            expect_equal(result$coef, NA)
+            expect_equal(result$se, NA)
+          })
 
 #Unit test 2
 test_that("fit_air_pollution_gam returns GAM object when data is sufficient and
@@ -473,43 +407,43 @@ test_that("fit_air_pollution_gam returns GAM object when data is sufficient and
 test_that("fit_air_pollution_gam errors when exposure variable is missing and
           returns NULL when essential predictor is missing", {
 
-  #removed pm25 column (exposure variable)
-  expect_error(fit_air_pollution_gam(FAPG_TEST_DATA[ , -2], var_name = "pm25"),
-               " not in dataset.")
+            #removed pm25 column (exposure variable)
+            expect_error(fit_air_pollution_gam(FAPG_TEST_DATA[ , -2], var_name = "pm25"),
+                         " not in dataset.")
 
-  #removed tmax column (predictor variable)
-  expect_null(fit_air_pollution_gam(FAPG_TEST_DATA[ , -4]))
-})
+            #removed tmax column (predictor variable)
+            expect_null(fit_air_pollution_gam(FAPG_TEST_DATA[ , -4]))
+          })
 
 #Unit test 4
 test_that("fit_air_pollution_gam handles different family values correctly and
           extract_air_pollution_coef returns correct coef and SE for valid model", {
-  families <- c("quasipoisson", "poisson", "nb", "ziP")
-  for (fam in families) {
-    model <- fit_air_pollution_gam(FAPG_TEST_DATA, var_name = "pm25", family = fam)
-    expect_s3_class(model, "gam")
+            families <- c("quasipoisson", "poisson", "nb", "ziP")
+            for (fam in families) {
+              model <- fit_air_pollution_gam(FAPG_TEST_DATA, var_name = "pm25", family = fam)
+              expect_s3_class(model, "gam")
 
-    result <- extract_air_pollution_coef(model)
+              result <- extract_air_pollution_coef(model)
 
-    expect_type(result, "list")
-    expect_true(all(c("coef", "se") %in% names(result)))
+              expect_type(result, "list")
+              expect_true(all(c("coef", "se") %in% names(result)))
 
-    expect_true(is.numeric(result$coef))
-    expect_true(is.numeric(result$se))
-    expect_false(is.na(result$coef))
-    expect_false(is.na(result$se))
+              expect_true(is.numeric(result$coef))
+              expect_true(is.numeric(result$se))
+              expect_false(is.na(result$coef))
+              expect_false(is.na(result$se))
 
-    expect_type(result$coef, "double")
-    expect_type(result$se, "double")
+              expect_type(result$coef, "double")
+              expect_type(result$se, "double")
 
-  }
-})
+            }
+          })
 
 # Unit test 5
 test_that("extract_air_pollution_coef handles non model input", {
-result = extract_air_pollution_coef("not a model", "pm25")
-expect_true(is.na(result$coef))
-expect_true(is.na(result$se))
+  result = extract_air_pollution_coef("not a model", "pm25")
+  expect_true(is.na(result$coef))
+  expect_true(is.na(result$se))
 })
 
 # Test for air_pollution_meta_analysis
@@ -536,63 +470,63 @@ APMA_TEST_DATA_LARGE <- make_test_data(n_regions = 3, n_per_region = 600)
 #Unit test 1
 test_that("air_pollution_meta_analysis returns valid meta-analysis results for
           multiple regions and different distribution family ", {
-  families <- c("quasipoisson", "poisson", "nb", "ziP")
-  for (fam in families) {
-    result <- air_pollution_meta_analysis(APMA_TEST_DATA_LARGE, var_name = "pm25", family = fam)
+            families <- c("quasipoisson", "poisson", "nb", "ziP")
+            for (fam in families) {
+              result <- air_pollution_meta_analysis(APMA_TEST_DATA_LARGE, var_name = "pm25", family = fam)
 
-    #Top level structure
-    expect_type(result, "list")
-    expect_true(all(c("region_results", "meta_result", "overall_rr",
-                      "overall_ci", "overall_af", "overall_an", "heterogeneity") %in% names(result)))
+              #Top level structure
+              expect_type(result, "list")
+              expect_true(all(c("region_results", "meta_result", "overall_rr",
+                                "overall_ci", "overall_af", "overall_an", "heterogeneity") %in% names(result)))
 
-    # Check numeric outputs
-    expect_true(is.numeric(result$overall_rr))
-    expect_true(length(result$overall_ci) == 2)
-    expect_true(is.numeric(result$overall_af))
-    expect_true(is.numeric(result$overall_an))
+              # Check numeric outputs
+              expect_true(is.numeric(result$overall_rr))
+              expect_true(length(result$overall_ci) == 2)
+              expect_true(is.numeric(result$overall_af))
+              expect_true(is.numeric(result$overall_an))
 
-    # Check range for RR and AF
-    expect_true(result$overall_rr >= 0) #since it is defined as an exponential fn
-    expect_true(result$overall_af <= 1) #AF'll be always < 1 as per the formula
+              # Check range for RR and AF
+              expect_true(result$overall_rr >= 0) #since it is defined as an exponential fn
+              expect_true(result$overall_af <= 1) #AF'll be always < 1 as per the formula
 
-    # Check heterogeneity metrics
-    expect_true(is.list(result$heterogeneity))
-    expect_true(all(c("tau2", "I2") %in% names(result$heterogeneity)))
-    expect_true(is.numeric(result$heterogeneity$tau2))
-    expect_true(is.numeric(result$heterogeneity$I2))
+              # Check heterogeneity metrics
+              expect_true(is.list(result$heterogeneity))
+              expect_true(all(c("tau2", "I2") %in% names(result$heterogeneity)))
+              expect_true(is.numeric(result$heterogeneity$tau2))
+              expect_true(is.numeric(result$heterogeneity$I2))
 
-    # Region results structure
-    region_results = result$region_results
-    expect_s3_class(region_results, "data.frame")
-    expect_equal(length(unique(region_results$region)), 3)
+              # Region results structure
+              region_results = result$region_results
+              expect_s3_class(region_results, "data.frame")
+              expect_equal(length(unique(region_results$region)), 3)
 
-    expect_true(all(c("region", "data", "n_obs", "total_deaths", "model", "coef_pm25",
-                      "se_pm25", "rr_10ug", "ci_lower", "ci_upper", "af_10ug", "an_10ug")
-                    %in% names(region_results)))
+              expect_true(all(c("region", "data", "n_obs", "total_deaths", "model", "coef_pm25",
+                                "se_pm25", "rr_10ug", "ci_lower", "ci_upper", "af_10ug", "an_10ug")
+                              %in% names(region_results)))
 
-    # No missing coeffecients or se used in meta analysis
-    expect_false(any(is.na(region_results$coef_pm25)))
-    expect_false(any(is.na(region_results$se_pm25)))
+              # No missing coeffecients or se used in meta analysis
+              expect_false(any(is.na(region_results$coef_pm25)))
+              expect_false(any(is.na(region_results$se_pm25)))
 
-    # Meta results structure
-    meta_results = result$meta_result
-    expect_s3_class(meta_results, "rma.uni")
+              # Meta results structure
+              meta_results = result$meta_result
+              expect_s3_class(meta_results, "rma.uni")
 
-  }
-})
+            }
+          })
 
 # Unit test 2
 test_that("air_pollution_meta_analysis returns NULL and warns when < 2 regions
           have valid models", {
-  # Only one region
-    APMA_TEST_DATA <- APMA_TEST_DATA_LARGE[APMA_TEST_DATA_LARGE$region == "RegionA", ]
+            # Only one region
+            APMA_TEST_DATA <- APMA_TEST_DATA_LARGE[APMA_TEST_DATA_LARGE$region == "RegionA", ]
 
-    expect_warning(
-      result <- air_pollution_meta_analysis(APMA_TEST_DATA, var_name = "pm25"),
-      "At least 2 regions with successful model fits needed for meta-analysis."
-    )
-    expect_null(result)
-})
+            expect_warning(
+              result <- air_pollution_meta_analysis(APMA_TEST_DATA, var_name = "pm25"),
+              "At least 2 regions with successful model fits needed for meta-analysis."
+            )
+            expect_null(result)
+          })
 
 # Unit test 3
 test_that("air_pollution_meta_analysis handles insufficient rows in some regions", {
@@ -636,4 +570,3 @@ test_that("analyze_air_pollution_lags returns expected structure", {
 
 
 
->>>>>>> Stashed changes
