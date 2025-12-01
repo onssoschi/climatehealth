@@ -42,7 +42,7 @@ set to TRUE.
 }
 \description{
 Splits data by region if relative_risk_by_region==TRUE.
-If T, data for each individual region is passed to casecrossover_quasipoisson
-to calculate RR by region. If false RR is calculated for the entire dataset.
+If TRUE, data for each individual region is passed to casecrossover_quasipoisson
+to calculate RR by region. If FALSE, RR is calculated for the entire dataset.
 }
 \keyword{internal}

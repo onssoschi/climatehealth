@@ -8,6 +8,7 @@ case-crossover approach.}
 casecrossover_quasipoisson(
   data,
   scale_factor_wildfire_pm = 10,
+  wildfire_lag,
   save_fig = TRUE,
   output_folder_path = NULL,
   print_model_summaries = TRUE
