@@ -8,7 +8,7 @@ plot_rr_by_pm(data, save_fig = FALSE, output_dir = NULL)
 }
 \arguments{
 \item{data}{A data frame with columns: pm_levels, relative_risk, ci_lower,
-ci_upper, and regnames.}
+ci_upper, and region.}
 
 \item{save_fig}{Logical. If TRUE, saves the plot(s) as a PDF file in
 output_dir. Defaults to FALSE.}

@@ -31,7 +31,7 @@ relative risk. Defaults to seq(0, 50, by = 1).}
 A data frame with relative risk estimates for each region and PM value.
 }
 \description{
-Computes relative risk estimates for wildfire-specific PM2.5 exposure across regions
-by applying a scaling factor and lag to PM values.
+Computes relative risk estimates for wildfire-specific PM2.5 exposure
+across regions as PM values changes.
 }
 \keyword{internal}
