@@ -2,11 +2,11 @@
 % Please edit documentation in R/wildfire.R
 \name{plot_RR}
 \alias{plot_RR}
-\title{Plot relative risk results by region.}
+\title{Plot relative risk results by region (if available).}
 \usage{
 plot_RR(
   rr_data,
-  wildfire_lag = 3,
+  wildfire_lag,
   by_region = FALSE,
   save_fig = FALSE,
   output_folder_path = NULL
@@ -33,6 +33,6 @@ wildfire-related PM2.5
 }
 \description{
 Plots relative risk and confidence intervals for each lag value
-of wildfire-related PM2.5.
+of wildfire-related PM2.5
 }
 \keyword{internal}
