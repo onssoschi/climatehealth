@@ -796,7 +796,7 @@ compute_attributable_deaths <- function(df_list,
       dplyr::mutate(
         heatwave_temp = ifelse(.data$heatwave_flag == 1, .data$temp, mintempregions[i])
       ) %>%
-      dplyr::select(all_of(c(-"high_heat_flag", -"heatwave_flag")))
+      dplyr::select(-dplyr::all_of(c("high_heat_flag", "heatwave_flag")))
 
     matsim[i, "glob_cold"] <- attrdl(
       x = data_output_year$temp,

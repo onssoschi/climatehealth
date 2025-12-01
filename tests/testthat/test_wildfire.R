@@ -19,8 +19,8 @@ WF_TEST_HEALTH <- data.frame(
 
 WF_TEST_CLIMATE <- data.frame(
     date = lubridate::dmy(c("01-01-2020", "02-01-2020", "03/01/2020")),
-    regnames = c("North", "South", "East"),
-    mean_PM_FRP = c(0.0005, 0.0001, 0.00015)
+    region = c("North", "South", "East"),
+    mean_PM = c(0.0005, 0.0001, 0.00015)
 )
 
 test_that(
@@ -36,7 +36,7 @@ test_that(
             wind_speed_col = "wind_speed"
         )
         exp_cols = c(
-            "date", "tmean", "health_outcome", "regnames", "rh", "wind_speed",
+            "date", "tmean", "health_outcome", "region", "rh", "wind_speed",
             "year", "month", "day", "dow"
         )
         expect_true(all(exp_cols %in% colnames(res)))
@@ -55,11 +55,11 @@ test_that(
             health_outcome_col = "deaths"
         )
         exp_cols = c(
-            "date", "tmean", "health_outcome", "regnames", "rh", "wind_speed",
+            "date", "tmean", "health_outcome", "region", "rh", "wind_speed",
             "year", "month", "day", "dow"
         )
         expect_true(all(exp_cols %in% colnames(res)))
-        expect_equal(res$regnames, rep("no_region", 3))
+        expect_equal(res$region, rep("no_region", 3))
         expect_equal(res$rh, rep(NA, 3))
         expect_equal(res$wind_speed, rep(NA, 3))
     }
@@ -116,16 +116,16 @@ test_that(
         joined <- join_health_and_climate_data(
             climate_data = WF_TEST_CLIMATE,
             health_data = health,
-            region_col = "regnames",
+            region_col = "region",
             date_col = "date",
-            exposure_col = "mean_PM_FRP"
+            exposure_col = "mean_PM"
         )
         exp_cols <- c(
-            "date", "tmean", "health_outcome", "regnames", "rh", "wind_speed", 
-            "year", "month", "day", "dow", "mean_PM_FRP"
+            "date", "tmean", "health_outcome", "region", "rh", "wind_speed", 
+            "year", "month", "day", "dow", "mean_PM"
         )
         expect_true(all(exp_cols %in% colnames(joined)))
-        expect_equal(joined$mean_PM_FRP, c(500000, 100000, 150000))
+        expect_equal(joined$mean_PM, c(500000, 100000, 150000))
 
     }
 )
@@ -136,7 +136,7 @@ test_that(
     "load_wildfire_data reads data as expected with pre-joined health+climate.",
     {
         PREJOINED_DATA <- WF_TEST_HEALTH %>% mutate(
-            mean_PM_FRP = WF_TEST_CLIMATE$mean_PM_FRP 
+            mean_PM = WF_TEST_CLIMATE$mean_PM 
         )
         res <- load_wildfire_data(
             health_path = PREJOINED_DATA,
@@ -149,7 +149,7 @@ test_that(
             health_outcome_col = "deaths",
             rh_col = "relative_humidity",
             wind_speed_col = "wind_speed",
-            pm_2_5_col = "mean_PM_FRP"
+            pm_2_5_col = "mean_PM"
         )
         expect_equal(dim(res), c(3, 11))
     }
@@ -181,9 +181,9 @@ test_that(
     "create_lagged_variables works as expected when provided the correct data.",
     {
         LAGGED_VARS_DF <- data.frame(
-            regnames = c("A1", "A1", "A2", "A2", "A2", "A2"),
+            region = c("A1", "A1", "A2", "A2", "A2", "A2"),
             tmean = c(5, 10, 2, 3, 5, 7),
-            mean_PM_FRP = c(3, 3, 10, 7, 12, 20)
+            mean_PM = c(3, 3, 10, 7, 12, 20)
         )
         res <- create_lagged_variables(
             data = LAGGED_VARS_DF,
@@ -191,8 +191,8 @@ test_that(
             temperature_lag = 1
         )
         added_cols <- c(     
-            "mean_PM_FRP_l0", "mean_PM_FRP_l1", "mean_PM_FRP_l2", 
-            "mean_PM_FRP_l0_mean", "mean_PM_FRP_l1_mean", "mean_PM_FRP_l2_mean",
+            "mean_PM_l0", "mean_PM_l1", "mean_PM_l2", 
+            "mean_PM_l0_mean", "mean_PM_l1_mean", "mean_PM_l2_mean",
             "tmean_l0", "tmean_l1", "tmean_l0_mean", "tmean_l1_mean"
         )
         expect_true(all(added_cols %in% colnames(res)))
@@ -247,7 +247,7 @@ test_that(
     "create_temperature_splines calculates splines as expected.",
     {
         SPLINES_DF <- data.frame(
-            regnames = c("A1", "A1", "A1", "A2", "A2", "A2"),
+            region = c("A1", "A1", "A1", "A2", "A2", "A2"),
             tmean = c(10, 14, 13, 5, 4, 9),
             tmean_l1_mean = c(NA, 12, 13.5, NA, 4.5, 6.5)
         )
@@ -270,7 +270,7 @@ TS_DATA <- data.frame(
     month = rep(c(01, 02), 2),
     year = c(2001, 2001, 2001, 2001),
     dow = rep(c("Mon", "Tue"), 2),
-    regnames = c("Wales", "Wales", "North East", "North East"),
+    region = c("Wales", "Wales", "North East", "North East"),
     health_outcome = c(57, 59, 278, 301)
 )
 
@@ -368,7 +368,7 @@ test_that(
 
 set.seed(42)
 WIF_VIF_DATA <- data.frame(
-  regnames = rep(c("RegionA", "RegionB"), each = 30),
+  region = rep(c("RegionA", "RegionB"), each = 30),
   health_outcome = rnorm(60, mean = 50, sd = 10),
   smoke_exposure = rnorm(60, mean = 10, sd = 3),
   temperature = rnorm(60, mean = 20, sd = 2)
@@ -405,7 +405,7 @@ test_that(
     "checK_wildfire_vif raises a warning when VIF > 2.",
     {
         VIF_WARN_DATA <- data.frame(
-            regnames = rep(c("RegionA", "RegionB"), each = 20),
+            region = rep(c("RegionA", "RegionB"), each = 20),
             health_outcome = rnorm(40, mean = 50, sd = 10),
             smoke_exposure = rnorm(40, mean = 10, sd = 3),
             temperature = rnorm(40, mean = 20, sd = 2)
@@ -431,16 +431,16 @@ test_that(
     "get_wildfire_lag_columns acts as expected",
     {
         WF_L_DATA <- data.frame(
-            "mean_PM_FRP_l0_mean" = c(1),
-            "mean_PM_FRP_l1_mean" = c(2),
-            "mean_PM_FRP_l2_mean" = c(3)
+            "mean_PM_l0_mean" = c(1),
+            "mean_PM_l1_mean" = c(2),
+            "mean_PM_l2_mean" = c(3)
         )
         lag_cols <- get_wildfire_lag_columns(WF_L_DATA)$col_names
         exp_lag_cols <- c(
-            "mean_PM_FRP",
-            "mean_PM_FRP_l0_mean",
-            "mean_PM_FRP_l1_mean",
-            "mean_PM_FRP_l2_mean"
+            "mean_PM",
+            "mean_PM_l0_mean",
+            "mean_PM_l1_mean",
+            "mean_PM_l2_mean"
         )
         expect_equal(lag_cols, exp_lag_cols)
     }
@@ -458,7 +458,7 @@ generate_wildfire_test_data <- function(
   set.seed(42)
   RNGkind("Mersenne-Twister", "Inversion")
   dates <- seq.Date(from = start_date, by = "day", length.out = n)
-  regnames <- rep(c("Region_A", "Region_B"), length.out = n)
+  region <- rep(c("Region_A", "Region_B"), length.out = n)
   region_pop <- c(Region_A = 500000, Region_B = 1200000)
   data <- data.frame(
     date = dates,
@@ -477,10 +477,10 @@ generate_wildfire_test_data <- function(
             "Sunday"
         )
     ),
-    regnames = regnames,
-    pop = unname(region_pop[regnames]),
+    region = region,
+    pop = unname(region_pop[region]),
     health_outcome = rpois(n, lambda = 5),
-    mean_PM_FRP = runif(n, 5, 30),
+    mean_PM = runif(n, 5, 30),
     tmean = rnorm(n, mean = 15, sd = 5),
     rh = runif(n, 40, 90),
     wind_speed = runif(n, 0, 10),
@@ -797,7 +797,7 @@ test_that(
 )
 
 test_that(
-    "calculate_wildfire_rr_by_region rauses an error when regnames isn't present",
+    "calculate_wildfire_rr_by_region rauses an error when region isn't present",
     {
         data <- data.frame(test = c(1, 2, 3))
         expect_error(
@@ -809,7 +809,7 @@ test_that(
                 output_folder_path = NULL,
                 print_model_summaries = FALSE
             ),
-            "data must contain 'regnames' column for region level RR data."
+            "data must contain 'region' column for region level RR data."
         )
     }
 )
@@ -882,14 +882,14 @@ test_that(
         )
         exp_shape <- c(5000, 36)
         exp_columns <- c(
-            "health_outcome", "mean_PM_FRP",
+            "health_outcome", "mean_PM",
             "tmean", "rh",
             "wind_speed", "ind",
-            "stratum", "regnames",
-            "mean_PM_FRP_l0", "mean_PM_FRP_l1",
-            "mean_PM_FRP_l2", "mean_PM_FRP_l3",
-            "mean_PM_FRP_l0_mean", "mean_PM_FRP_l1_mean",
-            "mean_PM_FRP_l2_mean", "mean_PM_FRP_l3_mean",
+            "stratum", "region",
+            "mean_PM_l0", "mean_PM_l1",
+            "mean_PM_l2", "mean_PM_l3",
+            "mean_PM_l0_mean", "mean_PM_l1_mean",
+            "mean_PM_l2_mean", "mean_PM_l3_mean",
             "tmean_l0", "tmean_l1",
             "tmean_l0_mean", "tmean_l1_mean",
             "ns.tmean", "rescaled_RR",
@@ -927,7 +927,7 @@ test_that(
             round(head(res, 4)$total_attributable_number, 2)
         )
         expect_equal(dim(res), c(330, 17))
-        expect_equal(unique(res$regnames), c("Region_A", "Region_B"))
+        expect_equal(unique(res$region), c("Region_A", "Region_B"))
     }
 )
 
@@ -949,14 +949,14 @@ test_that(
             tolerance = 0.5
         )
         expect_equal(dim(res), c(28, 16))
-        expect_equal(unique(res$regnames), c("Region_A", "Region_B"))
+        expect_equal(unique(res$region), c("Region_A", "Region_B"))
     }
 )
 
-# Tests for plot_aggregated_AN and plot_aggregated_AN_core (covers both)
+# Tests for plot_aggregated_AF and plot_aggregated_AF_core (covers both)
 
 AGGREGATED_AN_DATA <- data.frame(
-  regnames = c(rep("Region_A", 5), rep("Region_B", 5)),
+  region = c(rep("Region_A", 5), rep("Region_B", 5)),
   year = rep(2020:2024, 2),
   population = c(rep(500000, 5), rep(1200000, 5)),
   total_attributable_number = c(20.233,19.155,19.944,19.020,19.538,
@@ -987,10 +987,10 @@ AGGREGATED_AN_DATA <- data.frame(
 )
 
 test_that(
-    "plot_aggregated_AN raises an error if expected columns are not present.",
+    "plot_aggregated_AF raises an error if expected columns are not present.",
     {
         expect_error(
-            plot_aggregated_AN(
+            plot_aggregated_AF(
                 data = data.frame(),
                 by_region = FALSE,
                 output_dir = "."),
@@ -1000,10 +1000,10 @@ test_that(
 )
 
 test_that(
-    "plot_aggregated_AN raises an error if output_dir does not exist.",
+    "plot_aggregated_AF raises an error if output_dir does not exist.",
     {
         expect_error(
-            plot_aggregated_AN(
+            plot_aggregated_AF(
                 data = AGGREGATED_AN_DATA,
                 by_region = FALSE,
                 output_dir = "does/not/exist"
@@ -1014,9 +1014,9 @@ test_that(
 )
 
 test_that(
-    "plot_aggregated_AN creates and saves plot when by_region=FALSE.",
+    "plot_aggregated_AF creates and saves plot when by_region=FALSE.",
     {
-        plot_aggregated_AN(
+        plot_aggregated_AF(
             data = AGGREGATED_AN_DATA,
             by_region = FALSE,
             output_dir = temp_dir
@@ -1028,9 +1028,9 @@ test_that(
 )
 
 test_that(
-    "plot_aggregated_AN creates and saves plot when by_region=TRUE.",
+    "plot_aggregated_AF creates and saves plot when by_region=TRUE.",
     {
-        plot_aggregated_AN(
+        plot_aggregated_AF(
             data = AGGREGATED_AN_DATA,
             by_region = TRUE,
             output_dir = temp_dir
@@ -1062,7 +1062,7 @@ test_that(
                 an_ar_data = data.frame(
                     year = c(2021, 2022),
                     month = c(1, 1),
-                    regnames = c("regA", "regA")
+                    region = c("regA", "regA")
                 )
             ),
             "'pm_data' requires the columns: "
@@ -1076,20 +1076,20 @@ test_that(
         ar_data <- data.frame(
             year = c(rep(2021, 3), rep(2022, 3)),
             month = rep(c(1:3), 2),
-            regnames = c(rep("A1", 3), rep("A2", 3)),
+            region = c(rep("A1", 3), rep("A2", 3)),
             AN_total = c(23, 34, 22, 78, 87, 39)
         )
         pm_data <- data.frame(
             year = c(rep(2021, 3), rep(2022, 3)),
             month = rep(c(1:3), 2),
-            regnames = c(rep("A1", 3), rep("A2", 3)),
-            mean_PM_FRP = c(0.12, 0.12, 0.11, 0.24, 0.23, 0.27)
+            region = c(rep("A1", 3), rep("A2", 3)),
+            mean_PM = c(0.12, 0.12, 0.11, 0.24, 0.23, 0.27)
         )
         res <- join_ar_and_pm_monthly(
             pm_data = pm_data,
             an_ar_data = ar_data
         )
-        exp_columns <- c("year", "month", "regnames", "AN_total", "monthly_avg_pm25")
+        exp_columns <- c("year", "month", "region", "AN_total", "monthly_avg_pm25")
         expect_true(all(exp_columns %in% colnames(res)))
         expect_equal(dim(res), c(6, 5))
     }
@@ -1123,7 +1123,7 @@ test_that(
         MONTHLY_AR_PM <- data.frame(
             year = c(rep(2021, 3), rep(2022, 3)),
             month = rep(1:3, 2),
-            regnames = c(rep("A1", 3), rep("A2", 3)),
+            region = c(rep("A1", 3), rep("A2", 3)),
             AN_total = c(23, 34, 22, 78, 87, 39),
             deaths_per_100k = round(runif(6, min = 10, max = 100), 1),
             monthly_avg_pm25 = round(runif(6, min = 5, max = 40), 1)
@@ -1269,7 +1269,7 @@ test_that(
 # Tests for plot_ar_by_region
 
 AR_AN_TEST_DF <- data.frame(
-    regnames = c("A", "A", "A"),
+    region = c("A", "A", "A"),
     deaths_per_100k = c(100, 105, 110),
     lower_ci_deaths_per_100k = c(95, 100, 105),
     upper_ci_deaths_per_100k = c(105, 110, 115),
@@ -1289,7 +1289,7 @@ test_that(
 test_that(
     "plot_ar_by_region raises an error if expected columns aren't present.",
     {
-        bad_df <- AR_AN_TEST_DF[, !(names(AR_AN_TEST_DF) %in% c("regnames"))]
+        bad_df <- AR_AN_TEST_DF[, !(names(AR_AN_TEST_DF) %in% c("region"))]
         expect_error(
             plot_ar_by_region(data = bad_df),
             "'data' must contain the following columns: "
