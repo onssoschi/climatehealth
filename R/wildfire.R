@@ -1236,7 +1236,7 @@ summarise_AF_AN <- function(data, monthly = TRUE) {
 #'
 #' @examples
 #' \dontrun{
-#' plot_aggregated_AN(data = my_df, by_region = TRUE, output_dir = "plots")
+#' plot_aggregated_AF(data = my_df, by_region = TRUE, output_dir = "plots")
 #' }
 plot_aggregated_AF <- function(data, by_region = FALSE, output_dir = ".") {
   # input validation
@@ -2097,7 +2097,7 @@ wildfire_do_analysis <- function(
     annual_af_an_results <- summarise_AF_AN(data = daily_AF_AN, monthly = FALSE)
     # Plot aggregated AN for all regions and individual regions
     if (save_fig) {
-      plot_aggregated_AN(af_an_results, TRUE, output_folder_path)
+      plot_aggregated_AF(af_an_results, TRUE, output_folder_path)
     }
     # Plot AR and PM monthly values
     ar_pm_monthly <- join_ar_and_pm_monthly(pm_data, af_an_results)

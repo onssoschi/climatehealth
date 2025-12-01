@@ -29,7 +29,7 @@ file named "aggregated_AR_by_region.pdf" in the specified output_dir.
 }
 \examples{
 \dontrun{
-plot_aggregated_AN(data = my_df, by_region = TRUE, output_dir = "plots")
+plot_aggregated_AF(data = my_df, by_region = TRUE, output_dir = "plots")
 }
 }
 \keyword{internal}
