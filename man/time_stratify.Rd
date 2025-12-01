@@ -8,7 +8,7 @@ time_stratify(data)
 }
 \arguments{
 \item{data}{Dataframe containing a daily time series of climate and health
-data. Assumes that 'data' has a 'month', 'year', 'dow' and 'regnames' column.}
+data. Assumes that 'data' has a 'month', 'year', 'dow' and 'region' column.}
 }
 \value{
 Dataframe with additional columns for stratum
