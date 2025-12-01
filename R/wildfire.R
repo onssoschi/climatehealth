@@ -665,8 +665,6 @@ casecrossover_quasipoisson <- function(
   }
   for (i in lags) {
     # create model
-    number <- lag_nums[[i]]
-
     formula_parts <- c("health_outcome ~ splines::ns(tmean, df = 6)")
     if (!all(is.na(data$rh))) {
       formula_parts <- c(formula_parts, "splines::ns(rh, df = 3)")
@@ -690,7 +688,7 @@ casecrossover_quasipoisson <- function(
     if (print_model_summaries) {
       print(Epi::ci.exp(model, subset = i))
       print(summary(model))
-      print(paste0(
+      print(paste(
         Epi::ci.exp(model, subset = i), "\n",
         summary(model),
         "\nRatio of residual deviance to degrees of freedom: ",
@@ -763,7 +761,7 @@ calculate_qaic <- function(
       # define model
       number <- lag_nums[[i]]
       # create model formula
-      formula_parts <- c("health_outcome ~ ns.tmean", i)
+      formula_parts <- c("health_outcome ~ splines::ns(tmean, df = 6)", i)
       if (!all(is.na(data$rh))) {
         formula_parts <- c(formula_parts, "splines::ns(rh, df = 3)")
       }
@@ -1382,7 +1380,7 @@ join_ar_and_pm_monthly <- function(
     monthly_pm25,
     by = c("year", "month", "region")
   )
-  return (joined_data)
+  return(joined_data)
 }
 
 #' Plot monthly deaths and PM2.5 concentrations with dual y-axes
@@ -1435,7 +1433,6 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
   scale_factor <- max(aggregated_data$mean_deaths_per_100k) / max(aggregated_data$mean_pm)
   # Plot results
   all_plots <- c()
-  ag <<- aggregated_data
   for (reg in unique(aggregated_data$region)) {
     region_data <- subset(
       aggregated_data,
@@ -1785,7 +1782,7 @@ plot_ar_by_region <- function(data, output_dir = ".") {
       ),
       y = .data$mean_deaths_per_100k
     )
-    ) +
+  ) +
     ggplot2::geom_col(fill = "#003c57") +
     ggplot2::labs(
         title = "Deaths per 100k attributable to Wildfire-specific PM2.5",
@@ -1794,13 +1791,13 @@ plot_ar_by_region <- function(data, output_dir = ".") {
     ) +
     ggplot2::theme_minimal(base_family = "sans") +
     ggplot2::theme(
-        plot.background = ggplot2::element_rect(fill = "white", color = NA),
-        panel.background = ggplot2::element_rect(fill = "white", color = NA),
-        axis.text = ggplot2::element_text(color = "black"),
-        axis.title = ggplot2::element_text(color = "black"),
-        plot.title = ggplot2::element_text(color = "black"),
-        axis.line = ggplot2::element_line(size = 0.5, colour = "black"),
-        axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+      plot.background = ggplot2::element_rect(fill = "white", color = NA),
+      panel.background = ggplot2::element_rect(fill = "white", color = NA),
+      axis.text = ggplot2::element_text(color = "black"),
+      axis.title = ggplot2::element_text(color = "black"),
+      plot.title = ggplot2::element_text(color = "black"),
+      axis.line = ggplot2::element_line(size = 0.5, colour = "black"),
+      axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
     )
   # save plot
   ggplot2::ggsave(
@@ -1863,13 +1860,13 @@ plot_an_by_region <- function(data, output_dir = ".") {
     ) +
     ggplot2::theme_minimal(base_family = "sans") +
     ggplot2::theme(
-        plot.background = ggplot2::element_rect(fill = "white", color = NA),
-        panel.background = ggplot2::element_rect(fill = "white", color = NA),
-        axis.text = ggplot2::element_text(color = "black"),
-        axis.title = ggplot2::element_text(color = "black"),
-        plot.title = ggplot2::element_text(color = "black"),
-        axis.line = ggplot2::element_line(size = 0.5, colour = "black"),
-        axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+      plot.background = ggplot2::element_rect(fill = "white", color = NA),
+      panel.background = ggplot2::element_rect(fill = "white", color = NA),
+      axis.text = ggplot2::element_text(color = "black"),
+      axis.title = ggplot2::element_text(color = "black"),
+      plot.title = ggplot2::element_text(color = "black"),
+      axis.line = ggplot2::element_line(size = 0.5, colour = "black"),
+      axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
     )
 
   # save plot
@@ -2107,12 +2104,12 @@ wildfire_do_analysis <- function(
     plot_ar_pm_monthly(ar_pm_monthly, save_fig, output_folder_path)
     # Plot AR/AN by region
     plot_ar_by_region(
-        data=af_an_results,
-        output_dir=output_folder_path
+      data = af_an_results,
+      output_dir = output_folder_path
     )
     plot_an_by_region(
-        data=af_an_results,
-        output_dir=output_folder_path
+      data = af_an_results,
+      output_dir = output_folder_path
     )
   }
   # Save outputs (conditionally)
