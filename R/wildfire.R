@@ -1048,11 +1048,11 @@ calculate_wildfire_rr_by_region <- function(
   if (save_fig && is.null(output_folder_path)) {
     stop("No output path provided when save_fig==T.")
   }
-  if (calc_relative_risk_by_region && !("region" %in% names(data))) {
+  if (calc_relative_risk_by_region == TRUE && !("region" %in% names(data))) {
     stop("data must contain 'region' column for region level RR data.")
   }
   results_list <- list()
-  if (calc_relative_risk_by_region) {
+  if (calc_relative_risk_by_region == TRUE) {
     # split dataset and create output list
     df_list <- split(data, f = data$region)
     # Get region level RR data
@@ -1631,7 +1631,7 @@ plot_rr_by_pm <- function(
   if (save_fig == TRUE && is.null(output_dir)) {
     stop("'output_dir' must be provded to save outputs.")
   }
-  if (!file.exists(output_dir)) {
+  if (save_fig == TRUE && !file.exists(output_dir)) {
     stop("'output_dir' must exist on disk to save outputs.")
   }
   exp_cols <- c(
@@ -2008,7 +2008,7 @@ wildfire_do_analysis <- function(
     print_vif = FALSE,
     print_model_summaries = FALSE) {
   # Setup additional output DIR
-  if (!file.exists(file.path(output_folder_path, "model_validation"))) {
+  if (save_fig == TRUE && !file.exists(file.path(output_folder_path, "model_validation"))) {
     dir.create(file.path(output_folder_path, "model_validation"), recursive = TRUE)
   }
   # Read and combine datasets
@@ -2090,7 +2090,7 @@ wildfire_do_analysis <- function(
   af_an_results <- NULL
   annual_af_an_results <- NULL
   ar_pm_monthly <- NULL
-  if (calc_relative_risk_by_region) {
+  if (calc_relative_risk_by_region == TRUE) {
     # get AN/AR
     daily_AF_AN <- calculate_daily_AF_AN(data = data, rr_data = rr_results)
     af_an_results <- summarise_AF_AN(data = daily_AF_AN)
