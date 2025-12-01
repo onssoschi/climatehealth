@@ -7,9 +7,9 @@
 join_health_and_climate_data(
   climate_data,
   health_data,
-  region_col = "regnames",
+  region_col = "region",
   date_col = "date",
-  exposure_col = "mean_PM_FRP"
+  exposure_col = "mean_PM"
 )
 }
 \arguments{
@@ -21,21 +21,21 @@ series of data for a particular health outcome, which may be disaggregated by
 region.}
 
 \item{region_col}{Character. Name of the region column in both datasets.
-Defaults to 'regnames'}
+Defaults to 'region'}
 
 \item{date_col}{Character. Name of the date column in both datasets.
 Defaults to 'date'}
 
 \item{exposure_col}{Character. Name of the column in the climate data
 containing the exposure column (e.g., PM2.5) in kilograms. Defaults to
-'mean_PM_FRP'.}
+'mean_PM'.}
 }
 \value{
 Dataframe containing a daily time series of the joined
 climate and health data.
 }
 \description{
-Joins a daily time series of climate data with a daily time
+Joins a daily time series of wildfire PM2.5 data with a daily time
 series of health data.
 }
 \keyword{internal}

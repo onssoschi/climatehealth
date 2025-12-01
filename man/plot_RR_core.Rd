@@ -7,7 +7,7 @@
 plot_RR_core(
   rr_data,
   save_fig = FALSE,
-  wildfire_lag = 3,
+  wildfire_lag,
   output_folder_path = NULL,
   region_name = "All regions",
   ylims = NULL

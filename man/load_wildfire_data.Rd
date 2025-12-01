@@ -47,14 +47,14 @@ that contains the mean temperature column.}
 contains the health outcome count column (e.g. number of deaths, hospital
 admissions)}
 
-\item{rh_col}{Character. Name of the column containing relative humidity
-values. Defaults to NULL.}
+\item{rh_col}{Character. Name of the column in the dataframe that
+contains daily relative humidity values.Defaults to NULL.}
 
-\item{wind_speed_col}{Character. Name of the column containing wind speed.
-Defaults to NULL.}
+\item{wind_speed_col}{Character. Name of the column in the dataframe that
+contains the daily windspeed values.Defaults to NULL.}
 
 \item{pm_2_5_col}{Character. The name of the column containing PM2.5 values
-in micrograms. Thsi is only required if health data isn't joined.
+in micrograms. This is only required if health data isn't joined.
 Defaults to NULL.}
 }
 \value{
