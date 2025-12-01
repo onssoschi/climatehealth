@@ -2,12 +2,13 @@
 % Please edit documentation in R/diseases_shared.R
 \name{plot_rr_map}
 \alias{plot_rr_map}
-\title{Plot Relative Risk Map at District or Region Level}
+\title{Plot Relative Risk Map at sub-national Level}
 \usage{
 plot_rr_map(
   combined_data,
   model,
   param_term = "tmax",
+  max_lag,
   level = "District",
   filter_year = NULL,
   case_type,
@@ -22,16 +23,19 @@ function. This list should include both the health-climate data and the map data
 \item{model}{The fitted model object returned from the \code{run_inla_models()} function.}
 
 \item{param_term}{A character vector or list specifying the climate parameters
-(e.g., "tmax" for maximum temperature, "rainfall" for precipitation) to include in the map.
-Defaults to "tmax".}
+(e.g., \code{tmax} for maximum temperature, \code{rainfall} for precipitation) to
+include in the map. Defaults to \code{tmax}.}
+
+\item{max_lag}{Character. Number corresponding to the maximum lag to be
+considered for the delay effect. It should be between 2 an 4.}
 
 \item{level}{A character string indicating the spatial aggregation level.
-Options are "region" or "district". Defaults to "District".}
+Options are \code{region} or \code{district}. Defaults to \code{District}.}
 
 \item{filter_year}{Integer. The year to filter to data to. Defaults to NULL.}
 
 \item{case_type}{Character. The type of disease that the case column refers
-to. Must be one of 'diarrhea' or 'malaria'}
+to. Must be one of \code{diarrhea} or \code{malaria}.}
 
 \item{output_dir}{Character. The directory path where the output PDF file
 should be saved. Defaults to NULL.}
@@ -43,8 +47,8 @@ Defaults to FALSE.}
 Relative risk map at the chosen level.
 }
 \description{
-Generates a map of the relative risk of Malaria cases associated with climate
+Generates a map of the relative risk of the diseases cases associated with climate
 hazards, including extreme temperature and cumulative rainfall, at a specified
-spatial level (District or Region).
+geographical level (district or region).
 }
 \keyword{internal}

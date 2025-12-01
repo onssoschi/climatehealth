@@ -4,7 +4,7 @@
 \alias{diarrhea_do_analysis}
 \title{Code for calculating Diarrhea disease cases attributable to extreme
 precipitation and extreme temperature
-Run Full Diarrhea-Climate Analysis Pipeline}
+Run Full diarrhea-Climate Analysis Pipeline}
 \usage{
 diarrhea_do_analysis(
   health_data_path,
@@ -26,13 +26,14 @@ diarrhea_do_analysis(
   geometry_col,
   spi_col = NULL,
   max_lag = 2,
-  inla_param,
   basis_matrices_choices,
+  inla_param,
   param_term,
   level,
   param_threshold = 1,
   filter_year = NULL,
   family = "poisson",
+  group_by_year = FALSE,
   config = FALSE,
   save_csv = FALSE,
   save_model = FALSE,
@@ -41,92 +42,93 @@ diarrhea_do_analysis(
 )
 }
 \arguments{
-\item{health_data_path}{Data frame containing the processed health data.}
+\item{health_data_path}{Character. Path to the processed health data file.}
 
-\item{climate_data_path}{Data frame containing the processed climate data.}
+\item{climate_data_path}{Character. Path to the processed climate data file.}
 
-\item{map_path}{Data frame containing the spatial map data (shapefile or equivalent).}
+\item{map_path}{Character. Path to the spatial data file (e.g., shapefile).}
 
-\item{region_col}{Character. Name of the column containing region names.}
+\item{region_col}{Character. Column name for the region variable.}
 
-\item{district_col}{Character. Name of the column containing district names.}
+\item{district_col}{Character. Column name for the district variable.}
 
-\item{date_col}{Character. Name of the column containing the date. Defaults to NULL.}
+\item{date_col}{Character (optional). Column name for the date variable.
+Defaults to \code{NULL}.}
 
-\item{year_col}{Character. Name of the column containing the year.}
+\item{year_col}{Character. Column name for the year variable.}
 
-\item{month_col}{Character. Name of the column containing the month.}
+\item{month_col}{Character. Column name for the month variable.}
 
-\item{diarrhea_case_col}{Character. Name of the column containing diarrhea case counts.}
+\item{diarrhea_case_col}{Character. Column name for diarrhea case counts.}
 
-\item{tot_pop_col}{Character. Name of the column containing total population.}
+\item{tot_pop_col}{Character. Column name for total population.}
 
-\item{tmin_col}{Character. Name of the column containing minimum temperature.}
+\item{tmin_col}{Character. Column name for minimum temperature.}
 
-\item{tmean_col}{Character. Name of the column containing mean temperature.}
+\item{tmean_col}{Character. Column name for mean temperature.}
 
-\item{tmax_col}{Character. Name of the column containing maximum temperature.}
+\item{tmax_col}{Character. Column name for maximum temperature.}
 
-\item{rainfall_col}{Character. Name of the column containing cumulative
-monthly rainfall.}
+\item{rainfall_col}{Character. Column name for cumulative monthly rainfall.}
 
-\item{r_humidity_col}{Character. Name of the column containing relative humidity.}
+\item{r_humidity_col}{Character. Column name for relative humidity.}
 
-\item{runoff_col}{Character. Name of the column containing monthly runoff
-data.}
+\item{runoff_col}{Character. Column name for monthly runoff data.}
 
-\item{geometry_col}{Character. Name of the geometry column in the shapefile
-(usually "geometry").}
+\item{geometry_col}{Character. Column name of the geometry column in the
+shapefile (usually \code{"geometry"}).}
 
-\item{spi_col}{Character. Name of the column containing the Standardized
-Precipitation Index. Defaults to NULL.}
+\item{spi_col}{Character (optional). Column name for the Standardized
+Precipitation Index (SPI). Defaults to \code{NULL}.}
 
-\item{max_lag}{Numeric. Maximum lag to consider in the model
-(typically 2 to 4). Defaults to 2.}
+\item{max_lag}{Numeric. Maximum temporal lag to include in the distributed
+lag model (e.g., \code{2}–\code{4}). Defaults to \code{4}.}
 
-\item{inla_param}{A character vector specifying the confounding exposures to
-be included in the model. Possible values are "tmax","tmin", "rainfall",
-"r_humidity", and "runoff".}
+\item{basis_matrices_choices}{Character vector. Specifies which climate variables
+to include in the basis matrix (e.g., \code{c("tmax", "rainfall", "r_humidity")}).}
 
-\item{basis_matrices_choices}{Character vector specifying basis matrix
-parameters to include in the model (e.g., "tmax", "tmin", "rainfall",
-"r_humidity", "spi").}
+\item{inla_param}{Character vector. Specifies exposure variables included in
+the INLA model (e.g., \code{c("tmin", "rainfall", "r_humidity")}).}
 
-\item{param_term}{Character vector specifying the exposure variables of interest
-(e.g., "tmax", "rainfall").}
+\item{param_term}{Character or vector. Exposure variable(s) of primary interest
+for relative risk and attribution (e.g., \code{"tmax"}, \code{"rainfall"}).}
 
-\item{level}{Character. Spatial disaggregation level: "country", "region", or "district".}
+\item{level}{Character. Spatial disaggregation level; must be one of
+\code{"country"}, \code{"region"}, or \code{"district"}.}
 
-\item{param_threshold}{Numeric. Threshold above which exposure is considered,
-"attributable". Can take floats. Defaults to 1.}
+\item{param_threshold}{Numeric. Threshold above which exposure is considered
+“attributable.” Defaults to \code{1}.}
 
-\item{filter_year}{Integer. The year to filter to data to. Defaults to NULL.}
+\item{filter_year}{Integer or vector (optional). Year(s) to filter the data by.
+Defaults to \code{NULL}.}
 
-\item{family}{Character. The probability distribution for the response
-variable. The user may also have thepossibility to choose "nbinomial" for a
-negative binomial distribution. Defaults to "poisson".}
+\item{family}{Character. Probability distribution for the outcome variable.
+Options include \code{"poisson"} (default) and \code{"nbinomial"} for a negative binomial model.}
 
-\item{config}{Boolean. Enable additional model configurations. Defaults to FALSE.}
+\item{group_by_year}{Logical. Whether to group attributable metrics by year.
+Defaults to \code{FALSE}.}
 
-\item{save_csv}{Boolean. If TRUE, saves the resultant datasets. Defaults to FALSE.}
+\item{config}{Logical. Whether to enable additional INLA model configurations.
+Defaults to \code{TRUE}.}
 
-\item{save_model}{Boolean. If TRUE, saves the INLA model. Defaults to FALSE.}
+\item{save_csv}{Logical. If \code{TRUE}, saves intermediate datasets to CSV.
+Defaults to \code{TRUE}.}
 
-\item{save_fig}{Boolean. If TRUE, saves the generated plots. Defaults to FALSE.}
+\item{save_model}{Logical. If \code{TRUE}, saves fitted INLA model results.
+Defaults to \code{TRUE}.}
 
-\item{output_dir}{Character. The path to the directory where outputs
-(e.g., plots, maps, datasets) should be saved.}
+\item{save_fig}{Logical. If \code{TRUE}, saves generated plots. Defaults to \code{TRUE}.}
+
+\item{output_dir}{Character. Directory where output files (plots, datasets, maps)
+are saved. Defaults to \code{NULL}.}
 }
 \value{
-A list containing:
+A named list containing:
 \itemize{
-\item Model output from INLA
-\item Monthly random effects plot
-\item Yearly random effects plot
-\item Contour plot
-\item Relative risk map
-\item Relative risk plot
-\item Attributable fraction and number summary
+\item \code{inla_result} – Fitted INLA model object and summaries.
+\item \code{VIF} – Variance Inflation Factor results for multicollinearity assessment.
+\item \code{rr_df} – Relative risk results dataset.
+\item \code{an_ar_results} – Attributable risk summary table.
 }
 }
 \description{

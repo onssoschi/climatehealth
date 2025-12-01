@@ -9,6 +9,7 @@ run_inla_models(
   combined_data,
   basis_matrices_choices,
   inla_param,
+  max_lag,
   case_type,
   output_dir = NULL,
   save_model = FALSE,
@@ -17,26 +18,29 @@ run_inla_models(
 )
 }
 \arguments{
-\item{combined_data}{A dataframe resulting from combine_health_climate_data() function.}
+\item{combined_data}{A dataframe resulting from \code{combine_health_climate_data()} function.}
 
 \item{basis_matrices_choices}{A character vector specifying the basis matrix
-parameters to be included in the model. Possible values are "tmax", and "rainfall".}
+parameters to be included in the model. Possible values are \code{tmax}, and \code{rainfall}.}
 
 \item{inla_param}{A character vector specifying the confounding exposures to
-be included in the model. Possible values are "tmax","tmin", "rainfall",
-"r_humidity", and "runoff".}
+be included in the model. Possible values are \code{tmax},\code{tmin}, \code{rainfall},
+\code{r_humidity}, \code{runoff}, \code{ndvi}, Etc.}
+
+\item{max_lag}{Character. Number corresponding to the maximum lag to be
+considered for the delay effect. It should be between 2 an 4.}
 
 \item{case_type}{Character. The type of disease that the case column refers
-to. Must be one of 'diarrhea' or 'malaria'}
+to. Must be one of \code{diarrhea} or \code{malaria}.}
 
 \item{output_dir}{Character. The path to save model output to.  Defaults to NULL.}
 
-\item{save_model}{Boolean. Whether to save the model as a CSV. Defaults to
+\item{save_model}{Boolean. Whether to save the results as a CSV. Defaults to
 FALSE.}
 
 \item{family}{Character. The probability distribution for the response
-variable. The user may also have thepossibility to choose "nbinomial" for a
-negative binomial distribution. Defaults to "poisson".}
+variable. The user may also have the possibility to choose \code{nbinomial} for a
+negative binomial distribution. Defaults to\code{poisson}.}
 
 \item{config}{Boolean. Enable additional model configurations. Defaults to FALSE.}
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/diseases_shared.R
 \name{plot_yearly_spatial_random_effect}
 \alias{plot_yearly_spatial_random_effect}
-\title{Visualize yearly spatial random effect}
+\title{Visualize yearly spatial random effect of the Diseases Incidence Rate (DIR).}
 \usage{
 plot_yearly_spatial_random_effect(
   combined_data,
@@ -13,24 +13,24 @@ plot_yearly_spatial_random_effect(
 )
 }
 \arguments{
-\item{combined_data}{Data list from combine_health_climate_data() function.}
+\item{combined_data}{Data list \verb{from combine_health_climate_data()} function.}
 
-\item{model}{The fitted model from run_inla_models() function.}
+\item{model}{The fitted model from \code{run_inla_models()} function.}
 
 \item{case_type}{Character. The type of disease that the case column refers
-to. Must be one of 'diarrhea' or 'malaria'}
+to. Must be one of \code{diarrhea} or \code{malaria}.}
 
 \item{save_fig}{Boolean. Whether to save the plot as an output. Defaults to
 FALSE.}
 
-\item{output_dir}{Character. The path to save the fitted model to. Defaults
+\item{output_dir}{Character. The path to save the fitted model results to. Defaults
 to NULL.}
 }
 \value{
-The yearly space random effect plot
+The yearly space random effect for the disease incidence rate plot.
 }
 \description{
-Generates and saves plots of yearly spatial random effect at
-district level.
+Generates and saves plots of yearly spatial random effect of the diseases
+incidence rate at district level.
 }
 \keyword{internal}
