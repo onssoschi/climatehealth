@@ -54,6 +54,7 @@ read_and_format_data <- function(
     date_function <- lubridate::dmy
   }
   # Subset needed columns
+  # Subset needed columns
   needed_cols <- c(
     date_col,
     mean_temperature_col,
@@ -62,9 +63,18 @@ read_and_format_data <- function(
     rh_col,
     wind_speed_col
   )
+  standard_cols <- c(
+    "date", "tmean", "health_outcome", "region", "rh", "wind_speed"
+  )
+  for (i in seq_along(standard_cols)) {
+    std_col <- standard_cols[i]
+    need_col <- needed_cols[i]
+    if (!identical(std_col, need_col) && std_col %in% names(df)) {
+      df[[std_col]] <- NULL
+    }
+  }
   # Data set pre processing
   df <- df %>%
-    dplyr::select(all_of(needed_cols)) %>%
     dplyr::rename(
       date = all_of(date_col),
       tmean = all_of(mean_temperature_col),
