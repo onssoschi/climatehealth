@@ -9,7 +9,7 @@ plot_an_by_region(data, output_dir = ".")
 \arguments{
 \item{data}{A data frame containing columns:
 \itemize{
-\item \code{regnames}: Region names.
+\item \code{region}: Region names.
 \item \code{total_attributable_number}: Numeric values of attributable numbers.
 }}
 
