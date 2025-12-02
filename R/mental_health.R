@@ -34,13 +34,21 @@ mh_read_and_format_data <- function(
   }
   # read data
   df <- read_input_data(data_path)
-
+  # process region col
   if (is.null(region_col)) {
     df <- df %>%
       dplyr::mutate(region = "aggregated")
   }
-
+  # subset needed cols
+  needed_cols <- c(
+    date_col,
+    region_col,
+    temperature_col,
+    health_outcome_col,
+    population_col
+  )
   df <- df %>%
+    dplyr::select(all_of(needed_cols)) %>%
     dplyr::rename(
       date = date_col,
       region = region_col,
