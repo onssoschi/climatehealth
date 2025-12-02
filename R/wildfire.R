@@ -53,8 +53,18 @@ read_and_format_data <- function(
   if (grepl("^\\d{2}[-/]\\d{2}[-/]\\d{4}$", df[[date_col]][1])) {
     date_function <- lubridate::dmy
   }
+  # Subset needed columns
+  needed_cols <- c(
+    date_col,
+    mean_temperature_col,
+    health_outcome_col,
+    region_col,
+    rh_col,
+    wind_speed_col
+  )
   # Data set pre processing
   df <- df %>%
+    dplyr::select(all_of(needed_cols)) %>%
     dplyr::rename(
       date = all_of(date_col),
       tmean = all_of(mean_temperature_col),
