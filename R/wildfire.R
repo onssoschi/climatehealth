@@ -1427,7 +1427,7 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
   if (save_outputs == TRUE && is.null(output_dir)) {
     stop("'output_dir' must be provded to save outputs.")
   }
-  if (!file.exists(output_dir)) {
+  if (save_outputs == TRUE && !file.exists(output_dir)) {
     stop("'output_dir' must exist on disk to save outputs.")
   }
   data$month_name <- month.abb[data$month]
@@ -2122,14 +2122,15 @@ wildfire_do_analysis <- function(
     ar_pm_monthly <- join_ar_and_pm_monthly(pm_data, af_an_results)
     plot_ar_pm_monthly(ar_pm_monthly, save_fig, output_folder_path)
     # Plot AR/AN by region
-    plot_ar_by_region(
-      data = af_an_results,
-      output_dir = output_folder_path
-    )
-    plot_an_by_region(
-      data = af_an_results,
-      output_dir = output_folder_path
-    )
+    if (save_fig == TRUE)
+      plot_ar_by_region(
+        data = af_an_results,
+        output_dir = output_folder_path
+      )
+      plot_an_by_region(
+        data = af_an_results,
+        output_dir = output_folder_path
+      )
   }
   # Save outputs (conditionally)
   if (save_csv == TRUE) {
