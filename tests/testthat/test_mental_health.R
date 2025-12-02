@@ -2135,3 +2135,87 @@ test_that("mh_save_results writes all expected CSV files and validates content",
   unlink(attr_mth_path)
   unlink(power_path)
 })
+
+
+# test-mental-health-integration
+test_that("integration: suicides_heat_do_analysis runs end-to-end (dynamic synthetic data)", {
+  set.seed(42)
+
+  # ---- Generate 2-region daily data with continuity and variability ----
+  n_days_per_region <- 1000           # safer than 30; gives stable splines & lag=1
+  regions <- c("Region 1", "Region 2")
+  start_date <- as.Date("2000-01-01")
+
+  make_region <- function(region_name) {
+    dates <- seq(start_date, by = "day", length.out = n_days_per_region)
+
+    # Temperature: mild seasonality + noise, range approx [-5, 25]
+    day_ix <- seq_len(n_days_per_region)
+    tmean <- 10 + 8*sin(2*pi*day_ix/365) + rnorm(n_days_per_region, sd = 4)
+    tmean <- pmax(pmin(tmean, 25), -5) # clamp
+
+    # Humidity & rainfall: plausible ranges, some day-to-day variation
+    hum <- pmax(pmin(80 + rnorm(n_days_per_region, sd = 6), 95), 70)
+    rainfall <- pmax(rnorm(n_days_per_region, mean = 3.5, sd = 2.0), 0)
+    sun <- pmax(rnorm(n_days_per_region, mean = 2.5, sd = 1.2), 0)
+
+    # Population: region-specific constant (keeps pipeline simple)
+    pop <- if (region_name == "Region 1") 2600000L else 6800000L
+
+    # Suicides: Poisson with log link to temperature to ensure variability
+    # (keeps zeros but avoids all-zero series)
+    lambda <- exp(-0.1 + 0.03 * tmean)          # ~0.5–3.0
+    suicides <- rpois(n_days_per_region, lambda = lambda)
+    # Ensure a few non-zero early values to avoid edge-case emptiness
+    suicides[1:5] <- pmax(suicides[1:5], c(0,1,0,1,2))
+
+    data.frame(
+      date = dates,
+      region = region_name,
+      tmean = round(tmean, 2),
+      hum = round(hum, 2),
+      sun = round(sun, 2),
+      rainfall = round(rainfall, 2),
+      population = rep(pop, n_days_per_region),
+      suicides = suicides,
+      check.names = FALSE
+    )
+  }
+
+  df <- do.call(rbind, lapply(regions, make_region))
+  df <- df[order(df$region, df$date), ]
+
+  # ---- Safety checks to avoid the earlier QAIC error ----
+  # Enough unique temps for spline knots; at least some non-zero suicides per region
+  by_region <- split(df, df$region)
+  ok_unique_temp <- all(vapply(by_region, function(x) length(unique(x$tmean)) >= 10, logical(1)))
+  ok_nonzero <- all(vapply(by_region, function(x) sum(x$suicides > 0) >= 10, logical(1)))
+  expect_true(ok_unique_temp, info = "Not enough unique temperature values for splines")
+  expect_true(ok_nonzero, info = "Too few non-zero suicides for model fitting")
+
+  # ---- Write to a temporary CSV (robust even if reader expects a path) ----
+  tmp_file <- tempfile(fileext = ".csv")
+  write.csv(df, tmp_file, row.names = FALSE)
+  on.exit(unlink(tmp_file), add = TRUE)  # clean up after test
+
+  # ---- Run pipeline (minimised for speed) ----
+  result <- suicides_heat_do_analysis(
+    data_path = tmp_file,       # pass the temp file path
+    date_col = "date",
+    region_col = "region",
+    temperature_col = "tmean",
+    health_outcome_col = "suicides",
+    population_col = "population",
+    independent_cols = c("hum", "sun", "rainfall"),
+    save_fig = FALSE,           # avoid file IO in tests
+    save_csv = FALSE,
+    var_per = c(50),            # single knot percentile for stability
+    lag_days = 1                # minimal lag
+  )
+
+  # ---- Assertions on structure (not exact numbers) ----
+  expect_type(result, "list")
+  expect_true(all(c("qaic_results", "qaic_summary", "vif_results") %in% names(result)))
+  expect_s3_class(result$qaic_results, "data.frame")
+  expect_true(nrow(result$qaic_results) > 0, info = "QAIC results unexpectedly empty")
+})
