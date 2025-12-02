@@ -11,7 +11,7 @@ create_temperature_splines(data, nlag = 0, degrees_freedom = 6)
 data}
 
 \item{nlag}{Integer. The number of days of lag in the temperature
-variable from which to generate splines. Default is 0 (unlagged temperature
+variable from which to generate splines (unlagged temperature
 variable). Defaults to 0.}
 
 \item{degrees_freedom}{Integer. Degrees of freedom for the spline(s).

@@ -9,7 +9,7 @@ plot_ar_by_region(data, output_dir = ".")
 \arguments{
 \item{data}{A data frame containing columns:
 \itemize{
-\item \code{regnames}: Region names.
+\item \code{region}: Region names.
 \item \code{deaths_per_100k}: Numeric values of deaths per 100k population.
 \item \code{lower_ci_deaths_per_100k}: Lower bound of confidence interval.
 \item \code{upper_ci_deaths_per_100k}: Upper bound of confidence interval.
@@ -22,7 +22,7 @@ Defaults to the current working directory (\code{"."}).}
 A \code{ggplot} object representing the bar plot.
 }
 \description{
-Aggregates wildfire-specific PM2.5 attributable risk (deaths per 100k) by region
-and creates a bar plot showing the mean attributable risk per region.
+Aggregates wildfire-specific PM2.5 attributable risk (deaths per 100k)
+by region and creates a bar plot showing the mean attributable risk per region.
 }
 \keyword{internal}
