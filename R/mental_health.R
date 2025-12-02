@@ -441,10 +441,10 @@ mh_model_validation <- function(
       if (save_fig == TRUE) {
         title <- paste0("Deviance Residuals by Date: ", reg)
         mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+
+        dev.off()
       }
     }
-
-    dev.off()
 
     if (sample_check == TRUE) {
       all_residuals <- do.call(rbind, formula_list)
@@ -488,10 +488,10 @@ mh_model_validation <- function(
       if (save_fig == TRUE) {
         title <- paste0("Deviance Residuals by Fitted Values: ", reg, sample_title)
         mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+
+        dev.off()
       }
     }
-
-    dev.off()
 
     if (save_fig == TRUE) {
       grid <- c(min(length(formula_list), 3), ceiling(length(new_res_list) / 3))
@@ -514,10 +514,10 @@ mh_model_validation <- function(
       if (save_fig == TRUE) {
         title <- paste0("Normal Q-Q Plot of Residuals: ", reg, sample_title)
         mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+
+        dev.off()
       }
     }
-
-    dev.off()
 
     if (save_fig == TRUE) {
       grid <- c(min(length(formula_list), 2), ceiling(length(formula_list) / 3) * 2)
@@ -536,9 +536,10 @@ mh_model_validation <- function(
     if (save_fig == TRUE) {
       title <- paste0("Autocorrelation and Partial Autocorrelation of Residuals:\n", reg)
       mtext(title, outer = TRUE, cex = 1.5, line = 0.5, font = 2)
+
+      dev.off()
     }
 
-    dev.off()
   }
   return(list(qaic_results, qaic_summary, vif_results, vif_summary))
 }
@@ -1183,6 +1184,7 @@ mh_plot_power <- function(
   if (save_fig == TRUE) {
     title <- paste0("Power vs Temperature by Area, ", country)
     mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+
     dev.off()
   }
 }
@@ -2040,9 +2042,10 @@ mh_plot_af_monthly <- function(
 
     mtext(ci_warning, outer = TRUE, side = 1, line = 1, cex = 0.8, col = "red", font = 3)
     mtext(ovr_warning, outer = TRUE, side = 1, line = 2, cex = 0.8, col = "red", font = 3)
+
+    dev.off()
   }
 
-  dev.off()
 }
 
 
@@ -2173,9 +2176,10 @@ mh_plot_ar_monthly <- function(
 
     mtext(ci_warning, outer = TRUE, side = 1, line = 1, cex = 0.8, col = "red", font = 3)
     mtext(ovr_warning, outer = TRUE, side = 1, line = 2, cex = 0.8, col = "red", font = 3)
+
+    dev.off()
   }
 
-  dev.off()
 }
 
 
