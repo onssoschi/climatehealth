@@ -408,7 +408,10 @@ mh_model_validation <- function(
   for (reg in names(df_list)) {
     region_data <- df_list[[reg]]
     formula_list <- residuals_list[[reg]]
-    named_label <- named_label_list[[reg]]
+
+    if (save_fig == TRUE) {
+      named_label <- named_label_list[[reg]]
+    }
 
     if (save_fig == TRUE) {
       reg_folder <- gsub(pattern = " ", replacement = "_", x = reg)
