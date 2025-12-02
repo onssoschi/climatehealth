@@ -7,10 +7,10 @@
 join_ar_and_pm_monthly(pm_data, an_ar_data)
 }
 \arguments{
-\item{pm_data}{A data frame with columns: year, month, regnames, mean_PM_FRP.
+\item{pm_data}{A data frame with columns: year, month, region, mean_PM.
 Represents monthly PM2.5 estimates.}
 
-\item{an_ar_data}{A data frame with columns: year, month, regnames.
+\item{an_ar_data}{A data frame with columns: year, month, region.
 Represents attributable risk or fraction data to be joined with PM2.5
 estimates.}
 }
@@ -20,7 +20,7 @@ risk data.
 }
 \description{
 Aggregates PM2.5 data to monthly averages by region and joins it with
-attributable risk data using year, month, and regnames as keys.
+attributable risk data using year, month, and region as keys.
 }
 \examples{
 \dontrun{

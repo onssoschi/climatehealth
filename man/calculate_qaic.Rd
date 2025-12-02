@@ -26,6 +26,7 @@ pearson dispersion statistics. Defaults to FALSE.}
 Dataframe containing QAIC results for each lag.
 }
 \description{
-QAIC calculation
+Computes the Quasi–Akaike Information Criterion (QAIC) for models,
+enabling model comparison
 }
 \keyword{internal}

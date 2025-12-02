@@ -2,8 +2,8 @@
 % Please edit documentation in R/wildfire.R
 \name{wildfire_do_analysis}
 \alias{wildfire_do_analysis}
-\title{Run pipeline to analyse the impact of wildfire-related PM2.5 on a health
-outcome using a time-stratified case-crossover approach.}
+\title{This is full analysis pipeline to analyse the impact of wildfire-related PM2.5 on a health
+outcome.}
 \usage{
 wildfire_do_analysis(
   health_path,
@@ -67,7 +67,7 @@ values. Defaults to NULL.}
 Defaults to NULL.}
 
 \item{pm_2_5_col}{Character. The name of the column containing PM2.5 values
-in micrograms. Thsi is only required if health data isn't joined. Defaults to NULL.}
+in micrograms. This is only required if health data isn't joined. Defaults to NULL.}
 
 \item{wildfire_lag}{Integer. The number of days for which to calculate the
 lags for wildfire PM2.5. Default is 3.}
@@ -109,17 +109,50 @@ for each predictor. Defaults to FALSE.}
 console. Defaults to FALSE.}
 }
 \value{
-Dataframe of relative risk and confidence intervals for
-each lag of wildfire-related PM2.5
-
-rr_results, af_an_results
 \itemize{
 \item \code{rr_results} A dataframe with relative risk estimates and confidence
 intervals for each region.
-\item \code{af_an_results} A dataframe containing attributable fractions and numbers for each region
+\item \code{rr_pm} A dataframe of relative risk estimates for wildfire-specific PM2.5 exposure
+across regions as PM values changes.
+\item \code{af_an_results} A dataframe containing attributable fractions, attributable numbers
+and deaths per 100k population for each region
+\item \code{annual_af_an_results}A dataframe containing annual attributable numbers and fractions
+for each region
+\item \code{calculate_qaic} A dataframe of QAIC and dispersion metrics for each model
+combination and geography.
+\item \code{check_wildfire_vif} A dataframe containing Variance inflation factors for
+each independent variables by region.
 }
 }
 \description{
 Runs full analysis pipeline for analysis of the impact of
-wildfire-related PM2.5 on a health outcome.
+wildfire-related PM2.5 on a health outcome using time stratified case-crossover approach
+with conditional quasi-Poisson regression model. This function generates
+relative risk of the mortality associated to wildfire-related PM2.5 as well as
+attributable numbers, rates and fractions of health outcome. Model validation
+statistics are also provided.
+}
+\details{
+This analysis pipeline requires a daily time series with mean wildfire PM2.5,
+mean temperature and health outcome (all-cause mortality, respiratory, cardiovascular,
+hospital admissions etc) with population values as a minimum.
+This is then processed using a time stratified case crossover approach with conditional
+Poisson case-crossover analysis and optional meta-analysis.
+Meta-analysis is recommended if the input data is disaggregated by area.
+
+The model parameters have default values, which are recommended to keep as based
+on existing studies. However, if desired these can be adjusted for sensitivity
+analysis.
+
+Model validation testing is provided as a standard output from the pipeline so
+a user can assess the quality of the model. Additionally, users can incorporate
+extra independent variables—such as relative humidity or wind speed—directly
+into the model for enhanced analysis.
+
+Further details on the input data requirements, methodology, quality information
+and guidance on interpreting outputs can be found in the accompanying published
+\href{https://doi.org/10.5281/zenodo.14052184}{Zenodo documentation}.
+}
+\references{
+to be updated
 }
