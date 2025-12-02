@@ -1,3 +1,7 @@
+temp_dir <- tempdir()
+temp_dir <- file.path(temp_dir, "mental_health_tests")
+if (!file.exists(temp_dir)) dir.create(temp_dir)
+
 # Test mh_read_and_format_data
 test_that("Test mh_read_and_format_data", {
 
