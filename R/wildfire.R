@@ -1272,6 +1272,7 @@ plot_aggregated_AF <- function(data, by_region = FALSE, output_dir = ".") {
       paste(expected_cols, collapse = ", ")
     )
   }
+  if (is.null(output_dir)) stop("'output_dir' is NULL.")
   if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
   # set up plot
   pname <- "aggregated_AR"
