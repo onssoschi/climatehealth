@@ -1901,7 +1901,7 @@ plot_and_write_relative_risk_all <- function(df_list,
 #' @seealso [dlnm] package
 #'
 #' @export
-heat_and_cold_analysis <- function(input_csv_path_ = "NONE",
+heat_and_cold_do_analysis <- function(input_csv_path_ = "NONE",
                                    output_folder_path_ = NULL,
                                    save_fig_ = FALSE,
                                    save_csv_ = FALSE,
