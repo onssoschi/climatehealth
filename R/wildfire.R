@@ -1763,6 +1763,7 @@ plot_rr_by_pm_core <- function(
 #' @keywords internal
 plot_ar_by_region <- function(data, output_dir = ".") {
   # validation
+  if (is.null("output_dir")) stop("'output_dir' required.")
   if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
   exp_cols <- c(
     "region",
@@ -2115,14 +2116,12 @@ wildfire_do_analysis <- function(
     af_an_results <- summarise_AF_AN(data = daily_AF_AN)
     annual_af_an_results <- summarise_AF_AN(data = daily_AF_AN, monthly = FALSE)
     # Plot aggregated AN for all regions and individual regions
-    if (save_fig) {
-      plot_aggregated_AF(af_an_results, TRUE, output_folder_path)
-    }
     # Plot AR and PM monthly values
     ar_pm_monthly <- join_ar_and_pm_monthly(pm_data, af_an_results)
     plot_ar_pm_monthly(ar_pm_monthly, save_fig, output_folder_path)
     # Plot AR/AN by region
     if (save_fig == TRUE)
+      plot_aggregated_AF(af_an_results, TRUE, output_folder_path)
       plot_ar_by_region(
         data = af_an_results,
         output_dir = output_folder_path
