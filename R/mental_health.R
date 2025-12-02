@@ -1106,13 +1106,14 @@ mh_power_list <- function(
 
     rownames(coef_effect_with_se) <- NULL
 
+    n <- nrow(coef_effect_with_se)
     power_df <- data.frame(
-      region = reg,
+      region = rep(reg, n),
       temperature = coef_effect_with_se$temperature,
-      cen = min_st,
+      cen = rep(min_st, n),
       log_rr = coef_effect_with_se$log_rr,
       se = coef_effect_with_se$se,
-      z_alpha = stats::qnorm(1 - alpha / 2)
+      z_alpha = rep(stats::qnorm(1 - alpha / 2), n)
     )
 
     power_df <- power_df %>%
@@ -1228,10 +1229,11 @@ mh_rr_results <- function(
     temp_freq <- as.numeric(temp_freq_table[as.character(pred_temp_rounded)])
     temp_freq[is.na(temp_freq)] <- 0 # Replace NAs with 0 for bins not present
 
+    n <- length(reg_pred$predvar)
     df <- data.frame(
-      Area = region_name,
-      MinST = round(min_st, 1),
-      Attr_Threshold_Temp = round(attr_thr_temp, 1),
+      Area = rep(region_name, n),
+      MinST = rep(round(min_st, 1), n),
+      Attr_Threshold_Temp = rep(round(attr_thr_temp, 1), n),
       Temperature = round(reg_pred$predvar, 1),
       Temp_Frequency = temp_freq,
       RR = round(reg_pred$allRRfit, 2),
