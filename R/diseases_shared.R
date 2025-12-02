@@ -134,6 +134,9 @@ load_and_process_data <- function(
     stop("If no date column is provided, you must provide both the year and the month columns.")
   }
   if (!is.null(date_col)) {
+    if ("date" %in% colnames(data) && date_col != "date") {
+      data <- data[, !(names(data) %in% "date")]
+    }
     data <- data %>%
       rename(
         date = date_col
@@ -142,11 +145,17 @@ load_and_process_data <- function(
         year = lubridate::year(date),
         month = lubridate::month(date)
       )
+    year_col <- "year"
+    month_col <- "month"
   }
   # Rename columns accordingly
+  needed_cols <- c(
+    year_col, month_col, region_col, district_col, case_col, tot_pop_col
+  )
   case_sym <- rlang::sym(case_type)
   data <- data %>%
-    rename(
+    dplyr::select(any_of(needed_cols)) %>%
+    dplyr::rename(
       year = year_col,
       month = month_col,
       region = region_col,
@@ -154,7 +163,7 @@ load_and_process_data <- function(
       !!case_sym := case_col,
       tot_pop = tot_pop_col
     ) %>%
-    select(
+    dplyr::select(
       all_of(c("region", "district", "year", "month", case_type, "tot_pop"))
     )
   return(data)
