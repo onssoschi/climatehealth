@@ -23,7 +23,7 @@ test_that("Test mh_read_and_format_data", {
     check_file_extension = mock_check_file_extension,
     read_input_data = mock_read_input_data
     )
-  {
+
     control_df <- data.frame(
       date = structure(c(19362, 19360, 19358, -718778, -718048), class = "Date"),
       region = structure(c(1L, 2L, 3L, 4L, 5L), levels = c("Central","East", "North", "South", "West"), class = "factor"),
@@ -80,7 +80,6 @@ test_that("Test mh_read_and_format_data", {
                               "temp",
                               "health_outcomes",
                               "pop")
-    }
 
     expect_identical(mh_test_list, control_test_list)
 })
