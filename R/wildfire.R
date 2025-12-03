@@ -1747,7 +1747,7 @@ plot_rr_by_pm_core <- function(
 #' @keywords internal
 plot_ar_by_region <- function(data, output_dir = ".") {
   # validation
-  if (is.null("output_dir")) stop("'output_dir' required.")
+  if (is.null(output_dir)) stop("'output_dir' required.")
   if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
   exp_cols <- c(
     "region",
@@ -1831,7 +1831,7 @@ plot_ar_by_region <- function(data, output_dir = ".") {
 #' @keywords internal
 plot_an_by_region <- function(data, output_dir = ".") {
   # validation
-  if (is.null("output_dir")) stop("'output_dir' required.")
+  if (is.null(output_dir)) stop("'output_dir' required.")
   if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
   exp_cols <- c(
     "region",
