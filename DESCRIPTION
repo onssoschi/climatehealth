@@ -41,7 +41,7 @@ Imports:
     reshape2 (>= 1.4.4),
     rlang,
     scales,
-    sf,
+    sf (< 1.0-23),
     spdep,
     splines,
     stats,
