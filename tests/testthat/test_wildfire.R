@@ -14,7 +14,8 @@ WF_TEST_HEALTH <- data.frame(
     region = c("North", "South", "East"),
     relative_humidity = c(70, 65, 80),
     wind_speed = c(3.2, 2.8, 4.0),
-    stringsAsFactors = FALSE
+    stringsAsFactors = FALSE,
+    regnames = c("North", "South", "East")
 )
 
 WF_TEST_CLIMATE <- data.frame(
@@ -31,7 +32,7 @@ test_that(
             date_col = "date",
             mean_temperature_col = "tmean",
             health_outcome_col = "deaths",
-            region_col = "region",
+            region_col = "regnames",
             rh_col = "relative_humidity",
             wind_speed_col = "wind_speed"
         )
@@ -151,7 +152,7 @@ test_that(
             wind_speed_col = "wind_speed",
             pm_2_5_col = "mean_PM"
         )
-        expect_equal(dim(res), c(3, 11))
+        expect_equal(dim(res), c(3, 12))
     }
 )
 
@@ -1014,6 +1015,20 @@ test_that(
 )
 
 test_that(
+    "plot_aggregated_AF raises an error if output_dir is NULL.",
+    {
+        expect_error(
+            plot_aggregated_AF(
+                data = AGGREGATED_AN_DATA,
+                by_region = FALSE,
+                output_dir = NULL
+            ),
+            "'output_dir' is NULL."
+        )
+    }
+)
+
+test_that(
     "plot_aggregated_AF creates and saves plot when by_region=FALSE.",
     {
         plot_aggregated_AF(
@@ -1277,6 +1292,16 @@ AR_AN_TEST_DF <- data.frame(
 )
 
 test_that(
+    "plot_ar_by_region raises an error if output_dir is null",
+    {
+        expect_error(
+            plot_ar_by_region(data = AR_AN_TEST_DF, NULL),
+            "'output_dir' required."
+        )
+    }
+)
+
+test_that(
     "plot_ar_by_region raises an error if output_dir does not exist",
     {
         expect_error(
@@ -1311,6 +1336,16 @@ test_that(
 )
 
 # Tets for plot_an_by_region
+
+test_that(
+    "plot_an_by_region raises an error if output_dir is null",
+    {
+        expect_error(
+            plot_an_by_region(data = AR_AN_TEST_DF, NULL),
+            "'output_dir' required."
+        )
+    }
+)
 
 test_that(
     "plot_an_by_region raises an error if output_dir does not exist",
