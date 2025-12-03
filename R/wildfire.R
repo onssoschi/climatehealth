@@ -1499,6 +1499,15 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
     all_plots[[length(all_plots) + 1]] <- plot_ar_pm
   }
   combined_plots <- patchwork::wrap_plots(all_plots)
+  # sort data
+  sorted_data <- aggregated_data[
+      order(
+        aggregated_data$region,
+        match(aggregated_data$month_name, month.abb)
+      ),
+    ]
+  sorted_data <- sorted_data %>% select(all_of(c("region", "month_name", "mean_deaths_per_100k", "mean_pm")))
+  # save csv
   if (save_outputs) {
     fpath <- file.path(output_dir, "ar_and_pm_monthly_average")
     ggplot2::ggsave(
@@ -1508,15 +1517,9 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
       height = length(all_plots) * 4,
       limitsize = FALSE
     )
-    sorted_data <- aggregated_data[
-      order(
-        aggregated_data$region,
-        match(aggregated_data$month_name, month.abb)
-      ),
-    ]
-    sorted_data <- sorted_data %>% select(all_of(c("region", "month_name", "mean_deaths_per_100k", "mean_pm")))
     write.csv(sorted_data, paste0(fpath, ".csv"), row.names = FALSE)
   }
+  return(sorted_data)
 }
 
 #' Relative risk estimates across PM2.5 concentrations for a specified lag.
@@ -2120,7 +2123,7 @@ wildfire_do_analysis <- function(
     # Plot aggregated AN for all regions and individual regions
     # Plot AR and PM monthly values
     ar_pm_monthly <- join_ar_and_pm_monthly(pm_data, af_an_results)
-    plot_ar_pm_monthly(ar_pm_monthly, save_fig, output_folder_path)
+    ar_pm_monthly <- plot_ar_pm_monthly(ar_pm_monthly, save_fig, output_folder_path)
     # Plot AR/AN by region
     if (save_fig == TRUE) {
       plot_aggregated_AF(af_an_results, TRUE, output_folder_path)
