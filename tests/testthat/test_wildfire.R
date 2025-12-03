@@ -152,6 +152,12 @@ test_that(
             wind_speed_col = "wind_speed",
             pm_2_5_col = "mean_PM"
         )
+        exp_columns <- c(
+            "date", "tmean", "health_outcome", "region", "rh", "wind_speed",
+            "regnames", "mean_PM", "year", "month", "day", "dow"
+        )
+        expect_true(all(exp_columns %in% colnames(res)))
+        expect_equal(as.character(res$date), c("2020-01-01", "2020-01-02", "2020-01-03"))
         expect_equal(dim(res), c(3, 12))
     }
 )
