@@ -1255,6 +1255,7 @@ plot_aggregated_AF <- function(data, by_region = FALSE, output_dir = ".") {
       paste(expected_cols, collapse = ", ")
     )
   }
+  if (is.null(output_dir)) stop("'output_dir' is NULL.")
   if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
   # set up plot
   pname <- "aggregated_AN"
@@ -1410,7 +1411,7 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
   if (save_outputs == TRUE && is.null(output_dir)) {
     stop("'output_dir' must be provded to save outputs.")
   }
-  if (!file.exists(output_dir)) {
+  if (save_outputs == TRUE && !file.exists(output_dir)) {
     stop("'output_dir' must exist on disk to save outputs.")
   }
   data$month_name <- month.abb[data$month]
@@ -1746,6 +1747,7 @@ plot_rr_by_pm_core <- function(
 #' @keywords internal
 plot_ar_by_region <- function(data, output_dir = ".") {
   # validation
+  if (is.null("output_dir")) stop("'output_dir' required.")
   if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
   exp_cols <- c(
     "region",
@@ -1829,6 +1831,7 @@ plot_ar_by_region <- function(data, output_dir = ".") {
 #' @keywords internal
 plot_an_by_region <- function(data, output_dir = ".") {
   # validation
+  if (is.null("output_dir")) stop("'output_dir' required.")
   if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
   exp_cols <- c(
     "region",
@@ -2098,21 +2101,21 @@ wildfire_do_analysis <- function(
     af_an_results <- summarise_AF_AN(data = daily_AF_AN)
     annual_af_an_results <- summarise_AF_AN(data = daily_AF_AN, monthly = FALSE)
     # Plot aggregated AN for all regions and individual regions
-    if (save_fig) {
-      plot_aggregated_AF(af_an_results, TRUE, output_folder_path)
-    }
     # Plot AR and PM monthly values
     ar_pm_monthly <- join_ar_and_pm_monthly(pm_data, af_an_results)
     plot_ar_pm_monthly(ar_pm_monthly, save_fig, output_folder_path)
     # Plot AR/AN by region
-    plot_ar_by_region(
-      data = af_an_results,
-      output_dir = output_folder_path
-    )
-    plot_an_by_region(
-      data = af_an_results,
-      output_dir = output_folder_path
-    )
+    if (save_fig == TRUE) {
+      plot_aggregated_AF(af_an_results, TRUE, output_folder_path)
+      plot_ar_by_region(
+        data = af_an_results,
+        output_dir = output_folder_path
+      )
+      plot_an_by_region(
+        data = af_an_results,
+        output_dir = output_folder_path
+      )
+    }
   }
   # Save outputs (conditionally)
   if (save_csv == TRUE) {
