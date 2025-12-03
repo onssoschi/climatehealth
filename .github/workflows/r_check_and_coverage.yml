@@ -43,7 +43,7 @@ jobs:
             "devtools", "roxygen2", "remotes", "patrick", "pak", "covr", "DT",
             "htmltools", "mockery", "openxlsx"
           ))
-          install.package("sf", source = FALSE)
+          install.packages("sf", source = FALSE)
           install.packages("sf", repos="https://rspatial.r-universe.dev")
           install.packages("fmesher")
           install.packages(
