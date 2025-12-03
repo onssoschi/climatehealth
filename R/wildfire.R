@@ -717,8 +717,7 @@ casecrossover_quasipoisson <- function(
     dev.off()
   }
   # create results df and return
-  results <- as.data.frame(do.call(rbind, results))
-  results <- unique(results)
+  results <- unique(as.data.frame(do.call(rbind, results)))
   rownames(results) <- NULL
   return(results)
 }
