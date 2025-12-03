@@ -409,7 +409,7 @@ test_that(
 )
 
 test_that(
-    "checK_wildfire_vif raises a warning when VIF > 2.",
+    "check_wildfire_vif raises a warning when VIF > 2.",
     {
         VIF_WARN_DATA <- data.frame(
             region = rep(c("RegionA", "RegionB"), each = 20),
