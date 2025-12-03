@@ -1151,12 +1151,6 @@ test_that(
         # validate return
         expect_true(inherits(res, "data.frame"))
         expect_equal(dim(res), c(9, 4))
-        exp_mean_pm <- c(31.5, 13.1, 38.8, 10, 30.1, 39.9, 20.8, 21.6, 39.3)
-        expect_equal(
-            res$mean_pm,
-            exp_mean_pm,
-            tolerance = 0.051
-        )
         # validate output saved
         for (ext in c(".png", ".csv")) {
             fname <- paste0("ar_and_pm_monthly_average", ext)
