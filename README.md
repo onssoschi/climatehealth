@@ -1,4 +1,4 @@
-![Static Badge](https://img.shields.io/badge/Status-In%20Development-darkgreen?logo=git&logoColor=white) ![Static Badge](https://img.shields.io/badge/Release%20Version-0.9.1-pink?logo=github) ![Static Badge](https://img.shields.io/badge/R_Version-4.4.1-pink?logo=R) [![codecov](https://codecov.io/gh/onssoschi/climatehealth/graph/badge.svg?token=YKRAUQ3JAU)](https://codecov.io/gh/onssoschi/climatehealth)  
+![Static Badge](https://img.shields.io/badge/Status-In%20Development-darkgreen?logo=git&logoColor=white) ![Static Badge](https://img.shields.io/badge/Release%20Version-0.9.22-pink?logo=github) ![Static Badge](https://img.shields.io/badge/R_Version-4.4.1-pink?logo=R) [![codecov](https://codecov.io/gh/onssoschi/climatehealth/graph/badge.svg?token=YKRAUQ3JAU)](https://codecov.io/gh/onssoschi/climatehealth)  
 [![Build R Package on Release](https://github.com/onssoschi/climatehealth/actions/workflows/r_release.yml/badge.svg)](https://github.com/onssoschi/climatehealth/actions/workflows/r_release.yml) [![R CMD Check and Coverage](https://github.com/onssoschi/climatehealth/actions/workflows/r_check_and_coverage.yml/badge.svg)](https://github.com/onssoschi/climatehealth/actions/workflows/r_check_and_coverage.yml)
 
 # Climatehealth Package
@@ -7,13 +7,13 @@
 > This package is still in development and methods are actively changing.
 
 ## Table of Contents
-- [📦 Package Overview](#package-overview)  
-- [🛠️ Package Installation](#package-installation)  
-- [📊 Example Datasets](#example-datasets)  
-- [🙌 Contributing](#contributing)  
-- [👥 Authors](#authors)  
-- [🤝 Contributors](#contributors)  
-- [💰 Funding](#funding)  
+- [Package Overview](#package-overview)  
+- [Package Installation](#package-installation)  
+- [Example Datasets](#example-datasets)  
+- [Contributing](#contributing)  
+- [Authors](#authors)  
+- [Contributors](#contributors)  
+- [Funding](#funding)  
 
 ## Package Overview
 
@@ -93,6 +93,18 @@ install.packages(path = "{path/to/climatehealth/source/.tar.gz}", repos = NULL, 
 ```
 The functions from the R package can then be used either by directly referencing the namespace (e.g., `climatehealth::heat_and_cold_do_analysis()`) or by loading all of the package functions at once (e.g., `library(climatehealth)`).
 
+## Climatehealth Pipelines
+To assist users with running the full analysis included in the climatehealth package, an additional repository has been created called ['climatehealth_pipelines'](https://github.com/onssoschi/climatehealth_pipelines). This repository aims to provide easy-to-use reproducible analytical pipelines to users who aren't as comfortable implementing the functions exported from the R package in their own environment. 
+
+The pipelines repository contains the following:
+- A structured R pipeline for each indicator
+- A dynamic configuration system to tune the pipelines
+- A sophisticated logging sytem
+- Prebuilt data directory to store outputs
+- A plumber API for the climatehealth package (for internal use only - see climatehealth_pipelines/README for more information)
+- A detailed README containing a step-by-step guide
+
+For additional information on the climatehealth_pieplines repository, see the README in the repository itself.
 
 ## Example Datasets
 

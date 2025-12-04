@@ -2,26 +2,25 @@
 % Please edit documentation in R/wildfire.R
 \name{calculate_daily_AF_AN}
 \alias{calculate_daily_AF_AN}
-\title{Use the Lag 1 RR and upper and lower confidence intervals to calculate the
-attributable fraction and attributable number of a given health outcome
-for each day in the input data.}
+\title{Calculate attributable numbers and fraction of a given health outcome.}
 \usage{
 calculate_daily_AF_AN(data, rr_data)
 }
 \arguments{
 \item{data}{Dataframe containing a daily time series of climate and health
-data from which to fit models.}
+data that was used to obtain rr_data.}
 
-\item{rr_data}{Dataframe containing calculated relative risk and confidence
-intervals, calculated from input data.}
+\item{rr_data}{Dataframe containing relative risk and confidence intervals,
+calculated from input data.}
 }
 \value{
-Time series dataframe with daily AF and AN, and AF and AN upper and
-lower CIs
+A dataframe containing a daily timseries of AF and AN, including
+upper and lower confidence intervals.
 }
 \description{
-takes a calculated RR and upper and lower CIs, and applies these
+Takes a calculated RR and upper and lower CIs, and applies these
 to the input data to calculate attributable fraction and attributable number,
-along with upper and lower CIs, for each day in the input data.
+along with upper and lower CIs, for each day in the input data. Uses Lag 1 RR
+and lower/upper CIs.
 }
 \keyword{internal}

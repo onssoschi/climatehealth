@@ -6,10 +6,10 @@
 \usage{
 mh_min_suicide_temp(
   df_list,
-  var_fun = "splines",
+  var_fun = "bs",
   var_per = c(25, 50, 75),
   var_degree = 2,
-  blup = blup,
+  blup,
   coef_,
   meta_analysis = FALSE
 )

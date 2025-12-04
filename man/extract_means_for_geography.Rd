@@ -2,15 +2,26 @@
 % Please edit documentation in R/wildfire.R
 \name{extract_means_for_geography}
 \alias{extract_means_for_geography}
-\title{Extract mean values for shapefile regions from NetCDF file}
+\title{Extract mean wildfire PM2.5 values for shapefile regions from NetCDF file}
 \usage{
-extract_means_for_geography(ncdf_path, shapefile_path)
+extract_means_for_geography(
+  ncdf_path,
+  shp_path,
+  region_col = "region",
+  output_value_col = "mean_PM"
+)
 }
 \arguments{
 \item{ncdf_path}{Path to a NetCDF file}
 
-\item{shapefile_path}{Path to a shapefile .shp of the geographical boundaries for
-which to extract mean values of wildfire-related PM2.5}
+\item{shp_path}{Path to a shapefile .shp of the geographical
+boundaries for which to extract mean values of wildfire-related PM2.5}
+
+\item{region_col}{Character. The name of the column containing region data
+in the shapefile. Defaults to 'region'}
+
+\item{output_value_col}{Character. The name of the value column to include
+in the output. Defaults to mean_PM}
 }
 \value{
 Dataframe containing a daily time series with mean wildfire-related

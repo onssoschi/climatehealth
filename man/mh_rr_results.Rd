@@ -4,10 +4,18 @@
 \alias{mh_rr_results}
 \title{Produce cumulative relative risk results of analysis}
 \usage{
-mh_rr_results(pred_list)
+mh_rr_results(pred_list, df_list, attr_thr = 97.5, minpercreg)
 }
 \arguments{
 \item{pred_list}{A list containing predictions from the model by region.}
+
+\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
+and climate variables which may be disaggregated by a particular region.}
+
+\item{attr_thr}{Integer. Percentile at which to define the temperature threshold for
+calculating attributable risk. Defaults to 97.5.}
+
+\item{minpercreg}{Vector. Percentile of minimum suicide temperature for each area.}
 }
 \value{
 Dataframe containing cumulative relative risk and confidence

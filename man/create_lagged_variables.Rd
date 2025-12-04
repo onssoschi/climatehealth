@@ -2,9 +2,9 @@
 % Please edit documentation in R/wildfire.R
 \name{create_lagged_variables}
 \alias{create_lagged_variables}
-\title{Generate lagged values for predictor variables}
+\title{Generate lagged values for predictor (temperature) variables}
 \usage{
-create_lagged_variables(data, wildfire_lag = 3, temperature_lag = 1)
+create_lagged_variables(data, wildfire_lag, temperature_lag)
 }
 \arguments{
 \item{data}{Dataframe containing a daily time series of climate and health

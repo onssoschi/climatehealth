@@ -1,6 +1,6 @@
 Package: climatehealth
 Title: Package for Calculating Climate-Health Indicators
-Version: 0.9.1
+Version: 0.9.22
 Maintainer: Charlie Browning <charlie.browning@ons.gov.uk>
 Author: Charlie Browning [aut, cre]
 Authors@R: 
@@ -16,6 +16,7 @@ Imports:
     dlnm,
     dplyr (>= 1.1.4),
     Epi (>= 2.59),
+    forcats,
     exactextractr,
     ggplot2 (>= 3.5.2),
     gnm (>= 1.1-5),
@@ -62,7 +63,7 @@ Suggests:
     mockery,
     openxlsx,
     patrick,
-    terra (<= 1.8-60),
+    terra,
     testthat (>= 3.2.1.1),
     withr
 Config/rcmdcheck/ignore-inconsequential-notes: true
