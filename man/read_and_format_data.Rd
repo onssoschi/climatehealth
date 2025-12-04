@@ -2,39 +2,48 @@
 % Please edit documentation in R/wildfire.R
 \name{read_and_format_data}
 \alias{read_and_format_data}
-\title{Read in health data and rename columns}
+\title{Code for producing analysis for health effects of extreme weather events - wildfires
+Read in and format health data}
 \usage{
 read_and_format_data(
   health_path,
   date_col,
-  region_col = NULL,
   mean_temperature_col,
-  health_outcome_col
+  health_outcome_col,
+  region_col = NULL,
+  rh_col = NULL,
+  wind_speed_col = NULL
 )
 }
 \arguments{
 \item{health_path}{Path to a CSV file containing a daily time series of data
-for a particular health outcome, which may be disaggregated by region.}
+for a particular health outcome and climate variables, which may be disaggregated by region.}
 
 \item{date_col}{Character. Name of the column in the dataframe that contains
 the date. Date column should be in YYYY-MM-DD or YYYY/MM/DD format.}
 
-\item{region_col}{Character. Name of the column in the dataframe that contains
-the region names.}
-
 \item{mean_temperature_col}{Character. Name of the column in the dataframe
-that contains the mean temperature column.}
+that contains the daily mean temperature column.}
 
 \item{health_outcome_col}{Character. Name of the column in the dataframe that
-contains the health outcome count column (e.g. number of deaths, hospital
+contains the daily health outcome count (e.g. number of deaths, hospital
 admissions)}
+
+\item{region_col}{Character. Name of the column in the dataframe that contains
+the region names. Defaults to NULL.}
+
+\item{rh_col}{Character. Name of the column in the dataframe that contains daily relative humidity
+values. Defaults to NULL.}
+
+\item{wind_speed_col}{Character. Name of the column in the dataframe that contains daily wind speed.
+Defaults to NULL.}
 }
 \value{
 Dataframe with formatted and renamed columns
 }
 \description{
-Reads in a CSV file for a daily time series of health data and
-renames columns to standard names. This function creates day of week, month,
+Reads in a CSV file for a daily time series of health and climate data,
+renames columns to standard names. Creates columns for day of week, month,
 and year columns derived from the date.
 }
 \keyword{internal}

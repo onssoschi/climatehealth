@@ -17,7 +17,7 @@ and climate variables which may be disaggregated by a particular region.}
 \item{minpercreg}{Vector. Percentile of maximum suicide temperature for each region.}
 
 \item{attr_thr}{Integer. Percentile at which to define the temperature threshold for
-calculating attributable risk.}
+calculating attributable risk. Defaults to 97.5.}
 }
 \value{
 A list containing attributable numbers per region

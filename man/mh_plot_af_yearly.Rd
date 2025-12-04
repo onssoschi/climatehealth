@@ -21,7 +21,8 @@ FALSE.}
 \item{output_folder_path}{Path to folder where plots should be saved.
 Defaults to NULL.}
 
-\item{country}{Character. Name of country for national level estimates.}
+\item{country}{Character. Name of country for national level estimates.
+Defaults to 'National'}
 }
 \value{
 Plots of yearly attributable fractions per area

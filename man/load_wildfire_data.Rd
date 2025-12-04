@@ -6,13 +6,15 @@
 \usage{
 load_wildfire_data(
   health_path,
-  join_wildfire_data,
   ncdf_path,
   shp_path,
+  join_wildfire_data = TRUE,
   date_col,
-  region_col = NULL,
+  region_col,
   mean_temperature_col,
   health_outcome_col,
+  rh_col = NULL,
+  wind_speed_col = NULL,
   pm_2_5_col = NULL
 )
 }
@@ -22,21 +24,21 @@ daily time series of data for a particular health outcome, which may be
 disaggregated by region. If this does not include a column with
 wildfire-related PM2.5, use join_wildfire_data = TRUE to join these data.}
 
-\item{join_wildfire_data}{Boolean. If TRUE, a daily time series of
-wildfire-related PM2.5 concentration is joined to the health data. If FALSE,
-the data set is loaded without any additional joins.}
-
 \item{ncdf_path}{Path to a NetCDF file containing a daily time series of
 gridded wildfire-related PM2.5 concentration data.}
 
 \item{shp_path}{Path to a shapefile .shp of the geographical boundaries for
 which to extract mean values of wildfire-related PM2.5}
 
+\item{join_wildfire_data}{Boolean. If TRUE, a daily time series of
+wildfire-related PM2.5 concentration is joined to the health data. If FALSE,
+the data set is loaded without any additional joins.}
+
 \item{date_col}{Character. Name of the column in the dataframe that contains
 the date.}
 
-\item{region_col}{Character. Name of the column in the dataframe that contains
-the region names.}
+\item{region_col}{Character. Name of the column in the dataframe that
+contains the region names.}
 
 \item{mean_temperature_col}{Character. Name of the column in the dataframe
 that contains the mean temperature column.}
@@ -45,12 +47,18 @@ that contains the mean temperature column.}
 contains the health outcome count column (e.g. number of deaths, hospital
 admissions)}
 
+\item{rh_col}{Character. Name of the column in the dataframe that
+contains daily relative humidity values.Defaults to NULL.}
+
+\item{wind_speed_col}{Character. Name of the column in the dataframe that
+contains the daily windspeed values.Defaults to NULL.}
+
 \item{pm_2_5_col}{Character. The name of the column containing PM2.5 values
-in micrograms. Thsi is only required if health data isn't joined. Defaults to NULL.}
+in micrograms. This is only required if health data isn't joined.
+Defaults to NULL.}
 }
 \value{
-Dataframe containing a daily time series of
-climate and health data.
+Dataframe containing a daily time series of climate and health data.
 }
 \description{
 Loads a dataframe containing a daily time series of health and

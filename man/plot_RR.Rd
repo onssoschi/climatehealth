@@ -2,28 +2,30 @@
 % Please edit documentation in R/wildfire.R
 \name{plot_RR}
 \alias{plot_RR}
-\title{Plot results of relative risk analysis}
+\title{Plot relative risk results by region (if available).}
 \usage{
 plot_RR(
-  results,
-  save_fig,
-  wildfire_lag = 3,
-  output_folder_path,
-  region_name = "All regions"
+  rr_data,
+  wildfire_lag,
+  by_region = FALSE,
+  save_fig = FALSE,
+  output_folder_path = NULL
 )
 }
 \arguments{
-\item{results}{Dataframe of relative risk and confidence intervals for
+\item{rr_data}{Dataframe of relative risk and confidence intervals for
 each lag of wildfire-related PM2.5}
 
-\item{save_fig}{Boolean. Whether to save the plot as an output.}
-
 \item{wildfire_lag}{Integer. The maximum number of days for which to plot the
-lags for wildfire PM2.5. Default is 3.}
+lags for wildfire PM2.5. Defaults to 3.}
+
+\item{by_region}{Bool. Whether to plot RR(relative risk) by region.
+Defaults to FALSE}
+
+\item{save_fig}{Boolean. Whether to save the generated plot.
+Defaults to FALSE.}
 
 \item{output_folder_path}{Path to folder where plots should be saved.}
-
-\item{region_name}{Character. The name of the region. Default is 'All regions'.}
 }
 \value{
 Plot of relative risk and confidence intervals for each lag of

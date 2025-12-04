@@ -2,8 +2,7 @@
 % Please edit documentation in R/mental_health.R
 \name{suicides_heat_do_analysis}
 \alias{suicides_heat_do_analysis}
-\title{Run pipeline to analyse the impact of extreme heat on suicides using a time-
-stratified case-crossover approach with distributed lag non-linear model}
+\title{Full analysis pipeline for the suicides and extreme heat indicator}
 \usage{
 suicides_heat_do_analysis(
   data_path,
@@ -12,20 +11,20 @@ suicides_heat_do_analysis(
   temperature_col,
   health_outcome_col,
   population_col,
-  independent_cols = NULL,
-  control_cols = NULL,
+  country = "National",
+  meta_analysis = FALSE,
   var_fun = "bs",
   var_degree = 2,
   var_per = c(25, 50, 75),
   lag_fun = "strata",
   lag_breaks = 1,
   lag_days = 2,
+  independent_cols = NULL,
+  control_cols = NULL,
+  cenper = 50,
+  attr_thr = 97.5,
   save_fig = FALSE,
   save_csv = FALSE,
-  cenper = 50,
-  country = "National",
-  meta_analysis = FALSE,
-  attr_thr = 97.5,
   output_folder_path = NULL
 )
 }
@@ -50,10 +49,9 @@ admissions).}
 \item{population_col}{Character. Name of the column in the dataframe that
 contains the population estimate coloumn.}
 
-\item{independent_cols}{Additional independent variables to test in model validation}
+\item{country}{Character. Name of country for national level estimates.}
 
-\item{control_cols}{A list of confounders to include in the final model adjustment.
-Defaults to NULL if none.}
+\item{meta_analysis}{Boolean. Whether to perform a meta-analysis.}
 
 \item{var_fun}{Character. Exposure function for argvar
 (see dlnm::crossbasis). Defaults to 'bs'.}
@@ -73,27 +71,38 @@ Defaults to NULL if none.}
 \item{lag_days}{Integer. Maximum lag. Defaults to 2.
 (see dlnm:crossbasis).}
 
+\item{independent_cols}{Additional independent variables to test in model validation}
+
+\item{control_cols}{A list of confounders to include in the final model adjustment.
+Defaults to NULL if none.}
+
+\item{cenper}{Integer. Value for the percentile in calculating the centering
+value 0-100. Defaults to 50.}
+
+\item{attr_thr}{Integer. Percentile at which to define the temperature threshold for
+calculating attributable risk.}
+
 \item{save_fig}{Boolean. Whether to save the plot as an output. Defaults to
 FALSE.}
 
 \item{save_csv}{Boolean. Whether to save the results as a CSV. Defaults to
 FALSE.}
 
-\item{cenper}{Integer. Value for the percentile in calculating the centering
-value 0-100. Defaults to 50.}
-
-\item{country}{Character. Name of country for national level estimates.}
-
-\item{meta_analysis}{Boolean. Whether to perform a meta-analysis.}
-
-\item{attr_thr}{Integer. Percentile at which to define the temperature threshold for
-calculating attributable risk.}
-
 \item{output_folder_path}{Path to folder where plots and/or CSV should be
 saved. Defaults to NULL.}
 }
 \value{
 \itemize{
+\item \code{qaic_results} A dataframe of QAIC and dispersion metrics for each model
+combination and geography.
+\item \code{qaic_summary} A dataframe with the mean QAIC and dispersion metrics for
+each model combination.
+\item \code{vif_results} A dataframe. Variance inflation factors for each independent
+variables by region.
+\item \code{vif_summary} A dataframe with the mean variance inflation factors for
+each independent variable.
+\item \code{meta_test_res} A dataframe of results from statistical tests on the meta model.
+\item \code{power_list} A list containing power information by area.
 \item \code{rr_results} Dataframe containing cumulative relative risk and confidence
 intervals from analysis.
 \item \code{res_attr_tot} Dataframe. Total attributable fractions, numbers and
@@ -105,6 +114,87 @@ fractions, numbers and rates by calendar month and area.
 }
 }
 \description{
-Runs full analysis pipeline for analysis of the impact of
-extreme heat on suicides
+Runs the full pipeline to analyse the impact of extreme heat
+on suicides using a time-stratified case-crossover approach with distributed
+lag non-linear model. This function generates relative risk of the
+suicide-temperature association as well as attributable numbers, rates and
+fractions of suicides to a specified temperature threshold. Model validation
+statistics are also provided.
+}
+\details{
+This analysis pipeline requires a daily time series of temperature and suicide
+deaths with population values as a minimum. This is then processed using a
+conditional Poisson case-crossover analysis with distributed lag non-linear
+model and optional meta-analysis. Meta-analysis is recommended if the input
+data is disaggregated by area.
+
+The model parameters have default values, which are recommended to keep as based
+on existing studies. However, if desired these can be adjusted for sensitivity
+analysis.
+
+Model validation testing is provided as a standard output from the pipeline so
+a user can assess the quality of the model. If a user has additional independent
+variables these can be specified as \code{independent_cols} and assessed within
+different model combinations in the outputs of this testing. These can be added
+in the final model via \code{control_cols}.
+
+For attributable deaths the default is to use extreme heat as a threshold,
+defined as the 97.5th percentile of temperature over the corresponding time
+period for each geography. This can be adjusted if desired, following review of
+the relative risk association between temperature and suicides, using \code{attr_thr}.
+
+Further details on the input data requirements, methodology, quality information
+and guidance on interpreting outputs can be found in the accompanying published
+\href{https://doi.org/10.5281/zenodo.14050224}{Zenodo documentation}.
+}
+\examples{
+\dontrun{
+suicides_heat_do_analysis(
+  data_path = "data/inputs/daily_suicides_climate_E_2001_2023.csv",
+  date_col = "date",
+  region_col = "region",
+  temperature_col = "tmean",
+  health_outcome_col = "suicides",
+  population_col = "pop",
+  country = "England",
+  meta_analysis = TRUE,
+  var_fun = "bs",
+  var_degree = 2,
+  var_per = c(25, 50, 75),
+  lag_fun = "strata",
+  lag_breaks = 1,
+  lag_days = 2,
+  independent_cols = c("rainfall", "humidity"),
+  control_cols = NULL,
+  cenper = 50,
+  attr_thr = 97.5,
+  save_fig = TRUE,
+  save_csv = TRUE,
+  output_folder_path = "data/outputs/england_analysis"
+)
+}
+
+}
+\references{
+\enumerate{
+\item Pearce M, Watkins E, Glickman M, Lewis B, Ingole V. Standards for Official Statistics on
+Climate-Health Interactions (SOSCHI): Suicides attributed to extreme heat: methodology.
+Zenodo; 2024. Available from: \url{https://doi.org/10.5281/zenodo.14050224}
+\item Gasparrini A, Guo Y, Hashizume M, Lavigne E, Zanobetti A, Schwartz J, et al. Mortality
+risk attributable to high and low ambient temperature: a multicountry observational study.
+Lancet. 2015 Jul;386(9991):369–75. Available from: \url{https://linkinghub.elsevier.com/retrieve/pii/S0140673614621140}
+\item Kim Y, Kim H, Gasparrini A, Armstrong B, Honda Y, Chung Y, et al. Suicide and Ambient
+Temperature: A Multi-Country Multi-City Study. Environ Health Perspect. 2019 Nov;127(11):1–10.
+Available from: \url{https://ehp.niehs.nih.gov/doi/10.1289/EHP4898}
+\item Gasparrini A, Armstrong B. Reducing and meta-analysing estimates from distributed lag
+non-linear models. BMC Med Res Methodol. 2013 Jan 9;13:1. Available from: \url{https://doi.org/10.1186/1471-2288-13-1}
+\item Gasparrini A, Armstrong B, Kenward MG. Multivariate meta‐analysis for non‐linear and
+other multi‐parameter associations. Stat Med. 2012 Dec 20;31(29):3821–39.
+Available from: \url{https://doi.org/10.1002/sim.5471}
+\item Sera F, Armstrong B, Blangiardo M, Gasparrini A. An extended mixed‐effects framework
+for meta‐analysis. Stat Med. 2019 Dec 20;38(29):5429–44. Available from: \url{https://doi.org/10.1002/sim.8362}
+\item Gasparrini A, Leone M. Attributable risk from distributed lag models.
+BMC Med Res Methodol. 2014 Dec 23;14(1):55.
+Available from: \url{https://bmcmedresmethodol.biomedcentral.com/articles/10.1186/1471-2288-14-55}
+}
 }
