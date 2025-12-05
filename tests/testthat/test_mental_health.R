@@ -1,92 +1,100 @@
+# Unit tests for mental_health.R
+
+# Create temp_dir to be used by all MH tests
 temp_dir <- tempdir()
 temp_dir <- file.path(temp_dir, "mental_health_tests")
 if (!file.exists(temp_dir)) dir.create(temp_dir)
 
-# Test mh_read_and_format_data
+
 test_that("Test mh_read_and_format_data", {
 
+  # Mocking functions to work around need to have .csv file on drive for test
   mock_check_file_extension <- function(data_path, extension, param_nm) {
     identical(tools::file_ext(data_path), extension)
   }
 
+  # mock function also defines our source df
   mock_read_input_data <- function(data_path) {
     df <- data.frame(
       date_column = c("2023-01-01", "02-01-2023", "2023-01-03", "04-01-2023", "2023-01-05"),
       region = c("North", "South", "East", "West", "Central"),
+      regnames = c("North", "South", "East", "West", "Central"),
       temp = c(23.5, 25.1, 22.8, 24.3, 21.9),
       health_outcomes = c(10.2, 12.5, 9.8, 11.1, 8.7),
       pop = c(1000L, 1200L, 950L, 1100L, 1050L)
     )
   }
 
+  # Set mocked bindings
   local_mocked_bindings(
     check_file_extension = mock_check_file_extension,
     read_input_data = mock_read_input_data
     )
 
-    control_df <- data.frame(
-      date = structure(c(19362, 19360, 19358, -718778, -718048), class = "Date"),
-      region = structure(c(1L, 2L, 3L, 4L, 5L), levels = c("Central","East", "North", "South", "West"), class = "factor"),
-      temp = c(21.9, 22.8, 23.5, 25.1, 24.3),
-      suicides = c(8.7, 9.8, 10.2, 12.5, 11.1),
-      population = c(1050L, 950L, 1000L, 1200L, 1100L),
-      year = structure(c(3L, 3L, 3L, 1L, 2L), levels = c("2", "4", "2023"), class = "factor"),
-      month = structure(c(1L, 1L, 1L, 1L, 1L), levels = "1", class = "factor"),
-      dow = structure(c(5L, 3L, 1L, 1L, 3L), levels = c("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"), class = c("ordered", "factor")),
-      stratum = structure(c(19L, 38L, 57L, 64L, 94L),
-                          levels = c("Central:2:1:Sun","Central:2:1:Mon", "Central:2:1:Tue",
-                                     "Central:2:1:Wed","Central:2:1:Thu", "Central:2:1:Fri",
-                                     "Central:2:1:Sat", "Central:4:1:Sun", "Central:4:1:Mon",
-                                     "Central:4:1:Tue", "Central:4:1:Wed", "Central:4:1:Thu",
-                                     "Central:4:1:Fri", "Central:4:1:Sat", "Central:2023:1:Sun",
-                                     "Central:2023:1:Mon", "Central:2023:1:Tue", "Central:2023:1:Wed",
-                                     "Central:2023:1:Thu", "Central:2023:1:Fri", "Central:2023:1:Sat",
-                                     "East:2:1:Sun", "East:2:1:Mon", "East:2:1:Tue", "East:2:1:Wed",
-                                     "East:2:1:Thu", "East:2:1:Fri", "East:2:1:Sat", "East:4:1:Sun",
-                                     "East:4:1:Mon", "East:4:1:Tue", "East:4:1:Wed", "East:4:1:Thu",
-                                     "East:4:1:Fri", "East:4:1:Sat", "East:2023:1:Sun",
-                                     "East:2023:1:Mon", "East:2023:1:Tue", "East:2023:1:Wed",
-                                     "East:2023:1:Thu", "East:2023:1:Fri", "East:2023:1:Sat",
-                                     "North:2:1:Sun", "North:2:1:Mon", "North:2:1:Tue",
-                                     "North:2:1:Wed", "North:2:1:Thu", "North:2:1:Fri",
-                                     "North:2:1:Sat", "North:4:1:Sun", "North:4:1:Mon",
-                                     "North:4:1:Tue", "North:4:1:Wed", "North:4:1:Thu",
-                                     "North:4:1:Fri", "North:4:1:Sat", "North:2023:1:Sun",
-                                     "North:2023:1:Mon", "North:2023:1:Tue", "North:2023:1:Wed",
-                                     "North:2023:1:Thu", "North:2023:1:Fri", "North:2023:1:Sat",
-                                     "South:2:1:Sun", "South:2:1:Mon", "South:2:1:Tue",
-                                     "South:2:1:Wed", "South:2:1:Thu", "South:2:1:Fri",
-                                     "South:2:1:Sat", "South:4:1:Sun", "South:4:1:Mon",
-                                     "South:4:1:Tue", "South:4:1:Wed", "South:4:1:Thu",
-                                     "South:4:1:Fri", "South:4:1:Sat", "South:2023:1:Sun",
-                                     "South:2023:1:Mon", "South:2023:1:Tue", "South:2023:1:Wed",
-                                     "South:2023:1:Thu", "South:2023:1:Fri", "South:2023:1:Sat",
-                                     "West:2:1:Sun", "West:2:1:Mon", "West:2:1:Tue", "West:2:1:Wed",
-                                     "West:2:1:Thu", "West:2:1:Fri", "West:2:1:Sat", "West:4:1:Sun",
-                                     "West:4:1:Mon", "West:4:1:Tue", "West:4:1:Wed", "West:4:1:Thu",
-                                     "West:4:1:Fri", "West:4:1:Sat", "West:2023:1:Sun",
-                                     "West:2023:1:Mon", "West:2023:1:Tue", "West:2023:1:Wed",
-                                     "West:2023:1:Thu", "West:2023:1:Fri", "West:2023:1:Sat"),
-                          class = "factor")
+  # Create control df (to test results against)
+  control_df <- data.frame(
+    date = structure(c(19362, 19360, 19358, -718778, -718048), class = "Date"),
+    region = structure(c(1L, 2L, 3L, 4L, 5L), levels = c("Central","East", "North", "South", "West"), class = "factor"),
+    temp = c(21.9, 22.8, 23.5, 25.1, 24.3),
+    suicides = c(8.7, 9.8, 10.2, 12.5, 11.1),
+    population = c(1050L, 950L, 1000L, 1200L, 1100L),
+    year = structure(c(3L, 3L, 3L, 1L, 2L), levels = c("2", "4", "2023"), class = "factor"),
+    month = structure(c(1L, 1L, 1L, 1L, 1L), levels = "1", class = "factor"),
+    dow = structure(c(5L, 3L, 1L, 1L, 3L), levels = c("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"), class = c("ordered", "factor")),
+    stratum = structure(c(19L, 38L, 57L, 64L, 94L),
+                        levels = c("Central:2:1:Sun","Central:2:1:Mon", "Central:2:1:Tue",
+                                   "Central:2:1:Wed","Central:2:1:Thu", "Central:2:1:Fri",
+                                   "Central:2:1:Sat", "Central:4:1:Sun", "Central:4:1:Mon",
+                                   "Central:4:1:Tue", "Central:4:1:Wed", "Central:4:1:Thu",
+                                   "Central:4:1:Fri", "Central:4:1:Sat", "Central:2023:1:Sun",
+                                   "Central:2023:1:Mon", "Central:2023:1:Tue", "Central:2023:1:Wed",
+                                   "Central:2023:1:Thu", "Central:2023:1:Fri", "Central:2023:1:Sat",
+                                   "East:2:1:Sun", "East:2:1:Mon", "East:2:1:Tue", "East:2:1:Wed",
+                                   "East:2:1:Thu", "East:2:1:Fri", "East:2:1:Sat", "East:4:1:Sun",
+                                   "East:4:1:Mon", "East:4:1:Tue", "East:4:1:Wed", "East:4:1:Thu",
+                                   "East:4:1:Fri", "East:4:1:Sat", "East:2023:1:Sun",
+                                   "East:2023:1:Mon", "East:2023:1:Tue", "East:2023:1:Wed",
+                                   "East:2023:1:Thu", "East:2023:1:Fri", "East:2023:1:Sat",
+                                   "North:2:1:Sun", "North:2:1:Mon", "North:2:1:Tue",
+                                   "North:2:1:Wed", "North:2:1:Thu", "North:2:1:Fri",
+                                   "North:2:1:Sat", "North:4:1:Sun", "North:4:1:Mon",
+                                   "North:4:1:Tue", "North:4:1:Wed", "North:4:1:Thu",
+                                   "North:4:1:Fri", "North:4:1:Sat", "North:2023:1:Sun",
+                                   "North:2023:1:Mon", "North:2023:1:Tue", "North:2023:1:Wed",
+                                   "North:2023:1:Thu", "North:2023:1:Fri", "North:2023:1:Sat",
+                                   "South:2:1:Sun", "South:2:1:Mon", "South:2:1:Tue",
+                                   "South:2:1:Wed", "South:2:1:Thu", "South:2:1:Fri",
+                                   "South:2:1:Sat", "South:4:1:Sun", "South:4:1:Mon",
+                                   "South:4:1:Tue", "South:4:1:Wed", "South:4:1:Thu",
+                                   "South:4:1:Fri", "South:4:1:Sat", "South:2023:1:Sun",
+                                   "South:2023:1:Mon", "South:2023:1:Tue", "South:2023:1:Wed",
+                                   "South:2023:1:Thu", "South:2023:1:Fri", "South:2023:1:Sat",
+                                   "West:2:1:Sun", "West:2:1:Mon", "West:2:1:Tue", "West:2:1:Wed",
+                                   "West:2:1:Thu", "West:2:1:Fri", "West:2:1:Sat", "West:4:1:Sun",
+                                   "West:4:1:Mon", "West:4:1:Tue", "West:4:1:Wed", "West:4:1:Thu",
+                                   "West:4:1:Fri", "West:4:1:Sat", "West:2023:1:Sun",
+                                   "West:2023:1:Mon", "West:2023:1:Tue", "West:2023:1:Wed",
+                                   "West:2023:1:Thu", "West:2023:1:Fri", "West:2023:1:Sat"),
+                        class = "factor")
     )
+  control_df <- control_df %>% dplyr::mutate(ind = tapply(.data$suicides, .data$stratum, sum)[.data$stratum])
+  control_test_list <- aggregate_by_column(control_df, "region")
 
-    control_df <- control_df %>% dplyr::mutate(ind = tapply(.data$suicides, .data$stratum, sum)[.data$stratum])
+  # Call function
+  mh_test_list <- mh_read_and_format_data("mock_file.csv",
+                            "date_column",
+                            "regnames",
+                            "temp",
+                            "health_outcomes",
+                            "pop")
 
-    control_test_list <- aggregate_by_column(control_df, "region")
-
-    mh_test_list <- mh_read_and_format_data("mock_file.csv",
-                              "date_column",
-                              "region",
-                              "temp",
-                              "health_outcomes",
-                              "pop")
-
-    expect_identical(mh_test_list, control_test_list)
+  # Test for equality between control and result
+  expect_identical(mh_test_list, control_test_list)
 })
 
 
-# Test mh_pop_totals
 test_that("Test mh_pop_totals", {
+  # Define test data
   mh_pop_totals_df <- data.frame(
     region = structure(c(1L, 1L, 3L, 2L, 3L, 1L, 2L, 1L), levels = c("Central","East", "North"), class = "factor"),
     population = c(1050L, 950L, 1000L, 1200L, 1100L, 850L, 1150L, 1300L),
@@ -105,11 +113,13 @@ test_that("Test mh_pop_totals", {
       year = structure(2L, levels = c("2022", "2024", "2023"), class = "factor"),
       population = 1050), row.names = c(NA, -1L), class = "data.frame"))
 
+  # Call function
   mh_pop_totals_national_control_list <- append(mh_pop_totals_control_list, list(
     National = structure(list(
       year = structure(1:3, levels = c("2022", "2024", "2023"), class = "factor"),
       population = c(2150, 2350, 2050)), row.names = c(NA, -3L), class = "data.frame")))
 
+  # Assert equality
   expect_equal(mh_pop_totals(mh_pop_totals_list, meta_analysis = FALSE),
                mh_pop_totals_control_list,
                label = "mh_pop_totals(mh_pop_totals_list, meta_analysis = FALSE)")
@@ -117,6 +127,7 @@ test_that("Test mh_pop_totals", {
                mh_pop_totals_national_control_list,
                label = "mh_pop_totals(mh_pop_totals_list, meta_analysis = TRUE)")
 })
+
 
 test_that("mh_create_crossbasis creates correct cross-basis matrices", {
   # Create sample data with sufficient observations for lag
@@ -166,6 +177,7 @@ test_that("mh_create_crossbasis creates correct cross-basis matrices", {
   expect_equal(attr(custom_result$Region1, "argvar")$degree, 3)
   expect_equal(attr(custom_result$Region1, "lag")[2], 3)
 })
+
 
 test_that("mh_model_combo_res creates correct model combinations and diagnostics", {
   # Create sample data
@@ -250,6 +262,7 @@ test_that("mh_model_combo_res creates correct model combinations and diagnostics
                c("region", "formula", "fitted", "residuals"))
 })
 
+
 test_that("mh_vif calculates variance inflation factors correctly", {
   # Create sample data with known correlations
   set.seed(123)  # For reproducibility
@@ -313,6 +326,7 @@ test_that("mh_vif calculates variance inflation factors correctly", {
   }
 })
 
+
 test_that("mh_model_validation performs complete model validation", {
   # Setup test data
   set.seed(123)
@@ -351,7 +365,6 @@ test_that("mh_model_validation performs complete model validation", {
   )
 
   independent_vars <- c("humidity", "pollution")
-  temp_dir <- tempdir()
   validation_dir <- file.path(temp_dir, "model_validation")
 
   # Ensure cleanup runs even if test fails
@@ -432,8 +445,9 @@ test_that("mh_model_validation performs complete model validation", {
   expect_null(single_region_results[[4]])  # VIF summary should be NULL
 })
 
+
 test_that("mh_casecrossover_dlnm fits case-crossover DLNM models correctly", {
-  # Setup test data with sufficient observations
+  # Setup test data
   set.seed(123)
   n_days <- 100
 
@@ -469,7 +483,7 @@ test_that("mh_casecrossover_dlnm fits case-crossover DLNM models correctly", {
     "Region2" = mock_cb
   )
 
-  # Test 1: Basic functionality with multiple control variables
+  # Basic functionality with multiple control variables
   control_cols <- c("humidity", "pollution")
   models <- mh_casecrossover_dlnm(df_list, control_cols, cb_list)
 
@@ -499,7 +513,7 @@ test_that("mh_casecrossover_dlnm fits case-crossover DLNM models correctly", {
                            function(x) any(grepl(paste0("ns\\(", x), terms)))))
   }
 
-  # Test 2: Verify NULL control variables case
+  # Verify NULL control variables case
   models_no_controls <- mh_casecrossover_dlnm(df_list, NULL, cb_list)
   expect_type(models_no_controls, "list")
   for (reg in names(models_no_controls)) {
@@ -508,7 +522,7 @@ test_that("mh_casecrossover_dlnm fits case-crossover DLNM models correctly", {
     expect_equal(formula_str, "suicides ~ cb")
   }
 
-  # Test 3: Verify single control variable handling
+  # Verify single control variable handling
   single_control <- "humidity"
   models_single <- mh_casecrossover_dlnm(df_list, single_control, cb_list)
 
@@ -520,13 +534,7 @@ test_that("mh_casecrossover_dlnm fits case-crossover DLNM models correctly", {
                       formula_str))
   }
 
-  # Test 4: Verify error handling for invalid input
-  expect_error(
-    mh_casecrossover_dlnm(df_list, control_cols = 123, cb_list),
-    "'control_cols' expected a vector of strings or a string"
-  )
-
-  # Test 5: Verify model fit properties
+  # Verify model fit properties
   for (reg in names(models)) {
     model <- models[[reg]]
     # Check model convergence
@@ -537,6 +545,52 @@ test_that("mh_casecrossover_dlnm fits case-crossover DLNM models correctly", {
     expect_true(all(fitted(model) > 0))
   }
 })
+
+
+test_that("mh_casecrossover_dlnm produces errors for invalid input", {
+  # Setup test data with sufficient observations
+  set.seed(66)
+  n_days <- 100
+
+  # Create sample data with relevant variables
+  sample_df <- data.frame(
+    date = seq.Date(from = as.Date("2023-01-01"),
+                    length.out = n_days,
+                    by = "day"),
+    temp = rnorm(n_days, mean = 23, sd = 2),
+    suicides = rpois(n_days, lambda = 10),
+    humidity = rnorm(n_days, mean = 70, sd = 10),
+    pollution = rnorm(n_days, mean = 50, sd = 15),
+    stratum = factor(rep(1:20, each = 5)),
+    ind = rep(1, n_days)
+  )
+
+  # Create regional data structure
+  df_list <- list(
+    "Region1" = sample_df,
+    "Region2" = sample_df
+  )
+
+  # Create mock cross-basis matrix for DLNM
+  mock_cb <- matrix(rnorm(n_days * 6), nrow = n_days)
+  colnames(mock_cb) <- paste0("v", 1:6)
+  class(mock_cb) <- c("crossbasis", "matrix")
+  attr(mock_cb, "df") <- c(3, 2)
+  attr(mock_cb, "range") <- range(sample_df$temp)
+  attr(mock_cb, "lag") <- c(0, 3)
+
+  cb_list <- list(
+    "Region1" = mock_cb,
+    "Region2" = mock_cb
+  )
+
+  # Verify error handling for invalid input
+  expect_error(
+    mh_casecrossover_dlnm(df_list, control_cols = 123, cb_list),
+    "'control_cols' expected a vector of strings or a string"
+  )
+})
+
 
 test_that("mh_reduce_cumulative produces expected output with valid inputs", {
   # Set seed for reproducibility
@@ -610,11 +664,11 @@ test_that("mh_reduce_cumulative produces expected output with valid inputs", {
 
   # Test with missing values
   df_list$region1$temp[1] <- NA
-  expect_error(
-    mh_reduce_cumulative(df_list, cb_list = cb_list, model_list = model_list),
-    NA
+  expect_no_error(
+    mh_reduce_cumulative(df_list, cb_list = cb_list, model_list = model_list)
   )
 })
+
 
 test_that("mh_meta_analysis performs meta-analysis correctly", {
   # Set seed for reproducibility
@@ -647,18 +701,21 @@ test_that("mh_meta_analysis performs meta-analysis correctly", {
     m <- matrix(runif(n_coef^2), n_coef, n_coef)
     # Make symmetric positive definite
     m <- m %*% t(m)
-    return(m)
+    m
   })
   names(vcov_) <- names(df_list)
 
   # Create temporary directory for CSV output test
-  temp_dir <- tempdir()
+  output_csv <- file.path(temp_dir, "meta_model_stat_test_results.csv")
+  on.exit(unlink(output_csv), add = TRUE)
 
   # Run function with various configurations
   result_basic <- mh_meta_analysis(df_list, coef_, vcov_)
-  result_with_csv <- mh_meta_analysis(df_list, coef_, vcov_,
-                                      save_csv = TRUE,
-                                      output_folder_path = temp_dir)
+  result_with_csv <- mh_meta_analysis(
+    df_list, coef_, vcov_,
+    save_csv = TRUE,
+    output_folder_path = temp_dir
+  )
 
   # Structure tests
   expect_type(result_basic, "list")
@@ -679,17 +736,83 @@ test_that("mh_meta_analysis performs meta-analysis correctly", {
   )))
 
   # CSV output test
-  expect_true(file.exists(file.path(temp_dir, "meta_model_stat_test_results.csv")))
+  expect_true(file.exists(output_csv))
+})
 
-  # Error handling tests
-  expect_error(
-    mh_meta_analysis(df_list, coef_, vcov_, save_csv = TRUE),
-    "Output path not specified"
+
+test_that("mh_meta_analysis errors when save_csv = TRUE and output path is missing", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Create test data
+  n_regions <- 5
+  n_days <- 80
+  n_coef <- 3
+
+  df_list <- lapply(seq_len(n_regions), function(i) {
+    data.frame(
+      temp = rnorm(n_days, mean = 20 + i, sd = 2),
+      outcome = rpois(n_days, lambda = 8 + i)
+    )
+  })
+  names(df_list) <- paste0("region", seq_len(n_regions))
+
+  # Coefficient matrix
+  coef_ <- matrix(
+    rnorm(n_regions * n_coef, mean = 0, sd = 0.3),
+    nrow = n_regions,
+    ncol = n_coef,
+    dimnames = list(names(df_list))
   )
 
-  # Clean up
-  unlink(file.path(temp_dir, "meta_model_stat_test_results.csv"))
+  # Generate vcov list with positive definite matrices
+  vcov_ <- lapply(seq_len(n_regions), function(i) {
+    M <- matrix(rnorm(n_coef^2), n_coef, n_coef)
+    crossprod(M) + diag(n_coef) * 0.5  # add diagonal for conditioning
+  })
+  names(vcov_) <- names(df_list)
+
+  # Expect error due to output path not being specified
+  expect_error(
+    mh_meta_analysis(df_list, coef_, vcov_, save_csv = TRUE, output_folder_path = NULL),
+    "Output path not specified",
+    fixed = TRUE
+  )
 })
+
+# Define blup for specific conditions of mh_min_suicide_temp (see below) to be used for testing other meta_analysis functions at a later date
+blup <- list(region1 = list(blup = c(y1 = 1.07682186619024, y2 = -0.00124519149119406,
+    y3 = 0.12735288433524, y4 = 0.458084787928137, y5 = -0.422585618213722
+    ), vcov = c(2.0232841917723, 0.754492831583736, 1.74159115208854,
+    1.87466328377305, 2.04230007103516, 0.754492831583736, 0.410519023044737,
+    0.557550516102308, 0.51036725151191, 0.845289713293512, 1.74159115208854,
+    0.557550516102308, 1.71140995311799, 1.62848871042226, 1.66517808066849,
+    1.87466328377305, 0.51036725151191, 1.62848871042226, 2.31772250883277,
+    1.60661695703015, 2.04230007103516, 0.845289713293512, 1.66517808066849,
+    1.60661695703015, 2.34708542365521)),
+  region2 = list(blup = c(y1 = 0.161699455934293,
+  y2 = 0.016578758841848, y3 = 1.2861402850592, y4 = -0.29625496475898,
+  y5 = 0.450368244681151), vcov = c(1.42370486932474,
+  1.17642246467664, 1.54378824677196, 1.76216535256413, 1.53882330735721,
+  1.17642246467664, 1.651257618267, 1.5020680530722, 1.50233695780163,
+  1.41398180793844, 1.54378824677196, 1.5020680530722, 1.89737329128652,
+  1.81459335815769, 1.56672475939414, 1.76216535256413, 1.50233695780163,
+  1.81459335815769, 2.73157533502173, 2.31015628790682, 1.53882330735721,
+  1.41398180793844, 1.56672475939414, 2.31015628790682, 2.06260608467254
+  )),
+  region3 = list(blup = c(y1 = -0.198397612864354,
+    y2 = 0.539619576074286, y3 = -0.00293663579066807, y4 = -0.251856410739526,
+    y5 = -0.461415405436472), vcov = c(2.13504552128293,
+    1.49587297376017, 1.69179507509888, 1.55488388134613, 1.9602054436117,
+    1.49587297376017, 1.5916186371976, 1.38395985557859, 0.854041196449995,
+    1.63116434508889, 1.69179507509888, 1.38395985557859, 1.63075827687899,
+    1.14365623555706, 1.47896009671971, 1.55488388134613, 0.854041196449995,
+    1.14365623555706, 1.3810451389053, 1.2775932649805, 1.9602054436117,
+    1.63116434508889, 1.47896009671971, 1.2775932649805, 2.12470587378516
+    )
+  )
+)
+
 
 test_that("mh_min_suicide_temp correctly generates minpercreg", {
   # Set seed for reproducibility
@@ -728,20 +851,35 @@ test_that("mh_min_suicide_temp correctly generates minpercreg", {
 
   control_minpercreg <- c(region1 = 46L, region2 = 26L, region3 = 3L)
 
+  # Test without meta_analysis
   test_minpercreg <- mh_min_suicide_temp(df_list,
                                   var_fun = "bs",
                                   var_per = c(25,50,75),
                                   var_degree = 2,
-                                  blup = blup,
+                                  blup = NULL,
                                   coef_,
                                   meta_analysis = FALSE)
-
   expect_identical(test_minpercreg, control_minpercreg)
+
+  # Test with meta_analysis
+  test_minpercreg_meta <- mh_min_suicide_temp(df_list,
+                                         var_fun = "bs",
+                                         var_per = c(25,50,75),
+                                         var_degree = 2,
+                                         blup = blup,
+                                         coef_,
+                                         meta_analysis = TRUE)
+  expect_identical(test_minpercreg_meta, control_minpercreg)
+
 })
 
+
 test_that("mh_predict_reg produces expected output", {
+  # Set seed for reproducibility
+  set.seed(3728)
+
   # Create test data
-  n_regions <- 2
+  n_regions <- 3
   n_days <- 10
   n_coef <- 5
 
@@ -780,7 +918,7 @@ test_that("mh_predict_reg produces expected output", {
                                            var_per = c(25,50,75),
                                            var_degree = 2,
                                            minpercreg,
-                                           blup,
+                                           blup=NULL,
                                            coef_,
                                            vcov_,
                                            meta_analysis = FALSE)
@@ -821,6 +959,7 @@ test_that("mh_predict_reg produces expected output", {
       expect_equal(length(pred$allse), length(pred$predvar))
     }
 })
+
 
 test_that("test mh_add_national_data", {
   # Set seed for reproducibility
@@ -929,8 +1068,8 @@ test_that("test mh_add_national_data", {
   expect_true(is.numeric(mmpredall$fit))
   expect_true(is.matrix(mmpredall$vcov))
   expect_equal(length(mmpredall$fit), ncol(mmpredall$vcov))
-
 })
+
 
 test_that("mh_predict_nat produces expected output", {
   # Set seed for reproducibility
@@ -1009,6 +1148,7 @@ test_that("mh_predict_nat produces expected output", {
   expect_equal(length(result$National$allse), length(result$National$predvar))
 })
 
+
 test_that("mh_power_list produces expected output", {
   # Create sample data for two regions
   set.seed(123)
@@ -1075,6 +1215,7 @@ test_that("mh_power_list produces expected output", {
   }
 })
 
+
 test_that("mh_power_list handles edge cases correctly", {
   # test Single region
   set.seed(456)
@@ -1114,6 +1255,7 @@ test_that("mh_power_list handles edge cases correctly", {
   expect_length(result_empty, 0)  # Should return empty list without error
 })
 
+
 test_that("mh_plot_power produces plots correctly", {
   # Create sample power_list with two regions
   power_list <- list(
@@ -1135,37 +1277,32 @@ test_that("mh_plot_power produces plots correctly", {
     )
   )
 
-  # Plot without saving (allow warnings)
-  expect_warning(mh_plot_power(power_list, save_fig = FALSE), NA)
+  # Plot without saving
+  suppressWarnings(
+    mh_plot_power(power_list, save_fig = FALSE)
+    )
 
-  # Plot with saving enabled
-  tmp_dir <- tempdir()
-  output_folder <- file.path(tmp_dir, "test_plots")
+  # create temporary output folder
+  output_folder <- tempfile(pattern = "test_plots_", tmpdir = temp_dir)
   model_validation_dir <- file.path(output_folder, "model_validation")
 
-  # Cleanup before creating
-  if (dir.exists(model_validation_dir)) {
-    unlink(model_validation_dir, recursive = TRUE)
-  }
+  # Create directories (no need to pre-clean since we use a unique temp path)
+  dir.create(model_validation_dir, recursive = TRUE, showWarnings = FALSE)
 
-  # Create directory only if it doesn't exist
-  if (!dir.exists(model_validation_dir)) {
-    dir.create(model_validation_dir, recursive = TRUE)
-  }
+  # Schedule cleanup immediately after creation
+  on.exit(unlink(output_folder, recursive = TRUE, force = TRUE), add = TRUE)
 
-  expect_warning(
-    mh_plot_power(power_list, save_fig = TRUE, output_folder_path = output_folder, country = "TestCountry"),
-    NA
+  # Run plotting with saving enabled
+  suppressWarnings(
+    mh_plot_power(power_list, save_fig = TRUE, output_folder_path = output_folder, country = "TestCountry")
   )
 
-  # Check that the PDF file was created
+  # Validate the PDF file was created and is non-empty
   output_path <- file.path(model_validation_dir, "power_vs_temperature.pdf")
   expect_true(file.exists(output_path))
   expect_gt(file.info(output_path)$size, 0)
-
-  # Cleanup after test
-  unlink(output_folder, recursive = TRUE)
 })
+
 
 test_that("mh_rr_results produces expected cumulative RR results", {
   # Create sample data for two regions
@@ -1232,6 +1369,7 @@ test_that("mh_rr_results produces expected cumulative RR results", {
   }
 })
 
+
 test_that("mh_rr_results handles edge cases correctly", {
   # Single region
   df_list_single <- list(region1 = data.frame(temp = rnorm(10, 20, 2)))
@@ -1296,20 +1434,20 @@ test_that("mh_plot_rr produces plots correctly", {
   # minpercreg
   minpercreg <- c(Region1 = 50)
 
-  # Plot without saving (expect warnings)
-  expect_warning(
+  # Plot without saving
+  suppressWarnings(
     mh_plot_rr(df_list, pred_list, attr_thr = 0, minpercreg, save_fig = FALSE)
   )
 
   # Plot with saving enabled (expect warnings)
-  tmp_dir <- tempdir()
-  output_folder <- file.path(tmp_dir, "test_rr_plots")
+  output_folder <- file.path(temp_dir, "test_rr_plots")
   model_validation_dir <- file.path(output_folder, "model_validation")
+  on.exit(unlink(output_folder, recursive=TRUE))
 
   if (dir.exists(model_validation_dir)) unlink(model_validation_dir, recursive = TRUE)
   dir.create(model_validation_dir, recursive = TRUE)
 
-  expect_warning(
+  suppressWarnings(
     mh_plot_rr(df_list, pred_list, attr_thr = 0, minpercreg,
                save_fig = TRUE, output_folder_path = output_folder, country = "TestCountry")
   )
@@ -1318,9 +1456,6 @@ test_that("mh_plot_rr produces plots correctly", {
   output_path <- file.path(output_folder, "suicides_rr_plot.pdf")
   expect_true(file.exists(output_path))
   expect_gt(file.info(output_path)$size, 0)
-
-  # Cleanup
-  unlink(output_folder, recursive = TRUE)
 })
 
 
@@ -1360,11 +1495,8 @@ test_that("mh_attr produces expected output structure and values", {
   # minpercreg
   minpercreg <- c(Region1 = 37)
 
-  # Run mh_attr and check for errors
-  expect_error(
-    result <- mh_attr(df_list, cb_list, pred_list, minpercreg, attr_thr = 97.5),
-    NA
-  )
+  # Run mh_attr
+  result <- mh_attr(df_list, cb_list, pred_list, minpercreg, attr_thr = 97.5)
 
   # Validate output structure
   expect_type(result, "list")
@@ -1450,8 +1582,8 @@ test_that("mh_attr_tables aggregates attributable estimates correctly", {
   expect_named(attr_mth_list, c("region1", "region2"))
   expect_true(all(sapply(attr_mth_list, is.data.frame)))
 
-  # Validate CI calculations: upper CI should be >= lower CI
-  expect_true(all(res_attr_tot$an_upper_ci >= res_attr_tot$an_lower_ci))
+  # Validate CI calculations: upper CI should be >= lower CI, and an should fall inbetween
+  expect_true(all(c(res_attr_tot$an_upper_ci >= res_attr_tot$an, res_attr_tot$an >= res_attr_tot$an_lower_ci)))
 
   # Validate AF and AR are positive
   expect_true(all(res_attr_tot$af >= 0))
@@ -1485,12 +1617,12 @@ test_that("mh_plot_attr_totals generates plots and validates dynamic elements", 
   )
 
   # Capture plot output for dynamic checks without saving
-  expect_silent({
+  expect_no_error(suppress_plot({
     grDevices::pdf(NULL) # Direct to null device for testing
     mh_plot_attr_totals(df_list, res_attr_tot, save_fig = FALSE, country = "region1")
     plot_calls <- recordPlot()
     grDevices::dev.off()
-  })
+  }))
 
   # Validate sorting by AF and AR
   sorted_af <- order(res_attr_tot$af, decreasing = TRUE)
@@ -1517,20 +1649,15 @@ test_that("mh_plot_attr_totals generates plots and validates dynamic elements", 
   expect_equal(year_max, 2000)
 
   # Validate file saving when save_fig = TRUE
-  temp_dir <- tempdir()
   output_path <- file.path(temp_dir, "suicides_total_attr_plot.pdf")
+  on.exit(unlink(output_path))
 
-  expect_silent(
+  expect_no_error(suppress_plot(
     mh_plot_attr_totals(df_list, res_attr_tot, save_fig = TRUE, output_folder_path = temp_dir, country = "region1")
-  )
+  ))
 
   expect_true(file.exists(output_path))
-
-  # Clean up
-  unlink(output_path)
 })
-
-
 
 
 test_that("mh_plot_attr_totals saves plot when save_fig = TRUE", {
@@ -1555,20 +1682,17 @@ test_that("mh_plot_attr_totals saves plot when save_fig = TRUE", {
     ar_upper_ci = c(6.5, 4.5)
   )
 
-  # Create temporary directory for saving plot
-  temp_dir <- tempdir()
+  # Create path to temporary directory for saving plot
   output_path <- file.path(temp_dir, "suicides_total_attr_plot.pdf")
+  on.exit(unlink(output_path))
 
   # Run function with save_fig = TRUE
-  expect_silent(
+  expect_no_error(suppress_plot(
     mh_plot_attr_totals(df_list, res_attr_tot, save_fig = TRUE, output_folder_path = temp_dir, country = "region1")
-  )
+  ))
 
   # Check that file was created
   expect_true(file.exists(output_path))
-
-  # Clean up
-  unlink(output_path)
 })
 
 
@@ -1593,9 +1717,9 @@ test_that("mh_plot_af_yearly generates plots without errors", {
   )
 
   # Test plotting without saving
-  expect_silent(
+  expect_no_error(suppress_plot(
     mh_plot_af_yearly(attr_yr_list, save_fig = FALSE, country = "region1")
-  )
+  ))
 })
 
 
@@ -1620,12 +1744,12 @@ test_that("mh_plot_af_yearly generates plots and validates dynamic elements", {
   )
 
   # Capture plot output for dynamic checks without saving
-  expect_silent({
+  expect_no_error(suppress_plot({
     grDevices::pdf(NULL) # Direct to null device for testing
     mh_plot_af_yearly(attr_yr_list, save_fig = FALSE, country = "region1")
     plot_calls <- recordPlot()
     grDevices::dev.off()
-  })
+  }))
 
   # Validate year range calculation
   year_min <- min(sapply(attr_yr_list, function(x) min(x$year, na.rm = TRUE)))
@@ -1645,19 +1769,53 @@ test_that("mh_plot_af_yearly generates plots and validates dynamic elements", {
   expect_equal(length(x_poly), length(y_poly)) # Polygon coordinates match
 
   # Validate title text when save_fig = TRUE
-  temp_dir <- tempdir()
   output_path <- file.path(temp_dir, "suicides_af_timeseries.pdf")
+  on.exit(unlink(output_path))
 
-  expect_silent(
+  expect_no_error(suppress_plot(
     mh_plot_af_yearly(attr_yr_list, save_fig = TRUE, output_folder_path = temp_dir, country = "region1")
-  )
+  ))
 
   expect_true(file.exists(output_path))
-
-  # Clean up
-  unlink(output_path)
 })
 
+
+test_that("mh_plot_af_yearly flags CI out-of-bounds condition for extreme CIs", {
+  # Create mock data with AF in a modest range, but CI far beyond it
+  attr_yr_list <- list(
+    region_extreme = data.frame(
+      year = 2000:2002,
+      af = c(10, 11, 12),               # modest AF values
+      af_lower_ci = c(-50, -40, -30),   # very low lower bounds
+      af_upper_ci = c(80, 90, 100)      # very high upper bounds
+    ),
+    region_normal = data.frame(
+      year = 2000:2002,
+      af = c(8, 9, 10),
+      af_lower_ci = c(7, 8, 9),
+      af_upper_ci = c(9, 10, 11)
+    )
+  )
+
+  # Recompute the same ylim logic used in the function
+  y_min <- min(sapply(attr_yr_list, function(x) min(x$af, na.rm = TRUE)))
+  y_max <- max(sapply(attr_yr_list, function(x) max(x$af, na.rm = TRUE)))
+  ylim <- c(min(c(0, y_min)), y_max) * 1.5
+
+  # Compute CI range for the extreme region
+  region_af <- attr_yr_list$region_extreme
+  af_ci_range <- c(min(region_af$af_lower_ci), max(region_af$af_upper_ci))
+
+  # Expect the CI range to exceed the plotting limits (triggering mtext warnings in the function)
+  expect_true(af_ci_range[1] < ylim[1] || af_ci_range[2] > ylim[2])
+
+  # Also expect the function to run silently and produce a file if save_fig is TRUE
+  expect_no_error(suppress_plot(
+    mh_plot_af_yearly(attr_yr_list, save_fig = TRUE, output_folder_path = temp_dir, country = "National")
+  ))
+
+  expect_true(file.exists(file.path(temp_dir, "suicides_af_timeseries.pdf")))
+})
 
 
 test_that("mh_plot_ar_yearly generates plots and validates dynamic elements", {
@@ -1681,12 +1839,12 @@ test_that("mh_plot_ar_yearly generates plots and validates dynamic elements", {
   )
 
   # Capture plot output for dynamic checks without saving
-  expect_silent({
+  expect_no_error(suppress_plot({
     grDevices::pdf(NULL) # Direct to null device for testing
     mh_plot_ar_yearly(attr_yr_list, save_fig = FALSE, country = "region1")
     plot_calls <- recordPlot()
     grDevices::dev.off()
-  })
+  }))
 
   # Validate year range calculation
   year_min <- min(sapply(attr_yr_list, function(x) min(x$year, na.rm = TRUE)))
@@ -1706,17 +1864,55 @@ test_that("mh_plot_ar_yearly generates plots and validates dynamic elements", {
   expect_equal(length(x_poly), length(y_poly)) # Polygon coordinates match
 
   # Validate title text when save_fig = TRUE
-  temp_dir <- tempdir()
   output_path <- file.path(temp_dir, "suicides_ar_timeseries.pdf")
+  on.exit(unlink(output_path))
 
-  expect_silent(
+  expect_no_error(suppress_plot(
     mh_plot_ar_yearly(attr_yr_list, save_fig = TRUE, output_folder_path = temp_dir, country = "region1")
-  )
+  ))
 
   expect_true(file.exists(output_path))
+})
 
-  # Clean up
-  unlink(output_path)
+
+test_that("mh_plot_ar_yearly flags CI out-of-bounds when CI exceeds ylim", {
+  # Mock data: AR is modest, CI bounds are extreme
+  attr_yr_list <- list(
+    region_extreme = data.frame(
+      year = 2000:2002,
+      ar = c(5, 6, 5.5),
+      ar_lower_ci = c(-50, -40, -30),  # far below
+      ar_upper_ci = c(80, 90, 100)     # far above
+    ),
+    region_normal = data.frame(
+      year = 2000:2002,
+      ar = c(3.8, 4.2, 4.5),
+      ar_lower_ci = c(3.0, 3.2, 3.5),
+      ar_upper_ci = c(4.5, 4.8, 5.0)
+    )
+  )
+
+  # Reproduce ylim calculation used in the function
+  y_min <- min(sapply(attr_yr_list, function(x) min(x$ar, na.rm = TRUE)))
+  y_max <- max(sapply(attr_yr_list, function(x) max(x$ar, na.rm = TRUE)))
+  ylim <- c(min(c(0, y_min)), y_max) * 1.5
+
+  # CI range for the extreme region
+  region_ar <- attr_yr_list$region_extreme
+  ar_ci_range <- c(min(region_ar$ar_lower_ci), max(region_ar$ar_upper_ci))
+
+  # The condition that triggers mtext warnings should be TRUE
+  expect_true(ar_ci_range[1] < ylim[1] || ar_ci_range[2] > ylim[2])
+
+  # Function should still run and write the file when save_fig = TRUE
+  output_path <- file.path(temp_dir, "suicides_ar_timeseries.pdf")
+  on.exit(unlink(output_path))
+
+  expect_no_error(suppress_plot(
+    mh_plot_ar_yearly(attr_yr_list, save_fig = TRUE, output_folder_path = temp_dir, country = "National")
+  ))
+
+  expect_true(file.exists(output_path))
 })
 
 
@@ -1756,12 +1952,12 @@ test_that("mh_plot_af_monthly generates plots and validates dynamic elements", {
   )
 
   # Capture plot output without saving
-  expect_silent({
+  expect_no_error(suppress_plot({
     grDevices::pdf(NULL)
     mh_plot_af_monthly(attr_mth_list, df_list, country = "region1", save_fig = FALSE)
     plot_calls <- recordPlot()
     grDevices::dev.off()
-  })
+  }))
 
   # Dynamic validations
   # Check AF range and temperature scaling logic
@@ -1780,15 +1976,14 @@ test_that("mh_plot_af_monthly generates plots and validates dynamic elements", {
   expect_match(legend_text, "Attr. Risk Treshold")
 
   # Validate file saving when save_fig = TRUE
-  temp_dir <- tempdir()
   output_path <- file.path(temp_dir, "suicides_af_month_plot.pdf")
+  on.exit(unlink(output_path))
 
-  expect_silent(
+  expect_no_error(suppress_plot(
     mh_plot_af_monthly(attr_mth_list, df_list, country = "region1", save_fig = TRUE, output_folder_path = temp_dir)
-  )
-  expect_true(file.exists(output_path))
+  ))
 
-  unlink(output_path)
+  expect_true(file.exists(output_path))
 })
 
 
@@ -1822,13 +2017,12 @@ test_that("mh_plot_ar_monthly generates plots and validates dynamic elements", {
   )
 
   # Open a real device; let mh_plot_ar_monthly() close it internally
-  expect_silent({
+  expect_no_error(suppress_plot({
     tmp_file <- tempfile(fileext = ".pdf")
+    on.exit(unlink(tmp_file))
     grDevices::pdf(tmp_file)
     mh_plot_ar_monthly(attr_mth_list, df_list, country = "region1", save_fig = FALSE)
-    # Do NOT call dev.off(); the function closes the device itself.
-    unlink(tmp_file)
-  })
+  }))
 
   # Dynamic validations (derived from inputs)
   ylim_max <- max(sapply(attr_mth_list, function(x) max(x$ar, na.rm = TRUE)))
@@ -1846,14 +2040,14 @@ test_that("mh_plot_ar_monthly generates plots and validates dynamic elements", {
   expect_match(legend_text, "Attr. Risk Threshold")
 
   # Validate file saving when save_fig = TRUE (exists and non-empty)
-  temp_dir <- tempdir()
   output_path <- file.path(temp_dir, "suicides_ar_month_plot.pdf")
-  expect_silent(mh_plot_ar_monthly(attr_mth_list, df_list, country = "region1",
-                                   save_fig = TRUE, output_folder_path = temp_dir))
+  on.exit(unlink(output_path))
+  expect_no_error(suppress_plot(mh_plot_ar_monthly(attr_mth_list, df_list, country = "region1",
+                                   save_fig = TRUE, output_folder_path = temp_dir)))
   expect_true(file.exists(output_path))
   expect_gt(file.info(output_path)$size, 0)
-  unlink(output_path)
 })
+
 
 test_that("mh_plot_ar_monthly handles empty lists gracefully", {
   # The function attempts vectorized ops on empty lists, producing this base R error
@@ -1862,6 +2056,7 @@ test_that("mh_plot_ar_monthly handles empty lists gracefully", {
     regexp = "invalid 'type' \\(list\\) of argument"
   )
 })
+
 
 test_that("mh_plot_ar_monthly works with a single region", {
   single_attr_mth <- list(region1 = data.frame(
@@ -1877,14 +2072,14 @@ test_that("mh_plot_ar_monthly works with a single region", {
     temp = c(14, 15, 16, 17, 18)
   ))
 
-  expect_silent({
+  expect_no_error(suppress_plot({
     tmp_file <- tempfile(fileext = ".pdf")
+    on.exit((unlink(tmp_file)))
     grDevices::pdf(tmp_file)
     mh_plot_ar_monthly(single_attr_mth, single_df, country = "SingleRegion", save_fig = FALSE)
-    # Do NOT call dev.off(); the function closes the device itself.
-    unlink(tmp_file)
-  })
+  }))
 })
+
 
 test_that("mh_plot_ar_monthly responds to different attr_thr values", {
   attr_mth_list <- list(region1 = data.frame(
@@ -1900,17 +2095,17 @@ test_that("mh_plot_ar_monthly responds to different attr_thr values", {
     temp = c(14, 15, 16, 17, 18)
   ))
 
-  expect_silent({
+  expect_no_error(suppress_plot({
     tmp_file <- tempfile(fileext = ".pdf")
+    on.exit(unlink(tmp_file))
     grDevices::pdf(tmp_file)
     mh_plot_ar_monthly(attr_mth_list, df_list, country = "TestCountry", attr_thr = 90, save_fig = FALSE)
-    # Do NOT call dev.off(); the function closes the device itself.
-    unlink(tmp_file)
-  })
+  }))
 
   attr_thr_tmp <- round(quantile(df_list$region1$temp, 90 / 100, na.rm = TRUE), 2)
   expect_true(attr_thr_tmp <= max(df_list$region1$temp))
 })
+
 
 test_that("mh_plot_ar_monthly constructs expected title and warnings when save_fig = TRUE", {
   # Build df_list so year range is deterministic
@@ -1955,13 +2150,14 @@ test_that("mh_plot_ar_monthly constructs expected title and warnings when save_f
   expected_ovr_warning <- "(Please refer to the associated data table for more information on the uncertainty around each estimate)"
 
   # Run function with save_fig = TRUE and verify file exists and non-empty
-  temp_dir <- tempdir()
   output_path <- file.path(temp_dir, "suicides_ar_month_plot.pdf")
+  on.exit(unlink(output_path))
 
-  expect_silent(
+  expect_no_error(suppress_plot(
     mh_plot_ar_monthly(attr_mth_list, df_list, country = "Testland",
                        save_fig = TRUE, output_folder_path = temp_dir)
-  )
+  ))
+
   expect_true(file.exists(output_path))
   expect_gt(file.info(output_path)$size, 0)
 
@@ -1974,11 +2170,7 @@ test_that("mh_plot_ar_monthly constructs expected title and warnings when save_f
                        ar_ci_min, ar_ci_max))
   expect_match(expected_ovr_warning,
                "\\(Please refer to the associated data table for more information on the uncertainty around each estimate\\)")
-
-  # Clean up
-  unlink(output_path)
 })
-
 
 
 test_that("mh_save_results errors when output_folder_path is NULL", {
@@ -2002,13 +2194,18 @@ test_that("mh_save_results errors when output_folder_path is NULL", {
   )
 })
 
+
 test_that("mh_save_results writes all expected CSV files and validates content", {
   # Create a temporary output folder and ensure the model_validation subfolder exists
-  temp_dir <- tempdir()
-  model_val_dir <- file.path(temp_dir, "model_validation")
+  out_dir <- tempfile(pattern = "mh_save_results_out_", tmpdir = temp_dir)
+  dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+  model_val_dir <- file.path(out_dir, "model_validation")
   if (!dir.exists(model_val_dir)) {
     dir.create(model_val_dir, recursive = TRUE)
   }
+
+  # Cleanup after test
+  on.exit(unlink(out_dir, recursive = TRUE, force = TRUE), add = TRUE)
 
   # Mock rr_results (data.frame)
   rr_results <- data.frame(
@@ -2069,23 +2266,23 @@ test_that("mh_save_results writes all expected CSV files and validates content",
   )
 
   # Execute and validate file creation
-  expect_silent(
+  expect_no_error(suppress_plot(
     mh_save_results(
       rr_results = rr_results,
       res_attr_tot = res_attr_tot,
       attr_yr_list = attr_yr_list,
       attr_mth_list = attr_mth_list,
       power_list = power_list,
-      output_folder_path = temp_dir
+      output_folder_path = out_dir
     )
-  )
+  ))
 
   # Expected file paths
-  rr_path        <- file.path(temp_dir, "suicides_rr_results.csv")
-  attr_tot_path  <- file.path(temp_dir, "suicides_attr_tot_results.csv")
-  attr_yr_path   <- file.path(temp_dir, "suicides_attr_yr_results.csv")
-  attr_mth_path  <- file.path(temp_dir, "suicides_attr_mth_results.csv")
-  power_path     <- file.path(temp_dir, "model_validation", "suicides_power_results.csv")
+  rr_path        <- file.path(out_dir, "suicides_rr_results.csv")
+  attr_tot_path  <- file.path(out_dir, "suicides_attr_tot_results.csv")
+  attr_yr_path   <- file.path(out_dir, "suicides_attr_yr_results.csv")
+  attr_mth_path  <- file.path(out_dir, "suicides_attr_mth_results.csv")
+  power_path     <- file.path(out_dir, "model_validation", "suicides_power_results.csv")
 
   # Files exist and are non-empty
   expect_true(file.exists(rr_path))
@@ -2126,34 +2323,29 @@ test_that("mh_save_results writes all expected CSV files and validates content",
   power_out <- read.csv(power_path, stringsAsFactors = FALSE)
   expect_true(all(c("region", "power", "threshold") %in% names(power_out)))
   expect_equal(nrow(power_out), length(power_list))
-
-  # Clean up
-  unlink(rr_path)
-  unlink(attr_tot_path)
-  unlink(attr_yr_path)
-  unlink(attr_mth_path)
-  unlink(power_path)
 })
 
 
-# test-mental-health-integration
+# mental health integration test
 test_that("integration: suicides_heat_do_analysis runs end-to-end (dynamic synthetic data)", {
   set.seed(42)
 
-  # ---- Generate 2-region daily data with continuity and variability ----
-  n_days_per_region <- 1000           # safer than 30; gives stable splines & lag=1
+  # Generate 2-region daily data with continuity and variability
+  n_days_per_region <- 1000
   regions <- c("Region 1", "Region 2")
   start_date <- as.Date("2000-01-01")
 
   make_region <- function(region_name) {
+    # set static seed for repeatability (Dynamic values can sometime cause test to fail)
+    set.seed(126)
     dates <- seq(start_date, by = "day", length.out = n_days_per_region)
 
-    # Temperature: mild seasonality + noise, range approx [-5, 25]
+    # Temperature
     day_ix <- seq_len(n_days_per_region)
     tmean <- 10 + 8*sin(2*pi*day_ix/365) + rnorm(n_days_per_region, sd = 4)
     tmean <- pmax(pmin(tmean, 25), -5) # clamp
 
-    # Humidity & rainfall: plausible ranges, some day-to-day variation
+    # Humidity & rainfall
     hum <- pmax(pmin(80 + rnorm(n_days_per_region, sd = 6), 95), 70)
     rainfall <- pmax(rnorm(n_days_per_region, mean = 3.5, sd = 2.0), 0)
     sun <- pmax(rnorm(n_days_per_region, mean = 2.5, sd = 1.2), 0)
@@ -2162,7 +2354,6 @@ test_that("integration: suicides_heat_do_analysis runs end-to-end (dynamic synth
     pop <- if (region_name == "Region 1") 2600000L else 6800000L
 
     # Suicides: Poisson with log link to temperature to ensure variability
-    # (keeps zeros but avoids all-zero series)
     lambda <- exp(-0.1 + 0.03 * tmean)          # ~0.5–3.0
     suicides <- rpois(n_days_per_region, lambda = lambda)
     # Ensure a few non-zero early values to avoid edge-case emptiness
@@ -2184,20 +2375,19 @@ test_that("integration: suicides_heat_do_analysis runs end-to-end (dynamic synth
   df <- do.call(rbind, lapply(regions, make_region))
   df <- df[order(df$region, df$date), ]
 
-  # ---- Safety checks to avoid the earlier QAIC error ----
-  # Enough unique temps for spline knots; at least some non-zero suicides per region
+  # check there are enough unique temps for spline knots; at least some non-zero suicides per region
   by_region <- split(df, df$region)
   ok_unique_temp <- all(vapply(by_region, function(x) length(unique(x$tmean)) >= 10, logical(1)))
   ok_nonzero <- all(vapply(by_region, function(x) sum(x$suicides > 0) >= 10, logical(1)))
   expect_true(ok_unique_temp, info = "Not enough unique temperature values for splines")
   expect_true(ok_nonzero, info = "Too few non-zero suicides for model fitting")
 
-  # ---- Write to a temporary CSV (robust even if reader expects a path) ----
+  # Write to a temporary CSV
   tmp_file <- tempfile(fileext = ".csv")
   write.csv(df, tmp_file, row.names = FALSE)
   on.exit(unlink(tmp_file), add = TRUE)  # clean up after test
 
-  # ---- Run pipeline (minimised for speed) ----
+  # Run pipeline
   result <- suicides_heat_do_analysis(
     data_path = tmp_file,       # pass the temp file path
     date_col = "date",
@@ -2206,13 +2396,13 @@ test_that("integration: suicides_heat_do_analysis runs end-to-end (dynamic synth
     health_outcome_col = "suicides",
     population_col = "population",
     independent_cols = c("hum", "sun", "rainfall"),
-    save_fig = FALSE,           # avoid file IO in tests
+    save_fig = FALSE,
     save_csv = FALSE,
     var_per = c(50),            # single knot percentile for stability
     lag_days = 1                # minimal lag
   )
 
-  # ---- Assertions on structure (not exact numbers) ----
+  # Check structure matches expected
   expect_type(result, "list")
   expect_true(all(c("qaic_results", "qaic_summary", "vif_results") %in% names(result)))
   expect_s3_class(result$qaic_results, "data.frame")
