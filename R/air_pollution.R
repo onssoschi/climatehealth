@@ -2559,7 +2559,7 @@ library(RColorBrewer)
 # # Run complete analysis
 # results <- do_air_pollution_analysis(
 #   # Data specification
-#   data_path = "data.csv",
+  # data_path = "data.csv",
 #   date_col = "date",
 #   region_col = "province",
 #   pm25_col = "pm25",
