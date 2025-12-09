@@ -2887,12 +2887,11 @@ temp_mortality_do_analysis <- function(input_csv_path,
   )
 
   c(res_attr_tot, attr_yr_list, attr_mth_list) %<-% hc_attr_tables(
-    attr_list = attr_list, # Ew: different to MH - extra threshold
+    attr_list = attr_list,
     country = country,
     meta_analysis = meta_analysis
   )
 
-  # EW: plots all diff to MH due to extra threshold
   hc_plot_attr_totals(
     df_list = df_list,
     res_attr_tot = res_attr_tot,
