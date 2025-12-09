@@ -81,7 +81,7 @@ read_and_format_data <- function(
       health_outcome = all_of(health_outcome_col),
       region = all_of(region_col),
       rh = all_of(rh_col),
-      wind_speed =all_of(wind_speed_col)
+      wind_speed = all_of(wind_speed_col)
     ) %>%
     dplyr::mutate(
       date = date_function(date),
@@ -1483,11 +1483,11 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
   combined_plots <- patchwork::wrap_plots(all_plots)
   # sort data
   sorted_data <- aggregated_data[
-      order(
-        aggregated_data$region,
-        match(aggregated_data$month_name, month.abb)
-      ),
-    ]
+    order(
+      aggregated_data$region,
+      match(aggregated_data$month_name, month.abb)
+    ),
+  ]
   sorted_data <- sorted_data %>% select(all_of(c("region", "month_name", "mean_deaths_per_100k", "mean_pm")))
   # save csv
   if (save_outputs) {
@@ -1674,7 +1674,7 @@ plot_rr_by_pm <- function(
       limitsize = FALSE
     )
   }
-  return (combined_plots)
+  return(combined_plots)
 }
 
 #' Create a relative risk plot across PM2.5 levels for a single region
@@ -1790,9 +1790,9 @@ plot_ar_by_region <- function(data, output_dir = ".") {
   ) +
     ggplot2::geom_col(fill = "#003c57") +
     ggplot2::labs(
-        title = "Deaths per 100k attributable to Wildfire-specific PM2.5",
-        x = "Regions",
-        y = "Deaths per 100k population"
+      title = "Deaths per 100k attributable to Wildfire-specific PM2.5",
+      x = "Regions",
+      y = "Deaths per 100k population"
     ) +
     ggplot2::theme_minimal(base_family = "sans") +
     ggplot2::theme(
