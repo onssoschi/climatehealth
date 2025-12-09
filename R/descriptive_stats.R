@@ -104,9 +104,9 @@ create_column_summaries <- function(df, columns = NULL) {
     }
 
     summary_df <- as.data.frame(t(c(stats,
-      IQR = iqr,
-      Variance = var_val,
-      SD = sd_val
+                                    IQR = iqr,
+                                    Variance = var_val,
+                                    SD = sd_val
     )))
     final_fields <- c(
       "Min.", "1st Qu.", "Median", "Mean", "3rd Qu.",
@@ -279,7 +279,7 @@ common_descriptive_stats_core <- function(
 
   # plot box plots
   if (plot_box == T) {
-    boxplot_title <- paste0("Boxplots for the ", stringr::str_to_title(dataset_title), " Dataset \n(", title, ")")
+    boxplot_title <- paste0("Boxplots - ", title)
     boxplot_path <- file.path(output_path, "boxplots.pdf")
 
     ylabs <- sapply(columns, function(col) {
@@ -292,7 +292,7 @@ common_descriptive_stats_core <- function(
       df,
       selected_cols,
       ylabs = ylabs,
-      boxplot_title,
+      title = boxplot_title,
       save_plot = TRUE,
       output_path = boxplot_path
     )
@@ -306,12 +306,9 @@ common_descriptive_stats_core <- function(
       full_corr,
       paste0(
         "Correlation Matrix for the ",
-        stringr::str_to_title(dataset_title),
-        " Dataset \n(",
         title,
         ", Method: ",
-        stringr::str_to_title(correlation_method),
-        ")"
+        stringr::str_to_title(correlation_method)
       ),
       corr_path
     )
@@ -319,7 +316,7 @@ common_descriptive_stats_core <- function(
 
   # Column distributions
   if (plot_dist == T) {
-    dist_path <- file.path(output_path, "column_distributions.pdf")
+    dist_path <- file.path(output_path, "histograms.pdf")
 
     xlabs <- sapply(columns, function(col) {
       unit <- units[[col]]
@@ -331,7 +328,7 @@ common_descriptive_stats_core <- function(
       df,
       columns,
       xlabs = xlabs,
-      paste0("Column Distributions for the ", stringr::str_to_title(dataset_title), " dataset \n(", title, ")"),
+      paste0("Histograms - ", title),
       T,
       dist_path
     )
@@ -349,8 +346,8 @@ common_descriptive_stats_core <- function(
       las = 2,
       col = "#003c57",
       ylab = "NA Count",
-      main = paste0("NA Counts for Columns in the ", stringr::str_to_title(dataset_title), " Dataset \n(", title, ")")
-    )
+      main = paste0("NA counts - ", title)
+      )
 
     par(new = TRUE)
     plot(
@@ -378,7 +375,7 @@ common_descriptive_stats_core <- function(
       dependent_col,
       independent_cols,
       units = units,
-      paste0("Dependent vs Independent Column(s) \n(", title, ")"),
+      paste0("Dependent vs Independent Column(s) - ", title),
       T,
       scatter_path
     )
@@ -399,7 +396,7 @@ common_descriptive_stats_core <- function(
       date_col = timeseries_col,
       outcome_cols = columns,
       ylabs = ylabs,
-      title = paste("Seasonal Trends for", dataset_title),
+      title = paste("Seasonal Trends for", title),
       save_plot = TRUE,
       output_path = seasonal_path
     )
@@ -422,7 +419,7 @@ common_descriptive_stats_core <- function(
         df = df,
         region_col = aggregation_column,
         outcome_cols = columns,
-        title = paste("Regional Trends for", dataset_title),
+        title = paste("Regional Trends - ", title),
         ylabs = ylabs,
         save_plot = TRUE,
         output_path = regional_path
@@ -619,8 +616,8 @@ common_descriptive_stats <- function(
           ma_days,
           ma_sides,
           units = units,
-          paste0("Moving average for the ", stringr::str_to_title(dataset_title), " Dataset \n(", region_name, ")")
-        )
+          paste0("Moving average - ", region_name)
+          )
         dev.off()
       }
     }
@@ -632,7 +629,7 @@ common_descriptive_stats <- function(
     df <- df_list[[region_name]]
 
     # Use group_name in titles or filenames
-    region_title <- paste0(dataset_title, " - ", region_name)
+    region_title <- region_name
     region_output_path <- file.path(output_path, region_name)
     if (!dir.exists(region_output_path)) {
       dir.create(region_output_path, recursive = TRUE)
