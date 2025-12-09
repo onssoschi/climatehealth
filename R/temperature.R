@@ -22,7 +22,7 @@
 hc_read_data <- function(input_csv_path,
                          dependent_col,
                          date_col,
-                         geography_col,
+                         region_col,
                          temperature_col,
                          population_col) {
 
@@ -34,19 +34,28 @@ hc_read_data <- function(input_csv_path,
     df <- df %>%
       dplyr::mutate(geog = "aggregated")
   }
+  # subset needed cols
+  needed_cols <- c(
+    dependent_col
+    date_col,
+    region_col,
+    temperature_col,
+    population_col
+  )
   # Rename the columns
   df <- df %>%
+    dplyr::select(all_of(neeed_cols)) %>%
     dplyr::rename(dependent = dependent_col,
                   date = date_col,
-                  geog = geography_col,
+                  region = region_col,
                   temp = temperature_col,
-                  pop = population_col,
+                  population = population_col,
     ) %>%
     dplyr::mutate(date = as.Date(date, tryFormats = c("%d/%m/%Y", "%Y-%m-%d")),
                   year = as.factor(lubridate::year(date)),
                   month = as.factor(lubridate::month(date)),
                   dow = as.factor(lubridate::wday(date, label = TRUE)),
-                  geog = as.factor(geog))
+                  region = as.factor(geog))
 
   # Reformat data and fill NaNs
   df <- reformat_data(df,
@@ -54,41 +63,9 @@ hc_read_data <- function(input_csv_path,
                       fill_na = c("dependent"),
                       year_from_date = TRUE)
   # Split the data by region
-  df_list <- aggregate_by_column(df, "geog")
+  df_list <- aggregate_by_column(df, "region")
 
   return (list(df_list))
-
-}
-
-
-#' Create population totals
-#'
-#' @description Creates a list of population totals by year and geography for use
-#' in the attributable number, fraction and rate calculations.
-#'
-#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
-#' and climate variables which may be disaggregated by a particular geography.
-#' @param country Character. Name of country for national level estimate.
-#' @param meta_analysis Boolean. Whether to perform a meta-analysis.
-#'
-#' @returns List of population totals by year and region
-#'
-#' @export
-hc_pop_totals <- function(df_list,
-                          country = "National",
-                          meta_analysis = FALSE){
-
-  pop_list <- lapply(df_list, function(x) aggregate(pop ~ year, data = x, mean))
-
-  if (meta_analysis == TRUE){
-
-    tot_pop <- do.call(rbind, pop_list)
-    tot_pop <- aggregate(pop ~ year, data = tot_pop, sum)
-
-    pop_list[[country]] <- tot_pop}
-
-
-  return(pop_list)
 
 }
 
@@ -268,48 +245,6 @@ hc_model_combo_res <- function(df_list,
 
 }
 
-
-#' Produce variance inflation factor
-#'
-#' @description Produces variance inflation factor for the independent variables.
-#'
-#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
-#' and climate variables which may be disaggregated by a particular geography.
-#' @param independent_cols Additional independent variables to test in model validation
-#'
-#' @return A list. Variance inflation factors for each independent variables by geography.
-#'
-#' @export
-hc_vif <- function(df_list,
-                   independent_cols = NULL){
-
-  vif_list <- list()
-
-  for (geog in names(df_list)){
-
-    geog_data <- df_list[[geog]]
-
-    # test whether temp and optional independent variable are correlated with each other
-    formula_str <- paste(paste('dependent ~ temp'), paste("+", paste(independent_cols, collapse = " + ")))
-
-    vif_model <- glm(as.formula(formula_str), data = geog_data, family = quasipoisson())
-    vif_values <- car::vif(vif_model)
-
-
-    vif_df <- data.frame(
-      variable = names(vif_values),
-      vif = as.numeric(vif_values),
-      stringsAsFactors = FALSE
-    )
-
-    vif_list[[geog]] <- vif_df
-
-  }
-
-  return(vif_list)
-
-}
-
 #' Run ADF test and produce PACF plots for each model combo
 #'
 #' @description Run augmented Dickey-Fuller test for stationarity of dependent variable
@@ -322,15 +257,6 @@ hc_vif <- function(df_list,
 #'
 #' @export
 hc_adf <- function(df_list) {
-
-  # Load required libraries
-  if (!requireNamespace("tseries", quietly = TRUE)) install.packages("tseries")
-  if (!requireNamespace("forecast", quietly = TRUE)) install.packages("forecast")
-
-  library(tseries)
-  library(forecast)
-
-
   adf_list <- list()
 
   for (geog in names(df_list)){
@@ -410,7 +336,7 @@ hc_model_validation <- function(df_list = df_list,
   # VIF results to csv by geog
   if (!is.null(independent_cols)) {
 
-    vif_list <- hc_vif(df_list = df_list,
+    vif_list <- dlnm_vif(df_list = df_list,
                        independent_cols = independent_cols)
 
     vif_results <- dplyr::bind_rows(vif_list, .id = "Geography")
@@ -746,67 +672,6 @@ hc_quasipoisson_dlnm <- function(df_list,
 
 }
 
-
-#' Reduce to overall cumulative
-#'
-#' @description Reduce model to the overall cumulative association
-#'
-#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
-#' and climate variables which may be disaggregated by a particular region.
-#' @param var_per Vector. Internal knot positions for argvar
-#' (see dlnm::crossbasis). Defaults to c(25,50,75).
-#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
-#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
-#' @param cenper Integer. Value for the percentile in calculating the centering
-#' value 0-100. Defaults to 50.
-#' @param cb_list List of cross_basis matrices from create_crossbasis function.
-#' @param model_list List of models produced from case-crossover and DLNM
-#' analysis.
-#'
-#' @return
-#'  \itemize{
-#'   \item `coef_` A matrix of coefficients for the reduced model.
-#'   \item `vcov_` A list. Covariance matrices for each region for the reduced model.
-#'   }
-#'
-#' @export
-hc_reduce_cumulative <- function(df_list,
-                                 var_per = c(10,75,90),
-                                 var_degree = 2,
-                                 cb_list,
-                                 model_list) {
-
-  # Coefficients and vcov for overall cumulative summary
-  coef_ <- matrix(data = NA,
-                  nrow = length(names(df_list)),
-                  ncol = length(var_per) + var_degree,
-                  dimnames = list(names(df_list)))
-
-  vcov_ <- vector("list", length(names(df_list)))
-  names(vcov_) <- names(df_list)
-
-
-  for(geog in names(df_list)){
-
-    geog_data <- df_list[[geog]]
-    cb <- cb_list[[geog]]
-
-    cen_ <- mean(geog_data$temp, na.rm = TRUE)
-
-
-    # Reduction to overall cumulative lag effect
-    red <- dlnm::crossreduce(cb, model_list[[geog]], cen = cen_)
-
-    coef_[geog,] <- coef(red)
-    vcov_[[geog]] <- vcov(red)
-
-  }
-
-  return(list(coef_, vcov_))
-
-}
-
-
 #' Calculate p-values for Wald test
 #'
 #' A function to calculate p-values for an explanatory variable.
@@ -832,230 +697,6 @@ fwald <- function(mm, var) {
   return(1 - pchisq(waldstat, df))
 
 }
-
-
-#' Meta-analysis and BLUPs
-#'
-#' @description Run meta-analysis using temperature average and range as meta
-#' predictors. Then create the best linear unbiased predictions (BLUPs).
-#'
-#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
-#' and climate variables which may be disaggregated by a particular region.
-#' @param coef_ A matrix of coefficients for the reduced model.
-#' @param vcov_ A list. Covariance matrices for each region for the reduced model.
-#' @param save_csv Boolean. Whether to save the results as a CSV. Defaults to
-#' FALSE.
-#' @param output_folder_path Path to folder where results should be saved.
-#' Defaults to NULL.
-#'
-#' @return
-#' \itemize{
-#'   \item `mm` A model object. A multivariate meta-analysis model.
-#'   \item `blup` A list. BLUP (best linear unbiased predictions) from the
-#'   meta-analysis model for each region.
-#'   \item `meta_test_res` A dataframe of results from statistical tests on the meta model.
-#'   }
-#'
-#' @export
-hc_meta_analysis <- function(df_list,
-                             coef_,
-                             vcov_,
-                             save_csv = FALSE,
-                             output_folder_path = NULL){
-
-  # Assert that df_list is a list of dataframes
-  is_list_of_dfs(list_ = df_list)
-
-  # Assert that coef is a numeric matrix
-  if (!is.matrix(coef_) || !is.numeric(coef_)) {
-    stop("Argument 'coef_' must be a numeric matrix")
-  }
-
-
-  # Assert that vcov is a list of matrices.
-  # TODO: Functionalise this functionality into a defenses module
-  if (is.list(vcov_)) {
-    for (matr in vcov_){
-      if (!is.matrix(matr)) {
-        stop(paste(
-          "'vcov_' expected a list of matrices. List contains item of",
-          "type", toString(typeof(matr))
-        )
-        )
-      }
-    }
-  } else {
-    stop(paste("'vcov_' expected a list.", toString(typeof(vcov_))))
-  }
-  # Create average temperature and range as meta-predictors
-  temp_avg <- sapply(df_list,
-                     function(x)
-                       mean(x$temp, na.rm = TRUE))
-
-  temp_range <- sapply(df_list,
-                       function(x)
-                         diff(range(x$temp, na.rm = TRUE)))
-
-  # Meta-analysis
-  mm <- mixmeta::mixmeta(formula = coef_ ~ temp_avg + temp_range,
-                         S = vcov_,
-                         data = as.data.frame(names(df_list)),
-                         method = "reml"
-  )
-
-  # Obtain BLUPs
-  blup <- mixmeta::blup(mm, vcov = TRUE)
-
-  names(blup) <- names(df_list)
-
-  # Wald test
-
-  temp_avg_wald <- fwald(mm, "temp_avg")
-  temp_range_wald <- fwald(mm, "temp_range")
-
-  # Cochran's Q-test
-
-  qstat <- mixmeta::qtest(mm)
-
-  # I^2 statistic
-
-  i2stat <- ((qstat$Q - qstat$df) / qstat$Q)[1] * 100
-
-  meta_test_res <- data.frame(test = c("temp_avg Wald p-value",
-                                       "temp_range Wald p-value",
-                                       "Cochran's Q test p-value",
-                                       "I2 (%)",
-                                       "AIC"),
-                              result = round(c(temp_avg_wald,
-                                               temp_range_wald,
-                                               qstat[["pvalue"]][1],
-                                               i2stat,
-                                               summary(mm)$AIC),3))
-
-  if (save_csv == TRUE){
-
-    if (!is.null(output_folder_path)) {
-
-      check_file_exists(file.path(output_folder_path))
-
-      write.csv(meta_test_res, file = file.path(
-        output_folder_path, "meta_model_stat_test_results.csv"), row.names = FALSE)
-
-    } else {
-
-      stop("Output path not specified")
-
-    }
-
-  }
-
-  return(list(mm, blup, meta_test_res))
-
-}
-
-
-#' Define minimum mortality percentiles and temperatures
-#'
-#' @description Calculate the temperature at which there is minimum mortality risk
-#' using the product of the basis matrix and BLUPs.
-#'
-#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
-#' and climate variables which may be disaggregated by a particular region.
-#' @param var_fun Character. Exposure function for argvar
-#' (see dlnm::crossbasis). Defaults to 'bs'.
-#' @param var_per Vector. Internal knot positions for argvar
-#' (see dlnm::crossbasis). Defaults to c(25,50,75).
-#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
-#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
-#' @param blup A list. BLUP (best linear unbiased predictions) from the
-#' meta-analysis model for each region.
-#' @param coef_ A matrix of coefficients for the reduced model.
-#' @param meta_analysis Boolean. Whether to perform a meta-analysis.
-#'
-#' @returns Percentiles and corresponding temperatures for each geography.
-#'
-#' @export
-hc_min_mortality_temp <- function(df_list,
-                                  var_fun = "bs",
-                                  var_per = c(10,75,90),
-                                  var_degree = 2,
-                                  blup = blup,
-                                  coef_,
-                                  meta_analysis = FALSE) {
-
-  # Assert that df_list is a list of dataframes
-  is_list_of_dfs(list_ = df_list)
-
-  if (!is.null(blup) && !is.list(blup)) {
-    stop("Argument 'blup' must be a list")
-  }
-
-  # Assert that coef is a numeric matrix
-  if (!is.matrix(coef_) || !is.numeric(coef_)) {
-    stop("Argument 'coef_' must be a numeric matrix")
-  }
-
-
-  # Assert that vcov is a list of matrices.
-  # TODO: Functionalise this functionality into a defenses module
-  if (is.list(vcov_)) {
-    for (matr in vcov_){
-      if (!is.matrix(matr)) {
-        stop(paste(
-          "'vcov_' expected a list of matrices. List contains item of",
-          "type", toString(typeof(matr))
-        )
-        )
-      }
-    }
-  } else {
-    stop(paste("'vcov_' expected a list.", toString(typeof(vcov_))))
-  }
-
-
-  # if running a meta-analysis, then MMT is determined by BLUPs
-  # else, MMT is determined by coefficients matrix
-  if (meta_analysis == TRUE){
-
-    coef_list <- lapply(blup, function(x) x$blup)
-
-  } else coef_list <- split(coef_, rownames(coef_))
-
-
-  # Generate matrix for storing results
-  minpercgeog_ <- mintempgeog_ <- rep(NA,length(df_list))
-  names(mintempgeog_) <- names(minpercgeog_) <- names(df_list)
-
-
-  # Define minimum mortality percentile and corresponding temperature per geography: exclude low and very hot temperature
-  for(geog in names(df_list)){
-
-    geog_data <- df_list[[geog]]
-
-    predvar <- quantile(geog_data$temp, 1:99/100, na.rm = TRUE)
-
-    # Redefine the function using all arguments (boundary knots included)
-    argvar <- list(x = predvar,
-                   fun = var_fun,
-                   knots = quantile(geog_data$temp,
-                                    var_per / 100,
-                                    na.rm = TRUE),
-                   degree = var_degree,
-                   Bound = range(geog_data$temp, na.rm = TRUE))
-
-    bvar <- do.call(dlnm::onebasis, argvar)
-
-    minpercgeog_[geog] <- (1:99)[which.min(bvar %*%
-                                             coef_list[[geog]])]
-    mintempgeog_[geog] <- quantile(geog_data$temp,
-                                   minpercgeog_[geog]/100,
-                                   na.rm = TRUE)
-  }
-
-  return(list(minpercgeog_, mintempgeog_))
-
-}
-
 
 #' Run predictions from model
 #'
@@ -1244,175 +885,6 @@ hc_add_national_data <- function(df_list,
   return(list(df_list, cb_list, minpercgeog_, mintempgeog_, mmpredall))
 
 }
-
-
-
-#' Run national predictions from meta analysis
-#'
-#' @description Use the meta analysis to create national level predictions
-#'
-#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
-#' and climate variables which may be disaggregated by a particular region.
-#' @param var_fun Character. Exposure function for argvar
-#' (see dlnm::crossbasis). Defaults to 'bs'.
-#' @param var_per Vector. Internal knot positions for argvar
-#' (see dlnm::crossbasis). Defaults to c(10,75,90).
-#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
-#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
-#' @param minpercgeog Vector. Percentile of maximum suicide temperature for each region.
-#' @param mmpredall List of national coefficients and covariance matrices for the crosspred.
-#' @param pred_list A list containing predictions from the model by region.
-#' @param country Character. Name of country for national level estimates.
-#'
-#' @return A list containing predictions by region.
-#'
-#' @export
-hc_predict_nat <- function(df_list,
-                           var_fun = "bs",
-                           var_per = c(10,75,90),
-                           var_degree = 2,
-                           minpercgeog_,
-                           mmpredall,
-                           pred_list,
-                           country = "National"){
-
-  national_data <- df_list[[country]]
-
-  argvar <- list(x = national_data$temp,
-                 fun = var_fun,
-                 knots = quantile(national_data$temp,
-                                  var_per/100,
-                                  na.rm = TRUE),
-                 degree = var_degree)
-
-  bvar <- do.call(dlnm::onebasis, argvar)
-
-  cen <- quantile(national_data$temp,
-                  minpercgeog_[country]/100,
-                  na.rm=TRUE)
-
-  pred_nat <- dlnm::crosspred(bvar,
-                              coef=mmpredall$fit,
-                              vcov=mmpredall$vcov,
-                              cen=cen,
-                              model.link="log",
-                              by=0.1,
-                              from = min(national_data$temp, na.rm = TRUE),
-                              to = max(national_data$temp, na.rm = TRUE))
-
-  pred_list[[country]] <- pred_nat
-
-
-  return(pred_list)
-
-}
-
-
-#' Power calculation
-#'
-#' @description Produce a power statistic by area for the attributable threshold
-#' as a reference.
-#'
-#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
-#' and climate variables which may be disaggregated by a particular region.
-#' @param pred_list A list containing predictions from the model by region.
-#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
-#' @param attr_thr Integer. Percentile at which to define the temperature threshold for
-#' calculating attributable risk.
-#'
-#' @return A list containing power information by area.
-#'
-#' @export
-hc_power_list <- function(df_list = df_list,
-                          pred_list = pred_list,
-                          minpercgeog_ = minpercgeog_,
-                          attr_thr_high = 97.5,
-                          attr_thr_low = 2.5){
-
-  power_list_high <- list()
-  power_list_low <- list()
-  alpha <- 0.05
-
-  # Power for high temperature
-  for(geog in names(df_list)){
-
-    geog_data <- df_list[[geog]]
-    pred <- pred_list[[geog]]
-    mmt <- round(quantile(geog_data$temp, minpercgeog_[geog]/100, na.rm = TRUE), 1)
-
-    # Compute power for each .1 degree of temperature greater/less than or equal to the high and low temperature thresholds
-
-    thresh_temp_high <- round(quantile(geog_data$temp, attr_thr_high/100, na.rm = TRUE), 1)
-
-    coef_effect_with_se <- data.frame(temperature = round(pred$predvar, 1),
-                                      log_rr = pred$allfit,
-                                      se = pred$allse)
-
-    coef_effect_with_se <- coef_effect_with_se %>%
-      dplyr::filter(temperature >= thresh_temp_high)
-
-    rownames(coef_effect_with_se) <- NULL
-
-    power_df_high <- data.frame(geog = geog,
-                                temperature = coef_effect_with_se$temperature,
-                                mmt = mmt,
-                                log_rr = coef_effect_with_se$log_rr,
-                                se = coef_effect_with_se$se,
-                                z_alpha = qnorm(1 - alpha / 2))
-
-    power_df_high <- power_df_high %>%
-      mutate(power = pnorm(log_rr / se - z_alpha) + (1 - pnorm(log_rr / se + z_alpha))) %>%
-      select(-z_alpha) %>%
-      mutate(log_rr = round(log_rr, 2),
-             se = round(se, 2),
-             power = round(power * 100, 1))
-
-    power_list_high[[geog]] <- power_df_high
-
-  }
-
-  # Power for low temperature
-  for(geog in names(df_list)){
-
-    geog_data <- df_list[[geog]]
-    pred <- pred_list[[geog]]
-    mmt <- round(quantile(geog_data$temp, minpercgeog_[geog]/100, na.rm = TRUE), 1)
-
-    # Compute power for each .1 degree of temperature greater/less than or equal to the high and low temperature thresholds
-
-    thresh_temp_low <- round(quantile(geog_data$temp, attr_thr_low/100, na.rm = TRUE), 1)
-
-    coef_effect_with_se <- data.frame(temperature = round(pred$predvar, 1),
-                                      log_rr = pred$allfit,
-                                      se = pred$allse)
-
-    coef_effect_with_se <- coef_effect_with_se %>%
-      dplyr::filter(temperature <= thresh_temp_low)
-
-    rownames(coef_effect_with_se) <- NULL
-
-    power_df_low <- data.frame(geog = geog,
-                               temperature = coef_effect_with_se$temperature,
-                               mmt = mmt,
-                               log_rr = coef_effect_with_se$log_rr,
-                               se = coef_effect_with_se$se,
-                               z_alpha = qnorm(1 - alpha / 2))
-
-    power_df_low <- power_df_low %>%
-      mutate(power = pnorm(log_rr / se - z_alpha) + (1 - pnorm(log_rr / se + z_alpha))) %>%
-      select(-z_alpha) %>%
-      mutate(log_rr = round(log_rr, 2),
-             se = round(se, 2),
-             power = round(power * 100, 1))
-
-    power_list_low[[geog]] <- power_df_low
-
-  }
-
-  return(list(power_list_high, power_list_low))
-
-}
-
 
 hc_plot_power <- function(power_list_high,
                           power_list_low,
@@ -3292,11 +2764,11 @@ temp_mortality_do_analysis <- function(input_csv_path,
                           dependent_col = dependent_col,
                           population_col = population_col)
 
-  pop_list <- mh_pop_totals(df_list = df_list, #EW: same as MH but pop vs population name difference
+  pop_list <- dlnm_pop_totals(df_list = df_list,
                             country = country,
                             meta_analysis = meta_analysis)
 
-  cb_list <- hc_create_crossbasis(df_list = df_list, #EW: different variables to MH
+  cb_list <- hc_create_crossbasis(df_list = df_list,
                                   var_fun = var_fun,
                                   var_degree = var_degree,
                                   var_per = var_per,
@@ -3304,7 +2776,7 @@ temp_mortality_do_analysis <- function(input_csv_path,
                                   lagnk = lagnk,
                                   dfseas = dfseas)
 
-  c(qaic_results, qaic_summary, #EW: functions called within this differs slightly from MH
+  c(qaic_results, qaic_summary,
     vif_results, vif_summary) %<-% hc_model_validation(df_list = df_list,
                                                        cb_list = cb_list,
                                                        independent_cols = independent_cols,
@@ -3315,38 +2787,37 @@ temp_mortality_do_analysis <- function(input_csv_path,
   model_list <- hc_quasipoisson_dlnm(df_list = df_list,
                                      control_cols = control_cols,
                                      cb_list = cb_list,
-                                     dfseas = dfseas) #EW: may not need dfseas - depends on how formula defined - need QA
+                                     dfseas = dfseas)
 
-  c(coef_, vcov_) %<-% hc_reduce_cumulative(df_list = df_list,
+  c(coef_, vcov_) %<-% dlnm_reduce_cumulative(df_list = df_list,
                                             var_per = var_per,
                                             var_degree = var_degree,
-                                            #cenper = cenper, #EW: only difference between MH and HC?
                                             cb_list = cb_list,
                                             model_list = model_list)
 
   if (meta_analysis == TRUE){
 
-    c(mm, blup, meta_test_res) %<-% hc_meta_analysis(df_list = df_list, #EW: think can use MH function, HC has some validation in
-                                                     coef_ = coef_,
+    c(mm, blup, meta_test_res) %<-% dlnm_meta_analysis(df_list = df_list,
                                                      vcov_ = vcov_,
                                                      save_csv = save_csv,
                                                      output_folder_path = output_folder_path)
 
   } else blup <- NULL
 
-  c(minpercgeog_, mintempgeog_) <- hc_min_mortality_temp(df_list = df_list,
+  c(minpercgeog_, mintempgeog_) <- dlnm_min_mortality_temp(df_list = df_list,
                                                          var_fun = var_fun,
                                                          var_per = var_per,
                                                          var_degree = var_degree,
                                                          blup = blup,
                                                          coef_ = coef_,
-                                                         meta_analysis = meta_analysis)
+                                                         meta_analysis = meta_analysis,
+                                                         outcome_type = "temperature")
 
-  pred_list <- hc_predict(df_list = df_list, #EW: think can use MH function
+  pred_list <- hc_predict(df_list = df_list,
                           var_fun = var_fun,
                           var_per = var_per,
                           var_degree = var_degree,
-                          minpercgeog_ = minpercgeog_, #EW: name difference
+                          minpercgeog_ = minpercgeog_,
                           blup = blup,
                           coef_ = coef_,
                           vcov_ = vcov_,
@@ -3354,7 +2825,7 @@ temp_mortality_do_analysis <- function(input_csv_path,
 
   if (meta_analysis == TRUE){
 
-    c(df_list, cb_list, minpercgeog_, mmpredall) %<-% hc_add_national_data(df_list = df_list, #EW: different model to MH
+    c(df_list, cb_list, minpercgeog_, mmpredall) %<-% hc_add_national_data(df_list = df_list,
                                                                            pop_list = pop_list,
                                                                            var_fun = var_fun,
                                                                            var_per = var_per,
@@ -3366,38 +2837,39 @@ temp_mortality_do_analysis <- function(input_csv_path,
                                                                            mm = mm,
                                                                            minpercgeog_ = minpercgeog_)
 
-    pred_list <- mh_predict_nat(df_list = df_list, # EW: think can use MH function
+    pred_list <- dlnm_predict_nat(df_list = df_list,
                                 var_fun = var_fun,
                                 var_per = var_per,
                                 var_degree = var_degree,
-                                minpercgeog_ = minpercgeog_, #EW: name difference
+                                minpercreg = minpercgeog_,
                                 mmpredall = mmpredall,
                                 pred_list = pred_list,
                                 country = country)
 
   }
 
-  c(power_list_high, power_list_low) <- hc_power_list(df_list = df_list, # EW: repeats same loop twice for high and low thresholds, could be streamlined
+  c(power_list_high, power_list_low) <- dlnm_power_list(df_list = df_list,
                                                       pred_list = pred_list,
                                                       minpercgeog_ = minpercgeog_,
                                                       attr_thr_high = attr_thr_high,
-                                                      attr_thr_low = attr_thr_low)
+                                                      attr_thr_low = attr_thr_low,
+                                                      compute_low = TRUE)
 
-  hc_plot_power(power_list_high = power_list_high,# EW: repeats same loop twice for high and low thresholds, could be streamlined
+  hc_plot_power(power_list_high = power_list_high,
                 power_list_low = power_list_low,
                 save_fig = save_fig,
                 output_folder_path = output_folder_path,
                 country = country)
 
 
-  rr_results <- hc_rr_results(pred_list) # EW: has name differences inside function
+  rr_results <- hc_rr_results(pred_list)
 
 
   hc_plot_rr(df_list = df_list,
              pred_list = pred_list,
-             attr_thr_high = attr_thr_high, #EW: additional threshold to MH
+             attr_thr_high = attr_thr_high,
              attr_thr_low = attr_thr_low,
-             minpercgeog_ = minpercgeog_, #Ew: name difference
+             minpercgeog_ = minpercgeog_,
              country = country,
              save_fig = save_fig,
              output_folder_path = output_folder_path)
@@ -3406,8 +2878,8 @@ temp_mortality_do_analysis <- function(input_csv_path,
   attr_list <- hc_attr(df_list = df_list,
                        cb_list = cb_list,
                        pred_list = pred_list,
-                       minpercgeog_ = minpercgeog_, #Ew: name difference
-                       attr_thr_high = attr_thr_high, #EW: additional threshold to MH
+                       minpercgeog_ = minpercgeog_,
+                       attr_thr_high = attr_thr_high,
                        attr_thr_low = attr_thr_low)
 
   c(res_attr_tot, attr_yr_list, attr_mth_list) %<-% hc_attr_tables(attr_list = attr_list, #Ew: different to MH - extra threshold
@@ -3449,7 +2921,7 @@ temp_mortality_do_analysis <- function(input_csv_path,
 
   if (save_csv == TRUE) {
 
-    hc_save_results(rr_results = rr_results, #EW: think can use MH but diff file names in function
+    hc_save_results(rr_results = rr_results,
                     res_attr_tot = res_attr_tot,
                     attr_yr_list = attr_yr_list,
                     attr_mth_list = attr_mth_list,
