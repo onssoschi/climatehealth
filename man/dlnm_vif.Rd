@@ -10,7 +10,8 @@ dlnm_vif(df_list, independent_cols = NULL)
 \item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
 and climate variables which may be disaggregated by a particular region.}
 
-\item{independent_cols}{Additional independent variables to test in model validation.}
+\item{independent_cols}{Additional independent variables to test in model validation.
+Defaults to NULL.}
 }
 \value{
 A list. Variance inflation factors for each independent variables by region.

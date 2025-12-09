@@ -7,8 +7,10 @@
 #'
 #' @param df_list A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
-#' @param country Character. Name of country for national level estimates.
-#' @param meta_analysis Boolean. Whether to perform a meta-analysis.
+#' @param country Character. Name of country for national level estimates. Defaults
+#' to 'National'
+#' @param meta_analysis Boolean. Whether to perform a meta-analysis. Defaults to
+#' FALSE.
 #'
 #' @returns List of population totals by year and region
 #'
@@ -36,6 +38,7 @@ dlnm_pop_totals <- function(
 #' @param df_list A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
 #' @param independent_cols Additional independent variables to test in model validation.
+#' Defaults to NULL.
 #'
 #' @returns A list. Variance inflation factors for each independent variables by region.
 #'
@@ -85,7 +88,7 @@ dlnm_vif <- function(
 #' @param var_degree Integer. Degree of the piecewise polynomial for argvar
 #' (see dlnm::crossbasis). Defaults to 2 (quadratic).
 #' @param cenper Integer. Value for the percentile in calculating the centering
-#' value 0-100. Defaults to 50.
+#' value 0-100. Defaults to NULL.
 #' @param cb_list List of cross_basis matrices from create_crossbasis function.
 #' @param model_list List of models produced from case-crossover and DLNM
 #' analysis.
@@ -244,13 +247,16 @@ dlnm_meta_analysis <- function(df_list,
 #' @param var_fun Character. Exposure function for argvar
 #' (see dlnm::crossbasis). Defaults to 'bs'.
 #' @param var_per Vector. Internal knot positions for argvar
-#' (see dlnm::crossbasis). Defaults to c(25,50,75).
+#' (see dlnm::crossbasis). Defaults to c(10, 75, 90).
 #' @param var_degree Integer. Degree of the piecewise polynomial for argvar
 #' (see dlnm::crossbasis). Defaults to 2 (quadratic).
 #' @param blup A list. BLUP (best linear unbiased predictions) from the
-#' meta-analysis model for each region.
+#' meta-analysis model for each region. Defaults to NULL.
 #' @param coef_ A matrix of coefficients for the reduced model.
-#' @param meta_analysis Boolean. Whether to perform a meta-analysis.
+#' @param meta_analysis Boolean. Whether to perform a meta-analysis. Defaults
+#' to FALSE.
+#' @param outcome_type Character. The indicator that the function is being used
+#' for. One of 'suicide' or 'temperature'. Defaults to c("temperature", "suicide")
 #'
 #' @returns Percentiles and corresponding temperatures for each geography.
 #'
@@ -274,7 +280,6 @@ dlnm_min_mortality_temp <- function(
   if (!is.matrix(coef_) || !is.numeric(coef_)) {
     stop("Argument 'coef_' must be a numeric matrix")
   }
-  # --- Coefficient source ---
   coef_list <- if (meta_analysis) {
     lapply(blup, function(x) x$blup)
   } else {
@@ -333,13 +338,14 @@ dlnm_min_mortality_temp <- function(
 #' @param var_fun Character. Exposure function for argvar
 #' (see dlnm::crossbasis). Defaults to 'bs'.
 #' @param var_per Vector. Internal knot positions for argvar
-#' (see dlnm::crossbasis). Defaults to c(25,50,75).
+#' (see dlnm::crossbasis). Defaults to c(25, 50, 75).
 #' @param var_degree Integer. Degree of the piecewise polynomial for argvar
 #' (see dlnm::crossbasis). Defaults to 2 (quadratic).
 #' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
 #' @param mmpredall List of national coefficients and covariance matrices for the crosspred.
 #' @param pred_list A list containing predictions from the model by region.
-#' @param country Character. Name of country for national level estimates.
+#' @param country Character. Name of country for national level estimates. Defaults
+#' to National.
 #'
 #' @returns A list containing predictions by region.
 #'
@@ -390,8 +396,12 @@ dlnm_predict_nat <- function(
 #' and climate variables which may be disaggregated by a particular region.
 #' @param pred_list A list containing predictions from the model by region.
 #' @param minpercreg Vector. Percentile of maximum outcome temperature for each region.
-#' @param attr_thr Integer. Percentile at which to define the temperature threshold for
+#' @param attr_thr_high Integer. Percentile at which to define the upper temperature threshold for
 #' calculating attributable risk. Defaults to 97.5.
+#' @param attr_thr_lower Integer. Percentile at which to define the lower temperature threshold for
+#' calculating attributable risk. Defaults to 2.5.
+#' @param compute_lowe Bool. Whether to computer power for the lower threshold.
+#' Defaults to FALSE
 #'
 #' @returns A list containing power information by area.
 #'

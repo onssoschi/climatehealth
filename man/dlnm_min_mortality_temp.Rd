@@ -23,17 +23,21 @@ and climate variables which may be disaggregated by a particular region.}
 (see dlnm::crossbasis). Defaults to 'bs'.}
 
 \item{var_per}{Vector. Internal knot positions for argvar
-(see dlnm::crossbasis). Defaults to c(25,50,75).}
+(see dlnm::crossbasis). Defaults to c(10, 75, 90).}
 
 \item{var_degree}{Integer. Degree of the piecewise polynomial for argvar
 (see dlnm::crossbasis). Defaults to 2 (quadratic).}
 
 \item{blup}{A list. BLUP (best linear unbiased predictions) from the
-meta-analysis model for each region.}
+meta-analysis model for each region. Defaults to NULL.}
 
 \item{coef_}{A matrix of coefficients for the reduced model.}
 
-\item{meta_analysis}{Boolean. Whether to perform a meta-analysis.}
+\item{meta_analysis}{Boolean. Whether to perform a meta-analysis. Defaults
+to FALSE.}
+
+\item{outcome_type}{Character. The indicator that the function is being used
+for. One of 'suicide' or 'temperature'. Defaults to c("temperature", "suicide")}
 }
 \value{
 Percentiles and corresponding temperatures for each geography.
