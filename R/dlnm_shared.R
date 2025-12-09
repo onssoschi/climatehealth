@@ -245,7 +245,7 @@ dlnm_meta_analysis <- function(df_list,
 #'
 #' @returns Percentiles and corresponding temperatures for each geography.
 #'
-#' @export
+#' @keywords internal
 dlnm_min_mortality_temp <- function(
     df_list,
     var_fun = "bs",

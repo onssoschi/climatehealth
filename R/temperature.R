@@ -18,7 +18,7 @@
 #' @return An alphabetically-ordered list of dataframes for each
 #' geography comprising of dates, deaths, and temperatures.
 #'
-#' @export
+#' @keywords internal
 hc_read_data <- function(input_csv_path,
                          dependent_col,
                          date_col,
@@ -36,7 +36,7 @@ hc_read_data <- function(input_csv_path,
   }
   # subset needed cols
   needed_cols <- c(
-    dependent_col
+    dependent_col,
     date_col,
     region_col,
     temperature_col,
@@ -89,7 +89,7 @@ hc_read_data <- function(input_csv_path,
 #'
 #' @returns A list of cross-basis matrices by geography
 #'
-#' @export
+#' @keywords internal
 hc_create_crossbasis <- function(df_list,
                                  var_fun = "bs", #TODO What if natural spline (degree won't be needed as cubic) - if statement
                                  var_degree = 2,
@@ -143,7 +143,7 @@ hc_create_crossbasis <- function(df_list,
 #'   \item `residuals_list` A list. Residuals for each model combination.
 #'   }
 #'
-#' @export
+#' @keywords internal
 hc_model_combo_res <- function(df_list,
                                cb_list,
                                independent_cols = NULL,
@@ -255,7 +255,7 @@ hc_model_combo_res <- function(df_list,
 #'
 #' @return adf_result for each geography.
 #'
-#' @export
+#' @keywords internal
 hc_adf <- function(df_list) {
   adf_list <- list()
 
@@ -309,7 +309,7 @@ hc_adf <- function(df_list) {
 #'   \item `adf_results` A dataframe of ADF test results for each geography.
 #'   }
 #'
-#' @export
+#' @keywords internal
 hc_model_validation <- function(df_list = df_list,
                                 cb_list = cb_list,
                                 independent_cols = NULL,
@@ -597,7 +597,7 @@ hc_model_validation <- function(df_list = df_list,
 #'
 #' @returns List containing models by region
 #'
-#' @export
+#' @keywords internal
 hc_quasipoisson_dlnm <- function(df_list,
                                  control_cols = NULL,
                                  cb_list,
@@ -680,7 +680,7 @@ hc_quasipoisson_dlnm <- function(df_list,
 #' @param var A character. The name of the variable in the model to calculate
 #' p-values for.
 #'
-#' @export
+#' @keywords internal
 #' @return A number. The p-value of the explanatory variable.
 fwald <- function(mm, var) {
 
@@ -720,7 +720,7 @@ fwald <- function(mm, var) {
 #'
 #' @return A list containing predictions by region
 #'
-#' @export
+#' @keywords internal
 hc_predict_subnat <- function(df_list,
                               var_fun = "bs",
                               var_per = c(10,75,90),
@@ -808,7 +808,7 @@ hc_predict_subnat <- function(df_list,
 #'   \item `mmpredall` List. A list of national coefficients and covariance matrices.
 #'   }
 #'
-#' @export
+#' @keywords internal
 hc_add_national_data <- function(df_list,
                                  pop_list,
                                  var_fun = "bs",
@@ -973,7 +973,7 @@ hc_plot_power <- function(power_list_high,
 #' @returns Dataframe containing cumulative relative risk and confidence
 #' intervals from analysis.
 #'
-#' @export
+#' @keywords internal
 hc_rr_results <- function(pred_list,
                           df_list,
                           attr_thr_high = 97.5,
@@ -1038,7 +1038,7 @@ hc_rr_results <- function(pred_list,
 #' @returns Plots of cumulative lag exposure-response function with histogram of
 #' temperature distribution for each region
 #'
-#' @export
+#' @keywords internal
 hc_plot_rr <- function(df_list,
                        pred_list,
                        attr_thr_high = 97.5,
@@ -1197,7 +1197,7 @@ hc_plot_rr <- function(df_list,
 #'
 #' @return A list containing attributable numbers per region
 #'
-#' @export
+#' @keywords internal
 hc_attr <- function(df_list,
                     cb_list,
                     pred_list,
@@ -1303,7 +1303,7 @@ hc_attr <- function(df_list,
 #'   fractions, numbers and rates by calendar month and area.
 #'   }
 #'
-#' @export
+#' @keywords internal
 hc_attr_tables <- function(attr_list,
                            country = "National",
                            meta_analysis = FALSE) {
@@ -1400,7 +1400,7 @@ hc_attr_tables <- function(attr_list,
 #'
 #' @return Plots of total attributable fractions and rates by area
 #'
-#' @export
+#' @keywords internal
 hc_plot_attr_heat_totals <- function(df_list,
                                      res_attr_tot,
                                      save_fig = FALSE,
@@ -1531,7 +1531,7 @@ hc_plot_attr_heat_totals <- function(df_list,
 #'
 #' @return Plots of total attributable fractions and rates by area
 #'
-#' @export
+#' @keywords internal
 hc_plot_attr_cold_totals <- function(df_list,
                                      res_attr_tot,
                                      save_fig = FALSE,
@@ -1659,7 +1659,7 @@ hc_plot_attr_cold_totals <- function(df_list,
 #'
 #' @return Plots of yearly attributable fractions per area
 #'
-#' @export
+#' @keywords internal
 hc_plot_af_heat_yearly <- function(attr_yr_list,
                                    save_fig = FALSE,
                                    output_folder_path = NULL,
@@ -1772,7 +1772,7 @@ hc_plot_af_heat_yearly <- function(attr_yr_list,
 #'
 #' @return Plots of yearly attributable fractions per area
 #'
-#' @export
+#' @keywords internal
 hc_plot_af_cold_yearly <- function(attr_yr_list,
                                    save_fig = FALSE,
                                    output_folder_path = NULL,
@@ -1883,7 +1883,7 @@ hc_plot_af_cold_yearly <- function(attr_yr_list,
 #'
 #' @return Plots of yearly attributable rates per area
 #'
-#' @export
+#' @keywords internal
 hc_plot_ar_heat_yearly <- function(attr_yr_list,
                                    save_fig = FALSE,
                                    output_folder_path = NULL,
@@ -1995,7 +1995,7 @@ hc_plot_ar_heat_yearly <- function(attr_yr_list,
 #'
 #' @return Plots of yearly attributable rates per area
 #'
-#' @export
+#' @keywords internal
 hc_plot_ar_cold_yearly <- function(attr_yr_list,
                                    save_fig = FALSE,
                                    output_folder_path = NULL,
@@ -2111,7 +2111,7 @@ hc_plot_ar_cold_yearly <- function(attr_yr_list,
 #'
 #' @return Plots of attributable fractions by calendar month per area
 #'
-#' @export
+#' @keywords internal
 hc_plot_af_heat_monthly <- function(attr_mth_list,
                                     df_list,
                                     country = "National",
@@ -2241,7 +2241,7 @@ hc_plot_af_heat_monthly <- function(attr_mth_list,
 #'
 #' @return Plots of attributable fractions by calendar month per area
 #'
-#' @export
+#' @keywords internal
 hc_plot_af_cold_monthly <- function(attr_mth_list,
                                     df_list,
                                     country = "National",
@@ -2370,7 +2370,7 @@ hc_plot_af_cold_monthly <- function(attr_mth_list,
 #'
 #' @return Plots of attributable rates by calendar month per area
 #'
-#' @export
+#' @keywords internal
 hc_plot_ar_heat_monthly <- function(attr_mth_list,
                                     df_list,
                                     country = "National",
@@ -2499,7 +2499,7 @@ hc_plot_ar_heat_monthly <- function(attr_mth_list,
 #'
 #' @return Plots of attributable rates by calendar month per area
 #'
-#' @export
+#' @keywords internal
 hc_plot_ar_cold_monthly <- function(attr_mth_list,
                                     df_list,
                                     country = "National",
@@ -2624,7 +2624,7 @@ hc_plot_ar_cold_monthly <- function(attr_mth_list,
 #' @param output_folder_path Path to folder where results should be saved.
 #' Defaults to NULL.
 #'
-#' @export
+#' @keywords internal
 hc_save_results <- function(rr_results,
                             res_attr_tot,
                             attr_yr_list,
