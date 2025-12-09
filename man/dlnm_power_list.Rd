@@ -19,10 +19,16 @@ and climate variables which may be disaggregated by a particular region.}
 
 \item{pred_list}{A list containing predictions from the model by region.}
 
+\item{attr_thr_high}{Integer. Percentile at which to define the upper temperature threshold for
+calculating attributable risk. Defaults to 97.5.}
+
 \item{minpercreg}{Vector. Percentile of maximum outcome temperature for each region.}
 
-\item{attr_thr}{Integer. Percentile at which to define the temperature threshold for
-calculating attributable risk. Defaults to 97.5.}
+\item{attr_thr_lower}{Integer. Percentile at which to define the lower temperature threshold for
+calculating attributable risk. Defaults to 2.5.}
+
+\item{compute_lowe}{Bool. Whether to computer power for the lower threshold.
+Defaults to FALSE}
 }
 \value{
 A list containing power information by area.

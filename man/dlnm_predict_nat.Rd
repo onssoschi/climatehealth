@@ -23,7 +23,7 @@ and climate variables which may be disaggregated by a particular region.}
 (see dlnm::crossbasis). Defaults to 'bs'.}
 
 \item{var_per}{Vector. Internal knot positions for argvar
-(see dlnm::crossbasis). Defaults to c(25,50,75).}
+(see dlnm::crossbasis). Defaults to c(25, 50, 75).}
 
 \item{var_degree}{Integer. Degree of the piecewise polynomial for argvar
 (see dlnm::crossbasis). Defaults to 2 (quadratic).}
@@ -34,7 +34,8 @@ and climate variables which may be disaggregated by a particular region.}
 
 \item{pred_list}{A list containing predictions from the model by region.}
 
-\item{country}{Character. Name of country for national level estimates.}
+\item{country}{Character. Name of country for national level estimates. Defaults
+to National.}
 }
 \value{
 A list containing predictions by region.

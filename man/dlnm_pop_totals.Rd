@@ -10,9 +10,11 @@ dlnm_pop_totals(df_list, country = "National", meta_analysis = FALSE)
 \item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
 and climate variables which may be disaggregated by a particular region.}
 
-\item{country}{Character. Name of country for national level estimates.}
+\item{country}{Character. Name of country for national level estimates. Defaults
+to 'National'}
 
-\item{meta_analysis}{Boolean. Whether to perform a meta-analysis.}
+\item{meta_analysis}{Boolean. Whether to perform a meta-analysis. Defaults to
+FALSE.}
 }
 \value{
 List of population totals by year and region

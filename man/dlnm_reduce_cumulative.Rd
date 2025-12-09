@@ -24,7 +24,7 @@ and climate variables which may be disaggregated by a particular region.}
 (see dlnm::crossbasis). Defaults to 2 (quadratic).}
 
 \item{cenper}{Integer. Value for the percentile in calculating the centering
-value 0-100. Defaults to 50.}
+value 0-100. Defaults to NULL.}
 
 \item{cb_list}{List of cross_basis matrices from create_crossbasis function.}
 
