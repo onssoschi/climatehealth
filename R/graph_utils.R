@@ -284,28 +284,73 @@ plot_scatter_grid <- function(
 
   if (save_scatters) {
     output_path <- enforce_file_extension(output_path, ".pdf")
-    pdf(output_path, width = 8, height = 8)
+    plot_height <- max(10, length(comparison_cols)*2)
+    pdf(output_path, width = 10, height = plot_height)
   }
 
   par(mfrow = grid_size, col = "white", oma = c(0, 0, 6, 0))
-  point_colour <- get_alpha_colour("#27a0cc", 0.25)
+  point_colour <- get_alpha_colour("#296991", 0.25)
+  line_colour  <- "#C75E70"                          # Dusky Rose
+
+
+  # sample 20% to reduce file size; keep all rows if tiny dataset
+  n <- nrow(df)
+  idx_all <- if (n >= 10000) sample.int(n, max(2L, floor(n * 0.20))) else seq_len(n)
 
   for (i in seq_along(comparison_cols)) {
     x_col <- comparison_cols[i]
-    xlab <- label_with_unit(x_col, units)
-    ylab <- label_with_unit(main_col, units)
+    xlab  <- label_with_unit(x_col, units)
+    ylab  <- label_with_unit(main_col, units)
 
+    # sample, drop NA/Inf
+    x <- df[[x_col]][idx_all]
+    y <- df[[main_col]][idx_all]
+    ok <- is.finite(x) & is.finite(y)
+    x <- x[ok]; y <- y[ok]
+
+    # scatter
     plot(
-      x = df[[x_col]],
-      y = df[[main_col]],
+      x = x, y = y,
       col = point_colour,
       xlab = xlab,
       ylab = ylab,
       main = paste0(main_col, " vs ", x_col)
     )
-  }
+
+    # LOESS line of best fit (span tuned for stability)
+    if (length(x) >= 10) {
+      df_fit <- data.frame(x = x, y = y)
+      fit <- try(loess(y ~ x, data = df_fit, span = 0.7), silent = TRUE)
+      if (!inherits(fit, "try-error")) {
+        xs <- seq(min(x), max(x), length.out = 200)
+        lines(xs, predict(fit, newdata = data.frame(x = xs)), col = line_colour, lwd = 2)
+      }
+    }
+    }
 
   mtext(title, outer = TRUE, cex = 1.6, line = 1, font = 2, col = "black")
+
+  # single legend for the whole picture (bottom strip)
+  par(fig = c(0, 1, 0, 0.06), mar = c(0, 0, 0, 0), new = TRUE, xpd = NA)
+  plot.new()
+
+  # scope-aware legend note
+  is_full <- grepl("\\bfull dataset\\b", tolower(title))
+  note_text <- if (is_full) "Only 20% of data plotted to reduce file size"
+  else         " "
+
+  legend("bottom",
+         legend  = c("points", "LOESS fit", note_text),
+         pch     = c(16, NA, NA),
+         lty     = c(NA, 1, NA),
+         lwd     = c(NA, 2, NA),
+         col     = c(point_colour, line_colour, NA),
+         text.col = "black",       # ensure visible text
+         horiz   = TRUE,           # bottom, single-row legend
+         bty     = "n",
+         cex     = 1.15,           # bigger text size
+         seg.len = 1.1,
+         inset = -0.03)
 
   if (save_scatters) {
     dev.off()
