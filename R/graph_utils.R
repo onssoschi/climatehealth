@@ -73,7 +73,8 @@ plot_distributions <- function(
   if (save_hists == T) {
     # normalise output path
     output_path <- enforce_file_extension(output_path, ".pdf")
-    pdf(output_path)
+    plot_height <- max(10, length(columns)*2)
+    pdf(output_path, width = 10, height = plot_height)
   }
   # normalise columns
   columns <- c(columns)
@@ -87,16 +88,30 @@ plot_distributions <- function(
     oma = c(0, 0, 6, 0)
   )
 
+
+
   for (i in seq_along(columns)) {
     col_name <- columns[i]
     xlab <- if (!is.null(xlabs) && length(xlabs) >= i) xlabs[i] else col_name
+
+    x <- df[[col_name]]
+    rng <- range(x, na.rm = TRUE)
+    span <- rng[2] - rng[1]
+
+    # fallback for degenerate ranges (all values equal or NA)
+    if (!is.finite(span) || span <= 0) {
+      eps <- 1e-6
+      br <- seq(rng[1] - eps, rng[1] + eps, length.out = 15)
+    } else {
+      br <- seq(rng[1], rng[2], length.out = 15)
+    }
 
     hist(
       df[[col_name]],
       col = "#a8bd3a",
       xlab = xlab,
       main = paste0("Distribution of '", col_name, "'"),
-      breaks = 14
+      breaks = br
     )
   }
   mtext(title, outer = TRUE, cex = 1.6, line = 1, font = 2, col = "black")
