@@ -310,7 +310,8 @@ plot_boxplots <- function(
   # Save to PDF if requested
   if (save_plot) {
     output_path <- enforce_file_extension(output_path, ".pdf")
-    pdf(output_path)
+    plot_height <- max(10, length(selected_cols)*2)
+    pdf(output_path, width = 10, height = plot_height)
   }
 
   grid_size <- create_grid(length(selected_cols))
