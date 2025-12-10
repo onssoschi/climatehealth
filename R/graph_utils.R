@@ -28,6 +28,7 @@ create_grid <- function(plot_count) {
 }
 
 
+
 #' Plot a correlation matrix include a heatmap.
 #'
 #' @param matrix_ The matrix to plot.
@@ -40,14 +41,34 @@ plot_correlation_matrix <- function(matrix_, title, output_path) {
   output_path <- enforce_file_extension(output_path, ".png")
   # round correlation metrics
   matrix_ <- round(matrix_, 3)
-  # draw and save correlation matrix
-  png(output_path, width = 1000)
-  gplots::heatmap.2(
-    x = as.matrix(matrix_), Rowv = FALSE, Colv = FALSE, dendrogram = "none",
-    cellnote = matrix_, notecol = "black", notecex = 2, cexRow = 2, cexCol = 2,
-    trace = "none", key = FALSE, margins = c(11, 11), main = title
+
+  # design palette (Prussian Blue/Deep water -> Smoke grey -> Dusky Rose)
+  n <- 256; half <- n / 2
+  cols_neg <- grDevices::colorRampPalette(c("#0A2E4D", "#296991", "#F2F2F2"))(half)  # strong blue at -1 to white at 0
+  cols_pos <- grDevices::colorRampPalette(c("#F2F2F2", "#C75E70"))(half)             # white at 0 to strong red at +1
+  col_scheme <- c(cols_neg, cols_pos)
+
+  # symmetric breaks centered on 0 so white is exactly neutral
+  breaks <- c(
+    seq(-1, 0, length.out = half + 1),
+    seq(0, 1, length.out = half + 1)[-1]
   )
-  dev.off()
+
+  # draw and save correlation matrix
+  png(filename = output_path, units = "in", width = 11.69, height = 8.27, res = 300)
+
+  gplots::heatmap.2(
+    x = as.matrix(matrix_),
+    Rowv = FALSE, Colv = FALSE, dendrogram = "none",
+    cellnote = formatC(matrix_, format = "f", digits = 3),
+    notecol = "#000000", notecex = 2,
+    cexRow = 1.6, cexCol = 1.6,
+    trace = "none", key = FALSE,
+    margins = c(11, 11),
+    main = title,
+    col = col_scheme, breaks = breaks
+  )
+  grDevices::dev.off()
 }
 
 
