@@ -345,10 +345,10 @@ plot_scatter_grid <- function(
          lty     = c(NA, 1, NA),
          lwd     = c(NA, 2, NA),
          col     = c(point_colour, line_colour, NA),
-         text.col = "black",       # ensure visible text
-         horiz   = TRUE,           # bottom, single-row legend
+         text.col = "black",
+         horiz   = TRUE,
          bty     = "n",
-         cex     = 1.15,           # bigger text size
+         cex     = 1.15,
          seg.len = 1.1,
          inset = -0.03)
 
