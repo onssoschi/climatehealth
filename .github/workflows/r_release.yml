@@ -53,7 +53,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          Rscript -e "install.packages('devtools','remotes','pak')"
+          Rscript -e "install.packages(c('devtools', 'remotes', 'pak'))"
           Rscript -e "pak::repo_add('rspatial','https://rspatial.r-universe.dev')"
           Rscript -e "pak::pkg_install(pak::pkg_deps('.', dependencies = c('Depends','Imports','LinkingTo')))"
 
