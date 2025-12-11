@@ -44,9 +44,6 @@ jobs:
           r-version: "4.4.1"
           use-public-rspm: true
 
-      - name: Set up R Tools
-        uses: r-lib/actions/setup-rtools@v2
-
       - name: Install dependencies
         run: |
           Rscript -e "install.packages('devtools')"
