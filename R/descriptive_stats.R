@@ -154,12 +154,11 @@ create_na_summary <- function(
   na_summary <- data.frame(
     column = columns,
     na_count = na_count,
-    na_proportion = (round(na_percent, 2) / 100)
+    na_percent = round(na_percent, 2)
   )
   rownames(na_summary) <- NULL
   return(na_summary)
 }
-
 
 #' Detect Outliers Using the IQR Method
 #'
@@ -340,15 +339,29 @@ common_descriptive_stats_core <- function(
     pdf(na_counts_path)
     par(mar = c(8, 4, 4, 4) + 0.1)
 
+    # left axis: counts — force a sensible upper bound even if all zeros
+    y_max <- max(na_summary$na_count, na.rm = TRUE)
+    y_max <- max(10, ceiling(y_max / 10) * 10)
+    if (!is.finite(y_max) || y_max < 1) y_max <- 10
+
     bar_midpoints <- barplot(
       height = na_summary$na_count,
       names.arg = na_summary$column,
       las = 2,
-      col = "#003c57",
+      col = "#296991",
       ylab = "NA Count",
-      main = paste0("NA counts - ", title)
+      main = paste0("NA counts - ", title),
+      ylim = c(0, y_max),
+      yaxs = "i",
+      yaxt = "n"
       )
+    axis(side = 2,
+         at = seq(0, y_max,length.out = 11))
 
+
+    pmax <- max(na_summary$na_percent, na.rm = TRUE)
+    lim_hi <- if (is.finite(pmax) && pmax <= 2) 2 else 100
+    ticks  <- if (lim_hi == 100) seq(0, 100, by = 10) else seq(0, lim_hi, length.out = 11)
     par(new = TRUE)
     plot(
       x = bar_midpoints,
@@ -357,11 +370,15 @@ common_descriptive_stats_core <- function(
       axes = FALSE,
       xlab = "",
       ylab = "",
-      col = "#a8bd3a",
-      pch = 16
+      col = "#C75E70",
+      pch = 16,
+      ylim = c(-min(2, lim_hi * 0.1), lim_hi),
+      yaxs = "i"
     )
-    axis(side = 4, col = "#a8bd3a", col.axis = "#a8bd3a")
-    mtext("NA Percentage", side = 4, line = 3, col = "#a8bd3a")
+    axis(side = 4,
+         at = ticks,
+         labels = ticks)
+    mtext("NA Percent", side = 4, line = 3, col = "black")
 
     dev.off()
   }
