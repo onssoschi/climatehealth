@@ -6,7 +6,7 @@
 stratified case-crossover approach with distributed lag non-linear model}
 \usage{
 temp_mortality_do_analysis(
-  input_csv_path,
+  data_path,
   date_col,
   geography_col,
   temperature_col,
@@ -30,6 +30,10 @@ temp_mortality_do_analysis(
 )
 }
 \arguments{
+\item{data_path}{Path to a csv file containing a daily time series of data
+for a particular health outcome and climate variables, which may be
+disaggregated by region.}
+
 \item{date_col}{Character. Name of the column in the dataframe that contains
 the date.}
 
@@ -65,10 +69,6 @@ FALSE.}
 
 \item{output_folder_path}{Path to folder where plots and/or CSV should be
 saved. Defaults to NULL.}
-
-\item{data_path}{Path to a csv file containing a daily time series of data
-for a particular health outcome and climate variables, which may be
-disaggregated by region.}
 
 \item{region_col}{Character. Name of the column in the dataframe that contains
 the region names. Defaults to NULL.}

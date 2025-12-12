@@ -47,7 +47,7 @@ dlnm_vif <- function(
     df_list,
     independent_cols = NULL) {
   # determine formula var
-  col_name <- ifelse(suicides %in% colnames(df_list[[1]]), "suicides", "dependent")
+  col_name <- ifelse("suicides" %in% colnames(df_list[[1]]), "suicides", "dependent")
   # get all combinations
   all_combos <- unlist(lapply(1:length(independent_cols), function(i) {
     combn(independent_cols, i, simplify = FALSE)
@@ -118,12 +118,12 @@ dlnm_reduce_cumulative <- function(
   for (reg in names(df_list)) {
     region_data <- df_list[[reg]]
     cb <- cb_list[[reg]]
-    cenper <- ifelse(
+    cenper_ <- ifelse(
       is.null(cenper),
       mean(region_data$temp, na.rm = TRUE),
       quantile(region_data$temp, cenper / 100, na.rm = T)
     )
-    red <- dlnm::crossreduce(cb, model_list[[reg]], cen = cenper)
+    red <- dlnm::crossreduce(cb, model_list[[reg]], cen = cenper_)
     coef_[reg, ] <- coef(red)
     vcov_[[reg]] <- vcov(red)
   }
