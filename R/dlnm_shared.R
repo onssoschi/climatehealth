@@ -272,7 +272,6 @@ dlnm_min_mortality_temp <- function(
     outcome_type = c("temperature", "suicide")) {
   outcome_type <- match.arg(outcome_type)
   is_list_of_dfs(list_ = df_list)
-  print(outcome_type)
   if (!is.null(blup) && !is.list(blup)) {
     stop("Argument 'blup' must be a list")
   }

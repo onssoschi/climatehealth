@@ -47,8 +47,17 @@ mh_read_and_format_data <- function(
     health_outcome_col,
     population_col
   )
+  standard_cols <- c(
+    "date", "region", "tmean", "health_outcome", "population"
+  )
+  for (i in seq_along(standard_cols)) {
+    std_col <- standard_cols[i]
+    need_col <- needed_cols[i]
+    if (!identical(std_col, need_col) && std_col %in% names(df)) {
+      df[[std_col]] <- NULL
+    }
+  }
   df <- df %>%
-    dplyr::select(all_of(needed_cols)) %>%
     dplyr::rename(
       date = date_col,
       region = region_col,
@@ -160,7 +169,6 @@ mh_model_combo_res <- function(
   all_combos <- unlist(lapply(0:length(transformed_vars), function(i) {
     combn(transformed_vars, i, simplify = FALSE)
   }), recursive = FALSE)
-
   for (reg in names(df_list)) {
     formula_list <- list()
     region_data <- df_list[[reg]]
@@ -171,7 +179,6 @@ mh_model_combo_res <- function(
         assign(paste0(v, "_ns"), ns_matrix)
       }
     }
-    print("okay")
     for (vars in all_combos) {
       # Build the full formula string
       formula_str <- paste(
@@ -1122,7 +1129,7 @@ mh_attr_tables <- function(
         ar_lower_ci = .data$an_lower_ci / .data$population * 100000,
         ar_upper_ci = .data$an_upper_ci / .data$population * 100000
       ) %>%
-      select(all_of(c(-"sim_rows", -"sim_sum")))
+      select(-all_of("sim_rows"), -all_of("sim_sum"))
 
     res_list[[grp_name]] <- grouped
   }
@@ -1998,6 +2005,21 @@ suicides_heat_do_analysis <- function(
     save_fig = FALSE,
     save_csv = FALSE,
     output_folder_path = NULL) {
+  # Setup additional output DIR
+  if (!is.null(output_folder_path)) {
+    # Check output dir exists
+    check_file_exists(output_folder_path, TRUE)
+    new_fpath <- file.path(
+      output_folder_path,
+      paste0("suicides_analysis_", format(Sys.time(), "%d_%m_%Y_%H_%M"))
+    )
+    if (!is.null(new_fpath)) {
+      (
+        dir.create(new_fpath)
+      )
+    }
+    output_folder_path <- new_fpath
+  }
   # read and normalise input dataset
   df_list <- mh_read_and_format_data(
     data_path = data_path,
@@ -2023,7 +2045,6 @@ suicides_heat_do_analysis <- function(
     lag_breaks = lag_breaks,
     lag_days = lag_days
   )
-  print("!")
   # calculate qaic and vif for model validation
   c(
     qaic_results, qaic_summary, vif_results, vif_summary
@@ -2035,14 +2056,12 @@ suicides_heat_do_analysis <- function(
     save_csv = save_csv,
     output_folder_path = output_folder_path
   )
-  print("!")
   # create list of DLNM models
   model_list <- mh_casecrossover_dlnm(
     df_list = df_list,
     control_cols = control_cols,
     cb_list = cb_list
   )
-  print("!")
   # calculate values for reduced model
   c(coef_, vcov_) %<-% dlnm_reduce_cumulative(
     df_list = df_list,
@@ -2052,7 +2071,6 @@ suicides_heat_do_analysis <- function(
     cb_list = cb_list,
     model_list = model_list
   )
-  print("!")
   # conditionally carry out meta-analysis
   if (meta_analysis == TRUE) {
     c(mm, blup, meta_test_res) %<-% dlnm_meta_analysis(
@@ -2067,7 +2085,7 @@ suicides_heat_do_analysis <- function(
     blup <- NULL
     meta_test_res <- NULL
   }
-  print("!")
+  
   # get vector of minimum suicide temperatures (percentile)
   minpercreg <- dlnm_min_mortality_temp(
     df_list = df_list,
@@ -2123,7 +2141,7 @@ suicides_heat_do_analysis <- function(
   power_list <- dlnm_power_list(
     df_list = df_list,
     pred_list = pred_list,
-    minpercreg = minpercreg,
+    minperc = minpercreg,
     attr_thr_high = attr_thr,
     compute_low = FALSE
   )
