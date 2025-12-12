@@ -139,7 +139,7 @@ load_and_process_data <- function(
     }
     data <- data %>%
       rename(
-        date = all_of(date_col)
+        date = date_col
       ) %>%
       mutate(
         year = lubridate::year(date),
@@ -156,12 +156,12 @@ load_and_process_data <- function(
   data <- data %>%
     dplyr::select(any_of(needed_cols)) %>%
     dplyr::rename(
-      year = all_of(year_col),
-      month = all_of(month_col),
-      region = all_of(region_col),
-      district = all_of(district_col),
-      !!case_sym := all_of(case_col),
-      tot_pop = all_of(tot_pop_col)
+      year = year_col,
+      month = month_col,
+      region = region_col,
+      district = district_col,
+      !!case_sym := case_col,
+      tot_pop = tot_pop_col
     ) %>%
     dplyr::select(
       all_of(c("region", "district", "year", "month", case_type, "tot_pop"))
@@ -466,11 +466,7 @@ combine_health_climate_data <- function(
   map <- dplyr::left_join(map_data$map, grid_data, by = c("region", "district")) %>%
     dplyr::arrange(.data$region_code, .data$district_code)
 
-  grid_data <- dplyr::rename(
-    grid_data,
-    name = all_of("region"),
-    code_num = all_of("region_code")
-  )
+  grid_data <- dplyr::rename(grid_data, name = .data$region, code_num = .data$region_code)
 
   summary_stats <- list(
     tmin = summary(data$tmin),
