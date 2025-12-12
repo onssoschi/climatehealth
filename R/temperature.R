@@ -29,7 +29,7 @@ hc_read_data <- function(input_csv_path,
   df <- read_input_data(input_csv_path)
 
   # Format the geography column. If geog is missing, then assume geographies are aggregated or only single input geography
-  if (is.null(geography_col)) {
+  if (is.null(region_col)) {
     df <- df %>%
       dplyr::mutate(geog = "aggregated")
   }
@@ -41,9 +41,18 @@ hc_read_data <- function(input_csv_path,
     temperature_col,
     population_col
   )
+  standard_cols <- c(
+    "depdendent", "date", "region", "temp", "population"
+  )
+  for (i in seq_along(standard_cols)) {
+    std_col <- standard_cols[i]
+    need_col <- needed_cols[i]
+    if (!identical(std_col, need_col) && std_col %in% names(df)) {
+      df[[std_col]] <- NULL
+    }
+  }
   # Rename the columns
   df <- df %>%
-    dplyr::select(all_of(neeed_cols)) %>%
     dplyr::rename(
       dependent = dependent_col,
       date = date_col,
@@ -56,7 +65,7 @@ hc_read_data <- function(input_csv_path,
       year = as.factor(lubridate::year(date)),
       month = as.factor(lubridate::month(date)),
       dow = as.factor(lubridate::wday(date, label = TRUE)),
-      region = as.factor(geog)
+      region = as.factor(.data$region)
     )
 
   # Reformat data and fill NaNs
@@ -67,8 +76,7 @@ hc_read_data <- function(input_csv_path,
   )
   # Split the data by region
   df_list <- aggregate_by_column(df, "region")
-
-  return(list(df_list))
+  return(df_list)
 }
 
 #' Create cross-basis matrix
@@ -180,6 +188,7 @@ hc_model_combo_res <- function(df_list,
   }
 
   for (geog in names(df_list)) {
+
     formula_list <- list()
 
     geog_data <- df_list[[geog]]
@@ -192,11 +201,11 @@ hc_model_combo_res <- function(df_list,
       }
     }
 
-    # define the base independent cols
+    k <- length(unique(geog_data$year))
     base_independent_cols <- c(
       "cb",
       "dow",
-      paste0("splines::ns(date, df = ", dfseas, " * length(unique(year)))")
+      sprintf("splines::ns(as.numeric(date), df = %d)", k)
     )
 
     for (vars in all_combos) {
@@ -264,9 +273,9 @@ hc_adf <- function(df_list) {
 
     # Perform Augmented Dickey-Fuller Test - values can only be missing in first and last rows of series
     # null hypothesis = time series is non stationary
-    adf_test_res <- adf.test(geog_data$dependent)
-    cat("ADF Test for", geog, ":\n")
-    print(adf_test_res)
+    adf_test_res <- tseries::adf.test(geog_data$dependent)
+    # cat("ADF Test for", geog, ":\n")
+    # print(adf_test_res)
 
     adf_df <- data.frame(
       adf_test_stat = as.numeric(adf_test_res$statistic),
@@ -309,13 +318,20 @@ hc_adf <- function(df_list) {
 #'   }
 #'
 #' @keywords internal
-hc_model_validation <- function(df_list = df_list,
-                                cb_list = cb_list,
+hc_model_validation <- function(df_list,
+                                cb_list,
                                 independent_cols = NULL,
-                                dfseas = dfseas,
+                                dfseas = 8,
                                 save_fig = FALSE,
                                 save_csv = FALSE,
                                 output_folder_path = NULL) {
+  # Create empty storage
+  qaic_results <- NULL
+  qaic_summary <- NULL
+  vif_results <- NULL
+  vif_summary <- NULL
+  adf_results <- NULL
+  
   # QAIC results to csv
   c(qaic_results, residuals_list) %<-% hc_model_combo_res(
     df_list = df_list,
@@ -694,7 +710,7 @@ hc_predict_subnat <- function(df_list,
                               var_fun = "bs",
                               var_per = c(10, 75, 90),
                               var_degree = 2,
-                              minpercgeog_,
+                              mintempgeog_,
                               blup,
                               coef_,
                               vcov_,
@@ -789,19 +805,19 @@ hc_add_national_data <- function(df_list,
   national_data <- as.data.frame(do.call(rbind, df_list))
 
   nat_pop <- pop_list[[country]] %>%
-    rename(nat_pop = pop)
+    rename(nat_pop = population)
 
   national_data <- national_data %>%
-    left_join(nat_pop, by = "year") %>%
-    mutate(
-      weight = pop / nat_pop,
+    dplyr::left_join(nat_pop, by = "year") %>%
+    dplyr::mutate(
+      weight = population / nat_pop,
       weighted_temp = temp * weight
     ) %>%
-    group_by(date) %>%
-    summarise(
+    dplyr::group_by(date) %>%
+    dplyr::summarise(
       temp = round(sum(weighted_temp, na.rm = TRUE), 2),
       dependent = sum(dependent, na.rm = TRUE),
-      pop = unique(nat_pop)
+      population = unique(nat_pop)
     ) %>%
     mutate(
       year = as.factor(lubridate::year(date)),
@@ -862,7 +878,7 @@ hc_add_national_data <- function(df_list,
 
   minpercgeog_[country] <- minpercnat
 
-  return(list(df_list, cb_list, minpercgeog_, mintempgeog_, mmpredall))
+  return(list(df_list, cb_list, minpercgeog_, mmpredall))
 }
 
 hc_plot_power <- function(power_list_high,
@@ -871,9 +887,9 @@ hc_plot_power <- function(power_list_high,
                           output_folder_path = NULL,
                           country = "National") {
   # High temperature
-  if (output_config$save_fig == TRUE) {
+  if (save_fig == TRUE) {
     grid <- c(min(length(power_list_high), 3), ceiling(length(power_list_high) / 3))
-    output_path <- file.path(path_config$output_folder_path, "model_validation", "power_vs_high_temperature.pdf")
+    output_path <- file.path(output_folder_path, "model_validation", "power_vs_high_temperature.pdf")
     pdf(output_path, width = max(10, grid[1] * 5.5), height = max(7, grid[2] * 4.5))
     par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0), mar = c(8, 4, 5, 4))
   }
@@ -901,17 +917,17 @@ hc_plot_power <- function(power_list_high,
     )
   }
 
-  if (output_config$save_fig == TRUE) {
-    title <- paste0("Power vs. high temperatures by geography, ", model_config$country)
+  if (save_fig == TRUE) {
+    title <- paste0("Power vs. high temperatures by geography, ", country)
     mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
     dev.off()
   }
 
 
   # Low temperature
-  if (output_config$save_fig == TRUE) {
+  if (save_fig == TRUE) {
     grid <- c(min(length(power_list_low), 3), ceiling(length(power_list_low) / 3))
-    output_path <- file.path(path_config$output_folder_path, "model_validation", "power_vs_low_temperature.pdf")
+    output_path <- file.path(output_folder_path, "model_validation", "power_vs_low_temperature.pdf")
     pdf(output_path, width = max(10, grid[1] * 5.5), height = max(7, grid[2] * 4.5))
     par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0), mar = c(8, 4, 5, 4))
   }
@@ -939,8 +955,8 @@ hc_plot_power <- function(power_list_high,
     )
   }
 
-  if (output_config$save_fig == TRUE) {
-    title <- paste0("Power vs. low temperatures by geography, ", model_config$country)
+  if (save_fig == TRUE) {
+    title <- paste0("Power vs. low temperatures by geography, ", country)
     mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
     dev.off()
   }
@@ -960,6 +976,7 @@ hc_plot_power <- function(power_list_high,
 #' @keywords internal
 hc_rr_results <- function(pred_list,
                           df_list,
+                          minpercgeog_,
                           attr_thr_high = 97.5,
                           attr_thr_low = 2.5) {
   rr_results <- bind_rows(lapply(names(pred_list), function(geog_name) {
@@ -1143,7 +1160,7 @@ hc_plot_rr <- function(df_list,
     mtext("Frequency (days)", side = 4, line = 3, adj = adj_val, cex = 0.7)
   }
 
-  if (output_config$save_fig == TRUE) {
+  if (save_fig == TRUE) {
     year_range <- paste0(
       "(",
       min(sapply(df_list, function(x) min(lubridate::year(x$date), na.rm = TRUE))),
@@ -1199,7 +1216,8 @@ hc_attr <- function(df_list,
 
     c(
       af_heat, af_heat_lower_ci, af_heat_upper_ci,
-      an_heat, an_heat_lower_ci, an_heat_upper_ci
+      an_heat, an_heat_lower_ci, an_heat_upper_ci,
+      ansim_mat
     ) %<-% an_attrdl(
       x = geog_data$temp,
       basis = cb,
@@ -1215,7 +1233,8 @@ hc_attr <- function(df_list,
 
     c(
       af_cold, af_cold_lower_ci, af_cold_upper_ci,
-      an_cold, an_cold_lower_ci, an_cold_upper_ci
+      an_cold, an_cold_lower_ci, an_cold_upper_ci,
+      ansim_mat
     ) %<-% an_attrdl(
       x = geog_data$temp,
       basis = cb,
@@ -1228,11 +1247,12 @@ hc_attr <- function(df_list,
       tot = FALSE,
       nsim = 1000
     )
-
+    if (!"region" %in% colnames(geog_data)) {
+      geog_data$region <- geog
+    }
     results <- geog_data %>%
       dplyr::select(
-        .data$geog, .data$date, .data$temp, .data$year,
-        .data$month, .data$dependent, .data$pop
+        any_of(c("region", "date", "temp", "year", "month", "dependent", "population"))
       ) %>%
       dplyr::mutate(
         # outputs for higher, hotter temperatures
@@ -1243,9 +1263,9 @@ hc_attr <- function(df_list,
         an_heat = an_heat,
         an_heat_lower_ci = an_heat_lower_ci,
         an_heat_upper_ci = an_heat_upper_ci,
-        ar_heat = (.data$an_heat / .data$pop) * 100000,
-        ar_heat_lower_ci = (.data$an_heat_lower_ci / .data$pop) * 100000,
-        ar_heat_upper_ci = (.data$an_heat_upper_ci / .data$pop) * 100000,
+        ar_heat = (.data$an_heat / .data$population) * 100000,
+        ar_heat_lower_ci = (.data$an_heat_lower_ci / .data$population) * 100000,
+        ar_heat_upper_ci = (.data$an_heat_upper_ci / .data$population) * 100000,
         # outputs for lower, colder temperatures
         threshold_temp_low = round((low_temp), 2),
         af_cold = af_cold,
@@ -1254,9 +1274,9 @@ hc_attr <- function(df_list,
         an_cold = an_cold,
         an_cold_lower_ci = an_cold_lower_ci,
         an_cold_upper_ci = an_cold_upper_ci,
-        ar_cold = (.data$an_cold / .data$pop) * 100000,
-        ar_cold_lower_ci = (.data$an_cold_lower_ci / .data$pop) * 100000,
-        ar_cold_upper_ci = (.data$an_cold_upper_ci / .data$pop) * 100000
+        ar_cold = (.data$an_cold / .data$population) * 100000,
+        ar_cold_lower_ci = (.data$an_cold_lower_ci / .data$population) * 100000,
+        ar_cold_upper_ci = (.data$an_cold_upper_ci / .data$population) * 100000
       )
 
     attr_list[[geog]] <- results
@@ -1295,16 +1315,16 @@ hc_attr_tables <- function(attr_list,
   res_list <- list()
 
   groupings <- list(
-    monthly = rlang::quos(.data$month, .data$geog),
-    yearly  = rlang::quos(.data$year, .data$geog),
-    overall = rlang::quos(.data$geog)
+    monthly = rlang::quos(.data$month, .data$region),
+    yearly  = rlang::quos(.data$year, .data$region),
+    overall = rlang::quos(.data$region)
   )
 
   for (grp_name in names(groupings)) {
     results <- attr_res %>%
       dplyr::group_by(!!!groupings[[grp_name]]) %>%
       dplyr::summarise(
-        population = round(mean(.data$pop, na.rm = TRUE), 0),
+        population = round(mean(.data$population, na.rm = TRUE), 0),
         temp = round(mean(.data$temp, na.rm = TRUE), 2),
         threshold_temp_high = mean(.data$threshold_temp_high, na.rm = TRUE),
         threshold_temp_low = mean(.data$threshold_temp_low, na.rm = TRUE),
@@ -1348,20 +1368,20 @@ hc_attr_tables <- function(attr_list,
     res_list[[grp_name]] <- results
   }
 
-  geog_order <- if (isTRUE(model_config$meta_analysis)) {
-    c(sort(setdiff(names(attr_list), model_config$country)), model_config$country)
+  geog_order <- if (isTRUE(meta_analysis)) {
+    c(sort(setdiff(names(attr_list), country)), country)
   } else {
     sort(names(attr_list))
   }
 
   res_attr_tot <- res_list[["overall"]]
 
-  attr_yr_list <- aggregate_by_column(res_list[["yearly"]], "geog")
+  attr_yr_list <- aggregate_by_column(res_list[["yearly"]], "region")
   attr_yr_list <- attr_yr_list[geog_order]
 
   attr_mth_list <- res_list[["monthly"]] %>%
     dplyr::mutate(month = month.name[.data$month]) %>%
-    aggregate_by_column("geog")
+    aggregate_by_column("region")
   attr_mth_list <- attr_mth_list[geog_order]
 
   return(list(res_attr_tot, attr_yr_list, attr_mth_list))
@@ -1409,7 +1429,7 @@ hc_plot_attr_heat_totals <- function(df_list,
   }
 
   # Shorten the labels to a fixed length
-  short_labels <- sapply(as.character(res_attr_tot$geog), function(x) {
+  short_labels <- sapply(as.character(res_attr_tot$region), function(x) {
     if (nchar(x) - 3 > 10) {
       paste0(substr(x, 1, 10), "...")
     } else {
@@ -1443,7 +1463,7 @@ hc_plot_attr_heat_totals <- function(df_list,
 
   # Define bar colors
   bar_col_af_heat <- rep("#a04b58", length(short_labs_af_heat))
-  nat_ind_af_heat <- which(res_af_heat_tot$geog == country)
+  nat_ind_af_heat <- which(res_af_heat_tot$region == country)
   if (length(nat_ind_af_heat) > 0) {
     bar_col_af_heat[nat_ind_af_heat] <- "#7a855c" # Highlight color
   }
@@ -1472,7 +1492,7 @@ hc_plot_attr_heat_totals <- function(df_list,
 
   # Define bar colors
   bar_col_ar_heat <- rep("#c75e70", length(short_labs_ar_heat))
-  nat_ind_ar_heat <- which(res_ar_heat_tot$geog == country)
+  nat_ind_ar_heat <- which(res_ar_heat_tot$region == country)
   if (length(nat_ind_ar_heat) > 0) {
     bar_col_ar_heat[nat_ind_ar_heat] <- "#7a855c" # Highlight color
   }
@@ -1527,7 +1547,7 @@ hc_plot_attr_cold_totals <- function(df_list,
     chart_width <- 0.3 * num_geogs # adjust as needed
     total_width <- max(8, chart_width)
 
-    output_path <- file.path(path_config$output_folder_path, "mortality_total_cold_attr_plot.pdf")
+    output_path <- file.path(output_folder_path, "mortality_total_cold_attr_plot.pdf")
     pdf(output_path, width = total_width, height = chart_height * 2)
 
     # Set up layout: 1 row for barplot and 1 row for table
@@ -1538,7 +1558,7 @@ hc_plot_attr_cold_totals <- function(df_list,
   }
 
   # Shorten the labels to a fixed length
-  short_labels <- sapply(as.character(res_attr_tot$geog), function(x) {
+  short_labels <- sapply(as.character(res_attr_tot$region), function(x) {
     if (nchar(x) - 3 > 10) {
       paste0(substr(x, 1, 10), "...")
     } else {
@@ -1572,7 +1592,7 @@ hc_plot_attr_cold_totals <- function(df_list,
 
   # Define bar colors
   bar_col_af_cold <- rep("#0A2E4D", length(short_labs_af_cold))
-  nat_ind_af_cold <- which(res_af_cold_tot$geog == country)
+  nat_ind_af_cold <- which(res_af_cold_tot$region == country)
   if (length(nat_ind_af_cold) > 0) {
     bar_col_af_cold[nat_ind_af_cold] <- "#7a855c" # Highlight color
   }
@@ -1601,7 +1621,7 @@ hc_plot_attr_cold_totals <- function(df_list,
 
   # Define bar colors
   bar_col_ar_cold <- rep("#296991", length(short_labs_ar_cold))
-  nat_ind_ar_cold <- which(res_ar_cold_tot$geog == country)
+  nat_ind_ar_cold <- which(res_ar_cold_tot$region == country)
   if (length(nat_ind_ar_cold) > 0) {
     bar_col_ar_cold[nat_ind_ar_cold] <- "#7a855c" # Highlight color
   }
@@ -1762,7 +1782,6 @@ hc_plot_af_cold_yearly <- function(attr_yr_list,
 
   year_min <- min(sapply(attr_yr_list, function(x) min(x$year, na.rm = TRUE)))
   year_max <- max(sapply(attr_yr_list, function(x) max(x$year, na.rm = TRUE)))
-
   y_min <- min(sapply(attr_yr_list, function(x) min(x$af_cold, na.rm = TRUE)))
   y_max <- max(sapply(attr_yr_list, function(x) max(x$af_cold, na.rm = TRUE)))
 
@@ -2555,7 +2574,7 @@ hc_plot_ar_cold_monthly <- function(attr_mth_list,
     )
   }
 
-  if (output_config$save_fig == TRUE) {
+  if (save_fig == TRUE) {
     year_range <- paste0(
       "(",
       min(sapply(df_list, function(x) min(lubridate::year(x$date), na.rm = TRUE))),
@@ -2619,14 +2638,14 @@ hc_save_results <- function(rr_results,
     ), row.names = FALSE)
 
     res_attr_yr <- do.call(rbind, attr_yr_list) %>%
-      select(.data$geog, everything())
+      select(.data$region, everything())
 
     write.csv(res_attr_yr, file = file.path(
       output_folder_path, "mortality_attr_yr_results.csv"
     ), row.names = FALSE)
 
     res_attr_mth <- do.call(rbind, attr_mth_list) %>%
-      select(.data$geog, everything())
+      select(.data$region, everything())
 
     write.csv(res_attr_mth, file = file.path(
       output_folder_path, "mortality_attr_mth_results.csv"
@@ -2688,8 +2707,6 @@ hc_save_results <- function(rr_results,
 #' FALSE.
 #' @param save_csv Boolean. Whether to save the results as a CSV. Defaults to
 #' FALSE.
-#' @param cenper Integer. Value for the percentile in calculating the centering
-#' value 0-100. Defaults to 50.
 #' @param country Character. Name of country for national level estimates.
 #' @param meta_analysis Boolean. Whether to perform a meta-analysis.
 #' @param attr_thr Integer. Percentile at which to define the temperature threshold for
@@ -2710,7 +2727,7 @@ hc_save_results <- function(rr_results,
 #'   }
 #'
 #' @export
-temp_mortality_do_analysis <- function(input_csv_path,
+temp_mortality_do_analysis <- function(data_path,
                                        date_col,
                                        geography_col,
                                        temperature_col,
@@ -2731,10 +2748,44 @@ temp_mortality_do_analysis <- function(input_csv_path,
                                        attr_thr_high = 97.5,
                                        attr_thr_low = 2.5,
                                        output_folder_path = NULL) {
+
+  # Setup additional output DIR
+  if (!is.null(output_folder_path)) {
+    # Check output dir exists
+    check_file_exists(output_folder_path, TRUE)
+    new_fpath <- file.path(
+      output_folder_path,
+      paste0("temperature_mortality_analysis_", format(Sys.time(), "%d_%m_%Y_%H_%M"))
+    )
+    if (!is.null(new_fpath)) {
+      (
+        dir.create(new_fpath)
+      )
+    }
+    output_folder_path <- new_fpath
+  }
+
+  # Param defences
+  if (save_fig == TRUE && is.null(output_folder_path)) {
+    stop("Output folder path must be specified if saving figures")
+  }
+  if (save_csv == TRUE && is.null(output_folder_path)) {
+    stop("Output folder path must be specified if saving csv files")
+  }
+  if (!is.character(country) || length(country) != 1) {
+    stop("Country must be a single character string")
+  }
+  if (attr_thr_high <= attr_thr_low) {
+    stop("High temperature threshold must be greater than low temperature threshold")
+  }
+  if (attr_thr_high >= 100 || attr_thr_low <= 0) {
+    stop("Temperature thresholds must be between 0 and 100")
+  }
+
   df_list <- hc_read_data(
-    data_path = data_path,
+    input_csv_path = data_path,
     date_col = date_col,
-    geography_col = geograpphy_col,
+    region_col = geography_col,
     temperature_col = temperature_col,
     dependent_col = dependent_col,
     population_col = population_col
@@ -2758,11 +2809,12 @@ temp_mortality_do_analysis <- function(input_csv_path,
 
   c(
     qaic_results, qaic_summary,
-    vif_results, vif_summary
+    vif_results, vif_summary, adf_summary
   ) %<-% hc_model_validation(
     df_list = df_list,
     cb_list = cb_list,
     independent_cols = independent_cols,
+    dfseas = dfseas,
     save_fig = save_fig,
     save_csv = save_csv,
     output_folder_path = output_folder_path
@@ -2786,6 +2838,7 @@ temp_mortality_do_analysis <- function(input_csv_path,
   if (meta_analysis == TRUE) {
     c(mm, blup, meta_test_res) %<-% dlnm_meta_analysis(
       df_list = df_list,
+      coef_ = coef_,
       vcov_ = vcov_,
       save_csv = save_csv,
       output_folder_path = output_folder_path
@@ -2794,7 +2847,7 @@ temp_mortality_do_analysis <- function(input_csv_path,
     blup <- NULL
   }
 
-  c(minpercgeog_, mintempgeog_) <- dlnm_min_mortality_temp(
+  c(minpercgeog_, mintempgeog_) %<-% dlnm_min_mortality_temp(
     df_list = df_list,
     var_fun = var_fun,
     var_per = var_per,
@@ -2805,12 +2858,12 @@ temp_mortality_do_analysis <- function(input_csv_path,
     outcome_type = "temperature"
   )
 
-  pred_list <- hc_predict(
+  pred_list <- hc_predict_subnat(
     df_list = df_list,
     var_fun = var_fun,
     var_per = var_per,
     var_degree = var_degree,
-    minpercgeog_ = minpercgeog_,
+    mintempgeog_ = mintempgeog_,
     blup = blup,
     coef_ = coef_,
     vcov_ = vcov_,
@@ -2818,7 +2871,7 @@ temp_mortality_do_analysis <- function(input_csv_path,
   )
 
   if (meta_analysis == TRUE) {
-    c(df_list, cb_list, minpercgeog_, mmpredall) %<-% hc_add_national_data(
+    c(df_list, cb_list, mintempgeog_, mmpredall) %<-% hc_add_national_data(
       df_list = df_list,
       pop_list = pop_list,
       var_fun = var_fun,
@@ -2844,10 +2897,10 @@ temp_mortality_do_analysis <- function(input_csv_path,
     )
   }
 
-  c(power_list_high, power_list_low) <- dlnm_power_list(
+  c(power_list_high, power_list_low) %<-% dlnm_power_list(
     df_list = df_list,
     pred_list = pred_list,
-    minpercgeog_ = minpercgeog_,
+    minperc = minpercgeog_,
     attr_thr_high = attr_thr_high,
     attr_thr_low = attr_thr_low,
     compute_low = TRUE
@@ -2861,9 +2914,13 @@ temp_mortality_do_analysis <- function(input_csv_path,
     country = country
   )
 
-
-  rr_results <- hc_rr_results(pred_list)
-
+  rr_results <- hc_rr_results(
+    pred_list = pred_list,
+    df_list = df_list,
+    minpercgeog_ = minpercgeog_,
+    attr_thr_high = attr_thr_high,
+    attr_thr_low = attr_thr_low
+  )
 
   hc_plot_rr(
     df_list = df_list,
@@ -2875,7 +2932,6 @@ temp_mortality_do_analysis <- function(input_csv_path,
     save_fig = save_fig,
     output_folder_path = output_folder_path
   )
-
 
   attr_list <- hc_attr(
     df_list = df_list,
@@ -2891,58 +2947,84 @@ temp_mortality_do_analysis <- function(input_csv_path,
     country = country,
     meta_analysis = meta_analysis
   )
-
-  hc_plot_attr_totals(
-    df_list = df_list,
-    res_attr_tot = res_attr_tot,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path,
-    country = country
-  )
-
-  hc_plot_af_yearly(
-    attr_yr_list = attr_yr_list,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path,
-    country = country
-  )
-
-  hc_plot_ar_yearly(
-    attr_yr_list = attr_yr_list,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path,
-    country = country
-  )
-
-  hc_plot_af_monthly(
-    attr_mth_list = attr_mth_list,
-    df_list = df_list,
-    country = country,
-    attr_thr_high = attr_thr_high,
-    attr_thr_low = attr_thr_low,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path
-  )
-
-  hc_plot_ar_monthly(
-    attr_mth_list = attr_mth_list,
-    df_list = df_list,
-    country = country,
-    attr_thr_high = attr_thr_high,
-    attr_thr_low = attr_thr_low,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path
-  )
+  
+  hc_plot_attr_heat_totals(df_list = df_list,
+                           res_attr_tot = res_attr_tot,
+                           save_fig = save_fig,
+                           output_folder_path = output_folder_path,
+                           country = country)
+  
+  hc_plot_attr_cold_totals(df_list = df_list,
+                           res_attr_tot = res_attr_tot,
+                           save_fig = save_fig,
+                           output_folder_path = output_folder_path,
+                           country = country)
+  
+  hc_plot_af_heat_yearly(attr_yr_list = attr_yr_list,
+                       save_fig = save_fig,
+                       output_folder_path = output_folder_path,
+                       country = country)
+  
+  hc_plot_af_cold_yearly(attr_yr_list = attr_yr_list,
+                        save_fig = save_fig,
+                        output_folder_path = output_folder_path,
+                        country = country)
+  
+  hc_plot_ar_heat_yearly(attr_yr_list = attr_yr_list,
+                       save_fig = save_fig,
+                       output_folder_path = output_folder_path,
+                       country = country)
+  
+  hc_plot_ar_cold_yearly(attr_yr_list = attr_yr_list,
+                       save_fig = save_fig,
+                       output_folder_path = output_folder_path,
+                       country = country)
+  
+  hc_plot_af_heat_monthly(attr_mth_list = attr_mth_list,
+                        df_list = df_list,
+                        country = country,
+                        attr_thr_high = attr_thr_high,
+                        save_fig = save_fig,
+                        output_folder_path = output_folder_path)
+  
+  hc_plot_af_cold_monthly(attr_mth_list = attr_mth_list,
+                        df_list = df_list,
+                        country = country,
+                        attr_thr_low = attr_thr_low,
+                        save_fig = save_fig,
+                        output_folder_path = output_folder_path)
+  
+  hc_plot_ar_heat_monthly(attr_mth_list = attr_mth_list,
+                        df_list = df_list,
+                        country = country,
+                        attr_thr_high = attr_thr_high,
+                        save_fig = save_fig,
+                        output_folder_path = output_folder_path)
+  
+  hc_plot_ar_cold_monthly(attr_mth_list = attr_mth_list,
+                          df_list = df_list,
+                          country = country,
+                          attr_thr_low = attr_thr_low,
+                          save_fig = save_fig,
+                          output_folder_path = output_folder_path)
 
   if (save_csv == TRUE) {
-    hc_save_results(
-      rr_results = rr_results,
-      res_attr_tot = res_attr_tot,
-      attr_yr_list = attr_yr_list,
-      attr_mth_list = attr_mth_list,
-      output_folder_path = output_folder_path
+    hc_save_results(rr_results = rr_results,
+                  res_attr_tot = res_attr_tot,
+                  attr_yr_list = attr_yr_list,
+                  attr_mth_list = attr_mth_list,
+                  power_list_high = power_list_high,
+                  power_list_low = power_list_low,
+                  output_folder_path = output_folder_path
     )
   }
 
-  return(list(rr_results, res_attr_tot, attr_yr_list, attr_mth_list))
+  return(
+    list(
+      rr_results <- rr_results,
+      an_ar_results <- res_attr_tot,
+      monthly_an_ar_results <- attr_yr_list,
+      annual_an_ar_results <- attr_mth_list
+    )
+  )
 }
