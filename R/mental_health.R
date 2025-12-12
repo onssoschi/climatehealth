@@ -197,9 +197,13 @@ mh_model_combo_res <- function(
     (transformed_vars <- NULL)
   }
 
-  all_combos <- unlist(lapply(0:length(transformed_vars), function(i) {
+  if (!is.null(independent_cols)) {
+    all_combos <- unlist(lapply(0:length(transformed_vars), function(i) {
     combn(transformed_vars, i, simplify = FALSE)
-  }), recursive = FALSE)
+    }), recursive = FALSE)
+  } else {
+    all_combos <- list(character(0))
+  }
 
   for (reg in names(df_list)) {
     formula_list <- list()
@@ -221,16 +225,19 @@ mh_model_combo_res <- function(
         na.action = "na.exclude", subset = region_data$ind > 0
       )
       # Get model values
-      disp <- summary(model)$dispersion
-      loglik <- sum(dpois(model$y, model$fitted.values, log = TRUE))
-      k <- length(coef(model))
-      qaic <- -2 * loglik / disp + 2 * k
-      qaic_results[[length(qaic_results) + 1]] <- data.frame(
-        region = reg,
-        formula = formula_str,
-        disp = disp,
-        qaic = qaic
-      )
+      if (!is.null(independent_cols)) {
+        disp <- summary(model)$dispersion
+        loglik <- sum(dpois(model$y, model$fitted.values, log = TRUE))
+        k <- length(coef(model))
+        qaic <- -2 * loglik / disp + 2 * k
+        qaic_results[[length(qaic_results) + 1]] <- data.frame(
+          region = reg,
+          formula = formula_str,
+          disp = disp,
+          qaic = qaic
+        )
+      }
+
       residuals_df <- data.frame(
         region = reg,
         formula = formula_str,
@@ -241,10 +248,14 @@ mh_model_combo_res <- function(
     }
     residuals_list[[reg]] <- formula_list
   }
-  # Combine results into a single data frame
-  qaic_results <- do.call(rbind, qaic_results)
-  # Sort by region and QAIC
-  qaic_results <- qaic_results[order(qaic_results$region, qaic_results$formula), ]
+  if (!is.null(independent_cols)) {
+    # Combine results into a single data frame
+    qaic_results <- do.call(rbind, qaic_results)
+    # Sort by region and QAIC
+    qaic_results <- qaic_results[order(qaic_results$region, qaic_results$formula), ]
+  } else {
+    qaic_results <- NULL
+  }
   return(list(qaic_results, residuals_list))
 }
 
@@ -358,7 +369,7 @@ mh_model_validation <- function(
     vif_results <- NULL
   }
 
-  if (length(df_list) > 1) {
+  if (length(df_list) > 1 && !is.null(independent_cols)) {
     # calculate QAIC summary
     qaic_summary <- qaic_results %>%
       group_by(formula) %>%
@@ -386,6 +397,7 @@ mh_model_validation <- function(
   } else {
     qaic_summary <- vif_summary <- NULL
   }
+
   if (save_fig == TRUE) {
     # Shorten the labels to a fixed length
     short_labels <- sapply(as.character(names(df_list)), function(x) {
