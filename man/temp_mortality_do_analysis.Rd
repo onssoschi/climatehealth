@@ -86,9 +86,6 @@ admissions).}
 \item{lag_days}{Integer. Maximum lag. Defaults to 2.
 (see dlnm:crossbasis).}
 
-\item{cenper}{Integer. Value for the percentile in calculating the centering
-value 0-100. Defaults to 50.}
-
 \item{attr_thr}{Integer. Percentile at which to define the temperature threshold for
 calculating attributable risk.}
 }

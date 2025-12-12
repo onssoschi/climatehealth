@@ -5,10 +5,10 @@
 \title{Model Validation Assessment}
 \usage{
 hc_model_validation(
-  df_list = df_list,
-  cb_list = cb_list,
+  df_list,
+  cb_list,
   independent_cols = NULL,
-  dfseas = dfseas,
+  dfseas = 8,
   save_fig = FALSE,
   save_csv = FALSE,
   output_folder_path = NULL

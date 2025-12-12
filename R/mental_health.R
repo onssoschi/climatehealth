@@ -2085,7 +2085,7 @@ suicides_heat_do_analysis <- function(
     blup <- NULL
     meta_test_res <- NULL
   }
-  
+
   # get vector of minimum suicide temperatures (percentile)
   minpercreg <- dlnm_min_mortality_temp(
     df_list = df_list,
