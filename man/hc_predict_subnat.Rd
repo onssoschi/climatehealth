@@ -9,7 +9,7 @@ hc_predict_subnat(
   var_fun = "bs",
   var_per = c(10, 75, 90),
   var_degree = 2,
-  minpercgeog_,
+  mintempgeog_,
   blup,
   coef_,
   vcov_,

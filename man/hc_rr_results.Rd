@@ -4,7 +4,13 @@
 \alias{hc_rr_results}
 \title{Produce cumulative relative risk results of analysis}
 \usage{
-hc_rr_results(pred_list, df_list, attr_thr_high = 97.5, attr_thr_low = 2.5)
+hc_rr_results(
+  pred_list,
+  df_list,
+  minpercgeog_,
+  attr_thr_high = 97.5,
+  attr_thr_low = 2.5
+)
 }
 \arguments{
 \item{pred_list}{A list containing predictions from the model by region.}

@@ -188,7 +188,6 @@ hc_model_combo_res <- function(df_list,
   }
 
   for (geog in names(df_list)) {
-
     formula_list <- list()
 
     geog_data <- df_list[[geog]]
@@ -331,7 +330,7 @@ hc_model_validation <- function(df_list,
   vif_results <- NULL
   vif_summary <- NULL
   adf_results <- NULL
-  
+
   # QAIC results to csv
   c(qaic_results, residuals_list) %<-% hc_model_combo_res(
     df_list = df_list,
@@ -2748,7 +2747,6 @@ temp_mortality_do_analysis <- function(data_path,
                                        attr_thr_high = 97.5,
                                        attr_thr_low = 2.5,
                                        output_folder_path = NULL) {
-
   # Setup additional output DIR
   if (!is.null(output_folder_path)) {
     # Check output dir exists
@@ -2947,75 +2945,96 @@ temp_mortality_do_analysis <- function(data_path,
     country = country,
     meta_analysis = meta_analysis
   )
-  
-  hc_plot_attr_heat_totals(df_list = df_list,
-                           res_attr_tot = res_attr_tot,
-                           save_fig = save_fig,
-                           output_folder_path = output_folder_path,
-                           country = country)
-  
-  hc_plot_attr_cold_totals(df_list = df_list,
-                           res_attr_tot = res_attr_tot,
-                           save_fig = save_fig,
-                           output_folder_path = output_folder_path,
-                           country = country)
-  
-  hc_plot_af_heat_yearly(attr_yr_list = attr_yr_list,
-                       save_fig = save_fig,
-                       output_folder_path = output_folder_path,
-                       country = country)
-  
-  hc_plot_af_cold_yearly(attr_yr_list = attr_yr_list,
-                        save_fig = save_fig,
-                        output_folder_path = output_folder_path,
-                        country = country)
-  
-  hc_plot_ar_heat_yearly(attr_yr_list = attr_yr_list,
-                       save_fig = save_fig,
-                       output_folder_path = output_folder_path,
-                       country = country)
-  
-  hc_plot_ar_cold_yearly(attr_yr_list = attr_yr_list,
-                       save_fig = save_fig,
-                       output_folder_path = output_folder_path,
-                       country = country)
-  
-  hc_plot_af_heat_monthly(attr_mth_list = attr_mth_list,
-                        df_list = df_list,
-                        country = country,
-                        attr_thr_high = attr_thr_high,
-                        save_fig = save_fig,
-                        output_folder_path = output_folder_path)
-  
-  hc_plot_af_cold_monthly(attr_mth_list = attr_mth_list,
-                        df_list = df_list,
-                        country = country,
-                        attr_thr_low = attr_thr_low,
-                        save_fig = save_fig,
-                        output_folder_path = output_folder_path)
-  
-  hc_plot_ar_heat_monthly(attr_mth_list = attr_mth_list,
-                        df_list = df_list,
-                        country = country,
-                        attr_thr_high = attr_thr_high,
-                        save_fig = save_fig,
-                        output_folder_path = output_folder_path)
-  
-  hc_plot_ar_cold_monthly(attr_mth_list = attr_mth_list,
-                          df_list = df_list,
-                          country = country,
-                          attr_thr_low = attr_thr_low,
-                          save_fig = save_fig,
-                          output_folder_path = output_folder_path)
+
+  hc_plot_attr_heat_totals(
+    df_list = df_list,
+    res_attr_tot = res_attr_tot,
+    save_fig = save_fig,
+    output_folder_path = output_folder_path,
+    country = country
+  )
+
+  hc_plot_attr_cold_totals(
+    df_list = df_list,
+    res_attr_tot = res_attr_tot,
+    save_fig = save_fig,
+    output_folder_path = output_folder_path,
+    country = country
+  )
+
+  hc_plot_af_heat_yearly(
+    attr_yr_list = attr_yr_list,
+    save_fig = save_fig,
+    output_folder_path = output_folder_path,
+    country = country
+  )
+
+  hc_plot_af_cold_yearly(
+    attr_yr_list = attr_yr_list,
+    save_fig = save_fig,
+    output_folder_path = output_folder_path,
+    country = country
+  )
+
+  hc_plot_ar_heat_yearly(
+    attr_yr_list = attr_yr_list,
+    save_fig = save_fig,
+    output_folder_path = output_folder_path,
+    country = country
+  )
+
+  hc_plot_ar_cold_yearly(
+    attr_yr_list = attr_yr_list,
+    save_fig = save_fig,
+    output_folder_path = output_folder_path,
+    country = country
+  )
+
+  hc_plot_af_heat_monthly(
+    attr_mth_list = attr_mth_list,
+    df_list = df_list,
+    country = country,
+    attr_thr_high = attr_thr_high,
+    save_fig = save_fig,
+    output_folder_path = output_folder_path
+  )
+
+  hc_plot_af_cold_monthly(
+    attr_mth_list = attr_mth_list,
+    df_list = df_list,
+    country = country,
+    attr_thr_low = attr_thr_low,
+    save_fig = save_fig,
+    output_folder_path = output_folder_path
+  )
+
+  hc_plot_ar_heat_monthly(
+    attr_mth_list = attr_mth_list,
+    df_list = df_list,
+    country = country,
+    attr_thr_high = attr_thr_high,
+    save_fig = save_fig,
+    output_folder_path = output_folder_path
+  )
+
+  hc_plot_ar_cold_monthly(
+    attr_mth_list = attr_mth_list,
+    df_list = df_list,
+    country = country,
+    attr_thr_low = attr_thr_low,
+    save_fig = save_fig,
+    output_folder_path = output_folder_path
+  )
 
   if (save_csv == TRUE) {
-    hc_save_results(rr_results = rr_results,
-                  res_attr_tot = res_attr_tot,
-                  attr_yr_list = attr_yr_list,
-                  attr_mth_list = attr_mth_list,
-                  power_list_high = power_list_high,
-                  power_list_low = power_list_low,
-                  output_folder_path = output_folder_path
+    hc_save_results(
+      rr_results = rr_results,
+      res_attr_tot = res_attr_tot,
+      attr_yr_list = attr_yr_list,
+      attr_mth_list = attr_mth_list,
+      power_list_high = power_list_high,
+      power_list_low = power_list_low,
+      output_folder_path = output_folder_path
     )
   }
 

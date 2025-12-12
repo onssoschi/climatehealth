@@ -423,7 +423,7 @@ plot_regional_trends <- function(
     output_path <- enforce_file_extension(output_path, ".pdf")
     pdf(output_path, width = 10, height = 6)
   }
-  
+
   grid_size <- create_grid(length(outcome_cols))
   par(mfrow = grid_size, oma = c(0, 0, 4, 0))
 
