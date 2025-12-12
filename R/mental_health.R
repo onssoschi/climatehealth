@@ -47,17 +47,8 @@ mh_read_and_format_data <- function(
     health_outcome_col,
     population_col
   )
-  standard_cols <- c(
-    "date", "region", "tmean", "health_outcome", "population"
-  )
-  for (i in seq_along(standard_cols)) {
-    std_col <- standard_cols[i]
-    need_col <- needed_cols[i]
-    if (!identical(std_col, need_col) && std_col %in% names(df)) {
-      df[[std_col]] <- NULL
-    }
-  }
   df <- df %>%
+    dplyr::select(all_of(needed_cols)) %>%
     dplyr::rename(
       date = date_col,
       region = region_col,

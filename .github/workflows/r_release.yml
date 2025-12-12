@@ -44,18 +44,10 @@ jobs:
           r-version: "4.4.1"
           use-public-rspm: true
 
-      - name: Set up R Options
+      - name: Install dependencies
         run: |
-          Rscript -e "options(pkgType = 'binary')"
-          Rscript -e "options(install.packages.compile.from.source = 'never')"
-          Rscript -e "options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/latest'))"
-        timeout-minutes: 5
-
-      - name: Install Dependencies
-        run: |
-          Rscript -e "install.packages(c('devtools', 'remotes', 'pak'))"
-          Rscript -e "pak::repo_add('rspatial','https://rspatial.r-universe.dev')"
-          Rscript -e "pak::pkg_install('.', dependencies = c('Depends','Imports','LinkingTo'))"
+          Rscript -e 'install.packages(c("devtools", "roxygen2", "remotes", "pak"))'
+          Rscript -e 'pak::pkg_install(devtools::dev_package_deps()$package)'
 
       - name: Build Windows artifact (binary)
         shell: bash
