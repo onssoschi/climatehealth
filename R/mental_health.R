@@ -171,6 +171,7 @@ mh_model_combo_res <- function(
         assign(paste0(v, "_ns"), ns_matrix)
       }
     }
+    print("okay")
     for (vars in all_combos) {
       # Build the full formula string
       formula_str <- paste(
@@ -2022,6 +2023,7 @@ suicides_heat_do_analysis <- function(
     lag_breaks = lag_breaks,
     lag_days = lag_days
   )
+  print("!")
   # calculate qaic and vif for model validation
   c(
     qaic_results, qaic_summary, vif_results, vif_summary
@@ -2033,12 +2035,14 @@ suicides_heat_do_analysis <- function(
     save_csv = save_csv,
     output_folder_path = output_folder_path
   )
+  print("!")
   # create list of DLNM models
   model_list <- mh_casecrossover_dlnm(
     df_list = df_list,
     control_cols = control_cols,
     cb_list = cb_list
   )
+  print("!")
   # calculate values for reduced model
   c(coef_, vcov_) %<-% dlnm_reduce_cumulative(
     df_list = df_list,
@@ -2048,6 +2052,7 @@ suicides_heat_do_analysis <- function(
     cb_list = cb_list,
     model_list = model_list
   )
+  print("!")
   # conditionally carry out meta-analysis
   if (meta_analysis == TRUE) {
     c(mm, blup, meta_test_res) %<-% dlnm_meta_analysis(
@@ -2062,6 +2067,7 @@ suicides_heat_do_analysis <- function(
     blup <- NULL
     meta_test_res <- NULL
   }
+  print("!")
   # get vector of minimum suicide temperatures (percentile)
   minpercreg <- dlnm_min_mortality_temp(
     df_list = df_list,
