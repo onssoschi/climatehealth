@@ -443,6 +443,21 @@ test_that("mh_model_validation performs complete model validation", {
 
   expect_null(single_region_results[[2]])  # QAIC summary should be NULL
   expect_null(single_region_results[[4]])  # VIF summary should be NULL
+
+  # No independent column case
+  expect_no_error(
+    results_no_ind <- mh_model_validation(
+      df_list = df_list,
+      cb_list = cb_list,
+      independent_cols = NULL, # Explicitly set to NULL
+      save_fig = TRUE,
+      save_csv = TRUE,
+      output_folder_path = temp_dir
+    )
+  )
+
+  expect_null(results_no_ind[[2]]) # QAIC summary should be NULL
+  expect_null(results_no_ind[[4]]) # VIF summary should be NULL
 })
 
 
