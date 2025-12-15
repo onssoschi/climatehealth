@@ -437,7 +437,7 @@ plot_seasonal_trends <- function(
     df,
     date_col,
     outcome_cols,
-    title = "Seasonal Trends",
+    title = "Seasonal Averages",
     ylabs = NULL,
     save_plot = FALSE,
     output_path = "") {
@@ -447,15 +447,19 @@ plot_seasonal_trends <- function(
   # Extract month
   df$month <- lubridate::month(df[[date_col]], label = TRUE)
 
-  # Set up PDF output if needed
-  if (save_plot) {
-    output_path <- enforce_file_extension(output_path, ".pdf")
-    pdf(output_path, width = 10, height = 6)
-  }
-
   # Layout
   grid_size <- create_grid(length(outcome_cols))
   par(mfrow = grid_size, oma = c(0, 0, 4, 0))
+
+  # Set up PDF output if needed
+  if (save_plot) {
+    output_path <- enforce_file_extension(output_path, ".pdf")
+    plot_height <- max(10, length(outcome_cols)*4)
+    pdf(output_path, width = 10, height = plot_height)
+  }
+
+  # Layout: readable margins + outer title room
+  par(mfrow = grid_size, mar = c(9, 4.5, 6, 1), oma = c(0, 0, 5, 0))
 
   # Loop through each outcome column
   for (i in seq_along(outcome_cols)) {
@@ -468,7 +472,7 @@ plot_seasonal_trends <- function(
       height = monthly_avg$x,
       names.arg = monthly_avg$Month,
       col = "#296991",
-      main = paste("Average by Month:", col),
+      main = paste(col),
       ylab = ylab
     )
   }
@@ -515,9 +519,6 @@ plot_regional_trends <- function(
   # Grid and dynamic device sizing
   grid_size <- create_grid(length(outcome_cols))
   rows <- grid_size[1]; cols <- grid_size[2]
-  # # Taller per-row with a bit of top space for title
-  # dev_w <- cols * 4.0 + 0.8
-  # dev_h <- rows * 3.2 + 1.4
 
   # Set up PDF output if needed
   if (save_plot) {
