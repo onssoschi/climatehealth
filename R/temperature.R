@@ -907,7 +907,8 @@ hc_plot_power <- function(power_list_high,
     pdf(output_path, width = max(10, grid[1] * 5.5), height = max(7, grid[2] * 4.5))
     par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0), mar = c(8, 4, 5, 4))
   }
-
+  plh <<- power_list_high
+  pll <<- power_list_low
   for (geog in names(power_list_high)) {
     df <- power_list_high[[geog]]
     df <- df[order(df$temperature), ]
@@ -2864,8 +2865,8 @@ temp_mortality_do_analysis <- function(data_path,
       output_folder_path = output_folder_path
     )
     mm <- meta[[1]]
-    blup <- meta[[1]]
-    meta_test_res <- meta[[1]]
+    blup <- meta[[2]]
+    meta_test_res <- meta[[3]]
   } else {
     blup <- NULL
   }
@@ -2894,7 +2895,6 @@ temp_mortality_do_analysis <- function(data_path,
     vcov_ = vcov_,
     meta_analysis = meta_analysis
   )
-
   if (meta_analysis == TRUE) {
     nat_data <- hc_add_national_data(
       df_list = df_list,
@@ -2911,7 +2911,7 @@ temp_mortality_do_analysis <- function(data_path,
     )
     df_list <- nat_data[[1]]
     cb_list <- nat_data[[2]]
-    mintempgeog_ <- nat_data[[3]]
+    minpercgeog_ <- nat_data[[3]]
     mmpredall <- nat_data[[4]]
 
     pred_list <- dlnm_predict_nat(
@@ -2925,7 +2925,6 @@ temp_mortality_do_analysis <- function(data_path,
       country = country
     )
   }
-
   power_list <- dlnm_power_list(
     df_list = df_list,
     pred_list = pred_list,
@@ -2934,8 +2933,8 @@ temp_mortality_do_analysis <- function(data_path,
     attr_thr_low = attr_thr_low,
     compute_low = TRUE
   )
-  power_list_high <- power_list[[1]]
-  power_list_low <- power_list[[2]]
+  power_list_high <- power_list$high
+  power_list_low <- power_list$low
 
   hc_plot_power(
     power_list_high = power_list_high,
@@ -2979,8 +2978,8 @@ temp_mortality_do_analysis <- function(data_path,
     meta_analysis = meta_analysis
   )
   res_attr_tot <- attr_tables[[1]]
-  attr_yr_list <- attr_tables[[1]]
-  attr_mth_list <- attr_tables[[1]]
+  attr_yr_list <- attr_tables[[2]]
+  attr_mth_list <- attr_tables[[3]]
 
   hc_plot_attr_heat_totals(
     df_list = df_list,

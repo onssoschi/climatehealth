@@ -472,8 +472,10 @@ dlnm_power_list <- function(df_list,
         )
 
       power_list_low[[nm]] <- power_df_low
-      return(list(high = power_list_high, low = power_list_low))
     }
+  }
+  if (compute_low) {
+    return(list(high = power_list_high, low = power_list_low))
   }
   return(power_list_high)
 }
