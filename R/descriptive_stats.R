@@ -420,29 +420,34 @@ common_descriptive_stats_core <- function(
   }
   # Plot regional trends
   if (plot_regional && !is.null(timeseries_col)) {
-    for (col in columns) {
-      unit <- units[[col]]
+    # only produce on the full dataset and when regional disaggregation exists
+    has_regions <- aggregation_column %in% names(df) && length(unique(na.omit(df[[aggregation_column]]))) > 1
+    is_full     <- grepl("\\bfull dataset\\b", tolower(title))
+    if (has_regions && is_full) {
 
-      regional_path <- file.path(output_path, paste0("regional_trends.pdf"))
+      # y-axis labels with units
+      ylabs <- vapply(columns, function(col) {
+        u <- units[[col]]
+        if (!is.null(u) && nzchar(u)) paste0(col, " (", u, ")") else col
+      }, character(1))
 
-      # Create y-axis labels with units
-      ylabs <- sapply(columns, function(col) {
-        unit <- units[[col]]
-        unit <- if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
-        return(unit)
-      })
+      regional_path <- file.path(output_path, "regional_averages.pdf")
 
       plot_regional_trends(
         df = df,
         region_col = aggregation_column,
         outcome_cols = columns,
-        title = paste("Regional Trends - ", title),
+        title = paste("Regional Averages - ", title),
         ylabs = ylabs,
         save_plot = TRUE,
         output_path = regional_path
       )
     }
   }
+
+
+
+
   # Outlier table
   if (detect_outliers == TRUE) {
     outlier_columns <- setdiff(
@@ -484,23 +489,25 @@ common_descriptive_stats_core <- function(
 
   # Rate based metrics
   if (calculate_rate == TRUE) {
-    rate_path <- file.path(output_path, "rate_health_outcome.pdf")
+    rate_path <- file.path(output_path, "annual_rate_health_outcome_per_100k.pdf")
     plot_rate_overall(
       df = df,
       dependent_col = dependent_col,
       population_col = population_col,
       date_col = timeseries_col,
+      title = title,
       save_rate = TRUE,
       output_path = rate_path
     )
   }
   # Plot total by year
   if (plot_total == TRUE) {
-    total_path <- file.path(output_path, "plot_total_by_year.pdf")
+    total_path <- file.path(output_path, "annual_total_counts.pdf")
     plot_total_variables_by_year(
       df = df,
       date_col = timeseries_col,
       variables = dependent_col,
+      title = title,
       save_total = TRUE,
       output_path = total_path
     )
