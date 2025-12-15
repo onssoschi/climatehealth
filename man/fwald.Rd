@@ -7,10 +7,10 @@
 fwald(mm, var)
 }
 \arguments{
+\item{mm}{A model object.}
+
 \item{var}{A character. The name of the variable in the model to calculate
 p-values for.}
-
-\item{model}{A model object.}
 }
 \value{
 A number. The p-value of the explanatory variable.

@@ -249,11 +249,13 @@ mh_model_validation <- function(
     save_fig = FALSE,
     save_csv = FALSE,
     output_folder_path = NULL) {
-  c(qaic_results, residuals_list) %<-% mh_model_combo_res(
+  model_combo <- mh_model_combo_res(
     df_list = df_list,
     cb_list = cb_list,
     independent_cols = independent_cols
   )
+  qaic_results <- model_combo[[1]]
+  residuals_list <- model_combo[[2]]
   if (save_csv == TRUE) {
     dir_path <- file.path(output_folder_path, "model_validation")
     dir.create(dir_path, recursive = TRUE, showWarnings = FALSE)
@@ -1020,9 +1022,7 @@ mh_attr <- function(
     min_range <- quantile(region_data$temp, attr_thr / 100, na.rm = TRUE)
     max_range <- max(region_data$temp, na.rm = TRUE)
 
-    c(
-      af, af_lower_ci, af_upper_ci, an, an_lower_ci, an_upper_ci, ansim_mat
-    ) %<-% an_attrdl(
+    attr <- an_attrdl(
       x = region_data$temp,
       basis = cb,
       cases = region_data$suicides,
@@ -1038,19 +1038,19 @@ mh_attr <- function(
       select(all_of(c("region", "date", "temp", "year", "month", "suicides", "population"))) %>%
       mutate(
         threshold_temp = round(min_range, 1),
-        af = af,
-        af_lower_ci = af_lower_ci,
-        af_upper_ci = af_upper_ci,
-        an = an,
-        an_lower_ci = an_lower_ci,
-        an_upper_ci = an_upper_ci,
-        ar = (an / .data$population) * 100000,
-        ar_lower_ci = (an_lower_ci / .data$population) * 100000,
-        ar_upper_ci = (an_upper_ci / .data$population) * 100000
+        af = attr[[1]],
+        af_lower_ci = attr[[2]],
+        af_upper_ci = attr[[3]],
+        an = attr[[4]],
+        an_lower_ci = attr[[5]],
+        an_upper_ci = attr[[6]],
+        ar = (attr[[4]] / .data$population) * 100000,
+        ar_lower_ci = (attr[[5]] / .data$population) * 100000,
+        ar_upper_ci = (attr[[6]] / .data$population) * 100000
       )
     attr_list[[reg]] <- list(
       results = results,
-      ansim_mat = ansim_mat
+      ansim_mat = attr[[7]]
     )
   }
   return(attr_list)
@@ -2046,9 +2046,7 @@ suicides_heat_do_analysis <- function(
     lag_days = lag_days
   )
   # calculate qaic and vif for model validation
-  c(
-    qaic_results, qaic_summary, vif_results, vif_summary
-  ) %<-% mh_model_validation(
+  model_val <- mh_model_validation(
     df_list = df_list,
     cb_list = cb_list,
     independent_cols = independent_cols,
@@ -2056,6 +2054,10 @@ suicides_heat_do_analysis <- function(
     save_csv = save_csv,
     output_folder_path = output_folder_path
   )
+  qaic_results <- model_val[[1]]
+  qaic_summary <- model_val[[2]]
+  vif_results <- model_val[[3]]
+  vif_summary <- model_val[[4]]
   # create list of DLNM models
   model_list <- mh_casecrossover_dlnm(
     df_list = df_list,
@@ -2063,7 +2065,7 @@ suicides_heat_do_analysis <- function(
     cb_list = cb_list
   )
   # calculate values for reduced model
-  c(coef_, vcov_) %<-% dlnm_reduce_cumulative(
+  reduced <- dlnm_reduce_cumulative(
     df_list = df_list,
     var_per = var_per,
     var_degree = var_degree,
@@ -2071,15 +2073,20 @@ suicides_heat_do_analysis <- function(
     cb_list = cb_list,
     model_list = model_list
   )
+  coef_ <- reduced[[1]]
+  vcov_ <- reduced[[2]]
   # conditionally carry out meta-analysis
   if (meta_analysis == TRUE) {
-    c(mm, blup, meta_test_res) %<-% dlnm_meta_analysis(
+    meta <- dlnm_meta_analysis(
       df_list = df_list,
       coef_ = coef_,
       vcov_ = vcov_,
       save_csv = save_csv,
       output_folder_path = output_folder_path
     )
+    mm <- meta[[1]]
+    blup <- meta[[2]]
+    meta_test_res <- meta[[3]]
   } else {
     # assign NULL placeholders
     blup <- NULL
@@ -2111,7 +2118,7 @@ suicides_heat_do_analysis <- function(
   )
   # aggregate data to national level and generate crossbasis
   if (meta_analysis == TRUE) {
-    c(df_list, cb_list, minpercreg, mmpredall) %<-% mh_add_national_data(
+    nat_data <- mh_add_national_data(
       df_list = df_list,
       pop_list = pop_list,
       var_fun = var_fun,
@@ -2125,6 +2132,10 @@ suicides_heat_do_analysis <- function(
       mm = mm,
       minpercreg = minpercreg
     )
+    df_list <- nat_data[[1]]
+    cb_list <- nat_data[[2]]
+    minpercreg <- nat_data[[3]]
+    mmpredall <- nat_data[[4]]
     # get predictions
     pred_list <- dlnm_predict_nat(
       df_list = df_list,
@@ -2178,11 +2189,14 @@ suicides_heat_do_analysis <- function(
     attr_thr = attr_thr
   )
   # create a table containing attributable estimates
-  c(res_attr_tot, attr_yr_list, attr_mth_list) %<-% mh_attr_tables(
+  attr <- mh_attr_tables(
     attr_list = attr_list,
     country = country,
     meta_analysis = meta_analysis
   )
+  res_attr_tot <- attr[[1]]
+  attr_yr_list <- attr[[2]]
+  attr_mth_list <- attr[[3]]
   # Plot attributable numbers
   mh_plot_attr_totals(
     df_list = df_list,

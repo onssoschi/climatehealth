@@ -22,14 +22,14 @@ and climate variables which may be disaggregated by a particular region.}
 
 \item{country}{Character. Name of country for national level estimates.}
 
+\item{attr_thr_low}{Integer. Percentile at which to define the lower temperature threshold for
+calculating attributable risk. Defaults to 2.5.}
+
 \item{save_fig}{Boolean. Whether to save the plot as an output. Defaults to
 FALSE.}
 
 \item{output_folder_path}{Path to folder where plots should be saved.
 Defaults to NULL.}
-
-\item{attr_thr}{Integer. Percentile at which to define the temperature threshold for
-calculating attributable risk.}
 }
 \value{
 Plots of attributable fractions by calendar month per area
