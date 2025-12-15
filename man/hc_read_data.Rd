@@ -22,12 +22,12 @@ dependent variable of interest e.g,. deaths.}
 
 \item{date_col}{Date column.}
 
-\item{population_col}{The population estimate column e.g., pop.}
-
-\item{geog}{The geography column over which the data
+\item{region_col}{The geography column over which the data
 are spatially aggregated e.g., geognames.}
 
-\item{temp_col}{The temperature variable column e.g., tmean.}
+\item{temperature_col}{The temperature variable column e.g., tmean.}
+
+\item{population_col}{The population estimate column e.g., pop.}
 }
 \value{
 An alphabetically-ordered list of dataframes for each

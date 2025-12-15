@@ -37,8 +37,15 @@ disaggregated by region.}
 \item{date_col}{Character. Name of the column in the dataframe that contains
 the date.}
 
+\item{geography_col}{Character. Name of the column in the dataframe that contains
+the region names. Defaults to NULL.}
+
 \item{temperature_col}{Character. Name of the column in the dataframe that
 contains the temperature column.}
+
+\item{dependent_col}{Character. Name of the column in the dataframe that
+contains the health outcome count column (e.g. number of deaths, hospital
+admissions).}
 
 \item{population_col}{Character. Name of the column in the dataframe that
 contains the population estimate column.}
@@ -57,6 +64,14 @@ Defaults to NULL if none.}
 \item{var_per}{Vector. Internal knot positions for argvar
 (see dlnm::crossbasis). Defaults to c(25,50,75).}
 
+\item{lagn}{Integer. Number of days in the lag period. Defaults to 21.
+(see dlnm::crossbasis).}
+
+\item{lagnk}{Integer. Number of knots in lag function. Defaults to 3.
+(see dlnm::logknots).}
+
+\item{dfseas}{Integer. Degrees of freedom for seasonality.}
+
 \item{save_fig}{Boolean. Whether to save the plot as an output. Defaults to
 FALSE.}
 
@@ -67,27 +82,14 @@ FALSE.}
 
 \item{meta_analysis}{Boolean. Whether to perform a meta-analysis.}
 
+\item{attr_thr_high}{Integer. Percentile at which to define the upper temperature threshold for
+calculating attributable risk. Defaults to 97.5.}
+
+\item{attr_thr_low}{Integer. Percentile at which to define the lower temperature threshold for
+calculating attributable risk. Defaults to 2.5.}
+
 \item{output_folder_path}{Path to folder where plots and/or CSV should be
 saved. Defaults to NULL.}
-
-\item{region_col}{Character. Name of the column in the dataframe that contains
-the region names. Defaults to NULL.}
-
-\item{health_outcome_col}{Character. Name of the column in the dataframe that
-contains the health outcome count column (e.g. number of deaths, hospital
-admissions).}
-
-\item{lag_fun}{Character. Exposure function for arglag
-(see dlnm::crossbasis). Defaults to 'strata'.}
-
-\item{lag_breaks}{Integer. Internal cut-off point defining the strata for arglag
-(see dlnm:crossbasis). Defaults to 1.}
-
-\item{lag_days}{Integer. Maximum lag. Defaults to 2.
-(see dlnm:crossbasis).}
-
-\item{attr_thr}{Integer. Percentile at which to define the temperature threshold for
-calculating attributable risk.}
 }
 \value{
 \itemize{

@@ -29,6 +29,8 @@ and climate variables which may be disaggregated by a particular region.}
 \item{var_degree}{Integer. Degree of the piecewise polynomial for argvar
 (see dlnm::crossbasis). Defaults to 2 (quadratic).}
 
+\item{mintempgeog_}{Vector. Percentile of maximum suicide temperature for each region.}
+
 \item{blup}{A list. BLUP (best linear unbiased predictions) from the
 meta-analysis model for each region.}
 
@@ -37,8 +39,6 @@ meta-analysis model for each region.}
 \item{vcov_}{A list. Covariance matrices for each region for the reduced model.}
 
 \item{meta_analysis}{Boolean. Whether to perform a meta-analysis.}
-
-\item{minpercreg}{Vector. Percentile of maximum suicide temperature for each region.}
 }
 \value{
 A list containing predictions by region

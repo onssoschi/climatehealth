@@ -10,9 +10,9 @@
 #' @param dependent_col the column name of the health outcome
 #' dependent variable of interest e.g,. deaths.
 #' @param date_col Date column.
-#' @param geog The geography column over which the data
+#' @param region_col The geography column over which the data
 #' are spatially aggregated e.g., geognames.
-#' @param temp_col The temperature variable column e.g., tmean.
+#' @param temperature_col The temperature variable column e.g., tmean.
 #' @param population_col The population estimate column e.g., pop.
 #'
 #' @return An alphabetically-ordered list of dataframes for each
@@ -325,19 +325,20 @@ hc_model_validation <- function(df_list,
                                 save_csv = FALSE,
                                 output_folder_path = NULL) {
   # Create empty storage
-  qaic_results <- NULL
   qaic_summary <- NULL
   vif_results <- NULL
   vif_summary <- NULL
   adf_results <- NULL
 
   # QAIC results to csv
-  c(qaic_results, residuals_list) %<-% hc_model_combo_res(
+  model_combo <- hc_model_combo_res(
     df_list = df_list,
     cb_list = cb_list,
     dfseas = dfseas,
     independent_cols = independent_cols
   )
+  qaic_results <- model_combo[[1]]
+  residuals_list <- model_combo[[2]]
   if (save_csv == TRUE) {
     dir.create(file.path(
       output_folder_path, "model_validation"
@@ -555,8 +556,8 @@ hc_model_validation <- function(df_list,
     }
 
     for (i in names(formula_list)) {
-      residuals_clean <- na.omit(formula_list[[i]]$residuals)
-      pacf(residuals_clean, main = unique(formula_list[[i]]$formula), col = "#7A855C")
+      residuals_clean <- stats::na.omit(formula_list[[i]]$residuals)
+      stats::pacf(residuals_clean, main = unique(formula_list[[i]]$formula), col = "#7A855C")
 
       if (save_fig == TRUE) {
         title <- paste0("Partial autocorrelation function: ", geog)
@@ -662,7 +663,7 @@ hc_quasipoisson_dlnm <- function(df_list,
 #'
 #' A function to calculate p-values for an explanatory variable.
 #'
-#' @param model A model object.
+#' @param mm A model object.
 #' @param var A character. The name of the variable in the model to calculate
 #' p-values for.
 #'
@@ -695,7 +696,7 @@ fwald <- function(mm, var) {
 #' (see dlnm::crossbasis). Defaults to c(25,50,75).
 #' @param var_degree Integer. Degree of the piecewise polynomial for argvar
 #' (see dlnm::crossbasis). Defaults to 2 (quadratic).
-#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
+#' @param mintempgeog_ Vector. Percentile of maximum suicide temperature for each region.
 #' @param blup A list. BLUP (best linear unbiased predictions) from the
 #' meta-analysis model for each region.
 #' @param coef_ A matrix of coefficients for the reduced model.
@@ -769,16 +770,14 @@ hc_predict_subnat <- function(df_list,
 #' (see dlnm::crossbasis). Defaults to c(25,50,75).
 #' @param var_degree Integer. Degree of the piecewise polynomial for argvar
 #' (see dlnm::crossbasis). Defaults to 2 (quadratic).
-#' @param lag_fun Character. Exposure function for arglag
-#' (see dlnm::crossbasis). Defaults to 'strata'.
-#' @param lag_breaks Integer. Internal cut-off point defining the strata for arglag
-#' (see dlnm::crossbasis). Defaults to 1.
-#' @param lag_days Integer. Maximum lag. Defaults to 2.
+#' @param lagn Integer. Number of days in the lag period. Defaults to 21.
 #' (see dlnm::crossbasis).
+#' @param lagnk Integer. Number of knots in lag function. Defaults to 3.
+#' (see dlnm::logknots).
 #' @param country Character. Name of country for national level estimates.
 #' @param cb_list A list of cross-basis matrices by region.
 #' @param mm A model object. A multivariate meta-analysis model.
-#' @param minpercgeog Vector. Percentile of minumum mortality temperature for each region.
+#' @param minpercgeog_ Vector. Percentile of minumum mortality temperature for each region.
 #'
 #' @return
 #' \itemize{
@@ -804,18 +803,18 @@ hc_add_national_data <- function(df_list,
   national_data <- as.data.frame(do.call(rbind, df_list))
 
   nat_pop <- pop_list[[country]] %>%
-    rename(nat_pop = population)
+    rename(nat_pop = .data$population)
 
   national_data <- national_data %>%
     dplyr::left_join(nat_pop, by = "year") %>%
     dplyr::mutate(
-      weight = population / nat_pop,
-      weighted_temp = temp * weight
+      weight = .data$population / nat_pop,
+      weighted_temp = .data$temp * .data$weight
     ) %>%
     dplyr::group_by(date) %>%
     dplyr::summarise(
-      temp = round(sum(weighted_temp, na.rm = TRUE), 2),
-      dependent = sum(dependent, na.rm = TRUE),
+      temp = round(sum(.data$weighted_temp, na.rm = TRUE), 2),
+      dependent = sum(.data$dependent, na.rm = TRUE),
       population = unique(nat_pop)
     ) %>%
     mutate(
@@ -828,7 +827,6 @@ hc_add_national_data <- function(df_list,
 
 
   # Create cross basis for national data
-
   argvar <- list(
     fun = var_fun,
     knots = quantile(national_data$temp,
@@ -880,6 +878,23 @@ hc_add_national_data <- function(df_list,
   return(list(df_list, cb_list, minpercgeog_, mmpredall))
 }
 
+#' Plot power calculations for temperature mortality analysis.
+#'
+#' @description Produces a plot displaying power calculation values for
+#' temperature mortatlity analysis.
+#'
+#' @param power_list_high List. High power values.
+#' @param power_list_low List. Low power values.
+#' @param save_fig Logical. Whether or not to save the figure. Defailts to FALSE.
+#' @param output_folder_path Character. The output location for the figure. Defaults
+#' to NULL.
+#' @param country Character. The name of the country or group of regions of analysis.
+#' Defaults to "National".
+#'
+#' @returns Dataframe containing cumulative relative risk and confidence
+#' intervals from analysis.
+#'
+#' @keywords internal
 hc_plot_power <- function(power_list_high,
                           power_list_low,
                           save_fig = FALSE,
@@ -961,13 +976,19 @@ hc_plot_power <- function(power_list_high,
   }
 }
 
-
 #' Produce cumulative relative risk results of analysis
 #'
 #' @description Produces cumulative relative risk and confidence intervals
 #' from analysis.
 #'
 #' @param pred_list A list containing predictions from the model by region.
+#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
+#' and climate variables which may be disaggregated by a particular region.
+#' @param minpercgeog_ Vector. Percentile of minimum suicide temperature for each area.
+#' @param attr_thr_high Integer. Percentile at which to define the upper temperature threshold for
+#' calculating attributable risk. Defaults to 97.5.
+#' @param attr_thr_low Integer. Percentile at which to define the lower temperature threshold for
+#' calculating attributable risk. Defaults to 2.5.
 #'
 #' @returns Dataframe containing cumulative relative risk and confidence
 #' intervals from analysis.
@@ -1022,9 +1043,11 @@ hc_rr_results <- function(pred_list,
 #' @param df_list A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
 #' @param pred_list A list containing predictions from the model by region.
-#' @param attr_thr Integer. Percentile at which to define the temperature threshold for
-#' calculating attributable risk.
-#' @param minpercreg Vector. Percentile of minimum suicide temperature for each area.
+#' @param attr_thr_high Integer. Percentile at which to define the upper temperature threshold for
+#' calculating attributable risk. Defaults to 97.5.
+#' @param attr_thr_low Integer. Percentile at which to define the lower temperature threshold for
+#' calculating attributable risk. Defaults to 2.5.
+#' @param minpercgeog_ Vector. Percentile of minimum suicide temperature for each area.
 #' @param country Character. Name of country for national level estimates.
 #' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
 #' FALSE.
@@ -1186,9 +1209,11 @@ hc_plot_rr <- function(df_list,
 #' and climate variables which may be disaggregated by a particular region.
 #' @param cb_list A list of cross-basis matrices by region.
 #' @param pred_list A list containing predictions from the model by region.
-#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
-#' @param attr_thr Integer. Percentile at which to define the temperature threshold for
-#' calculating attributable risk.
+#' @param minpercgeog_ Vector. Percentile of maximum suicide temperature for each region.
+#' @param attr_thr_high Integer. Percentile at which to define the upper temperature threshold for
+#' calculating attributable risk. Defaults to 97.5.
+#' @param attr_thr_low Integer. Percentile at which to define the lower temperature threshold for
+#' calculating attributable risk. Defaults to 2.5.
 #'
 #' @return A list containing attributable numbers per region
 #'
@@ -1213,11 +1238,7 @@ hc_attr <- function(df_list,
     high_temp <- quantile(geog_data$temp, attr_thr_high / 100, na.rm = TRUE)
     max_temp <- max(geog_data$temp, na.rm = TRUE)
 
-    c(
-      af_heat, af_heat_lower_ci, af_heat_upper_ci,
-      an_heat, an_heat_lower_ci, an_heat_upper_ci,
-      ansim_mat
-    ) %<-% an_attrdl(
+    heat <- an_attrdl(
       x = geog_data$temp,
       basis = cb,
       cases = geog_data$dependent,
@@ -1230,11 +1251,7 @@ hc_attr <- function(df_list,
       nsim = 1000
     )
 
-    c(
-      af_cold, af_cold_lower_ci, af_cold_upper_ci,
-      an_cold, an_cold_lower_ci, an_cold_upper_ci,
-      ansim_mat
-    ) %<-% an_attrdl(
+    cold <- an_attrdl(
       x = geog_data$temp,
       basis = cb,
       cases = geog_data$dependent,
@@ -1246,6 +1263,7 @@ hc_attr <- function(df_list,
       tot = FALSE,
       nsim = 1000
     )
+
     if (!"region" %in% colnames(geog_data)) {
       geog_data$region <- geog
     }
@@ -1256,23 +1274,23 @@ hc_attr <- function(df_list,
       dplyr::mutate(
         # outputs for higher, hotter temperatures
         threshold_temp_high = round((high_temp), 2),
-        af_heat = af_heat,
-        af_heat_lower_ci = af_heat_lower_ci,
-        af_heat_upper_ci = af_heat_upper_ci,
-        an_heat = an_heat,
-        an_heat_lower_ci = an_heat_lower_ci,
-        an_heat_upper_ci = an_heat_upper_ci,
+        af_heat = heat[[1]],
+        af_heat_lower_ci = heat[[2]],
+        af_heat_upper_ci = heat[[3]],
+        an_heat = heat[[4]],
+        an_heat_lower_ci = heat[[5]],
+        an_heat_upper_ci = heat[[6]],
         ar_heat = (.data$an_heat / .data$population) * 100000,
         ar_heat_lower_ci = (.data$an_heat_lower_ci / .data$population) * 100000,
         ar_heat_upper_ci = (.data$an_heat_upper_ci / .data$population) * 100000,
         # outputs for lower, colder temperatures
         threshold_temp_low = round((low_temp), 2),
-        af_cold = af_cold,
-        af_cold_lower_ci = af_cold_lower_ci,
-        af_cold_upper_ci = af_cold_upper_ci,
-        an_cold = an_cold,
-        an_cold_lower_ci = an_cold_lower_ci,
-        an_cold_upper_ci = an_cold_upper_ci,
+        af_cold = cold[[1]],
+        af_cold_lower_ci = cold[[2]],
+        af_cold_upper_ci = cold[[3]],
+        an_cold = cold[[4]],
+        an_cold_lower_ci = cold[[5]],
+        an_cold_upper_ci = cold[[6]],
         ar_cold = (.data$an_cold / .data$population) * 100000,
         ar_cold_lower_ci = (.data$an_cold_lower_ci / .data$population) * 100000,
         ar_cold_upper_ci = (.data$an_cold_upper_ci / .data$population) * 100000
@@ -2082,8 +2100,8 @@ hc_plot_ar_cold_yearly <- function(attr_yr_list,
 #' @param df_list A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
 #' @param country Character. Name of country for national level estimates.
-#' @param attr_thr Integer. Percentile at which to define the temperature threshold for
-#' calculating attributable risk.
+#' @param attr_thr_high Integer. Percentile at which to define the upper temperature threshold for
+#' calculating attributable risk. Defaults to 97.5.
 #' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
 #' FALSE.
 #' @param output_folder_path Path to folder where plots should be saved.
@@ -2215,8 +2233,8 @@ hc_plot_af_heat_monthly <- function(attr_mth_list,
 #' @param df_list A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
 #' @param country Character. Name of country for national level estimates.
-#' @param attr_thr Integer. Percentile at which to define the temperature threshold for
-#' calculating attributable risk.
+#' @param attr_thr_low Integer. Percentile at which to define the lower temperature threshold for
+#' calculating attributable risk. Defaults to 2.5.
 #' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
 #' FALSE.
 #' @param output_folder_path Path to folder where plots should be saved.
@@ -2348,8 +2366,8 @@ hc_plot_af_cold_monthly <- function(attr_mth_list,
 #' @param df_list A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
 #' @param country Character. Name of country for national level estimates.
-#' @param attr_thr Integer. Percentile at which to define the temperature threshold for
-#' calculating attributable risk.
+#' @param attr_thr_high Integer. Percentile at which to define the upper temperature threshold for
+#' calculating attributable risk. Defaults to 97.5.
 #' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
 #' FALSE.
 #' @param output_folder_path Path to folder where plots should be saved.
@@ -2480,8 +2498,8 @@ hc_plot_ar_heat_monthly <- function(attr_mth_list,
 #' @param df_list A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
 #' @param country Character. Name of country for national level estimates.
-#' @param attr_thr Integer. Percentile at which to define the temperature threshold for
-#' calculating attributable risk.
+#' @param attr_thr_low Integer. Percentile at which to define the lower temperature threshold for
+#' calculating attributable risk. Defaults to 2.5.
 #' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
 #' FALSE.
 #' @param output_folder_path Path to folder where plots should be saved.
@@ -2678,11 +2696,11 @@ hc_save_results <- function(rr_results,
 #' disaggregated by region.
 #' @param date_col Character. Name of the column in the dataframe that contains
 #' the date.
-#' @param region_col Character. Name of the column in the dataframe that contains
+#' @param geography_col Character. Name of the column in the dataframe that contains
 #' the region names. Defaults to NULL.
 #' @param temperature_col Character. Name of the column in the dataframe that
 #' contains the temperature column.
-#' @param health_outcome_col Character. Name of the column in the dataframe that
+#' @param dependent_col Character. Name of the column in the dataframe that
 #' contains the health outcome count column (e.g. number of deaths, hospital
 #' admissions).
 #' @param population_col Character. Name of the column in the dataframe that
@@ -2696,20 +2714,21 @@ hc_save_results <- function(rr_results,
 #' (see dlnm:crossbasis). Defaults to 2 (quadratic).
 #' @param var_per Vector. Internal knot positions for argvar
 #' (see dlnm::crossbasis). Defaults to c(25,50,75).
-#' @param lag_fun Character. Exposure function for arglag
-#' (see dlnm::crossbasis). Defaults to 'strata'.
-#' @param lag_breaks Integer. Internal cut-off point defining the strata for arglag
-#' (see dlnm:crossbasis). Defaults to 1.
-#' @param lag_days Integer. Maximum lag. Defaults to 2.
-#' (see dlnm:crossbasis).
+#' @param lagn Integer. Number of days in the lag period. Defaults to 21.
+#' (see dlnm::crossbasis).
+#' @param lagnk Integer. Number of knots in lag function. Defaults to 3.
+#' (see dlnm::logknots).
+#' @param dfseas Integer. Degrees of freedom for seasonality.
 #' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
 #' FALSE.
 #' @param save_csv Boolean. Whether to save the results as a CSV. Defaults to
 #' FALSE.
 #' @param country Character. Name of country for national level estimates.
 #' @param meta_analysis Boolean. Whether to perform a meta-analysis.
-#' @param attr_thr Integer. Percentile at which to define the temperature threshold for
-#' calculating attributable risk.
+#' @param attr_thr_high Integer. Percentile at which to define the upper temperature threshold for
+#' calculating attributable risk. Defaults to 97.5.
+#' @param attr_thr_low Integer. Percentile at which to define the lower temperature threshold for
+#' calculating attributable risk. Defaults to 2.5.
 #' @param output_folder_path Path to folder where plots and/or CSV should be
 #' saved. Defaults to NULL.
 #'
@@ -2805,10 +2824,7 @@ temp_mortality_do_analysis <- function(data_path,
     dfseas = dfseas
   )
 
-  c(
-    qaic_results, qaic_summary,
-    vif_results, vif_summary, adf_summary
-  ) %<-% hc_model_validation(
+  model_validation <- hc_model_validation(
     df_list = df_list,
     cb_list = cb_list,
     independent_cols = independent_cols,
@@ -2817,6 +2833,10 @@ temp_mortality_do_analysis <- function(data_path,
     save_csv = save_csv,
     output_folder_path = output_folder_path
   )
+  qaic_results <- model_validation[[1]]
+  qaic_summary <- model_validation[[2]]
+  vif_results <- model_validation[[3]]
+  vif_summary <- model_validation[[4]]
 
   model_list <- hc_quasipoisson_dlnm(
     df_list = df_list,
@@ -2825,27 +2845,32 @@ temp_mortality_do_analysis <- function(data_path,
     dfseas = dfseas
   )
 
-  c(coef_, vcov_) %<-% dlnm_reduce_cumulative(
+  reduced <- dlnm_reduce_cumulative(
     df_list = df_list,
     var_per = var_per,
     var_degree = var_degree,
     cb_list = cb_list,
     model_list = model_list
   )
+  coef_ <- reduced[[1]]
+  vcov_ <- reduced[[2]]
 
   if (meta_analysis == TRUE) {
-    c(mm, blup, meta_test_res) %<-% dlnm_meta_analysis(
+    meta <- dlnm_meta_analysis(
       df_list = df_list,
       coef_ = coef_,
       vcov_ = vcov_,
       save_csv = save_csv,
       output_folder_path = output_folder_path
     )
+    mm <- meta[[1]]
+    blup <- meta[[1]]
+    meta_test_res <- meta[[1]]
   } else {
     blup <- NULL
   }
 
-  c(minpercgeog_, mintempgeog_) %<-% dlnm_min_mortality_temp(
+  min_mort_temp <- dlnm_min_mortality_temp(
     df_list = df_list,
     var_fun = var_fun,
     var_per = var_per,
@@ -2855,6 +2880,8 @@ temp_mortality_do_analysis <- function(data_path,
     meta_analysis = meta_analysis,
     outcome_type = "temperature"
   )
+  minpercgeog_ <- min_mort_temp[[1]]
+  mintempgeog_ <- min_mort_temp[[2]]
 
   pred_list <- hc_predict_subnat(
     df_list = df_list,
@@ -2869,7 +2896,7 @@ temp_mortality_do_analysis <- function(data_path,
   )
 
   if (meta_analysis == TRUE) {
-    c(df_list, cb_list, mintempgeog_, mmpredall) %<-% hc_add_national_data(
+    nat_data <- hc_add_national_data(
       df_list = df_list,
       pop_list = pop_list,
       var_fun = var_fun,
@@ -2882,6 +2909,10 @@ temp_mortality_do_analysis <- function(data_path,
       mm = mm,
       minpercgeog_ = minpercgeog_
     )
+    df_list <- nat_data[[1]]
+    cb_list <- nat_data[[2]]
+    mintempgeog_ <- nat_data[[3]]
+    mmpredall <- nat_data[[4]]
 
     pred_list <- dlnm_predict_nat(
       df_list = df_list,
@@ -2895,7 +2926,7 @@ temp_mortality_do_analysis <- function(data_path,
     )
   }
 
-  c(power_list_high, power_list_low) %<-% dlnm_power_list(
+  power_list <- dlnm_power_list(
     df_list = df_list,
     pred_list = pred_list,
     minperc = minpercgeog_,
@@ -2903,6 +2934,8 @@ temp_mortality_do_analysis <- function(data_path,
     attr_thr_low = attr_thr_low,
     compute_low = TRUE
   )
+  power_list_high <- power_list[[1]]
+  power_list_low <- power_list[[2]]
 
   hc_plot_power(
     power_list_high = power_list_high,
@@ -2940,11 +2973,14 @@ temp_mortality_do_analysis <- function(data_path,
     attr_thr_low = attr_thr_low
   )
 
-  c(res_attr_tot, attr_yr_list, attr_mth_list) %<-% hc_attr_tables(
+  attr_tables <- hc_attr_tables(
     attr_list = attr_list,
     country = country,
     meta_analysis = meta_analysis
   )
+  res_attr_tot <- attr_tables[[1]]
+  attr_yr_list <- attr_tables[[1]]
+  attr_mth_list <- attr_tables[[1]]
 
   hc_plot_attr_heat_totals(
     df_list = df_list,
@@ -3040,10 +3076,10 @@ temp_mortality_do_analysis <- function(data_path,
 
   return(
     list(
-      rr_results <- rr_results,
-      an_ar_results <- res_attr_tot,
-      monthly_an_ar_results <- attr_yr_list,
-      annual_an_ar_results <- attr_mth_list
+      rr_results = rr_results,
+      an_ar_results = res_attr_tot,
+      monthly_an_ar_results = attr_yr_list,
+      annual_an_ar_results = attr_mth_list
     )
   )
 }

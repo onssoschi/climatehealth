@@ -21,6 +21,14 @@ and climate variables which may be disaggregated by a particular region.}
 
 \item{pred_list}{A list containing predictions from the model by region.}
 
+\item{attr_thr_high}{Integer. Percentile at which to define the upper temperature threshold for
+calculating attributable risk. Defaults to 97.5.}
+
+\item{attr_thr_low}{Integer. Percentile at which to define the lower temperature threshold for
+calculating attributable risk. Defaults to 2.5.}
+
+\item{minpercgeog_}{Vector. Percentile of minimum suicide temperature for each area.}
+
 \item{country}{Character. Name of country for national level estimates.}
 
 \item{save_fig}{Boolean. Whether to save the plot as an output. Defaults to
@@ -28,11 +36,6 @@ FALSE.}
 
 \item{output_folder_path}{Path to folder where plots should be saved.
 Defaults to NULL.}
-
-\item{attr_thr}{Integer. Percentile at which to define the temperature threshold for
-calculating attributable risk.}
-
-\item{minpercreg}{Vector. Percentile of minimum suicide temperature for each area.}
 }
 \value{
 Plots of cumulative lag exposure-response function with histogram of

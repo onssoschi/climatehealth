@@ -394,12 +394,12 @@ dlnm_predict_nat <- function(
 #' @param df_list A list of dataframes containing daily timeseries data for a health outcome
 #' and climate variables which may be disaggregated by a particular region.
 #' @param pred_list A list containing predictions from the model by region.
-#' @param minpercreg Vector. Percentile of maximum outcome temperature for each region.
+#' @param minperc Vector. Percentile of maximum outcome temperature for each region.
 #' @param attr_thr_high Integer. Percentile at which to define the upper temperature threshold for
 #' calculating attributable risk. Defaults to 97.5.
-#' @param attr_thr_lower Integer. Percentile at which to define the lower temperature threshold for
+#' @param attr_thr_low Integer. Percentile at which to define the lower temperature threshold for
 #' calculating attributable risk. Defaults to 2.5.
-#' @param compute_lowe Bool. Whether to computer power for the lower threshold.
+#' @param compute_low Bool. Whether to computer power for the lower threshold.
 #' Defaults to FALSE
 #'
 #' @returns A list containing power information by area.
@@ -428,7 +428,7 @@ dlnm_power_list <- function(df_list,
 
     ## calculate high threshold
     thresh_temp_high <- round(quantile(dat$temp, attr_thr_high / 100, na.rm = TRUE), 1)
-    coef_high <- coef_effect_with_se %>% dplyr::filter(temperature >= thresh_temp_high)
+    coef_high <- coef_effect_with_se %>% dplyr::filter(.data$temperature >= thresh_temp_high)
 
     power_df_high <- data.frame(
       region = nm,
@@ -438,13 +438,13 @@ dlnm_power_list <- function(df_list,
       se = coef_high$se,
       z_alpha = stats::qnorm(1 - alpha / 2)
     ) %>%
-      dplyr::mutate(power = stats::pnorm(log_rr / se - z_alpha) +
-        (1 - stats::pnorm(log_rr / se + z_alpha))) %>%
-      dplyr::select(-z_alpha) %>%
+      dplyr::mutate(power = stats::pnorm(.data$log_rr / .data$se - .data$z_alpha) +
+        (1 - stats::pnorm(.data$log_rr / .data$se + .data$z_alpha))) %>%
+      dplyr::select(-all_of("z_alpha")) %>%
       dplyr::mutate(
-        log_rr = round(log_rr, 2),
-        se = round(se, 2),
-        power = round(power * 100, 1)
+        log_rr = round(.data$log_rr, 2),
+        se = round(.data$se, 2),
+        power = round(.data$power * 100, 1)
       )
 
     power_list_high[[nm]] <- power_df_high
@@ -452,7 +452,7 @@ dlnm_power_list <- function(df_list,
     # Calculate low threshold conditionally
     if (compute_low) {
       thresh_temp_low <- round(quantile(dat$temp, attr_thr_low / 100, na.rm = TRUE), 1)
-      coef_low <- coef_effect_with_se %>% dplyr::filter(temperature <= thresh_temp_low)
+      coef_low <- coef_effect_with_se %>% dplyr::filter(.data$temperature <= thresh_temp_low)
 
       power_df_low <- data.frame(
         region = nm,
@@ -462,13 +462,13 @@ dlnm_power_list <- function(df_list,
         se = coef_low$se,
         z_alpha = stats::qnorm(1 - alpha / 2)
       ) %>%
-        dplyr::mutate(power = stats::pnorm(log_rr / se - z_alpha) +
-          (1 - stats::pnorm(log_rr / se + z_alpha))) %>%
-        dplyr::select(-z_alpha) %>%
+        dplyr::mutate(power = stats::pnorm(.data$log_rr / .data$se - .data$z_alpha) +
+          (1 - stats::pnorm(.data$log_rr / .data$se + .data$z_alpha))) %>%
+        dplyr::select(-all_of("z_alpha")) %>%
         dplyr::mutate(
-          log_rr = round(log_rr, 2),
-          se = round(se, 2),
-          power = round(power * 100, 1)
+          log_rr = round(.data$log_rr, 2),
+          se = round(.data$se, 2),
+          power = round(.data$power * 100, 1)
         )
 
       power_list_low[[nm]] <- power_df_low

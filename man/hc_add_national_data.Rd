@@ -33,22 +33,19 @@ and climate variables which may be disaggregated by a particular region.}
 \item{var_degree}{Integer. Degree of the piecewise polynomial for argvar
 (see dlnm::crossbasis). Defaults to 2 (quadratic).}
 
+\item{lagn}{Integer. Number of days in the lag period. Defaults to 21.
+(see dlnm::crossbasis).}
+
+\item{lagnk}{Integer. Number of knots in lag function. Defaults to 3.
+(see dlnm::logknots).}
+
 \item{country}{Character. Name of country for national level estimates.}
 
 \item{cb_list}{A list of cross-basis matrices by region.}
 
 \item{mm}{A model object. A multivariate meta-analysis model.}
 
-\item{lag_fun}{Character. Exposure function for arglag
-(see dlnm::crossbasis). Defaults to 'strata'.}
-
-\item{lag_breaks}{Integer. Internal cut-off point defining the strata for arglag
-(see dlnm::crossbasis). Defaults to 1.}
-
-\item{lag_days}{Integer. Maximum lag. Defaults to 2.
-(see dlnm::crossbasis).}
-
-\item{minpercgeog}{Vector. Percentile of minumum mortality temperature for each region.}
+\item{minpercgeog_}{Vector. Percentile of minumum mortality temperature for each region.}
 }
 \value{
 \itemize{
