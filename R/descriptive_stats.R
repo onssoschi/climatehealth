@@ -399,7 +399,7 @@ common_descriptive_stats_core <- function(
   }
   # Seasonal tends
   if (plot_seasonal && !is.null(timeseries_col)) {
-    seasonal_path <- file.path(output_path, "seasonal_trends.pdf")
+    seasonal_path <- file.path(output_path, "seasonal_averages.pdf")
 
     # Create y-axis labels with units
     ylabs <- sapply(columns, function(col) {
@@ -413,7 +413,7 @@ common_descriptive_stats_core <- function(
       date_col = timeseries_col,
       outcome_cols = columns,
       ylabs = ylabs,
-      title = paste("Seasonal Trends for", title),
+      title = paste("Seasonal Averages for", title),
       save_plot = TRUE,
       output_path = seasonal_path
     )
