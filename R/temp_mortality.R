@@ -906,8 +906,6 @@ hc_plot_power <- function(power_list_high,
     pdf(output_path, width = max(10, grid[1] * 5.5), height = max(7, grid[2] * 4.5))
     par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0), mar = c(8, 4, 5, 4))
   }
-  plh <<- power_list_high
-  pll <<- power_list_low
   for (geog in names(power_list_high)) {
     df <- power_list_high[[geog]]
     df <- df[order(df$temperature), ]
