@@ -2157,12 +2157,14 @@ suicides_heat_do_analysis <- function(
     compute_low = FALSE
   )
   # plot power calculation results
-  mh_plot_power(
-    power_list = power_list,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path,
-    country = country
-  )
+  if (save_fig == TRUE) {
+    mh_plot_power(
+      power_list = power_list,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path,
+      country = country
+    )
+  }
   # obtain relative risk values
   rr_results <- mh_rr_results(
     pred_list = pred_list,
@@ -2171,15 +2173,17 @@ suicides_heat_do_analysis <- function(
     minpercreg = minpercreg
   )
   # plot relative risk values
-  mh_plot_rr(
-    df_list = df_list,
-    pred_list = pred_list,
-    attr_thr = attr_thr,
-    minpercreg = minpercreg,
-    country = country,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path
-  )
+  if (save_fig == TRUE) {
+    mh_plot_rr(
+      df_list = df_list,
+      pred_list = pred_list,
+      attr_thr = attr_thr,
+      minpercreg = minpercreg,
+      country = country,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path
+    )
+  }
   # calculate attributable numbers per region
   attr_list <- mh_attr(
     df_list = df_list,
@@ -2197,46 +2201,48 @@ suicides_heat_do_analysis <- function(
   res_attr_tot <- attr[[1]]
   attr_yr_list <- attr[[2]]
   attr_mth_list <- attr[[3]]
-  # Plot attributable numbers
-  mh_plot_attr_totals(
-    df_list = df_list,
-    res_attr_tot = res_attr_tot,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path,
-    country = country
-  )
-  # Plot yearly attributable fraction values
-  mh_plot_af_yearly(
-    attr_yr_list = attr_yr_list,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path,
-    country = country
-  )
-  # plot year attributable rates
-  mh_plot_ar_yearly(
-    attr_yr_list = attr_yr_list,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path,
-    country = country
-  )
-  # plot monthly attributable fractions
-  mh_plot_af_monthly(
-    attr_mth_list = attr_mth_list,
-    df_list = df_list,
-    country = country,
-    attr_thr = attr_thr,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path
-  )
-  # plot monthly attributable rates
-  mh_plot_ar_monthly(
-    attr_mth_list = attr_mth_list,
-    df_list = df_list,
-    country = country,
-    attr_thr = attr_thr,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path
-  )
+  if (save_fig == TRUE) {
+    # Plot attributable numbers
+    mh_plot_attr_totals(
+      df_list = df_list,
+      res_attr_tot = res_attr_tot,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path,
+      country = country
+    )
+    # Plot yearly attributable fraction values
+    mh_plot_af_yearly(
+      attr_yr_list = attr_yr_list,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path,
+      country = country
+    )
+    # plot year attributable rates
+    mh_plot_ar_yearly(
+      attr_yr_list = attr_yr_list,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path,
+      country = country
+    )
+    # plot monthly attributable fractions
+    mh_plot_af_monthly(
+      attr_mth_list = attr_mth_list,
+      df_list = df_list,
+      country = country,
+      attr_thr = attr_thr,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path
+    )
+    # plot monthly attributable rates
+    mh_plot_ar_monthly(
+      attr_mth_list = attr_mth_list,
+      df_list = df_list,
+      country = country,
+      attr_thr = attr_thr,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path
+    )
+  }
   # conditionally save csv files containing raw data
   if (save_csv == TRUE) {
     mh_save_results(
