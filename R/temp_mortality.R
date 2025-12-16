@@ -200,11 +200,10 @@ hc_model_combo_res <- function(df_list,
       }
     }
 
-    k <- length(unique(geog_data$year))
     base_independent_cols <- c(
       "cb",
       "dow",
-      sprintf("splines::ns(as.numeric(date), df = %d)", k)
+      paste0("splines::ns(date, df = ", dfseas, " * length(unique(year)))")
     )
 
     for (vars in all_combos) {
