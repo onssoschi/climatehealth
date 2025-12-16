@@ -2737,11 +2737,11 @@ hc_save_results <- function(rr_results,
 #' \itemize{
 #'   \item `rr_results` Dataframe containing cumulative relative risk and confidence
 #' intervals from analysis.
-#'   \item `res_attr_tot` Dataframe. Total attributable fractions, numbers and
+#'   \item `an_ar_results` Dataframe. Total attributable fractions, numbers and
 #'   rates for each area over the whole time series.
-#'   \item `attr_yr_list` List. Dataframes containing yearly estimates of
+#'   \item `annual_an_ar_results` List. Dataframes containing yearly estimates of
 #'   attributable fractions, numbers and rates by area.
-#'   \item `attr_mth_list` List. Dataframes containing total attributable
+#'   \item `monthly_an_ar_results` List. Dataframes containing total attributable
 #'   fractions, numbers and rates by calendar month and area.
 #'   }
 #'
@@ -3077,8 +3077,8 @@ temp_mortality_do_analysis <- function(data_path,
     list(
       rr_results = rr_results,
       an_ar_results = res_attr_tot,
-      monthly_an_ar_results = attr_yr_list,
-      annual_an_ar_results = attr_mth_list
+      annual_an_ar_results = attr_yr_list,
+      monthly_an_ar_results = attr_mth_list
     )
   )
 }
