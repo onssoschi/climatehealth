@@ -325,146 +325,139 @@ mh_model_validation <- function(
     named_label_list <- as.list(short_labels)
     names(named_label_list) <- names(df_list)
   }
-  if (nrow(do.call(rbind, do.call(rbind, residuals_list))) > 100000) {
-    sample_check <- TRUE
-  } else {
-    sample_check <- FALSE
-  }
-  for (reg in names(df_list)) {
-    region_data <- df_list[[reg]]
-    formula_list <- residuals_list[[reg]]
-    named_label <- named_label_list[[reg]]
-
-    if (save_fig == TRUE) {
-      reg_folder <- gsub(pattern = " ", replacement = "_", x = reg)
-
-      output_folder_main <- file.path(output_folder_path, "model_validation", reg_folder)
-      dir.create(output_folder_main, recursive = TRUE, showWarnings = FALSE)
-
-      grid <- c(min(length(formula_list), 3), ceiling(length(formula_list) / 3))
-      output_path <- paste0(output_folder_main, "/", named_label, "_residuals_timeseries.pdf")
-      pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
-
-      par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
+  # Check if save_fig is set to TRUE before running plotting loop
+  if (save_fig == TRUE){
+    if (nrow(do.call(rbind, do.call(rbind, residuals_list))) > 100000) {
+      sample_check <- TRUE
+    } else {
+      sample_check <- FALSE
     }
+    for (reg in names(df_list)) {
+      region_data <- df_list[[reg]]
+      formula_list <- residuals_list[[reg]]
+      named_label <- named_label_list[[reg]]
 
-    for (i in names(formula_list)) {
-      plot(
-        x = region_data$date[region_data$ind > 0],
-        y = formula_list[[i]]$residuals,
-        ylim = c(-5, 10),
-        pch = 19,
-        cex = 0.2,
-        col = "#0A2E4D",
-        main = unique(formula_list[[i]]$formula),
-        ylab = "Deviance residuals",
-        xlab = "Date"
-      )
+      # Time series residual plots
+        reg_folder <- gsub(pattern = " ", replacement = "_", x = reg)
 
-      abline(h = 0, lty = 2, lwd = 2)
+        output_folder_main <- file.path(output_folder_path, "model_validation", reg_folder)
+        dir.create(output_folder_main, recursive = TRUE, showWarnings = FALSE)
 
-      if (save_fig == TRUE) {
+        grid <- c(min(length(formula_list), 3), ceiling(length(formula_list) / 3))
+        output_path <- paste0(output_folder_main, "/", named_label, "_residuals_timeseries.pdf")
+        pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
+
+        par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
+
+
+      for (i in names(formula_list)) {
+        plot(
+          x = region_data$date[region_data$ind > 0],
+          y = formula_list[[i]]$residuals,
+          ylim = c(-5, 10),
+          pch = 19,
+          cex = 0.2,
+          col = "#0A2E4D",
+          main = unique(formula_list[[i]]$formula),
+          ylab = "Deviance residuals",
+          xlab = "Date"
+        )
+
+        abline(h = 0, lty = 2, lwd = 2)
+
         title <- paste0("Deviance Residuals by Date: ", reg)
         mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
       }
-    }
 
-    dev.off()
+      dev.off()
 
-    if (sample_check == TRUE) {
-      all_residuals <- do.call(rbind, formula_list)
+      # Fitted vs residuals
+      if (sample_check == TRUE) {
+        all_residuals <- do.call(rbind, formula_list)
 
-      set.seed(123) # for reproducibility
-      sampled_residuals <- all_residuals %>%
-        group_by(.data$formula) %>%
-        sample_frac(0.2) %>%
-        ungroup()
+        set.seed(123) # for reproducibility
+        sampled_residuals <- all_residuals %>%
+          dplyr::group_by(.data$formula) %>%
+          dplyr::sample_frac(0.2) %>%
+          dplyr::ungroup()
 
-      new_res_list <- split(sampled_residuals, sampled_residuals$formula)
+        new_res_list <- split(sampled_residuals, sampled_residuals$formula)
 
-      sample_title <- " (20% sample)"
-    } else {
-      new_res_list <- formula_list
-      sample_title <- ""
-    }
-
-    if (save_fig == TRUE) {
-      grid <- c(min(length(formula_list), 3), ceiling(length(new_res_list) / 3))
-      output_path <- paste0(output_folder_main, "/", named_label, "_residuals_fitted.pdf")
-      pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
-
-      par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
-    }
-
-    for (i in names(new_res_list)) {
-      plot(
-        x = jitter(new_res_list[[i]]$fitted, amount = 0.5),
-        y = jitter(new_res_list[[i]]$residuals, amount = 0.5),
-        pch = 19,
-        cex = 0.2,
-        col = "#0A2E4D",
-        main = unique(new_res_list[[i]]$formula),
-        ylab = "Deviance residuals",
-        xlab = "Fitted values"
-      )
-
-      abline(h = 0, lty = 2, lwd = 2)
-
-      if (save_fig == TRUE) {
-        title <- paste0("Deviance Residuals by Fitted Values: ", reg, sample_title)
-        mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+        sample_title <- " (20% sample)"
+      } else {
+        new_res_list <- formula_list
+        sample_title <- ""
       }
-    }
 
-    dev.off()
+        grid <- c(min(length(formula_list), 3), ceiling(length(new_res_list) / 3))
+        output_path <- paste0(output_folder_main, "/", named_label, "_residuals_fitted.pdf")
+        pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
 
-    if (save_fig == TRUE) {
-      grid <- c(min(length(formula_list), 3), ceiling(length(new_res_list) / 3))
-      output_path <- paste0(output_folder_main, "/", named_label, "_qq_plot.pdf")
-      pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
+        par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
 
-      par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
-    }
+      for (i in names(new_res_list)) {
+        plot(
+          x = jitter(new_res_list[[i]]$fitted, amount = 0.5),
+          y = jitter(new_res_list[[i]]$residuals, amount = 0.5),
+          pch = 19,
+          cex = 0.2,
+          col = "#0A2E4D",
+          main = unique(new_res_list[[i]]$formula),
+          ylab = "Deviance residuals",
+          xlab = "Fitted values"
+        )
 
-    for (i in names(new_res_list)) {
-      qqnorm(new_res_list[[i]]$residuals,
-        pch = 19,
-        cex = 0.2,
-        col = "#0A2E4D",
-        main = unique(new_res_list[[i]]$formula)
-      )
+        abline(h = 0, lty = 2, lwd = 2)
 
-      qqline(new_res_list[[i]]$residuals, lwd = 2)
-
-      if (save_fig == TRUE) {
-        title <- paste0("Normal Q-Q Plot of Residuals: ", reg, sample_title)
-        mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+          title <- paste0("Deviance Residuals by Fitted Values: ", reg, sample_title)
+          mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
       }
+
+      dev.off()
+
+      # QQ plots
+        grid <- c(min(length(formula_list), 3), ceiling(length(new_res_list) / 3))
+        output_path <- paste0(output_folder_main, "/", named_label, "_qq_plot.pdf")
+        pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
+
+        par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
+
+      for (i in names(new_res_list)) {
+        qqnorm(new_res_list[[i]]$residuals,
+          pch = 19,
+          cex = 0.2,
+          col = "#0A2E4D",
+          main = unique(new_res_list[[i]]$formula)
+        )
+
+        qqline(new_res_list[[i]]$residuals, lwd = 2)
+
+          title <- paste0("Normal Q-Q Plot of Residuals: ", reg, sample_title)
+          mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+      }
+
+      dev.off()
+
+      # ACF/PACF plots
+        grid <- c(min(length(formula_list), 2), ceiling(length(formula_list) / 3) * 2)
+        output_path <- file.path(output_folder_main, paste0(named_label, "_residuals_acf_pacf.pdf"))
+        pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
+
+        par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 5, 0))
+
+      for (i in names(formula_list)) {
+        residuals_clean <- stats::na.omit(formula_list[[i]]$residuals)
+        stats::acf(residuals_clean, main = paste0("ACF: ", unique(formula_list[[i]]$formula)), col = "#7A855C")
+        stats::pacf(residuals_clean, main = paste0("PACF: ", unique(formula_list[[i]]$formula)), col = "#7A855C")
+      }
+
+        title <- paste0("Autocorrelation and Partial Autocorrelation of Residuals:\n", reg)
+        mtext(title, outer = TRUE, cex = 1.5, line = 0.5, font = 2)
+
+      dev.off()
     }
-
-    dev.off()
-
-    if (save_fig == TRUE) {
-      grid <- c(min(length(formula_list), 2), ceiling(length(formula_list) / 3) * 2)
-      output_path <- file.path(output_folder_main, paste0(named_label, "_residuals_acf_pacf.pdf"))
-      pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
-
-      par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 5, 0))
-    }
-
-    for (i in names(formula_list)) {
-      residuals_clean <- stats::na.omit(formula_list[[i]]$residuals)
-      stats::acf(residuals_clean, main = paste0("ACF: ", unique(formula_list[[i]]$formula)), col = "#7A855C")
-      stats::pacf(residuals_clean, main = paste0("PACF: ", unique(formula_list[[i]]$formula)), col = "#7A855C")
-    }
-
-    if (save_fig == TRUE) {
-      title <- paste0("Autocorrelation and Partial Autocorrelation of Residuals:\n", reg)
-      mtext(title, outer = TRUE, cex = 1.5, line = 0.5, font = 2)
-    }
-
-    dev.off()
   }
+
   return(list(qaic_results, qaic_summary, vif_results, vif_summary))
 }
 
