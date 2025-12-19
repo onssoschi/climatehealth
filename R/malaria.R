@@ -103,7 +103,8 @@ malaria_do_analysis <- function(
     save_csv = FALSE,
     save_model = FALSE,
     save_fig = FALSE,
-    output_dir = NULL) {
+    output_dir = NULL,
+    api_mode = FALSE) {
   # Simple output validation
   if (is.null(output_dir) & (save_fig | save_csv)) {
     stop("'output_dir' must be provided is 'save_fig' or save_csv' are TRUE.")
@@ -138,7 +139,8 @@ malaria_do_analysis <- function(
     "region_col", "district_col", "year_col", "month_col",
     "malaria_case_col", "tot_pop_col", "tmin_col",
     "tmean_col","tmax_col", "rainfall_col",
-    "r_humidity_col", "runoff_col", "param_term"
+    "r_humidity_col", "runoff_col", "param_term",
+    "geometry_col"
   )
   for (col in required_cols){
     val <- get(col)
@@ -357,11 +359,21 @@ malaria_do_analysis <- function(
     output_dir = output_dir
   )
   # structure and return results
-  res <- list(
-    inla_result = inla_result,
-    VIF = VIF,
-    rr_df = rr_df,
-    an_ar_results = attr_frac_num
-  )
+  # Return only csvs if running over api
+  if (api_mode){
+    # Lightweight results for flask/JSOn compatibility
+    res <- list(
+      rr_df = rr_df,
+      an_ar_results = attr_frac_num
+    )
+  } else{
+    # Full results for local users
+    res <- list(
+      inla_result = inla_result,
+      VIF = VIF,
+      rr_df = rr_df,
+      an_ar_results = attr_frac_num
+    )
+  }
   return(res)
 }
