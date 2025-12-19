@@ -133,10 +133,21 @@ malaria_do_analysis <- function(
       paste0(acceptable_levels, collapse = ", ")
     ))
   }
-  # Validation for required parameters to prevent "NULL to symbol" errors
-  if (is.null(param_term) || param_term == "") {
-    stop("param_term cannot be NULL or empty.")
+  # Validate required params to prevent "NULL to symbol" errors
+  required_cols <- c(
+    "region_col", "district_col", "year_col", "month_col",
+    "malaria_case_col", "tot_pop_col", "tmin_col",
+    "tmean_col","tmax_col", "rainfall_col",
+    "r_humidity_col", "runoff_col", "param_term"
+  )
+  for (col in required_cols){
+    val <- get(col)
+    if (is.null(val) || val == ""){
+      stop(paste0("Parameter '", col, "' cannot be NULL or empty."))
+    }
   }
+
+  # Validate required lists
   if (is.null(basis_matrices_choices) || length(basis_matrices_choices) == 0) {
     stop("basis_matrices_choices cannot be NULL or empty.")
   }
