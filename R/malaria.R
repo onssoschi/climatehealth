@@ -133,6 +133,16 @@ malaria_do_analysis <- function(
       paste0(acceptable_levels, collapse = ", ")
     ))
   }
+  # Validation for required parameters to prevent "NULL to symbol" errors
+  if (is.null(param_term) || param_term == "") {
+    stop("param_term cannot be NULL or empty.")
+  }
+  if (is.null(basis_matrices_choices) || length(basis_matrices_choices) == 0) {
+    stop("basis_matrices_choices cannot be NULL or empty.")
+  }
+  if (is.null(inla_param) || length(inla_param) == 0) {
+    stop("inla_param cannot be NULL or empty.")
+  }
 
   # Input validation (IF makes API exception)
   if (is.character(health_data_path)) {
