@@ -359,13 +359,41 @@ malaria_do_analysis <- function(
     output_dir = output_dir
   )
   # structure and return results
-  # Return only csvs if running over api
+  # Sanitise API outputs to primitives only
+  json_safe <- function(x){
+    # Drop known non-JSONable classes
+    if (inherits(x, c("crosspred", "inla"))) return(NULL)
+
+    # If data.frame/tibble: drop list-columns (where these objects usually hide)
+    if (is.data.frame(x)) {
+      keep <- vapply(x, function(col) !is.list(col), logical(1))
+      return(x[, keep, drop = FALSE])
+    }
+
+    # If list: recurse
+    if (is.list(x)) {
+      out <- lapply(x, json_safe)
+      out <- out[!vapply(out, is.null, logical(1))]
+      return(out)
+    }
+
+    # Atomics are safe
+    if (is.atomic(x) || is.null(x)) return(x)
+
+    # Fallback: stringify
+    as.character(x)
+  }
+  }
+
+  # Return only CSVs if running over api
   if (api_mode){
     # Lightweight results for flask/JSOn compatibility
     res <- list(
       rr_df = rr_df,
       an_ar_results = attr_frac_num
     )
+    #jsonlite::toJSON(json_safe(res), auto_unbox = TRUE)
+    return(json_safe(res))
   } else{
     # Full results for local users
     res <- list(
