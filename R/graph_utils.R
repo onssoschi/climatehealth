@@ -28,7 +28,6 @@ create_grid <- function(plot_count) {
 }
 
 
-
 #' Plot a correlation matrix include a heatmap.
 #'
 #' @param matrix_ The matrix to plot.
@@ -60,7 +59,7 @@ plot_correlation_matrix <- function(matrix_, title, output_path) {
   gplots::heatmap.2(
     x = as.matrix(matrix_),
     Rowv = FALSE, Colv = FALSE, dendrogram = "none",
-    cellnote = formatC(matrix_, format = "f", digits = 3),
+    cellnote = matrix_,
     notecol = "#000000", notecex = 2,
     cexRow = 1.6, cexCol = 1.6,
     trace = "none", key = FALSE,
@@ -95,7 +94,7 @@ plot_distributions <- function(
     # normalise output path
     output_path <- enforce_file_extension(output_path, ".pdf")
     plot_height <- max(10, length(columns)*2)
-    pdf(output_path, width = 10, height = plot_height)
+    pdf(output_path, width = 14, height = plot_height)
   }
   # normalise columns
   columns <- c(columns)
@@ -106,10 +105,11 @@ plot_distributions <- function(
   par(
     mfrow = as.numeric(grid_size),
     col = "white",
-    oma = c(0, 0, 6, 0)
+    oma = c(0, 1, 6, 0),
+    cex.axis = 1.35,
+    cex.lab  = 1.35,
+    cex.main = 1.50
   )
-
-
 
   for (i in seq_along(columns)) {
     col_name <- columns[i]
@@ -142,6 +142,7 @@ plot_distributions <- function(
   }
 }
 
+
 #' Generate and RGB colour value with alpha from a hex value.
 #'
 #' @param hex The hex code of the colour to convert.
@@ -152,7 +153,7 @@ plot_distributions <- function(
 get_alpha_colour <- function(hex, alpha) {
   rgb_vals <- col2rgb(hex)
   alpha_colour <- rgb(rgb_vals[1, ] / 255, rgb_vals[2, ] / 255, rgb_vals[3, ] /
-    255, alpha = alpha)
+                        255, alpha = alpha)
   return(alpha_colour)
 }
 
@@ -184,7 +185,8 @@ plot_moving_average <- function(
   if (save_plot == TRUE) {
     output_path <- enforce_file_extension(output_path, ".pdf")
     dir.create(dirname(output_path), recursive = TRUE, showWarnings = FALSE)
-    pdf(output_path)
+    pdf(output_path, width = 14, height = 8)
+    par(oma = c(0, 0, 4, 0), mar = c(5, 4, 3.5, 2) + 0.1)
   }
 
   # Select relevant columns
@@ -198,14 +200,18 @@ plot_moving_average <- function(
     return(NULL)
   }
 
-  # Set up plot layout
-  par(bg = "white", mfrow = c(1, 1), oma = c(0, 0, 4, 0))
-  plot_title <- paste0("Moving Average (n=", ma_days, ", sides=", ma_sides, ")")
+  # Compute y-limits that always include 0, with headroom
+  vr    <- range(valid_values, na.rm = TRUE)
+  y_lo0 <- min(0, vr[1])
+  y_hi0 <- max(0, vr[2])
+  span  <- y_hi0 - y_lo0
+  if (!is.finite(span) || span == 0) span <- max(1, abs(y_hi0) + abs(y_lo0))
+  y_lim <- c(y_lo0 - 0.05 * span, y_hi0 + 0.10 * span)
+
   line_colour <- get_alpha_colour("#296991", 0.25)
 
   # Plot raw data
   plot(
-    main = plot_title,
     x = df[[time_col]],
     y = df[[value_col]],
     type = "l",
@@ -213,6 +219,13 @@ plot_moving_average <- function(
     ylab = label_with_unit(value_col, units),
     ylim = range(valid_values, na.rm = TRUE),
     col = line_colour
+  )
+
+  graphics::title(
+    main = paste0("Moving average for `", value_col, "`"),
+    cex.main = 1.2,
+    font.main = 2,
+    col.main  = "black"
   )
 
   # create moving average column
@@ -234,17 +247,20 @@ plot_moving_average <- function(
     x = df[[time_col]],
     y = df[[col_name]],
     type = "l",
-    col = "#296991"
+    col = "#0A2E4D",
+    lwd = 1.6
   )
 
-  # add outer title
-  mtext(
-    title,
-    outer = TRUE,
-    cex = 1.6,
-    line = 1,
-    font = 2,
-    col = "black"
+  # Legend
+  legend(
+    "topleft",
+    legend = c("Actual values", paste0(ma_days, "-day moving average")),
+    col    = c("#296991", "#0A2E4D"),
+    lwd    = c(1.3, 1.6),
+    lty    = c(1, 1),
+    bg     = "white",
+    box.lwd = 0.8,
+    cex    = 0.9
   )
 
   # close pdf if saving
@@ -279,19 +295,18 @@ plot_scatter_grid <- function(
   }
 
   df <- df %>% dplyr::select(all_of(all_columns))
-
   grid_size <- create_grid(length(comparison_cols))
 
   if (save_scatters) {
     output_path <- enforce_file_extension(output_path, ".pdf")
     plot_height <- max(10, length(comparison_cols)*2)
-    pdf(output_path, width = 10, height = plot_height)
+    pdf(output_path, width = 14, height = plot_height)
   }
+  par(mfrow = grid_size, col = "white", oma = c(0, 1, 7, 0), xpd = NA,
+      cex.axis = 1.35, cex.lab = 1.35, cex.main = 1.50)
 
-  par(mfrow = grid_size, col = "white", oma = c(0, 0, 6, 0))
-  point_colour <- get_alpha_colour("#296991", 0.25)
+  point_colour <- get_alpha_colour("#296991", 0.5)
   line_colour  <- "#C75E70"                          # Dusky Rose
-
 
   # sample 20% to reduce file size; keep all rows if tiny dataset
   n <- nrow(df)
@@ -326,31 +341,28 @@ plot_scatter_grid <- function(
         lines(xs, predict(fit, newdata = data.frame(x = xs)), col = line_colour, lwd = 2)
       }
     }
-    }
+  }
 
-  mtext(title, outer = TRUE, cex = 1.6, line = 1, font = 2, col = "black")
+  ## Title (outer margin, top)
+  mtext(title, outer = TRUE, side = 3, line = 3, cex = 1.6, font = 2, col = "black")
 
-  # single legend for the whole picture (bottom strip)
-  par(fig = c(0, 1, 0, 0.06), mar = c(0, 0, 0, 0), new = TRUE, xpd = NA)
-  plot.new()
+  is_full   <- grepl("\\bfull dataset\\b", tolower(title))
+  note_text <- if (is_full) "* 20% random sample shown to reduce file size" else " "
 
-  # scope-aware legend note
-  is_full <- grepl("\\bfull dataset\\b", tolower(title))
-  note_text <- if (is_full) "Only 20% of data plotted to reduce file size"
-  else         " "
+  # points: blue symbol, black text
+  mtext("\u2022", outer = TRUE, side = 3, line = 0.9,
+        adj = 0.295, col = point_colour, cex = 1.7)
+  mtext("Observed data points",outer = TRUE, side = 3, line = 1.2,
+        adj = 0.34, col = "black", cex = 0.90)
 
-  legend("bottom",
-         legend  = c("points", "LOESS fit", note_text),
-         pch     = c(16, NA, NA),
-         lty     = c(NA, 1, NA),
-         lwd     = c(NA, 2, NA),
-         col     = c(point_colour, line_colour, NA),
-         text.col = "black",
-         horiz   = TRUE,
-         bty     = "n",
-         cex     = 1.15,
-         seg.len = 1.1,
-         inset = -0.03)
+  # LOESS: red short line, black text
+  mtext("\u2014", outer = TRUE, side = 3, line = 1.2, adj = 0.53,
+        col = line_colour, cex = 1.5)
+  mtext("LOESS smooth", outer = TRUE, side = 3, line = 1.2, adj = 0.59,
+        col = "black", cex = 0.90)
+
+  # Right item: note text (black), right aligned
+  mtext(note_text, outer = TRUE, side = 3, line = 1.2, adj = 0.9, col = "black", cex = 0.90)
 
   if (save_scatters) {
     dev.off()
@@ -392,25 +404,27 @@ plot_boxplots <- function(
   if (save_plot) {
     output_path <- enforce_file_extension(output_path, ".pdf")
     plot_height <- max(10, length(selected_cols)*2)
-    pdf(output_path, width = 10, height = plot_height)
+    pdf(output_path, width = 14, height = plot_height)
   }
 
   grid_size <- create_grid(length(selected_cols))
-  par(mfrow = grid_size, oma = c(0, 0, 4, 0))
+  par(mfrow = grid_size, oma = c(0, 1, 4, 0),
+      cex.axis = 1.35,
+      cex.lab  = 1.35,
+      cex.main = 1.50)
 
   # Plot each variable
-
   for (i in seq_along(selected_cols)) {
     col_name <- selected_cols[i]
     ylab <- if (!is.null(ylabs) && length(ylabs) >= i) ylabs[i] else col_name
 
     boxplot(df[[col_name]],
-      main = paste0("Boxplot of '", col_name, "'"),
-      col = "#296991",
-      border = "#003c57",
-      outline = TRUE,
-      horizontal = FALSE,
-      ylab = ylab
+            main = paste0(col_name),
+            col = "#296991",
+            border = "#003c57",
+            outline = TRUE,
+            horizontal = FALSE,
+            ylab = ylab
     )
   }
   # Add overall title
@@ -449,17 +463,19 @@ plot_seasonal_trends <- function(
 
   # Layout
   grid_size <- create_grid(length(outcome_cols))
-  par(mfrow = grid_size, oma = c(0, 0, 4, 0))
 
   # Set up PDF output if needed
   if (save_plot) {
     output_path <- enforce_file_extension(output_path, ".pdf")
     plot_height <- max(10, length(outcome_cols)*4)
-    pdf(output_path, width = 10, height = plot_height)
+    pdf(output_path, width = 14, height = plot_height)
   }
 
   # Layout: readable margins + outer title room
-  par(mfrow = grid_size, mar = c(9, 4.5, 6, 1), oma = c(0, 0, 5, 0))
+  par(mfrow = grid_size, oma = c(0, 1, 5, 0),
+      cex.axis = 1.35,
+      cex.lab  = 1.35,
+      cex.main = 1.50)
 
   # Loop through each outcome column
   for (i in seq_along(outcome_cols)) {
@@ -478,12 +494,14 @@ plot_seasonal_trends <- function(
   }
 
   # Overall title
-  mtext(title, outer = TRUE, cex = 1.6, line = 1, font = 2, col = "black")
+  mtext(title, outer = TRUE, side = 3, line = 3, cex = 1.6, font = 2, col = "black")
+  mtext("(Note: mean used for calculations)",outer=TRUE, side=3, line=1.4, adj=0.5, col="black", cex=0.90)
 
   if (save_plot) {
     dev.off()
   }
 }
+
 
 #' Plot regional trends of a climate and healthoutcome.
 #'
@@ -505,7 +523,6 @@ plot_regional_trends <- function(
     save_plot = FALSE,
     output_path = "") {
 
-
   # Helper to truncate labels with ellipsis
   truncate_labels <- function(x, n = 12) {
     vapply(x, function(s) {
@@ -515,20 +532,21 @@ plot_regional_trends <- function(
     }, character(1))
   }
 
-
   # Grid and dynamic device sizing
   grid_size <- create_grid(length(outcome_cols))
-  rows <- grid_size[1]; cols <- grid_size[2]
 
   # Set up PDF output if needed
   if (save_plot) {
     output_path <- enforce_file_extension(output_path, ".pdf")
-    plot_height <- max(10, length(outcome_cols)*4)
-    pdf(output_path, width = 10, height = plot_height)
+    plot_height <- max(12, length(outcome_cols)*4)
+    pdf(output_path, width = 14, height = plot_height)
   }
 
   # Layout: readable margins + outer title room
-  par(mfrow = grid_size, mar = c(9, 4.5, 6, 1), oma = c(0, 0, 5, 0))
+  par(mfrow = grid_size, oma = c(0, 1, 5, 0), mar = c(10, 4.5, 6, 1),
+      cex.axis = 1.35,
+      cex.lab  = 1.35,
+      cex.main = 1.50)
 
   # Loop through each outcome column
   for (i in seq_along(outcome_cols)) {
@@ -550,12 +568,9 @@ plot_regional_trends <- function(
 
     # Truncate long labels
     lab_trunc <- truncate_labels(regional_avg$Region, n = 15)
-
-
     # Headroom for readability
     y_max <- max(regional_avg$x, na.rm = TRUE)
     y_top <- if (is.finite(y_max) && y_max > 0) y_max * 1.10 else 1
-
 
     barplot(
       height = regional_avg$x,
@@ -574,13 +589,10 @@ plot_regional_trends <- function(
   mtext("Note: bars show mean values per region",
         outer = TRUE, cex = 0.55, line = 0.95, col = "black")
 
-
   if (save_plot) {
     dev.off()
   }
 }
-
-
 
 
 #' Plot the rate of a dependent variable per 100,000 population per year.
@@ -624,7 +636,6 @@ plot_rate_overall <- function(
   y_max <- max(yearly_data$Rate_per_100k, na.rm = TRUE)
   y_top <- if (is.finite(y_max)) y_max * 1.10 else NA
 
-
   # Create plot
   plot_overall_rate <- ggplot2::ggplot(yearly_data, ggplot2::aes(x = .data$Year, y = .data$Rate_per_100k)) +
     ggplot2::geom_line(group = 1, color = "#296991", linewidth = 1.2) +
@@ -638,11 +649,10 @@ plot_rate_overall <- function(
                                 expand = ggplot2::expansion(mult = c(0, 0.02))) +
     ggplot2::theme_minimal()
 
-
   # Save or return
   if (save_rate && !is.null(output_path)) {
     output_path <- enforce_file_extension(output_path, ".pdf")
-    grDevices::pdf(output_path, paper = "USr")
+    grDevices::pdf(output_path, height = 8, width = 14)
     print(plot_overall_rate)
     grDevices::dev.off()
   } else {
@@ -680,7 +690,7 @@ plot_total_variables_by_year <- function(
   # Set up PDF output if needed
   if (save_total) {
     output_path <- enforce_file_extension(output_path, ".pdf")
-    pdf(output_path, paper = "USr")
+    pdf(output_path, height = 8, width = 14)
   }
 
   # Plot each variable
