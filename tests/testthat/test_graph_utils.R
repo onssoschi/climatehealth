@@ -67,7 +67,7 @@ with_parameters_test_that(
 )
 
 test_that(
-    "Function runs silently without displaying plot", 
+    "Function runs silently without displaying plot",
     {
         df <- data.frame(
             date = seq.Date(from = as.Date("2023-01-01"), by = "month", length.out = 12),
@@ -153,7 +153,7 @@ test_that(
 )
 
 test_that(
-    "plot_moving_average runs silently without saving", 
+    "plot_moving_average runs silently without saving",
     {
         pdf(NULL)
         on.exit(dev.off())
@@ -172,7 +172,7 @@ test_that(
 )
 
 test_that(
-  "plot_moving_average closes PDF when no valid values and save_plot is TRUE", 
+  "plot_moving_average closes PDF when no valid values and save_plot is TRUE",
   {
     df <- data.frame(
       date = seq.Date(from = as.Date("2023-01-01"), by = "day", length.out = 10),
@@ -231,19 +231,19 @@ with_parameters_test_that(
 )
 
 test_that(
-    "plot_scatter_grid runs silently without saving", 
+    "plot_scatter_grid runs silently without saving",
     {
         pdf(NULL)
         on.exit(dev.off())
-        expect_silent(
-            plot_scatter_grid(
+        expect_silent(suppressWarnings(suppressMessages(
+          plot_scatter_grid(
                 df = scatter_df,
                 main_col = "X",
                 comparison_cols = c("Y", "Z"),
                 title = "No Save Test",
                 save_scatters = FALSE
             )
-        )
+        )))
     }
 )
 
@@ -266,7 +266,7 @@ test_that(
 # Tests for plot_boxplots()
 
 test_that(
-    "plot_boxplots creates plots as expected", 
+    "plot_boxplots creates plots as expected",
     {
         df <- data.frame(a = rnorm(10), b = rnorm(10))
         tmpdir <- local_tempdir()
@@ -284,7 +284,7 @@ test_that(
 )
 
 test_that(
-    "Plot is created when using select_numeric = TRUE", 
+    "Plot is created when using select_numeric = TRUE",
     {
         df <- data.frame(x = rnorm(10), y = rnorm(10), z = letters[1:10])
         tmpdir <- local_tempdir()
@@ -302,7 +302,7 @@ test_that(
 )
 
 test_that(
-    "Plot is created with custom y-axis labels", 
+    "Plot is created with custom y-axis labels",
     {
         df <- data.frame(a = rnorm(10), b = rnorm(10))
         tmpdir <- local_tempdir()
@@ -321,7 +321,7 @@ test_that(
 )
 
 test_that(
-    "Error is thrown when neither columns nor select_numeric is provided", 
+    "Error is thrown when neither columns nor select_numeric is provided",
     {
         df <- data.frame(a = 1:10, b = 11:20)
         expect_error(
@@ -334,7 +334,7 @@ test_that(
 # Tests for plot_seasonal_trends
 
 test_that(
-    "plot_seasonal_trends behaves as expected", 
+    "plot_seasonal_trends behaves as expected",
     {
         df <- data.frame(
             date = seq.Date(from = as.Date("2023-01-01"), by = "month", length.out = 12),
@@ -358,7 +358,7 @@ test_that(
 )
 
 test_that(
-    "plot_seasonal_trends runs silently without saving plot", 
+    "plot_seasonal_trends runs silently without saving plot",
     {
         df <- data.frame(
             date = seq.Date(from = as.Date("2023-01-01"), by = "month", length.out = 12),
@@ -382,7 +382,7 @@ test_that(
 # Test for plot_regional_trends
 
 test_that(
-    "plot_regional_trends outputs a PDF as expected", 
+    "plot_regional_trends outputs a PDF as expected",
     {
         df <- data.frame(
             region = rep(c("North", "South", "East", "West"), each = 5),
@@ -406,7 +406,7 @@ test_that(
 )
 
 test_that(
-    "Function runs silently without saving plot", 
+    "Function runs silently without saving plot",
     {
         df <- data.frame(
             region = rep(c("North", "South"), each = 6),
@@ -428,7 +428,7 @@ test_that(
 )
 
 test_that(
-    "Function skips NA-only outcome column with warning", 
+    "Function skips NA-only outcome column with warning",
     {
         df <- data.frame(
             region = rep(c("North", "South"), each = 6),
@@ -436,8 +436,7 @@ test_that(
             humidity = rnorm(12)
         )
 
-        pdf(NULL)
-        on.exit(dev.off())
+         on.exit(dev.off())
 
         expect_warning(
             plot_regional_trends(
@@ -454,7 +453,7 @@ test_that(
 # Tests for plot_rate_overall
 
 test_that(
-    "plot_rate_overall saves plot as expected", 
+    "plot_rate_overall saves plot as expected",
     {
         df <- data.frame(
             date = seq.Date(from = as.Date("2020-01-01"), by = "year", length.out = 3),
@@ -466,6 +465,7 @@ test_that(
 
         plot_rate_overall(
             df = df,
+            title = "Full dataset",
             dependent_col = "cases",
             population_col = "population",
             date_col = "date",
@@ -478,7 +478,7 @@ test_that(
 )
 
 test_that(
-    "plot_rate_overall returns a ggplot object when save_rate is FALSE", 
+    "plot_rate_overall returns a ggplot object when save_rate is FALSE",
     {
         df <- data.frame(
             date = seq.Date(from = as.Date("2020-01-01"), by = "year", length.out = 3),
@@ -488,6 +488,7 @@ test_that(
 
         result <- plot_rate_overall(
             df = df,
+            title = "Full dataset",
             dependent_col = "cases",
             population_col = "population",
             date_col = "date",
@@ -499,7 +500,7 @@ test_that(
 )
 
 test_that(
-    "plot_rate_overall runs silently without displaying plot", 
+    "plot_rate_overall runs silently without displaying plot",
     {
         df <- data.frame(
             date = seq.Date(from = as.Date("2020-01-01"), by = "year", length.out = 3),
@@ -513,6 +514,7 @@ test_that(
         expect_silent(
             plot_rate_overall(
                 df = df,
+                title = "Full dataset",
                 dependent_col = "cases",
                 population_col = "population",
                 date_col = "date",
@@ -523,7 +525,7 @@ test_that(
 )
 
 test_that(
-    "plot_rate_overall handles population column with commas", 
+    "plot_rate_overall handles population column with commas",
     {
         df <- data.frame(
             date = seq.Date(from = as.Date("2020-01-01"), by = "year", length.out = 3),
@@ -533,6 +535,7 @@ test_that(
 
         result <- plot_rate_overall(
             df = df,
+            title = "Full dataset",
             dependent_col = "cases",
             population_col = "population",
             date_col = "date",
@@ -546,7 +549,7 @@ test_that(
 # Tests for plot_total_variables_by_year
 
 test_that(
-    "plot_total_variables_by_year saves plots as expected", 
+    "plot_total_variables_by_year saves plots as expected",
     {
         df <- data.frame(
             date = seq.Date(from = as.Date("2020-01-01"), by = "year", length.out = 3),
@@ -558,6 +561,7 @@ test_that(
 
         plot_total_variables_by_year(
             df = df,
+            title = "Full dataset",
             date_col = "date",
             variables = c("cases", "deaths"),
             save_total = TRUE,
@@ -569,7 +573,7 @@ test_that(
 )
 
 test_that(
-    "plot_total_variables_by_year runs silently without saving plot", 
+    "plot_total_variables_by_year runs silently without saving plot",
     {
         df <- data.frame(
             date = seq.Date(from = as.Date("2020-01-01"), by = "year", length.out = 3),
@@ -582,6 +586,7 @@ test_that(
         expect_silent(
             plot_total_variables_by_year(
                 df = df,
+                title = "Full dataset",
                 date_col = "date",
                 variables = c("cases"),
                 save_total = FALSE
@@ -591,7 +596,7 @@ test_that(
 )
 
 test_that(
-    "plot_total_variables_by_year handles NA values in variables", 
+    "plot_total_variables_by_year handles NA values in variables",
     {
         df <- data.frame(
             date = seq.Date(from = as.Date("2020-01-01"), by = "year", length.out = 3),
@@ -605,6 +610,7 @@ test_that(
         expect_silent(
             plot_total_variables_by_year(
                 df = df,
+                title = "Full dataset",
                 date_col = "date",
                 variables = c("cases", "deaths"),
                 save_total = FALSE
