@@ -134,27 +134,36 @@ load_and_process_data <- function(
     stop("If no date column is provided, you must provide both the year and the month columns.")
   }
   if (!is.null(date_col)) {
+    if ("date" %in% colnames(data) && date_col != "date") {
+      data <- data[, !(names(data) %in% "date")]
+    }
     data <- data %>%
       rename(
-        date = date_col
+        date = all_of(date_col)
       ) %>%
       mutate(
         year = lubridate::year(date),
         month = lubridate::month(date)
       )
+    year_col <- "year"
+    month_col <- "month"
   }
   # Rename columns accordingly
+  needed_cols <- c(
+    year_col, month_col, region_col, district_col, case_col, tot_pop_col
+  )
   case_sym <- rlang::sym(case_type)
   data <- data %>%
-    rename(
-      year = year_col,
-      month = month_col,
-      region = region_col,
-      district = district_col,
-      !!case_sym := case_col,
-      tot_pop = tot_pop_col
+    dplyr::select(any_of(needed_cols)) %>%
+    dplyr::rename(
+      year = all_of(year_col),
+      month = all_of(month_col),
+      region = all_of(region_col),
+      district = all_of(district_col),
+      !!case_sym := all_of(case_col),
+      tot_pop = all_of(tot_pop_col)
     ) %>%
-    select(
+    dplyr::select(
       all_of(c("region", "district", "year", "month", case_type, "tot_pop"))
     )
   return(data)
@@ -457,7 +466,11 @@ combine_health_climate_data <- function(
   map <- dplyr::left_join(map_data$map, grid_data, by = c("region", "district")) %>%
     dplyr::arrange(.data$region_code, .data$district_code)
 
-  grid_data <- dplyr::rename(grid_data, name = .data$region, code_num = .data$region_code)
+  grid_data <- dplyr::rename(
+    grid_data,
+    name = all_of("region"),
+    code_num = all_of("region_code")
+  )
 
   summary_stats <- list(
     tmin = summary(data$tmin),
