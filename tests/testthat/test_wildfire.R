@@ -1394,7 +1394,7 @@ test_that(
 
 test_that("wildfire_do_analysis: end-to-end run (dataset-level RR only, no file outputs)", {
 
-  # ---- Dynamically generate a synthetic dataset ----
+  # Dynamically generate a synthetic dataset
   set.seed(123)
   n_days   <- 180
   dates    <- seq.Date(as.Date("2019-01-01"), by = "day", length.out = n_days)
@@ -1425,7 +1425,7 @@ test_that("wildfire_do_analysis: end-to-end run (dataset-level RR only, no file 
 
   # ---- Run the analysis end-to-end (no join to external wildfire data) ----
   # We pass the column names that match our synthetic data.
-  # join_wildfire_data = FALSE -> use the pm_2_5_col directly (no NetCDF/shapefile).
+  # join_wildfire_data = FALSE -> use the pm_2_5_col directly.
   res <- wildfire_do_analysis(
     health_path                         = csv_path,
     join_wildfire_data                  = FALSE,
@@ -1450,7 +1450,7 @@ test_that("wildfire_do_analysis: end-to-end run (dataset-level RR only, no file 
     print_model_summaries               = FALSE
   )
 
-  # ---- Assertions on returned structure and content ----
+  # Assertions on returned structure and content
   expect_type(res, "list")
   expect_named(res, c("RR_results", "AF_AN_results", "AR_PM_monthly"), ignore.order = TRUE)
 
@@ -1469,7 +1469,7 @@ test_that("wildfire_do_analysis: end-to-end run (dataset-level RR only, no file 
 
 test_that("wildfire_do_analysis: end-to-end run with region-level outputs (AF/AN), no file outputs", {
 
-  # Reuse the same synthetic data generation but a different seed
+  # synthetic data generation
   set.seed(456)
   n_days   <- 150
   dates    <- seq.Date(as.Date("2020-04-01"), by = "day", length.out = n_days)
@@ -1489,7 +1489,7 @@ test_that("wildfire_do_analysis: end-to-end run with region-level outputs (AF/AN
   csv_path2 <- file.path(tmp_dir2, "synthetic_health_by_region.csv")
   utils::write.csv(df, csv_path2, row.names = FALSE)
 
-  # Enable region-level outputs; still avoid saving figures/CSVs
+  # Enable region-level outputs
   res2 <- wildfire_do_analysis(
     health_path                         = csv_path2,
     join_wildfire_data                  = FALSE,
@@ -1526,7 +1526,7 @@ test_that("wildfire_do_analysis: end-to-end run with region-level outputs (AF/AN
   expect_true(is.data.frame(res2$AF_AN_results) && nrow(res2$AF_AN_results) > 0)
   expect_true(is.data.frame(res2$AR_PM_monthly) && nrow(res2$AR_PM_monthly) > 0)
 
-  # Basic column sanity checks on AF/AN
+  # Basic column  checks on AF/AN
   expect_true(all(c("region","year","month",
                     "total_attributable_number",
                     "average_attributable_fraction",
