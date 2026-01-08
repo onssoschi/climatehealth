@@ -436,7 +436,9 @@ test_that(
             humidity = rnorm(12)
         )
 
-         on.exit(dev.off())
+
+        grDevices::pdf(NULL, width = 14, height = 10)
+        on.exit(grDevices::dev.off(), add = TRUE)
 
         expect_warning(
             plot_regional_trends(
@@ -618,3 +620,4 @@ test_that(
         )
     }
 )
+
