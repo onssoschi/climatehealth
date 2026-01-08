@@ -29,7 +29,6 @@ Imports:
     metafor,
     mgcv,
     mixmeta,
-    mvmeta,
     ncdf4,
     patchwork,
     pkgbuild,
@@ -50,10 +49,10 @@ Imports:
     tidyr,
     tidytable,
     tools,
-    tsModel,
+    tseries,
+    tsModel (>= 0.6-2),
     utils,
-    xfun,
-    zeallot
+    xfun
 Suggests:
     covr,
     devtools,
