@@ -1,13 +1,20 @@
-test_that("Test mh_pop_totals", {
+# Unit tests for dlnm_shared
+
+# Create temp_dir to be used by all MH tests
+temp_dir <- tempdir()
+temp_dir <- file.path(temp_dir, "dlnm_shared_tests")
+if (!file.exists(temp_dir)) dir.create(temp_dir)
+
+test_that("Test dlnm_pop_totals", {
   # Define test data
-  mh_pop_totals_df <- data.frame(
+  dlnm_pop_totals_df <- data.frame(
     region = structure(c(1L, 1L, 3L, 2L, 3L, 1L, 2L, 1L), levels = c("Central","East", "North"), class = "factor"),
     population = c(1050L, 950L, 1000L, 1200L, 1100L, 850L, 1150L, 1300L),
     year = structure(c(1L, 1L, 2L, 3L, 2L, 3L, 1L, 2L), levels = c("2022", "2024", "2023"), class = "factor"))
-  mh_pop_totals_list <- aggregate_by_column(mh_pop_totals_df, "region")
+  dlnm_pop_totals_list <- aggregate_by_column(dlnm_pop_totals_df, "region")
 
 
-  mh_pop_totals_control_list <- list(
+  dlnm_pop_totals_control_list <- list(
     Central = structure(list(
       year = structure(1:3, levels = c("2022", "2024", "2023"), class = "factor"),
       population = c(1000, 1300, 850)), row.names = c(NA, -3L), class = "data.frame"),
@@ -19,22 +26,22 @@ test_that("Test mh_pop_totals", {
       population = 1050), row.names = c(NA, -1L), class = "data.frame"))
 
   # Call function
-  mh_pop_totals_national_control_list <- append(mh_pop_totals_control_list, list(
+  dlnm_pop_totals_national_control_list <- append(dlnm_pop_totals_control_list, list(
     National = structure(list(
       year = structure(1:3, levels = c("2022", "2024", "2023"), class = "factor"),
       population = c(2150, 2350, 2050)), row.names = c(NA, -3L), class = "data.frame")))
 
   # Assert equality
-  expect_equal(mh_pop_totals(mh_pop_totals_list, meta_analysis = FALSE),
-               mh_pop_totals_control_list,
-               label = "mh_pop_totals(mh_pop_totals_list, meta_analysis = FALSE)")
-  expect_equal(mh_pop_totals(mh_pop_totals_list, meta_analysis = TRUE),
-               mh_pop_totals_national_control_list,
-               label = "mh_pop_totals(mh_pop_totals_list, meta_analysis = TRUE)")
+  expect_equal(dlnm_pop_totals(dlnm_pop_totals_list, meta_analysis = FALSE),
+               dlnm_pop_totals_control_list,
+               label = "dlnm_pop_totals(dlnm_pop_totals_list, meta_analysis = FALSE)")
+  expect_equal(dlnm_pop_totals(dlnm_pop_totals_list, meta_analysis = TRUE),
+               dlnm_pop_totals_national_control_list,
+               label = "dlnm_pop_totals(dlnm_pop_totals_list, meta_analysis = TRUE)")
 })
 
 
-test_that("mh_vif calculates variance inflation factors correctly", {
+test_that("dlnm_vif calculates variance inflation factors correctly", {
   # Create sample data with known correlations
   set.seed(123)  # For reproducibility
   n <- 30
@@ -60,7 +67,7 @@ test_that("mh_vif calculates variance inflation factors correctly", {
 
   # Test with multiple independent variables
   independent_vars <- c("humidity", "pollution", "wind")
-  results <- mh_vif(df_list, independent_vars)
+  results <- dlnm_vif(df_list, independent_vars)
 
   # Test structure
   expect_type(results, "list")
@@ -90,7 +97,7 @@ test_that("mh_vif calculates variance inflation factors correctly", {
   }
 
   # Test with single independent variable
-  single_var_results <- mh_vif(df_list, "pollution")
+  single_var_results <- dlnm_vif(df_list, "pollution")
   for (reg in names(single_var_results)) {
     expect_equal(nrow(single_var_results[[reg]]), 2)  # temp and pollution
     expect_setequal(single_var_results[[reg]]$variable, c("temp", "pollution"))
@@ -98,7 +105,7 @@ test_that("mh_vif calculates variance inflation factors correctly", {
 })
 
 
-test_that("mh_reduce_cumulative produces expected output with valid inputs", {
+test_that("dlnm_reduce_cumulative produces expected output with valid inputs", {
   # Set seed for reproducibility
   set.seed(123)
 
@@ -144,7 +151,7 @@ test_that("mh_reduce_cumulative produces expected output with valid inputs", {
   }
 
   # Test the function
-  result <- mh_reduce_cumulative(
+  result <- dlnm_reduce_cumulative(
     df_list = df_list,
     var_per = var_per,
     var_degree = var_degree,
@@ -171,12 +178,12 @@ test_that("mh_reduce_cumulative produces expected output with valid inputs", {
   # Test with missing values
   df_list$region1$temp[1] <- NA
   expect_no_error(
-    mh_reduce_cumulative(df_list, cb_list = cb_list, model_list = model_list)
+    dlnm_reduce_cumulative(df_list, cb_list = cb_list, model_list = model_list)
   )
 })
 
 
-test_that("mh_meta_analysis performs meta-analysis correctly", {
+test_that("dlnm_meta_analysis performs meta-analysis correctly", {
   # Set seed for reproducibility
   set.seed(123)
 
@@ -216,8 +223,8 @@ test_that("mh_meta_analysis performs meta-analysis correctly", {
   on.exit(unlink(output_csv), add = TRUE)
 
   # Run function with various configurations
-  result_basic <- mh_meta_analysis(df_list, coef_, vcov_)
-  result_with_csv <- mh_meta_analysis(
+  result_basic <- dlnm_meta_analysis(df_list, coef_, vcov_)
+  result_with_csv <- dlnm_meta_analysis(
     df_list, coef_, vcov_,
     save_csv = TRUE,
     output_folder_path = temp_dir
@@ -234,9 +241,9 @@ test_that("mh_meta_analysis performs meta-analysis correctly", {
   expect_equal(names(result_basic[[2]]), names(df_list))
   expect_equal(nrow(result_basic[[3]]), 5)  # 5 test results
   expect_true(all(result_basic[[3]]$test == c(
-    "Temp_avg Wald p-value",
-    "Temp_range Wald p-value",
-    "Cochrane Q test p-value",
+    "temp_avg Wald p-value",
+    "temp_range Wald p-value",
+    "Cochran's Q test p-value",
     "I2 (%)",
     "AIC"
   )))
@@ -246,7 +253,7 @@ test_that("mh_meta_analysis performs meta-analysis correctly", {
 })
 
 
-test_that("mh_meta_analysis errors when save_csv = TRUE and output path is missing", {
+test_that("dlnm_meta_analysis errors when save_csv = TRUE and output path is missing", {
   # Set seed for reproducibility
   set.seed(123)
 
@@ -280,16 +287,14 @@ test_that("mh_meta_analysis errors when save_csv = TRUE and output path is missi
 
   # Expect error due to output path not being specified
   expect_error(
-    mh_meta_analysis(df_list, coef_, vcov_, save_csv = TRUE, output_folder_path = NULL),
+    dlnm_meta_analysis(df_list, coef_, vcov_, save_csv = TRUE, output_folder_path = NULL),
     "Output path not specified",
     fixed = TRUE
   )
 })
 
 
-
-
-# Define blup for specific conditions of mh_min_suicide_temp (see below) to be used for testing other meta_analysis functions at a later date
+# Define blup for specific conditions of dlnm_min_suicide_temp (see below) to be used for testing other meta_analysis functions at a later date
 blup <- list(region1 = list(blup = c(y1 = 1.07682186619024, y2 = -0.00124519149119406,
                                      y3 = 0.12735288433524, y4 = 0.458084787928137, y5 = -0.422585618213722
 ), vcov = c(2.0232841917723, 0.754492831583736, 1.74159115208854,
@@ -323,7 +328,7 @@ region3 = list(blup = c(y1 = -0.198397612864354,
 )
 
 
-test_that("mh_min_suicide_temp correctly generates minpercreg", {
+test_that("dlnm_min_mortality_temp correctly generates minpercreg", {
   # Set seed for reproducibility
   set.seed(3728)
 
@@ -361,29 +366,31 @@ test_that("mh_min_suicide_temp correctly generates minpercreg", {
   control_minpercreg <- c(region1 = 46L, region2 = 26L, region3 = 3L)
 
   # Test without meta_analysis
-  test_minpercreg <- mh_min_suicide_temp(df_list,
+  test_minpercreg <- dlnm_min_mortality_temp(df_list,
                                          var_fun = "bs",
                                          var_per = c(25,50,75),
                                          var_degree = 2,
                                          blup = NULL,
                                          coef_,
-                                         meta_analysis = FALSE)
+                                         meta_analysis = FALSE,
+                                         outcome_type = "suicide")
   expect_identical(test_minpercreg, control_minpercreg)
 
   # Test with meta_analysis
-  test_minpercreg_meta <- mh_min_suicide_temp(df_list,
+  test_minpercreg_meta <- dlnm_min_mortality_temp(df_list,
                                               var_fun = "bs",
                                               var_per = c(25,50,75),
                                               var_degree = 2,
                                               blup = blup,
                                               coef_,
-                                              meta_analysis = TRUE)
+                                              meta_analysis = TRUE,
+                                              outcome_type = "suicide")
   expect_identical(test_minpercreg_meta, control_minpercreg)
 
 })
 
 
-test_that("mh_predict_nat produces expected output", {
+test_that("dlnm_predict_nat produces expected output", {
   # Set seed for reproducibility
   set.seed(123)
 
@@ -425,7 +432,7 @@ test_that("mh_predict_nat produces expected output", {
   pred_list <- list()
 
   # Run function
-  result <- suppressWarnings(mh_predict_nat(
+  result <- suppressWarnings(dlnm_predict_nat(
     df_list = df_list,
     var_fun = "bs",
     var_per = c(25, 50, 75),
@@ -461,7 +468,7 @@ test_that("mh_predict_nat produces expected output", {
 })
 
 
-test_that("mh_power_list produces expected output", {
+test_that("dlnm_power_list produces expected output", {
   # Create sample data for two regions
   set.seed(123)
   n_regions <- 2
@@ -490,7 +497,7 @@ test_that("mh_power_list produces expected output", {
   minpercreg <- setNames(sample(20:60, n_regions, replace = TRUE), names(df_list))
 
   # Run the function
-  result <- mh_power_list(df_list, pred_list, minpercreg, attr_thr = 97.5)
+  result <- dlnm_power_list(df_list, pred_list, minpercreg, compute_low = FALSE)
 
   # Tests
   expect_type(result, "list")
@@ -528,7 +535,7 @@ test_that("mh_power_list produces expected output", {
 })
 
 
-test_that("mh_power_list handles edge cases correctly", {
+test_that("dlnm_power_list handles edge cases correctly", {
   # test Single region
   set.seed(456)
   df_list_single <- list(region1 = data.frame(temp = rnorm(10, 20, 2)))
@@ -538,7 +545,7 @@ test_that("mh_power_list handles edge cases correctly", {
   minpercreg_single <- c(region1 = 50)
 
   # Run function for single region
-  result_single <- mh_power_list(df_list_single, pred_list_single, minpercreg_single)
+  result_single <- dlnm_power_list(df_list_single, pred_list_single, minpercreg_single, compute_low = FALSE)
   expect_type(result_single, "list")
   expect_length(result_single, 1)
   expect_named(result_single, "region1")
@@ -552,7 +559,7 @@ test_that("mh_power_list handles edge cases correctly", {
   minpercreg_na <- c(region1 = 50)
 
   # Run function with NA values
-  result_na <- mh_power_list(df_list_na, pred_list_na, minpercreg_na)
+  result_na <- dlnm_power_list(df_list_na, pred_list_na, minpercreg_na, compute_low = FALSE)
   expect_type(result_na, "list")
   expect_true(all(!is.na(result_na$region1$cen)))  # cen should compute despite NA values
 
@@ -562,7 +569,7 @@ test_that("mh_power_list handles edge cases correctly", {
   minpercreg_empty <- c()
 
   # Run function with empty inputs
-  result_empty <- mh_power_list(df_list_empty, pred_list_empty, minpercreg_empty)
+  result_empty <- dlnm_power_list(df_list_empty, pred_list_empty, minpercreg_empty, compute_low = FALSE)
   expect_type(result_empty, "list")
   expect_length(result_empty, 0)  # Should return empty list without error
 })
