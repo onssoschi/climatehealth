@@ -336,7 +336,7 @@ mh_model_validation <- function(
     named_label_list <- as.list(short_labels)
     names(named_label_list) <- names(df_list)
   }
-  if (nrow(do.call(rbind, do.call(rbind, residuals_list))) > 100000) {
+  if ((nrow(do.call(rbind, do.call(rbind, residuals_list))) > 100000) & (save_fig == TRUE)) {
     sample_check <- TRUE
   } else {
     sample_check <- FALSE
@@ -389,9 +389,9 @@ mh_model_validation <- function(
 
       set.seed(123) # for reproducibility
       sampled_residuals <- all_residuals %>%
-        group_by(.data$formula) %>%
-        sample_frac(0.2) %>%
-        ungroup()
+        dplyr::group_by(.data$formula) %>%
+        dplyr::sample_frac(0.2) %>%
+        dplyr::ungroup()
 
       new_res_list <- split(sampled_residuals, sampled_residuals$formula)
 
