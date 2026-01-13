@@ -2162,7 +2162,6 @@ test_that(
     # Confirm PDF file was saved
     expected_file <- file.path(tmp_dir, "plot_AR_Number_temp_district.pdf")
     expect_true(file.exists(expected_file))
-    res <<-  result
     # Confirm result is a list of ggplot objects
     expect_type(result, "list")
     flat_plots <- unlist(result, recursive = FALSE)

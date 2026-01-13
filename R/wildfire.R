@@ -50,18 +50,38 @@ read_and_format_data <- function(
   }
   # Date format identification
   date_function <- lubridate::ymd
-  if (grepl("^\\d{2}/\\d{2}/\\d{4}$", df[[date_col]][1])) {
+  if (grepl("^\\d{2}[-/]\\d{2}[-/]\\d{4}$", df[[date_col]][1])) {
     date_function <- lubridate::dmy
+  }
+  # Subset needed columns
+  # Subset needed columns
+  needed_cols <- c(
+    date_col,
+    mean_temperature_col,
+    health_outcome_col,
+    region_col,
+    rh_col,
+    wind_speed_col
+  )
+  standard_cols <- c(
+    "date", "tmean", "health_outcome", "region", "rh", "wind_speed"
+  )
+  for (i in seq_along(standard_cols)) {
+    std_col <- standard_cols[i]
+    need_col <- needed_cols[i]
+    if (!identical(std_col, need_col) && std_col %in% names(df)) {
+      df[[std_col]] <- NULL
+    }
   }
   # Data set pre processing
   df <- df %>%
     dplyr::rename(
-      date = date_col,
-      tmean = mean_temperature_col,
-      health_outcome = health_outcome_col,
-      region = region_col,
-      rh = rh_col,
-      wind_speed = wind_speed_col
+      date = all_of(date_col),
+      tmean = all_of(mean_temperature_col),
+      health_outcome = all_of(health_outcome_col),
+      region = all_of(region_col),
+      rh = all_of(rh_col),
+      wind_speed = all_of(wind_speed_col)
     ) %>%
     dplyr::mutate(
       date = date_function(date),
@@ -203,7 +223,6 @@ join_health_and_climate_data <- function(
   # Ensure valid exposure column
   df_joined <- df_joined %>%
     dplyr::filter(!is.na(.data[[exposure_col]]))
-
   # Convert exposure units from kg to microgram
   df_joined <- df_joined %>%
     dplyr::mutate(
@@ -275,11 +294,9 @@ load_wildfire_data <- function(
   )
   # Skip wildfire data join if not required
   if (!join_wildfire_data) {
-    # Validate exposure column
-    if (is.null(pm_2_5_col)) stop("PM2.5 column missing.")
     # Normalise column name
     health_df <- health_df %>%
-      dplyr::rename(mean_PM = pm_2_5_col)
+      dplyr::rename(mean_PM = all_of(pm_2_5_col))
     return(health_df)
   }
   # Obtain wildfire data
@@ -427,7 +444,7 @@ time_stratify <- function(data) {
   required_cols <- c("month", "year", "dow", "region", "health_outcome")
   if (!all(required_cols %in% colnames(data))) {
     stop(
-      paste("data must include columns:", paste(required_cols, collapse = ", "))
+      paste("Data must include columns:", paste(required_cols, collapse = ", "))
     )
   }
   # Create stratified columns
@@ -510,25 +527,6 @@ descriptive_stats <- function(
   write.csv(summary_df, file = summary_fpath, row.names = FALSE)
 }
 
-#' Creates a scatter plot.
-#'
-#' @description Produces a ggplot2 scatterplot of two variables x versus y.
-#'
-#' @param data Dataframe containing a daily time series of climate and health
-#' data
-#' @param xvar x variable
-#' @param yvar y variable
-#'
-#' @returns Prints a ggplot2 scatterplot of x versus y
-#'
-#' @keywords internal
-plot_scatter <- function(data, xvar, yvar) {
-  ggplot2::ggplot(data = data, ggplot2::aes(x = {{ xvar }}, y = {{ yvar }})) +
-    ggplot2::geom_point() +
-    ggplot2::geom_smooth() +
-    ggplot2::theme_bw()
-}
-
 #' Check variance inflation factors of predictor variables using a linear model
 #'
 #' @description Checks variance inflation factors of predictor variables using a
@@ -571,12 +569,12 @@ check_wildfire_vif <- function(
     region_data <- subset(data, data$region == reg)
     model <- lm(formula, data = region_data)
     vif_mod <- car::vif(model)
-    if (print_vif) print(paste0("Variance inflation factor: ", vif_mod))
+    if (print_vif) print(paste0("Variance inflation factor: ", round(vif_mod, 4)))
     for (var in names(vif_mod)) {
       if (vif_mod[[var]] >= 2) {
         warning(paste0(
-          "Variance inflation factor for ", var, " is >= 2. Investigation is",
-          " suggested."
+          "Variance inflation factor for ", var, " is >= 2. ",
+          "Investigation is suggested."
         ))
       }
       vif_results[[reg]] <- data.frame(
@@ -724,7 +722,7 @@ casecrossover_quasipoisson <- function(
     dev.off()
   }
   # create results df and return
-  results <- as.data.frame(do.call(rbind, results))
+  results <- unique(as.data.frame(do.call(rbind, results)))
   rownames(results) <- NULL
   return(results)
 }
@@ -944,7 +942,7 @@ plot_RR_core <- function(
     )
   ) +
     ggplot2::geom_point(size = 3) +
-    ggplot2::geom_errorbar(width = 0.5, size = 1) +
+    ggplot2::geom_errorbar(width = 0.5, linewidth = 1) +
     ggplot2::geom_hline(yintercept = 1, lty = 2) +
     ggplot2::xlab("Lag") +
     ggplot2::ylab("Relative risk") +
@@ -1000,17 +998,20 @@ save_wildfire_results <- function(
   # Save RR results
   write.csv(
     rr_results,
-    file = file.path(output_folder_path, "wildfire_rr.csv")
+    file = file.path(output_folder_path, "wildfire_rr.csv"),
+    row.names = FALSE
   )
   # conditionally save AN/AR results
   if (!is.null(an_ar_results)) {
     write.csv(
       an_ar_results,
-      file = file.path(output_folder_path, "wildfire_an_ar_monthly.csv")
+      file = file.path(output_folder_path, "wildfire_an_ar_monthly.csv"),
+      row.names = FALSE
     )
     write.csv(
       annual_af_an_results,
-      file = file.path(output_folder_path, "wildfire_an_ar_yearly.csv")
+      file = file.path(output_folder_path, "wildfire_an_ar_yearly.csv"),
+      row.names = FALSE
     )
   }
 }
@@ -1053,11 +1054,11 @@ calculate_wildfire_rr_by_region <- function(
   if (save_fig && is.null(output_folder_path)) {
     stop("No output path provided when save_fig==T.")
   }
-  if (calc_relative_risk_by_region && !("region" %in% names(data))) {
+  if (calc_relative_risk_by_region == TRUE && !("region" %in% names(data))) {
     stop("data must contain 'region' column for region level RR data.")
   }
   results_list <- list()
-  if (calc_relative_risk_by_region) {
+  if (calc_relative_risk_by_region == TRUE) {
     # split dataset and create output list
     df_list <- split(data, f = data$region)
     # Get region level RR data
@@ -1258,9 +1259,10 @@ plot_aggregated_AF <- function(data, by_region = FALSE, output_dir = ".") {
       paste(expected_cols, collapse = ", ")
     )
   }
+  if (is.null(output_dir)) stop("'output_dir' is NULL.")
   if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
   # set up plot
-  pname <- "aggregated_AR"
+  pname <- "aggregated_AN"
   if (by_region) pname <- paste0(pname, "_by_region")
   fpath <- file.path(output_dir, paste0(pname, ".pdf"))
   plots <- list()
@@ -1324,7 +1326,7 @@ plot_aggregated_AF_core <- function(data, region_name = NULL) {
       alpha = 0.2,
       fill = "#4d7789"
     ) +
-    ggplot2::geom_line(color = "#003c57", size = 1) +
+    ggplot2::geom_line(color = "#003c57", linewidth = 1) +
     ggplot2::theme_minimal(base_size = 14) +
     ggplot2::labs(
       title = title,
@@ -1332,7 +1334,7 @@ plot_aggregated_AF_core <- function(data, region_name = NULL) {
       y = "Attributable Rate"
     ) +
     ggplot2::theme(
-      axis.line = ggplot2::element_line(size = 0.5, colour = "black")
+      axis.line = ggplot2::element_line(linewidth = 0.5, colour = "black")
     )
   return(plot_agg_an)
 }
@@ -1364,7 +1366,7 @@ join_ar_and_pm_monthly <- function(
   exp_cols_pm <- c("year", "month", "region", "mean_PM")
   if (!all(exp_cols_ar %in% colnames(an_ar_data))) {
     stop(paste0(
-      "'an_ar_data' requries the columns: ",
+      "'an_ar_data' requires the columns: ",
       paste(exp_cols_ar, collapse = ", ")
     ))
   }
@@ -1413,7 +1415,7 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
   if (save_outputs == TRUE && is.null(output_dir)) {
     stop("'output_dir' must be provded to save outputs.")
   }
-  if (!file.exists(output_dir)) {
+  if (save_outputs == TRUE && !file.exists(output_dir)) {
     stop("'output_dir' must exist on disk to save outputs.")
   }
   data$month_name <- month.abb[data$month]
@@ -1460,7 +1462,7 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
       ggplot2::geom_line(
         ggplot2::aes(y = .data$mean_pm * scale_factor, group = 1),
         color = "red",
-        size = 1
+        linewidth = 1
       ) +
       ggplot2::geom_point(
         ggplot2::aes(y = .data$mean_pm * scale_factor),
@@ -1479,11 +1481,20 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
       ) +
       ggplot2::theme_light() +
       ggplot2::theme(
-        axis.line = ggplot2::element_line(size = 0.5, colour = "black")
+        axis.line = ggplot2::element_line(linewidth = 0.5, colour = "black")
       )
     all_plots[[length(all_plots) + 1]] <- plot_ar_pm
   }
   combined_plots <- patchwork::wrap_plots(all_plots)
+  # sort data
+  sorted_data <- aggregated_data[
+    order(
+      aggregated_data$region,
+      match(aggregated_data$month_name, month.abb)
+    ),
+  ]
+  sorted_data <- sorted_data %>% select(all_of(c("region", "month_name", "mean_deaths_per_100k", "mean_pm")))
+  # save csv
   if (save_outputs) {
     fpath <- file.path(output_dir, "ar_and_pm_monthly_average")
     ggplot2::ggsave(
@@ -1493,15 +1504,9 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
       height = length(all_plots) * 4,
       limitsize = FALSE
     )
-    sorted_data <- aggregated_data[
-      order(
-        aggregated_data$region,
-        match(aggregated_data$month_name, month.abb)
-      ),
-    ]
-    sorted_data <- sorted_data %>% select(all_of(c("region", "month_name", "mean_deaths_per_100k", "mean_pm")))
     write.csv(sorted_data, paste0(fpath, ".csv"), row.names = FALSE)
   }
+  return(sorted_data)
 }
 
 #' Relative risk estimates across PM2.5 concentrations for a specified lag.
@@ -1634,9 +1639,9 @@ plot_rr_by_pm <- function(
     output_dir = NULL) {
   # input validation
   if (save_fig == TRUE && is.null(output_dir)) {
-    stop("'output_dir' must be provded to save outputs.")
+    stop("'output_dir' must be provided to save outputs.")
   }
-  if (!file.exists(output_dir)) {
+  if (save_fig == TRUE && !file.exists(output_dir)) {
     stop("'output_dir' must exist on disk to save outputs.")
   }
   exp_cols <- c(
@@ -1673,9 +1678,8 @@ plot_rr_by_pm <- function(
       height = if (length(combined_plots) == 1) 8 else 4 * length(combined_plots),
       limitsize = FALSE
     )
-  } else {
-    print(combined_plots)
   }
+  return(combined_plots)
 }
 
 #' Create a relative risk plot across PM2.5 levels for a single region
@@ -1710,7 +1714,7 @@ plot_rr_by_pm_core <- function(
       alpha = 0.2,
       fill = "#4d7789"
     ) +
-    ggplot2::geom_line(color = "#003c57", size = 1) +
+    ggplot2::geom_line(color = "#003c57", linewidth = 1) +
     ggplot2::scale_y_continuous(
       limits = ylims,
       labels = scales::number_format(accuracy = 0.01)
@@ -1718,12 +1722,12 @@ plot_rr_by_pm_core <- function(
     ggplot2::labs(title = title, x = "PM2.5 (ug/m3)", y = "Relative Risk") +
     ggplot2::theme_minimal(base_size = 14) +
     ggplot2::theme(
-      axis.line = ggplot2::element_line(size = 0.5, colour = "black"),
-      plot.background = ggplot2::element_rect(color = "#222222", size = 1),
+      axis.line = ggplot2::element_line(linewidth = 0.5, colour = "black"),
+      plot.background = ggplot2::element_rect(color = "#222222", linewidth = 1),
       panel.border = ggplot2::element_rect(
         color = "#222222",
         fill = NA,
-        size = 0.5
+        linewidth = 0.5
       )
     )
   return(p)
@@ -1749,6 +1753,7 @@ plot_rr_by_pm_core <- function(
 #' @keywords internal
 plot_ar_by_region <- function(data, output_dir = ".") {
   # validation
+  if (is.null(output_dir)) stop("'output_dir' required.")
   if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
   exp_cols <- c(
     "region",
@@ -1790,9 +1795,9 @@ plot_ar_by_region <- function(data, output_dir = ".") {
   ) +
     ggplot2::geom_col(fill = "#003c57") +
     ggplot2::labs(
-        title = "Deaths per 100k attributable to Wildfire-specific PM2.5",
-        x = "Regions",
-        y = "Deaths per 100k population"
+      title = "Deaths per 100k attributable to Wildfire-specific PM2.5",
+      x = "Regions",
+      y = "Deaths per 100k population"
     ) +
     ggplot2::theme_minimal(base_family = "sans") +
     ggplot2::theme(
@@ -1801,7 +1806,7 @@ plot_ar_by_region <- function(data, output_dir = ".") {
       axis.text = ggplot2::element_text(color = "black"),
       axis.title = ggplot2::element_text(color = "black"),
       plot.title = ggplot2::element_text(color = "black"),
-      axis.line = ggplot2::element_line(size = 0.5, colour = "black"),
+      axis.line = ggplot2::element_line(linewidth = 0.5, colour = "black"),
       axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
     )
   # save plot
@@ -1832,6 +1837,7 @@ plot_ar_by_region <- function(data, output_dir = ".") {
 #' @keywords internal
 plot_an_by_region <- function(data, output_dir = ".") {
   # validation
+  if (is.null(output_dir)) stop("'output_dir' required.")
   if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
   exp_cols <- c(
     "region",
@@ -1870,7 +1876,7 @@ plot_an_by_region <- function(data, output_dir = ".") {
       axis.text = ggplot2::element_text(color = "black"),
       axis.title = ggplot2::element_text(color = "black"),
       plot.title = ggplot2::element_text(color = "black"),
-      axis.line = ggplot2::element_line(size = 0.5, colour = "black"),
+      axis.line = ggplot2::element_line(linewidth = 0.5, colour = "black"),
       axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
     )
 
@@ -2014,7 +2020,7 @@ wildfire_do_analysis <- function(
     print_vif = FALSE,
     print_model_summaries = FALSE) {
   # Setup additional output DIR
-  if (!file.exists(file.path(output_folder_path, "model_validation"))) {
+  if (save_fig == TRUE && !file.exists(file.path(output_folder_path, "model_validation"))) {
     dir.create(file.path(output_folder_path, "model_validation"), recursive = TRUE)
   }
   # Read and combine datasets
@@ -2097,27 +2103,27 @@ wildfire_do_analysis <- function(
   af_an_results <- NULL
   annual_af_an_results <- NULL
   ar_pm_monthly <- NULL
-  if (calc_relative_risk_by_region) {
+  if (calc_relative_risk_by_region == TRUE) {
     # get AN/AR
     daily_AF_AN <- calculate_daily_AF_AN(data = data, rr_data = rr_results)
     af_an_results <- summarise_AF_AN(data = daily_AF_AN)
     annual_af_an_results <- summarise_AF_AN(data = daily_AF_AN, monthly = FALSE)
     # Plot aggregated AN for all regions and individual regions
-    if (save_fig) {
-      plot_aggregated_AF(af_an_results, TRUE, output_folder_path)
-    }
     # Plot AR and PM monthly values
     ar_pm_monthly <- join_ar_and_pm_monthly(pm_data, af_an_results)
-    plot_ar_pm_monthly(ar_pm_monthly, save_fig, output_folder_path)
+    ar_pm_monthly <- plot_ar_pm_monthly(ar_pm_monthly, save_fig, output_folder_path)
     # Plot AR/AN by region
-    plot_ar_by_region(
-      data = af_an_results,
-      output_dir = output_folder_path
-    )
-    plot_an_by_region(
-      data = af_an_results,
-      output_dir = output_folder_path
-    )
+    if (save_fig == TRUE) {
+      plot_aggregated_AF(af_an_results, TRUE, output_folder_path)
+      plot_ar_by_region(
+        data = af_an_results,
+        output_dir = output_folder_path
+      )
+      plot_an_by_region(
+        data = af_an_results,
+        output_dir = output_folder_path
+      )
+    }
   }
   # Save outputs (conditionally)
   if (save_csv == TRUE) {
