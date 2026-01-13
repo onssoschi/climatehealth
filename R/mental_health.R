@@ -34,12 +34,29 @@ mh_read_and_format_data <- function(
   }
   # read data
   df <- read_input_data(data_path)
-
+  # process region col
   if (is.null(region_col)) {
     df <- df %>%
       dplyr::mutate(region = "aggregated")
   }
-
+  # subset needed cols
+  needed_cols <- c(
+    date_col,
+    region_col,
+    temperature_col,
+    health_outcome_col,
+    population_col
+  )
+  standard_cols <- c(
+    "date", "region", "tmean", "health_outcome", "population"
+  )
+  for (i in seq_along(standard_cols)) {
+    std_col <- standard_cols[i]
+    need_col <- needed_cols[i]
+    if (!identical(std_col, need_col) && std_col %in% names(df)) {
+      df[[std_col]] <- NULL
+    }
+  }
   df <- df %>%
     dplyr::rename(
       date = date_col,
@@ -61,37 +78,6 @@ mh_read_and_format_data <- function(
 
   return(df_list)
 }
-
-
-#' Create population totals
-#'
-#' @description Creates a list of population totals by year and region for use
-#' in the attributable rate calculations.
-#'
-#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
-#' and climate variables which may be disaggregated by a particular region.
-#' @param country Character. Name of country for national level estimates.
-#' @param meta_analysis Boolean. Whether to perform a meta-analysis.
-#'
-#' @returns List of population totals by year and region
-#'
-#' @keywords internal
-mh_pop_totals <- function(
-    df_list,
-    country = "National",
-    meta_analysis = FALSE) {
-  # create list of population aggregates
-  pop_list <- lapply(
-    df_list, function(x) aggregate(population ~ year, data = x, mean)
-  )
-  if (meta_analysis == TRUE) {
-    tot_pop <- do.call(rbind, pop_list)
-    tot_pop <- aggregate(population ~ year, data = tot_pop, sum)
-    pop_list[[country]] <- tot_pop
-  }
-  return(pop_list)
-}
-
 
 #' Create cross-basis matrix
 #'
@@ -183,7 +169,6 @@ mh_model_combo_res <- function(
   all_combos <- unlist(lapply(0:length(transformed_vars), function(i) {
     combn(transformed_vars, i, simplify = FALSE)
   }), recursive = FALSE)
-
   for (reg in names(df_list)) {
     formula_list <- list()
     region_data <- df_list[[reg]]
@@ -231,51 +216,6 @@ mh_model_combo_res <- function(
   return(list(qaic_results, residuals_list))
 }
 
-
-#' Produce variance inflation factor
-#'
-#' @description Produces variance inflation factor for the independent variables.
-#'
-#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
-#' and climate variables which may be disaggregated by a particular region.
-#' @param independent_cols Additional independent variables to test in model validation.
-#'
-#' @returns A list. Variance inflation factors for each independent variables by region.
-#'
-#' @keywords internal
-mh_vif <- function(
-    df_list,
-    independent_cols = NULL) {
-  # get all combinations
-  all_combos <- unlist(lapply(1:length(independent_cols), function(i) {
-    combn(independent_cols, i, simplify = FALSE)
-  }), recursive = FALSE)
-  # calculate VIF for each region
-  vif_list <- list()
-  for (reg in names(df_list)) {
-    region_data <- df_list[[reg]]
-    reg_vif <- list()
-    for (combo in all_combos) {
-      # define model formula and calculate VIF
-      formula_str <- paste(paste("suicides ~ temp"), paste(combo, collapse = " + "), sep = " + ")
-      vif_model <- glm(as.formula(formula_str), data = region_data, family = quasipoisson())
-      vif_values <- car::vif(vif_model)
-      var_combo <- paste0("temp_", paste(combo, collapse = "_"))
-      vif_df <- data.frame(
-        region = reg,
-        variable_combo = var_combo,
-        variable = names(vif_values),
-        vif = as.numeric(vif_values),
-        stringsAsFactors = FALSE
-      )
-      reg_vif[[var_combo]] <- vif_df
-    }
-    vif_list[[reg]] <- do.call(rbind, reg_vif)
-  }
-  return(vif_list)
-}
-
-
 #' Model Validation Assessment
 #'
 #' @description Produces results on QAIC for each model combination, variance inflation
@@ -309,11 +249,13 @@ mh_model_validation <- function(
     save_fig = FALSE,
     save_csv = FALSE,
     output_folder_path = NULL) {
-  c(qaic_results, residuals_list) %<-% mh_model_combo_res(
+  model_combo <- mh_model_combo_res(
     df_list = df_list,
     cb_list = cb_list,
     independent_cols = independent_cols
   )
+  qaic_results <- model_combo[[1]]
+  residuals_list <- model_combo[[2]]
   if (save_csv == TRUE) {
     dir_path <- file.path(output_folder_path, "model_validation")
     dir.create(dir_path, recursive = TRUE, showWarnings = FALSE)
@@ -325,7 +267,7 @@ mh_model_validation <- function(
   }
   # calculate VIF if independent_cols is not NULL
   if (!is.null(independent_cols)) {
-    vif_list <- mh_vif(
+    vif_list <- dlnm_vif(
       df_list = df_list,
       independent_cols = independent_cols
     )
@@ -383,146 +325,139 @@ mh_model_validation <- function(
     named_label_list <- as.list(short_labels)
     names(named_label_list) <- names(df_list)
   }
-  if (nrow(do.call(rbind, do.call(rbind, residuals_list))) > 100000) {
-    sample_check <- TRUE
-  } else {
-    sample_check <- FALSE
-  }
-  for (reg in names(df_list)) {
-    region_data <- df_list[[reg]]
-    formula_list <- residuals_list[[reg]]
-    named_label <- named_label_list[[reg]]
-
-    if (save_fig == TRUE) {
-      reg_folder <- gsub(pattern = " ", replacement = "_", x = reg)
-
-      output_folder_main <- file.path(output_folder_path, "model_validation", reg_folder)
-      dir.create(output_folder_main, recursive = TRUE, showWarnings = FALSE)
-
-      grid <- c(min(length(formula_list), 3), ceiling(length(formula_list) / 3))
-      output_path <- paste0(output_folder_main, "/", named_label, "_residuals_timeseries.pdf")
-      pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
-
-      par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
+  # Check if save_fig is set to TRUE before running plotting loop
+  if (save_fig == TRUE){
+    if (nrow(do.call(rbind, do.call(rbind, residuals_list))) > 100000) {
+      sample_check <- TRUE
+    } else {
+      sample_check <- FALSE
     }
+    for (reg in names(df_list)) {
+      region_data <- df_list[[reg]]
+      formula_list <- residuals_list[[reg]]
+      named_label <- named_label_list[[reg]]
 
-    for (i in names(formula_list)) {
-      plot(
-        x = region_data$date[region_data$ind > 0],
-        y = formula_list[[i]]$residuals,
-        ylim = c(-5, 10),
-        pch = 19,
-        cex = 0.2,
-        col = "#0A2E4D",
-        main = unique(formula_list[[i]]$formula),
-        ylab = "Deviance residuals",
-        xlab = "Date"
-      )
+      # Time series residual plots
+        reg_folder <- gsub(pattern = " ", replacement = "_", x = reg)
 
-      abline(h = 0, lty = 2, lwd = 2)
+        output_folder_main <- file.path(output_folder_path, "model_validation", reg_folder)
+        dir.create(output_folder_main, recursive = TRUE, showWarnings = FALSE)
 
-      if (save_fig == TRUE) {
+        grid <- c(min(length(formula_list), 3), ceiling(length(formula_list) / 3))
+        output_path <- paste0(output_folder_main, "/", named_label, "_residuals_timeseries.pdf")
+        pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
+
+        par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
+
+
+      for (i in names(formula_list)) {
+        plot(
+          x = region_data$date[region_data$ind > 0],
+          y = formula_list[[i]]$residuals,
+          ylim = c(-5, 10),
+          pch = 19,
+          cex = 0.2,
+          col = "#0A2E4D",
+          main = unique(formula_list[[i]]$formula),
+          ylab = "Deviance residuals",
+          xlab = "Date"
+        )
+
+        abline(h = 0, lty = 2, lwd = 2)
+
         title <- paste0("Deviance Residuals by Date: ", reg)
         mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
       }
-    }
 
-    dev.off()
+      dev.off()
 
-    if (sample_check == TRUE) {
-      all_residuals <- do.call(rbind, formula_list)
+      # Fitted vs residuals
+      if (sample_check == TRUE) {
+        all_residuals <- do.call(rbind, formula_list)
 
-      set.seed(123) # for reproducibility
-      sampled_residuals <- all_residuals %>%
-        group_by(.data$formula) %>%
-        sample_frac(0.2) %>%
-        ungroup()
+        set.seed(123) # for reproducibility
+        sampled_residuals <- all_residuals %>%
+          dplyr::group_by(.data$formula) %>%
+          dplyr::sample_frac(0.2) %>%
+          dplyr::ungroup()
 
-      new_res_list <- split(sampled_residuals, sampled_residuals$formula)
+        new_res_list <- split(sampled_residuals, sampled_residuals$formula)
 
-      sample_title <- " (20% sample)"
-    } else {
-      new_res_list <- formula_list
-      sample_title <- ""
-    }
-
-    if (save_fig == TRUE) {
-      grid <- c(min(length(formula_list), 3), ceiling(length(new_res_list) / 3))
-      output_path <- paste0(output_folder_main, "/", named_label, "_residuals_fitted.pdf")
-      pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
-
-      par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
-    }
-
-    for (i in names(new_res_list)) {
-      plot(
-        x = jitter(new_res_list[[i]]$fitted, amount = 0.5),
-        y = jitter(new_res_list[[i]]$residuals, amount = 0.5),
-        pch = 19,
-        cex = 0.2,
-        col = "#0A2E4D",
-        main = unique(new_res_list[[i]]$formula),
-        ylab = "Deviance residuals",
-        xlab = "Fitted values"
-      )
-
-      abline(h = 0, lty = 2, lwd = 2)
-
-      if (save_fig == TRUE) {
-        title <- paste0("Deviance Residuals by Fitted Values: ", reg, sample_title)
-        mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+        sample_title <- " (20% sample)"
+      } else {
+        new_res_list <- formula_list
+        sample_title <- ""
       }
-    }
 
-    dev.off()
+        grid <- c(min(length(formula_list), 3), ceiling(length(new_res_list) / 3))
+        output_path <- paste0(output_folder_main, "/", named_label, "_residuals_fitted.pdf")
+        pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
 
-    if (save_fig == TRUE) {
-      grid <- c(min(length(formula_list), 3), ceiling(length(new_res_list) / 3))
-      output_path <- paste0(output_folder_main, "/", named_label, "_qq_plot.pdf")
-      pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
+        par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
 
-      par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
-    }
+      for (i in names(new_res_list)) {
+        plot(
+          x = jitter(new_res_list[[i]]$fitted, amount = 0.5),
+          y = jitter(new_res_list[[i]]$residuals, amount = 0.5),
+          pch = 19,
+          cex = 0.2,
+          col = "#0A2E4D",
+          main = unique(new_res_list[[i]]$formula),
+          ylab = "Deviance residuals",
+          xlab = "Fitted values"
+        )
 
-    for (i in names(new_res_list)) {
-      qqnorm(new_res_list[[i]]$residuals,
-        pch = 19,
-        cex = 0.2,
-        col = "#0A2E4D",
-        main = unique(new_res_list[[i]]$formula)
-      )
+        abline(h = 0, lty = 2, lwd = 2)
 
-      qqline(new_res_list[[i]]$residuals, lwd = 2)
-
-      if (save_fig == TRUE) {
-        title <- paste0("Normal Q-Q Plot of Residuals: ", reg, sample_title)
-        mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+          title <- paste0("Deviance Residuals by Fitted Values: ", reg, sample_title)
+          mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
       }
+
+      dev.off()
+
+      # QQ plots
+        grid <- c(min(length(formula_list), 3), ceiling(length(new_res_list) / 3))
+        output_path <- paste0(output_folder_main, "/", named_label, "_qq_plot.pdf")
+        pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
+
+        par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
+
+      for (i in names(new_res_list)) {
+        qqnorm(new_res_list[[i]]$residuals,
+          pch = 19,
+          cex = 0.2,
+          col = "#0A2E4D",
+          main = unique(new_res_list[[i]]$formula)
+        )
+
+        qqline(new_res_list[[i]]$residuals, lwd = 2)
+
+          title <- paste0("Normal Q-Q Plot of Residuals: ", reg, sample_title)
+          mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+      }
+
+      dev.off()
+
+      # ACF/PACF plots
+        grid <- c(min(length(formula_list), 2), ceiling(length(formula_list) / 3) * 2)
+        output_path <- file.path(output_folder_main, paste0(named_label, "_residuals_acf_pacf.pdf"))
+        pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
+
+        par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 5, 0))
+
+      for (i in names(formula_list)) {
+        residuals_clean <- stats::na.omit(formula_list[[i]]$residuals)
+        stats::acf(residuals_clean, main = paste0("ACF: ", unique(formula_list[[i]]$formula)), col = "#7A855C")
+        stats::pacf(residuals_clean, main = paste0("PACF: ", unique(formula_list[[i]]$formula)), col = "#7A855C")
+      }
+
+        title <- paste0("Autocorrelation and Partial Autocorrelation of Residuals:\n", reg)
+        mtext(title, outer = TRUE, cex = 1.5, line = 0.5, font = 2)
+
+      dev.off()
     }
-
-    dev.off()
-
-    if (save_fig == TRUE) {
-      grid <- c(min(length(formula_list), 2), ceiling(length(formula_list) / 3) * 2)
-      output_path <- file.path(output_folder_main, paste0(named_label, "_residuals_acf_pacf.pdf"))
-      pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
-
-      par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 5, 0))
-    }
-
-    for (i in names(formula_list)) {
-      residuals_clean <- stats::na.omit(formula_list[[i]]$residuals)
-      stats::acf(residuals_clean, main = paste0("ACF: ", unique(formula_list[[i]]$formula)), col = "#7A855C")
-      stats::pacf(residuals_clean, main = paste0("PACF: ", unique(formula_list[[i]]$formula)), col = "#7A855C")
-    }
-
-    if (save_fig == TRUE) {
-      title <- paste0("Autocorrelation and Partial Autocorrelation of Residuals:\n", reg)
-      mtext(title, outer = TRUE, cex = 1.5, line = 0.5, font = 2)
-    }
-
-    dev.off()
   }
+
   return(list(qaic_results, qaic_summary, vif_results, vif_summary))
 }
 
@@ -596,212 +531,6 @@ mh_casecrossover_dlnm <- function(
 
   return(model_list)
 }
-
-
-#' Reduce to overall cumulative
-#'
-#' @description Reduce model to the overall cumulative association
-#'
-#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
-#' and climate variables which may be disaggregated by a particular region.
-#' @param var_per Vector. Internal knot positions for argvar
-#' (see dlnm::crossbasis). Defaults to c(25,50,75).
-#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
-#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
-#' @param cenper Integer. Value for the percentile in calculating the centering
-#' value 0-100. Defaults to 50.
-#' @param cb_list List of cross_basis matrices from create_crossbasis function.
-#' @param model_list List of models produced from case-crossover and DLNM
-#' analysis.
-#'
-#' @returns
-#'  \itemize{
-#'   \item `coef_` A matrix of coefficients for the reduced model.
-#'   \item `vcov_` A list. Covariance matrices for each region for the reduced model.
-#'   }
-#'
-#' @keywords internal
-mh_reduce_cumulative <- function(
-    df_list,
-    var_per = c(25, 50, 75),
-    var_degree = 2,
-    cenper = 50,
-    cb_list,
-    model_list) {
-  coef_ <- matrix(
-    data = NA,
-    nrow = length(names(df_list)),
-    ncol = length(var_per) + var_degree,
-    dimnames = list(names(df_list))
-  )
-  vcov_ <- vector("list", length(names(df_list)))
-  names(vcov_) <- names(df_list)
-
-  for (reg in names(df_list)) {
-    region_data <- df_list[[reg]]
-    cb <- cb_list[[reg]]
-
-
-    red <- dlnm::crossreduce(cb, model_list[[reg]], cen = quantile(region_data$temp, cenper / 100, na.rm = T))
-
-    coef_[reg, ] <- coef(red)
-    vcov_[[reg]] <- vcov(red)
-  }
-
-  return(list(coef_, vcov_))
-}
-
-
-#' Meta-analysis and BLUPs
-#'
-#' @description Run meta-analysis using temperature average and range as meta
-#' predictors. Then create the best linear unbiased predictions (BLUPs).
-#'
-#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
-#' and climate variables which may be disaggregated by a particular region.
-#' @param coef_ A matrix of coefficients for the reduced model.
-#' @param vcov_ A list. Covariance matrices for each region for the reduced model.
-#' @param save_csv Boolean. Whether to save the results as a CSV. Defaults to
-#' FALSE.
-#' @param output_folder_path Path to folder where results should be saved.
-#' Defaults to NULL.
-#'
-#' @returns
-#' \itemize{
-#'   \item `mm` A model object. A multivariate meta-analysis model.
-#'   \item `blup` A list. BLUP (best linear unbiased predictions) from the
-#'   meta-analysis model for each region.
-#'   \item `meta_test_res` A dataframe of results from statistical tests on the meta model.
-#'   }
-#'
-#' @keywords internal
-mh_meta_analysis <- function(
-    df_list,
-    coef_,
-    vcov_,
-    save_csv = FALSE,
-    output_folder_path = NULL) {
-  # Create temperature average and range as meta predictors
-  temp_avg <- sapply(df_list, function(x) mean(x$temp, na.rm = TRUE))
-  temp_range <- sapply(df_list, function(x) diff(range(x$temp, na.rm = TRUE)))
-  # Meta-analysis
-  mm <- mixmeta::mixmeta(
-    formula = coef_ ~ temp_avg + temp_range,
-    S = vcov_,
-    data = as.data.frame(names(df_list)),
-    method = "reml"
-  )
-  # BLUP
-  blup <- mixmeta::blup(
-    object = mm,
-    vcov = TRUE
-  )
-
-  names(blup) <- names(df_list)
-  # Wald test
-  temp_avg_wald <- fwald(mm, "temp_avg")
-  temp_range_wald <- fwald(mm, "temp_range")
-  # Cochran Q-test
-  qstat <- mixmeta::qtest(mm)
-  # I2 statistic
-  i2stat <- ((qstat$Q - qstat$df) / qstat$Q)[1] * 100
-  meta_test_res <- data.frame(
-    test = c(
-      "Temp_avg Wald p-value",
-      "Temp_range Wald p-value",
-      "Cochrane Q test p-value",
-      "I2 (%)",
-      "AIC"
-    ),
-    result = round(c(
-      temp_avg_wald,
-      temp_range_wald,
-      qstat[["pvalue"]][1],
-      i2stat,
-      summary(mm)$AIC
-    ), 3)
-  )
-
-  if (save_csv == TRUE) {
-    if (!is.null(output_folder_path)) {
-      check_file_exists(file.path(output_folder_path))
-
-      write.csv(meta_test_res, file = file.path(
-        output_folder_path, "meta_model_stat_test_results.csv"
-      ), row.names = FALSE)
-    } else {
-      stop("Output path not specified")
-    }
-  }
-  return(list(mm, blup, meta_test_res))
-}
-
-
-#' Define minimum suicide temperature values
-#'
-#' @description Define the minimum suicide temperature values (between 1st and
-#' 50th percentiles).
-#'
-#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
-#' and climate variables which may be disaggregated by a particular region.
-#' @param var_fun Character. Exposure function for argvar
-#' (see dlnm::crossbasis). Defaults to 'bs'.
-#' @param var_per Vector. Internal knot positions for argvar
-#' (see dlnm::crossbasis). Defaults to c(25,50,75).
-#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
-#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
-#' @param blup A list. BLUP (best linear unbiased predictions) from the
-#' meta-analysis model for each region.
-#' @param coef_ A matrix of coefficients for the reduced model.
-#' @param meta_analysis Boolean. Whether to perform a meta-analysis.
-#'
-#' @returns Vector. Percentile of minimum suicide temperature for each region.
-#'
-#' @keywords internal
-mh_min_suicide_temp <- function(
-    df_list,
-    var_fun = "bs",
-    var_per = c(25, 50, 75),
-    var_degree = 2,
-    blup,
-    coef_,
-    meta_analysis = FALSE) {
-  if (meta_analysis == TRUE) {
-    coef_list <- lapply(blup, function(x) x$blup)
-  } else {
-    coef_list <- split(coef_, rownames(coef_))
-  }
-
-  # Generate matrix for storing results
-
-  minpercreg <- rep(NA, length(df_list))
-  names(minpercreg) <- names(df_list)
-
-  # Define min and max suicide values: exclude low and very hot temperature
-
-  for (reg in names(df_list)) {
-    region_data <- df_list[[reg]]
-
-    predvar <- quantile(region_data$temp, 1:99 / 100, na.rm = TRUE)
-
-    # Redefine the function using all arguments (boundary knots included)
-
-    argvar <- list(
-      x = predvar,
-      fun = var_fun,
-      knots = quantile(region_data$temp, var_per / 100, na.rm = TRUE),
-      degree = var_degree,
-      Boundary.knots = range(region_data$temp, na.rm = TRUE)
-    )
-
-    bvar <- do.call(dlnm::onebasis, argvar)
-
-    minpercreg[reg] <- (1:50)[which.min((bvar %*% coef_list[[reg]])[1:50, ])]
-  }
-
-  return(minpercreg)
-}
-
 
 #' Run regional predictions from model
 #'
@@ -984,132 +713,6 @@ mh_add_national_data <- function(
 
   return(list(df_list, cb_list, minpercreg, mmpredall))
 }
-
-
-#' Run national predictions from meta analysis
-#'
-#' @description Use the meta analysis to create national level predictions
-#'
-#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
-#' and climate variables which may be disaggregated by a particular region.
-#' @param var_fun Character. Exposure function for argvar
-#' (see dlnm::crossbasis). Defaults to 'bs'.
-#' @param var_per Vector. Internal knot positions for argvar
-#' (see dlnm::crossbasis). Defaults to c(25,50,75).
-#' @param var_degree Integer. Degree of the piecewise polynomial for argvar
-#' (see dlnm::crossbasis). Defaults to 2 (quadratic).
-#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
-#' @param mmpredall List of national coefficients and covariance matrices for the crosspred.
-#' @param pred_list A list containing predictions from the model by region.
-#' @param country Character. Name of country for national level estimates.
-#'
-#' @returns A list containing predictions by region.
-#'
-#' @keywords internal
-mh_predict_nat <- function(
-    df_list,
-    var_fun = "bs",
-    var_per = c(25, 50, 75),
-    var_degree = 2,
-    minpercreg,
-    mmpredall,
-    pred_list,
-    country = "National") {
-  national_data <- df_list[[country]]
-
-  argvar <- list(
-    x = national_data$temp,
-    fun = var_fun,
-    knots = quantile(national_data$temp, var_per / 100, na.rm = TRUE),
-    degree = var_degree
-  )
-
-  bvar <- do.call(dlnm::onebasis, argvar)
-
-  cen <- quantile(national_data$temp, minpercreg[country] / 100, na.rm = T)
-
-  pred_nat <- dlnm::crosspred(bvar,
-    coef = mmpredall$fit,
-    vcov = mmpredall$vcov,
-    cen = cen,
-    model.link = "log",
-    by = 0.1,
-    from = min(round(national_data$temp, 1), na.rm = TRUE),
-    to = max(round(national_data$temp, 1), na.rm = TRUE)
-  )
-
-  pred_list[[country]] <- pred_nat
-
-  return(pred_list)
-}
-
-
-#' Mental Health Power calculation
-#'
-#' @description Produce a power statistic by area for the attributable threshold
-#' and above as a reference.
-#'
-#' @param df_list A list of dataframes containing daily timeseries data for a health outcome
-#' and climate variables which may be disaggregated by a particular region.
-#' @param pred_list A list containing predictions from the model by region.
-#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
-#' @param attr_thr Integer. Percentile at which to define the temperature threshold for
-#' calculating attributable risk. Defaults to 97.5.
-#'
-#' @returns A list containing power information by area.
-#'
-#' @keywords internal
-mh_power_list <- function(
-    df_list,
-    pred_list,
-    minpercreg,
-    attr_thr = 97.5) {
-  power_list <- list()
-  alpha <- 0.05
-
-  for (reg in names(df_list)) {
-    region_data <- df_list[[reg]]
-    pred <- pred_list[[reg]]
-    min_st <- round(quantile(region_data$temp, minpercreg[reg] / 100, na.rm = TRUE), 1)
-
-    thresh_temp <- round(quantile(region_data$temp, attr_thr / 100, na.rm = TRUE), 1)
-
-    coef_effect_with_se <- data.frame(
-      temperature = round(pred$predvar, 1),
-      log_rr = pred$allfit,
-      se = pred$allse
-    )
-
-    coef_effect_with_se <- coef_effect_with_se %>%
-      dplyr::filter(.data$temperature >= thresh_temp)
-
-    rownames(coef_effect_with_se) <- NULL
-
-    power_df <- data.frame(
-      region = reg,
-      temperature = coef_effect_with_se$temperature,
-      cen = min_st,
-      log_rr = coef_effect_with_se$log_rr,
-      se = coef_effect_with_se$se,
-      z_alpha = stats::qnorm(1 - alpha / 2)
-    )
-
-    power_df <- power_df %>%
-      mutate(power = stats::pnorm(
-        .data$log_rr / .data$se - .data$z_alpha
-      ) + (1 - stats::pnorm(.data$log_rr / .data$se + .data$z_alpha))) %>%
-      select(all_of(c(-"z_alpha"))) %>%
-      mutate(
-        log_rr = round(.data$log_rr, 2),
-        se = round(.data$se, 2),
-        power = round(.data$power * 100, 1)
-      )
-
-    power_list[[reg]] <- power_df
-  }
-  return(power_list)
-}
-
 
 #' Plot power
 #'
@@ -1412,9 +1015,7 @@ mh_attr <- function(
     min_range <- quantile(region_data$temp, attr_thr / 100, na.rm = TRUE)
     max_range <- max(region_data$temp, na.rm = TRUE)
 
-    c(
-      af, af_lower_ci, af_upper_ci, an, an_lower_ci, an_upper_ci, ansim_mat
-    ) %<-% an_attrdl(
+    attr <- an_attrdl(
       x = region_data$temp,
       basis = cb,
       cases = region_data$suicides,
@@ -1430,19 +1031,19 @@ mh_attr <- function(
       select(all_of(c("region", "date", "temp", "year", "month", "suicides", "population"))) %>%
       mutate(
         threshold_temp = round(min_range, 1),
-        af = af,
-        af_lower_ci = af_lower_ci,
-        af_upper_ci = af_upper_ci,
-        an = an,
-        an_lower_ci = an_lower_ci,
-        an_upper_ci = an_upper_ci,
-        ar = (an / .data$population) * 100000,
-        ar_lower_ci = (an_lower_ci / .data$population) * 100000,
-        ar_upper_ci = (an_upper_ci / .data$population) * 100000
+        af = attr[[1]],
+        af_lower_ci = attr[[2]],
+        af_upper_ci = attr[[3]],
+        an = attr[[4]],
+        an_lower_ci = attr[[5]],
+        an_upper_ci = attr[[6]],
+        ar = (attr[[4]] / .data$population) * 100000,
+        ar_lower_ci = (attr[[5]] / .data$population) * 100000,
+        ar_upper_ci = (attr[[6]] / .data$population) * 100000
       )
     attr_list[[reg]] <- list(
       results = results,
-      ansim_mat = ansim_mat
+      ansim_mat = attr[[7]]
     )
   }
   return(attr_list)
@@ -1521,7 +1122,7 @@ mh_attr_tables <- function(
         ar_lower_ci = .data$an_lower_ci / .data$population * 100000,
         ar_upper_ci = .data$an_upper_ci / .data$population * 100000
       ) %>%
-      select(all_of(c(-"sim_rows", -"sim_sum")))
+      select(-all_of("sim_rows"), -all_of("sim_sum"))
 
     res_list[[grp_name]] <- grouped
   }
@@ -2397,6 +1998,21 @@ suicides_heat_do_analysis <- function(
     save_fig = FALSE,
     save_csv = FALSE,
     output_folder_path = NULL) {
+  # Setup additional output DIR
+  if (!is.null(output_folder_path)) {
+    # Check output dir exists
+    check_file_exists(output_folder_path, TRUE)
+    new_fpath <- file.path(
+      output_folder_path,
+      paste0("suicides_analysis_", format(Sys.time(), "%d_%m_%Y_%H_%M"))
+    )
+    if (!is.null(new_fpath)) {
+      (
+        dir.create(new_fpath)
+      )
+    }
+    output_folder_path <- new_fpath
+  }
   # read and normalise input dataset
   df_list <- mh_read_and_format_data(
     data_path = data_path,
@@ -2407,7 +2023,7 @@ suicides_heat_do_analysis <- function(
     population_col = population_col
   )
   # create list of population totals
-  pop_list <- mh_pop_totals(
+  pop_list <- dlnm_pop_totals(
     df_list = df_list,
     country = country,
     meta_analysis = meta_analysis
@@ -2423,9 +2039,7 @@ suicides_heat_do_analysis <- function(
     lag_days = lag_days
   )
   # calculate qaic and vif for model validation
-  c(
-    qaic_results, qaic_summary, vif_results, vif_summary
-  ) %<-% mh_model_validation(
+  model_val <- mh_model_validation(
     df_list = df_list,
     cb_list = cb_list,
     independent_cols = independent_cols,
@@ -2433,6 +2047,10 @@ suicides_heat_do_analysis <- function(
     save_csv = save_csv,
     output_folder_path = output_folder_path
   )
+  qaic_results <- model_val[[1]]
+  qaic_summary <- model_val[[2]]
+  vif_results <- model_val[[3]]
+  vif_summary <- model_val[[4]]
   # create list of DLNM models
   model_list <- mh_casecrossover_dlnm(
     df_list = df_list,
@@ -2440,7 +2058,7 @@ suicides_heat_do_analysis <- function(
     cb_list = cb_list
   )
   # calculate values for reduced model
-  c(coef_, vcov_) %<-% mh_reduce_cumulative(
+  reduced <- dlnm_reduce_cumulative(
     df_list = df_list,
     var_per = var_per,
     var_degree = var_degree,
@@ -2448,29 +2066,36 @@ suicides_heat_do_analysis <- function(
     cb_list = cb_list,
     model_list = model_list
   )
+  coef_ <- reduced[[1]]
+  vcov_ <- reduced[[2]]
   # conditionally carry out meta-analysis
   if (meta_analysis == TRUE) {
-    c(mm, blup, meta_test_res) %<-% mh_meta_analysis(
+    meta <- dlnm_meta_analysis(
       df_list = df_list,
       coef_ = coef_,
       vcov_ = vcov_,
       save_csv = save_csv,
       output_folder_path = output_folder_path
     )
+    mm <- meta[[1]]
+    blup <- meta[[2]]
+    meta_test_res <- meta[[3]]
   } else {
     # assign NULL placeholders
     blup <- NULL
     meta_test_res <- NULL
   }
+
   # get vector of minimum suicide temperatures (percentile)
-  minpercreg <- mh_min_suicide_temp(
+  minpercreg <- dlnm_min_mortality_temp(
     df_list = df_list,
     var_fun = var_fun,
     var_per = var_per,
     var_degree = var_degree,
     blup = blup,
     coef_ = coef_,
-    meta_analysis = meta_analysis
+    meta_analysis = meta_analysis,
+    outcome_type = "suicide"
   )
   # get model predictions by region
   pred_list <- mh_predict_reg(
@@ -2486,7 +2111,7 @@ suicides_heat_do_analysis <- function(
   )
   # aggregate data to national level and generate crossbasis
   if (meta_analysis == TRUE) {
-    c(df_list, cb_list, minpercreg, mmpredall) %<-% mh_add_national_data(
+    nat_data <- mh_add_national_data(
       df_list = df_list,
       pop_list = pop_list,
       var_fun = var_fun,
@@ -2500,8 +2125,12 @@ suicides_heat_do_analysis <- function(
       mm = mm,
       minpercreg = minpercreg
     )
+    df_list <- nat_data[[1]]
+    cb_list <- nat_data[[2]]
+    minpercreg <- nat_data[[3]]
+    mmpredall <- nat_data[[4]]
     # get predictions
-    pred_list <- mh_predict_nat(
+    pred_list <- dlnm_predict_nat(
       df_list = df_list,
       var_fun = var_fun,
       var_per = var_per,
@@ -2513,19 +2142,22 @@ suicides_heat_do_analysis <- function(
     )
   }
   # carry out power calculation to assess model
-  power_list <- mh_power_list(
+  power_list <- dlnm_power_list(
     df_list = df_list,
     pred_list = pred_list,
-    minpercreg = minpercreg,
-    attr_thr = attr_thr
+    minperc = minpercreg,
+    attr_thr_high = attr_thr,
+    compute_low = FALSE
   )
   # plot power calculation results
-  mh_plot_power(
-    power_list = power_list,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path,
-    country = country
-  )
+  if (save_fig == TRUE) {
+    mh_plot_power(
+      power_list = power_list,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path,
+      country = country
+    )
+  }
   # obtain relative risk values
   rr_results <- mh_rr_results(
     pred_list = pred_list,
@@ -2534,15 +2166,17 @@ suicides_heat_do_analysis <- function(
     minpercreg = minpercreg
   )
   # plot relative risk values
-  mh_plot_rr(
-    df_list = df_list,
-    pred_list = pred_list,
-    attr_thr = attr_thr,
-    minpercreg = minpercreg,
-    country = country,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path
-  )
+  if (save_fig == TRUE) {
+    mh_plot_rr(
+      df_list = df_list,
+      pred_list = pred_list,
+      attr_thr = attr_thr,
+      minpercreg = minpercreg,
+      country = country,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path
+    )
+  }
   # calculate attributable numbers per region
   attr_list <- mh_attr(
     df_list = df_list,
@@ -2552,51 +2186,56 @@ suicides_heat_do_analysis <- function(
     attr_thr = attr_thr
   )
   # create a table containing attributable estimates
-  c(res_attr_tot, attr_yr_list, attr_mth_list) %<-% mh_attr_tables(
+  attr <- mh_attr_tables(
     attr_list = attr_list,
     country = country,
     meta_analysis = meta_analysis
   )
-  # Plot attributable numbers
-  mh_plot_attr_totals(
-    df_list = df_list,
-    res_attr_tot = res_attr_tot,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path,
-    country = country
-  )
-  # Plot yearly attributable fraction values
-  mh_plot_af_yearly(
-    attr_yr_list = attr_yr_list,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path,
-    country = country
-  )
-  # plot year attributable rates
-  mh_plot_ar_yearly(
-    attr_yr_list = attr_yr_list,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path,
-    country = country
-  )
-  # plot monthly attributable fractions
-  mh_plot_af_monthly(
-    attr_mth_list = attr_mth_list,
-    df_list = df_list,
-    country = country,
-    attr_thr = attr_thr,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path
-  )
-  # plot monthly attributable rates
-  mh_plot_ar_monthly(
-    attr_mth_list = attr_mth_list,
-    df_list = df_list,
-    country = country,
-    attr_thr = attr_thr,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path
-  )
+  res_attr_tot <- attr[[1]]
+  attr_yr_list <- attr[[2]]
+  attr_mth_list <- attr[[3]]
+  if (save_fig == TRUE) {
+    # Plot attributable numbers
+    mh_plot_attr_totals(
+      df_list = df_list,
+      res_attr_tot = res_attr_tot,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path,
+      country = country
+    )
+    # Plot yearly attributable fraction values
+    mh_plot_af_yearly(
+      attr_yr_list = attr_yr_list,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path,
+      country = country
+    )
+    # plot year attributable rates
+    mh_plot_ar_yearly(
+      attr_yr_list = attr_yr_list,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path,
+      country = country
+    )
+    # plot monthly attributable fractions
+    mh_plot_af_monthly(
+      attr_mth_list = attr_mth_list,
+      df_list = df_list,
+      country = country,
+      attr_thr = attr_thr,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path
+    )
+    # plot monthly attributable rates
+    mh_plot_ar_monthly(
+      attr_mth_list = attr_mth_list,
+      df_list = df_list,
+      country = country,
+      attr_thr = attr_thr,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path
+    )
+  }
   # conditionally save csv files containing raw data
   if (save_csv == TRUE) {
     mh_save_results(
