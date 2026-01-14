@@ -30,6 +30,7 @@ Imports:
     mgcv,
     mixmeta,
     ncdf4,
+    mvmeta,
     patchwork,
     pkgbuild,
     purrr,
