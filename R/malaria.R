@@ -60,6 +60,10 @@
 #' @param save_fig Logical. If `TRUE`, saves generated plots. Defaults to `TRUE`.
 #' @param output_dir Character. Directory where output files (plots, datasets, maps)
 #' are saved. Defaults to `NULL`.
+#'@param api_mode Logical, If `TRUE`, runs the do_analysis function for the baseline
+#'model only, returning lightweight results for flask/JSOn compatibility.
+#'Defaults to False.
+#'
 #'
 #' @return A named list containing:
 #' \itemize{
