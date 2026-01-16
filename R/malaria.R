@@ -383,10 +383,10 @@ malaria_do_analysis <- function(
     # Fallback: stringify
     as.character(x)
   }
-  }
+
 
   # Return only CSVs if running over api
-  if (api_mode){
+  if (isTRUE(api_mode)) {
     # Lightweight results for flask/JSOn compatibility
     res <- list(
       rr_df = rr_df,
@@ -402,6 +402,7 @@ malaria_do_analysis <- function(
       rr_df = rr_df,
       an_ar_results = attr_frac_num
     )
-  }
+
   return(res)
+  }
 }
