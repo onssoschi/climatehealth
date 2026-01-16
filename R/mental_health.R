@@ -59,11 +59,11 @@ mh_read_and_format_data <- function(
   }
   df <- df %>%
     dplyr::rename(
-      date = date_col,
-      region = region_col,
-      temp = temperature_col,
-      suicides = health_outcome_col,
-      population = population_col
+      date = all_of(date_col),
+      region = all_of(region_col),
+      temp = all_of(temperature_col),
+      suicides = all_of(health_outcome_col),
+      population = all_of(population_col)
     ) %>%
     dplyr::mutate(
       date = as.Date(date, tryFormats = c("%d/%m/%Y", "%Y-%m-%d")),
@@ -166,9 +166,13 @@ mh_model_combo_res <- function(
     (transformed_vars <- NULL)
   }
 
-  all_combos <- unlist(lapply(0:length(transformed_vars), function(i) {
-    combn(transformed_vars, i, simplify = FALSE)
-  }), recursive = FALSE)
+  if (!is.null(independent_cols)) {
+    all_combos <- unlist(lapply(0:length(transformed_vars), function(i) {
+      combn(transformed_vars, i, simplify = FALSE)
+    }), recursive = FALSE)
+  } else {
+    all_combos <- list(character(0))
+  }
   for (reg in names(df_list)) {
     formula_list <- list()
     region_data <- df_list[[reg]]
@@ -185,20 +189,22 @@ mh_model_combo_res <- function(
         "suicides ~ cb", if (length(vars) > 0) paste("+", paste(vars, collapse = " + ")) else ""
       )
       model <- gnm::gnm(as.formula(formula_str),
-        eliminate = region_data$stratum, family = quasipoisson(), data = region_data,
-        na.action = "na.exclude", subset = region_data$ind > 0
+                        eliminate = region_data$stratum, family = quasipoisson(), data = region_data,
+                        na.action = "na.exclude", subset = region_data$ind > 0
       )
       # Get model values
-      disp <- summary(model)$dispersion
-      loglik <- sum(dpois(model$y, model$fitted.values, log = TRUE))
-      k <- length(coef(model))
-      qaic <- -2 * loglik / disp + 2 * k
-      qaic_results[[length(qaic_results) + 1]] <- data.frame(
-        region = reg,
-        formula = formula_str,
-        disp = disp,
-        qaic = qaic
-      )
+      if (!is.null(independent_cols)) {
+        disp <- summary(model)$dispersion
+        loglik <- sum(dpois(model$y, model$fitted.values, log = TRUE))
+        k <- length(coef(model))
+        qaic <- -2 * loglik / disp + 2 * k
+        qaic_results[[length(qaic_results) + 1]] <- data.frame(
+          region = reg,
+          formula = formula_str,
+          disp = disp,
+          qaic = qaic
+        )
+      }
       residuals_df <- data.frame(
         region = reg,
         formula = formula_str,
@@ -209,10 +215,14 @@ mh_model_combo_res <- function(
     }
     residuals_list[[reg]] <- formula_list
   }
-  # Combine results into a single data frame
-  qaic_results <- do.call(rbind, qaic_results)
-  # Sort by region and QAIC
-  qaic_results <- qaic_results[order(qaic_results$region, qaic_results$formula), ]
+  if (!is.null(independent_cols)) {
+    # Combine results into a single data frame
+    qaic_results <- do.call(rbind, qaic_results)
+    # Sort by region and QAIC
+    qaic_results <- qaic_results[order(qaic_results$region, qaic_results$formula), ]
+  } else {
+    qaic_results <- NULL
+  }
   return(list(qaic_results, residuals_list))
 }
 
@@ -283,7 +293,7 @@ mh_model_validation <- function(
     vif_results <- NULL
   }
 
-  if (length(df_list) > 1) {
+  if (length(df_list) > 1 && !is.null(independent_cols)) {
     # calculate QAIC summary
     qaic_summary <- qaic_results %>%
       group_by(formula) %>%
@@ -311,6 +321,7 @@ mh_model_validation <- function(
   } else {
     qaic_summary <- vif_summary <- NULL
   }
+
   if (save_fig == TRUE) {
     # Shorten the labels to a fixed length
     short_labels <- sapply(as.character(names(df_list)), function(x) {
@@ -325,139 +336,148 @@ mh_model_validation <- function(
     named_label_list <- as.list(short_labels)
     names(named_label_list) <- names(df_list)
   }
-  # Check if save_fig is set to TRUE before running plotting loop
-  if (save_fig == TRUE){
-    if (nrow(do.call(rbind, do.call(rbind, residuals_list))) > 100000) {
-      sample_check <- TRUE
-    } else {
-      sample_check <- FALSE
-    }
-    for (reg in names(df_list)) {
-      region_data <- df_list[[reg]]
-      formula_list <- residuals_list[[reg]]
+  if ((nrow(do.call(rbind, do.call(rbind, residuals_list))) > 100000) & (save_fig == TRUE)) {
+    sample_check <- TRUE
+  } else {
+    sample_check <- FALSE
+  }
+  for (reg in names(df_list)) {
+    region_data <- df_list[[reg]]
+    formula_list <- residuals_list[[reg]]
+    if (save_fig == TRUE) {
       named_label <- named_label_list[[reg]]
+    }
 
-      # Time series residual plots
-        reg_folder <- gsub(pattern = " ", replacement = "_", x = reg)
+    if (save_fig == TRUE) {
+      reg_folder <- gsub(pattern = " ", replacement = "_", x = reg)
 
-        output_folder_main <- file.path(output_folder_path, "model_validation", reg_folder)
-        dir.create(output_folder_main, recursive = TRUE, showWarnings = FALSE)
+      output_folder_main <- file.path(output_folder_path, "model_validation", reg_folder)
+      dir.create(output_folder_main, recursive = TRUE, showWarnings = FALSE)
 
-        grid <- c(min(length(formula_list), 3), ceiling(length(formula_list) / 3))
-        output_path <- paste0(output_folder_main, "/", named_label, "_residuals_timeseries.pdf")
-        pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
+      grid <- c(min(length(formula_list), 3), ceiling(length(formula_list) / 3))
+      output_path <- paste0(output_folder_main, "/", named_label, "_residuals_timeseries.pdf")
+      pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
 
-        par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
+      par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
+    }
 
+    for (i in names(formula_list)) {
+      plot(
+        x = region_data$date[region_data$ind > 0],
+        y = formula_list[[i]]$residuals,
+        ylim = c(-5, 10),
+        pch = 19,
+        cex = 0.2,
+        col = "#0A2E4D",
+        main = unique(formula_list[[i]]$formula),
+        ylab = "Deviance residuals",
+        xlab = "Date"
+      )
 
-      for (i in names(formula_list)) {
-        plot(
-          x = region_data$date[region_data$ind > 0],
-          y = formula_list[[i]]$residuals,
-          ylim = c(-5, 10),
-          pch = 19,
-          cex = 0.2,
-          col = "#0A2E4D",
-          main = unique(formula_list[[i]]$formula),
-          ylab = "Deviance residuals",
-          xlab = "Date"
-        )
+      abline(h = 0, lty = 2, lwd = 2)
 
-        abline(h = 0, lty = 2, lwd = 2)
-
+      if (save_fig == TRUE) {
         title <- paste0("Deviance Residuals by Date: ", reg)
         mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+
+        dev.off()
       }
+    }
 
-      dev.off()
+    if (sample_check == TRUE) {
+      all_residuals <- do.call(rbind, formula_list)
 
-      # Fitted vs residuals
-      if (sample_check == TRUE) {
-        all_residuals <- do.call(rbind, formula_list)
+      set.seed(123) # for reproducibility
+      sampled_residuals <- all_residuals %>%
+        dplyr::group_by(.data$formula) %>%
+        dplyr::sample_frac(0.2) %>%
+        dplyr::ungroup()
 
-        set.seed(123) # for reproducibility
-        sampled_residuals <- all_residuals %>%
-          dplyr::group_by(.data$formula) %>%
-          dplyr::sample_frac(0.2) %>%
-          dplyr::ungroup()
+      new_res_list <- split(sampled_residuals, sampled_residuals$formula)
 
-        new_res_list <- split(sampled_residuals, sampled_residuals$formula)
+      sample_title <- " (20% sample)"
+    } else {
+      new_res_list <- formula_list
+      sample_title <- ""
+    }
 
-        sample_title <- " (20% sample)"
-      } else {
-        new_res_list <- formula_list
-        sample_title <- ""
+    if (save_fig == TRUE) {
+      grid <- c(min(length(formula_list), 3), ceiling(length(new_res_list) / 3))
+      output_path <- paste0(output_folder_main, "/", named_label, "_residuals_fitted.pdf")
+      pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
+
+      par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
+    }
+
+    for (i in names(new_res_list)) {
+      plot(
+        x = jitter(new_res_list[[i]]$fitted, amount = 0.5),
+        y = jitter(new_res_list[[i]]$residuals, amount = 0.5),
+        pch = 19,
+        cex = 0.2,
+        col = "#0A2E4D",
+        main = unique(new_res_list[[i]]$formula),
+        ylab = "Deviance residuals",
+        xlab = "Fitted values"
+      )
+
+      abline(h = 0, lty = 2, lwd = 2)
+
+      if (save_fig == TRUE) {
+        title <- paste0("Deviance Residuals by Fitted Values: ", reg, sample_title)
+        mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+
+        dev.off()
       }
+    }
 
-        grid <- c(min(length(formula_list), 3), ceiling(length(new_res_list) / 3))
-        output_path <- paste0(output_folder_main, "/", named_label, "_residuals_fitted.pdf")
-        pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
+    if (save_fig == TRUE) {
+      grid <- c(min(length(formula_list), 3), ceiling(length(new_res_list) / 3))
+      output_path <- paste0(output_folder_main, "/", named_label, "_qq_plot.pdf")
+      pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
 
-        par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
+      par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
+    }
 
-      for (i in names(new_res_list)) {
-        plot(
-          x = jitter(new_res_list[[i]]$fitted, amount = 0.5),
-          y = jitter(new_res_list[[i]]$residuals, amount = 0.5),
-          pch = 19,
-          cex = 0.2,
-          col = "#0A2E4D",
-          main = unique(new_res_list[[i]]$formula),
-          ylab = "Deviance residuals",
-          xlab = "Fitted values"
-        )
+    for (i in names(new_res_list)) {
+      qqnorm(new_res_list[[i]]$residuals,
+             pch = 19,
+             cex = 0.2,
+             col = "#0A2E4D",
+             main = unique(new_res_list[[i]]$formula)
+      )
 
-        abline(h = 0, lty = 2, lwd = 2)
+      qqline(new_res_list[[i]]$residuals, lwd = 2)
 
-          title <- paste0("Deviance Residuals by Fitted Values: ", reg, sample_title)
-          mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+      if (save_fig == TRUE) {
+        title <- paste0("Normal Q-Q Plot of Residuals: ", reg, sample_title)
+        mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+
+        dev.off()
       }
+    }
 
-      dev.off()
+    if (save_fig == TRUE) {
+      grid <- c(min(length(formula_list), 2), ceiling(length(formula_list) / 3) * 2)
+      output_path <- file.path(output_folder_main, paste0(named_label, "_residuals_acf_pacf.pdf"))
+      pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
 
-      # QQ plots
-        grid <- c(min(length(formula_list), 3), ceiling(length(new_res_list) / 3))
-        output_path <- paste0(output_folder_main, "/", named_label, "_qq_plot.pdf")
-        pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
+      par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 5, 0))
+    }
 
-        par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
+    for (i in names(formula_list)) {
+      residuals_clean <- stats::na.omit(formula_list[[i]]$residuals)
+      stats::acf(residuals_clean, main = paste0("ACF: ", unique(formula_list[[i]]$formula)), col = "#7A855C")
+      stats::pacf(residuals_clean, main = paste0("PACF: ", unique(formula_list[[i]]$formula)), col = "#7A855C")
+    }
 
-      for (i in names(new_res_list)) {
-        qqnorm(new_res_list[[i]]$residuals,
-          pch = 19,
-          cex = 0.2,
-          col = "#0A2E4D",
-          main = unique(new_res_list[[i]]$formula)
-        )
-
-        qqline(new_res_list[[i]]$residuals, lwd = 2)
-
-          title <- paste0("Normal Q-Q Plot of Residuals: ", reg, sample_title)
-          mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
-      }
-
-      dev.off()
-
-      # ACF/PACF plots
-        grid <- c(min(length(formula_list), 2), ceiling(length(formula_list) / 3) * 2)
-        output_path <- file.path(output_folder_main, paste0(named_label, "_residuals_acf_pacf.pdf"))
-        pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
-
-        par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 5, 0))
-
-      for (i in names(formula_list)) {
-        residuals_clean <- stats::na.omit(formula_list[[i]]$residuals)
-        stats::acf(residuals_clean, main = paste0("ACF: ", unique(formula_list[[i]]$formula)), col = "#7A855C")
-        stats::pacf(residuals_clean, main = paste0("PACF: ", unique(formula_list[[i]]$formula)), col = "#7A855C")
-      }
-
-        title <- paste0("Autocorrelation and Partial Autocorrelation of Residuals:\n", reg)
-        mtext(title, outer = TRUE, cex = 1.5, line = 0.5, font = 2)
+    if (save_fig == TRUE) {
+      title <- paste0("Autocorrelation and Partial Autocorrelation of Residuals:\n", reg)
+      mtext(title, outer = TRUE, cex = 1.5, line = 0.5, font = 2)
 
       dev.off()
     }
   }
-
   return(list(qaic_results, qaic_summary, vif_results, vif_summary))
 }
 
@@ -523,8 +543,8 @@ mh_casecrossover_dlnm <- function(
     cb <- cb_list[[reg]]
 
     model <- gnm::gnm(formula,
-      eliminate = region_data$stratum, family = quasipoisson(), data = region_data,
-      na.action = "na.exclude", subset = region_data$ind > 0
+                      eliminate = region_data$stratum, family = quasipoisson(), data = region_data,
+                      na.action = "na.exclude", subset = region_data$ind > 0
     )
     model_list[[reg]] <- model
   }
@@ -589,13 +609,13 @@ mh_predict_reg <- function(
     cen <- quantile(region_data$temp, minpercreg[reg] / 100, na.rm = TRUE)
 
     pred <- dlnm::crosspred(bvar,
-      coef = coef_list[[reg]],
-      vcov = vcov_list[[reg]],
-      model.link = "log",
-      by = 0.1,
-      cen = cen,
-      from = min(round(region_data$temp, 1), na.rm = TRUE),
-      to = max(round(region_data$temp, 1), na.rm = TRUE)
+                            coef = coef_list[[reg]],
+                            vcov = vcov_list[[reg]],
+                            model.link = "log",
+                            by = 0.1,
+                            cen = cen,
+                            from = min(round(region_data$temp, 1), na.rm = TRUE),
+                            to = max(round(region_data$temp, 1), na.rm = TRUE)
     )
 
     pred_list[[reg]] <- pred
@@ -655,7 +675,7 @@ mh_add_national_data <- function(
   national_data <- as.data.frame(do.call(rbind, df_list))
 
   nat_pop <- pop_list[[country]] %>%
-    dplyr::rename(nat_population = .data$population)
+    dplyr::rename(nat_population = all_of("population"))
 
   national_data <- national_data %>%
     dplyr::left_join(nat_pop, by = "year") %>%
@@ -809,10 +829,11 @@ mh_rr_results <- function(
     temp_freq <- as.numeric(temp_freq_table[as.character(pred_temp_rounded)])
     temp_freq[is.na(temp_freq)] <- 0 # Replace NAs with 0 for bins not present
 
+    n <- length(reg_pred$predvar)
     df <- data.frame(
-      Area = region_name,
-      MinST = round(min_st, 1),
-      Attr_Threshold_Temp = round(attr_thr_temp, 1),
+      Area = rep(region_name, n),
+      MinST = rep(round(min_st, 1), n),
+      Attr_Threshold_Temp = rep(round(attr_thr_temp, 1), n),
       Temperature = round(reg_pred$predvar, 1),
       Temp_Frequency = temp_freq,
       RR = round(reg_pred$allRRfit, 2),
@@ -899,13 +920,13 @@ mh_plot_rr <- function(
     par(mar = c(5, 5, 4, 5) + 0.1)
 
     plot(region_pred,
-      "overall",
-      xlab = expression(paste("Temperature (", degree, "C)")),
-      ylab = "RR",
-      ylim = ylim,
-      xlim = xlim,
-      main = reg,
-      col = "#296991"
+         "overall",
+         xlab = expression(paste("Temperature (", degree, "C)")),
+         ylab = "RR",
+         ylim = ylim,
+         xlim = xlim,
+         main = reg,
+         col = "#296991"
     )
 
     vline_pos_max_x <- quantile(region_temp, attr_thr / 100, na.rm = TRUE)
@@ -932,8 +953,8 @@ mh_plot_rr <- function(
     reg_temp_range <- range(region_temp, na.rm = TRUE)
 
     hist_data <- hist(region_temp,
-      breaks = seq(floor(reg_temp_range[1]), ceiling(reg_temp_range[2]), by = 1),
-      plot = FALSE
+                      breaks = seq(floor(reg_temp_range[1]), ceiling(reg_temp_range[2]), by = 1),
+                      plot = FALSE
     )
 
     hist_scale <- (0.3) / hist_max
@@ -1350,15 +1371,15 @@ mh_plot_af_yearly <- function(
     )
 
     legend("topright",
-      inset = c(0, -0.1),
-      legend = "95% CI",
-      col = adjustcolor("#296991", alpha.f = 0.2),
-      pch = 15,
-      pt.cex = 2,
-      bty = "n",
-      xpd = TRUE,
-      horiz = TRUE,
-      cex = 0.9
+           inset = c(0, -0.1),
+           legend = "95% CI",
+           col = adjustcolor("#296991", alpha.f = 0.2),
+           pch = 15,
+           pt.cex = 2,
+           bty = "n",
+           xpd = TRUE,
+           horiz = TRUE,
+           cex = 0.9
     )
 
     if (save_fig == TRUE) {
@@ -1459,15 +1480,15 @@ mh_plot_ar_yearly <- function(
     )
 
     legend("topright",
-      inset = c(0, -0.1),
-      legend = "95% CI",
-      col = adjustcolor("#C75E70", alpha.f = 0.2),
-      pch = 15,
-      pt.cex = 2,
-      bty = "n",
-      xpd = TRUE,
-      horiz = TRUE,
-      cex = 0.9
+           inset = c(0, -0.1),
+           legend = "95% CI",
+           col = adjustcolor("#C75E70", alpha.f = 0.2),
+           pch = 15,
+           pt.cex = 2,
+           bty = "n",
+           xpd = TRUE,
+           horiz = TRUE,
+           cex = 0.9
     )
 
     if (save_fig == TRUE) {
@@ -1588,17 +1609,17 @@ mh_plot_af_monthly <- function(
     af_leg_lab <- paste0("AF (%) - from Attr. Risk Treshold, ", attr_thr_tmp, "\u00b0C (", attr_thr, "p)")
 
     legend("topleft",
-      inset = c(0, -0.05),
-      legend = c(af_leg_lab, "Mean Temp (\u00b0C)"),
-      fill = c("#296991", NA),
-      border = NA,
-      lty = c(NA, 1),
-      pch = c(NA, 16),
-      col = c("#296991", "#0a2e4d"),
-      bty = "n",
-      cex = 0.9,
-      horiz = FALSE,
-      xpd = TRUE
+           inset = c(0, -0.05),
+           legend = c(af_leg_lab, "Mean Temp (\u00b0C)"),
+           fill = c("#296991", NA),
+           border = NA,
+           lty = c(NA, 1),
+           pch = c(NA, 16),
+           col = c("#296991", "#0a2e4d"),
+           bty = "n",
+           cex = 0.9,
+           horiz = FALSE,
+           xpd = TRUE
     )
   }
 
@@ -1624,9 +1645,9 @@ mh_plot_af_monthly <- function(
 
     mtext(ci_warning, outer = TRUE, side = 1, line = 1, cex = 0.8, col = "red", font = 3)
     mtext(ovr_warning, outer = TRUE, side = 1, line = 2, cex = 0.8, col = "red", font = 3)
-  }
 
-  dev.off()
+    dev.off()
+  }
 }
 
 
@@ -1721,17 +1742,17 @@ mh_plot_ar_monthly <- function(
     ar_leg_lab <- paste0("AR - from Attr. Risk Threshold, ", attr_thr_tmp, "\u00b0C (", attr_thr, "p)")
 
     legend("topleft",
-      inset = c(0, -0.05),
-      legend = c(ar_leg_lab, "Mean Temp (\u00b0C)"),
-      fill = c("#c75e70", NA),
-      border = NA,
-      lty = c(NA, 1),
-      pch = c(NA, 16),
-      col = c("#c75e70", "#0a2e4d"),
-      bty = "n",
-      cex = 0.9,
-      horiz = FALSE,
-      xpd = TRUE
+           inset = c(0, -0.05),
+           legend = c(ar_leg_lab, "Mean Temp (\u00b0C)"),
+           fill = c("#c75e70", NA),
+           border = NA,
+           lty = c(NA, 1),
+           pch = c(NA, 16),
+           col = c("#c75e70", "#0a2e4d"),
+           bty = "n",
+           cex = 0.9,
+           horiz = FALSE,
+           xpd = TRUE
     )
   }
 
