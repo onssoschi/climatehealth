@@ -103,7 +103,8 @@ malaria_do_analysis <- function(
     save_csv = FALSE,
     save_model = FALSE,
     save_fig = FALSE,
-    output_dir = NULL) {
+    output_dir = NULL,
+    api_mode = FALSE) {
   # Simple output validation
   if (is.null(output_dir) & (save_fig | save_csv)) {
     stop("'output_dir' must be provided is 'save_fig' or save_csv' are TRUE.")
@@ -132,6 +133,28 @@ malaria_do_analysis <- function(
       "Level must be one of ",
       paste0(acceptable_levels, collapse = ", ")
     ))
+  }
+  # Validate required params to prevent "NULL to symbol" errors
+  required_cols <- c(
+    "region_col", "district_col", "year_col", "month_col",
+    "malaria_case_col", "tot_pop_col", "tmin_col",
+    "tmean_col","tmax_col", "rainfall_col",
+    "r_humidity_col", "runoff_col", "param_term",
+    "geometry_col"
+  )
+  for (col in required_cols){
+    val <- get(col)
+    if (is.null(val) || val == ""){
+      stop(paste0("Parameter '", col, "' cannot be NULL or empty."))
+    }
+  }
+
+  # Validate required lists
+  if (is.null(basis_matrices_choices) || length(basis_matrices_choices) == 0) {
+    stop("basis_matrices_choices cannot be NULL or empty.")
+  }
+  if (is.null(inla_param) || length(inla_param) == 0) {
+    stop("inla_param cannot be NULL or empty.")
   }
 
   # Input validation (IF makes API exception)
@@ -336,11 +359,50 @@ malaria_do_analysis <- function(
     output_dir = output_dir
   )
   # structure and return results
-  res <- list(
-    inla_result = inla_result,
-    VIF = VIF,
-    rr_df = rr_df,
-    an_ar_results = attr_frac_num
-  )
+  # Sanitise API outputs to primitives only
+  json_safe <- function(x){
+    # Drop known non-JSONable classes
+    if (inherits(x, c("crosspred", "inla"))) return(NULL)
+
+    # If data.frame/tibble: drop list-columns (where these objects usually hide)
+    if (is.data.frame(x)) {
+      keep <- vapply(x, function(col) !is.list(col), logical(1))
+      return(x[, keep, drop = FALSE])
+    }
+
+    # If list: recurse
+    if (is.list(x)) {
+      out <- lapply(x, json_safe)
+      out <- out[!vapply(out, is.null, logical(1))]
+      return(out)
+    }
+
+    # Atomics are safe
+    if (is.atomic(x) || is.null(x)) return(x)
+
+    # Fallback: stringify
+    as.character(x)
+  }
+
+
+  # Return only CSVs if running over api
+  if (isTRUE(api_mode)) {
+    # Lightweight results for flask/JSOn compatibility
+    res <- list(
+      rr_df = rr_df,
+      an_ar_results = attr_frac_num
+    )
+    #jsonlite::toJSON(json_safe(res), auto_unbox = TRUE)
+    return(json_safe(res))
+  } else{
+    # Full results for local users
+    res <- list(
+      inla_result = inla_result,
+      VIF = VIF,
+      rr_df = rr_df,
+      an_ar_results = attr_frac_num
+    )
+
   return(res)
+  }
 }
