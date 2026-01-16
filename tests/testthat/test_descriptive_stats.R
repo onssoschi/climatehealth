@@ -654,3 +654,4 @@ test_that("API converts date column correctly", {
 
   expect_true(dir.exists(out[1]))
 })
+
