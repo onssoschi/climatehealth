@@ -122,7 +122,7 @@ test_that(
             exposure_col = "mean_PM"
         )
         exp_cols <- c(
-            "date", "tmean", "health_outcome", "region", "rh", "wind_speed", 
+            "date", "tmean", "health_outcome", "region", "rh", "wind_speed",
             "year", "month", "day", "dow", "mean_PM"
         )
         expect_true(all(exp_cols %in% colnames(joined)))
@@ -137,7 +137,7 @@ test_that(
     "load_wildfire_data reads data as expected with pre-joined health+climate.",
     {
         PREJOINED_DATA <- WF_TEST_HEALTH %>% mutate(
-            mean_PM = WF_TEST_CLIMATE$mean_PM 
+            mean_PM = WF_TEST_CLIMATE$mean_PM
         )
         res <- load_wildfire_data(
             health_path = PREJOINED_DATA,
@@ -174,7 +174,7 @@ test_that(
         res <- get_lags_and_means(LAG_MEAN_DF, "tmean", 2)
         expect_equal(length(colnames(res)), 8)
         exp_cols <- c(
-            "tmean_l0", "tmean_l1", "tmean_l2", "tmean_l0_mean", 
+            "tmean_l0", "tmean_l1", "tmean_l2", "tmean_l0_mean",
             "tmean_l1_mean", "tmean_l2_mean"
         )
         expect_true(all(exp_cols %in% colnames(res)))
@@ -197,8 +197,8 @@ test_that(
             wildfire_lag = 2,
             temperature_lag = 1
         )
-        added_cols <- c(     
-            "mean_PM_l0", "mean_PM_l1", "mean_PM_l2", 
+        added_cols <- c(
+            "mean_PM_l0", "mean_PM_l1", "mean_PM_l2",
             "mean_PM_l0_mean", "mean_PM_l1_mean", "mean_PM_l2_mean",
             "tmean_l0", "tmean_l1", "tmean_l0_mean", "tmean_l1_mean"
         )
@@ -330,7 +330,7 @@ test_that(
             tmean = c(7, 9, 14, 13, 13),
             rainfall = c(0.21, 0.22, 0.17, 0.18, 0.26)
         )
-        
+
         descriptive_stats(
             data = DS_DATA,
             variables = c("tmean", "rainfall"),
@@ -386,7 +386,7 @@ WIF_VIF_DATA$pm25 <- WIF_VIF_DATA$smoke_exposure * 2 + rnorm(60, 0, 10)
 test_that(
     "check_wildfire calculates and saves VIF as expected",
     {
-        
+
         if (!file.exists(file.path(temp_dir, "model_validation")))
         dir.create(file.path(temp_dir, "model_validation"))
         out <- capture.output(check_wildfire_vif(
@@ -473,7 +473,7 @@ generate_wildfire_test_data <- function(
     month = as.integer(format(dates, "%m")),
     day = as.integer(format(dates, "%d")),
     dow = factor(
-        weekdays(dates), 
+        weekdays(dates),
         levels = c(
             "Monday",
             "Tuesday",
@@ -502,7 +502,7 @@ generate_wildfire_test_data <- function(
 test_that(
     "casecrossover_quassipoission calculates model values and saves residuals.",
     {
-        
+
         test_data <- generate_wildfire_test_data(
             n = 5000,
             n_strata = 5,
@@ -673,7 +673,7 @@ test_that(
 test_that(
     "plot_RR saves a figure to disk when prompted.",
     {
-        
+
         plot_RR(
             rr_data = RR_EX_DATA,
             wildfire_lag = 2,
@@ -717,7 +717,7 @@ test_that(
 test_that(
     "plot_RR_core saves plots to disk when prompted.",
     {
-        
+
         rr_plot <- plot_RR_core(
             rr_data <- subset(RR_EX_DATA, RR_EX_DATA$region_name=="Region_A"),
             save_fig = TRUE,
@@ -760,7 +760,7 @@ test_that(
 test_that(
     "save_wildfire_results saves results to disk when prompted",
     {
-        
+
         rr_res <- data.frame(col1 = c("a", "b"), cold2 = c(34, 42))
         an_ar_res <- data.frame(col1 = c("c", "d"), cold2 = c(88, 102))
         an_ar_annual_res <- data.frame(col1 = c("e", "f"), cold2 = c(500, 1000))
@@ -1162,7 +1162,7 @@ test_that(
             fname <- paste0("ar_and_pm_monthly_average", ext)
             expect_true(
                 file.exists(file.path(temp_dir, fname))
-            )  
+            )
         }
     }
 )
@@ -1229,8 +1229,8 @@ test_that(
     {
         expect_error(
             plot_rr_by_pm(
-                data = data.frame(test = c(1, 2)), 
-                save_fig = TRUE, 
+                data = data.frame(test = c(1, 2)),
+                save_fig = TRUE,
                 output_dir = NULL
             ),
             "'output_dir' must be provided to save outputs."
@@ -1282,7 +1282,7 @@ test_that(
         expect_true(inherits(plot, "ggplot2::gg"))
         # validate plot saved
         expect_true(file.exists(file.path(temp_dir, "rr_by_pm.pdf")))
-    } 
+    }
 )
 
 # Tests for plot_ar_by_region
@@ -1384,3 +1384,151 @@ test_that(
         expect_true(file.exists(file.path(temp_dir, "an_by_region.png")))
     }
 )
+
+
+# tests/testthat/test-wildfire_do_analysis.R
+# Integration tests for wildfire_do_analysis()
+# - Dynamically generates a synthetic daily dataset for 2 regions
+# - Exercises the end-to-end pipeline without external joins (NetCDF/shapefile)
+# - Adds a second scenario that enables region-level outputs (AF/AN), still without saving files
+
+test_that("wildfire_do_analysis: end-to-end run (dataset-level RR only, no file outputs)", {
+
+  # Dynamically generate a synthetic dataset
+  set.seed(123)
+  n_days   <- 180
+  dates    <- seq.Date(as.Date("2019-01-01"), by = "day", length.out = n_days)
+  regions  <- c("North", "South")
+  df       <- base::expand.grid(date = dates, region = regions, KEEP.OUT.ATTRS = FALSE)
+
+  # Temperature with seasonality + noise
+  df$temp_mean <- 12 + 8 * sin(2 * pi * as.numeric(df$date) / 365) +
+    rnorm(nrow(df), sd = 2)
+
+  # Wildfire PM2.5 (ug/m3) ~ positive values
+  pm_base_by_region <- ifelse(df$region == "North", 6, 10)
+  df$pm25 <- pmax(0.1, pm_base_by_region + rnorm(nrow(df), sd = 3))
+
+  # Population (only used when region-level AF/AN is requested)
+  df$pop <- ifelse(df$region == "North", 1000000, 650000)
+
+  # Construct a Poisson outcome with modest dependence on PM and temp
+  # Use a smooth canonical link to avoid extreme counts
+  eta <- -1 + 0.015 * df$pm25 + 0.01 * (df$temp_mean - mean(df$temp_mean))
+  mu  <- pmax(0.1, exp(eta)) * 10
+  df$deaths <- rpois(nrow(df), lambda = mu)
+
+  # Write to a temporary CSV (wildfire_do_analysis reads from disk)
+  tmp_dir  <- tempdir()
+  csv_path <- file.path(tmp_dir, "synthetic_health.csv")
+  utils::write.csv(df, csv_path, row.names = FALSE)
+
+  # ---- Run the analysis end-to-end (no join to external wildfire data) ----
+  # We pass the column names that match our synthetic data.
+  # join_wildfire_data = FALSE -> use the pm_2_5_col directly.
+  res <- wildfire_do_analysis(
+    health_path                         = csv_path,
+    join_wildfire_data                  = FALSE,
+    date_col                            = "date",
+    region_col                          = "region",
+    mean_temperature_col                = "temp_mean",
+    health_outcome_col                  = "deaths",
+    pm_2_5_col                          = "pm25",
+    rh_col                              = NULL,         # let code create NA rh
+    wind_speed_col                      = NULL,         # let code create NA wind
+    wildfire_lag                        = 2,            # small lag to keep the model light
+    temperature_lag                     = 1,
+    spline_temperature_lag              = 0,
+    spline_temperature_degrees_freedom  = 3,            # fewer df for robustness on small data
+    predictors_vif                      = NULL,         # skip VIF step
+    calc_relative_risk_by_region        = FALSE,        # dataset-level RR only
+    scale_factor_wildfire_pm            = 10,
+    save_fig                            = FALSE,        # avoid opening graphics devices
+    save_csv                            = FALSE,        # avoid file IO
+    output_folder_path                  = NULL,
+    print_vif                           = FALSE,
+    print_model_summaries               = FALSE
+  )
+
+  # Assertions on returned structure and content
+  expect_type(res, "list")
+  expect_named(res, c("RR_results", "AF_AN_results", "AR_PM_monthly"), ignore.order = TRUE)
+
+  # RR results should be a data.frame with at least one row per lag (0..wildfire_lag)
+  expect_s3_class(res$RR_results, "data.frame")
+  expect_true(all(c("lag", "relative_risk", "ci_lower", "ci_upper", "region_name") %in%
+                    names(res$RR_results)))
+  expect_equal(sort(unique(res$RR_results$lag)), 0:2)
+  expect_true(all(is.finite(res$RR_results$relative_risk)))
+  expect_true(all(res$RR_results$region_name == "All Regions"))
+
+  # No AF/AN and no AR_PM_monthly in this configuration
+  expect_true(is.null(res$AF_AN_results) || nrow(res$AF_AN_results) == 0)
+  expect_true(is.null(res$AR_PM_monthly) || nrow(res$AR_PM_monthly) == 0)
+})
+
+test_that("wildfire_do_analysis: end-to-end run with region-level outputs (AF/AN), no file outputs", {
+
+  # synthetic data generation
+  set.seed(456)
+  n_days   <- 150
+  dates    <- seq.Date(as.Date("2020-04-01"), by = "day", length.out = n_days)
+  regions  <- c("North", "South")
+  df       <- base::expand.grid(date = dates, region = regions, KEEP.OUT.ATTRS = FALSE)
+
+  df$temp_mean <- 11 + 7 * sin(2 * pi * as.numeric(df$date) / 365) + rnorm(nrow(df), sd = 2)
+  pm_base_by_region <- ifelse(df$region == "North", 5, 9)
+  df$pm25 <- pmax(0.1, pm_base_by_region + rnorm(nrow(df), sd = 2.5))
+  df$pop  <- ifelse(df$region == "North", 1050000, 700000)
+
+  eta <- -0.8 + 0.02 * df$pm25 + 0.008 * (df$temp_mean - mean(df$temp_mean))
+  mu  <- pmax(0.1, exp(eta)) * 12
+  df$deaths <- rpois(nrow(df), lambda = mu)
+
+  tmp_dir2  <- tempdir()
+  csv_path2 <- file.path(tmp_dir2, "synthetic_health_by_region.csv")
+  utils::write.csv(df, csv_path2, row.names = FALSE)
+
+  # Enable region-level outputs
+  res2 <- wildfire_do_analysis(
+    health_path                         = csv_path2,
+    join_wildfire_data                  = FALSE,
+    date_col                            = "date",
+    region_col                          = "region",
+    mean_temperature_col                = "temp_mean",
+    health_outcome_col                  = "deaths",
+    pm_2_5_col                          = "pm25",
+    rh_col                              = NULL,
+    wind_speed_col                      = NULL,
+    wildfire_lag                        = 1,
+    temperature_lag                     = 1,
+    spline_temperature_lag              = 0,
+    spline_temperature_degrees_freedom  = 3,
+    predictors_vif                      = NULL,
+    calc_relative_risk_by_region        = TRUE,    # <- enables AF/AN path
+    scale_factor_wildfire_pm            = 10,
+    save_fig                            = FALSE,
+    save_csv                            = FALSE,
+    output_folder_path                  = NULL,
+    print_vif                           = FALSE,
+    print_model_summaries               = FALSE
+  )
+
+  # RR results should include All Regions and the individual regions
+  expect_s3_class(res2$RR_results, "data.frame")
+  expect_true(all(c("lag","relative_risk","ci_lower","ci_upper","region_name") %in%
+                    names(res2$RR_results)))
+  expect_true(all(c("All Regions","North","South") %in% unique(res2$RR_results$region_name)))
+
+  # AF/AN monthly and annual summaries should be present when by-region is TRUE
+  # (The top-level list returns the monthly summary as AF_AN_results and the
+  #  joined PM~AR monthly result as AR_PM_monthly.)
+  expect_true(is.data.frame(res2$AF_AN_results) && nrow(res2$AF_AN_results) > 0)
+  expect_true(is.data.frame(res2$AR_PM_monthly) && nrow(res2$AR_PM_monthly) > 0)
+
+  # Basic column  checks on AF/AN
+  expect_true(all(c("region","year","month",
+                    "total_attributable_number",
+                    "average_attributable_fraction",
+                    "deaths_per_100k") %in% names(res2$AF_AN_results)))
+})
