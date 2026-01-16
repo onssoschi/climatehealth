@@ -64,7 +64,6 @@
 #'model only, returning lightweight results for flask/JSOn compatibility.
 #'Defaults to False.
 #'
-#'
 #' @return A named list containing:
 #' \itemize{
 #'   \item `inla_result` – Fitted INLA model object and summaries.
