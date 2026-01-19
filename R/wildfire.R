@@ -253,6 +253,8 @@ join_health_and_climate_data <- function(
 #' the date.
 #' @param region_col Character. Name of the column in the dataframe that
 #' contains the region names.
+#' @param shape_region_col Character. Name of the column in the shapefile dataframe that
+#' contains the region names.
 #' @param mean_temperature_col Character. Name of the column in the dataframe
 #' that contains the mean temperature column.
 #' @param health_outcome_col Character. Name of the column in the dataframe that
@@ -1916,6 +1918,8 @@ plot_an_by_region <- function(data, output_dir = ".") {
 #' the date.
 #' @param region_col Character. Name of the column in the dataframe that contains
 #' the region names.
+#' @param shape_region_col Character. Name of the column in the shapefile dataframe that
+#' contains the region names.
 #' @param mean_temperature_col Character. Name of the column in the dataframe
 #' that contains the mean temperature column.
 #' @param health_outcome_col Character. Name of the column in the dataframe that
