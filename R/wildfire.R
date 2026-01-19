@@ -53,7 +53,7 @@ read_and_format_data <- function(
   if (grepl("^\\d{2}[-/]\\d{2}[-/]\\d{4}$", df[[date_col]][1])) {
     date_function <- lubridate::dmy
   }
-  # Subset needed columns
+
   # Subset needed columns
   needed_cols <- c(
     date_col,
