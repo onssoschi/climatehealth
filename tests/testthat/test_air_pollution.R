@@ -1,5 +1,5 @@
 # Tests for air_pollution.R
-source("R/air_pollution.R")
+# source("R/air_pollution.R")
 devtools::load_all()
 # Test for load_air_pollution_data
 # Unit test 1
