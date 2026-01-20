@@ -128,7 +128,7 @@ Defaults to \code{TRUE}.}
 are saved. Defaults to \code{NULL}.}
 
 \item{api_mode}{Logical, If \code{TRUE}, runs the do_analysis function for the baseline
-model only (), returning lightweight results for flask/JSOn compatibility.
+model only, returning lightweight results for flask/JSOn compatibility.
 Defaults to False.}
 }
 \value{
