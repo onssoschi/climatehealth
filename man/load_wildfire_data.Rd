@@ -11,6 +11,7 @@ load_wildfire_data(
   join_wildfire_data = TRUE,
   date_col,
   region_col,
+  shape_region_col,
   mean_temperature_col,
   health_outcome_col,
   rh_col = NULL,
@@ -38,6 +39,9 @@ the data set is loaded without any additional joins.}
 the date.}
 
 \item{region_col}{Character. Name of the column in the dataframe that
+contains the region names.}
+
+\item{shape_region_col}{Character. Name of the column in the shapefile dataframe that
 contains the region names.}
 
 \item{mean_temperature_col}{Character. Name of the column in the dataframe
