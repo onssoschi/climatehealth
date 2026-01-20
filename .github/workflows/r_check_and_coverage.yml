@@ -32,7 +32,7 @@ jobs:
           key: ${{ runner.os }}-r-${{ hashFiles('DESCRIPTION') }}
           restore-keys: |
             ${{ runner.os }}-r-
-      
+
       - name: Set R options
         run: echo 'options(pkgType = "binary")' >> ~/.Rprofile
 
@@ -52,6 +52,13 @@ jobs:
           pak::local_install(".", dependencies = c("Depends", "Imports", "LinkingTo"))
           '
         timeout-minutes: 5
+
+      - name: Run package health check
+        run: |
+          Rscript -e '
+            library(climatehealth)
+            pkg_health_check(verbose = TRUE)
+          '
 
       - name: Run R CMD Check
         uses: r-lib/actions/check-r-package@v2
