@@ -58,7 +58,7 @@ pkg_health_check <- function(verbose = FALSE) {
   set.seed(42)
 
   df <- data.frame(
-    dependent = rpois(30, lambda = 8),
+    dependent = stats::rpois(30, lambda = 8),
     temp      = rnorm(30, mean = 20, sd = 2.5),
     date      = seq.Date(as.Date("2023-01-01"), by = "day", length.out = 30),
     year      = rep(2023, 30)
