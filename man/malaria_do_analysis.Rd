@@ -39,8 +39,7 @@ malaria_do_analysis(
   save_csv = FALSE,
   save_model = FALSE,
   save_fig = FALSE,
-  output_dir = NULL,
-  api_mode = FALSE
+  output_dir = NULL
 )
 }
 \arguments{
@@ -126,10 +125,6 @@ Defaults to \code{TRUE}.}
 
 \item{output_dir}{Character. Directory where output files (plots, datasets, maps)
 are saved. Defaults to \code{NULL}.}
-
-\item{api_mode}{Logical, If \code{TRUE}, runs the do_analysis function for the baseline
-model only (), returning lightweight results for flask/JSOn compatibility.
-Defaults to False.}
 }
 \value{
 A named list containing:
