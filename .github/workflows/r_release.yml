@@ -21,10 +21,20 @@ jobs:
           Rscript -e 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/latest"))'
           Rscript -e 'install.packages(c("devtools", "roxygen2", "remotes", "pak"))'
 
+      - name: Install package
+        run: |
+          Rscript -e 'pak::local_install(".", dependencies = c("Depends","Imports","LinkingTo"))'
+
+      - name: Run package health check
+        run: |
+          Rscript -e '
+            library(climatehealth)
+            pkg_health_check(verbose = TRUE)
+          '
+
       - name: Build package source (MacOS)
         run: |
           R CMD build .
-          R -q -e 'stopifnot(climatehealth::pkg_health_check())'
 
       - name: Upload macOS artifact
         uses: softprops/action-gh-release@v1
@@ -57,6 +67,10 @@ jobs:
           Rscript -e "install.packages(c('devtools', 'remotes', 'pak'))"
           Rscript -e "pak::repo_add('rspatial','https://rspatial.r-universe.dev')"
           Rscript -e "pak::pkg_install('.', dependencies = c('Depends','Imports','LinkingTo'))"
+
+      - name: Run package health check
+        run: |
+          Rscript -e "library(climatehealth); pkg_health_check(verbose = TRUE)"
 
       - name: Build Windows artifact (binary)
         shell: bash
