@@ -53,7 +53,7 @@ read_and_format_data <- function(
   if (grepl("^\\d{2}[-/]\\d{2}[-/]\\d{4}$", df[[date_col]][1])) {
     date_function <- lubridate::dmy
   }
-  # Subset needed columns
+
   # Subset needed columns
   needed_cols <- c(
     date_col,
@@ -81,7 +81,7 @@ read_and_format_data <- function(
       health_outcome = all_of(health_outcome_col),
       region = all_of(region_col),
       rh = all_of(rh_col),
-      wind_speed =all_of(wind_speed_col)
+      wind_speed = all_of(wind_speed_col)
     ) %>%
     dplyr::mutate(
       date = date_function(date),
@@ -159,6 +159,10 @@ extract_means_for_geography <- function(
   # Keep only 'region' and raster columns
   raster_cols <- setdiff(names(extracted), names(shp))
   extracted <- extracted[, c("region", raster_cols)]
+
+  #Drop geometry and ensure plain dataframe
+  extracted <- sf::st_drop_geometry(extracted)
+  extracted <- as.data.frame(extracted)
 
   # Reshape to long format
   extracted_long <- reshape2::melt(extracted, id.vars = "region")
@@ -249,6 +253,8 @@ join_health_and_climate_data <- function(
 #' the date.
 #' @param region_col Character. Name of the column in the dataframe that
 #' contains the region names.
+#' @param shape_region_col Character. Name of the column in the shapefile dataframe that
+#' contains the region names.
 #' @param mean_temperature_col Character. Name of the column in the dataframe
 #' that contains the mean temperature column.
 #' @param health_outcome_col Character. Name of the column in the dataframe that
@@ -272,6 +278,7 @@ load_wildfire_data <- function(
     join_wildfire_data = TRUE,
     date_col,
     region_col,
+    shape_region_col,
     mean_temperature_col,
     health_outcome_col,
     rh_col = NULL,
@@ -298,7 +305,7 @@ load_wildfire_data <- function(
   wildfire_df <- extract_means_for_geography(
     ncdf_path = ncdf_path,
     shp_path = shp_path,
-    region_col = region_col
+    region_col = shape_region_col
   )
   # Join wildfire data to climate data
   joined_df <- join_health_and_climate_data(
@@ -1483,11 +1490,11 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
   combined_plots <- patchwork::wrap_plots(all_plots)
   # sort data
   sorted_data <- aggregated_data[
-      order(
-        aggregated_data$region,
-        match(aggregated_data$month_name, month.abb)
-      ),
-    ]
+    order(
+      aggregated_data$region,
+      match(aggregated_data$month_name, month.abb)
+    ),
+  ]
   sorted_data <- sorted_data %>% select(all_of(c("region", "month_name", "mean_deaths_per_100k", "mean_pm")))
   # save csv
   if (save_outputs) {
@@ -1674,7 +1681,7 @@ plot_rr_by_pm <- function(
       limitsize = FALSE
     )
   }
-  return (combined_plots)
+  return(combined_plots)
 }
 
 #' Create a relative risk plot across PM2.5 levels for a single region
@@ -1790,9 +1797,9 @@ plot_ar_by_region <- function(data, output_dir = ".") {
   ) +
     ggplot2::geom_col(fill = "#003c57") +
     ggplot2::labs(
-        title = "Deaths per 100k attributable to Wildfire-specific PM2.5",
-        x = "Regions",
-        y = "Deaths per 100k population"
+      title = "Deaths per 100k attributable to Wildfire-specific PM2.5",
+      x = "Regions",
+      y = "Deaths per 100k population"
     ) +
     ggplot2::theme_minimal(base_family = "sans") +
     ggplot2::theme(
@@ -1911,6 +1918,8 @@ plot_an_by_region <- function(data, output_dir = ".") {
 #' the date.
 #' @param region_col Character. Name of the column in the dataframe that contains
 #' the region names.
+#' @param shape_region_col Character. Name of the column in the shapefile dataframe that
+#' contains the region names.
 #' @param mean_temperature_col Character. Name of the column in the dataframe
 #' that contains the mean temperature column.
 #' @param health_outcome_col Character. Name of the column in the dataframe that
@@ -1996,6 +2005,7 @@ wildfire_do_analysis <- function(
     shp_path = NULL,
     date_col,
     region_col,
+    shape_region_col,
     mean_temperature_col,
     health_outcome_col,
     rh_col = NULL,
@@ -2020,11 +2030,12 @@ wildfire_do_analysis <- function(
   # Read and combine datasets
   data <- load_wildfire_data(
     health_path = health_path,
-    ncdf_path = ncdf_path,
+    ncdf_path = nc_path,
     shp_path = shp_path,
     join_wildfire_data = join_wildfire_data,
     date_col = date_col,
     region_col = region_col,
+    shape_region_col = shape_region_col,
     mean_temperature_col = mean_temperature_col,
     health_outcome_col = health_outcome_col,
     rh_col = rh_col,

@@ -12,6 +12,7 @@ wildfire_do_analysis(
   shp_path = NULL,
   date_col,
   region_col,
+  shape_region_col,
   mean_temperature_col,
   health_outcome_col,
   rh_col = NULL,
@@ -52,6 +53,9 @@ the date.}
 
 \item{region_col}{Character. Name of the column in the dataframe that contains
 the region names.}
+
+\item{shape_region_col}{Character. Name of the column in the shapefile dataframe that
+contains the region names.}
 
 \item{mean_temperature_col}{Character. Name of the column in the dataframe
 that contains the mean temperature column.}
