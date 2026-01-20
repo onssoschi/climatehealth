@@ -138,6 +138,7 @@ write_tmp_shapefile <- function() {
 test_that(
     "load_and_process_map reads in a shapefile as intended",
     {
+        skip_if_not_installed("INLA")
         # Get local shapefile
         tmp_shp <- write_tmp_shapefile()
         # Load and process map
@@ -158,6 +159,7 @@ test_that(
 test_that(
     "load_and_process_map correctly reads and writes nb.map files",
     {
+        skip_if_not_installed("INLA")
         # define test pathas
         tmp_shp <- write_tmp_shapefile()
         tmp_dir <- tempdir()
@@ -405,7 +407,7 @@ test_that(
   "plot_health_climate_timeseries sums instead of taking mean when param_term==case_col",
   {
       # Create single date dataset
-      PHT_data_adjusted <- PHT_test_data %>% 
+      PHT_data_adjusted <- PHT_test_data %>%
           mutate(
               date = as.Date(rep("2020-01-01")),
               year = rep(2020),
@@ -532,6 +534,7 @@ INLA_IND <- data.frame(
 test_that(
   "create_inla_indices adds expected columns",
   {
+    skip_if_not_installed("INLA")
     result <- create_inla_indices(INLA_IND, case_type = "malaria")
     # validate base columns
     expect_true(all(c(
@@ -547,6 +550,7 @@ test_that(
 test_that(
   "create_inla_indices computes E and SIR correctly",
   {
+    skip_if_not_installed("INLA")
     result <- create_inla_indices(INLA_IND, case_type = "malaria")
     overall_rate <- sum(INLA_IND$malaria) / sum(INLA_IND$tot_pop)
     expected_E <- overall_rate * INLA_IND$tot_pop
@@ -557,6 +561,7 @@ test_that(
 )
 
 test_that("create_inla_indices handles NA values in case column", {
+  skip_if_not_installed("INLA")
   INLA_NA <- INLA_IND
   INLA_NA$malaria[2] <- NA
   result <- create_inla_indices(INLA_NA, case_type = "malaria")
@@ -595,6 +600,7 @@ CHECK_VIF_DF <- data.frame(
 test_that(
   "check_diseases_vif returns expected output",
   {
+    skip_if_not_installed("INLA")
     # Get VIF with warnings supressed (for test dset)
     result <- suppressWarnings(
       check_diseases_vif(
@@ -617,6 +623,7 @@ test_that(
 test_that(
   "check_diseases_vif errors on missing basis matrix",
   {
+    skip_if_not_installed("INLA")
     bad_data <- CHECK_VIF_DF[, !grepl("^tmin", names(CHECK_VIF_DF))]
     expect_error(
       check_diseases_vif(
@@ -634,6 +641,7 @@ test_that(
 test_that(
   "check_diseases_vif errors on missing inla_param variable",
   {
+    skip_if_not_installed("INLA")
     bad_data <- CHECK_VIF_DF[, !(names(CHECK_VIF_DF) %in% c("tmin"))]
     expect_error(
       check_diseases_vif(
@@ -671,6 +679,7 @@ MOD_COL_DF <- data.frame(
 test_that(
   "check_diseases_vif detects moderate collinearity",
   {
+    skip_if_not_installed("INLA")
     result <- suppressWarnings(
       check_diseases_vif(
         data = MOD_COL_DF,
@@ -707,6 +716,7 @@ LOW_COL_DF <- data.frame(
 test_that(
   "check_diseases_vif detects low collinearity",
   {
+    skip_if_not_installed("INLA")
     result <- suppressWarnings(
       check_diseases_vif(
         data = LOW_COL_DF,
@@ -724,6 +734,7 @@ test_that(
 test_that(
   "check_and_write_vif creates VIF DF and writes to a file",
   {
+    skip_if_not_installed("INLA")
     # generate and write results
     temp_dir <- tempdir()
     result <- check_and_write_vif(
@@ -774,6 +785,7 @@ RIM_make_mock_model <- function(dic_val = 123.45, cpo_val = 0.9) {
 test_that(
   "run_inla_models raises an error when save_model==T and output_dir==NULL",
   {
+    skip_if_not_installed("INLA")
     expect_error(
       run_inla_models(
         data.frame(),
@@ -806,6 +818,7 @@ test_that(
 test_that(
   "run_inla_models handles NULL basis_matrices_choices",
   {
+    skip_if_not_installed("INLA")
     with_mocked_bindings(
       `inla.rerun` = function(x) RIM_make_mock_model(100, 0.8),
       .package = "INLA",
@@ -827,6 +840,7 @@ test_that(
 test_that(
   "run_inla_models saves model to output_dir when save_model is TRUE",
   {
+    skip_if_not_installed("INLA")
     RIM_temp_dir <- tempdir()
     with_mocked_bindings(
       `inla.rerun` = function(x) RIM_make_mock_model(200, 0.95),
@@ -853,6 +867,7 @@ test_that(
 test_that(
   "run_inla_models includes basis and raw variables in model string",
   {
+    skip_if_not_installed("INLA")
     with_mocked_bindings(
       `inla.rerun` = function(x) RIM_make_mock_model(300, 0.85),
       .package = "INLA",
@@ -989,6 +1004,7 @@ PYSRE_combined_data <- list(
 test_that(
   "plot_yearly_spatial_random_effect raises an error if save_fig=T and output_dir=NULL",
   {
+    skip_if_not_installed("INLA")
     expect_error(
       plot_yearly_spatial_random_effect(
         combined_data = PYSRE_combined_data,
@@ -1005,6 +1021,7 @@ test_that(
 test_that(
   "plot_yearly_spatial_random_effect saves and returns PDF when save_fig=T",
   {
+    skip_if_not_installed("INLA")
     temp_dir <- tempdir()
     p <- plot_yearly_spatial_random_effect(
       combined_data = PYSRE_combined_data,
@@ -1059,6 +1076,7 @@ gp_model <- list(
 test_that(
   "get_predictions returns country-level crosspred object",
   {
+    skip_if_not_installed("INLA")
     result <- get_predictions(
       data = gp_data,
       param_term = "tmax",
@@ -1085,6 +1103,7 @@ test_that(
 test_that(
   "get_predictions returns region-level named list of crosspred objects",
   {
+    skip_if_not_installed("INLA")
     result <- get_predictions(
       data = gp_data,
       param_term = "tmax",
@@ -1102,6 +1121,7 @@ test_that(
 test_that(
   "get_predictions returns district-level named list of crosspred objects",
   {
+    skip_if_not_installed("INLA")
     result <- get_predictions(
       data = gp_data,
       param_term = "tmax",
@@ -1119,6 +1139,7 @@ test_that(
 test_that(
   "get_predictions errors if param_term is not found in model",
   {
+    skip_if_not_installed("INLA")
     bad_model <- gp_model
     bad_model$names.fixed <- paste0("basis_other.", seq_along(gp_basis_names))
     expect_error(
@@ -1686,6 +1707,7 @@ mock_basis <- function(data, nlag, include_ndvi) list(temp = real_basis)
 test_that(
   "attribution_calculation raises an error if there are no terms for a basis",
   {
+    skip_if_not_installed("INLA")
     error_data <- tibble::tibble(
       tmax = seq(10, 50, length.out = 10),
       malaria = rep(10, 10),
@@ -1711,6 +1733,7 @@ test_that(
 test_that(
   "attribution_calculation raises an error if filter_year=NULL and year isn't in the data",
   {
+    skip_if_not_installed("INLA")
     no_year_data <- AC_data %>% select(-"year")
     expect_error(
       attribution_calculation(
@@ -1728,6 +1751,7 @@ test_that(
 test_that(
   "attribution_calculation returns empty tibble for empty data frame",
   {
+    skip_if_not_installed("INLA")
     empty_data <- AC_data[0, ]
     with_mocked_bindings(
       {
@@ -1752,6 +1776,7 @@ test_that(
 test_that(
   "attribution_calculation returns zeroed metrics for zero population",
   {
+    skip_if_not_installed("INLA")
     zero_pop_data <- AC_data
     zero_pop_data$tot_pop <- 0
 
@@ -1784,6 +1809,7 @@ test_that(
 test_that(
   "attribution_calculation returns NULL if crosspred fails",
   {
+    skip_if_not_installed("INLA")
     bad_basis <- function(data, nlag, include_ndvi) list(temp = matrix(NA, nrow = nrow(data), ncol = 2))
     with_mocked_bindings(
       {
@@ -1808,6 +1834,7 @@ test_that(
 test_that(
   "attribution_calculation returns NULL if RR vector is NULL",
   {
+    skip_if_not_installed("INLA")
     null_basis <- function(data, nlag, include_ndvi) list(temp = matrix(1, nrow = nrow(data), ncol = 2))
     null_model <- AC_model
     null_model$summary.fixed$mean <- rep(NA, 2)
@@ -1834,6 +1861,7 @@ test_that(
 test_that(
   "attribution_calculation returns NULL when group is filtered to zero rows",
   {
+    skip_if_not_installed("INLA")
     # Group has rows, but all will be filtered out inside compute_metrics_from_pred()
     tricky_data <- tibble::tibble(
       region = rep("North", 5),
@@ -1888,6 +1916,7 @@ test_that(
 test_that(
   "attribution_calculation runs as expected.",
   {
+    skip_if_not_installed("INLA")
     tmp_dir <- file.path(tempdir(), "new_nested_dir")
     if (dir.exists(tmp_dir)) unlink(tmp_dir, recursive = TRUE)
     with_mocked_bindings(
@@ -1917,6 +1946,7 @@ test_that(
 test_that(
   "attribution_calculation runs as expected for country level and AR_Number metric.",
   {
+    skip_if_not_installed("INLA")
     tmp_dir <- file.path(tempdir(), "new_nested_dir")
     if (dir.exists(tmp_dir)) unlink(tmp_dir, recursive = TRUE)
     with_mocked_bindings(
@@ -2112,7 +2142,7 @@ test_that(
       metrics = "AR_per_100k",
       filter_year = c(2020, 2021, 2022)
     )
-    
+
     result_frac <- plot_attribution_metric(
       attr_data = PAM_unique_data,
       level = "region",
