@@ -9,7 +9,7 @@
 #'
 #' @return Invisibly returns TRUE on success.
 #' @export
-pkg_smoke_check <- function(verbose = FALSE) {
+pkg_health_check <- function(verbose = FALSE) {
 
   # Helper for controlled messaging
   vmsg <- function(...) {

@@ -24,7 +24,8 @@ jobs:
       - name: Build package source (MacOS)
         run: |
           R CMD build .
-          
+          R -q -e 'stopifnot(climatehealth::pkg_smoke_check())'
+
       - name: Upload macOS artifact
         uses: softprops/action-gh-release@v1
         with:
@@ -61,7 +62,7 @@ jobs:
         shell: bash
         run: |
           Rscript -e 'devtools::build(path = Sys.getenv("GITHUB_WORKSPACE"), binary = TRUE)'
-      
+
       - name: Upload Windows artifact
         uses: softprops/action-gh-release@v1
         with:
