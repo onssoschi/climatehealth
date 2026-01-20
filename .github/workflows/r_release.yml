@@ -24,7 +24,7 @@ jobs:
       - name: Build package source (MacOS)
         run: |
           R CMD build .
-          R -q -e 'stopifnot(climatehealth::pkg_smoke_check())'
+          R -q -e 'stopifnot(climatehealth::pkg_health_check())'
 
       - name: Upload macOS artifact
         uses: softprops/action-gh-release@v1
