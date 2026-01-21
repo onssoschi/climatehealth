@@ -5,7 +5,6 @@
 \title{Core Functionality for Producing Descriptive Statistics}
 \usage{
 common_descriptive_stats_core(
-  dataset_title,
   df,
   output_path,
   title,
@@ -16,9 +15,7 @@ common_descriptive_stats_core(
   plot_dist = F,
   dependent_col,
   independent_cols = c(),
-  columns = NULL,
   units = NULL,
-  select_all_numeric = F,
   plot_na_counts = F,
   plot_scatter = F,
   plot_box = F,
@@ -31,8 +28,6 @@ common_descriptive_stats_core(
 )
 }
 \arguments{
-\item{dataset_title}{Character. The title for the dataset being used.}
-
 \item{df}{Dataframe. The input DataFrame.}
 
 \item{output_path}{Character. The path to write outputs to.}
@@ -53,11 +48,7 @@ common_descriptive_stats_core(
 
 \item{independent_cols}{Character vector. The independent columns.}
 
-\item{columns}{Character vector. Specific columns to use for analysis.}
-
 \item{units}{Named character vector. Units to use for plots (maps to columns parameter).}
-
-\item{select_all_numeric}{Logical. Whether to select all numerical columns for plotting (columns parameter overwrites this).}
 
 \item{plot_na_counts}{Logical. Whether to plot NA counts.}
 
