@@ -1,8 +1,9 @@
 
-#' pkg_health_check() is an internal smoke test intended for CI / developer validation run after package installation.
+#' pkg_health_check() is an internal smoke test intended for CI / developer
+#' validation run after package installation.
 #'
 #' Verifies that critical dependencies are available and that a minimal,
-#' representative modelling path executes successfully.
+#' representative DLNM modelling path executes successfully.
 #'
 #' @param verbose Logical. If TRUE, print status messages.
 #'   Defaults to FALSE.
@@ -22,10 +23,7 @@ pkg_health_check <- function(verbose = FALSE) {
   # 1) Check presence of critical dependencies (no installation attempted)
   # --------------------------------------------------------------------------
 
-  critical_pkgs <- c(
-    "dlnm",
-    "dplyr"
-  )
+  critical_pkgs <- c("dlnm", "dplyr")
 
   missing <- critical_pkgs[
     !vapply(critical_pkgs, requireNamespace, logical(1), quietly = TRUE)
@@ -52,41 +50,39 @@ pkg_health_check <- function(verbose = FALSE) {
   ))
 
   # --------------------------------------------------------------------------
-  # 2) Execute a minimal DLNM modelling path (single region)
+  # 2) Execute a minimal DLNM modelling path (single region, stable configuration)
   # --------------------------------------------------------------------------
-  set.seed(42)
+  set.seed(123)
+
+  n_days <- 50
 
   df <- data.frame(
-    dependent = stats::rpois(20, lambda = 10),
-    temp      = stats::rnorm(20, mean = 20, sd = 3),
-    date      = seq.Date(as.Date("2023-01-01"), by = "day", length.out = 20),
-    year      = rep(2023, 20)
+    temp    = stats::rnorm(n_days, mean = 20, sd = 5),
+    outcome = stats::rpois(n_days, lambda = 10)
   )
 
   df_list <- list(region1 = df)
 
-  cb <- dlnm::crossbasis(
-    df$temp,
-    lag = 2,
-    argvar = list(
-      fun   = "bs",
-      knots = stats::quantile(df$temp, c(0.25, 0.5, 0.75))
-    ),
-    arglag = list(
-      knots = dlnm::logknots(2, 1)
+  cb_list <- list(
+    region1 = dlnm::crossbasis(
+      df$temp,
+      lag = 0,
+      argvar = list(
+        fun    = "bs",
+        knots  = stats::quantile(df$temp, c(0.25, 0.5, 0.75)),
+        degree = 2
+      ),
+      arglag = list(fun = "lin")
     )
   )
 
-  cb_list <- list(region1 = cb)
-
-  model <- stats::glm(
-    dependent ~ cb,
-    data = df,
-    family = stats::quasipoisson(),
-    na.action = stats::na.exclude
+  model_list <- list(
+    region1 = stats::glm(
+      outcome ~ cb_list$region1,
+      family = stats::poisson(),
+      data   = df
+    )
   )
-
-  model_list <- list(region1 = model)
 
   reduce_fn <- get("dlnm_reduce_cumulative", envir = asNamespace("climatehealth"))
 
