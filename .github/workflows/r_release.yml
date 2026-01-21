@@ -25,7 +25,7 @@ jobs:
         run: |
           Rscript -e 'pak::local_install(".", dependencies = c("Depends","Imports","LinkingTo"))'
 
-      - name: Run package health check
+      - name: Run package post-install health check
         run: |
           Rscript -e 'get("pkg_health_check", envir = asNamespace("climatehealth"))(verbose = TRUE)'
 
@@ -65,7 +65,7 @@ jobs:
           Rscript -e "pak::repo_add('rspatial','https://rspatial.r-universe.dev')"
           Rscript -e "pak::pkg_install('.', dependencies = c('Depends','Imports','LinkingTo'))"
 
-      - name: Run package health check
+      - name: Run package post-install health check
         run: |
           Rscript -e "get('pkg_health_check', envir = asNamespace('climatehealth'))(verbose = TRUE)"
 

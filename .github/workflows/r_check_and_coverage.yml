@@ -53,7 +53,7 @@ jobs:
           '
         timeout-minutes: 5
 
-      - name: Run package health check
+      - name: Run package post-install health check
         run: |
           Rscript -e 'get("pkg_health_check", envir = asNamespace("climatehealth"))(verbose = TRUE)'
 
