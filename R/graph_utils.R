@@ -335,7 +335,7 @@ plot_scatter_grid <- function(
     # LOESS line of best fit (span tuned for stability)
     if (length(x) >= 10) {
       df_fit <- data.frame(x = x, y = y)
-      fit <- try(loess(y ~ x, data = df_fit, span = 0.7), silent = TRUE)
+      fit <- try(stats::loess(y ~ x, data = df_fit, span = 0.7), silent = TRUE)
       if (!inherits(fit, "try-error")) {
         xs <- seq(min(x), max(x), length.out = 200)
         lines(xs, predict(fit, newdata = data.frame(x = xs)), col = line_colour, lwd = 2)
