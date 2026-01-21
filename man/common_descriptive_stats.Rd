@@ -5,7 +5,6 @@
 \title{Wrapper Function to Compute Descriptive Statistics for Heat and Cold Indicators}
 \usage{
 common_descriptive_stats(
-  dataset_title,
   df_list,
   output_path,
   aggregation_column = NULL,
@@ -16,13 +15,10 @@ common_descriptive_stats(
   plot_ma = F,
   ma_days = 100,
   ma_sides = 1,
-  ma_columns = c(),
   timeseries_col = NULL,
   dependent_col,
   independent_cols,
-  columns = NULL,
   units = NULL,
-  select_all_numeric = F,
   plot_na_counts = F,
   plot_scatter = F,
   plot_box = F,
@@ -34,8 +30,6 @@ common_descriptive_stats(
 )
 }
 \arguments{
-\item{dataset_title}{Character. The title for the dataset being used.}
-
 \item{df_list}{List of dataframes. A list of input dataframes.}
 
 \item{output_path}{Character. The path to write outputs to.}
@@ -56,19 +50,13 @@ common_descriptive_stats(
 
 \item{ma_sides}{Integer. The number of sides to use for a moving average (1 or 2).}
 
-\item{ma_columns}{Character vector. Additional columns to plot moving average for. Dependent done by default.}
-
 \item{timeseries_col}{Character. The column used as the timeseries for moving averages.}
 
 \item{dependent_col}{Character. The column in the data containing the dependent variable.}
 
 \item{independent_cols}{Character vector. The columns in the data containing the independent variables.}
 
-\item{columns}{Character vector. Specific columns to use for analysis.}
-
 \item{units}{Named character vector. A named character vector of units for each variable.}
-
-\item{select_all_numeric}{Logical. Whether to select all numerical columns for plotting.}
 
 \item{plot_na_counts}{Logical. Whether to plot NA counts.}
 

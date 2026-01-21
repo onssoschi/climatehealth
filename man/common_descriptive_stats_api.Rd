@@ -8,12 +8,9 @@ common_descriptive_stats_api(
   data,
   aggregation_column = NULL,
   population_col = NULL,
-  dataset_title,
   dependent_col,
   independent_cols,
-  columns = NULL,
   units = NULL,
-  select_all_numeric = T,
   plot_correlation = T,
   plot_dist_hists = T,
   plot_ma = T,
@@ -26,7 +23,6 @@ common_descriptive_stats_api(
   correlation_method = NULL,
   ma_days = NULL,
   ma_sides = 1,
-  ma_columns = NULL,
   timeseries_col = NULL,
   detect_outliers = T,
   calculate_rate = T,
@@ -40,17 +36,11 @@ common_descriptive_stats_api(
 
 \item{population_col}{Character. The column containing the population.}
 
-\item{dataset_title}{Character. The dataset's title used for outputs.}
-
 \item{dependent_col}{Character. The dependent column.}
 
 \item{independent_cols}{Character vector. The independent columns.}
 
-\item{columns}{Character vector. Specific columns to use for analysis.}
-
 \item{units}{Named character vector. A named character vector of units for each variable.}
-
-\item{select_all_numeric}{Logical. Whether to select all numeric columns.}
 
 \item{plot_correlation}{Logical. Whether to plot a correlation matrix.}
 
@@ -75,8 +65,6 @@ common_descriptive_stats_api(
 \item{ma_days}{Integer. The number of days to use in moving average calculations.}
 
 \item{ma_sides}{Integer. The number of sides to use in moving average calculations (1 or 2).}
-
-\item{ma_columns}{Character vector. Columns to plot moving average for.}
 
 \item{timeseries_col}{Character. The column used as the timeseries for moving averages.}
 
