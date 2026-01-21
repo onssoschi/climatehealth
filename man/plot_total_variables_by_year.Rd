@@ -8,6 +8,7 @@ plot_total_variables_by_year(
   df,
   date_col,
   variables,
+  title,
   save_total = FALSE,
   output_path = ""
 )
@@ -18,6 +19,8 @@ plot_total_variables_by_year(
 \item{date_col}{The name of the column containing date values.}
 
 \item{variables}{Column names to be summed and plotted.}
+
+\item{title}{Character. The specific title for the subset of data being used.}
 
 \item{save_total}{if TRUE, saves each plot as a PDF.}
 
