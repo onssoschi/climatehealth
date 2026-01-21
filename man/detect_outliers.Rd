@@ -4,12 +4,12 @@
 \alias{detect_outliers}
 \title{Detect Outliers Using the IQR Method}
 \usage{
-detect_outliers(df, columns = NULL)
+detect_outliers(df, independent_cols = NULL)
 }
 \arguments{
 \item{df}{A data frame containing the data to check for outliers.}
 
-\item{columns}{A character vector of column names to check for outliers.}
+\item{independent_cols}{Character vector. The columns in the data containing the independent variables.}
 }
 \value{
 Dataframe. Column summaries
