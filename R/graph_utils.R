@@ -528,7 +528,7 @@ plot_regional_trends <- function(
     vapply(x, function(s) {
       if (is.na(s)) return(NA_character_)
       s <- as.character(s)
-      if (nchar(s) <= n) s else paste0(substr(s, 1, max(1, n - 1)), "…")
+      if (nchar(s) <= n) s else paste0(substr(s, 1, max(1, n - 1)), "...")
     }, character(1))
   }
 
