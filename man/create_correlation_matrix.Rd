@@ -4,12 +4,16 @@
 \alias{create_correlation_matrix}
 \title{Create a correlation matrix for columns in a dataframe.}
 \usage{
-create_correlation_matrix(df, columns = NULL, correlation_method = "pearson")
+create_correlation_matrix(
+  df,
+  independent_cols = NULL,
+  correlation_method = "pearson"
+)
 }
 \arguments{
 \item{df}{Dataframe. The dataframe to use to create a correlation matrix.}
 
-\item{columns}{vector. The columns to calculate correlation between.}
+\item{independent_cols}{Character vector. The columns in the data containing the independent variables.}
 
 \item{correlation_method}{string. The method to use for correlation calculations.}
 }

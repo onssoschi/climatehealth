@@ -4,12 +4,12 @@
 \alias{create_na_summary}
 \title{Create a summary of all NA values in a dataset.}
 \usage{
-create_na_summary(df, columns = NULL)
+create_na_summary(df, independent_cols = NULL)
 }
 \arguments{
 \item{df}{Dataframe. The input dataset.}
 
-\item{columns}{vector. The columns to summaries NA counts for.}
+\item{independent_cols}{Character vector. The columns in the data containing the independent variables.}
 }
 \value{
 Dataframe. A summary of NA values in the dataset.
