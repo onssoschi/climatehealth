@@ -48,47 +48,47 @@ load_air_pollution_data <- function(data_path,
   data <- if (is.character(data_path)) read.csv(data_path) else data_path
 
   if (date_col != "date" && date_col %in% names(data)) {
-    data <- data %>% dplyr::rename(date = !!rlang::sym(date_col))
+    data <- data %>% rename(date = !!rlang::sym(date_col))
   }
   if (region_col != "region" && region_col %in% names(data)) {
-    data <- data %>% dplyr::rename(region = !!rlang::sym(region_col))
+    data <- data %>% rename(region = !!rlang::sym(region_col))
   }
   if (pm25_col != "pm25" && pm25_col %in% names(data)) {
-    data <- data %>% dplyr::rename(pm25 = !!rlang::sym(pm25_col))
+    data <- data %>% rename(pm25 = !!rlang::sym(pm25_col))
   }
   if (deaths_col != "deaths" && deaths_col %in% names(data)) {
-    data <- data %>% dplyr::rename(deaths = !!rlang::sym(deaths_col))
+    data <- data %>% rename(deaths = !!rlang::sym(deaths_col))
   }
   if (humidity_col != "humidity" && humidity_col %in% names(data)) {
-    data <- data %>% dplyr::rename(humidity = !!rlang::sym(humidity_col))
+    data <- data %>% rename(humidity = !!rlang::sym(humidity_col))
   }
   if (precipitation_col != "precipitation" && precipitation_col %in% names(data)) {
-    data <- data %>% dplyr::rename(precipitation = !!rlang::sym(precipitation_col))
+    data <- data %>% rename(precipitation = !!rlang::sym(precipitation_col))
   }
   if (tmax_col != "tmax" && tmax_col %in% names(data)) {
-    data <- data %>% dplyr::rename(tmax = !!rlang::sym(tmax_col))
+    data <- data %>% rename(tmax = !!rlang::sym(tmax_col))
   }
 
   if (!is.null(population_col) && population_col %in% names(data)) {
-    data <- data %>% dplyr::rename(population = !!rlang::sym(population_col))
+    data <- data %>% rename(population = !!rlang::sym(population_col))
   } else if (!("population" %in% names(data))) {
     data <- data %>% dplyr::mutate(population = 1)
   }
 
   if (!is.null(age_col) && age_col %in% names(data)) {
-    data <- data %>% dplyr::rename(age = !!rlang::sym(age_col))
+    data <- data %>% rename(age = !!rlang::sym(age_col))
   } else if (!("age" %in% names(data))) {
     data <- data %>% dplyr::mutate(age = "all")
   }
 
   if (!is.null(sex_col) && sex_col %in% names(data)) {
-    data <- data %>% dplyr::rename(sex = !!rlang::sym(sex_col))
+    data <- data %>% rename(sex = !!rlang::sym(sex_col))
   } else if (!("sex" %in% names(data))) {
     data <- data %>% dplyr::mutate(sex = "both")
   }
 
   if (!is.null(urbanisation_col) && urbanisation_col %in% names(data)) {
-    data <- data %>% dplyr::rename(urbanisation = !!rlang::sym(urbanisation_col))
+    data <- data %>% rename(urbanisation = !!rlang::sym(urbanisation_col))
   } else if (!("urbanisation" %in% names(data))) {
     data <- data %>% dplyr::mutate(urbanisation = "mixed")
   }
@@ -151,10 +151,10 @@ create_air_pollution_lags <- function(
   all_lag_vars <- c("pm25", lag_vars)
   avg_lag_name <- paste0("pm25_lag0_", max_lag)
   data_with_lags <- data_with_lags %>%
-    dplyr::mutate(!!avg_lag_name := rowMeans(dplyr::across(all_of(all_lag_vars)), na.rm = FALSE))
+    dplyr::mutate(!!avg_lag_name := rowMeans(across(all_of(all_lag_vars)), na.rm = FALSE))
 
   data_with_lags <- data_with_lags %>%
-    dplyr::filter(dplyr::if_all(all_of(all_lag_vars), ~ !is.na(.))) %>%
+    filter(dplyr::if_all(all_of(all_lag_vars), ~ !is.na(.))) %>%
     dplyr::ungroup()
 
   return(data_with_lags)
@@ -316,8 +316,8 @@ fit_air_pollution_gam <- function(data,
   GAM_formula <- as.formula(
     paste(
       "deaths ~ ", var_name,
-      "+ splines::ns(time, df = 7) + splines::ns(tmax, df = 3) + splines::ns(humidity, df = 3)",
-      "+ splines::ns(precipitation, df = 3) + dow + offset(log(population))"
+      "+ ns(time, df = 7) + ns(tmax, df = 3) + ns(humidity, df = 3)",
+      "+ ns(precipitation, df = 3) + dow + offset(log(population))"
     )
   )
 
