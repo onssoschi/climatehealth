@@ -32,7 +32,7 @@ pkg_health_check <- function(verbose = FALSE) {
 
   if (length(missing)) {
     msg <- sprintf(
-      "[climatehealth] Smoke check failed: missing critical dependencies: %s",
+      "[climatehealth][pkg_health_check] failed: missing critical dependencies: %s",
       paste(missing, collapse = ", ")
     )
     if (verbose) message(msg)
@@ -46,13 +46,14 @@ pkg_health_check <- function(verbose = FALSE) {
   )
 
   vmsg(sprintf(
-    "[climatehealth] Dependencies OK: %s",
+    "[climatehealth][pkg_health_check] Dependencies OK: %s",
     paste(sprintf("%s@%s", names(dep_versions), dep_versions), collapse = ", ")
   ))
 
   # --------------------------------------------------------------------------
   # 2) Execute a minimal DLNM modelling path (single region, stable configuration)
   # --------------------------------------------------------------------------
+
   set.seed(123)
 
   n_days <- 50
@@ -105,7 +106,7 @@ pkg_health_check <- function(verbose = FALSE) {
   # 3) Successful completion
   # --------------------------------------------------------------------------
 
-  vmsg("[climatehealth] Smoke check passed successfully.")
+  vmsg("[climatehealth][pkg_health_check] passed successfully.")
 
   invisible(TRUE)
 }
