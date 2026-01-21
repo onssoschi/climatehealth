@@ -48,47 +48,47 @@ load_air_pollution_data <- function(data_path,
   data <- if (is.character(data_path)) read.csv(data_path) else data_path
 
   if (date_col != "date" && date_col %in% names(data)) {
-    data <- data %>% rename(date = !!rlang::sym(date_col))
+    data <- data %>% dplyr::rename(date = !!rlang::sym(date_col))
   }
   if (region_col != "region" && region_col %in% names(data)) {
-    data <- data %>% rename(region = !!rlang::sym(region_col))
+    data <- data %>% dplyr::rename(region = !!rlang::sym(region_col))
   }
   if (pm25_col != "pm25" && pm25_col %in% names(data)) {
-    data <- data %>% rename(pm25 = !!rlang::sym(pm25_col))
+    data <- data %>% dplyr::rename(pm25 = !!rlang::sym(pm25_col))
   }
   if (deaths_col != "deaths" && deaths_col %in% names(data)) {
-    data <- data %>% rename(deaths = !!rlang::sym(deaths_col))
+    data <- data %>% dplyr::rename(deaths = !!rlang::sym(deaths_col))
   }
   if (humidity_col != "humidity" && humidity_col %in% names(data)) {
-    data <- data %>% rename(humidity = !!rlang::sym(humidity_col))
+    data <- data %>% dplyr::rename(humidity = !!rlang::sym(humidity_col))
   }
   if (precipitation_col != "precipitation" && precipitation_col %in% names(data)) {
-    data <- data %>% rename(precipitation = !!rlang::sym(precipitation_col))
+    data <- data %>% dplyr::rename(precipitation = !!rlang::sym(precipitation_col))
   }
   if (tmax_col != "tmax" && tmax_col %in% names(data)) {
-    data <- data %>% rename(tmax = !!rlang::sym(tmax_col))
+    data <- data %>% dplyr::rename(tmax = !!rlang::sym(tmax_col))
   }
 
   if (!is.null(population_col) && population_col %in% names(data)) {
-    data <- data %>% rename(population = !!rlang::sym(population_col))
+    data <- data %>% dplyr::rename(population = !!rlang::sym(population_col))
   } else if (!("population" %in% names(data))) {
     data <- data %>% dplyr::mutate(population = 1)
   }
 
   if (!is.null(age_col) && age_col %in% names(data)) {
-    data <- data %>% rename(age = !!rlang::sym(age_col))
+    data <- data %>% dplyr::rename(age = !!rlang::sym(age_col))
   } else if (!("age" %in% names(data))) {
     data <- data %>% dplyr::mutate(age = "all")
   }
 
   if (!is.null(sex_col) && sex_col %in% names(data)) {
-    data <- data %>% rename(sex = !!rlang::sym(sex_col))
+    data <- data %>% dplyr::rename(sex = !!rlang::sym(sex_col))
   } else if (!("sex" %in% names(data))) {
     data <- data %>% dplyr::mutate(sex = "both")
   }
 
   if (!is.null(urbanisation_col) && urbanisation_col %in% names(data)) {
-    data <- data %>% rename(urbanisation = !!rlang::sym(urbanisation_col))
+    data <- data %>% dplyr::rename(urbanisation = !!rlang::sym(urbanisation_col))
   } else if (!("urbanisation" %in% names(data))) {
     data <- data %>% dplyr::mutate(urbanisation = "mixed")
   }
@@ -151,10 +151,10 @@ create_air_pollution_lags <- function(
   all_lag_vars <- c("pm25", lag_vars)
   avg_lag_name <- paste0("pm25_lag0_", max_lag)
   data_with_lags <- data_with_lags %>%
-    dplyr::mutate(!!avg_lag_name := rowMeans(across(all_of(all_lag_vars)), na.rm = FALSE))
+    dplyr::mutate(!!avg_lag_name := rowMeans(dplyr::across(all_of(all_lag_vars)), na.rm = FALSE))
 
   data_with_lags <- data_with_lags %>%
-    filter(dplyr::if_all(all_of(all_lag_vars), ~ !is.na(.))) %>%
+    dplyr::filter(dplyr::if_all(all_of(all_lag_vars), ~ !is.na(.))) %>%
     dplyr::ungroup()
 
   return(data_with_lags)
@@ -201,11 +201,11 @@ air_pollution_descriptive_stats <- function(data,
 
   # Display histogram (or draw on PDF)
   graphics::hist(data$deaths,
-    breaks = seq(0, max(data$deaths) + bin_width,
-      by = bin_width
-    ),
-    main = "All cause mortality",
-    xlab = "Mortality", col = "blue"
+                 breaks = seq(0, max(data$deaths) + bin_width,
+                              by = bin_width
+                 ),
+                 main = "All cause mortality",
+                 xlab = "Mortality", col = "blue"
   )
 
   # Save PNG device if save requested
@@ -316,8 +316,8 @@ fit_air_pollution_gam <- function(data,
   GAM_formula <- as.formula(
     paste(
       "deaths ~ ", var_name,
-      "+ ns(time, df = 7) + ns(tmax, df = 3) + ns(humidity, df = 3)",
-      "+ ns(precipitation, df = 3) + dow + offset(log(population))"
+      "+ splines::ns(time, df = 7) + splines::ns(tmax, df = 3) + splines::ns(humidity, df = 3)",
+      "+ splines::ns(precipitation, df = 3) + dow + offset(log(population))"
     )
   )
 
@@ -558,7 +558,7 @@ save_air_pollution_plot <- function(plot_object,
     output_path <- file.path(output_dir, filename)
   }
   ggplot2::ggsave(output_path, plot_object,
-    width = fig_width, height = fig_height, dpi = dpi
+                  width = fig_width, height = fig_height, dpi = dpi
   )
 }
 
@@ -619,7 +619,7 @@ plot_air_pollution_forest <- function(meta_results,
     ) +
     ggplot2::geom_point(ggplot2::aes(color = .data$is_overall, size = .data$is_overall)) +
     ggplot2::geom_text(ggplot2::aes(label = .data$label, x = .data$ci_upper),
-      hjust = -0.1, size = 3
+                       hjust = -0.1, size = 3
     ) +
     ggplot2::geom_vline(xintercept = 1, linetype = "dashed", color = "red") +
     ggplot2::scale_color_manual(values = c("FALSE" = "blue", "TRUE" = "red")) +
@@ -682,7 +682,7 @@ plot_air_pollution_lags <- function(lag_results,
 
   lag_labels <- c("Lag 0", paste0("Lag ", 1:max_lag), paste0("Lag 0-", max_lag))
   lag_results_clean$lag <- factor(lag_results_clean$lag,
-    levels = lag_labels
+                                  levels = lag_labels
   )
 
   lag_results_clean <- lag_results_clean %>%
@@ -690,7 +690,7 @@ plot_air_pollution_lags <- function(lag_results,
 
   lag_plot <- ggplot2::ggplot(lag_results_clean, ggplot2::aes(x = lag, y = .data$rr)) +
     ggplot2::geom_errorbar(ggplot2::aes(ymin = .data$ci_lower, ymax = .data$ci_upper),
-      width = 0.2, color = "darkblue", linewidth = 0.8
+                           width = 0.2, color = "darkblue", linewidth = 0.8
     ) +
     ggplot2::geom_point(size = 3, color = "blue") +
     ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
@@ -1250,8 +1250,8 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
   meta_model <- tryCatch(
     {
       mixmeta::mixmeta(coef_matrix[valid_rows, ] ~ 1,
-        S = vcov_list[valid_rows],
-        control = list(showiter = FALSE)
+                       S = vcov_list[valid_rows],
+                       control = list(showiter = FALSE)
       )
     },
     error = function(e) {
@@ -1269,9 +1269,9 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
   bvar_national <- do.call(dlnm::onebasis, argvar_national)
 
   pred_national <- dlnm::crosspred(bvar_national,
-    coef = meta_model$coefficients,
-    vcov = meta_model$vcov, model.link = "log",
-    by = 0.1, cen = reference_pm25
+                                   coef = meta_model$coefficients,
+                                   vcov = meta_model$vcov, model.link = "log",
+                                   by = 0.1, cen = reference_pm25
   )
 
   national_af_an <- list(af = 0, an = 0)
@@ -1293,8 +1293,8 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
   fig_height <- plot_height_per_panel * grid_dims$nrow
 
   png(output_file,
-    width = fig_width * res, height = fig_height * res,
-    res = res, bg = "white"
+      width = fig_width * res, height = fig_height * res,
+      res = res, bg = "white"
   )
 
   par(
@@ -1310,24 +1310,24 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
   y_seq <- seq(0, max_ylim, by = 0.5)
 
   plot(pred_national,
-    ylab = "", ylim = c(0.0, max_ylim), xlab = "", xaxt = "n",
-    yaxt = "n", main = "Nationwide", lwd = 2, col = "red",
-    ci.arg = list(col = rgb(0, 0, 1, 0.2), density = NULL)
+       ylab = "", ylim = c(0.0, max_ylim), xlab = "", xaxt = "n",
+       yaxt = "n", main = "Nationwide", lwd = 2, col = "red",
+       ci.arg = list(col = rgb(0, 0, 1, 0.2), density = NULL)
   )
 
   abline(h = 1, col = "black", lwd = 1, lty = 1)
   axis(2,
-    at = y_seq, labels = format(y_seq, nsmall = 1), cex.axis = 0.8,
-    las = 1, tck = -0.02
+       at = y_seq, labels = format(y_seq, nsmall = 1), cex.axis = 0.8,
+       las = 1, tck = -0.02
   )
   axis(1,
-    at = seq(floor(min(t1)), ceiling(max(t1)), by = 20), cex.axis = 0.8,
-    tck = -0.02
+       at = seq(floor(min(t1)), ceiling(max(t1)), by = 20), cex.axis = 0.8,
+       tck = -0.02
   )
 
   breaks <- c(min(t1) - 1, seq(pred_national$predvar[1],
-    pred_national$predvar[length(pred_national$predvar)],
-    length = 30
+                               pred_national$predvar[length(pred_national$predvar)],
+                               length = 30
   ), max(t1) + 1)
   hist_data <- hist(t1, breaks = breaks, plot = FALSE)
   hist_data$density <- hist_data$density / max(hist_data$density) * 0.7
@@ -1336,16 +1336,16 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
 
   hist_scaling_factor <- max_ylim / 1.8
   plot(hist_data,
-    ylim = c(0, max(hist_data$density) * hist_scaling_factor),
-    axes = FALSE, ann = FALSE,
-    col = rgb(0.8, 0.8, 0.8, 0.5),
-    border = rgb(0.7, 0.7, 0.7, 0.8),
-    breaks = breaks, freq = FALSE, add = TRUE
+       ylim = c(0, max(hist_data$density) * hist_scaling_factor),
+       axes = FALSE, ann = FALSE,
+       col = rgb(0.8, 0.8, 0.8, 0.5),
+       border = rgb(0.7, 0.7, 0.7, 0.8),
+       breaks = breaks, freq = FALSE, add = TRUE
   )
 
   axis(4,
-    at = counts * prop, labels = counts, cex.axis = 0.8, las = 1,
-    tck = -0.02
+       at = counts * prop, labels = counts, cex.axis = 0.8, las = 1,
+       tck = -0.02
   )
   abline(v = reference_pm25, col = "red", lty = 2, lwd = 2)
   abline(v = quantile(t1, c(0.05, 0.95)), col = grey(0.5), lty = 3, lwd = 1.5)
@@ -1368,31 +1368,31 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
 
     valid_idx <- which(prov[valid_rows] == region_name)
     cp <- dlnm::crosspred(bvar,
-      coef = blup_results[[valid_idx]]$blup,
-      vcov = blup_results[[valid_idx]]$vcov,
-      model.link = "log", by = 0.1, cen = reference_pm25
+                          coef = blup_results[[valid_idx]]$blup,
+                          vcov = blup_results[[valid_idx]]$vcov,
+                          model.link = "log", by = 0.1, cen = reference_pm25
     )
 
     plot(cp, "overall",
-      ylim = c(0.0, max_ylim), lwd = 2, col = "red",
-      ci.arg = list(col = rgb(0, 0, 1, 0.2), density = NULL),
-      xaxt = "n", yaxt = "n", xlab = "", ylab = "",
-      main = region_name
+         ylim = c(0.0, max_ylim), lwd = 2, col = "red",
+         ci.arg = list(col = rgb(0, 0, 1, 0.2), density = NULL),
+         xaxt = "n", yaxt = "n", xlab = "", ylab = "",
+         main = region_name
     )
 
     abline(h = 1, col = "black", lwd = 1, lty = 1)
     axis(2,
-      at = y_seq, labels = format(y_seq, nsmall = 1), cex.axis = 0.8,
-      las = 1, tck = -0.02
+         at = y_seq, labels = format(y_seq, nsmall = 1), cex.axis = 0.8,
+         las = 1, tck = -0.02
     )
     axis(1,
-      at = seq(floor(min(var1)), ceiling(max(var1)), by = 20),
-      cex.axis = 0.8, tck = -0.02
+         at = seq(floor(min(var1)), ceiling(max(var1)), by = 20),
+         cex.axis = 0.8, tck = -0.02
     )
 
     breaks_prov <- c(min(var1) - 1, seq(cp$predvar[1],
-      cp$predvar[length(cp$predvar)],
-      length = 30
+                                        cp$predvar[length(cp$predvar)],
+                                        length = 30
     ), max(var1) + 1)
     hist_prov <- hist(var1, breaks = breaks_prov, plot = FALSE)
     hist_prov$density <- hist_prov$density / max(hist_prov$density) * 0.7
@@ -1400,16 +1400,16 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
     counts_prov <- pretty(hist_prov$count, 3)
 
     plot(hist_prov,
-      ylim = c(0, max(hist_prov$density) * hist_scaling_factor),
-      axes = FALSE, ann = FALSE,
-      col = rgb(0.8, 0.8, 0.8, 0.5),
-      border = rgb(0.7, 0.7, 0.7, 0.8),
-      breaks = breaks_prov, freq = FALSE, add = TRUE
+         ylim = c(0, max(hist_prov$density) * hist_scaling_factor),
+         axes = FALSE, ann = FALSE,
+         col = rgb(0.8, 0.8, 0.8, 0.5),
+         border = rgb(0.7, 0.7, 0.7, 0.8),
+         breaks = breaks_prov, freq = FALSE, add = TRUE
     )
 
     axis(4,
-      at = counts_prov * prop_prov, labels = counts_prov, cex.axis = 0.8,
-      las = 1, tck = -0.02
+         at = counts_prov * prop_prov, labels = counts_prov, cex.axis = 0.8,
+         las = 1, tck = -0.02
     )
     abline(v = reference_pm25, col = "red", lty = 2, lwd = 2)
     abline(v = quantile(var1, c(0.05, 0.95)), col = grey(0.5), lty = 3, lwd = 1.5)
@@ -1452,15 +1452,15 @@ create_air_pollution_exposure_plots <- function(data_with_lags,
     )
 
     legend("center",
-      legend = legend_items,
-      col = c("red", rgb(0, 0, 1, 0.2), "red", grey(0.5)),
-      lty = c(1, NA, 2, 3),
-      pch = c(NA, 15, NA, NA),
-      pt.bg = c(NA, rgb(0, 0, 1, 0.2), NA, NA),
-      pt.cex = c(NA, 2, NA, NA),
-      cex = 0.9,
-      bg = "white",
-      box.lty = 1
+           legend = legend_items,
+           col = c("red", rgb(0, 0, 1, 0.2), "red", grey(0.5)),
+           lty = c(1, NA, 2, 3),
+           pch = c(NA, 15, NA, NA),
+           pt.bg = c(NA, rgb(0, 0, 1, 0.2), NA, NA),
+           pt.cex = c(NA, 2, NA, NA),
+           cex = 0.9,
+           bg = "white",
+           box.lty = 1
     )
   }
 
@@ -1682,7 +1682,7 @@ air_pollution_do_analysis <- function(data_path,
     region_results_clean <- meta_results$region_results %>%
       dplyr::select(all_of(c(-"data", -"model")))
     write.csv(region_results_clean, file.path(output_dir, "region_results.csv"),
-      row.names = FALSE
+              row.names = FALSE
     )
     write.csv(lag_results, file.path(output_dir, "lag_results.csv"), row.names = FALSE)
 
@@ -1694,7 +1694,7 @@ air_pollution_do_analysis <- function(data_path,
       row.names = FALSE
       )
       write.csv(dlm_results$meta_results, file.path(output_dir, "meta_dlm_results.csv"),
-        row.names = FALSE
+                row.names = FALSE
       )
     }
 
