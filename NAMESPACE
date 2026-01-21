@@ -2,7 +2,6 @@
 
 export(air_pollution_do_analysis)
 export(diarrhea_do_analysis)
-export(heat_and_cold_do_analysis)
 export(install_INLA)
 export(install_terra)
 export(malaria_do_analysis)
@@ -70,4 +69,3 @@ importFrom(utils,install.packages)
 importFrom(utils,packageVersion)
 importFrom(utils,read.csv)
 importFrom(utils,write.csv)
-importFrom(zeallot,"%<-%")
