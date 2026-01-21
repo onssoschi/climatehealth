@@ -27,27 +27,27 @@ test_that("Test default behaviour.", {
 })
 
 test_that("Specifying columns returns correct correlation matrix", {
-  result <- create_correlation_matrix(CORR_MATRIX_DATA, independent_cols = c("A", "B"))
+  result <- create_correlation_matrix(CORR_MATRIX_DATA, columns = c("A", "B"))
   expect_equal(dim(result), c(2, 2))
   expect_equal(rownames(result), c("A", "B"))
 })
 
 patrick::with_parameters_test_that(
-  "Test that all correlation methods work as intended.",
-  {
-    result <- create_correlation_matrix(
-      CORR_MATRIX_DATA,
-      correlation_method = corr_method
-    )
-    expect_equal(as.vector(result["A", ]), exp_output, 1.0e-07)
-  },
-  corr_method = c("pearson", "kendall", "spearman"),
-  exp_output = list(
-    c(1, 1, 0.9515227),
-    c(1, 1, 0.8222222),
-    c(1, 1, 0.9515152)
-  ),
-  .test_name = c("Pearson", "Kendall", "Spearman")
+    "Test that all correlation methods work as intended.",
+    {
+        result <- create_correlation_matrix(
+            CORR_MATRIX_DATA,
+            correlation_method = corr_method
+        )
+        expect_equal(as.vector(result["A", ]), exp_output, 1.0e-07)
+    },
+    corr_method = c("pearson", "kendall", "spearman"),
+    exp_output = list(
+        c(1, 1, 0.9515227),
+        c(1, 1, 0.8222222),
+        c(1, 1, 0.9515152)
+    ),
+    .test_name = c("Pearson", "Kendall", "Spearman")
 )
 
 # Error Raises
@@ -60,14 +60,14 @@ test_that("Invalid correlation method throws error", {
 
 test_that("Non-vector columns argument throws error", {
   expect_error(
-    create_correlation_matrix(CORR_MATRIX_DATA, independent_cols = data.frame(x = 1)),
-    "'independent_cols' expected a vector of column names"
+    create_correlation_matrix(CORR_MATRIX_DATA, columns = data.frame(x = 1)),
+    "'columns' expected a vector of column names"
   )
 })
 
 test_that("Non-existent column throws error", {
   expect_error(
-    create_correlation_matrix(CORR_MATRIX_DATA, independent_cols = c("A", "Z")),
+    create_correlation_matrix(CORR_MATRIX_DATA, columns = c("A", "Z")),
     "Column Z not in dataset"
   )
 })
@@ -92,36 +92,36 @@ test_that("Default behavior summarises all columns", {
 })
 
 test_that("Summarising specific numeric columns works", {
-  result <- create_column_summaries(COL_SUM_TEST_DATA, independent_cols = c("num1", "num2"))
+  result <- create_column_summaries(COL_SUM_TEST_DATA, columns = c("num1", "num2"))
   expect_equal(rownames(result), c("num1", "num2"))
   expect_equal(result["num1", ]$SD, 1.581139, tolerance=1.0e-06)
   expect_true(all(!is.na(result$Mean)))
 })
 
 test_that("Non-numeric columns return NA for numeric stats", {
-  result <- create_column_summaries(COL_SUM_TEST_DATA, independent_cols = c("char1", "factor1"))
+  result <- create_column_summaries(COL_SUM_TEST_DATA, columns = c("char1", "factor1"))
   expect_true(all(is.na(result$IQR)))
   expect_true(all(is.na(result$Variance)))
   expect_true(all(is.na(result$SD)))
 })
 
 test_that("Mixed column types are handled correctly", {
-  result <- create_column_summaries(COL_SUM_TEST_DATA, independent_cols = c("num1", "char1"))
+  result <- create_column_summaries(COL_SUM_TEST_DATA, columns = c("num1", "char1"))
   expect_false(is.na(result["num1", "Mean"]))
   expect_true(is.na(result["char1", "Mean"]))
 })
 
 test_that("Invalid column name throws error", {
   expect_error(
-    create_column_summaries(COL_SUM_TEST_DATA, independent_cols = c("num1", "missing_col")),
+    create_column_summaries(COL_SUM_TEST_DATA, columns = c("num1", "missing_col")),
     "Column missing_col not in dataset"
   )
 })
 
 test_that("Non-vector columns argument throws error", {
   expect_error(
-    create_column_summaries(COL_SUM_TEST_DATA, independent_cols = data.frame(x = 1)),
-    "'independent_cols' expected a vector of column names"
+    create_column_summaries(COL_SUM_TEST_DATA, columns = data.frame(x = 1)),
+    "'columns' expected a vector of column names"
   )
 })
 
@@ -143,13 +143,13 @@ test_that("Default behavior summarises all columns", {
   expect_equal(nrow(result), ncol(NA_SUM_TEST_DATA))
   expect_equal(sort(result$column), sort(colnames(NA_SUM_TEST_DATA)))
   expect_equal(
-    as.vector(result$na_percent),
-    c(40, 100, 20, 40)
+    as.vector(result$na_proportion),
+    c(0.4, 1.0, 0.2, 0.4)
   )
 })
 
 test_that("Summarizing specific columns works", {
-  result <- create_na_summary(NA_SUM_TEST_DATA, independent_cols = c("a", "b"))
+  result <- create_na_summary(NA_SUM_TEST_DATA, columns = c("a", "b"))
   expect_equal(result$column, c("a", "b"))
   expect_equal(result$na_count[1], 2)
   expect_equal(result$na_count[2], 5)
@@ -158,14 +158,14 @@ test_that("Summarizing specific columns works", {
 # Error Raises
 test_that("Non-vector columns argument throws error", {
   expect_error(
-    create_na_summary(NA_SUM_TEST_DATA, independent_cols = data.frame(x = 1)),
-    "'independent_cols' expected a vector of column names."
+    create_na_summary(NA_SUM_TEST_DATA, columns = data.frame(x = 1)),
+    "'columns' expected a vector of column names."
   )
 })
 
 test_that("Invalid column name throws error", {
   expect_error(
-    create_na_summary(NA_SUM_TEST_DATA, independent_cols = c("a", "not_a_column")),
+    create_na_summary(NA_SUM_TEST_DATA, columns = c("a", "not_a_column")),
     "Column not_a_column not in dataset."
   )
 })
@@ -190,7 +190,7 @@ test_that("detect_outliers selects columns correctly", {
     x = c(1, 2, 3, 100),
     y = c(10, 20, 30, 40)
   )
-  result <- detect_outliers(df, independent_cols = "x")
+  result <- detect_outliers(df, columns = "x")
 
   expect_named(result, c("row", "x"))
   expect_true(result$x[4])
@@ -227,28 +227,28 @@ test_that("detect_outliers does not raise error on valid input", {
 # Tests for label_with_unit
 
 test_that("Passing a column with available units works.",
-          {
-            test_water <- label_with_unit(
-              "Water Consumption",
-              list("Water Consumption" = "L", "Frequency" = "Hz")
-            )
-            test_freq <- label_with_unit(
-              "Frequency",
-              list("Water Consumption" = "L", "Frequency" = "Hz")
-            )
-            expect_equal(test_water, "Water Consumption (L)")
-            expect_equal(test_freq, "Frequency (Hz)")
-          }
+  {
+    test_water <- label_with_unit(
+      "Water Consumption", 
+      list("Water Consumption" = "L", "Frequency" = "Hz")
+    )
+    test_freq <- label_with_unit(
+      "Frequency", 
+      list("Water Consumption" = "L", "Frequency" = "Hz")
+    )
+    expect_equal(test_water, "Water Consumption (L)")
+    expect_equal(test_freq, "Frequency (Hz)")
+  }
 )
 
 test_that("Passing a column without available units returns the column name",
-          {
-            test_none <- label_with_unit(
-              "Frequency",
-              list("Water Consumption" = "L")
-            )
-            expect_equal(test_none, "Frequency")
-          }
+  {
+    test_none <- label_with_unit(
+      "Frequency", 
+      list("Water Consumption" = "L")
+    )
+    expect_equal(test_none, "Frequency")
+  }
 )
 
 # Tests for raise_if_null
@@ -281,15 +281,19 @@ test_that("Fails when no column selection method is provided", {
 
   expect_error(
     common_descriptive_stats_core(
+      dataset_title = "Test",
       df = df,
       output_path = temp_dir,
       title = "Subset",
+      columns = NULL,
       independent_cols = NULL,
+      select_all_numeric = FALSE,
       dependent_col = "x"
     ),
-    "Please specify `independent_cols`"
+    "Please specify `columns` or set `select_all_numeric = TRUE`."
   )
 })
+
 
 test_that("Creates summary file with columns specified", {
   temp_dir <- withr::local_tempdir()
@@ -303,9 +307,11 @@ test_that("Creates summary file with columns specified", {
   units <- c(temp = "degrees", dependent = "cases")
 
   common_descriptive_stats_core(
+    dataset_title = "Test",
     df = df,
     output_path = temp_dir,
     title = "Subset",
+    columns = c("temp", "dependent"),
     units = units,
     dependent_col = "dependent",
     independent_cols = c("temp")
@@ -326,9 +332,11 @@ test_that("Generates all enabled plots and outputs", {
   units <- c(temp = "°C", dependent = "cases")
 
   common_descriptive_stats_core(
+    dataset_title = "Test",
     df = df,
     output_path = temp_dir,
     title = "Subset",
+    columns = c("temp", "dependent"),
     units = units,
     dependent_col = "dependent",
     independent_cols = c("temp"),
@@ -350,18 +358,49 @@ test_that("Generates all enabled plots and outputs", {
     "dataset_summary.csv",
     "boxplots.pdf",
     "correlation_matrix.png",
-    "histograms.pdf",
+    "column_distributions.pdf",
     "na_counts.pdf",
     "dependent_vs_independents.pdf",
-    "monthly_averages.pdf",
+    "seasonal_trends.pdf",
+    "regional_trends.pdf",
     "outlier_table.csv",
-    "annual_rate_health_outcome_per_100k.pdf",
-    "annual_total_counts.pdf"
+    "rate_health_outcome.pdf",
+    "plot_total_by_year.pdf"
   )
 
   for (f in expected_files) {
     expect_true(file.exists(file.path(temp_dir, f)), info = paste("Missing:", f))
   }
+})
+
+
+test_that("Works with select_all_numeric fallback", {
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(
+    date = as.Date("2020-01-01") + 0:4,
+    region = rep("A", 5),
+    temp = c(10, 15, 20, NA, 25),
+    dependent = c(100, 200, 150, 175, 300),
+    population = c(1000, 1000, 1000, 1000, 1000)
+  )
+
+  common_descriptive_stats_core(
+    dataset_title = "Test",
+    df = df,
+    output_path = temp_dir,
+    title = "Subset",
+    select_all_numeric = TRUE,
+    detect_outliers = TRUE,
+    dependent_col = "dependent",
+    independent_cols = c("temp"),
+    timeseries_col = "date",
+    aggregation_column = "region"
+  )
+
+  outlier_table <- read.csv(file.path(temp_dir, "outlier_table.csv"))
+
+  expected_cols <- c("date", "region", "temp", "population", "is_outlier_temp", "is_outlier_population")
+  expect_true(all(expected_cols %in% colnames(outlier_table)))
 })
 
 
@@ -371,9 +410,11 @@ test_that("common_descriptive_stats_core handles empty dataframes", {
 
   expect_error(
     common_descriptive_stats_core(
+      dataset_title = "Empty",
       df = df,
       output_path = temp_dir,
       title = "Empty",
+      select_all_numeric = TRUE,
       dependent_col = "x",
       independent_cols = c("y")
     ),
@@ -392,9 +433,11 @@ test_that("Triggers warning and creates empty outlier table when no valid outlie
 
   expect_warning({
     common_descriptive_stats_core(
+      dataset_title = "Test",
       df = df,
       output_path = temp_dir,
       title = "No numeric columns",
+      columns = c("category"),  # non-numeric column
       dependent_col = "dependent",
       independent_cols = c("category"),
       detect_outliers = TRUE
@@ -425,13 +468,16 @@ test_that("common_descriptive_stats creates the expected files", {
   )
   # Create descriptive stats
   out <- common_descriptive_stats(
+    dataset_title = "My Dataset",
     df_list = df_list,
     output_path = tmp_root,
     timeseries_col = "date",
     dependent_col = "value",
-    independent_cols = c("value"),
+    independent_cols = c(),
     aggregation_column = "region",
+    select_all_numeric = T,
     plot_ma = TRUE,
+    ma_columns = c("value"),
     ma_days = 3,
     ma_sides = 1,
     units = list(value = "units"),
@@ -447,10 +493,10 @@ test_that("common_descriptive_stats creates the expected files", {
     calculate_rate = FALSE
   )
   # Validate outputs have been created
-  expected_root_folder <- file.path(tmp_root, "descriptive_stats")
+  expected_root_folder <- file.path(tmp_root, "my_dataset_descriptive_stats")
   expect_true(dir.exists(expected_root_folder))
   expect_equal(out[1], expected_root_folder)
-  expect_equal(out[2], "descriptive_stats")
+  expect_equal(out[2], "my_dataset_descriptive_stats")
 
   # Validate correct output files are present
   all_folder <- file.path(expected_root_folder, "All")
@@ -460,7 +506,7 @@ test_that("common_descriptive_stats creates the expected files", {
   for (region in c("RegionA", "RegionB")) {
     region_folder <- file.path(expected_root_folder, region)
     expect_true(dir.exists(region_folder), info = paste("Missing region folder:", region))
-    pdf_path <- file.path(region_folder, "moving_average.pdf")
+    pdf_path <- file.path(region_folder, "value_moving_average.pdf")
     expect_true(file.exists(pdf_path), info = paste("Missing moving average PDF for", region))
     expect_true(file.exists(file.path(region_folder, "dataset_summary.csv")))
     expect_gt(file.info(pdf_path)$size, 0)
@@ -477,12 +523,14 @@ test_that(
       value = rnorm(10)
     )
     out <- common_descriptive_stats(
+      dataset_title = "My Dataset",
       df_list = list(region1=df),
       output_path = tmp_root,
       timeseries_col = "date",
       dependent_col = "value",
-      independent_cols = c("value"),
+      independent_cols = c(),
       aggregation_column = "region",
+      select_all_numeric = T,
       plot_ma = FALSE,
       units = list(value = "units"),
       plot_corr_matrix = FALSE,
@@ -497,7 +545,7 @@ test_that(
       calculate_rate = FALSE
     )
     expect_false(
-      file.exists(file.path(out[1], "region1", "moving_average.pdf"))
+      file.exists(file.path(out[1], "region1", "value_moving_average.pdf"))
     )
   }
 )
@@ -520,9 +568,12 @@ test_that("API runs with all features enabled", {
     data = cds_api_df,
     aggregation_column = "region",
     population_col = "population",
+    dataset_title = "Full Test",
     dependent_col = "value",
     independent_cols = c("population"),
+    columns = c("value", "population"),
     units = c(value = "units", population = "people"),
+    select_all_numeric = TRUE,
     plot_correlation = TRUE,
     plot_dist_hists = TRUE,
     plot_ma = TRUE,
@@ -535,6 +586,7 @@ test_that("API runs with all features enabled", {
     correlation_method = "pearson",
     ma_days = 2,
     ma_sides = 1,
+    ma_columns = c("value"),
     timeseries_col = "date",
     detect_outliers = TRUE,
     calculate_rate = TRUE,
@@ -542,7 +594,7 @@ test_that("API runs with all features enabled", {
   )
 
   expect_true(dir.exists(out[1]))
-  expect_equal(out[2], "descriptive_stats")
+  expect_equal(out[2], "full_test_descriptive_stats")
 })
 
 test_that("API runs with minimal required inputs and no aggregation", {
@@ -550,6 +602,7 @@ test_that("API runs with minimal required inputs and no aggregation", {
 
   out <- common_descriptive_stats_api(
     data = cds_api_df,
+    dataset_title = "Minimal Test",
     dependent_col = "value",
     independent_cols = c("population"),
     output_path = tmp,
@@ -575,6 +628,7 @@ test_that("API errors if required MA parameters are missing", {
   expect_error(
     common_descriptive_stats_api(
       data = cds_api_df,
+      dataset_title = "Missing MA",
       dependent_col = "value",
       independent_cols = c("population"),
       output_path = tmp,
@@ -594,6 +648,7 @@ test_that("API errors if correlation_method is missing when plot_correlation = T
   expect_error(
     common_descriptive_stats_api(
       data = cds_api_df,
+      dataset_title = "Missing Corr",
       dependent_col = "value",
       independent_cols = c("population"),
       output_path = tmp,
@@ -615,6 +670,7 @@ test_that("API errors if dependent_col is not in dataset", {
   expect_error(
     common_descriptive_stats_api(
       data = bad_df,
+      dataset_title = "Missing Dependent",
       dependent_col = "value",
       independent_cols = c("population"),
       output_path = tmp,
@@ -641,9 +697,11 @@ test_that("API converts date column correctly", {
   out <- common_descriptive_stats_api(
     data = df,
     aggregation_column = "region",
+    dataset_title = "Date Format Test",
     dependent_col = "value",
     independent_cols = c("population"),
     output_path = tmp,
+    columns = c("value"),
     plot_correlation = FALSE,
     plot_dist_hists = FALSE,
     plot_ma=FALSE,
@@ -654,4 +712,3 @@ test_that("API converts date column correctly", {
 
   expect_true(dir.exists(out[1]))
 })
-
