@@ -55,10 +55,7 @@ jobs:
 
       - name: Run package health check
         run: |
-          Rscript -e '
-            library(climatehealth)
-            pkg_health_check(verbose = TRUE)
-          '
+          Rscript -e 'get("pkg_health_check", envir = asNamespace("climatehealth"))(verbose = TRUE)'
 
       - name: Run R CMD Check
         uses: r-lib/actions/check-r-package@v2
