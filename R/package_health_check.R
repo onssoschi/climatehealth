@@ -21,6 +21,7 @@ pkg_health_check <- function(verbose = FALSE) {
   # --------------------------------------------------------------------------
   # 1) Check presence of critical dependencies (no installation attempted)
   # --------------------------------------------------------------------------
+
   critical_pkgs <- c(
     "dlnm",
     "dplyr"
@@ -51,58 +52,62 @@ pkg_health_check <- function(verbose = FALSE) {
   ))
 
   # --------------------------------------------------------------------------
-  # 2) Execute a minimal representative modelling path
+  # 2) Execute a minimal DLNM modelling path (single region)
   # --------------------------------------------------------------------------
   set.seed(42)
 
   df <- data.frame(
-    dependent = stats::rpois(30, lambda = 8),
-    temp      = rnorm(30, mean = 20, sd = 2.5),
-    date      = seq.Date(as.Date("2023-01-01"), by = "day", length.out = 30),
-    year      = rep(2023, 30)
+    dependent = stats::rpois(20, lambda = 10),
+    temp      = stats::rnorm(20, mean = 20, sd = 3),
+    date      = seq.Date(as.Date("2023-01-01"), by = "day", length.out = 20),
+    year      = rep(2023, 20)
   )
 
-  define_model_fn <- get("define_model", envir = asNamespace("climatehealth"))
+  df_list <- list(region1 = df)
 
-  res <- tryCatch(
-    define_model_fn(
-      dataset          = df,
-      independent_cols = NULL,
-      varfun           = "bs",
-      varper           = 50,  # single internal knot
-      vardegree        = 1,
-      lag              = 2,
-      lagnk            = 1,
-      dfseas           = 2
+  cb <- dlnm::crossbasis(
+    df$temp,
+    lag = 2,
+    argvar = list(
+      fun   = "bs",
+      knots = stats::quantile(df$temp, c(0.25, 0.5, 0.75))
     ),
-    error = function(e) {
-      msg <- sprintf(
-        "[climatehealth] Smoke check failed during model definition: %s",
-        conditionMessage(e)
-      )
-      if (verbose) message(msg)
-      stop(msg, call. = FALSE)
-    }
+    arglag = list(
+      knots = dlnm::logknots(2, 1)
+    )
   )
 
-  stopifnot(is.list(res), length(res) == 2)
-  model <- res[[1]]
-  cb    <- res[[2]]
+  cb_list <- list(region1 = cb)
 
-  stopifnot(inherits(model, "glm"))
-  stopifnot(inherits(cb, "crossbasis"))
+  model <- stats::glm(
+    dependent ~ cb,
+    data = df,
+    family = stats::quasipoisson(),
+    na.action = stats::na.exclude
+  )
 
-  cen  <- mean(df$temp, na.rm = TRUE)
-  pred <- dlnm::crossreduce(cb, model, cen = cen)
+  model_list <- list(region1 = model)
+
+  reduce_fn <- get("dlnm_reduce_cumulative", envir = asNamespace("climatehealth"))
+
+  res <- reduce_fn(
+    df_list    = df_list,
+    cb_list    = cb_list,
+    model_list = model_list
+  )
 
   stopifnot(
-    is.numeric(stats::coef(pred)),
-    is.matrix(stats::vcov(pred))
+    is.list(res),
+    length(res) == 2,
+    is.matrix(res[[1]]),
+    is.list(res[[2]]),
+    is.matrix(res[[2]][[1]])
   )
 
   # --------------------------------------------------------------------------
   # 3) Successful completion
   # --------------------------------------------------------------------------
+
   vmsg("[climatehealth] Smoke check passed successfully.")
 
   invisible(TRUE)
