@@ -1,4 +1,5 @@
 
+# nocov start
 #' pkg_health_check() is an internal smoke test intended for CI / developer
 #' validation run after package installation.
 #'
@@ -108,3 +109,5 @@ pkg_health_check <- function(verbose = FALSE) {
 
   invisible(TRUE)
 }
+
+# nocov end
