@@ -2030,7 +2030,7 @@ wildfire_do_analysis <- function(
   # Read and combine datasets
   data <- load_wildfire_data(
     health_path = health_path,
-    ncdf_path = nc_path,
+    ncdf_path = ncdf_path,
     shp_path = shp_path,
     join_wildfire_data = join_wildfire_data,
     date_col = date_col,
