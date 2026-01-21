@@ -428,7 +428,7 @@ common_descriptive_stats_core <- function(
   # Plot regional trends
   if (plot_regional && !is.null(timeseries_col)) {
     # only produce on the full dataset and when regional disaggregation exists
-    has_regions <- aggregation_column %in% names(df) && length(unique(na.omit(df[[aggregation_column]]))) > 1
+    has_regions <- aggregation_column %in% names(df) && length(unique(stats::na.omit(df[[aggregation_column]]))) > 1
     is_full     <- grepl("\\bfull dataset\\b", tolower(title))
     if (has_regions && is_full) {
 
