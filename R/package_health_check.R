@@ -1,5 +1,5 @@
 
-#' Run a minimal smoke check post-install
+#' pkg_health_check() is an internal smoke test intended for CI / developer validation run after package installation.
 #'
 #' Verifies that critical dependencies are available and that a minimal,
 #' representative modelling path executes successfully.
@@ -8,7 +8,7 @@
 #'   Defaults to FALSE.
 #'
 #' @return Invisibly returns TRUE on success.
-#' @export
+#' @keywords internal
 pkg_health_check <- function(verbose = FALSE) {
 
   # Helper for controlled messaging
@@ -23,9 +23,7 @@ pkg_health_check <- function(verbose = FALSE) {
   # --------------------------------------------------------------------------
   critical_pkgs <- c(
     "dlnm",
-    "dplyr",
-    "splines",
-    "stats"
+    "dplyr"
   )
 
   missing <- critical_pkgs[
@@ -64,8 +62,10 @@ pkg_health_check <- function(verbose = FALSE) {
     year      = rep(2023, 30)
   )
 
+  define_model_fn <- get("define_model", envir = asNamespace("climatehealth"))
+
   res <- tryCatch(
-    define_model(
+    define_model_fn(
       dataset          = df,
       independent_cols = NULL,
       varfun           = "bs",

@@ -2,7 +2,7 @@
 % Please edit documentation in R/package_health_check.R
 \name{pkg_health_check}
 \alias{pkg_health_check}
-\title{Run a minimal smoke check post-install}
+\title{pkg_health_check() is an internal smoke test intended for CI / developer validation run after package installation.}
 \usage{
 pkg_health_check(verbose = FALSE)
 }
@@ -17,3 +17,4 @@ Invisibly returns TRUE on success.
 Verifies that critical dependencies are available and that a minimal,
 representative modelling path executes successfully.
 }
+\keyword{internal}
