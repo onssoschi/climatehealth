@@ -1094,3 +1094,144 @@ test_that("hc_plot_power produces plots correctly (high and low)", {
   expect_true(file.exists(output_path_low))
   expect_gt(file.info(output_path_low)$size, 0)
 })
+
+
+test_that("hc_rr_results produces expected cumulative RR results", {
+  # Create sample data for two geographies
+  set.seed(123)
+  n_geog <- 2
+  n_days <- 10
+
+  # Create df_list with temperature data
+  df_list <- lapply(1:n_geog, function(i) {
+    data.frame(
+      temp = rnorm(n_days, mean = 20 + i * 2, sd = 3),
+      dependent = rpois(n_days, lambda = 10 + i)
+    )
+  })
+  names(df_list) <- paste0("geog", 1:n_geog)
+
+  # Create pred_list with prediction values for each geography
+  pred_list <- lapply(1:n_geog, function(i) {
+    data.frame(
+      predvar   = seq(15, 30, length.out = 5),
+      allRRfit  = runif(5, 1, 2),
+      allRRlow  = runif(5, 0.8, 1.2),
+      allRRhigh = runif(5, 2, 3)
+    )
+  })
+  names(pred_list) <- names(df_list)
+
+  # Create minpercgeog_ vector for percentile thresholds
+  minpercgeog_ <- setNames(sample(20:60, n_geog, replace = TRUE), names(df_list))
+
+  # Run the function
+  result <- suppressWarnings(
+    hc_rr_results(
+      pred_list = pred_list,
+      df_list = df_list,
+      minpercgeog_ = minpercgeog_,
+      attr_thr_high = 97.5,
+      attr_thr_low = 2.5
+    )
+  )
+
+  # Tests
+  expect_s3_class(result, "data.frame")
+  expect_true(nrow(result) > 0)
+
+  # Check required columns exist
+  required_cols <- c(
+    "Area",
+    "MMT",
+    "Attr_Threshold_High_Temp",
+    "Attr_Threshold_Ligh_Temp",  # note: Ligh in function output
+    "Temperature",
+    "Temp_Frequency",
+    "RR",
+    "RR_lower_CI",
+    "RR_upper_CI"
+  )
+  expect_true(all(required_cols %in% names(result)))
+
+  # Check that Area names match geog names
+  expect_true(all(result$Area %in% names(df_list)))
+
+  # Check rounding of RR and confidence intervals
+  expect_true(all(result$RR == round(result$RR, 2)))
+  expect_true(all(result$RR_lower_CI == round(result$RR_lower_CI, 2)))
+  expect_true(all(result$RR_upper_CI == round(result$RR_upper_CI, 2)))
+
+  # Check Temp_Frequency is numeric and non-negative
+  expect_true(is.numeric(result$Temp_Frequency))
+  expect_true(all(result$Temp_Frequency >= 0))
+
+  # Check MMT and threshold temps are correctly computed (ignore names)
+  for (geog in names(df_list)) {
+    temps <- df_list[[geog]]$temp
+
+    expected_mmt <- unname(round(quantile(temps, minpercgeog_[geog] / 100, na.rm = TRUE), 1))
+    actual_mmt <- unique(result[result$Area == geog, "MMT"])
+    expect_equal(actual_mmt, expected_mmt)
+
+    expected_high <- unname(round(quantile(temps, 97.5 / 100, na.rm = TRUE), 1))
+    actual_high <- unique(result[result$Area == geog, "Attr_Threshold_High_Temp"])
+    expect_equal(actual_high, expected_high)
+
+    expected_low <- unname(round(quantile(temps, 2.5 / 100, na.rm = TRUE), 1))
+    actual_low <- unique(result[result$Area == geog, "Attr_Threshold_Ligh_Temp"])
+    expect_equal(actual_low, expected_low)
+  }
+})
+
+
+test_that("hc_rr_results handles edge cases correctly", {
+  # Single geography
+  df_list_single <- list(geog1 = data.frame(temp = rnorm(10, 20, 2)))
+  pred_list_single <- list(
+    geog1 = data.frame(
+      predvar   = seq(18, 25, length.out = 3),
+      allRRfit  = c(1.1, 1.2, 1.3),
+      allRRlow  = c(0.9, 1.0, 1.1),
+      allRRhigh = c(1.5, 1.6, 1.7)
+    )
+  )
+  minpercgeog_single <- c(geog1 = 50)
+
+  result_single <- suppressWarnings(
+    hc_rr_results(pred_list_single, df_list_single, minpercgeog_ = minpercgeog_single)
+  )
+  expect_s3_class(result_single, "data.frame")
+  expect_equal(unique(result_single$Area), "geog1")
+
+  # Missing values in temperature
+  df_list_na <- list(geog1 = data.frame(temp = c(NA, 20, 22, NA, 25)))
+  pred_list_na <- list(
+    geog1 = data.frame(
+      predvar   = c(20, 22, 25),
+      allRRfit  = c(1.1, 1.2, 1.3),
+      allRRlow  = c(0.9, 1.0, 1.1),
+      allRRhigh = c(1.5, 1.6, 1.7)
+    )
+  )
+  minpercgeog_na <- c(geog1 = 50)
+
+  result_na <- suppressWarnings(
+    hc_rr_results(pred_list_na, df_list_na, minpercgeog_ = minpercgeog_na)
+  )
+  expect_s3_class(result_na, "data.frame")
+  expect_true(all(!is.na(result_na$MMT)))  # MMT should compute despite NA values
+
+  # Empty lists
+  df_list_empty <- list()
+  pred_list_empty <- list()
+  minpercgeog_empty <- c()
+
+  result_empty <- hc_rr_results(
+    pred_list = pred_list_empty,
+    df_list = df_list_empty,
+    minpercgeog_ = minpercgeog_empty
+  )
+  expect_s3_class(result_empty, "data.frame")
+  expect_equal(nrow(result_empty), 0)  # Should return empty data frame without error
+})
