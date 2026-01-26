@@ -1235,3 +1235,71 @@ test_that("hc_rr_results handles edge cases correctly", {
   expect_s3_class(result_empty, "data.frame")
   expect_equal(nrow(result_empty), 0)  # Should return empty data frame without error
 })
+
+
+test_that("hc_plot_rr produces plots correctly", {
+
+  # Create sample df_list
+  set.seed(123)
+  df_list <- list(
+    Geog1 = data.frame(
+      date = seq.Date(as.Date("2023-01-01"), by = "day", length.out = 10),
+      geog = "Geog1",
+      temp = rnorm(10, 20, 3),
+      dependent = rpois(10, lambda = 5),
+      population = rep(1000000, 10),
+      year = rep(2023, 10),
+      month = rep(1, 10)
+    )
+  )
+
+  # Generate dummy crosspred object with strong positive effect
+  temp_seq <- seq(-6, 6, length.out = 20)
+  basis <- dlnm::onebasis(temp_seq, "lin")
+  coef <- 2  # large positive coefficient for RR values
+  vcov <- matrix(0.01)
+  pred_obj <- dlnm::crosspred(basis, coef = coef, vcov = vcov, cen = 0, at = temp_seq)
+
+  # Wrap in list for hc_plot_rr
+  pred_list <- list(Geog1 = pred_obj)
+
+  # minpercgeog_
+  minpercgeog_ <- c(Geog1 = 50)
+
+  # Plot without saving
+  suppressWarnings(
+    hc_plot_rr(
+      df_list = df_list,
+      pred_list = pred_list,
+      attr_thr_high = 0,
+      attr_thr_low = 0,
+      minpercgeog_ = minpercgeog_,
+      save_fig = FALSE
+    )
+  )
+
+  # Plot with saving enabled (expect warnings)
+  output_folder <- file.path(temp_dir, "test_temp_mortality_rr_plots")
+  on.exit(unlink(output_folder, recursive = TRUE), add = TRUE)
+
+  if (dir.exists(output_folder)) unlink(output_folder, recursive = TRUE)
+  dir.create(output_folder, recursive = TRUE)
+
+  suppressWarnings(
+    hc_plot_rr(
+      df_list = df_list,
+      pred_list = pred_list,
+      attr_thr_high = 0,
+      attr_thr_low = 0,
+      minpercgeog_ = minpercgeog_,
+      save_fig = TRUE,
+      output_folder_path = output_folder,
+      country = "TestCountry"
+    )
+  )
+
+  # Check PDF file exists and is non-empty
+  output_path <- file.path(output_folder, "temp_mortality_rr_plot.pdf")
+  expect_true(file.exists(output_path))
+  expect_gt(file.info(output_path)$size, 0)
+})
