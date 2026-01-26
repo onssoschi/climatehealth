@@ -2400,3 +2400,186 @@ test_that("hc_plot_ar_cold_monthly produces monthly AR (cold) plots with overlay
   expect_true(file.exists(output_path))
   expect_gt(file.info(output_path)$size, 0)
 })
+
+test_that("hc_save_results errors when output_folder_path is NULL", {
+  # Minimal inputs; function should error before using them
+  rr_results <- data.frame(region = character(), rr = numeric(), rr_lower_ci = numeric(), rr_upper_ci = numeric())
+  res_attr_tot <- matrix(nrow = 0, ncol = 0)
+  attr_yr_list <- list()
+  attr_mth_list <- list()
+  power_list_high <- list()
+  power_list_low  <- list()
+
+  expect_error(
+    hc_save_results(
+      rr_results = rr_results,
+      res_attr_tot = res_attr_tot,
+      attr_yr_list = attr_yr_list,
+      attr_mth_list = attr_mth_list,
+      power_list_high = power_list_high,
+      power_list_low  = power_list_low,
+      output_folder_path = NULL
+    ),
+    regexp = "Output path not specified"
+  )
+})
+
+
+test_that("hc_save_results writes all expected CSV files and validates content", {
+  # Create a temporary output folder and ensure the model_validation subfolder exists
+  out_dir <- tempfile(pattern = "hc_save_results_out_", tmpdir = temp_dir)
+  dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+
+  model_val_dir <- file.path(out_dir, "model_validation")
+  if (!dir.exists(model_val_dir)) {
+    dir.create(model_val_dir, recursive = TRUE)
+  }
+
+  # Cleanup after test
+  on.exit(unlink(out_dir, recursive = TRUE, force = TRUE), add = TRUE)
+
+  # Mock rr_results (data.frame)
+  rr_results <- data.frame(
+    region = c("region1", "region2"),
+    rr = c(1.15, 1.08),
+    rr_lower_ci = c(1.05, 1.02),
+    rr_upper_ci = c(1.25, 1.15)
+  )
+
+  # Mock res_attr_tot (matrix) with named columns
+  res_attr_tot <- matrix(
+    c("region1", 12.4, 52, 5.6,  9.1, 45, 4.8,  # region, af_heat, an_heat, ar_heat, af_cold, an_cold, ar_cold
+      "region2",  8.8, 38, 3.9,  7.3, 32, 3.4),
+    nrow = 2, byrow = TRUE
+  )
+  colnames(res_attr_tot) <- c(
+    "region",
+    "af_heat", "an_heat", "ar_heat",
+    "af_cold", "an_cold", "ar_cold"
+  )
+
+  # Mock attr_yr_list (list of data.frames); region first column is required
+  attr_yr_list <- list(
+    region1 = data.frame(
+      region = "region1",
+      year = c(2000, 2001),
+      af_heat = c(10.5, 12.0),
+      an_heat = c(25, 30),
+      ar_heat = c(5.2, 6.0),
+      af_cold = c(7.1, 8.0),
+      an_cold = c(14, 16),
+      ar_cold = c(3.1, 3.4)
+    ),
+    region2 = data.frame(
+      region = "region2",
+      year = c(2000, 2001),
+      af_heat = c(8.2, 9.5),
+      an_heat = c(20, 22),
+      ar_heat = c(3.8, 4.5),
+      af_cold = c(6.5, 7.2),
+      an_cold = c(12, 13),
+      ar_cold = c(2.9, 3.2)
+    )
+  )
+
+  # Mock attr_mth_list (list of data.frames); region first column is required
+  attr_mth_list <- list(
+    region1 = data.frame(
+      region = "region1",
+      month = month.name[1:3],
+      af_heat = c(10.5, 12.0, 11.3),
+      an_heat = c(5, 6, 7),
+      ar_heat = c(4.5, 5.0, 5.2),
+      af_cold = c(7.2, 6.9, 7.5),
+      an_cold = c(3, 4, 3),
+      ar_cold = c(2.5, 2.8, 2.6)
+    ),
+    region2 = data.frame(
+      region = "region2",
+      month = month.name[1:3],
+      af_heat = c(8.2, 9.5, 10.1),
+      an_heat = c(4, 5, 6),
+      ar_heat = c(3.2, 3.8, 4.1),
+      af_cold = c(6.4, 6.8, 7.0),
+      an_cold = c(2, 2, 3),
+      ar_cold = c(2.0, 2.1, 2.3)
+    )
+  )
+
+  # Mock power lists (rbind-able)
+  power_list_high <- list(
+    data.frame(region = "region1", temperature = 27.5, power = 0.85, threshold = 97.5),
+    data.frame(region = "region2", temperature = 28.0, power = 0.88, threshold = 97.5)
+  )
+  power_list_low <- list(
+    data.frame(region = "region1", temperature = 2.5, power = 0.81, threshold = 2.5),
+    data.frame(region = "region2", temperature = 3.0, power = 0.83, threshold = 2.5)
+  )
+
+  # Execute and validate file creation
+  expect_no_error(
+    hc_save_results(
+      rr_results = rr_results,
+      res_attr_tot = res_attr_tot,
+      attr_yr_list = attr_yr_list,
+      attr_mth_list = attr_mth_list,
+      power_list_high = power_list_high,
+      power_list_low  = power_list_low,
+      output_folder_path = out_dir
+    )
+  )
+
+  # Expected file paths
+  rr_path        <- file.path(out_dir, "mortality_rr_results.csv")
+  attr_tot_path  <- file.path(out_dir, "mortality_attr_tot_results.csv")
+  attr_yr_path   <- file.path(out_dir, "mortality_attr_yr_results.csv")
+  attr_mth_path  <- file.path(out_dir, "mortality_attr_mth_results.csv")
+  power_high_path <- file.path(out_dir, "model_validation", "mortality_high_temp_power_results.csv")
+  power_low_path  <- file.path(out_dir, "model_validation", "mortality_low_temp_power_results.csv")
+
+  # Files exist and are non-empty
+  expect_true(file.exists(rr_path))
+  expect_true(file.exists(attr_tot_path))
+  expect_true(file.exists(attr_yr_path))
+  expect_true(file.exists(attr_mth_path))
+  expect_true(file.exists(power_high_path))
+  expect_true(file.exists(power_low_path))
+
+  expect_gt(file.info(rr_path)$size, 0)
+  expect_gt(file.info(attr_tot_path)$size, 0)
+  expect_gt(file.info(attr_yr_path)$size, 0)
+  expect_gt(file.info(attr_mth_path)$size, 0)
+  expect_gt(file.info(power_high_path)$size, 0)
+  expect_gt(file.info(power_low_path)$size, 0)
+
+  # Validate RR results content
+  rr_out <- read.csv(rr_path, stringsAsFactors = FALSE)
+  expect_true(all(c("region", "rr", "rr_lower_ci", "rr_upper_ci") %in% names(rr_out)))
+  expect_equal(nrow(rr_out), nrow(rr_results))
+
+  # Validate total attributable results: region column present; row count matches
+  attr_tot_out <- read.csv(attr_tot_path, stringsAsFactors = FALSE)
+  expect_true("region" %in% names(attr_tot_out))
+  expect_equal(nrow(attr_tot_out), nrow(res_attr_tot))
+
+  # Validate yearly results: region is the first column; row count equals sum over list
+  attr_yr_out <- read.csv(attr_yr_path, stringsAsFactors = FALSE)
+  expect_equal(names(attr_yr_out)[1], "region")
+  expected_yr_rows <- sum(vapply(attr_yr_list, nrow, integer(1)))
+  expect_equal(nrow(attr_yr_out), expected_yr_rows)
+
+  # Validate monthly results: region is the first column; row count equals sum over list
+  attr_mth_out <- read.csv(attr_mth_path, stringsAsFactors = FALSE)
+  expect_equal(names(attr_mth_out)[1], "region")
+  expected_mth_rows <- sum(vapply(attr_mth_list, nrow, integer(1)))
+  expect_equal(nrow(attr_mth_out), expected_mth_rows)
+
+  # Validate power results content
+  power_high_out <- read.csv(power_high_path, stringsAsFactors = FALSE)
+  expect_true(all(c("region", "power", "threshold") %in% names(power_high_out)))
+  expect_equal(nrow(power_high_out), length(power_list_high))
+
+  power_low_out <- read.csv(power_low_path, stringsAsFactors = FALSE)
+  expect_true(all(c("region", "power", "threshold") %in% names(power_low_out)))
+  expect_equal(nrow(power_low_out), length(power_list_low))
+})
