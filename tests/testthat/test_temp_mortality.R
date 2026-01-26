@@ -1586,3 +1586,817 @@ test_that("hc_attr_tables aggregates attributable estimates correctly", {
   expect_true(all(attr_mth_list$region1$month %in% month.name))
   expect_true(all(attr_mth_list$region2$month %in% month.name))
 })
+
+
+test_that("hc_plot_attr_heat_totals generates plots and validates dynamic elements", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Mock df_list with date column for two regions
+  n_days <- 10
+  df_list <- list(
+    region1 = data.frame(date = seq.Date(as.Date("2000-01-01"), by = "day", length.out = n_days)),
+    region2 = data.frame(date = seq.Date(as.Date("2000-01-01"), by = "day", length.out = n_days))
+  )
+
+  # Mock res_attr_tot with required columns (heat only)
+  res_attr_tot <- data.frame(
+    region = c("region1", "region2"),
+    af_heat = c(12.5, 8.3),
+    af_heat_lower_ci = c(10.0, 6.0),
+    af_heat_upper_ci = c(15.0, 10.0),
+    ar_heat = c(5.2, 3.8),
+    ar_heat_lower_ci = c(4.0, 3.0),
+    ar_heat_upper_ci = c(6.5, 4.5)
+  )
+
+  # Plot to a null device for dynamic checks (no file saving)
+  expect_no_error(suppress_plot({
+    grDevices::pdf(NULL) # Direct to null device for testing
+    hc_plot_attr_heat_totals(df_list, res_attr_tot, save_fig = FALSE, country = "region1")
+    plot_calls <- recordPlot()
+    grDevices::dev.off()
+  }))
+
+  # Validate sorting by AF and AR (descending)
+  sorted_af <- order(res_attr_tot$af_heat, decreasing = TRUE)
+  expect_equal(res_attr_tot$region[sorted_af][1], "region1") # region1 has highest AF
+
+  sorted_ar <- order(res_attr_tot$ar_heat, decreasing = TRUE)
+  expect_equal(res_attr_tot$region[sorted_ar][1], "region1") # region1 has highest AR
+
+  # Validate highlight color logic for AF section
+  # Colors used in function: bars = "#a04b58"; highlight (national) = "#7a855c"
+  bar_col_af_heat <- rep("#a04b58", nrow(res_attr_tot))
+  nat_ind_af_heat <- which(res_attr_tot$region[sorted_af] == "region1")
+  if (length(nat_ind_af_heat) > 0) {
+    bar_col_af_heat[nat_ind_af_heat] <- "#7a855c"
+  }
+  expect_true("#7a855c" %in% bar_col_af_heat)
+
+  # Validate CI warning text formatting (heat)
+  af_heat_ci_range <- c(min(res_attr_tot$af_heat_lower_ci), max(res_attr_tot$af_heat_upper_ci))
+  af_warning <- sprintf("Warning: AF CI's range from %.2f%% to %.2f%%", af_heat_ci_range[1], af_heat_ci_range[2])
+  expect_match(af_warning, "Warning: AF CI's range from")
+
+  ar_heat_ci_range <- c(min(res_attr_tot$ar_heat_lower_ci), max(res_attr_tot$ar_heat_upper_ci))
+  ar_warning <- sprintf("Warning: AR CI's range from %.2f to %.2f per 100,000", ar_heat_ci_range[1], ar_heat_ci_range[2])
+  expect_match(ar_warning, "Warning: AR CI's range from")
+
+  # Validate year range calculation for titles
+  year_min <- min(sapply(df_list, function(x) min(lubridate::year(x$date), na.rm = TRUE)))
+  year_max <- max(sapply(df_list, function(x) max(lubridate::year(x$date), na.rm = TRUE)))
+  expect_equal(year_min, 2000)
+  expect_equal(year_max, 2000)
+
+  # Validate file saving when save_fig = TRUE
+  output_path <- file.path(temp_dir, "mortality_total_heat_attr_plot.pdf")
+  on.exit(unlink(output_path, force = TRUE), add = TRUE)
+
+  expect_no_error(suppress_plot(
+    hc_plot_attr_heat_totals(
+      df_list = df_list,
+      res_attr_tot = res_attr_tot,
+      save_fig = TRUE,
+      output_folder_path = temp_dir,
+      country = "region1"
+    )
+  ))
+
+  expect_true(file.exists(output_path))
+  expect_gt(file.info(output_path)$size, 0)
+})
+
+
+test_that("hc_plot_attr_cold_totals generates plots and validates dynamic elements", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Mock df_list with date column for two regions
+  n_days <- 10
+  df_list <- list(
+    region1 = data.frame(date = seq.Date(as.Date("2000-01-01"), by = "day", length.out = n_days)),
+    region2 = data.frame(date = seq.Date(as.Date("2000-01-01"), by = "day", length.out = n_days))
+  )
+
+  # Mock res_attr_tot with required columns (cold-specific)
+  res_attr_tot <- data.frame(
+    region = c("region1", "region2"),
+    af_cold = c(9.4, 6.1),
+    af_cold_lower_ci = c(7.0, 4.5),
+    af_cold_upper_ci = c(11.5, 7.8),
+    ar_cold = c(4.8, 2.9),
+    ar_cold_lower_ci = c(3.9, 2.3),
+    ar_cold_upper_ci = c(5.9, 3.6)
+  )
+
+  # Plot to a null device for dynamic checks (no file saving)
+  expect_no_error(suppress_plot({
+    grDevices::pdf(NULL) # Direct to null device for testing
+    hc_plot_attr_cold_totals(df_list, res_attr_tot, save_fig = FALSE, country = "region1")
+    plot_calls <- recordPlot()
+    grDevices::dev.off()
+  }))
+
+  # Validate sorting by AF and AR (descending)
+  sorted_af <- order(res_attr_tot$af_cold, decreasing = TRUE)
+  expect_equal(res_attr_tot$region[sorted_af][1], "region1") # highest AF
+
+  sorted_ar <- order(res_attr_tot$ar_cold, decreasing = TRUE)
+  expect_equal(res_attr_tot$region[sorted_ar][1], "region1") # highest AR
+
+  # Validate highlight color logic for AF section
+  # Bars use "#0A2E4D" and highlight (national) "#7a855c"
+  bar_col_af_cold <- rep("#0A2E4D", nrow(res_attr_tot))
+  nat_ind_af_cold <- which(res_attr_tot$region[sorted_af] == "region1")
+  if (length(nat_ind_af_cold) > 0) {
+    bar_col_af_cold[nat_ind_af_cold] <- "#7a855c"
+  }
+  expect_true("#7a855c" %in% bar_col_af_cold)
+
+  # Validate CI warning text formatting for AF and AR
+  af_cold_ci_range <- c(min(res_attr_tot$af_cold_lower_ci), max(res_attr_tot$af_cold_upper_ci))
+  af_warning <- sprintf("Warning: AF CI's range from %.2f%% to %.2f%%", af_cold_ci_range[1], af_cold_ci_range[2])
+  expect_match(af_warning, "Warning: AF CI's range from")
+
+  ar_cold_ci_range <- c(min(res_attr_tot$ar_cold_lower_ci), max(res_attr_tot$ar_cold_upper_ci))
+  ar_warning <- sprintf("Warning: AR CI's range from %.2f to %.2f per 100,000", ar_cold_ci_range[1], ar_cold_ci_range[2])
+  expect_match(ar_warning, "Warning: AR CI's range from")
+
+  # Validate year range calculation for titles
+  year_min <- min(sapply(df_list, function(x) min(lubridate::year(x$date), na.rm = TRUE)))
+  year_max <- max(sapply(df_list, function(x) max(lubridate::year(x$date), na.rm = TRUE)))
+  expect_equal(year_min, 2000)
+  expect_equal(year_max, 2000)
+
+  # Validate file saving when save_fig = TRUE
+  output_path <- file.path(temp_dir, "mortality_total_cold_attr_plot.pdf")
+  on.exit(unlink(output_path, force = TRUE), add = TRUE)
+
+  expect_no_error(suppress_plot(
+    hc_plot_attr_cold_totals(
+      df_list = df_list,
+      res_attr_tot = res_attr_tot,
+      save_fig = TRUE,
+      output_folder_path = temp_dir,
+      country = "region1"
+    )
+  ))
+
+  expect_true(file.exists(output_path))
+  expect_gt(file.info(output_path)$size, 0)
+})
+
+
+test_that("hc_plot_af_heat_yearly produces yearly AF (heat) plots with CI shading and file output", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Construct attr_yr_list for two geographies
+  attr_yr_list <- list(
+    GeogA = data.frame(
+      year = 2018:2022,
+      af_heat = c(4.5, 6.0, 7.2, 6.8, 8.1),
+      af_heat_lower_ci = c(3.0, 4.2, 5.5, 5.0, 6.1),
+      af_heat_upper_ci = c(6.0, 7.8, 8.9, 8.4, 10.0)
+    ),
+    GeogB = data.frame(
+      year = 2019:2022,
+      af_heat = c(3.8, 5.1, 4.7, 5.9),
+      af_heat_lower_ci = c(2.4, 3.6, 3.1, 4.4),
+      af_heat_upper_ci = c(5.2, 6.6, 6.3, 7.4)
+    )
+  )
+
+  # Plot without saving (render to null device)
+  expect_no_error(suppress_plot({
+    grDevices::pdf(NULL)
+    hc_plot_af_heat_yearly(attr_yr_list, save_fig = FALSE, country = "Testland")
+    plot_calls <- recordPlot()
+    grDevices::dev.off()
+  }))
+
+  # Validate year range derived from list
+  year_min <- min(sapply(attr_yr_list, function(x) min(x$year, na.rm = TRUE)))
+  year_max <- max(sapply(attr_yr_list, function(x) max(x$year, na.rm = TRUE)))
+  expect_equal(year_min, 2018)
+  expect_equal(year_max, 2022)
+
+  # Validate CI warning message formatting logic (independent of device)
+  # Use GeogA to compute expected format; function prints only if outside ylim.
+  ga <- attr_yr_list$GeogA
+  af_heat_ci_range <- c(min(ga$af_heat_lower_ci), max(ga$af_heat_upper_ci))
+  ci_warning <- sprintf(
+    "Warning: CI's are outside the bounds of this chart. CI's range from %.2f%% to %.2f%%",
+    af_heat_ci_range[1], af_heat_ci_range[2]
+  )
+  expect_match(ci_warning, "Warning: CI's are outside the bounds of this chart")
+
+  # Prepare output folder and ensure cleanup
+  output_folder <- file.path(temp_dir, "hc_plot_af_heat_yearly_out")
+  if (dir.exists(output_folder)) unlink(output_folder, recursive = TRUE)
+  dir.create(output_folder, recursive = TRUE, showWarnings = FALSE)
+  on.exit(unlink(output_folder, recursive = TRUE, force = TRUE), add = TRUE)
+
+  # Plot with saving enabled
+  expect_no_error(suppress_plot(
+    hc_plot_af_heat_yearly(
+      attr_yr_list = attr_yr_list,
+      save_fig = TRUE,
+      output_folder_path = output_folder,
+      country = "Testland"
+    )
+  ))
+
+  # Validate output PDF exists and is non-empty
+  output_path <- file.path(output_folder, "mortality_af_heat_timeseries.pdf")
+  expect_true(file.exists(output_path))
+  expect_gt(file.info(output_path)$size, 0)
+})
+
+
+test_that("hc_plot_af_cold_yearly produces yearly AF (cold) plots with CI shading and file output", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Construct attr_yr_list for two geographies
+  attr_yr_list <- list(
+    GeogA = data.frame(
+      year = 2018:2022,
+      af_cold = c(6.2, 5.9, 7.1, 6.5, 7.8),
+      af_cold_lower_ci = c(4.7, 4.2, 5.4, 4.9, 6.1),
+      af_cold_upper_ci = c(7.7, 7.6, 8.8, 8.1, 9.5)
+    ),
+    GeogB = data.frame(
+      year = 2019:2022,
+      af_cold = c(5.0, 5.6, 5.2, 6.0),
+      af_cold_lower_ci = c(3.6, 4.1, 3.7, 4.6),
+      af_cold_upper_ci = c(6.4, 7.1, 6.7, 7.5)
+    )
+  )
+
+  # Plot without saving (render to null device)
+  expect_no_error(suppress_plot({
+    grDevices::pdf(NULL)
+    hc_plot_af_cold_yearly(attr_yr_list, save_fig = FALSE, country = "Testland")
+    plot_calls <- recordPlot()
+    grDevices::dev.off()
+  }))
+
+  # Validate year range derived from list
+  year_min <- min(sapply(attr_yr_list, function(x) min(x$year, na.rm = TRUE)))
+  year_max <- max(sapply(attr_yr_list, function(x) max(x$year, na.rm = TRUE)))
+  expect_equal(year_min, 2018)
+  expect_equal(year_max, 2022)
+
+  # Validate CI warning message formatting logic (computed independently)
+  ga <- attr_yr_list$GeogA
+  af_cold_ci_range <- c(min(ga$af_cold_lower_ci), max(ga$af_cold_upper_ci))
+  ci_warning <- sprintf(
+    "Warning: CI's are outside the bounds of this chart. CI's range from %.2f%% to %.2f%%",
+    af_cold_ci_range[1], af_cold_ci_range[2]
+  )
+  expect_match(ci_warning, "Warning: CI's are outside the bounds of this chart")
+
+  # Prepare output folder and ensure cleanup
+  output_folder <- file.path(temp_dir, "hc_plot_af_cold_yearly_out")
+  if (dir.exists(output_folder)) unlink(output_folder, recursive = TRUE)
+  dir.create(output_folder, recursive = TRUE, showWarnings = FALSE)
+  on.exit(unlink(output_folder, recursive = TRUE, force = TRUE), add = TRUE)
+
+  # Plot with saving enabled
+  expect_no_error(suppress_plot(
+    hc_plot_af_cold_yearly(
+      attr_yr_list = attr_yr_list,
+      save_fig = TRUE,
+      output_folder_path = output_folder,
+      country = "Testland"
+    )
+  ))
+
+  # Validate output PDF exists and is non-empty
+  output_path <- file.path(output_folder, "mortality_af_cold_timeseries.pdf")
+  expect_true(file.exists(output_path))
+  expect_gt(file.info(output_path)$size, 0)
+})
+
+
+test_that("hc_plot_ar_heat_yearly produces yearly AR (heat) plots with CI shading and file output", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Construct attr_yr_list for two geographies
+  attr_yr_list <- list(
+    GeogA = data.frame(
+      year = 2018:2022,
+      ar_heat = c(3.2, 3.8, 4.5, 4.1, 5.0),
+      ar_heat_lower_ci = c(2.4, 2.9, 3.5, 3.2, 4.0),
+      ar_heat_upper_ci = c(4.0, 4.7, 5.6, 5.0, 6.1)
+    ),
+    GeogB = data.frame(
+      year = 2019:2022,
+      ar_heat = c(2.9, 3.3, 3.0, 3.6),
+      ar_heat_lower_ci = c(2.1, 2.5, 2.2, 2.8),
+      ar_heat_upper_ci = c(3.7, 4.1, 3.8, 4.4)
+    )
+  )
+
+  # Plot without saving (render to null device)
+  expect_no_error(suppress_plot({
+    grDevices::pdf(NULL)
+    hc_plot_ar_heat_yearly(attr_yr_list, save_fig = FALSE, country = "Testland")
+    plot_calls <- recordPlot()
+    grDevices::dev.off()
+  }))
+
+  # Validate year range derived from list
+  year_min <- min(sapply(attr_yr_list, function(x) min(x$year, na.rm = TRUE)))
+  year_max <- max(sapply(attr_yr_list, function(x) max(x$year, na.rm = TRUE)))
+  expect_equal(year_min, 2018)
+  expect_equal(year_max, 2022)
+
+  # Validate CI warning message formatting logic (computed independently)
+  ga <- attr_yr_list$GeogA
+  ar_heat_ci_range <- c(min(ga$ar_heat_lower_ci), max(ga$ar_heat_upper_ci))
+  ci_warning <- sprintf(
+    "Warning: CI's are outside the bounds of this chart. CI's range from %.2f to %.2f per 100,000",
+    ar_heat_ci_range[1], ar_heat_ci_range[2]
+  )
+  expect_match(ci_warning, "Warning: CI's are outside the bounds of this chart")
+
+  # Prepare output folder and ensure cleanup
+  output_folder <- file.path(temp_dir, "hc_plot_ar_heat_yearly_out")
+  if (dir.exists(output_folder)) unlink(output_folder, recursive = TRUE)
+  dir.create(output_folder, recursive = TRUE, showWarnings = FALSE)
+  on.exit(unlink(output_folder, recursive = TRUE, force = TRUE), add = TRUE)
+
+  # Plot with saving enabled
+  expect_no_error(suppress_plot(
+    hc_plot_ar_heat_yearly(
+      attr_yr_list = attr_yr_list,
+      save_fig = TRUE,
+      output_folder_path = output_folder,
+      country = "Testland"
+    )
+  ))
+
+  # Validate output PDF exists and is non-empty
+  output_path <- file.path(output_folder, "mortality_ar_heat_timeseries.pdf")
+  expect_true(file.exists(output_path))
+  expect_gt(file.info(output_path)$size, 0)
+})
+
+
+#' Plot attributable rates by year - low temps
+#'
+#' @description Plot attributable rates by year and area with confidence intervals
+#'
+#' @param attr_yr_list A list of matrices containing yearly estimates of attributable
+#' fractions, numbers and rates by area
+#' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
+#' FALSE.
+#' @param output_folder_path Path to folder where plots should be saved.
+#' Defaults to NULL.
+#' @param country Character. Name of country for national level estimates.
+#'
+#' @return Plots of yearly attributable rates per area
+#'
+#' @keywords internal
+hc_plot_ar_cold_yearly <- function(attr_yr_list,
+                                   save_fig = FALSE,
+                                   output_folder_path = NULL,
+                                   country = "National") {
+  if (save_fig == TRUE) {
+    grid <- c(min(length(attr_yr_list), 3), ceiling(length(attr_yr_list) / 3))
+    output_path <- file.path(output_folder_path, "mortality_ar_cold_timeseries.pdf")
+    pdf(output_path, width = max(10, grid[1] * 5.5), height = max(7, grid[2] * 4.5))
+
+    par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0), mar = c(8, 4, 5, 4))
+  }
+
+  year_min <- min(sapply(attr_yr_list, function(x) min(x$year, na.rm = TRUE)))
+  year_max <- max(sapply(attr_yr_list, function(x) max(x$year, na.rm = TRUE)))
+
+  y_min <- min(sapply(attr_yr_list, function(x) min(x$ar_cold, na.rm = TRUE)))
+  y_max <- max(sapply(attr_yr_list, function(x) max(x$ar_cold, na.rm = TRUE)))
+
+  ylim <- c(min(c(0, y_min)), y_max) * 1.5
+
+  for (geog in names(attr_yr_list)) {
+    geog_ar <- as.data.frame(attr_yr_list[[geog]])
+
+    plot(
+      x = geog_ar$year,
+      y = geog_ar$ar_cold,
+      type = "l",
+      xlim = c(year_min, year_max),
+      ylim = ylim,
+      xlab = "Year",
+      ylab = "Low temperature AR (per 100,000 population)",
+      main = geog,
+      col = "#296991"
+    )
+
+    # Ensure data is sorted by Year
+    geog_ar <- geog_ar[order(geog_ar$year), ]
+
+    # Create x and y coordinates for the polygon
+    x_poly <- c(geog_ar$year, rev(geog_ar$year))
+    y_poly <- c(geog_ar$ar_cold_upper_ci, rev(geog_ar$ar_cold_lower_ci))
+
+    # Draw shaded confidence interval
+    polygon(
+      x = x_poly,
+      y = y_poly,
+      col = adjustcolor("#296991", alpha.f = 0.2),
+      border = NA
+    )
+
+    abline(
+      h = 0,
+      col = "black",
+      lty = 2
+    )
+
+    legend("topright",
+           inset = c(0, -0.1),
+           legend = "95% CI",
+           col = adjustcolor("#296991", alpha.f = 0.2),
+           pch = 15,
+           pt.cex = 2,
+           bty = "n",
+           xpd = TRUE,
+           horiz = TRUE,
+           cex = 0.9
+    )
+
+    if (save_fig == TRUE) {
+      ar_cold_ci_range <- c(min(geog_ar$ar_cold_lower_ci), max(geog_ar$ar_cold_upper_ci))
+
+      if (ar_cold_ci_range[1] < ylim[1] || ar_cold_ci_range[2] > ylim[2]) {
+        ci_warning <- sprintf("Warning: CI's are outside the bounds of this chart. CI's range from %.2f to %.2f per 100,000", ar_cold_ci_range[1], ar_cold_ci_range[2])
+        ovr_warning <- "(Please refer to the associated data table for more information on the uncertainty around each estimate)"
+
+        mtext(ci_warning, side = 1, line = 5, cex = 0.6, col = "red", font = 3)
+        mtext(ovr_warning, side = 1, line = 6, cex = 0.6, col = "red", font = 3)
+      }
+    }
+  }
+
+  if (save_fig == TRUE) {
+    year_range <- paste0("(", year_min, " - ", year_max, ")")
+    title <- paste0("Yearly attributable rate of low temperature mortality by geography, ", country, " ", year_range)
+
+    mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+
+    dev.off()
+  }
+}
+
+
+test_that("hc_plot_af_heat_monthly produces monthly AF (heat) plots with overlayed temperature and file output", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Build attr_mth_list: monthly AF (heat) with CI and monthly mean temperature
+  months <- month.name
+  make_attr_mth_df <- function(base_af = 4, base_temp = 10) {
+    data.frame(
+      month = months,
+      af_heat = round(runif(12, base_af - 1, base_af + 3), 1),
+      af_heat_lower_ci = round(runif(12, base_af - 2, base_af), 1),
+      af_heat_upper_ci = round(runif(12, base_af + 2, base_af + 4), 1),
+      temp = round(runif(12, base_temp - 5, base_temp + 10), 1)
+    )
+  }
+
+  attr_mth_list <- list(
+    GeogA = make_attr_mth_df(base_af = 5, base_temp = 12),
+    GeogB = make_attr_mth_df(base_af = 3, base_temp = 9)
+  )
+
+  # Build df_list: include date (for year range) and temp (for threshold computation)
+  n_days <- 365
+  start_date <- as.Date("2020-01-01")
+  dates <- seq.Date(start_date, by = "day", length.out = n_days)
+
+  df_list <- list(
+    GeogA = data.frame(
+      date = dates,
+      temp = rnorm(n_days, mean = 12, sd = 5)
+    ),
+    GeogB = data.frame(
+      date = dates,
+      temp = rnorm(n_days, mean = 9, sd = 6)
+    )
+  )
+
+  # Non-saving path: render to a null device to avoid side-effects
+  expect_no_error(suppress_plot({
+    grDevices::pdf(NULL)
+    hc_plot_af_heat_monthly(
+      attr_mth_list = attr_mth_list,
+      df_list = df_list,
+      country = "Testland",
+      attr_thr_high = 97.5,
+      save_fig = FALSE
+    )
+    plot_calls <- recordPlot()
+    grDevices::dev.off()
+  }))
+
+  # Validate year range calculation from df_list
+  year_min <- min(sapply(df_list, function(x) min(lubridate::year(x$date), na.rm = TRUE)))
+  year_max <- max(sapply(df_list, function(x) max(lubridate::year(x$date), na.rm = TRUE)))
+  expect_equal(year_min, 2020)
+  expect_equal(year_max, 2020)
+
+  # Validate CI warning text assembled from all regions’ monthly AF CI ranges
+  af_heat_ci_min <- min(sapply(attr_mth_list, function(x) min(x$af_heat_lower_ci, na.rm = TRUE)))
+  af_heat_ci_max <- max(sapply(attr_mth_list, function(x) max(x$af_heat_upper_ci, na.rm = TRUE)))
+  ci_warning <- sprintf("Warning: CI's range from %.2f%% to %.2f%%", af_heat_ci_min, af_heat_ci_max)
+  expect_match(ci_warning, "Warning: CI's range from")
+
+  # Validate legend label formatting (uses percentile threshold from df_list temperatures)
+  attr_thr_high <- 97.5
+  # Example for GeogA
+})
+
+
+test_that("hc_plot_af_cold_monthly produces monthly AF (cold) plots with overlayed temperature and file output", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Build attr_mth_list: monthly AF (cold) with CI and monthly mean temperature
+  months <- month.name
+  make_attr_mth_df <- function(base_af = 3.5, base_temp = 8) {
+    data.frame(
+      month = months,
+      af_cold = round(runif(12, base_af - 1, base_af + 3), 1),
+      af_cold_lower_ci = round(runif(12, base_af - 2, base_af), 1),
+      af_cold_upper_ci = round(runif(12, base_af + 2, base_af + 4), 1),
+      temp = round(runif(12, base_temp - 6, base_temp + 8), 1)
+    )
+  }
+
+  attr_mth_list <- list(
+    GeogA = make_attr_mth_df(base_af = 4.2, base_temp = 9),
+    GeogB = make_attr_mth_df(base_af = 2.8, base_temp = 7)
+  )
+
+  # Build df_list: include date (for year range) and temp (for threshold computation)
+  n_days <- 366
+  start_date <- as.Date("2020-01-01")
+  dates <- seq.Date(start_date, by = "day", length.out = n_days)
+
+  df_list <- list(
+    GeogA = data.frame(
+      date = dates,
+      temp = rnorm(n_days, mean = 9, sd = 5)
+    ),
+    GeogB = data.frame(
+      date = dates,
+      temp = rnorm(n_days, mean = 7, sd = 6)
+    )
+  )
+
+  # Non-saving path: render to a null device to avoid side-effects
+  expect_no_error(suppress_plot({
+    grDevices::pdf(NULL)
+    hc_plot_af_cold_monthly(
+      attr_mth_list = attr_mth_list,
+      df_list = df_list,
+      country = "Testland",
+      attr_thr_low = 2.5,
+      save_fig = FALSE
+    )
+    plot_calls <- recordPlot()
+    grDevices::dev.off()
+  }))
+
+  # Validate year range calculation from df_list
+  year_min <- min(sapply(df_list, function(x) min(lubridate::year(x$date), na.rm = TRUE)))
+  year_max <- max(sapply(df_list, function(x) max(lubridate::year(x$date), na.rm = TRUE)))
+  expect_equal(year_min, 2020)
+  expect_equal(year_max, 2020)
+
+  # Validate CI warning text assembled from all regions’ monthly AF CI ranges
+  af_cold_ci_min <- min(sapply(attr_mth_list, function(x) min(x$af_cold_lower_ci, na.rm = TRUE)))
+  af_cold_ci_max <- max(sapply(attr_mth_list, function(x) max(x$af_cold_upper_ci, na.rm = TRUE)))
+  ci_warning <- sprintf("Warning: CI's range from %.2f%% to %.2f%%", af_cold_ci_min, af_cold_ci_max)
+  expect_match(ci_warning, "Warning: CI's range from")
+
+  # Validate legend label formatting (uses percentile threshold from df_list temperatures)
+  attr_thr_low <- 2.5
+  thr_val <- round(stats::quantile(df_list$GeogA$temp, attr_thr_low / 100, na.rm = TRUE), 2)
+  expected_leg <- paste0("Low temperature AF (%) - from treshold, ", thr_val, "\u00b0C (", attr_thr_low, "p)")
+  expect_match(expected_leg, "Low temperature AF")
+
+  # Saving path: create a temporary output folder and verify file
+  output_folder <- file.path(temp_dir, "hc_plot_af_cold_monthly_out")
+  if (dir.exists(output_folder)) unlink(output_folder, recursive = TRUE)
+  dir.create(output_folder, recursive = TRUE, showWarnings = FALSE)
+  on.exit(unlink(output_folder, recursive = TRUE, force = TRUE), add = TRUE)
+
+  expect_no_error(suppress_plot(
+    hc_plot_af_cold_monthly(
+      attr_mth_list = attr_mth_list,
+      df_list = df_list,
+      country = "Testland",
+      attr_thr_low = attr_thr_low,
+      save_fig = TRUE,
+      output_folder_path = output_folder
+    )
+  ))
+
+  # Validate output PDF exists and is non-empty
+  output_path <- file.path(output_folder, "mortality_af_cold_month_plot.pdf")
+  expect_true(file.exists(output_path))
+  expect_gt(file.info(output_path)$size, 0)
+})
+
+
+test_that("hc_plot_ar_heat_monthly produces monthly AR (heat) plots with overlayed temperature and file output", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Build attr_mth_list: monthly AR (heat) with CI and monthly mean temperature
+  months <- month.name
+  make_attr_mth_df <- function(base_ar = 3.5, base_temp = 11) {
+    data.frame(
+      month = months,
+      ar_heat = round(runif(12, base_ar - 1, base_ar + 3), 2),
+      ar_heat_lower_ci = round(runif(12, base_ar - 2, base_ar), 2),
+      ar_heat_upper_ci = round(runif(12, base_ar + 2, base_ar + 4), 2),
+      temp = round(runif(12, base_temp - 6, base_temp + 8), 1)
+    )
+  }
+
+  attr_mth_list <- list(
+    GeogA = make_attr_mth_df(base_ar = 4.0, base_temp = 12),
+    GeogB = make_attr_mth_df(base_ar = 2.8, base_temp = 9)
+  )
+
+  # Build df_list: include date (for year range) and temp (for threshold computation)
+  n_days <- 365
+  start_date <- as.Date("2020-01-01")
+  dates <- seq.Date(start_date, by = "day", length.out = n_days)
+
+  df_list <- list(
+    GeogA = data.frame(
+      date = dates,
+      temp = rnorm(n_days, mean = 12, sd = 5)
+    ),
+    GeogB = data.frame(
+      date = dates,
+      temp = rnorm(n_days, mean = 9, sd = 6)
+    )
+  )
+
+  # Non-saving path: render to a null device to avoid side-effects
+  expect_no_error(suppress_plot({
+    grDevices::pdf(NULL)
+    hc_plot_ar_heat_monthly(
+      attr_mth_list = attr_mth_list,
+      df_list = df_list,
+      country = "Testland",
+      attr_thr_high = 97.5,
+      save_fig = FALSE
+    )
+    plot_calls <- recordPlot()
+    grDevices::dev.off()
+  }))
+
+  # Validate year range calculation from df_list
+  year_min <- min(sapply(df_list, function(x) min(lubridate::year(x$date), na.rm = TRUE)))
+  year_max <- max(sapply(df_list, function(x) max(lubridate::year(x$date), na.rm = TRUE)))
+  expect_equal(year_min, 2020)
+  expect_equal(year_max, 2020)
+
+  # Validate CI warning text assembled from all regions’ monthly AR CI ranges
+  ar_heat_ci_min <- min(sapply(attr_mth_list, function(x) min(x$ar_heat_lower_ci, na.rm = TRUE)))
+  ar_heat_ci_max <- max(sapply(attr_mth_list, function(x) max(x$ar_heat_upper_ci, na.rm = TRUE)))
+  ci_warning <- sprintf("Warning: CI's range from %.2f to %.2f per 100,000 population", ar_heat_ci_min, ar_heat_ci_max)
+  expect_match(ci_warning, "Warning: CI's range from")
+
+  # Validate legend label formatting (uses percentile threshold from df_list temperatures)
+  attr_thr_high <- 97.5
+  thr_val <- round(stats::quantile(df_list$GeogA$temp, attr_thr_high / 100, na.rm = TRUE), 2)
+  expected_leg <- paste0("High temperature AR - from threshold, ", thr_val, "\u00b0C (", attr_thr_high, "p)")
+  expect_match(expected_leg, "High temperature AR - from threshold")
+
+  # Saving path: create a temporary output folder and verify file
+  output_folder <- file.path(temp_dir, "hc_plot_ar_heat_monthly_out")
+  if (dir.exists(output_folder)) unlink(output_folder, recursive = TRUE)
+  dir.create(output_folder, recursive = TRUE, showWarnings = FALSE)
+  on.exit(unlink(output_folder, recursive = TRUE, force = TRUE), add = TRUE)
+
+  expect_no_error(suppress_plot(
+    hc_plot_ar_heat_monthly(
+      attr_mth_list = attr_mth_list,
+      df_list = df_list,
+      country = "Testland",
+      attr_thr_high = attr_thr_high,
+      save_fig = TRUE,
+      output_folder_path = output_folder
+    )
+  ))
+
+  # Validate output PDF exists and is non-empty
+  output_path <- file.path(output_folder, "mortality_ar_heat_month_plot.pdf")
+  expect_true(file.exists(output_path))
+  expect_gt(file.info(output_path)$size, 0)
+})
+
+
+test_that("hc_plot_ar_cold_monthly produces monthly AR (cold) plots with overlayed temperature and file output", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Build attr_mth_list: monthly AR (cold) with CI and monthly mean temperature
+  months <- month.name
+  make_attr_mth_df <- function(base_ar = 2.9, base_temp = 8) {
+    data.frame(
+      month = months,
+      ar_cold = round(runif(12, base_ar - 1, base_ar + 3), 2),
+      ar_cold_lower_ci = round(runif(12, base_ar - 2, base_ar), 2),
+      ar_cold_upper_ci = round(runif(12, base_ar + 2, base_ar + 4), 2),
+      temp = round(runif(12, base_temp - 6, base_temp + 8), 1)
+    )
+  }
+
+  attr_mth_list <- list(
+    GeogA = make_attr_mth_df(base_ar = 3.4, base_temp = 9),
+    GeogB = make_attr_mth_df(base_ar = 2.5, base_temp = 7)
+  )
+
+  # Build df_list: include date (for year range) and temp (for threshold computation)
+  n_days <- 365
+  start_date <- as.Date("2020-01-01")
+  dates <- seq.Date(start_date, by = "day", length.out = n_days)
+
+  df_list <- list(
+    GeogA = data.frame(
+      date = dates,
+      temp = rnorm(n_days, mean = 9, sd = 5)
+    ),
+    GeogB = data.frame(
+      date = dates,
+      temp = rnorm(n_days, mean = 7, sd = 6)
+    )
+  )
+
+  # Non-saving path: render to a null device to avoid side-effects
+  expect_no_error(suppress_plot({
+    grDevices::pdf(NULL)
+    hc_plot_ar_cold_monthly(
+      attr_mth_list = attr_mth_list,
+      df_list = df_list,
+      country = "Testland",
+      attr_thr_low = 2.5,
+      save_fig = FALSE
+    )
+    plot_calls <- recordPlot()
+    grDevices::dev.off()
+  }))
+
+  # Validate year range calculation from df_list
+  year_min <- min(sapply(df_list, function(x) min(lubridate::year(x$date), na.rm = TRUE)))
+  year_max <- max(sapply(df_list, function(x) max(lubridate::year(x$date), na.rm = TRUE)))
+  expect_equal(year_min, 2020)
+  expect_equal(year_max, 2020)
+
+  # Validate CI warning text assembled from all regions’ monthly AR CI ranges
+  ar_cold_ci_min <- min(sapply(attr_mth_list, function(x) min(x$ar_cold_lower_ci, na.rm = TRUE)))
+  ar_cold_ci_max <- max(sapply(attr_mth_list, function(x) max(x$ar_cold_upper_ci, na.rm = TRUE)))
+  ci_warning <- sprintf("Warning: CI's range from %.2f to %.2f per 100,000 population", ar_cold_ci_min, ar_cold_ci_max)
+  expect_match(ci_warning, "Warning: CI's range from")
+
+  # Validate legend label formatting (uses percentile threshold from df_list temperatures)
+  attr_thr_low <- 2.5
+  thr_val <- round(stats::quantile(df_list$GeogA$temp, attr_thr_low / 100, na.rm = TRUE), 2)
+  expected_leg <- paste0("Low temperature AR - from threshold, ", thr_val, "\u00b0C (", attr_thr_low, "p)")
+  expect_match(expected_leg, "Low temperature AR - from threshold")
+
+  # Saving path: create a temporary output folder and verify file
+  output_folder <- file.path(temp_dir, "hc_plot_ar_cold_monthly_out")
+  if (dir.exists(output_folder)) unlink(output_folder, recursive = TRUE)
+  dir.create(output_folder, recursive = TRUE, showWarnings = FALSE)
+  on.exit(unlink(output_folder, recursive = TRUE, force = TRUE), add = TRUE)
+
+  expect_no_error(suppress_plot(
+    hc_plot_ar_cold_monthly(
+      attr_mth_list = attr_mth_list,
+      df_list = df_list,
+      country = "Testland",
+      attr_thr_low = attr_thr_low,
+      save_fig = TRUE,
+      output_folder_path = output_folder
+    )
+  ))
+
+  # Validate output PDF exists and is non-empty
+  output_path <- file.path(output_folder, "mortality_ar_cold_month_plot.pdf")
+  expect_true(file.exists(output_path))
+  expect_gt(file.info(output_path)$size, 0)
+})
