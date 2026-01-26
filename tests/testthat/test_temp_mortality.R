@@ -878,3 +878,141 @@ test_that("hc_predict_subnat supports meta-analysis BLUP input (meta_analysis = 
     expect_equal(max(pred$predvar), max(df_list[[nm]]$temp, na.rm = TRUE), tolerance = 0.11)
   }
 })
+
+
+test_that("test hc_add_national_data", {
+  skip_if_not_installed("mvmeta")
+
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Parameters
+  n_regions <- 3
+  n_days <- 30
+  start_date <- as.Date("2020-01-01")
+  dates <- seq(start_date, by = "day", length.out = n_days)
+  years <- lubridate::year(dates)
+
+  # Generate df_list (use 'dependent' to match hc_add_national_data)
+  df_list <- lapply(1:n_regions, function(i) {
+    data.frame(
+      date = dates,
+      year = years,
+      temp = rnorm(n_days, mean = 15 + i * 2, sd = 5),
+      dependent = rpois(n_days, lambda = 5 + i),  # <-- outcome column is 'dependent'
+      population = sample(100000:200000, n_days, replace = TRUE),
+      geog = paste0("region", i)                   # <-- name consistent with function output
+    )
+  })
+  names(df_list) <- paste0("region", 1:n_regions)
+
+  # Generate pop_list
+  pop_list <- lapply(names(df_list), function(region) {
+    data.frame(
+      year = unique(years),
+      population = sample(100000:200000, length(unique(years)), replace = TRUE)
+    )
+  })
+  names(pop_list) <- names(df_list)
+
+  # Add national population
+  pop_list[["National"]] <- data.frame(
+    year = unique(years),
+    population = sample(500000:600000, length(unique(years)), replace = TRUE)
+  )
+
+  # Create a temporary national dataset to determine basis dimension
+  temp_nat <- do.call(rbind, df_list)
+  temp_cb <- dlnm::onebasis(
+    x = quantile(temp_nat$temp, 1:99 / 100),
+    fun = "bs",
+    knots = quantile(temp_nat$temp, c(0.10, 0.75, 0.90)),  # align with var_per default
+    degree = 2,
+    Boundary.knots = range(temp_nat$temp)
+  )
+  n_basis <- ncol(temp_cb)
+
+  # Generate synthetic coefficients and vcov for mvmeta
+  coef_mat <- matrix(rnorm(n_regions * n_basis), ncol = n_basis)
+  vcov_list <- replicate(n_regions, diag(n_basis), simplify = FALSE)
+  names(vcov_list) <- names(df_list)
+
+  # Fit mvmeta model
+  mm <- mvmeta::mvmeta(coef_mat, vcov_list, method = "reml")
+
+  # Generate cb_list for regions (use same lag parameterization as the function)
+  lagn <- 21
+  lagnk <- 3
+  cb_list <- lapply(df_list, function(df) {
+    dlnm::crossbasis(
+      df$temp,
+      lag = lagn,
+      argvar = list(
+        fun = "bs",
+        knots = quantile(df$temp, c(0.10, 0.75, 0.90))
+      ),
+      arglag = list(
+        knots = dlnm::logknots(lagn, lagnk)
+      )
+    )
+  })
+
+  # Generate minperc (vector exists but function overwrites/adds National)
+  minpercgeog_ <- setNames(sample(20:80, n_regions, replace = TRUE), names(df_list))
+
+  # Call function under test
+  result <- hc_add_national_data(
+    df_list = df_list,
+    pop_list = pop_list,
+    var_fun = "bs",
+    var_per = c(10, 75, 90),  # matches function default; OK to change if desired
+    var_degree = 2,
+    lagn = lagn,
+    lagnk = lagnk,
+    country = "National",
+    cb_list = cb_list,
+    mm = mm,
+    minpercgeog_ = minpercgeog_
+  )
+
+  # Basic structure checks
+  expect_type(result, "list")
+  expect_length(result, 4)
+  expect_named(result, NULL)  # unnamed list
+
+  # National dataframe checks
+  df_out <- result[[1]]
+  expect_true("National" %in% names(df_out))
+  nat_df <- df_out[["National"]]
+
+  expect_s3_class(nat_df, "data.frame")
+  expect_true(all(c("date", "temp", "dependent", "population", "year", "month", "geog") %in% names(nat_df)))
+  expect_equal(nrow(nat_df), length(unique(df_list[[1]]$date)))
+  expect_true(all(nat_df$geog == "National"))
+
+  # National crossbasis checks
+  cb_out <- result[[2]]
+  expect_true("National" %in% names(cb_out))
+  nat_cb <- cb_out[["National"]]
+
+  expect_s3_class(nat_cb, "crossbasis")
+  expect_true(all(c("argvar", "arglag") %in% names(attributes(nat_cb))))
+  expect_equal(attr(nat_cb, "argvar")$fun, "bs")
+  # For arglag we pass knots via logknots; assert presence/length rather than 'fun'
+  expect_true("knots" %in% names(attr(nat_cb, "arglag")))
+  expect_equal(length(attr(nat_cb, "arglag")$knots), lagnk)
+
+  # National min percentile checks (function uses 1:99 grid)
+  minperc_out <- result[[3]]
+  expect_true("National" %in% names(minperc_out))
+  expect_true(is.numeric(minperc_out[["National"]]))
+  expect_true(minperc_out[["National"]] >= 1 && minperc_out[["National"]] <= 99)
+
+  # Predicted national coefficients / vcov checks
+  mmpredall <- result[[4]]
+  expect_type(mmpredall, "list")
+  expect_true(all(c("fit", "vcov") %in% names(mmpredall)))
+  expect_true(is.numeric(mmpredall$fit))
+  expect_true(is.matrix(mmpredall$vcov))
+  expect_equal(length(mmpredall$fit), ncol(mmpredall$vcov))
+})
