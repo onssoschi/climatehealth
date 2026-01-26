@@ -2583,3 +2583,131 @@ test_that("hc_save_results writes all expected CSV files and validates content",
   expect_true(all(c("region", "power", "threshold") %in% names(power_low_out)))
   expect_equal(nrow(power_low_out), length(power_list_low))
 })
+
+test_that("integration: temp_mortality_do_analysis runs end-to-end (dynamic synthetic data)", {
+  set.seed(42)
+
+  # Generate 2-region daily data with continuity and variability
+  n_days_per_region <- 1000
+  regions <- c("Region 1", "Region 2")
+  start_date <- as.Date("2000-01-01")
+
+  make_region <- function(region_name) {
+    # static seed for repeatability across regions
+    set.seed(126)
+    dates <- seq(start_date, by = "day", length.out = n_days_per_region)
+
+    # Temperature with annual seasonality + noise
+    day_ix <- seq_len(n_days_per_region)
+    tmean <- 10 + 8 * sin(2 * pi * day_ix / 365) + rnorm(n_days_per_region, sd = 4)
+    tmean <- pmax(pmin(tmean, 25), -5)  # clamp to plausible range
+
+    # Additional independent vars (optional for model validation)
+    hum <- pmax(pmin(80 + rnorm(n_days_per_region, sd = 6), 95), 70)
+    rainfall <- pmax(rnorm(n_days_per_region, mean = 3.5, sd = 2.0), 0)
+    sun <- pmax(rnorm(n_days_per_region, mean = 2.5, sd = 1.2), 0)
+
+    # Population: region-specific constant
+    pop <- if (region_name == "Region 1") 2600000L else 6800000L
+
+    # Outcome: Poisson linked to temperature for variability; ensure some early non-zeros
+    lambda <- exp(-0.1 + 0.03 * tmean)  # ~0.5–3.0
+    dependent <- rpois(n_days_per_region, lambda = lambda)
+    dependent[1:5] <- pmax(dependent[1:5], c(0, 1, 0, 1, 2))
+
+    data.frame(
+      date = dates,
+      region = region_name,
+      tmean = round(tmean, 2),
+      hum = round(hum, 2),
+      sun = round(sun, 2),
+      rainfall = round(rainfall, 2),
+      population = rep(pop, n_days_per_region),
+      dependent = dependent,
+      check.names = FALSE
+    )
+  }
+
+  df <- do.call(rbind, lapply(regions, make_region))
+  df <- df[order(df$region, df$date), ]
+
+  # Quick preflight checks to avoid degenerate inputs
+  by_region <- split(df, df$region)
+  ok_unique_temp <- all(vapply(by_region, function(x) length(unique(x$tmean)) >= 10, logical(1)))
+  ok_nonzero <- all(vapply(by_region, function(x) sum(x$dependent > 0) >= 10, logical(1)))
+  expect_true(ok_unique_temp, info = "Not enough unique temperature values for splines")
+  expect_true(ok_nonzero, info = "Too few non-zero outcome counts for model fitting")
+
+  # Write to a temporary CSV
+  tmp_file <- tempfile(fileext = ".csv")
+  write.csv(df, tmp_file, row.names = FALSE)
+  on.exit(unlink(tmp_file), add = TRUE)
+
+  # Run pipeline with stable settings (single knot; short lag; no meta-analysis)
+  result <- temp_mortality_do_analysis(
+    data_path = tmp_file,
+    date_col = "date",
+    geography_col = "region",
+    temperature_col = "tmean",
+    dependent_col = "dependent",
+    population_col = "population",
+    independent_cols = c("hum", "sun", "rainfall"),
+    control_cols = NULL,
+    var_fun = "bs",
+    var_degree = 2,
+    var_per = c(50),  # single knot for stability
+    lagn = 2,         # minimal DLNM lag
+    lagnk = 1,        # minimal lag knots
+    dfseas = 6,       # moderate seasonal df
+    save_fig = FALSE,
+    save_csv = FALSE,
+    country = "National",
+    meta_analysis = FALSE,
+    attr_thr_high = 97.5,
+    attr_thr_low = 2.5,
+    output_folder_path = NULL
+  )
+
+  # Structure checks: ensure contract is met
+  expect_type(result, "list")
+  expected_names <- c("rr_results", "an_ar_results", "annual_an_ar_results", "monthly_an_ar_results")
+  expect_true(all(expected_names %in% names(result)))
+
+  # rr_results: basic schema & content (non-brittle subset)
+  rr <- result$rr_results
+  expect_s3_class(rr, "data.frame")
+  expect_true(nrow(rr) > 0, info = "rr_results unexpectedly empty")
+  expect_true(all(c("Area", "RR", "RR_lower_CI", "RR_upper_CI") %in% names(rr)))
+
+  # an_ar_results (overall totals)
+  tot <- result$an_ar_results
+  expect_s3_class(tot, "data.frame")
+  expect_true(nrow(tot) >= length(regions), info = "overall results should include per-region rows")
+  expect_true(all(c("region", "population", "dependent") %in% names(tot)))
+  expect_true(any(c("af_heat", "ar_heat", "an_heat") %in% names(tot)))  # heat metrics present
+  expect_true(any(c("af_cold", "ar_cold", "an_cold") %in% names(tot)))  # cold metrics present
+
+  # annual_an_ar_results: list of data frames keyed by region
+  yr_list <- result$annual_an_ar_results
+  expect_type(yr_list, "list")
+  expect_true(all(vapply(yr_list, is.data.frame, logical(1))))
+  # At least one data frame should include 'year' and some metric columns
+  if (length(yr_list) > 0) {
+    sample_df <- yr_list[[1]]
+    expect_true("year" %in% names(sample_df))
+    expect_true(any(c("af_heat", "ar_heat", "an_heat", "af_cold", "ar_cold", "an_cold") %in% names(sample_df)))
+  }
+
+  # monthly_an_ar_results: list of data frames keyed by region, with 'month' names
+  mth_list <- result$monthly_an_ar_results
+  expect_type(mth_list, "list")
+  expect_true(all(vapply(mth_list, is.data.frame, logical(1))))
+  if (length(mth_list) > 0) {
+    sample_df <- mth_list[[1]]
+    expect_true("month" %in% names(sample_df))
+    # month names expected if hc_attr_tables converted via month.name
+    if (all(!is.na(sample_df$month))) {
+      expect_true(all(sample_df$month %in% month.name))
+    }
+  }
+})
