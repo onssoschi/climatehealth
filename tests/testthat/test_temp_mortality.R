@@ -1303,3 +1303,286 @@ test_that("hc_plot_rr produces plots correctly", {
   expect_true(file.exists(output_path))
   expect_gt(file.info(output_path)$size, 0)
 })
+
+
+test_that("hc_attr produces expected output structure and values", {
+  # Create synthetic df_list with sufficient rows for lag calculations
+  set.seed(123)
+  n_rows <- 60
+  df_list <- list(
+    Geog1 = data.frame(
+      date = seq.Date(as.Date("2000-01-01"), by = "day", length.out = n_rows),
+      region = "Geog 1",
+      temp = rnorm(n_rows, 5, 2.5),
+      dependent = rpois(n_rows, lambda = 2),
+      population = rep(2600000, n_rows),
+      year = rep(2000, n_rows),
+      month = rep(1, n_rows)
+    )
+  )
+
+  # Create cb_list mimicking crossbasis structure (60 x 5)
+  cb <- matrix(rnorm(n_rows * 5), nrow = n_rows, ncol = 5)
+  class(cb) <- c("crossbasis", "matrix")
+  attr(cb, "df") <- c(5, 2)
+  attr(cb, "range") <- c(-6, 24)
+  attr(cb, "lag") <- c(0, 2)
+  attr(cb, "argvar") <- list(fun = "bs", knots = c(0, 5, 10), degree = 2)
+  attr(cb, "arglag") <- list(fun = "strata", breaks = 1)
+  cb_list <- list(Geog1 = cb)
+
+  # Create pred_list with coefficients and vcov (length 5)
+  pred_list <- list(
+    Geog1 = list(
+      coefficients = c(-0.19, -0.30, -0.20, -0.14, -0.36),
+      vcov = diag(c(0.18, 0.11, 0.15, 0.12, 0.16), 5, 5)
+    )
+  )
+
+  # Percentile of minimum temperature
+  minpercgeog_ <- c(Geog1 = 37)
+
+  # Run hc_attr with balanced thresholds
+  result <- hc_attr(
+    df_list = df_list,
+    cb_list = cb_list,
+    pred_list = pred_list,
+    minpercgeog_ = minpercgeog_,
+    attr_thr_high = 90,
+    attr_thr_low = 10
+  )
+
+  # Validate output structure
+  expect_type(result, "list")
+  expect_named(result, names(df_list))
+  expect_true(all(sapply(result, is.data.frame)))
+
+  # Expected columns
+  expected_cols <- c(
+    "region", "date", "temp", "year", "month", "dependent", "population",
+    "threshold_temp_high",
+    "af_heat", "af_heat_lower_ci", "af_heat_upper_ci",
+    "an_heat", "an_heat_lower_ci", "an_heat_upper_ci",
+    "ar_heat", "ar_heat_lower_ci", "ar_heat_upper_ci",
+    "threshold_temp_low",
+    "af_cold", "af_cold_lower_ci", "af_cold_upper_ci",
+    "an_cold", "an_cold_lower_ci", "an_cold_upper_ci",
+    "ar_cold", "ar_cold_lower_ci", "ar_cold_upper_ci"
+  )
+
+  for (geog in names(result)) {
+    df <- result[[geog]]
+    expect_true(all(expected_cols %in% names(df)))
+
+    # Validate numeric columns contain at least some finite values
+    num_cols <- setdiff(expected_cols, c("region", "date", "year", "month"))
+    for (col in num_cols) {
+      expect_true(is.numeric(df[[col]]))
+      expect_true(any(is.finite(df[[col]])))
+    }
+
+    # Validate confidence interval ordering on finite rows
+    ci_triads <- list(
+      c("af_heat_lower_ci", "af_heat", "af_heat_upper_ci"),
+      c("an_heat_lower_ci", "an_heat", "an_heat_upper_ci"),
+      c("ar_heat_lower_ci", "ar_heat", "ar_heat_upper_ci"),
+      c("af_cold_lower_ci", "af_cold", "af_cold_upper_ci"),
+      c("an_cold_lower_ci", "an_cold", "an_cold_upper_ci"),
+      c("ar_cold_lower_ci", "ar_cold", "ar_cold_upper_ci")
+    )
+    for (triad in ci_triads) {
+      rows <- complete.cases(df[triad])
+      if (any(rows)) {
+        expect_true(all(df[rows, triad[1]] <= df[rows, triad[2]]))
+        expect_true(all(df[rows, triad[2]] <= df[rows, triad[3]]))
+      } else {
+        succeed()
+      }
+    }
+
+    # Validate threshold temperatures
+    th_high <- unique(df$threshold_temp_high)
+    th_low  <- unique(df$threshold_temp_low)
+    expect_length(th_high, 1L)
+    expect_length(th_low, 1L)
+    expect_true(th_low  >= min(df$temp, na.rm = TRUE))
+    expect_true(th_high <= max(df$temp, na.rm = TRUE))
+  }
+})
+
+
+test_that("hc_attr adds region column when missing", {
+  set.seed(42)
+  n_rows <- 60
+  df_list <- list(
+    GeoNoRegion = data.frame(
+      date = seq.Date(as.Date("2001-01-01"), by = "day", length.out = n_rows),
+      temp = rnorm(n_rows, 7, 2),
+      dependent = rpois(n_rows, lambda = 3),
+      population = rep(500000, n_rows),
+      year = rep(2001, n_rows),
+      month = rep(2, n_rows)
+    )
+  )
+
+  # Use the same cb dimensionality (60 x 5) and attributes
+  cb <- matrix(rnorm(n_rows * 5), nrow = n_rows, ncol = 5)
+  class(cb) <- c("crossbasis", "matrix")
+  attr(cb, "df") <- c(5, 2)
+  attr(cb, "range") <- c(-5, 22)
+  attr(cb, "lag") <- c(0, 2)
+  attr(cb, "argvar") <- list(fun = "bs", knots = c(2, 6, 10), degree = 2)
+  attr(cb, "arglag") <- list(fun = "strata", breaks = 1)
+  cb_list <- list(GeoNoRegion = cb)
+
+  # Coefficients/vcov length 5
+  pred_list <- list(
+    GeoNoRegion = list(
+      coefficients = c(0.05, -0.02, 0.03, 0.01, -0.04),
+      vcov = diag(rep(0.02, 5))
+    )
+  )
+
+  minpercgeog_ <- c(GeoNoRegion = 50)
+
+  res <- hc_attr(
+    df_list, cb_list, pred_list, minpercgeog_,
+    attr_thr_high = 90, attr_thr_low = 10
+  )
+
+  expect_true("GeoNoRegion" %in% names(res))
+  df <- res$GeoNoRegion
+  expect_s3_class(df, "data.frame")
+  expect_true("region" %in% names(df))
+  expect_true(all(df$region == "GeoNoRegion"))
+})
+
+
+test_that("hc_attr_tables aggregates attributable estimates correctly", {
+  # Set seed for reproducibility
+  set.seed(123)
+
+  # Create mock attr_list for two regions with heat and cold components
+  # Ensure non-zero denominators to avoid division warnings
+  make_region_df <- function(region_name, years, months, n_rows) {
+    data.frame(
+      year = rep(years, length.out = n_rows),
+      month = rep(months, length.out = n_rows),
+      region = region_name,
+      population = rep(100000 + sample(0:20000, 1), n_rows),
+      temp = rnorm(n_rows, mean = 15, sd = 3),
+      threshold_temp_high = rep(27, n_rows),
+      threshold_temp_low  = rep(3, n_rows),
+      dependent = rep(10 + sample(0:5, 1), n_rows),
+
+      # Heat component: totals = n_rows * 2, CI wider around it
+      an_heat            = rep(2, n_rows),
+      an_heat_lower_ci   = rep(1.5, n_rows),
+      an_heat_upper_ci   = rep(2.5, n_rows),
+
+      # Cold component: totals = n_rows * 1, CI wider around it
+      an_cold            = rep(1, n_rows),
+      an_cold_lower_ci   = rep(0.5, n_rows),
+      an_cold_upper_ci   = rep(1.5, n_rows)
+    )
+  }
+
+  # Region 1: 10 rows across 2000–2001 and months 1–5
+  results_region1 <- make_region_df(
+    region_name = "region1",
+    years  = 2000:2001,
+    months = 1:5,
+    n_rows = 10
+  )
+
+  # Region 2: 8 rows across 2000–2001 and months 1–4
+  results_region2 <- make_region_df(
+    region_name = "region2",
+    years  = 2000:2001,
+    months = 1:4,
+    n_rows = 8
+  )
+
+  attr_list <- list(
+    region1 = results_region1,
+    region2 = results_region2
+  )
+
+  # Run function
+  result <- hc_attr_tables(attr_list, country = "National", meta_analysis = FALSE)
+
+  # Structure tests
+  expect_type(result, "list")
+  expect_length(result, 3)
+
+  res_attr_tot <- result[[1]]
+  attr_yr_list <- result[[2]]
+  attr_mth_list <- result[[3]]
+
+  # Check overall totals dataframe
+  expect_true(is.data.frame(res_attr_tot))
+  required_cols_tot <- c(
+    "region", "population", "temp",
+    "threshold_temp_high", "threshold_temp_low",
+    "dependent",
+    "an_heat", "an_heat_lower_ci", "an_heat_upper_ci",
+    "an_cold", "an_cold_lower_ci", "an_cold_upper_ci",
+    "af_heat", "af_heat_lower_ci", "af_heat_upper_ci",
+    "ar_heat", "ar_heat_lower_ci", "ar_heat_upper_ci",
+    "af_cold", "af_cold_lower_ci", "af_cold_upper_ci",
+    "ar_cold", "ar_cold_lower_ci", "ar_cold_upper_ci"
+  )
+  expect_true(all(required_cols_tot %in% names(res_attr_tot)))
+
+  # Check yearly list structure
+  expect_type(attr_yr_list, "list")
+  expect_named(attr_yr_list, c("region1", "region2"))
+  expect_true(all(sapply(attr_yr_list, is.data.frame)))
+
+  # Check monthly list structure
+  expect_type(attr_mth_list, "list")
+  expect_named(attr_mth_list, c("region1", "region2"))
+  expect_true(all(sapply(attr_mth_list, is.data.frame)))
+
+  # Validate CI ordering: lower <= estimate <= upper, for heat and cold metrics
+  check_ci_ordering <- function(df, lower, est, upper) {
+    rows <- stats::complete.cases(df[, c(lower, est, upper)])
+    if (any(rows)) {
+      expect_true(all(df[rows, lower] <= df[rows, est]))
+      expect_true(all(df[rows, est]  <= df[rows, upper]))
+    } else {
+      succeed()
+    }
+  }
+
+  for (df in list(res_attr_tot,
+                  attr_yr_list$region1, attr_yr_list$region2)) {
+    check_ci_ordering(df, "an_heat_lower_ci", "an_heat", "an_heat_upper_ci")
+    check_ci_ordering(df, "an_cold_lower_ci", "an_cold", "an_cold_upper_ci")
+    check_ci_ordering(df, "af_heat_lower_ci", "af_heat", "af_heat_upper_ci")
+    check_ci_ordering(df, "af_cold_lower_ci", "af_cold", "af_cold_upper_ci")
+    check_ci_ordering(df, "ar_heat_lower_ci", "ar_heat", "ar_heat_upper_ci")
+    check_ci_ordering(df, "ar_cold_lower_ci", "ar_cold", "ar_cold_upper_ci")
+  }
+
+  # Validate AF and AR are numeric; when denominators are positive, AF/AR should be finite
+  expect_true(is.numeric(res_attr_tot$af_heat))
+  expect_true(is.numeric(res_attr_tot$ar_heat))
+  expect_true(is.numeric(res_attr_tot$af_cold))
+  expect_true(is.numeric(res_attr_tot$ar_cold))
+
+  # Positive denominator check (dependent > 0, population > 0) => finite AF/AR
+  denom_rows <- with(res_attr_tot, is.finite(dependent) & dependent > 0 & is.finite(population) & population > 0)
+  if (any(denom_rows)) {
+    expect_true(all(is.finite(res_attr_tot$af_heat[denom_rows])))
+    expect_true(all(is.finite(res_attr_tot$ar_heat[denom_rows])))
+    expect_true(all(is.finite(res_attr_tot$af_cold[denom_rows])))
+    expect_true(all(is.finite(res_attr_tot$ar_cold[denom_rows])))
+  } else {
+    succeed()
+  }
+
+  # Check that month names are converted correctly in monthly list
+  expect_true(all(attr_mth_list$region1$month %in% month.name))
+  expect_true(all(attr_mth_list$region2$month %in% month.name))
+})
