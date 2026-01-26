@@ -1016,3 +1016,81 @@ test_that("test hc_add_national_data", {
   expect_true(is.matrix(mmpredall$vcov))
   expect_equal(length(mmpredall$fit), ncol(mmpredall$vcov))
 })
+
+
+test_that("hc_plot_power produces plots correctly (high and low)", {
+  # Create sample power_list_high and power_list_low with two regions each
+  power_list_high <- list(
+    region1 = data.frame(
+      geog = "region1",
+      temperature = seq(20, 30, by = 2),
+      cen = 22,
+      log_rr = c(0.1, 0.15, 0.2, 0.25, 0.3, 0.35),
+      se = c(0.05, 0.05, 0.06, 0.06, 0.07, 0.07),
+      power = c(70, 75, 80, 85, 90, 95)
+    ),
+    region2 = data.frame(
+      geog = "region2",
+      temperature = seq(18, 28, by = 2),
+      cen = 20,
+      log_rr = c(0.05, 0.1, 0.15, 0.2, 0.25, 0.3),
+      se = c(0.04, 0.05, 0.05, 0.06, 0.06, 0.07),
+      power = c(60, 65, 70, 75, 80, 85)
+    )
+  )
+
+  power_list_low <- list(
+    region1 = data.frame(
+      geog = "region1",
+      temperature = seq(0, 10, by = 2),
+      cen = 5,
+      log_rr = c(0.1, 0.12, 0.15, 0.18, 0.2, 0.22),
+      se = c(0.05, 0.05, 0.05, 0.06, 0.06, 0.07),
+      power = c(65, 70, 75, 80, 85, 90)
+    ),
+    region2 = data.frame(
+      geog = "region2",
+      temperature = seq(-2, 8, by = 2),
+      cen = 3,
+      log_rr = c(0.08, 0.1, 0.12, 0.14, 0.17, 0.2),
+      se = c(0.04, 0.05, 0.05, 0.06, 0.06, 0.07),
+      power = c(55, 60, 65, 70, 75, 80)
+    )
+  )
+
+  # Plot without saving
+  suppressWarnings(
+    hc_plot_power(power_list_high, power_list_low, save_fig = FALSE)
+  )
+
+  # create temporary output folder
+  output_folder <- tempfile(pattern = "test_plots_", tmpdir = temp_dir)
+  model_validation_dir <- file.path(output_folder, "model_validation")
+
+  # Create directories (no need to pre-clean since we use a unique temp path)
+  dir.create(model_validation_dir, recursive = TRUE, showWarnings = FALSE)
+
+  # Schedule cleanup immediately after creation
+  on.exit(unlink(output_folder, recursive = TRUE, force = TRUE), add = TRUE)
+
+  # Run plotting with saving enabled
+  suppressWarnings(
+    hc_plot_power(
+      power_list_high = power_list_high,
+      power_list_low  = power_list_low,
+      save_fig = TRUE,
+      output_folder_path = output_folder,
+      country = "TestCountry"
+    )
+  )
+
+  # Validate the PDF files were created and are non-empty
+  output_path_high <- file.path(model_validation_dir, "power_vs_high_temperature.pdf")
+  output_path_low  <- file.path(model_validation_dir, "power_vs_low_temperature.pdf")
+
+  expect_true(file.exists(output_path_high))
+  expect_gt(file.info(output_path_high)$size, 0)
+
+  expect_true(file.exists(output_path_low))
+  expect_gt(file.info(output_path_low)$size, 0)
+})
