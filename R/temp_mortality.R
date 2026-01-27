@@ -2217,7 +2217,7 @@ hc_plot_af_heat_monthly <- function(attr_mth_list,
     mtext(ci_warning, outer = TRUE, side = 1, line = 1, cex = 0.8, col = "red", font = 3)
     mtext(ovr_warning, outer = TRUE, side = 1, line = 2, cex = 0.8, col = "red", font = 3)
 
-    ev.off()
+    dev.off()
       }
 }
 
