@@ -453,11 +453,12 @@ common_descriptive_stats_core <- function(
   }
 
   # Outlier table
+  # Note: Use get() to avoid shadowing - parameter 'detect_outliers' shadows function detect_outliers()
   if (detect_outliers == TRUE) {
     outlier_columns <- setdiff(
       selected_cols[sapply(df[selected_cols], is.numeric)], dependent_col
     )
-    outlier_flags <- detect_outliers(df, outlier_columns)
+    outlier_flags <- get("detect_outliers", envir = asNamespace("climatehealth"))(df, outlier_columns)
 
     # Add outlier flags to df
     for (col in outlier_columns) {
