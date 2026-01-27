@@ -278,7 +278,7 @@ load_wildfire_data <- function(
     join_wildfire_data = TRUE,
     date_col,
     region_col,
-    shape_region_col,
+    shape_region_col = NULL,
     mean_temperature_col,
     health_outcome_col,
     rh_col = NULL,
@@ -2005,7 +2005,7 @@ wildfire_do_analysis <- function(
     shp_path = NULL,
     date_col,
     region_col,
-    shape_region_col,
+    shape_region_col = NULL,
     mean_temperature_col,
     health_outcome_col,
     rh_col = NULL,
@@ -2026,6 +2026,10 @@ wildfire_do_analysis <- function(
   # Setup additional output DIR
   if (save_fig == TRUE && !file.exists(file.path(output_folder_path, "model_validation"))) {
     dir.create(file.path(output_folder_path, "model_validation"), recursive = TRUE)
+  }
+  # Validate shape_region_col is provided when joining wildfire data
+  if (join_wildfire_data && is.null(shape_region_col)) {
+    stop("shape_region_col is required when join_wildfire_data = TRUE")
   }
   # Read and combine datasets
   data <- load_wildfire_data(
