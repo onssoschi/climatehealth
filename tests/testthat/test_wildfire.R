@@ -1061,9 +1061,8 @@ test_that(
             output_folder_path = NULL
         )
         expect_true(inherits(rr_plot, "patchwork"))
-        expect_true(inherits(rr_plot, "ggplot2::ggplot"))
-        expect_true(inherits(rr_plot, "S7_object"))
-        expect_true(inherits(rr_plot, "ggplot2::gg"))
+        expect_true(inherits(rr_plot, "ggplot"))
+        expect_true(inherits(rr_plot, "gg"))
     }
 )
 
@@ -1105,9 +1104,8 @@ test_that(
             region_name = "Region A",
             ylims = NULL
         )
-        expect_true(inherits(rr_plot, "ggplot2::ggplot"))
-        expect_true(inherits(rr_plot, "S7_object"))
-        expect_true(inherits(rr_plot, "ggplot2::gg"))
+        expect_true(inherits(rr_plot, "ggplot"))
+        expect_true(inherits(rr_plot, "gg"))
     }
 )
 
@@ -1674,9 +1672,8 @@ test_that(
         )
         # validate return
         expect_true(inherits(plot, "patchwork"))
-        expect_true(inherits(plot, "ggplot2::ggplot"))
-        expect_true(inherits(plot, "S7_object"))
-        expect_true(inherits(plot, "ggplot2::gg"))
+        expect_true(inherits(plot, "ggplot"))
+        expect_true(inherits(plot, "gg"))
         # validate plot saved
         expect_true(file.exists(file.path(temp_dir, "rr_by_pm.pdf")))
     }
@@ -1728,9 +1725,8 @@ test_that(
     {
         plot <- plot_ar_by_region(data = AR_AN_TEST_DF, output_dir = temp_dir)
         # validate return
-        expect_true(inherits(plot, "ggplot2::ggplot"))
-        expect_true(inherits(plot, "S7_object"))
-        expect_true(inherits(plot, "ggplot2::gg"))
+        expect_true(inherits(plot, "ggplot"))
+        expect_true(inherits(plot, "gg"))
         # validate plot saved
         expect_true(file.exists(file.path(temp_dir, "ar_by_region.png")))
     }
@@ -1774,9 +1770,8 @@ test_that(
     {
         plot <- plot_an_by_region(data = AR_AN_TEST_DF, output_dir = temp_dir)
         # validate return
-        expect_true(inherits(plot, "ggplot2::ggplot"))
-        expect_true(inherits(plot, "S7_object"))
-        expect_true(inherits(plot, "ggplot2::gg"))
+        expect_true(inherits(plot, "ggplot"))
+        expect_true(inherits(plot, "gg"))
         # validate plot saved
         expect_true(file.exists(file.path(temp_dir, "an_by_region.png")))
     }
