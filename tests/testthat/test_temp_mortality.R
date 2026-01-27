@@ -7,7 +7,7 @@ if (!file.exists(temp_dir)) dir.create(temp_dir)
 
 test_that("Test hc_read_data", {
 
-  # Mocking functions to avoid dependency on filesystem and internals
+  # Mocking functions
   mock_read_input_data <- function(input_csv_path) {
     data.frame(
       date_col = c("2023-01-01", "02/01/2023", "2023-01-03", "04/01/2023", "2023-01-05"),
@@ -19,12 +19,10 @@ test_that("Test hc_read_data", {
     )
   }
 
-  # Pass-through reformat (keeps test focused on hc_read_data)
   mock_reformat_data <- function(df, reformat_date = TRUE, fill_na = NULL, year_from_date = TRUE) {
     df
   }
 
-  # Emulate split-by-region and alphabetical ordering
   mock_aggregate_by_column <- function(df, col) {
     stopifnot(col %in% names(df))
     split_list <- split(df[order(df[[col]]), , drop = FALSE], df[[col]])
@@ -70,10 +68,10 @@ test_that("Test hc_read_data", {
     population_col   = "pop"
   )
 
-  # Test list names/order
+  # Test list names and order
   expect_identical(names(res_list), names(control_list))
 
-  # Test each regional dataframe without purrr
+  # Test each regional dataframe
   for (nm in names(control_list)) {
     expect_identical(res_list[[nm]], control_list[[nm]])
   }
@@ -151,7 +149,7 @@ test_that("hc_create_crossbasis creates correct cross-basis matrices", {
 
 test_that("hc_model_combo_res creates correct model combinations and diagnostics", {
 
-  # Create sample data (single year so length(unique(year)) = 1)
+  # Create sample data
   set.seed(123)
   sample_df <- data.frame(
     date       = seq.Date(from = as.Date("2023-01-01"),
@@ -178,7 +176,7 @@ test_that("hc_model_combo_res creates correct model combinations and diagnostics
   colnames(mock_cb) <- paste0("v", 1:6)
   class(mock_cb) <- c("crossbasis", "matrix")
 
-  # Minimal attributes for bookkeeping (not strictly required by glm)
+  # Minimal attributes for bookkeeping
   attr(mock_cb, "df")    <- c(3, 2)
   attr(mock_cb, "range") <- range(sample_df$temp)
   attr(mock_cb, "lag")   <- c(0, 3)
@@ -205,7 +203,7 @@ test_that("hc_model_combo_res creates correct model combinations and diagnostics
   expect_equal(nrow(qaic_results), 8)  # 2 geogs * 4 combinations (none, hum, pol, both)
   expect_named(qaic_results, c("geography", "formula", "disp", "qaic"))
 
-  # Test formulas generated - trim whitespace and verify all expected combinations exist
+  # Test formulas generated - verify all expected combinations exist
   # Base formula includes cb, dow, and the date spline with dfseas * length(unique(year))
   base_formula <- "dependent ~ cb + dow + splines::ns(date, df = 8 * length(unique(year)))"
 
@@ -316,6 +314,7 @@ test_that("hc_model_combo_res respects custom dfseas in formula construction", {
 
   qaic_results <- results[[1]]
   expect_s3_class(qaic_results, "data.frame")
+
   # Should have 2 rows: base and + humidity_ns
   expect_equal(nrow(qaic_results), 2)
 
@@ -570,7 +569,7 @@ test_that("hc_quasipoisson_dlnm fits DLNM GLMs correctly with controls", {
     # Fitted values should be positive
     expect_true(all(fitted(m) > 0))
 
-    # Formula content (substring checks to avoid whitespace brittleness)
+    # Formula content
     f_str <- paste(deparse(formula(m)), collapse = " ")
     expect_true(grepl("dependent ~", f_str, fixed = TRUE))
     expect_true(grepl(" cb", f_str, fixed = TRUE))
@@ -685,7 +684,7 @@ test_that("fwald returns a valid p-value for variables in the model", {
       dow  = as.factor(lubridate::wday(date, label = TRUE))
     )
 
-  # Simple 'cb' with 1 column to keep coefficient set small (but realistic)
+  # Simple 'cb' with 1 column
   cb <- matrix(rnorm(n_days), nrow = n_days)
   class(cb) <- c("crossbasis", "matrix")
 
@@ -893,7 +892,7 @@ test_that("test hc_add_national_data", {
   dates <- seq(start_date, by = "day", length.out = n_days)
   years <- lubridate::year(dates)
 
-  # Generate df_list (use 'dependent' to match hc_add_national_data)
+  # Generate df_list
   df_list <- lapply(1:n_regions, function(i) {
     data.frame(
       date = dates,
@@ -957,7 +956,7 @@ test_that("test hc_add_national_data", {
     )
   })
 
-  # Generate minperc (vector exists but function overwrites/adds National)
+  # Generate minperc
   minpercgeog_ <- setNames(sample(20:80, n_regions, replace = TRUE), names(df_list))
 
   # Call function under test
@@ -998,7 +997,6 @@ test_that("test hc_add_national_data", {
   expect_s3_class(nat_cb, "crossbasis")
   expect_true(all(c("argvar", "arglag") %in% names(attributes(nat_cb))))
   expect_equal(attr(nat_cb, "argvar")$fun, "bs")
-  # For arglag we pass knots via logknots; assert presence/length rather than 'fun'
   expect_true("knots" %in% names(attr(nat_cb, "arglag")))
   expect_equal(length(attr(nat_cb, "arglag")$knots), lagnk)
 
@@ -1067,7 +1065,7 @@ test_that("hc_plot_power produces plots correctly (high and low)", {
   output_folder <- tempfile(pattern = "test_plots_", tmpdir = temp_dir)
   model_validation_dir <- file.path(output_folder, "model_validation")
 
-  # Create directories (no need to pre-clean since we use a unique temp path)
+  # Create directories
   dir.create(model_validation_dir, recursive = TRUE, showWarnings = FALSE)
 
   # Schedule cleanup immediately after creation
@@ -1220,7 +1218,7 @@ test_that("hc_rr_results handles edge cases correctly", {
     hc_rr_results(pred_list_na, df_list_na, minpercgeog_ = minpercgeog_na)
   )
   expect_s3_class(result_na, "data.frame")
-  expect_true(all(!is.na(result_na$MMT)))  # MMT should compute despite NA values
+  expect_true(all(!is.na(result_na$MMT)))
 
   # Empty lists
   df_list_empty <- list()
@@ -1233,7 +1231,7 @@ test_that("hc_rr_results handles edge cases correctly", {
     minpercgeog_ = minpercgeog_empty
   )
   expect_s3_class(result_empty, "data.frame")
-  expect_equal(nrow(result_empty), 0)  # Should return empty data frame without error
+  expect_equal(nrow(result_empty), 0)
 })
 
 
@@ -1256,7 +1254,7 @@ test_that("hc_plot_rr produces plots correctly", {
   # Generate dummy crosspred object with strong positive effect
   temp_seq <- seq(-6, 6, length.out = 20)
   basis <- dlnm::onebasis(temp_seq, "lin")
-  coef <- 2  # large positive coefficient for RR values
+  coef <- 2
   vcov <- matrix(0.01)
   pred_obj <- dlnm::crosspred(basis, coef = coef, vcov = vcov, cen = 0, at = temp_seq)
 
@@ -1331,7 +1329,7 @@ test_that("hc_attr produces expected output structure and values", {
   attr(cb, "arglag") <- list(fun = "strata", breaks = 1)
   cb_list <- list(Geog1 = cb)
 
-  # Create pred_list with coefficients and vcov (length 5)
+  # Create pred_list with coefficients and vcov
   pred_list <- list(
     Geog1 = list(
       coefficients = c(-0.19, -0.30, -0.20, -0.14, -0.36),
@@ -1463,7 +1461,6 @@ test_that("hc_attr_tables aggregates attributable estimates correctly", {
   set.seed(123)
 
   # Create mock attr_list for two regions with heat and cold components
-  # Ensure non-zero denominators to avoid division warnings
   make_region_df <- function(region_name, years, months, n_rows) {
     data.frame(
       year = rep(years, length.out = n_rows),
@@ -1612,7 +1609,7 @@ test_that("hc_plot_attr_heat_totals generates plots and validates dynamic elemen
 
   # Plot to a null device for dynamic checks (no file saving)
   expect_no_error(suppress_plot({
-    grDevices::pdf(NULL) # Direct to null device for testing
+    grDevices::pdf(NULL)
     hc_plot_attr_heat_totals(df_list, res_attr_tot, save_fig = FALSE, country = "region1")
     plot_calls <- recordPlot()
     grDevices::dev.off()
@@ -1626,7 +1623,6 @@ test_that("hc_plot_attr_heat_totals generates plots and validates dynamic elemen
   expect_equal(res_attr_tot$region[sorted_ar][1], "region1") # region1 has highest AR
 
   # Validate highlight color logic for AF section
-  # Colors used in function: bars = "#a04b58"; highlight (national) = "#7a855c"
   bar_col_af_heat <- rep("#a04b58", nrow(res_attr_tot))
   nat_ind_af_heat <- which(res_attr_tot$region[sorted_af] == "region1")
   if (length(nat_ind_af_heat) > 0) {
@@ -1679,7 +1675,7 @@ test_that("hc_plot_attr_cold_totals generates plots and validates dynamic elemen
     region2 = data.frame(date = seq.Date(as.Date("2000-01-01"), by = "day", length.out = n_days))
   )
 
-  # Mock res_attr_tot with required columns (cold-specific)
+  # Mock res_attr_tot with required columns
   res_attr_tot <- data.frame(
     region = c("region1", "region2"),
     af_cold = c(9.4, 6.1),
@@ -1690,9 +1686,9 @@ test_that("hc_plot_attr_cold_totals generates plots and validates dynamic elemen
     ar_cold_upper_ci = c(5.9, 3.6)
   )
 
-  # Plot to a null device for dynamic checks (no file saving)
+  # Plot to a null device for dynamic checks
   expect_no_error(suppress_plot({
-    grDevices::pdf(NULL) # Direct to null device for testing
+    grDevices::pdf(NULL)
     hc_plot_attr_cold_totals(df_list, res_attr_tot, save_fig = FALSE, country = "region1")
     plot_calls <- recordPlot()
     grDevices::dev.off()
@@ -1706,7 +1702,6 @@ test_that("hc_plot_attr_cold_totals generates plots and validates dynamic elemen
   expect_equal(res_attr_tot$region[sorted_ar][1], "region1") # highest AR
 
   # Validate highlight color logic for AF section
-  # Bars use "#0A2E4D" and highlight (national) "#7a855c"
   bar_col_af_cold <- rep("#0A2E4D", nrow(res_attr_tot))
   nat_ind_af_cold <- which(res_attr_tot$region[sorted_af] == "region1")
   if (length(nat_ind_af_cold) > 0) {
@@ -1768,7 +1763,7 @@ test_that("hc_plot_af_heat_yearly produces yearly AF (heat) plots with CI shadin
     )
   )
 
-  # Plot without saving (render to null device)
+  # Plot without saving
   expect_no_error(suppress_plot({
     grDevices::pdf(NULL)
     hc_plot_af_heat_yearly(attr_yr_list, save_fig = FALSE, country = "Testland")
@@ -1835,7 +1830,7 @@ test_that("hc_plot_af_cold_yearly produces yearly AF (cold) plots with CI shadin
     )
   )
 
-  # Plot without saving (render to null device)
+  # Plot without saving
   expect_no_error(suppress_plot({
     grDevices::pdf(NULL)
     hc_plot_af_cold_yearly(attr_yr_list, save_fig = FALSE, country = "Testland")
@@ -1901,7 +1896,7 @@ test_that("hc_plot_ar_heat_yearly produces yearly AR (heat) plots with CI shadin
     )
   )
 
-  # Plot without saving (render to null device)
+  # Plot without saving
   expect_no_error(suppress_plot({
     grDevices::pdf(NULL)
     hc_plot_ar_heat_yearly(attr_yr_list, save_fig = FALSE, country = "Testland")
@@ -2091,7 +2086,7 @@ test_that("hc_plot_af_heat_monthly produces monthly AF (heat) plots with overlay
     )
   )
 
-  # Non-saving path: render to a null device to avoid side-effects
+  # Non-saving path
   expect_no_error(suppress_plot({
     grDevices::pdf(NULL)
     hc_plot_af_heat_monthly(
@@ -2116,10 +2111,6 @@ test_that("hc_plot_af_heat_monthly produces monthly AF (heat) plots with overlay
   af_heat_ci_max <- max(sapply(attr_mth_list, function(x) max(x$af_heat_upper_ci, na.rm = TRUE)))
   ci_warning <- sprintf("Warning: CI's range from %.2f%% to %.2f%%", af_heat_ci_min, af_heat_ci_max)
   expect_match(ci_warning, "Warning: CI's range from")
-
-  # Validate legend label formatting (uses percentile threshold from df_list temperatures)
-  attr_thr_high <- 97.5
-  # Example for GeogA
 })
 
 
@@ -2160,7 +2151,7 @@ test_that("hc_plot_af_cold_monthly produces monthly AF (cold) plots with overlay
     )
   )
 
-  # Non-saving path: render to a null device to avoid side-effects
+  # Non-saving path
   expect_no_error(suppress_plot({
     grDevices::pdf(NULL)
     hc_plot_af_cold_monthly(
@@ -2285,7 +2276,7 @@ test_that("hc_plot_ar_heat_monthly produces monthly AR (heat) plots with overlay
   expected_leg <- paste0("High temperature AR - from threshold, ", thr_val, "\u00b0C (", attr_thr_high, "p)")
   expect_match(expected_leg, "High temperature AR - from threshold")
 
-  # Saving path: create a temporary output folder and verify file
+  # Saving path
   output_folder <- file.path(temp_dir, "hc_plot_ar_heat_monthly_out")
   if (dir.exists(output_folder)) unlink(output_folder, recursive = TRUE)
   dir.create(output_folder, recursive = TRUE, showWarnings = FALSE)
@@ -2346,7 +2337,7 @@ test_that("hc_plot_ar_cold_monthly produces monthly AR (cold) plots with overlay
     )
   )
 
-  # Non-saving path: render to a null device to avoid side-effects
+  # Non-saving path
   expect_no_error(suppress_plot({
     grDevices::pdf(NULL)
     hc_plot_ar_cold_monthly(
@@ -2631,7 +2622,7 @@ test_that("integration: temp_mortality_do_analysis runs end-to-end (dynamic synt
   df <- do.call(rbind, lapply(regions, make_region))
   df <- df[order(df$region, df$date), ]
 
-  # Quick preflight checks to avoid degenerate inputs
+  # preflight checks to avoid degenerate inputs
   by_region <- split(df, df$region)
   ok_unique_temp <- all(vapply(by_region, function(x) length(unique(x$tmean)) >= 10, logical(1)))
   ok_nonzero <- all(vapply(by_region, function(x) sum(x$dependent > 0) >= 10, logical(1)))
