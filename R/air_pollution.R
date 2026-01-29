@@ -1,6 +1,6 @@
-#-------------------------------------------------------------------------------
+#===============================================================================
 #' @title R-code for I1: All-cause mortality attributable to Outdoor PM2.5.
-#-------------------------------------------------------------------------------
+#===============================================================================
 
 #' Read in climate, environmental and health data and rename columns
 #'
@@ -12,95 +12,91 @@
 #' @param date_col Character. Name of date column in the dataframe with format
 #' YYYY-MM-DD. Defaults to "date".
 #' @param region_col Character. Name of region column in the dataframe. Defaults
-#' to "province".
+#' to "region".
 #' @param pm25_col Character. Name of PM2.5 column in the dataframe. Defaults to
 #' "pm25".
-#' @param deaths_col Character. Name of all-cause mortality column in the dataframe.
-#' Defaults to "deaths"
+#' @param deaths_col Character. Name of all-cause mortality column in the dataframe 
+#' (Note that deaths_col variable has value 1 for each recorded death). 
+#' 'Defaults to "deaths"
 #' @param humidity_col Character. Name of humidity column in the dataframe. Defaults
 #' to "humidity".
 #' @param precipitation_col Character. Name of precipitation column in the dataframe.
 #' Defaults to "precipitation".
-#' @param tmax_col Character. Name of temperature column in the dataframe.
+#' @param tmax_col Character. Name of maximum temperature column in the dataframe.
 #' Defaults to "tmax".
-#' @param population_col Character. Name of population column in the dataframe.
-#' Defaults to NULL.
-#' @param age_col Character. Name of age column in the dataframe. Defaults to NULL.
-#' @param sex_col Character. Name of sex column in the dataframe. Defaults to NULL.
-#' @param urbanisation_col Character. Name of urbanisation column in the dataframe.
-#' Defaults to NULL.
+#' @param wind_speed_col Character. Name of wind speed column in the dataframe.
+#' Defaults to "wind_speed".
+#' @param Categorical_Others Optional. Character vector of additional categorical
+#' variables (e.g., "sex", "age_group"). Defaults to NULL.
+#'
+#' @param Continuous_Others Optional. Character vector of additional continuous
+#' variables (e.g., "tmean", "population"). Defaults to NULL.
 #'
 #' @return Dataframe with formatted and renamed with standardized column names.
 #'
-#' @keywords internal
+#' @export
 load_air_pollution_data <- function(data_path,
                                     date_col = "date",
-                                    region_col = "province",
+                                    region_col = "region",
                                     pm25_col = "pm25",
                                     deaths_col = "deaths",
                                     humidity_col = "humidity",
                                     precipitation_col = "precipitation",
                                     tmax_col = "tmax",
-                                    population_col = NULL,
-                                    age_col = NULL,
-                                    sex_col = NULL,
-                                    urbanisation_col = NULL) {
-  data <- if (is.character(data_path)) read.csv(data_path) else data_path
-
-  if (date_col != "date" && date_col %in% names(data)) {
-    data <- data %>% rename(date = !!rlang::sym(date_col))
+                                    wind_speed_col = "wind_speed",
+                                    Categorical_Others= NULL,
+                                    Continuous_Others= NULL
+) {
+  
+  if (!file.exists(data_path)) {
+    stop("Data file not found at: ", data_path)
   }
-  if (region_col != "region" && region_col %in% names(data)) {
-    data <- data %>% rename(region = !!rlang::sym(region_col))
+  
+  # Check for missing columns
+  Others <- c(Categorical_Others, Continuous_Others)# all additional variables
+  data0 <- if(is.character(data_path)) read.csv(data_path) else data_path
+  Col_NA <- setdiff(c(date_col,region_col,pm25_col,deaths_col, humidity_col,
+                      precipitation_col, tmax_col, wind_speed_col, Others), names(data0))
+  
+  if(length(Col_NA)>0 ) {
+    stop(paste0("Variables not found: ", paste(Col_NA, collapse = ", "),  
+                ". Please check your dataset."))
   }
-  if (pm25_col != "pm25" && pm25_col %in% names(data)) {
-    data <- data %>% rename(pm25 = !!rlang::sym(pm25_col))
+  
+  # Rename main variables using tidy evaluation
+  data <- data0 %>%
+    rename(
+      date         = !!sym(date_col),
+      region       = !!sym(region_col),
+      pm25         = !!sym(pm25_col),
+      deaths       = !!sym(deaths_col),
+      humidity     = !!sym(humidity_col),
+      precipitation= !!sym(precipitation_col),
+      tmax         = !!sym(tmax_col),
+      wind_speed   = !!sym(wind_speed_col)
+    )%>%
+    select(
+      date, region, pm25, deaths, humidity, precipitation,
+      tmax, wind_speed,  all_of(Others) )
+  
+  # Rename 'Others' after removing spaces
+  Nospace <- if(is.null(Others)) NULL else gsub(" ","_", Others)
+  if(!is.null(Others)){ names(data)[names(data) %in% Others] <- Nospace}
+  
+  # Enhanced date parsing function
+  universal_date <- function(x) {
+    lubridate::parse_date_time(
+      x,
+      orders = c("ymd", "dmy", "mdy", "Ymd", "dmY", "mdY", 
+                 "Y/m/d", "d/m/Y", "m/d/Y", "Y-m-d H:M:S", "d/m/Y H:M", "m/d/Y H:M")
+    ) %>% as.Date()
   }
-  if (deaths_col != "deaths" && deaths_col %in% names(data)) {
-    data <- data %>% rename(deaths = !!rlang::sym(deaths_col))
-  }
-  if (humidity_col != "humidity" && humidity_col %in% names(data)) {
-    data <- data %>% rename(humidity = !!rlang::sym(humidity_col))
-  }
-  if (precipitation_col != "precipitation" && precipitation_col %in% names(data)) {
-    data <- data %>% rename(precipitation = !!rlang::sym(precipitation_col))
-  }
-  if (tmax_col != "tmax" && tmax_col %in% names(data)) {
-    data <- data %>% rename(tmax = !!rlang::sym(tmax_col))
-  }
-
-  if (!is.null(population_col) && population_col %in% names(data)) {
-    data <- data %>% rename(population = !!rlang::sym(population_col))
-  } else if (!("population" %in% names(data))) {
-    data <- data %>% dplyr::mutate(population = 1)
-  }
-
-  if (!is.null(age_col) && age_col %in% names(data)) {
-    data <- data %>% rename(age = !!rlang::sym(age_col))
-  } else if (!("age" %in% names(data))) {
-    data <- data %>% dplyr::mutate(age = "all")
-  }
-
-  if (!is.null(sex_col) && sex_col %in% names(data)) {
-    data <- data %>% rename(sex = !!rlang::sym(sex_col))
-  } else if (!("sex" %in% names(data))) {
-    data <- data %>% dplyr::mutate(sex = "both")
-  }
-
-  if (!is.null(urbanisation_col) && urbanisation_col %in% names(data)) {
-    data <- data %>% rename(urbanisation = !!rlang::sym(urbanisation_col))
-  } else if (!("urbanisation" %in% names(data))) {
-    data <- data %>% dplyr::mutate(urbanisation = "mixed")
-  }
-
-  date_function <- lubridate::ymd
-  if (grepl("^\\d{2}/\\d{2}/\\d{4}$", data[["date"]][1])) {
-    date_function <- lubridate::dmy
-  }
-
+  
   data <- data %>%
+    arrange(region, date) %>%
+    group_by(region) %>%
     dplyr::mutate(
-      date = date_function(date),
+      date = universal_date(date),
       year = lubridate::year(date),
       month = lubridate::month(date),
       day = lubridate::day(date),
@@ -108,438 +104,822 @@ load_air_pollution_data <- function(data_path,
       time = dplyr::row_number()
     ) %>%
     dplyr::arrange(date)
-
-  essential_cols <- c(
-    "date", "region", "pm25", "deaths", "humidity",
-    "precipitation", "tmax", "population", "age", "sex",
-    "urbanisation", "year", "month", "day", "dow", "time"
-  )
-
-  data <- data %>% dplyr::select(all_of(essential_cols))
-
+  
+  # Convert to data.table for efficient aggregation
+  data <- as.data.table(data)
+  
+  # Define grouping variables
+  group_vars <- c("date", "region","dow", Categorical_Others)
+  
+  # Define variables to aggregate 
+  agg_vars <- setdiff(names(data), c("deaths", group_vars))
+  
+  # Perform aggregation
+  data <- data[, c(
+    list(deaths = sum(deaths, na.rm = TRUE)),
+    lapply(.SD, function(x) round(mean(x, na.rm = TRUE), 2))
+  ), by = group_vars, .SDcols = agg_vars]
+  
+  # Sort and select columns
+  data <- data %>% arrange(region, date)
+  
   return(data)
 }
 
-
+#===============================================================================
 #' Create lagged values for PM2.5 variable and average lag column.
 #'
 #' @description Creates new variables in a dataframe for lags and means over lag
 #' periods.
 #'
-#' @param data Dataframe containing a daily time series of health and environmental data.
-#' @param max_lag Integer. The maximum lag days for outdoor PM2.5. Defaults to 2.
+#' @param data Dataframe from  load_air_pollution_data() containing a daily 
+#'             time series of health and environmental data.
+#' @param max_lag Integer. The maximum lag days for outdoor PM2.5. Defaults to 14.
 #'
 #' @return Dataframe with added columns for lagged PM2.5 concentration.
 #'
-#' @import dplyr
-#'
-#' @keywords internal
-create_air_pollution_lags <- function(
-    data,
-    max_lag = 2) {
-  data_with_lags <- data %>%
-    dplyr::group_by(.data$region) %>%
-    dplyr::arrange(date)
+#' @export
 
-  for (i in 1:max_lag) {
-    lag_name <- paste0("pm25_lag", as.character(i))
-    data_with_lags <- data_with_lags %>%
-      dplyr::mutate(!!lag_name := lag(.data$pm25, i))
+create_air_pollution_lags <- function( data, max_lag = 14 ) {
+  # Validate input
+  if (max_lag < 1) {
+    stop("max_lag must be at least 1")
   }
-
+  
+  # Create lag variables
   lag_vars <- paste0("pm25_lag", 1:max_lag)
   all_lag_vars <- c("pm25", lag_vars)
   avg_lag_name <- paste0("pm25_lag0_", max_lag)
-  data_with_lags <- data_with_lags %>%
+  
+  # data_with_lags
+  data_with_lags <- data %>%
+    group_by(region) %>%
+    arrange(date)
+  
+  # Create individual lag variables
+  for (i in 1:max_lag) {
+    lag_name <- paste0("pm25_lag", as.character(i))
+    data_with_lags <- data_with_lags %>%
+      mutate(!!lag_name := lag(pm25, i))
+  }
+  
+  #Average lags
+  data_with_lags <- data_with_lags%>%
     dplyr::mutate(!!avg_lag_name := rowMeans(across(all_of(all_lag_vars)), na.rm = FALSE))
-
+  
   data_with_lags <- data_with_lags %>%
-    filter(dplyr::if_all(all_of(all_lag_vars), ~ !is.na(.))) %>%
+    filter(dplyr::if_all(all_of(all_lag_vars), ~!is.na(.))) %>%
     dplyr::ungroup()
-
+  
   return(data_with_lags)
 }
 
-
-#' Show descriptive statistics
+#===============================================================================
+#' Descriptive statistics
 #'
-#' @description Generates summary statistics for climate, environmental and health data.
+#' @description Generates summary statistics for climate, environmental and health data
 #'
 #' @param data Dataframe containing a daily time series of climate, environmental
 #' and health data
-#' @param variables Character or character vector with variable(s) to produce
-#' summary statistics for. Must include at least 1 variable.
-#' @param bin_width Integer. Width of each bin in a histogram of the outcome
-#' variable. Defaults to 1.
+#' @param env_lables Named vector. Labels for environmental variables with units.
+#' @param save_outputs Logical. Whether to save outputs. Defaults to FALSE.
 #' @param output_dir Character. Directory to save descriptive statistics.
 #' Defaults to NULL.
-#' @param save_outputs Logical. Whether to save outputs. Defaults to FALSE.
+#' @param moving_average_window Numeric. Window size for moving average calculations.
+#' Defaults to 3 (3-day moving average).
+#' @param plot_corr_matrix Logical. Whether to plot correlation matrix. Defaults to TRUE.
+#' @param correlation_method Character. Correlation method. One of 'pearson', 'spearman', 'kendall'.
+#' @param plot_dist Logical. Whether to plot distribution histograms. Defaults to TRUE.
+#' @param plot_na_counts Logical. Whether to plot NA counts. Defaults to TRUE.
+#' @param plot_scatter Logical. Whether to plot scatter plots. Defaults to TRUE.
+#' @param plot_box Logical. Whether to plot box plots. Defaults to TRUE.
+#' @param plot_seasonal Logical. Whether to plot seasonal trends. Defaults to TRUE.
+#' @param plot_regional Logical. Whether to plot regional trends. Defaults to TRUE.
+#' @param plot_total Logical. Whether to plot total health outcomes per year. Defaults to TRUE.
+#' @param detect_outliers Logical. Whether to detect outliers. Defaults to TRUE.
+#' @param calculate_rate Logical. Whether to calculate rate per 100k. Defaults to FALSE.
 #'
-#' @keywords internal
-air_pollution_descriptive_stats <- function(data,
-                                            variables,
-                                            bin_width = 1,
+#' @return Invisibly returns the national data with moving averages
+#'
+#' @export
+air_pollution_descriptive_stats <- function(data, 
+                                            env_lables = c(
+                                              "pm25" = "PM2.5 (µg/m³)",
+                                              "tmax" = "Max Temperature (°C)",
+                                              "tmean" = "Mean Temperature (°C)",
+                                              "precipitation" = "Precipitation (mm)", 
+                                              "humidity" = "Humidity (%)",
+                                              "wind_speed" = "Wind Speed (m/s)"),
+                                            save_outputs = FALSE,
                                             output_dir = NULL,
-                                            save_outputs = FALSE) {
-  # Check input params
-  if (save_outputs && is.null(output_dir)) {
-    stop("An output directory must be passed if save_outputs==T.")
+                                            moving_average_window = 3L,
+                                            plot_corr_matrix = TRUE,
+                                            correlation_method = "pearson",
+                                            plot_dist = TRUE,
+                                            plot_na_counts = TRUE,
+                                            plot_scatter = TRUE,
+                                            plot_box = TRUE,
+                                            plot_seasonal = TRUE,
+                                            plot_regional = TRUE,
+                                            plot_total = TRUE,
+                                            detect_outliers = TRUE,
+                                            calculate_rate = FALSE) {
+  
+  # Load the file utils module
+  # Try to source the file_utils.R file
+  if (file.exists("file_utils.R")) {
+    source("file_utils.R")
+  } else {
+    stop("file_utils.R file not found. Please ensure it's in the same directory.")
   }
-
-  # Create output dir
-  if (save_outputs) {
-    output_dir <- file.path(output_dir, "air_pollution_descriptive_stats")
-    if (!file.exists(output_dir)) {
-      dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+  
+  # Load the cleaning utils module
+  # Try to source the cleaning_utils.R file
+  if (file.exists("cleaning_utils.R")) {
+    source("cleaning_utils.R")
+  } else {
+    stop("cleaning_utils.R file not found. Please ensure it's in the same directory.")
+  }
+  
+  # Load the graph utils module
+  # Try to source the graph_utils.R file
+  if (file.exists("graph_utils.R")) {
+    source("graph_utils.R")
+  } else {
+    stop("graph_utils.R file not found. Please ensure it's in the same directory.")
+  }
+  
+  # Load the generic descriptive stats module
+  if (!exists("common_descriptive_stats_api")) {
+    # Try to source the descriptive_stats.R file
+    if (file.exists("descriptive_stats.R")) {
+      source("descriptive_stats.R")
+    } else {
+      stop("descriptive_stats.R file not found. Please ensure it's in the same directory.")
     }
   }
-
-  # Create PNG device if save requested
-  if (save_outputs) {
-    png(file.path(output_dir, "mortality_histogram.png"), width = 800, height = 600)
+  
+  # Validate moving_average_window parameter
+  if (!is.numeric(moving_average_window) || moving_average_window < 1) {
+    stop("moving_average_window must be a positive integer")
   }
-
-  # Display histogram (or draw on PDF)
-  graphics::hist(data$deaths,
-    breaks = seq(0, max(data$deaths) + bin_width,
-      by = bin_width
-    ),
-    main = "All cause mortality",
-    xlab = "Mortality", col = "blue"
-  )
-
-  # Save PNG device if save requested
-  if (save_outputs) dev.off()
-
-  # Store summary statistics
-  summary_list <- list()
-
-  for (i in seq_along(variables)) {
-    variable_name <- variables[i]
-    summary_stats <- summary(data[[variable_name]])
-    summary_list[[variable_name]] <- summary_stats
+  
+  if (moving_average_window < 3) {
+    warning("Window < 3 provides minimal smoothing. Consider using window >= 3 for better results.")
   }
-
-  # Save summary statistics if requested
+  moving_average_window <- as.integer(moving_average_window)
+  
+  # Validate data structure
+  if (!("data.frame" %in% class(data))) stop("data must be a data.frame or tibble")
+  if (!all(c("date", "deaths", "region") %in% names(data))) {
+    stop("data must contain at least the columns: date, deaths, region")
+  }
+  
+  # Determine which environmental variables to use based on env_lables and data columns
+  env_vars <- intersect(names(env_lables), names(data))
+  if (length(env_vars) == 0) {
+    warning("No environmental variables from env_lables were found in the data. Continuing with deaths only.")
+  }
+  
+  # Create units mapping
+  units <- c(deaths = "Number of Deaths")
+  if (length(env_vars) > 0) {
+    units <- c(units, env_lables[env_vars])
+  }
+  
+  # Check save_outputs / output_dir
+  if (save_outputs && is.null(output_dir)) {
+    stop("An output directory must be passed if save_outputs==TRUE.")
+  }
+  
+  # Create output directory if needed
   if (save_outputs) {
-    capture.output(
-      {
-        for (var in names(summary_list)) {
-          cat("\n", var, ":\n", sep = "")
-          print(summary_list[[var]])
-        }
-      },
-      file = file.path(output_dir, "descriptive_statistics.txt")
+    if (!dir.exists(output_dir)) {
+      dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+      message("Created output directory: ", output_dir)
+    }
+  }
+  
+  # Create national dataset: deaths sum, env_vars mean
+  data_n <- data %>%
+    dplyr::group_by(date) %>%
+    dplyr::summarise(
+      deaths = sum(deaths, na.rm = TRUE),
+      dplyr::across(all_of(env_vars), ~ mean(.x, na.rm = TRUE)),
+      .groups = "drop"
     )
+  
+  # Prepare data for analysis
+  data_for_stats <- data %>%
+    dplyr::mutate(date = as.Date(date))
+  
+  # Define columns for analysis
+  columns <- c("deaths", env_vars)
+  
+  # Create output subdirectory for descriptive stats
+  if (save_outputs) {
+    desc_stats_dir <- file.path(output_dir)
+    if (!dir.exists(desc_stats_dir)) {
+      dir.create(desc_stats_dir, recursive = TRUE, showWarnings = FALSE)
+    }
+  } else {
+    # Use a temporary directory
+    desc_stats_dir <- tempfile("air_pollution_desc_stats_")
+    dir.create(desc_stats_dir, recursive = TRUE, showWarnings = FALSE)
   }
-
-  # Return desc stats summary (no hist)
-  return(summary_list)
+  
+  # Run the generic descriptive statistics module
+  tryCatch({
+    # Use the API wrapper for comprehensive descriptive statistics
+    result_paths <- common_descriptive_stats_api(
+      data = data_for_stats,
+      aggregation_column = "region",
+      dataset_title = "Air Pollution and Health",
+      population_col = ifelse("population" %in% names(data_for_stats), "population", NULL),
+      dependent_col = "deaths",
+      independent_cols = env_vars,
+      columns = columns,
+      units = units,
+      select_all_numeric = FALSE,
+      plot_correlation = plot_corr_matrix,
+      plot_dist_hists = plot_dist,
+      plot_ma = TRUE,
+      plot_na_counts = plot_na_counts,
+      plot_scatter = plot_scatter,
+      plot_box = plot_box,
+      plot_seasonal = plot_seasonal,
+      plot_regional = plot_regional,
+      plot_total = plot_total,
+      correlation_method = correlation_method,
+      ma_days = moving_average_window,
+      ma_sides = 1,
+      ma_columns = env_vars,
+      timeseries_col = "date",
+      detect_outliers = detect_outliers,
+      calculate_rate = calculate_rate,
+      output_path = desc_stats_dir
+    )
+    
+    if (save_outputs) {
+      message("Descriptive statistics saved to: ", result_paths[1])
+    }
+    
+  }, error = function(e) {
+    warning("Error running generic descriptive statistics module: ", e$message)
+    message("Falling back to basic summary statistics...")
+    
+    # Fallback: basic summary statistics (silent mode)
+    try({
+      basic_summary <- create_column_summaries(data_for_stats, columns = columns)
+      basic_na_summary <- create_na_summary(data_for_stats, columns = columns)
+      corr_matrix <- create_correlation_matrix(data_for_stats, columns = columns, 
+                                               correlation_method = correlation_method)
+      
+      # Save fallback results if requested
+      if (save_outputs) {
+        write.csv(basic_summary, file.path(desc_stats_dir, "fallback_column_summary.csv"), row.names = TRUE)
+        write.csv(basic_na_summary, file.path(desc_stats_dir, "fallback_na_summary.csv"), row.names = FALSE)
+        write.csv(corr_matrix, file.path(desc_stats_dir, "fallback_correlation_matrix.csv"), row.names = TRUE)
+        
+        # Create basic correlation plot
+        try({
+          plot_correlation_matrix(
+            matrix_ = corr_matrix,
+            title = "Correlation Matrix (Fallback Mode)",
+            output_path = file.path(desc_stats_dir, "fallback_correlation_matrix.png")
+          )
+        }, silent = TRUE)
+      }
+    }, silent = TRUE)
+  })
+  
+  # Compute national data with moving averages for return value
+  national_df_ma <- data_n %>%
+    dplyr::arrange(date) %>%
+    dplyr::mutate(
+      dplyr::across(all_of(c("deaths", env_vars)),
+                    ~ zoo::rollmean(.x, k = moving_average_window, fill = NA, align = "center"),
+                    .names = "{.col}_ma{moving_average_window}")
+    )
+  
+  invisible(national_df_ma)
 }
 
-
-#' Create a scatterplot
-#'
-#' @description Produces a ggplot2 scatterplot of two variables x versus y.
-#'
-#' @param data Dataframe containing a daily time series of climate, environmental
-#' and health data
-#' @param xvar Character. x variable
-#' @param yvar Character. y variable
-#' @param output_dir Character. Directory to save plot. Defaults NULL.
-#' @param save_plot Logical. Whether to save the plot. Defaults FALSE.
-#'
-#' @keywords internal
-plot_air_pollution_variables <- function(data,
-                                         xvar,
-                                         yvar,
-                                         output_dir = NULL,
-                                         save_plot = FALSE) {
-  # Check input params
-  if (save_plot && is.null(output_dir)) {
-    stop("An output directory must be passed if save_outputs==T.")
-  }
-
-  # Plot Scatter
-  p <- ggplot2::ggplot(data = data, ggplot2::aes(x = .data[[xvar]], y = .data[[yvar]])) +
-    ggplot2::geom_point() +
-    ggplot2::geom_smooth() +
-    ggplot2::theme_bw()
-
-  print(p)
-
-  if (save_plot) {
-    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-    fname <- paste0(xvar, "_vs_", yvar, ".png")
-    output_path <- file.path(output_dir, fname)
-    ggplot2::ggsave(output_path, p, width = 8, height = 6, dpi = 150)
-  }
-}
-
-
+#===============================================================================
 #' Fit GAM model
 #'
-#' @description Fits the GAM model for a single region with a natural spline
-#' for climate variables.
+#' @description Fit a generalized additive model (mgcv::gam) including pm25 and its lagged
+#' variables (pm25_lag1, ..., pm25_lagN)
 #'
-#' @param data Data to fit the model.
-#' @param var_name Character. The name of the column containing PM2.5 values.
-#' Defaults to "pm25"
-#' @param family Character string indicating the distribution family used in the GAM.
-#' Must be one of the four options "quasipoisson", "nb", "ziP", and "poisson".
-#' "quasipoisson" (Appropriate for count data with overdispersion),
-#' "nb" (negativebinomial which is suitable for highly dispersed count data),
-#' "ziP" (zero-inflated which is suitable for count data with excess zeros (sparse data)),
-#' "poisson" (Suitable for count data without overdispersion (mean = variance)).
-#' Defaults to "quasipoisson"
+#' @param data_with_lags data.frame or tibble containing the outcome, confounders
+#'   and pm25 lag variables.
+#' @param max_lag integer. Maximum lag to include. Defaults to 14.
+#' @param family character or family object passed to mgcv::gam. Default "quasipoisson".
+#' @param conf_level numeric. Confidence level for CI (default 0.95).
 #'
-#' @return GAM model object or NULL if failed.
+#' @return A list with components:
+#'   - model: the fitted mgcv::gam object (or NULL if fit failed)
+#'   - coef_table: data.frame with columns: lag (0 for pm25, 1..N for pm25_lag#,
+#'       and "0-N" for cumulative), pm25_variable, coef, se, ci.lb, ci.ub
+#'   - vcov_used_for_cumulative: logical; TRUE if vcov() was used to compute cumulative SE
 #'
 #' @keywords internal
-fit_air_pollution_gam <- function(data,
-                                  var_name = "pm25",
-                                  family = "quasipoisson") {
-  # Data Validation
-  if (nrow(data) < 500) {
-    warning(
-      "Insufficient data: only ",
-      nrow(data),
-      " observations of a recommended 500 minimum."
-    )
-    return(NULL)
-  }
-
-  # Parameter Validation
-  if (!(var_name %in% names(data))) stop(paste0(var_name, " not in dataset."))
-
-  # Create Model Formula
+fit_air_pollution_gam <- function(data_with_lags,
+                                  max_lag = 14L,
+                                  family = "quasipoisson"
+) {
+  
+  # Build expected lag variable names and detect which are present
+  max_lag <- as.integer(max_lag)
+  if (is.na(max_lag) || max_lag < 0) stop("max_lag must be a non-negative integer")
+  lag_vars_expected <- c("pm25", if (max_lag >= 1) paste0("pm25_lag", 
+                                                          seq_len(max_lag)) else character())
+  present_lag_vars <- intersect(lag_vars_expected, names(data_with_lags))
+  if (length(present_lag_vars) == 0) stop("No pm25 variables found in dataset ", 
+                                          "(expected at least 'pm25')")
+  
+  # Build GAM formula including present lag terms
+  yr <- length(unique(data_with_lags$year))
+  dfseas <- 6L
+  lag_formula <- paste(present_lag_vars, collapse = " + ")
+  
   GAM_formula <- as.formula(
-    paste(
-      "deaths ~ ", var_name,
-      "+ ns(time, df = 7) + ns(tmax, df = 3) + ns(humidity, df = 3)",
-      "+ ns(precipitation, df = 3) + dow + offset(log(population))"
+    paste0(
+      "deaths ~ ", lag_formula,
+      " + s(time, k = ", dfseas * yr, ")",
+      " + s(tmax, k = 3)",
+      " + s(humidity, k = 3)",
+      " + s(precipitation, k = 3)",
+      " + s(wind_speed, k = 3)",
+      " + dow + offset(log(population))"
     )
   )
-
-  # Fit Model
-  tryCatch(
-    {
-      mgcv::gam(GAM_formula, data = data, family = family)
-    },
+  
+  # Fit model
+  model <- tryCatch(
+    mgcv::gam(GAM_formula, data = data_with_lags, family = family),
     error = function(e) {
       warning("Model fitting failed: ", e$message)
-      return(NULL)
+      NULL
     }
   )
-}
-
-
-#' Extract coefficient and standard error from GAM model
-#'
-#' @description Extracts the coefficient and standard error of the GAM model.
-#'
-#' @param model GAM model object from single region.
-#' @param var_name Character. Column name to extract. Defaults to "pm25"
-#'
-#' @return List with coefficient and standard error.
-#'
-#' @keywords internal
-extract_air_pollution_coef <- function(model,
-                                       var_name = "pm25") {
+  
+  # Prepare output structure
+  conf_level = 0.95
+  z <- stats::qnorm((1 + conf_level) / 2)
+  coef_table <- NULL
+  used_vcov <- FALSE
+  
   if (is.null(model)) {
-    return(list(coef = NA, se = NA))
+    return(list(model = NULL, coef_table = NULL, vcov_used_for_cumulative = FALSE))
   }
-
-  tryCatch(
-    {
-      res <- summary(model)
-      coef_val <- res$p.coeff[var_name]
-      se_val <- res$se[var_name]
-
-      return(list(
-        coef = as.numeric(coef_val),
-        se = as.numeric(se_val)
-      ))
-    },
-    error = function(e) {
-      warning("Failed to extract coefficient for '", var_name, "': ", e$message)
-      return(list(coef = NA, se = NA))
+  
+  # Extract coefficients and try vcov()
+  coefs_all <- coef(model)
+  V_full <- tryCatch(vcov(model), error = function(e) {
+    warning("vcov(model) failed: ", e$message)
+    NULL
+  })
+  
+  # Helper to extract se for a named parameter
+  se_from_vcov <- function(param) {
+    if (!is.null(V_full) && param %in% rownames(V_full)) {
+      se_val <- sqrt(as.numeric(V_full[param, param]))
+      return(as.numeric(se_val))
     }
-  )
+    # fallback: try summary(model)$se
+    s <- tryCatch({
+      ssum <- summary(model)
+      if (!is.null(ssum$se) && param %in% names(ssum$se)) as.numeric(ssum$se[param]) else NA_real_
+    }, error = function(e) NA_real_)
+    return(as.numeric(s))
+  }
+  
+  # Build per-lag rows
+  rows <- vector("list", length = length(present_lag_vars))
+  for (i in seq_along(present_lag_vars)) {
+    nm <- present_lag_vars[i]
+    beta <- if (nm %in% names(coefs_all)) as.numeric(coefs_all[nm]) else NA_real_
+    se <- se_from_vcov(nm)
+    ci_lb <- beta - z * se
+    ci_ub <- beta + z * se
+    lag_index <- if (nm == "pm25") 0L else as.integer(sub("^pm25_lag", "", nm))
+    rows[[i]] <- data.frame(
+      lag = lag_index,
+      pm25_variable = nm,
+      coef = beta,
+      se = se,
+      ci.lb = ci_lb,
+      ci.ub = ci_ub,
+      stringsAsFactors = FALSE
+    )
+  }
+  coef_table <- do.call(rbind, rows)
+  row.names(coef_table) <- NULL
+  
+  # Cumulative across available lag vars
+  lag_vars_for_cum <- intersect(lag_vars_expected, names(coefs_all))
+  if (length(lag_vars_for_cum) > 0) {
+    coefs_sub <- as.numeric(coefs_all[lag_vars_for_cum])
+    names(coefs_sub) <- lag_vars_for_cum
+    cum_coef <- sum(coefs_sub, na.rm = TRUE)
+    
+    # try to compute cumulative variance using vcov: Var(sum) = 1' V_sub 1
+    if (!is.null(V_full) && all(lag_vars_for_cum %in% rownames(V_full))) {
+      V_sub <- V_full[lag_vars_for_cum, lag_vars_for_cum, drop = FALSE]
+      one <- rep(1, length(lag_vars_for_cum))
+      cum_var <- as.numeric(t(one) %*% V_sub %*% one)
+      if (is.na(cum_var) || cum_var < 0) cum_var <- pmax(cum_var, 0)
+      cum_se <- sqrt(cum_var)
+      used_vcov <- TRUE
+    } else {
+      # fallback: naive independence assumption
+      se_sub <- vapply(lag_vars_for_cum, se_from_vcov, numeric(1))
+      cum_se <- sqrt(sum((se_sub)^2, na.rm = TRUE))
+      used_vcov <- FALSE
+      warning("vcov() unavailable or missing lag terms; cumulative SE computed ", 
+              "with naive sqrt(sum(se^2)) fallback - may underestimate variance.")
+    }
+    
+    cum_ci_lb <- cum_coef - z * cum_se
+    cum_ci_ub <- cum_coef + z * cum_se
+    
+    cum_row <- data.frame(
+      lag = paste0("0-", max_lag),
+      pm25_variable = paste0("pm25_lag0_", max_lag),
+      coef = cum_coef,
+      se = cum_se,
+      ci.lb = cum_ci_lb,
+      ci.ub = cum_ci_ub,
+      stringsAsFactors = FALSE
+    )
+    coef_table <- rbind(coef_table, cum_row)
+    row.names(coef_table) <- NULL
+  }
+  
+  # tidy ordering: numeric lags ascending and cumulative last
+  coef_table$lag_order <- suppressWarnings(as.numeric(as.character(coef_table$lag)))
+  coef_table$lag_order[is.na(coef_table$lag_order)] <- Inf
+  coef_table <- coef_table[order(coef_table$lag_order), c("lag", "pm25_variable", "coef", "se", "ci.lb", "ci.ub")]
+  
+  return(list(coef_table = coef_table))
 }
 
-
-#' Conduct two-stage meta-analysis with random effect with AF and AN calculations
+#===============================================================================
+#' Perform meta analysis with multiple lag structures
 #'
-#' @description Performs meta-analysis across regions and calculates attributable
-#' fraction and attributable number.
+#' @description Implements distributed lag model. Individual lag
+#' coefficients and cumulative effects are extracted and perform meta analysis
 #'
-#' @param data Input data with multiple regions
-#' @param var_name Character. PM2.5 variable to analyze. Defaults to "pm25".
+#' @param data_with_lags Lagged data
+#' @param max_lag Integer. Maximum lag days. Defaults to 14
 #' @param family Character string indicating the distribution family used in the GAM.
-#' Must be one of the four options "quasipoisson", "nb", "ziP", and "poisson".
-#' "quasipoisson" (Appropriate for count data with overdispersion),
-#' "nb" (negativebinomial which is suitable for highly dispersed count data),
-#' "ziP" (zero-inflated which is suitable for count data with excess zeros (sparse data)),
-#' "poisson" (Suitable for count data without overdispersion (mean = variance)).
-#' Defaults to "quasipoisson"
 #'
-#' @return List with meta-analysis results including AF and AN.
+#' @return Dataframe with lag-specific results including for regional and national
 #'
 #' @keywords internal
-air_pollution_meta_analysis <- function(data,
-                                        var_name = "pm25",
-                                        family = "quasipoisson") {
-  # Stage 0: Fit Regional Models
-  region_results <- data %>%
-    dplyr::group_by(.data$region) %>%
+air_pollution_meta_analysis <- function(data_with_lags,
+                                        max_lag = 14L,
+                                        family = "quasipoisson"
+) {
+  
+  # Fit distributed-lag model per region
+  region_results <- data_with_lags %>%
+    dplyr::group_by(region) %>%
     tidyr::nest() %>%
     dplyr::mutate(
-      n_obs = tidytable::map_dbl(.data$data, nrow),
-      total_deaths = tidytable::map_dbl(.data$data, ~ sum(.x$deaths, na.rm = TRUE)),
-      model = purrr::map2(.data$data, .data$region, ~ {
-        fit_air_pollution_gam(.x, var_name, family)
-      })
+      model_results = purrr::map2(data, region, ~ fit_air_pollution_gam(.x, max_lag, family))
     ) %>%
+    dplyr::select(region, model_results) %>%
     dplyr::ungroup()
-
-  # Stage 1: Extract Coefficients and Calculate AN/AF
-  region_results <- region_results %>%
+  
+  if (nrow(region_results) < 1) stop("At least 1 region needed for meta-analysis")
+  
+  # Extract per-region coef_table
+  all_coefs <- region_results %>%
+    dplyr::mutate(coef_table = purrr::map(model_results, "coef_table")) %>%
+    dplyr::select(region, coef_table) %>%
+    tidyr::unnest(coef_table)
+  
+  # Preserve the appearance order of lag and pm25_variable
+  all_coefs <- all_coefs %>%
     dplyr::mutate(
-      coef_results = purrr::map(.data$model, ~ extract_air_pollution_coef(.x, var_name)),
-      coef_pm25 = tidytable::map_dbl(.data$coef_results, ~ .x$coef),
-      se_pm25 = tidytable::map_dbl(.data$coef_results, ~ .x$se),
-      rr_10ug = exp(.data$coef_pm25 * 10),
-      ci_lower = exp((.data$coef_pm25 - 1.96 * .data$se_pm25) * 10),
-      ci_upper = exp((.data$coef_pm25 + 1.96 * .data$se_pm25) * 10),
-      af_10ug = (.data$rr_10ug - 1) / .data$rr_10ug,
-      an_10ug = .data$total_deaths * .data$af_10ug
-    ) %>%
-    dplyr::filter(!is.na(.data$coef_pm25) & !is.na(.data$se_pm25)) %>%
-    dplyr::select(-"coef_results")
-
-  if (nrow(region_results) < 2) {
-    warning("At least 2 regions with successful model fits needed for meta-analysis.")
-    return(NULL)
-  }
-
-  # Stage 2: Meta Analysis
-  meta_result <- metafor::rma(
-    yi = region_results$coef_pm25,
-    sei = region_results$se_pm25,
-    data = region_results,
-    method = "REML",
-    slab = region_results$region
-  )
-
-  overall_rr <- exp((meta_result$beta) * 10)
-  overall_af <- (overall_rr - 1) / overall_rr
-  overall_an <- sum(region_results$total_deaths) * overall_af
-
-  return(list(
-    region_results = region_results,
-    meta_result = meta_result,
-    overall_rr = overall_rr,
-    overall_ci = exp(c(meta_result$ci.lb, meta_result$ci.ub) * 10),
-    overall_af = overall_af,
-    overall_an = overall_an,
-    heterogeneity = list(
-      tau2 = meta_result$tau2,
-      I2 = meta_result$I2
+      lag = factor(as.character(lag), levels = unique(as.character(lag))),
+      pm25_variable = factor(as.character(pm25_variable), levels = unique(as.character(pm25_variable)))
     )
-  ))
+  
+  # Calculation by lag and pm25_variable
+  meta_results <- all_coefs %>%
+    dplyr::group_by(lag, pm25_variable) %>%
+    dplyr::group_modify(~{
+      valid_data <- .x %>% dplyr::filter(!is.na(coef) & !is.na(se))
+      if (nrow(valid_data) < 1) {
+        return(data.frame(
+          coef = NA_real_, se = NA_real_, ci.lb = NA_real_, ci.ub = NA_real_,
+          pval = NA_real_, I2 = NA_real_, stringsAsFactors = FALSE
+        ))
+      }
+      res <- tryCatch({
+        fit <- metafor::rma(yi = valid_data$coef, sei = valid_data$se, method = "REML")
+        data.frame(
+          coef = as.numeric(fit$b),
+          se = as.numeric(fit$se),
+          ci.lb = as.numeric(fit$ci.lb),
+          ci.ub = as.numeric(fit$ci.ub),
+          pval = if (!is.null(fit$pval)) as.numeric(fit$pval) else NA_real_,
+          I2 = if (!is.null(fit$I2)) as.numeric(fit$I2) else NA_real_,
+          stringsAsFactors = FALSE
+        )
+      }, error = function(e) {
+        warning("Meta-analysis failed for lag ", unique(.y$lag), ": ", e$message)
+        data.frame(
+          coef = NA_real_, se = NA_real_, ci.lb = NA_real_, ci.ub = NA_real_,
+          pval = NA_real_, I2 = NA_real_, stringsAsFactors = FALSE
+        )
+      })
+      return(res)
+    }) %>%
+    dplyr::ungroup()
+  
+  return(list(region_results = region_results, meta_results = meta_results))
 }
 
-
-#' Analyze multiple lag structures with AF and AN
+#===============================================================================
+#' Calculate daily RR/AF/AN/AR for region-specific/national distributed lag effects 
+#' for a chosen PM2.5 reference.
 #'
-#' @param data Input data
-#' @param max_lag Integer. Maximum lag days. Defaults to 2
-#' @param family Character string indicating the distribution family used in the GAM.
-#' Must be one of the four options "quasipoisson", "nb", "ziP", and "poisson".
-#' "quasipoisson" (Appropriate for count data with overdispersion),
-#' "nb" (negativebinomial which is suitable for highly dispersed count data),
-#' "ziP" (zero-inflated which is suitable for count data with excess zeros (sparse data)),
-#' "poisson" (Suitable for count data without overdispersion (mean = variance)).
-#' Defaults to "quasipoisson"
+#' @param data_with_lags Dataset. Lagged data with lag variables.
+#' @param meta_results Dataset. Results from meta analysis.
+#' @param ref_pm25 Numeric. PM2.5 reference value. Defaults to 15.
+#' @param ref_name Character. Reference body name. Defaults to "WHO". 
+#' @param max_lag Integer. Maximum lag days. Defaults to 14.
 #'
-#' @return Dataframe with lag-specific results including AF and AN.
+#' @return List with region-specific/national results for daily RR/AF/AN/AR
 #'
 #' @keywords internal
-analyze_air_pollution_lags <- function(data,
-                                       max_lag = 2,
-                                       family = "quasipoisson") {
-  lag_vars <- c("pm25", paste0("pm25_lag", 1:max_lag), paste0("pm25_lag0_", max_lag))
-  lag_labels <- c("Lag 0", paste0("Lag ", 1:max_lag), paste0("Lag 0-", max_lag))
-
-  tidytable::map2_dfr(lag_vars, lag_labels, ~ {
-    result <- tryCatch(
-      {
-        air_pollution_meta_analysis(data, .x, family)
-      },
-      error = function(e) {
-        warning("Failed to analyze ", .y, ": ", e$message)
-        return(NULL)
+analyze_air_pollution_daily <- function(data_with_lags,
+                                        meta_results,
+                                        ref_pm25 = 15,
+                                        ref_name = "WHO",
+                                        max_lag = 14L) {
+  
+  data <- data_with_lags
+  regions <- unique(as.character(data$region))
+  
+  all_lag_vars <- c("pm25", paste0("pm25_lag", 1:max_lag), paste0("pm25_lag0_", max_lag))
+  individual_labels <- c("0", paste0("", 1:max_lag), paste0("0_", max_lag))
+  z <- stats::qnorm(0.975)
+  
+  region_results_df <- meta_results$region_results
+  pooled_df <- meta_results$meta_results
+  
+  # Helper to extract a coef_table from each model_results element
+  get_coef_table <- function(x) {
+    if (!is.null(x$coef)) return(x$coef)
+    if (is.data.frame(x)) return(x)
+    stop("Could not find coefficient table inside model_results element")
+  }
+  
+  # Build a single data.frame with per-region coefficients
+  region_coefs <- region_results_df %>%
+    dplyr::mutate(
+      coef_table = purrr::map(.data$model_results, get_coef_table)
+    ) %>%
+    dplyr::select(region, coef_table) %>%
+    tidyr::unnest(cols = dplyr::all_of("coef_table"))
+  
+  # Normalize columns in region_coefs to match the lookup used later
+  if ("pm25_variable" %in% names(region_coefs)) {
+    region_coefs <- region_coefs %>%
+      dplyr::mutate(
+        pm25_variable = as.character(.data$pm25_variable),
+        lag = if ("lag" %in% names(.)) as.character(.data$lag) else
+          ifelse(.data$pm25_variable == "pm25", "0", sub("^pm25_lag", "", .data$pm25_variable)),
+        lag = ifelse(is.na(lag), NA_character_, gsub("-", "_", lag))
+      )
+  }
+  
+  # Compute region-level results
+  region_rows <- list()
+  for (prov in regions) {
+    prov_data <- data[data$region == prov, , drop = FALSE]
+    deaths_prov <- prov_data$deaths
+    population_prov <- prov_data$population
+    
+    for (j in seq_along(all_lag_vars)) {
+      var <- all_lag_vars[j]
+      lag_label <- individual_labels[j]
+      
+      row_coef <- region_coefs %>%
+        dplyr::filter(.data$region == prov & .data$pm25_variable == var & .data$lag == lag_label)
+      
+      if (nrow(row_coef) == 0) {
+        coef <- se <- ci.lb <- ci.ub <- NA_real_
+      } else {
+        coef <- row_coef$coef[1]
+        se <- row_coef$se[1]
+        ci.lb <- row_coef$ci.lb[1]
+        ci.ub <- row_coef$ci.ub[1]
       }
-    )
-
-    if (is.null(result)) {
-      return(data.frame(
-        lag = .y, rr = NA, ci_lower = NA, ci_upper = NA,
-        af = NA, an = NA, tau2 = NA, I2 = NA
-      ))
+      
+      if (is.na(coef) || is.na(se)) {
+        rr <- rr.lb <- rr.ub <- af <- af.lb <- af.ub <- an <- an.lb <- an.ub <- ar <- ar.lb <- ar.ub <- NA_real_
+      } else {
+        rr <- exp(coef * pmax(prov_data$pm25 - ref_pm25, 0))
+        rr.lb <- exp(ci.lb * pmax(prov_data$pm25 - ref_pm25, 0))
+        rr.ub <- exp(ci.ub * pmax(prov_data$pm25 - ref_pm25, 0))
+        
+        af <- (rr - 1) / rr
+        af.lb <- (rr.lb - 1) / rr.lb
+        af.ub <- (rr.ub - 1) / rr.ub
+        
+        an <- af * deaths_prov
+        an.lb <- af.lb * deaths_prov
+        an.ub <- af.ub * deaths_prov
+        
+        ar <- (an / population_prov) * 100000
+        ar.lb <- (an.lb / population_prov) * 100000
+        ar.ub <- (an.ub / population_prov) * 100000
+      }
+      
+      region_rows[[length(region_rows) + 1]] <- tibble::tibble(
+        region = prov,
+        date = prov_data$date,        
+        lag = lag_label,
+        var_name = var,
+        coef = coef,
+        se = se,
+        rr = rr, rr.lb = rr.lb, rr.ub = rr.ub,
+        af = af, af.lb = af.lb, af.ub = af.ub,
+        an = an, an.lb = an.lb, an.ub = an.ub,
+        ar = ar, ar.lb = ar.lb, ar.ub = ar.ub,
+        tot_deaths = deaths_prov,
+        pop = population_prov,
+        pm25_values = prov_data$pm25,
+        ref_pm25 = ref_pm25,
+        ref_name = ref_name
+      )
     }
-
-    data.frame(
-      lag = .y,
-      rr = result$overall_rr,
-      ci_lower = result$overall_ci[1],
-      ci_upper = result$overall_ci[2],
-      af = result$overall_af,
-      an = result$overall_an,
-      tau2 = result$heterogeneity$tau2,
-      I2 = result$heterogeneity$I2,
-      p_value = result$meta_result$pval
+  }
+  
+  region_gam_results <- dplyr::bind_rows(region_rows)
+  
+  # Compute national results
+  if (!"pm25_variable" %in% names(pooled_df)) {
+    stop("meta_results$meta_results must include a 'pm25_variable' column.")
+  }
+  pooled_df2 <- pooled_df %>%
+    dplyr::mutate(
+      pm25_variable = as.character(.data$pm25_variable),
+      coef = as.numeric(.data$coef),
+      se = as.numeric(.data$se)
+    ) %>%
+    dplyr::mutate(
+      lag = if ("lag" %in% names(pooled_df)) as.character(.data$lag) else
+        ifelse(.data$pm25_variable == "pm25", "0", sub("^pm25_lag", "", .data$pm25_variable)),
+      lag = ifelse(is.na(lag), NA_character_, gsub("-", "_", lag))
+    ) %>%
+    # compute ci if not present
+    dplyr::mutate(
+      ci.lb = if ("ci.lb" %in% names(.)) .data$ci.lb else .data$coef - z * .data$se,
+      ci.ub = if ("ci.ub" %in% names(.)) .data$ci.ub else .data$coef + z * .data$se
     )
-  })
+  
+  # Find pm25-related columns in the input data
+  pm25_cols <- grep("^pm25", names(data), value = TRUE)
+  agg_vars <- c(pm25_cols, "tmax", "precipitation", "humidity", "wind_speed")
+  
+  # Aggregate national-level data
+  data_national <- data %>%
+    dplyr::group_by(date) %>%
+    dplyr::summarise(
+      deaths = sum(.data$deaths, na.rm = TRUE),
+      population = sum(.data$population, na.rm = TRUE),
+      dplyr::across(dplyr::all_of(agg_vars), ~ round(mean(.x, na.rm = TRUE), 2)),
+      .groups = "drop"
+    )
+  
+  deaths_national <- data_national$deaths
+  population_national <- data_national$population
+  
+  national_rows <- list()
+  for (j in seq_along(all_lag_vars)) {
+    var <- all_lag_vars[j]
+    lag_label <- individual_labels[j]
+    
+    row_pooled <- pooled_df2 %>%
+      dplyr::filter(.data$pm25_variable == var & .data$lag == lag_label)
+    
+    if (nrow(row_pooled) == 0) {
+      coef <- se <- ci.lb <- ci.ub <- NA_real_
+    } else {
+      coef <- row_pooled$coef[1]
+      se <- row_pooled$se[1]
+      ci.lb <- row_pooled$ci.lb[1]
+      ci.ub <- row_pooled$ci.ub[1]
+    }
+    
+    if (is.na(coef) || is.na(se)) {
+      rr <- rr.lb <- rr.ub <- af <- af.lb <- af.ub <- an <- an.lb <- an.ub <- ar <- ar.lb <- ar.ub <- NA_real_
+    } else {
+      # use the national pm25 vector (data_national$pm25) for per-date RR/AF/AN/AR
+      rr <- exp(coef * pmax(data_national$pm25 - ref_pm25, 0))
+      rr.lb <- exp(ci.lb * pmax(data_national$pm25 - ref_pm25, 0))
+      rr.ub <- exp(ci.ub * pmax(data_national$pm25 - ref_pm25, 0))
+      
+      af <- (rr - 1) / rr
+      af.lb <- (rr.lb - 1) / rr.lb
+      af.ub <- (rr.ub - 1) / rr.ub
+      
+      an <- af * deaths_national
+      an.lb <- af.lb * deaths_national
+      an.ub <- af.ub * deaths_national
+      
+      ar <- (an / population_national) * 100000
+      ar.lb <- (an.lb / population_national) * 100000
+      ar.ub <- (an.ub / population_national) * 100000
+    }
+    
+    national_rows[[length(national_rows) + 1]] <- tibble::tibble(
+      region = "National",
+      date = data_national$date,
+      lag = lag_label,
+      var_name = var,
+      coef = coef,
+      se = se,
+      rr = rr, rr.lb = rr.lb, rr.ub = rr.ub,
+      af = af, af.lb = af.lb, af.ub = af.ub,
+      an = an, an.lb = an.lb, an.ub = an.ub,
+      ar = ar, ar.lb = ar.lb, ar.ub = ar.ub,
+      tot_deaths = deaths_national,
+      pop = population_national,
+      pm25_values = data_national$pm25,
+      ref_pm25 = ref_pm25,
+      ref_name = ref_name
+    )
+  }
+  
+  national_gam_results <- dplyr::bind_rows(national_rows)
+  
+  final <- rbind(region_gam_results,national_gam_results)
+  row.names(final) <- NULL
+  
+  return(final)
 }
 
+#===============================================================================
+#' Generate a grid size for a certain number of plots.
+#'
+#' @param n_plots The number of plots required for the grid.
+#'
+#' @return A list containing ncol and nrow values for the grid.
+#'
+#' @export
+calculate_air_pollution_grid_dims <- function(n_plots){
+  est <- sqrt(n_plots)
+  if (est == floor(est)){
+    x <- y <- est
+  } else {
+    base <- est - floor(est)
+    if (base < 0.5){
+      y <- floor(est)
+    }
+    else {
+      y <- floor(est) + 1
+    }
+    x <- floor(est) + 1
+  }
+  return(list(ncol = x, nrow = y))
+}
 
-#' Function to plot and save air pollution plots.
+#===============================================================================
+#' Save air pollution plot with standardized dimensions
 #'
-#' @description Function for saving all plot types with consistent parameters.
+#' @param plot_object ggplot or grob object to save
+#' @param output_dir Character. Directory to save plot.
+#' @param filename Character. Name of the file (without or with .png extension).
+#' @param grid_dims List with ncol and nrow for multi-panel plots. NULL for single plots.
 #'
-#' @param plot_object Character. ggplot object or grid.dplyr::arrange object to save.
-#' @param output_dir Character. Directory to save plots.
-#' @param filename Character. Filename without extension.
-#' @param width_per_panel Integer. Width per panel (for multi-panel plots).
-#' Defaults to 4.
-#' @param height_per_panel Integer. Height per panel (for multi-panel plots).
-#' Defaults to 4.
-#' @param grid_dims Grid dimensions (list with nrow, ncol) - optional
-#' for single plots. Defaults to NULL.
-#' @param dpi Integer. Resolution for output. Defaults to 150.
-#' @param single_plot_width Width for single plots (when grid_dims is NULL).
-#' Defaults to 10.
-#' @param single_plot_height Height for single plots (when grid_dims is NULL).
-#' Defaults to 8.
+#' @return Invisibly returns the output path
 #'
 #' @keywords internal
 save_air_pollution_plot <- function(plot_object,
                                     output_dir,
                                     filename,
-                                    width_per_panel = 4,
-                                    height_per_panel = 4,
-                                    grid_dims = NULL,
-                                    dpi = 150,
-                                    single_plot_width = 10,
-                                    single_plot_height = 8) {
+                                    grid_dims = NULL) {
+  # Fixed internal parameters
+  width_per_panel <- 4
+  height_per_panel <- 4
+  dpi <- 150
+  single_plot_width <- 10
+  single_plot_height <- 8
+  
   # Simple Validation
   if (is.null(output_dir)) stop("'output_dir' must be provided")
-
+  
   # Create output directory
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-
+  
   # Calculate dimensions
   if (is.null(grid_dims)) {
     # Single plot
@@ -550,1000 +930,1769 @@ save_air_pollution_plot <- function(plot_object,
     fig_width <- width_per_panel * grid_dims$ncol
     fig_height <- height_per_panel * grid_dims$nrow
   }
-
+  
   # Save plot
   if (!endsWith(filename, ".png")) {
     output_path <- file.path(output_dir, paste0(filename, ".png"))
   } else {
     output_path <- file.path(output_dir, filename)
   }
+  
   ggplot2::ggsave(output_path, plot_object,
-    width = fig_width, height = fig_height, dpi = dpi
+                  width = fig_width, height = fig_height, dpi = dpi
   )
+  
+  invisible(output_path)
 }
 
-
-#' Create forest plot with AF and AN
+#===============================================================================
+#' Plot forest plot for PM2.5 effects by region
 #'
-#' @param meta_results Meta-analysis results with AF/AN.
-#' @param title Character. Plot title. Defaults to "PM2.5 Effects by Region"
+#' @param analysis_results Processed results with RR/AF/AN/AR with lag variables
+#' @param var_name Character. PM2.5 variable name. Defaults to "pm25".
 #' @param output_dir Character. Directory to save plot. Defaults to NULL.
 #' @param save_plot Logical. Whether to save the plot. Defaults to FALSE.
 #'
 #' @return ggplot object
 #'
 #' @keywords internal
-plot_air_pollution_forest <- function(meta_results,
-                                      title = "PM2.5 Effects by Region",
-                                      output_dir = NULL,
-                                      save_plot = FALSE) {
+plot_air_pollution_forest_by_region <- function(analysis_results,
+                                                var_name = "pm25",
+                                                output_dir = NULL,
+                                                save_plot = FALSE) {
   if (is.null(output_dir) && save_plot) {
-    stop("Output directory must be specified if save_plot == TRUE.")
+    stop("output_dir must be specified when save_plot == TRUE.")
   }
-
-  region_data <- meta_results$region_results %>%
-    dplyr::select(
-      all_of(
-        c("region", "rr_10ug", "ci_lower", "ci_upper", "af_10ug", "an_10ug")
-      )
-    ) %>%
-    dplyr::mutate(
-      type = "Region",
-      label = sprintf("RR: %.3f", .data$rr_10ug)
+  
+  # select and summarise by region
+  pm25 <- var_name
+  specific_results <- analysis_results %>%
+    dplyr::filter(var_name == pm25) %>%
+    dplyr::group_by(region, ref_name, ref_pm25, var_name) %>%
+    dplyr::summarise(
+      rr = mean(rr, na.rm = TRUE),
+      rr.lb = mean(rr.lb, na.rm = TRUE),
+      rr.ub = mean(rr.ub, na.rm = TRUE),
+      .groups = "drop"
     )
-
-  overall_data <- data.frame(
-    region = "Overall",
-    rr_10ug = meta_results$overall_rr,
-    ci_lower = meta_results$overall_ci[1],
-    ci_upper = meta_results$overall_ci[2],
-    af_10ug = meta_results$overall_af,
-    an_10ug = meta_results$overall_an,
-    type = "Overall",
-    label = sprintf("RR: %.3f", meta_results$overall_rr)
-  )
-
-  plot_data <- dplyr::bind_rows(region_data, overall_data) %>%
-    dplyr::mutate(
-      region = factor(.data$region, levels = rev(c(region_data$region, "Overall"))),
-      is_overall = .data$type == "Overall"
-    )
-
-  forest_plot <- ggplot2::ggplot(plot_data, ggplot2::aes(x = .data$rr_10ug, y = .data$region)) +
-    ggplot2::geom_errorbarh(
-      ggplot2::aes(
-        xmin = .data$ci_lower, xmax = .data$ci_upper,
-        color = .data$is_overall, linewidth = .data$is_overall
-      ),
-      height = 0.3
+  
+  if (nrow(specific_results) == 0) {
+    stop("No results for the selected var_name.")
+  }
+  
+  # reference metadata (first non-NA)
+  ref_name <- na.omit(unique(specific_results$ref_name))[1]
+  ref_pm25 <- na.omit(unique(specific_results$ref_pm25))[1]
+  
+  # mark national row so it can be highlighted
+  specific_results <- specific_results %>%
+    dplyr::mutate(is_national = (.data$region == "National"))
+  
+  # Create ordered factor for region
+  prov_names <- specific_results %>% filter(region != "National") 
+  regions_only <- unique(prov_names$region)
+  region_order <- c(regions_only, "National")
+  
+  specific_results <- specific_results %>%
+    dplyr::mutate(region = factor(.data$region, levels = region_order))
+  
+  # global plotting limits
+  global_max_rr <- max(specific_results$rr.ub, na.rm = TRUE)
+  global_min_rr <- min(specific_results$rr.lb, na.rm = TRUE)
+  max_ylim <- global_max_rr * 1.01
+  min_ylim <- min(global_min_rr, 1) * 0.99
+  
+  forest_plot <- ggplot2::ggplot(specific_results, ggplot2::aes(x = .data$region, y = .data$rr)) +
+    ggplot2::geom_errorbar(
+      ggplot2::aes(ymin = .data$rr.lb, ymax = .data$rr.ub, color = .data$is_national),
+      width = 0.1, linewidth = 0.6
     ) +
-    ggplot2::geom_point(ggplot2::aes(color = .data$is_overall, size = .data$is_overall)) +
-    ggplot2::geom_text(ggplot2::aes(label = .data$label, x = .data$ci_upper),
-      hjust = -0.1, size = 3
-    ) +
-    ggplot2::geom_vline(xintercept = 1, linetype = "dashed", color = "red") +
+    ggplot2::geom_point(ggplot2::aes(color = .data$is_national), size = 2) +
+    ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
     ggplot2::scale_color_manual(values = c("FALSE" = "blue", "TRUE" = "red")) +
-    ggplot2::scale_size_manual(values = c("FALSE" = 2, "TRUE" = 3)) +
-    ggplot2::scale_linewidth_manual(values = c("FALSE" = 0.8, "TRUE" = 1.2)) +
-    ggplot2::xlim(c(min(plot_data$ci_lower) * 0.95, max(plot_data$ci_upper) * 1.05)) +
+    ggplot2::coord_cartesian(ylim = c(min_ylim, max_ylim)) +
     ggplot2::labs(
-      x = "Health Relative Risk", y = "Region",
-      title = title,
-      subtitle = sprintf(
-        "I\u00b2 = %.1f%%; \u03c4\u00b2 = %.4f",
-        meta_results$heterogeneity$I2,
-        meta_results$heterogeneity$tau2
-      )
+      x = "Region",
+      y = "Relative Risk",
+      title = sprintf('PM2.5 effects by region — Ref: "%s" = %s', ref_name, ref_pm25)
     ) +
     ggplot2::theme_minimal() +
     ggplot2::theme(
       legend.position = "none",
-      plot.title = ggplot2::element_text(hjust = 0.5)
+      plot.title = ggplot2::element_text(hjust = 0.5),
+      axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
     )
-
+  
   if (save_plot) {
+    filename <- sprintf("forest_plot_by_region_%s_%s_%s", var_name, ref_name, ref_pm25)
     save_air_pollution_plot(
       plot_object = forest_plot,
       output_dir = output_dir,
-      filename = "forest_plot",
-      single_plot_width = 10,
-      single_plot_height = 8
+      filename = filename,
+      grid_dims = NULL
     )
   }
-
+  
   return(forest_plot)
 }
 
-
-#' Plot lag comparison with AF and AN
+#===============================================================================
+#' Plot Relative Risk (RR) by lag
 #'
-#' @param lag_results Lag analysis results with AF/AN.
-#' @param max_lag Integer. Maximum lag days. Defaults to 2.
+#' @param analysis_results Processed results with RR/AF/AN/AR with lag variables
+#' @param max_lag Integer. Maximum lag days. Defaults to 14.
 #' @param output_dir Character. Directory to save plot. Defaults to NULL.
 #' @param save_plot Logical. Whether to save the plot. Defaults to FALSE.
 #'
 #' @return ggplot object
 #'
 #' @keywords internal
-plot_air_pollution_lags <- function(lag_results,
-                                    max_lag = 2,
-                                    output_dir = NULL,
-                                    save_plot = FALSE) {
-  # Param Validation
-  if (is.null(output_dir) && save_plot == TRUE) {
-    stop("Output directory must be specified if save_plot==T.")
+plot_air_pollution_forest_by_lag <- function(analysis_results,
+                                             max_lag = 14,
+                                             output_dir = NULL,
+                                             save_plot = FALSE) {
+  if (is.null(output_dir) && save_plot) {
+    stop("output_dir must be specified when save_plot == TRUE.")
   }
-
-  lag_results_clean <- lag_results %>% filter(!is.na(.data$rr))
-
-  if (nrow(lag_results_clean) == 0) {
-    stop("No successful lag analyses to plot")
+  
+  # select and summarise by region
+  specific_results <- analysis_results %>%
+    dplyr::group_by(var_name, ref_name, ref_pm25) %>%
+    dplyr::summarise(
+      rr = mean(rr, na.rm = TRUE),
+      rr.lb = mean(rr.lb, na.rm = TRUE),
+      rr.ub = mean(rr.ub, na.rm = TRUE),
+      .groups = "drop"
+    )
+  
+  if (nrow(specific_results) == 0) {
+    stop("No results for the selected var_name.")
   }
-
-  lag_labels <- c("Lag 0", paste0("Lag ", 1:max_lag), paste0("Lag 0-", max_lag))
-  lag_results_clean$lag <- factor(lag_results_clean$lag,
-    levels = lag_labels
-  )
-
-  lag_results_clean <- lag_results_clean %>%
-    dplyr::mutate(label = "")
-
-  lag_plot <- ggplot2::ggplot(lag_results_clean, ggplot2::aes(x = lag, y = .data$rr)) +
-    ggplot2::geom_errorbar(ggplot2::aes(ymin = .data$ci_lower, ymax = .data$ci_upper),
-      width = 0.2, color = "darkblue", linewidth = 0.8
+  
+  # reference metadata (first non-NA)
+  ref_name <- na.omit(unique(specific_results$ref_name))[1]
+  ref_pm25 <- na.omit(unique(specific_results$ref_pm25))[1]
+  
+  # mark national row so it can be highlighted
+  specific_results <- specific_results %>%
+    dplyr::mutate(is_cumulative = (.data$var_name == paste0("pm25_lag0_", max_lag)))
+  
+  # Create ordered factor for var_name
+  lag_order <- c("pm25", paste0("pm25_lag", 1:max_lag), paste0("pm25_lag0_", max_lag))
+  
+  specific_results <- specific_results %>%
+    dplyr::mutate(var_name = factor(.data$var_name, levels = lag_order))
+  
+  # global plotting limits
+  global_max_rr <- max(specific_results$rr.ub, na.rm = TRUE)
+  global_min_rr <- min(specific_results$rr.lb, na.rm = TRUE)
+  max_ylim <- global_max_rr * 1.01
+  min_ylim <- min(global_min_rr, 1) * 0.99
+  
+  forest_plot <- ggplot2::ggplot(specific_results, ggplot2::aes(x = .data$var_name, y = .data$rr)) +
+    ggplot2::geom_errorbar(
+      ggplot2::aes(ymin = .data$rr.lb, ymax = .data$rr.ub, color = .data$is_cumulative),
+      width = 0.1, linewidth = 0.6
     ) +
-    ggplot2::geom_point(size = 3, color = "blue") +
+    ggplot2::geom_point(ggplot2::aes(color = .data$is_cumulative), size = 2) +
     ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
+    ggplot2::scale_color_manual(values = c("FALSE" = "blue", "TRUE" = "red")) +
+    ggplot2::coord_cartesian(ylim = c(min_ylim, max_ylim)) +
     ggplot2::labs(
-      x = "Lag Structure", y = "Health Relative Risk",
-      title = "RR by Lag Structure"
+      x = "Region",
+      y = "Relative Risk",
+      title = sprintf('PM2.5 effects by region — Ref: "%s" = %s', ref_name, ref_pm25)
     ) +
-    ggplot2::ylim(c(
-      0.98,
-      max(lag_results_clean$ci_upper) * 1.05
-    )) +
     ggplot2::theme_minimal() +
-    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
-
-  # Use unified save_plot function
+    ggplot2::theme(
+      legend.position = "none",
+      plot.title = ggplot2::element_text(hjust = 0.5),
+      axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+    )
+  var_name_n <- na.omit(unique(specific_results$var_name))
+  
   if (save_plot) {
+    filename <- sprintf("forest_plot_by_lag_%s_%s", ref_name, ref_pm25)
     save_air_pollution_plot(
-      plot_object = lag_plot,
+      plot_object = forest_plot,
       output_dir = output_dir,
-      filename = "lag_results",
-      single_plot_width = 8,
-      single_plot_height = 6
+      filename = filename,
+      grid_dims = NULL
     )
   }
-
-  return(lag_plot)
+  
+  return(forest_plot)
 }
 
-
-#' Calculate Optimal Grid Dimensions for Multiple Plot Display
+#===============================================================================
+#' Aggregate air pollution results by region
 #'
-#' @description
-#' Determines the optimal grid layout (rows x columns) for displaying multiple plots
-#' in a single figure. The function prioritizes aesthetically pleasing arrangements
-#' that are wider than tall, minimizing empty cells while maintaining visual balance.
+#' @description Aggregates daily analysis results to regional summaries
 #'
-#' @param n_plots Integer. Number of plots to display. Must be positive.
+#' @param analysis_results Results from analyze_air_pollution_daily or analyze_air_pollution_monthly
+#' @param var_name Character. PM2.5 variable to aggregate. Defaults to "pm25".
+#' @param max_lag Integer. Maximum lag used in analysis. Defaults to 14.
 #'
-#' @return
-#' A named list with two components:
-#' - nrow: Number of rows in the grid
-#' - ncol: Number of columns in the grid
-#'
-#' @note
-#' For plot counts exceeding 400, the function will return a 20x20 grid.
-#' Consider whether such large grids are appropriate for your visualization needs.
-#'
+#' @return Dataframe with regional aggregates
 #' @keywords internal
-calculate_air_pollution_grid_dims <- function(n_plots) {
-  if (!is.numeric(n_plots) || length(n_plots) != 1) {
-    stop("n_plots must be a single numeric value")
-  }
-
-  if (n_plots <= 0) {
-    warning("n_plots should be positive. Returning 1x1 grid.")
-    return(list(nrow = 1, ncol = 1))
-  }
-
-  if (n_plots == 1) {
-    return(list(nrow = 1, ncol = 1))
-  }
-
-  optimal_grids <- list(
-    c(2, 2), c(2, 3), c(3, 3), c(3, 4), c(4, 4), c(4, 5), c(5, 5), c(5, 6),
-    c(6, 6), c(6, 7), c(7, 7), c(7, 8), c(8, 8), c(8, 9), c(9, 9), c(9, 10),
-    c(10, 10), c(10, 11), c(11, 12), c(12, 12), c(12, 13), c(13, 14), c(14, 15),
-    c(15, 15), c(15, 16), c(16, 16), c(16, 17), c(17, 17), c(17, 18), c(18, 18),
-    c(18, 19), c(19, 19), c(19, 20), c(20, 20)
-  )
-
-  for (grid in optimal_grids) {
-    if (grid[1] * grid[2] >= n_plots) {
-      return(list(nrow = grid[1], ncol = grid[2]))
-    }
-  }
-
-  warning("Number of plots exceeds 400. Returning maximum 20x20 grid.")
-  return(list(nrow = 20, ncol = 20))
+aggregate_air_pollution_by_region <- function(analysis_results,
+                                              var_name = "pm25",
+                                              max_lag = 14) {
+  
+  # Filter to specific PM2.5 variable
+  results_filtered <- analysis_results %>%
+    dplyr::filter(var_name == !!var_name)
+  
+  # Aggregate by region
+  regional_summary <- results_filtered %>%
+    dplyr::group_by(region, ref_name, ref_pm25) %>%
+    dplyr::summarise(
+      # Attributable Rate
+      ar_per_100k = sum(ar, na.rm = TRUE),
+      ar_lower = sum(ar.lb, na.rm = TRUE),
+      ar_upper = sum(ar.ub, na.rm = TRUE),
+      
+      # Attributable Number
+      an = sum(an, na.rm = TRUE),
+      an_lower = sum(an.lb, na.rm = TRUE),
+      an_upper = sum(an.ub, na.rm = TRUE),
+      
+      # Attributable Fraction
+      af = mean(af, na.rm = TRUE),
+      af_lower = mean(af.lb, na.rm = TRUE),
+      af_upper = mean(af.ub, na.rm = TRUE),
+      
+      # Supporting metrics
+      total_deaths = sum(tot_deaths, na.rm = TRUE),
+      mean_pm25 = mean(pm25_values, na.rm = TRUE),
+      population = mean(pop, na.rm = TRUE),
+      
+      .groups = 'drop'
+    )
+  
+  return(regional_summary)
 }
 
-
-#' Calculate AF and AN for a specific PM2.5 reference value
+#===============================================================================
+#' Aggregate air pollution results by year
 #'
-#' @param data A region-specific dataset.
-#' @param reference Integer. PM2.5 reference value. Defaults to 15
-#' (WHO guideline).
-#' @param var_name Character. PM2.5 variable name. Defaults to "pm25".
-#' @param family Character. Distribution family for GAM. Defaults to
-#' "quasipoisson".
+#' @description Aggregates daily analysis results to annual summaries
 #'
-#' @return List with AF and AN
+#' @param analysis_results Results from analyze_air_pollution_daily or analyze_air_pollution_monthly
+#' @param var_name Character. PM2.5 variable to aggregate. Defaults to "pm25".
+#' @param max_lag Integer. Maximum lag used in analysis. Defaults to 14.
+#' @param by_region Logical. Whether to also group by region
 #'
+#' @return Dataframe with annual aggregates
 #' @keywords internal
-calculate_air_pollution_af_an <- function(data,
-                                          reference = 15,
+aggregate_air_pollution_by_year <- function(analysis_results,
+                                            var_name = "pm25",
+                                            max_lag = 14,
+                                            by_region = FALSE) {
+  
+  # Add year column
+  results_with_year <- analysis_results %>%
+    dplyr::filter(var_name == !!var_name) %>%
+    dplyr::mutate(year = lubridate::year(date))
+  
+  # Define grouping variables
+  group_vars <- c("year", "ref_name", "ref_pm25")
+  if (by_region) {
+    group_vars <- c(group_vars, "region")
+  }
+  
+  # Aggregate
+  annual_summary <- results_with_year %>%
+    dplyr::group_by(across(all_of(group_vars))) %>%
+    dplyr::summarise(
+      # Attributable Rate
+      ar_per_100k = sum(ar, na.rm = TRUE),
+      ar_lower = sum(ar.lb, na.rm = TRUE),
+      ar_upper = sum(ar.ub, na.rm = TRUE),
+      
+      # Attributable Number
+      an = sum(an, na.rm = TRUE),
+      an_lower = sum(an.lb, na.rm = TRUE),
+      an_upper = sum(an.ub, na.rm = TRUE),
+      
+      # Attributable Fraction
+      af = mean(af, na.rm = TRUE),
+      af_lower = mean(af.lb, na.rm = TRUE),
+      af_upper = mean(af.ub, na.rm = TRUE),
+      
+      # Supporting metrics
+      total_deaths = sum(tot_deaths, na.rm = TRUE),
+      mean_pm25 = mean(pm25_values, na.rm = TRUE),
+      population = mean(pop, na.rm = TRUE),
+      
+      .groups = 'drop'
+    )
+  
+  return(annual_summary)
+}
+
+#===============================================================================
+#' Aggregate air pollution results by month
+#'
+#' @description Aggregates daily analysis results to monthly summaries
+#'
+#' @param analysis_results Results from analyze_air_pollution_daily
+#' @param var_name Character. PM2.5 variable to aggregate. Defaults to "pm25".
+#' @param max_lag Integer. Maximum lag used in analysis. Defaults to 14.
+#' @param by_region Logical. Whether to also group by region
+#'
+#' @return Dataframe with monthly aggregates
+#' @keywords internal
+aggregate_air_pollution_by_month <- function(analysis_results,
+                                             var_name = "pm25",
+                                             max_lag = 14,
+                                             by_region = FALSE) {
+  
+  # Add year and month columns
+  results_with_time <- analysis_results %>%
+    dplyr::filter(var_name == !!var_name) %>%
+    dplyr::mutate(
+      year = lubridate::year(date),
+      month = lubridate::month(date)
+    )
+  
+  # Define grouping variables
+  group_vars <- c("year", "month", "ref_name", "ref_pm25")
+  if (by_region) {
+    group_vars <- c(group_vars, "region")
+  }
+  
+  # Aggregate
+  monthly_summary <- results_with_time %>%
+    dplyr::group_by(across(all_of(group_vars))) %>%
+    dplyr::summarise(
+      # Attributable Rate
+      ar_per_100k = sum(ar, na.rm = TRUE),
+      ar_lower = sum(ar.lb, na.rm = TRUE),
+      ar_upper = sum(ar.ub, na.rm = TRUE),
+      
+      # Attributable Number
+      an = sum(an, na.rm = TRUE),
+      an_lower = sum(an.lb, na.rm = TRUE),
+      an_upper = sum(an.ub, na.rm = TRUE),
+      
+      # Attributable Fraction
+      af = mean(af, na.rm = TRUE),
+      af_lower = mean(af.lb, na.rm = TRUE),
+      af_upper = mean(af.ub, na.rm = TRUE),
+      
+      # Supporting metrics
+      total_deaths = sum(tot_deaths, na.rm = TRUE),
+      mean_pm25 = mean(pm25_values, na.rm = TRUE),
+      population = mean(pop, na.rm = TRUE),
+      
+      .groups = 'drop'
+    )
+  
+  return(monthly_summary)
+}
+
+#===============================================================================
+#' Plot Monthly Time Series of Attributable Rate (AR)
+#'
+#' @description Creates a monthly time series plot showing the attributable rate (AR) per 100,000 
+#' population, aggregated by month. 
+#'
+#' @param analysis_results Results from analyze_air_pollution_daily
+#' @param var_name Character. PM2.5 variable to plot. Defaults to "pm25".
+#' @param max_lag Integer. Maximum lag used in analysis. Defaults to 14.
+#' @param by_region Logical. Whether to create separate plots by region
+#' @param output_dir Character. Directory to save plot
+#' @param save_plot Logical. Whether to save the plot
+#'
+#' @return ggplot object or list of ggplot objects
+#' @export
+plot_air_pollution_ar_monthly <- function(analysis_results,
                                           var_name = "pm25",
-                                          family = "quasipoisson") {
-  model <- fit_air_pollution_gam(data, var_name, family)
-  coef_extract <- extract_air_pollution_coef(model, var_name)
-  beta <- coef_extract$coef
-
-  pm_values <- data[[var_name]]
-  deaths <- data$deaths
-
-  above_ref <- pm_values > reference & !is.na(pm_values) & !is.na(deaths)
-
-  if (!any(above_ref)) {
-    return(list(af = 0, an = 0))
+                                          max_lag = 14,
+                                          by_region = FALSE,
+                                          output_dir = NULL,
+                                          save_plot = FALSE) {
+  
+  if (save_plot && is.null(output_dir)) {
+    stop("output_dir must be specified when save_plot == TRUE")
   }
-
-  rr_t <- exp(beta * (pm_values[above_ref] - reference))
-  af_t <- (rr_t - 1) / rr_t
-  deaths_t <- deaths[above_ref]
-
-  af_overall <- sum(deaths_t * af_t) / sum(deaths, na.rm = TRUE)
-  an_overall <- af_overall * sum(deaths, na.rm = TRUE)
-
-  return(list(af = af_overall, an = an_overall))
+  
+  # Filter to specific PM2.5 variable
+  results_filtered <- analysis_results %>%
+    dplyr::filter(var_name == !!var_name)
+  
+  # Get reference info
+  ref_name <- unique(results_filtered$ref_name)[1]
+  ref_pm25 <- unique(results_filtered$ref_pm25)[1]
+  
+  # Aggregate by month
+  results_filtered <- results_filtered %>%
+    dplyr::mutate(
+      year = lubridate::year(date),
+      month = lubridate::month(date),
+      year_month = as.Date(paste(year, month, "01", sep = "-"))
+    )
+  
+  # Define grouping variables
+  group_vars <- c("year_month", "ref_name", "ref_pm25", "var_name")
+  if (by_region) {
+    group_vars <- c(group_vars, "region")
+  }
+  
+  # Aggregate to monthly level
+  monthly_data <- results_filtered %>%
+    dplyr::group_by(across(all_of(group_vars))) %>%
+    dplyr::summarise(
+      ar_monthly = sum(ar, na.rm = TRUE),
+      ar_lower = sum(ar.lb, na.rm = TRUE),
+      ar_upper = sum(ar.ub, na.rm = TRUE),
+      n_days = n(),
+      .groups = 'drop'
+    ) %>%
+    dplyr::arrange(year_month)
+  
+  # Create custom month-year labels
+  monthly_data <- monthly_data %>%
+    dplyr::mutate(
+      month_label = format(year_month, "%b %Y"),
+      month_label = factor(month_label, levels = unique(month_label))
+    )
+  
+  if (!by_region) {
+    # National monthly plot filtered for National region if region column exists
+    if ("region" %in% names(monthly_data)) {
+      national_data <- monthly_data %>%
+        dplyr::filter(region == "National" | is.na(region))
+    } else {
+      national_data <- monthly_data
+    }
+    
+    p <- ggplot2::ggplot(
+      national_data,
+      ggplot2::aes(x = year_month, y = ar_monthly)
+    ) +
+      ggplot2::geom_ribbon(
+        ggplot2::aes(ymin = ar_lower, ymax = ar_upper),
+        alpha = 0.2,
+        fill = "#F00001"  # Keep original red for national
+      ) +
+      ggplot2::geom_line(color = "darkblue", linewidth = 1) +
+      ggplot2::scale_x_date(
+        date_breaks = "3 months",
+        date_labels = "%b %Y"
+      ) +
+      ggplot2::labs(
+        title = sprintf(
+          "Monthly Time Series of Attributable Rate (AR) of Mortality\n(%s Standard: %s µg/m³)",
+          ref_name, ref_pm25
+        ),
+        x = "Month",
+        y = "Attributable Rate (per 100K population)",
+        caption = "Shaded area shows 95% confidence interval\nData aggregated by month"
+      ) +
+      ggplot2::theme_minimal(base_size = 14) +
+      ggplot2::theme(
+        plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 16),
+        plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 12),
+        axis.title = ggplot2::element_text(face = "bold"),
+        axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, size = 11),
+        plot.caption = ggplot2::element_text(hjust = 0.5, size = 10, color = "gray40"),
+        panel.grid.minor = ggplot2::element_blank(),
+        plot.background = ggplot2::element_rect(fill = "white", color = NA),
+        panel.background = ggplot2::element_rect(fill = "white", color = NA)
+      )
+    
+    if (save_plot) {
+      if (!dir.exists(output_dir)) {
+        dir.create(output_dir, recursive = TRUE)
+      }
+      
+      filename <- sprintf(
+        "air_pollution_ar_monthly_%s_ref%s.png",
+        ref_name, ref_pm25
+      )
+      
+      ggplot2::ggsave(
+        file.path(output_dir, filename),
+        plot = p,
+        width = 14,
+        height = 8,
+        dpi = 300,
+        bg = "white"
+      )
+    }
+    
+    return(p)
+    
+  } else {
+    # Regional monthly plots - USE SAME COLORS AS NATIONAL
+    regional_data <- monthly_data %>%
+      dplyr::filter(region != "National")
+    
+    plots <- list()
+    regions <- unique(regional_data$region)
+    
+    for (reg in regions) {
+      reg_data <- regional_data %>%
+        dplyr::filter(region == reg)
+      
+      p <- ggplot2::ggplot(
+        reg_data,
+        ggplot2::aes(x = year_month, y = ar_monthly)
+      ) +
+        ggplot2::geom_ribbon(
+          ggplot2::aes(ymin = ar_lower, ymax = ar_upper),
+          alpha = 0.2,
+          fill = "#F00001"  
+        ) +
+        ggplot2::geom_line(color = "darkblue", linewidth = 1) +  
+        ggplot2::scale_x_date(
+          date_breaks = "6 months",
+          date_labels = "%b %Y"
+        ) +
+        ggplot2::labs(
+          title = sprintf("Region: %s", reg),  
+          x = "Month",
+          y = "AR (per 100K)"
+        ) +
+        ggplot2::theme_minimal(base_size = 12) +
+        ggplot2::theme(
+          plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 12),
+          axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, size = 9),
+          panel.grid.minor = ggplot2::element_blank()
+        )
+      
+      plots[[reg]] <- p
+    }
+    
+    # Combine plots
+    combined_plots <- patchwork::wrap_plots(plots, ncol = 2) +
+      patchwork::plot_annotation(
+        title = sprintf(
+          "Monthly Attributable Rate (AR) by Region\n(%s Standard: %s µg/m³)",
+          ref_name, ref_pm25
+        ),
+        subtitle = "Shaded area shows 95% confidence interval",
+        theme = ggplot2::theme(
+          plot.title = ggplot2::element_text(size = 16, face = "bold", hjust = 0.5),
+          plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5, color = "gray40")
+        )
+      )
+    
+    if (save_plot) {
+      if (!dir.exists(output_dir)) {
+        dir.create(output_dir, recursive = TRUE)
+      }
+      
+      filename <- sprintf(
+        "air_pollution_ar_monthly_by_region_%s_ref%s.png",
+        ref_name, ref_pm25
+      )
+      
+      ggplot2::ggsave(
+        file.path(output_dir, filename),
+        plot = combined_plots,
+        width = 16,
+        height = 4 * ceiling(length(plots) / 2),
+        dpi = 300,
+        bg = "white",
+        limitsize = FALSE
+      )
+    }
+    
+    return(combined_plots)
+  }
 }
 
+#===============================================================================
+#' Plot Monthly Time Series of Attributable Number (AN)
+#'
+#' @description Creates a monthly time series plot showing the attributable number (AN) 
+#' of deaths, aggregated by month. This provides a smoother, clearer view of temporal trends.
+#'
+#' @param analysis_results Results from analyze_air_pollution_daily
+#' @param var_name Character. PM2.5 variable to plot. Defaults to "pm25".
+#' @param max_lag Integer. Maximum lag used in analysis. Defaults to 14.
+#' @param by_region Logical. Whether to create separate plots by region
+#' @param output_dir Character. Directory to save plot
+#' @param save_plot Logical. Whether to save the plot
+#'
+#' @return ggplot object or list of ggplot objects
+#' @export
+plot_air_pollution_an_monthly <- function(analysis_results,
+                                          var_name = "pm25",
+                                          max_lag = 14,
+                                          by_region = FALSE,
+                                          output_dir = NULL,
+                                          save_plot = FALSE) {
+  
+  if (save_plot && is.null(output_dir)) {
+    stop("output_dir must be specified when save_plot == TRUE")
+  }
+  
+  # Filter to specific PM2.5 variable
+  results_filtered <- analysis_results %>%
+    dplyr::filter(var_name == !!var_name)
+  
+  # Get reference info
+  ref_name <- unique(results_filtered$ref_name)[1]
+  ref_pm25 <- unique(results_filtered$ref_pm25)[1]
+  
+  # Aggregate by month
+  results_filtered <- results_filtered %>%
+    dplyr::mutate(
+      year = lubridate::year(date),
+      month = lubridate::month(date),
+      year_month = as.Date(paste(year, month, "01", sep = "-"))
+    )
+  
+  # Define grouping variables
+  group_vars <- c("year_month", "ref_name", "ref_pm25", "var_name")
+  if (by_region) {
+    group_vars <- c(group_vars, "region")
+  }
+  
+  # Aggregate to monthly level (sum for AN)
+  monthly_data <- results_filtered %>%
+    dplyr::group_by(across(all_of(group_vars))) %>%
+    dplyr::summarise(
+      an_monthly = sum(an, na.rm = TRUE),
+      an_lower = sum(an.lb, na.rm = TRUE),
+      an_upper = sum(an.ub, na.rm = TRUE),
+      n_days = n(),
+      .groups = 'drop'
+    ) %>%
+    dplyr::arrange(year_month)
+  
+  # Create custom month-year labels
+  monthly_data <- monthly_data %>%
+    dplyr::mutate(
+      month_label = format(year_month, "%b %Y"),
+      month_label = factor(month_label, levels = unique(month_label))
+    )
+  
+  if (!by_region) {
+    # National monthly plot
+    if ("region" %in% names(monthly_data)) {
+      national_data <- monthly_data %>%
+        dplyr::filter(region == "National" | is.na(region))
+    } else {
+      national_data <- monthly_data
+    }
+    
+    p <- ggplot2::ggplot(
+      national_data,
+      ggplot2::aes(x = year_month, y = an_monthly)
+    ) +
+      ggplot2::geom_ribbon(
+        ggplot2::aes(ymin = an_lower, ymax = an_upper),
+        alpha = 0.2,
+        fill = "#F00001",
+      ) +
+      ggplot2::geom_line(color = "darkblue", linewidth = 1) +
+      ggplot2::scale_x_date(
+        date_breaks = "3 months",
+        date_labels = "%b %Y"
+      ) +
+      ggplot2::scale_y_continuous(labels = scales::comma) +
+      ggplot2::labs(
+        title = sprintf(
+          "Monthly Time Series of Attributable Number (AN) of Deaths\n(%s Standard: %s µg/m³)",
+          ref_name, ref_pm25
+        ),
+        x = "Month",
+        y = "Attributable Number of Deaths",
+        caption = "Shaded area shows 95% confidence interval\nData aggregated by month"
+      ) +
+      ggplot2::theme_minimal(base_size = 14) +
+      ggplot2::theme(
+        plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 16),
+        plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 12),
+        axis.title = ggplot2::element_text(face = "bold"),
+        axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, size = 11),
+        plot.caption = ggplot2::element_text(hjust = 0.5, size = 10, color = "gray40"),
+        panel.grid.minor = ggplot2::element_blank(),
+        plot.background = ggplot2::element_rect(fill = "white", color = NA),
+        panel.background = ggplot2::element_rect(fill = "white", color = NA)
+      )
+    
+    if (save_plot) {
+      if (!dir.exists(output_dir)) {
+        dir.create(output_dir, recursive = TRUE)
+      }
+      
+      filename <- sprintf(
+        "air_pollution_an_monthly_%s_ref%s.png",
+        ref_name, ref_pm25
+      )
+      
+      ggplot2::ggsave(
+        file.path(output_dir, filename),
+        plot = p,
+        width = 14,
+        height = 8,
+        dpi = 300,
+        bg = "white"
+      )
+    }
+    
+    return(p)
+    
+  } else {
+    # Regional monthly plots - USE SAME COLORS AS NATIONAL
+    regional_data <- monthly_data %>%
+      dplyr::filter(region != "National")
+    
+    plots <- list()
+    regions <- unique(regional_data$region)
+    
+    for (reg in regions) {
+      reg_data <- regional_data %>%
+        dplyr::filter(region == reg)
+      
+      p <- ggplot2::ggplot(
+        reg_data,
+        ggplot2::aes(x = year_month, y = an_monthly)
+      ) +
+        ggplot2::geom_ribbon(
+          ggplot2::aes(ymin = an_lower, ymax = an_upper),
+          alpha = 0.2,
+          fill = "#F00001"  
+        ) +
+        ggplot2::geom_line(color = "darkblue", linewidth = 1) +  
+        ggplot2::scale_x_date(
+          date_breaks = "6 months",
+          date_labels = "%b %Y"
+        ) +
+        ggplot2::scale_y_continuous(labels = scales::comma) +
+        ggplot2::labs(
+          title = sprintf("Region: %s", reg),  
+          x = "Month",
+          y = "Attributable Deaths"
+        ) +
+        ggplot2::theme_minimal(base_size = 12) +
+        ggplot2::theme(
+          plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 12),
+          axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, size = 9),
+          panel.grid.minor = ggplot2::element_blank()
+        )
+      
+      plots[[reg]] <- p
+    }
+    
+    # Combine plots
+    combined_plots <- patchwork::wrap_plots(plots, ncol = 2) +
+      patchwork::plot_annotation(
+        title = sprintf(
+          "Monthly Attributable Number (AN) by Region\n(%s Standard: %s µg/m³)",
+          ref_name, ref_pm25
+        ),
+        subtitle = "Shaded area shows 95% confidence interval",
+        theme = ggplot2::theme(
+          plot.title = ggplot2::element_text(size = 16, face = "bold", hjust = 0.5),
+          plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5, color = "gray40")
+        )
+      )
+    
+    if (save_plot) {
+      if (!dir.exists(output_dir)) {
+        dir.create(output_dir, recursive = TRUE)
+      }
+      
+      filename <- sprintf(
+        "air_pollution_an_monthly_by_region_%s_ref%s.png",
+        ref_name, ref_pm25
+      )
+      
+      ggplot2::ggsave(
+        file.path(output_dir, filename),
+        plot = combined_plots,
+        width = 16,
+        height = 4 * ceiling(length(plots) / 2),
+        dpi = 300,
+        bg = "white",
+        limitsize = FALSE
+      )
+    }
+    
+    return(combined_plots)
+  }
+}
 
-#' Analyze region-specific distributed lag effects with AF/AN for a chosen
-#' PM2.5 reference
+#===============================================================================
+#' Plot Attributable Rate by Year for Air Pollution
 #'
-#' @param data Input data with lag variables.
-#' @param reference Numeric. PM2.5 reference value (e.g., 15, 25, 50, ...).
-#' Defaults to 15.
-#' @param max_lag Integer. Maximum lag days. Defaults to 2
-#' @param family Character. Distribution family for GAM. Defaults to
-#' "quasipoisson".
+#' @param analysis_results Results from analyze_air_pollution_daily
+#' @param var_name Character. PM2.5 variable to plot. Defaults to "pm25".
+#' @param max_lag Integer. Maximum lag. Defaults to 14.
+#' @param by_region Logical. Whether to create separate plots by region
+#' @param output_dir Character. Directory to save plot
+#' @param save_plot Logical. Whether to save
 #'
-#' @return List with region-specific and meta-analysis results including AF/AN
+#' @return ggplot object or list of ggplot objects
+#' @export
+plot_air_pollution_ar_by_year <- function(analysis_results,
+                                          var_name = "pm25",
+                                          max_lag = 14,
+                                          by_region = FALSE,
+                                          output_dir = NULL,
+                                          save_plot = FALSE) {
+  
+  if (save_plot && is.null(output_dir)) {
+    stop("output_dir must be specified when save_plot == TRUE")
+  }
+  
+  # Aggregate data
+  annual_data <- aggregate_air_pollution_by_year(
+    analysis_results,
+    var_name,
+    max_lag,
+    by_region
+  )
+  
+  # Get reference info
+  ref_name <- unique(annual_data$ref_name)[1]
+  ref_pm25 <- unique(annual_data$ref_pm25)[1]
+  
+  # Create label function that converts decimal years to Month-Year format
+  year_label_func <- function(x) {
+    year_int <- floor(x)
+    year_frac <- x - year_int
+    
+    month_num <- round(year_frac * 12) + 1
+    month_num <- pmin(month_num, 12)
+    
+    month_abbr <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+    
+    paste0(month_abbr[month_num], "-", year_int)
+  }
+  
+  if (!by_region) {
+    # Single plot for all regions combined
+    p <- ggplot2::ggplot(
+      annual_data,
+      ggplot2::aes(x = year, y = ar_per_100k)
+    ) +
+      ggplot2::geom_ribbon(
+        ggplot2::aes(ymin = ar_lower, ymax = ar_upper),
+        alpha = 0.2,
+        fill = "#F00001"  # Changed to match monthly plots
+      ) +
+      ggplot2::geom_line(color = "darkblue", linewidth = 1) +
+      ggplot2::scale_x_continuous(
+        breaks = scales::pretty_breaks(n = 10),
+        labels = year_label_func
+      ) +
+      ggplot2::labs(
+        title = sprintf(
+          "Annual Deaths (per 100K) attributable to PM2.5\n(%s Standard: %s µg/m³)",
+          ref_name, ref_pm25
+        ),
+        x = "Year",
+        y = "Attributable Rate (per 100K population)",
+        caption = "Shaded area shows 95% confidence interval"
+      ) +
+      ggplot2::theme_minimal(base_size = 14) +
+      ggplot2::theme(
+        plot.title = ggplot2::element_text(hjust = 0.5, face = "bold"),
+        axis.title = ggplot2::element_text(face = "bold"),
+        plot.caption = ggplot2::element_text(hjust = 0.5, color = "gray40")
+      )
+    
+    if (save_plot) {
+      if (!dir.exists(output_dir)) {
+        dir.create(output_dir, recursive = TRUE)
+      }
+      
+      filename <- sprintf(
+        "air_pollution_ar_by_year_%s_ref%s.png",
+        ref_name, ref_pm25
+      )
+      
+      ggplot2::ggsave(
+        file.path(output_dir, filename),
+        plot = p,
+        width = 12,
+        height = 7,
+        dpi = 300,
+        bg = "white"
+      )
+    }
+    
+    return(p)
+    
+  } else {
+    # Multiple plots by region - USE SAME COLORS
+    plots <- list()
+    regions <- unique(annual_data$region)
+    regions <- regions[regions != "National"]  # Exclude national for regional plots
+    
+    for (reg in regions) {
+      reg_data <- annual_data %>% dplyr::filter(region == reg)
+      
+      p <- ggplot2::ggplot(
+        reg_data,
+        ggplot2::aes(x = year, y = ar_per_100k)
+      ) +
+        ggplot2::geom_ribbon(
+          ggplot2::aes(ymin = ar_lower, ymax = ar_upper),
+          alpha = 0.2,
+          fill = "#F00001"  
+        ) +
+        ggplot2::geom_line(color = "darkblue", linewidth = 1) +  
+        ggplot2::scale_x_continuous(
+          breaks = scales::pretty_breaks(n = 8),
+          labels = year_label_func
+        ) +
+        ggplot2::labs(
+          title = sprintf("Region: %s", reg),  
+          x = "Year",
+          y = "AR (per 100K)"
+        ) +
+        ggplot2::theme_minimal(base_size = 12) +
+        ggplot2::theme(
+          plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 12),
+          axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+        )
+      
+      plots[[reg]] <- p
+    }
+    
+    # Combine plots with better annotation
+    combined_plots <- patchwork::wrap_plots(plots, ncol = 2) +
+      patchwork::plot_annotation(
+        title = sprintf(
+          "Annual Attributable Rate (AR) by Region\n(%s Standard: %s µg/m³)",
+          ref_name, ref_pm25
+        ),
+        subtitle = "Shaded area shows 95% confidence interval",
+        theme = ggplot2::theme(
+          plot.title = ggplot2::element_text(size = 16, face = "bold", hjust = 0.5),
+          plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5, color = "gray40")
+        )
+      )
+    
+    if (save_plot) {
+      if (!dir.exists(output_dir)) {
+        dir.create(output_dir, recursive = TRUE)
+      }
+      
+      filename <- sprintf(
+        "air_pollution_ar_by_year_by_region_%s_ref%s.png",
+        ref_name, ref_pm25
+      )
+      
+      ggplot2::ggsave(
+        file.path(output_dir, filename),
+        plot = combined_plots,
+        width = 14,
+        height = ceiling(length(plots) / 2) * 4,  
+        dpi = 300,
+        bg = "white",
+        limitsize = FALSE
+      )
+    }
+    
+    return(combined_plots)
+  }
+}
+
+#===============================================================================
+#' Plot Attributable Number by Year for Air Pollution
+#'
+#' @param analysis_results Results from analyze_air_pollution_daily
+#' @param var_name Character. PM2.5 variable to plot. Defaults to "pm25".
+#' @param max_lag Integer. Maximum lag. Defaults to 14.
+#' @param by_region Logical. Whether to create separate plots by region
+#' @param output_dir Character. Directory to save plot
+#' @param save_plot Logical. Whether to save
+#'
+#' @return ggplot object or list of ggplot objects
+#' @export
+plot_air_pollution_an_by_year <- function(analysis_results,
+                                          var_name = "pm25",
+                                          max_lag = 14,
+                                          by_region = FALSE,
+                                          output_dir = NULL,
+                                          save_plot = FALSE) {
+  
+  if (save_plot && is.null(output_dir)) {
+    stop("output_dir must be specified when save_plot == TRUE")
+  }
+  
+  # Aggregate data
+  annual_data <- aggregate_air_pollution_by_year(
+    analysis_results,
+    var_name,
+    max_lag,
+    by_region
+  )
+  
+  # Get reference info
+  ref_name <- unique(annual_data$ref_name)[1]
+  ref_pm25 <- unique(annual_data$ref_pm25)[1]
+  
+  year_label_func <- function(x) {
+    year_int <- floor(x)
+    year_frac <- x - year_int
+    month_num <- round(year_frac * 12) + 1
+    month_num <- pmin(month_num, 12)
+    
+    month_abbr <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+    
+    paste0(month_abbr[month_num], "-", year_int)
+  }
+  
+  if (!by_region) {
+    # Single plot for all regions combined
+    p <- ggplot2::ggplot(
+      annual_data,
+      ggplot2::aes(x = year, y = an)
+    ) +
+      ggplot2::geom_ribbon(
+        ggplot2::aes(ymin = an_lower, ymax = an_upper),
+        alpha = 0.2,
+        fill = "#F00001"  # Changed to match monthly plots
+      ) +
+      ggplot2::geom_line(color = "darkblue", linewidth = 1) +
+      ggplot2::scale_x_continuous(
+        breaks = scales::pretty_breaks(n = 10),
+        labels = year_label_func
+      ) +
+      ggplot2::labs(
+        title = sprintf(
+          "Annual Deaths attributable to PM2.5\n(%s Standard: %s µg/m³)",
+          ref_name, ref_pm25
+        ),
+        x = "Year",
+        y = "Attributable Number of Deaths",
+        caption = "Shaded area shows 95% confidence interval"
+      ) +
+      ggplot2::theme_minimal(base_size = 14) +
+      ggplot2::theme(
+        plot.title = ggplot2::element_text(hjust = 0.5, face = "bold"),
+        axis.title = ggplot2::element_text(face = "bold"),
+        plot.caption = ggplot2::element_text(hjust = 0.5, color = "gray40")
+      )
+    
+    if (save_plot) {
+      if (!dir.exists(output_dir)) {
+        dir.create(output_dir, recursive = TRUE)
+      }
+      
+      filename <- sprintf(
+        "air_pollution_an_by_year_%s_ref%s.png",
+        ref_name, ref_pm25
+      )
+      
+      ggplot2::ggsave(
+        file.path(output_dir, filename),
+        plot = p,
+        width = 12,
+        height = 7,
+        dpi = 300,
+        bg = "white"
+      )
+    }
+    
+    return(p)
+    
+  } else {
+    # Multiple plots by region - USE SAME COLORS
+    plots <- list()
+    regions <- unique(annual_data$region)
+    regions <- regions[regions != "National"]
+    
+    for (reg in regions) {
+      reg_data <- annual_data %>% dplyr::filter(region == reg)
+      
+      p <- ggplot2::ggplot(
+        reg_data,
+        ggplot2::aes(x = year, y = an)
+      ) +
+        ggplot2::geom_ribbon(
+          ggplot2::aes(ymin = an_lower, ymax = an_upper),
+          alpha = 0.2,
+          fill = "#F00001"  
+        ) +
+        ggplot2::geom_line(color = "darkblue", linewidth = 1) +  
+        ggplot2::scale_x_continuous(
+          breaks = scales::pretty_breaks(n = 8),
+          labels = year_label_func
+        ) +
+        ggplot2::labs(
+          title = sprintf("Region: %s", reg),  
+          x = "Year",
+          y = "Attributable Deaths"
+        ) +
+        ggplot2::theme_minimal(base_size = 12) +
+        ggplot2::theme(
+          plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 12),
+          axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+        )
+      
+      plots[[reg]] <- p
+    }
+    
+    # Combine plots with better annotation
+    combined_plots <- patchwork::wrap_plots(plots, ncol = 2) +
+      patchwork::plot_annotation(
+        title = sprintf(
+          "Annual Attributable Number (AN) by Region\n(%s Standard: %s µg/m³)",
+          ref_name, ref_pm25
+        ),
+        subtitle = "Shaded area shows 95% confidence interval",
+        theme = ggplot2::theme(
+          plot.title = ggplot2::element_text(size = 16, face = "bold", hjust = 0.5),
+          plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5, color = "gray40")
+        )
+      )
+    
+    if (save_plot) {
+      if (!dir.exists(output_dir)) {
+        dir.create(output_dir, recursive = TRUE)
+      }
+      
+      filename <- sprintf(
+        "air_pollution_an_by_year_by_region_%s_ref%s.png",
+        ref_name, ref_pm25
+      )
+      
+      ggplot2::ggsave(
+        file.path(output_dir, filename),
+        plot = combined_plots,
+        width = 14,
+        height = ceiling(length(plots) / 2) * 4,  
+        dpi = 300,
+        bg = "white",
+        limitsize = FALSE
+      )
+    }
+    
+    return(combined_plots)
+  }
+}
+
+#===============================================================================
+#' Plot histograms for AN and AR by month
+#'
+#' @description Creates histogram plots for Attributable Number (AN) and 
+#' Attributable Rate (AR) aggregated by month
+#'
+#' @param analysis_results Processed results with RR/AF/AN/AR with lag variables
+#' @param var_name Character. PM2.5 variable name. Defaults to "pm25".
+#' @param output_dir Character. Directory to save plots.
+#' @param save_plot Logical. Whether to save the plots.
+#'
+#' @return List with ggplot objects
+#' @keywords internal
+plot_air_pollution_monthly_histograms <- function(analysis_results,
+                                                  var_name = "pm25",
+                                                  output_dir = NULL,
+                                                  save_plot = FALSE) {
+  
+  if (save_plot && is.null(output_dir)) {
+    stop("output_dir must be specified when save_plot == TRUE")
+  }
+  
+  # Filter for specific PM2.5 variable and national level
+  specific_results <- analysis_results %>%
+    dplyr::filter(var_name == !!var_name & region == "National") %>%
+    dplyr::mutate(month = lubridate::month(date, label = TRUE, abbr = FALSE))
+  
+  # Get reference info
+  ref_name <- na.omit(unique(specific_results$ref_name))[1]
+  ref_pm25 <- na.omit(unique(specific_results$ref_pm25))[1]
+  
+  # Aggregate by month
+  monthly_agg <- specific_results %>%
+    dplyr::group_by(month) %>%
+    dplyr::summarise(
+      an_total = sum(an, na.rm = TRUE),
+      ar_aggr = sum(ar, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    dplyr::mutate(month = factor(month, levels = month.name))
+  
+  # Plot AN by month
+  an_plot <- ggplot2::ggplot(monthly_agg, ggplot2::aes(x = month, y = an_total)) +
+    ggplot2::geom_bar(stat = "identity", fill = "#2E86AB", alpha = 0.8) +
+    ggplot2::labs(
+      title = paste("Attributable Number (AN) by Month -", ref_name, "Standard"),
+      subtitle = paste("Reference PM2.5:", ref_pm25, "µg/m³"),
+      x = "Month",
+      y = "Total Attributable Number",
+      caption = "National level aggregation"
+    ) +
+    ggplot2::theme_minimal(base_size = 12) +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(hjust = 0.5, face = "bold"),
+      plot.subtitle = ggplot2::element_text(hjust = 0.5, color = "gray40"),
+      axis.text.x = ggplot2::element_text(angle = 45, hjust = 1),
+      axis.title = ggplot2::element_text(face = "bold"),
+      panel.grid.major.x = ggplot2::element_blank()
+    ) +
+    ggplot2::scale_y_continuous(labels = scales::comma)
+  
+  # Plot AR by month
+  ar_plot <- ggplot2::ggplot(monthly_agg, ggplot2::aes(x = month, y = ar_aggr)) +
+    ggplot2::geom_bar(stat = "identity", fill = "#A23B72", alpha = 0.8) +
+    ggplot2::labs(
+      title = paste("Aggregated Attributable Rate (AR) by Month -", ref_name, "Standard"),
+      subtitle = paste("Reference PM2.5:", ref_pm25, "µg/m³"),
+      x = "Month",
+      y = "Aggregated AR (per 100,000 population)",
+      caption = "National level aggregation"
+    ) +
+    ggplot2::theme_minimal(base_size = 12) +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(hjust = 0.5, face = "bold"),
+      plot.subtitle = ggplot2::element_text(hjust = 0.5, color = "gray40"),
+      axis.text.x = ggplot2::element_text(angle = 45, hjust = 1),
+      axis.title = ggplot2::element_text(face = "bold"),
+      panel.grid.major.x = ggplot2::element_blank()
+    )
+  
+  # Save plots if requested
+  if (save_plot) {
+    if (!dir.exists(output_dir)) {
+      dir.create(output_dir, recursive = TRUE)
+    }
+    
+    safe_refname <- tolower(gsub("\\s+", "_", ref_name))
+    
+    ggplot2::ggsave(
+      file.path(output_dir, paste0("an_monthly_histogram_", safe_refname, "_ref", ref_pm25, ".png")),
+      plot = an_plot,
+      width = 10,
+      height = 6,
+      dpi = 300,
+      bg = "white"
+    )
+    
+    ggplot2::ggsave(
+      file.path(output_dir, paste0("ar_monthly_histogram_", safe_refname, "_ref", ref_pm25, ".png")),
+      plot = ar_plot,
+      width = 10,
+      height = 6,
+      dpi = 300,
+      bg = "white"
+    )
+  }
+  
+  return(list(an_plot = an_plot, ar_plot = ar_plot))
+}
+
+#===============================================================================
+#' Plot Attributable Rate by Region as Bar Chart
+#'
+#' @param analysis_results Results from analyze_air_pollution_daily
+#' @param var_name Character. PM2.5 variable to plot. Defaults to "pm25".
+#' @param max_lag Integer. Maximum lag. Defaults to 14.
+#' @param output_dir Character. Directory to save plot
+#' @param save_plot Logical. Whether to save
+#'
+#' @return ggplot object
+#' @export
+plot_air_pollution_ar_by_region <- function(analysis_results,
+                                            var_name = "pm25",
+                                            max_lag = 14,
+                                            output_dir = NULL,
+                                            save_plot = FALSE) {
+  
+  if (save_plot && is.null(output_dir)) {
+    stop("output_dir must be specified when save_plot == TRUE")
+  }
+  
+  # Aggregate data by region
+  regional_data <- aggregate_air_pollution_by_region(
+    analysis_results,
+    var_name,
+    max_lag
+  )
+  
+  # Get reference info
+  ref_name <- unique(regional_data$ref_name)[1]
+  ref_pm25 <- unique(regional_data$ref_pm25)[1]
+  
+  # Separate national from regional
+  national_data <- regional_data %>% filter(region == "National")
+  regional_data_filtered <- regional_data %>% filter(region != "National")
+  
+  # Create bar plot
+  p <- ggplot2::ggplot(
+    regional_data_filtered,
+    ggplot2::aes(x = reorder(region, ar_per_100k), 
+                 y = ar_per_100k, 
+                 fill = region)
+  ) +
+    ggplot2::geom_bar(stat = "identity", alpha = 0.8) +
+    ggplot2::geom_errorbar(
+      ggplot2::aes(ymin = ar_lower, ymax = ar_upper),
+      width = 0.2,
+      color = "black"
+    ) +
+    ggplot2::labs(
+      title = sprintf(
+        "Attributable Rate (AR) by Region\n(%s Standard: %s µg/m³)",
+        ref_name, ref_pm25
+      ),
+      x = "Region",
+      y = "Attributable Rate (per 100K population)",
+      caption = "Error bars show 95% confidence interval"
+    ) +
+    ggplot2::scale_fill_brewer(palette = "Set3") +
+    ggplot2::theme_minimal(base_size = 14) +
+    ggplot2::theme(
+      legend.position = "none",
+      plot.title = ggplot2::element_text(hjust = 0.5, face = "bold"),
+      axis.title = ggplot2::element_text(face = "bold"),
+      axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, size = 11),
+      plot.caption = ggplot2::element_text(hjust = 0.5, color = "gray40")
+    )
+  
+  if (save_plot) {
+    if (!dir.exists(output_dir)) {
+      dir.create(output_dir, recursive = TRUE)
+    }
+    
+    filename <- sprintf(
+      "air_pollution_ar_by_region_%s_ref%s.png",
+      ref_name, ref_pm25
+    )
+    
+    # Add national reference line if available
+    if (nrow(national_data) > 0) {
+      p <- p +
+        ggplot2::geom_hline(
+          yintercept = national_data$ar_per_100k,
+          linetype = "dashed",
+          color = "darkgreen",
+          linewidth = 1
+        ) +
+        ggplot2::annotate(
+          "text",
+          x = Inf,
+          y = national_data$ar_per_100k,
+          label = sprintf("National: %.2f", national_data$ar_per_100k),
+          hjust = 1.1,
+          vjust = -0.5,
+          color = "darkgreen",
+          fontface = "bold"
+        )
+    }
+    
+    # Save if requested
+    ggplot2::ggsave(
+      file.path(output_dir, filename),
+      plot = p,
+      width = 10,
+      height = 7,
+      dpi = 300,
+      bg = "white"
+    )
+  }
+  
+  return(p)
+}
+
+#===============================================================================
+#' Plot exposure-response relationship with confidence intervals by region
+#'
+#' @description Creates faceted exposure-response plots showing RR with confidence 
+#' intervals across PM2.5 concentrations for each region (excluding National)
+#'
+#' @param analysis_results Processed results with RR/AF/AN/AR with lag variables
+#' @param var_name Character. PM2.5 variable name. Defaults to "pm25".
+#' @param ref_pm25 Numeric. Reference PM2.5 value to highlight.
+#' @param output_dir Character. Directory to save plot.
+#' @param save_plot Logical. Whether to save the plot.
+#'
+#' @return ggplot object
+#' @keywords internal
+plot_air_pollution_exposure_response <- function(analysis_results,
+                                                 var_name = "pm25",
+                                                 ref_pm25 = NULL,
+                                                 output_dir = NULL,
+                                                 save_plot = FALSE) {
+  
+  if (save_plot && is.null(output_dir)) {
+    stop("output_dir must be specified when save_plot == TRUE")
+  }
+  
+  # Use provided ref_pm25 or extract from analysis_results
+  if (is.null(ref_pm25)) {
+    ref_pm25 <- na.omit(unique(analysis_results$ref_pm25))[1]
+  }
+  
+  # Filter for specific PM2.5 variable and exclude National
+  specific_results <- analysis_results %>%
+    dplyr::filter(var_name == !!var_name & region != "National") %>%
+    dplyr::select(date, region, pm25_values, rr, rr.lb, rr.ub, ref_name, ref_pm25) %>%
+    dplyr::distinct()
+  
+  if (nrow(specific_results) == 0) {
+    stop("No data available for exposure-response plot by region")
+  }
+  
+  # Get reference name
+  ref_name <- na.omit(unique(specific_results$ref_name))[1]
+  
+  # Create faceted exposure-response plot
+  exp_plot <- ggplot2::ggplot(specific_results, ggplot2::aes(x = pm25_values, y = rr)) +
+    ggplot2::geom_line(color = "red", linewidth = 0.8) +
+    ggplot2::geom_ribbon(
+      ggplot2::aes(ymin = rr.lb, ymax = rr.ub),
+      alpha = 0.2,
+      fill = "#3498DB"
+    ) +
+    ggplot2::geom_vline(
+      xintercept = ref_pm25,
+      linetype = "dashed",
+      color = "#2ECC71",
+      linewidth = 0.8
+    ) +
+    ggplot2::geom_hline(
+      yintercept = 1,
+      linetype = "dashed",
+      color = "#7F8C8D",
+      linewidth = 0.6
+    ) +
+    ggplot2::facet_wrap(~ region, scales = "free_y", ncol = 2) +
+    ggplot2::labs(
+      title = paste("Exposure-Response Relationship by Region: PM2.5 vs Relative Risk -", ref_name, "Standard"),
+      subtitle = paste("Reference guideline:", ref_pm25, "µg/m³"),
+      x = "PM2.5 Concentration (µg/m³)",
+      y = "Relative Risk (RR)",
+      caption = paste("Red line: RR estimate | Blue band: 95% CI | Green line: Reference guideline")
+    ) +
+    ggplot2::theme_minimal(base_size = 12) +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 14),
+      plot.subtitle = ggplot2::element_text(hjust = 0.5, color = "gray40", size = 11),
+      plot.caption = ggplot2::element_text(hjust = 0.5, size = 9, color = "gray40"),
+      axis.title = ggplot2::element_text(face = "bold"),
+      panel.grid.minor = ggplot2::element_blank(),
+      strip.text = ggplot2::element_text(face = "bold", size = 11),
+      strip.background = ggplot2::element_rect(fill = "gray90", color = NA)
+    ) +
+    ggplot2::scale_y_continuous(breaks = scales::pretty_breaks(n = 6))
+  
+  # Save plot if requested
+  if (save_plot) {
+    if (!dir.exists(output_dir)) {
+      dir.create(output_dir, recursive = TRUE)
+    }
+    
+    safe_refname <- tolower(gsub("\\s+", "_", ref_name))
+    filename <- paste0("exposure_response_by_region_", safe_refname, "_ref", ref_pm25, ".png")
+    
+    # Calculate number of regions for plot dimensions
+    n_regions <- length(unique(specific_results$region))
+    n_rows <- ceiling(n_regions / 2)
+    
+    ggplot2::ggsave(
+      file.path(output_dir, filename),
+      plot = exp_plot,
+      width = 12,
+      height = 4 * n_rows,
+      dpi = 300,
+      bg = "white"
+    )
+  }
+  
+  return(exp_plot)
+}
+
+#===============================================================================
+#' Air Pollution Power Calculation using Meta Results
+#'
+#' @description Produce a power statistic by region for PM2.5 attributable mortality
+#' using meta-analysis results
+#'
+#' @param meta_results Meta-analysis results from air_pollution_meta_analysis
+#' @param data_with_lags Lagged data frame
+#' @param ref_pm25 Numeric. Reference PM2.5 value for attributable risk calculation
+#' @param attr_thr Integer. Percentile at which to define the PM2.5 threshold for
+#' calculating attributable risk. Defaults to 95.
+#'
+#' @returns A list containing power information by region
 #'
 #' @keywords internal
-analyze_air_pollution_dlm <- function(data,
-                                      reference = 15,
-                                      max_lag = 2,
-                                      family = "quasipoisson") {
-  regions <- unique(data$region)
-  all_vars <- c("pm25", paste0("pm25_lag", 1:max_lag), paste0("pm25_lag0_", max_lag))
-  all_labels <- c("0", paste0("", 1:max_lag), paste0("0-", max_lag))
-  region_results_list <- list()
-
-  for (prov in regions) {
-    prov_data <- data %>% dplyr::filter(.data$region == prov)
-    total_deaths_prov <- sum(prov_data$deaths, na.rm = TRUE)
-    if (nrow(prov_data) < 500) {
-      message("Skipping region ", prov, " due to insufficient data")
-      next
-    }
-    prov_results <- data.frame(
-      lag_group = all_labels,
-      RR = NA,
-      LB = NA,
-      UB = NA,
-      AF = NA,
-      AN = NA,
-      region = prov,
-      stringsAsFactors = FALSE
-    )
-    for (i in seq_along(all_vars)) {
-      var_name <- all_vars[i]
-      model <- tryCatch(
-        {
-          fit_air_pollution_gam(prov_data, var_name, family)
-        },
-        error = function(e) NULL
-      )
-      if (!is.null(model)) {
-        coef_result <- extract_air_pollution_coef(model, var_name)
-        if (!is.na(coef_result$coef) && !is.na(coef_result$se)) {
-          beta <- coef_result$coef
-          beta_se <- coef_result$se
-          beta_lower <- beta - 1.96 * beta_se
-          beta_upper <- beta + 1.96 * beta_se
-          pm_var <- prov_data[[var_name]]
-          deaths_var <- prov_data$deaths
-          above_ref <- pm_var > reference & !is.na(pm_var) & !is.na(deaths_var)
-
-          if (any(above_ref)) {
-            rr_t <- exp(beta * (pm_var[above_ref] - reference))
-            rr_t_lower <- exp(beta_lower * (pm_var[above_ref] - reference))
-            rr_t_upper <- exp(beta_upper * (pm_var[above_ref] - reference))
-            af_t <- (rr_t - 1) / rr_t
-            deaths_t <- deaths_var[above_ref]
-
-            rr_overall <- sum(deaths_t * rr_t) / sum(deaths_t)
-            lb_overall <- sum(deaths_t * rr_t_lower) / sum(deaths_t)
-            ub_overall <- sum(deaths_t * rr_t_upper) / sum(deaths_t)
-            af_overall <- sum(deaths_t * af_t) / sum(deaths_var, na.rm = TRUE)
-            an_overall <- af_overall * sum(deaths_var, na.rm = TRUE)
-          } else {
-            rr_overall <- 0
-            lb_overall <- 0
-            ub_overall <- 0
-            af_overall <- 0
-            an_overall <- 0
-          }
-          prov_results[i, c("RR", "LB", "UB", "AF", "AN")] <-
-            list(rr_overall, lb_overall, ub_overall, af_overall, an_overall)
+air_pollution_power_list <- function(
+    meta_results,
+    data_with_lags,
+    ref_pm25 = 15,
+    attr_thr = 95) {
+  
+  power_list <- list()
+  alpha <- 1- attr_thr / 100
+  
+  # Extract region results from meta_results
+  region_results <- meta_results$region_results
+  
+  for (i in 1:nrow(region_results)) {
+    region <- region_results$region[i]
+    model_results <- region_results$model_results[[i]]
+    
+    # Get region data
+    region_data <- data_with_lags[data_with_lags$region == region, ]
+    
+    # Calculate threshold PM2.5
+    thresh_pm25 <- round(quantile(region_data$pm25, attr_thr / 100, na.rm = TRUE), 1)
+    
+    # Get cumulative coefficient from meta results
+    # Find the cumulative lag row
+    cum_lag_var <- paste0("pm25_lag0_", max(as.numeric(gsub(".*_", "", names(data_with_lags)[grep("pm25_lag0_", names(data_with_lags))]))))
+    
+    # Extract coefficient and SE for cumulative lag
+    if (!is.null(model_results$coef_table)) {
+      coef_table <- model_results$coef_table
+      cum_row <- coef_table[grepl(cum_lag_var, coef_table$pm25_variable), ]
+      
+      if (nrow(cum_row) > 0) {
+        # Create power dataframe for PM2.5 values above threshold
+        pm25_above <- unique(region_data$pm25[region_data$pm25 >= thresh_pm25])
+        pm25_above <- sort(pm25_above)
+        
+        if (length(pm25_above) > 0) {
+          power_df <- data.frame(
+            region = region,
+            pm25 = pm25_above,
+            cen = ref_pm25,
+            log_rr = cum_row$coef * (pm25_above - ref_pm25),
+            se = cum_row$se * abs(pm25_above - ref_pm25),
+            z_alpha = stats::qnorm(1 - alpha / 2)
+          )
+          
+          power_df <- power_df %>%
+            dplyr::mutate(power = stats::pnorm(
+              .data$log_rr / .data$se - .data$z_alpha
+            ) + (1 - stats::pnorm(.data$log_rr / .data$se + .data$z_alpha))) %>%
+            dplyr::select(-z_alpha) %>%
+            dplyr::mutate(
+              log_rr = round(.data$log_rr, 3),
+              se = round(.data$se, 3),
+              power_pct = round(.data$power * 100, 1)
+            )
+          
+          power_list[[region]] <- power_df
         }
       }
     }
-    region_results_list[[prov]] <- prov_results
   }
-
-  if (length(region_results_list) > 0) {
-    region_dlm_results <- do.call(rbind, region_results_list)
-  } else {
-    stop("No regions with sufficient data for distributed lag analysis")
-  }
-
-  total_deaths_all <- sum(data$deaths, na.rm = TRUE)
-  meta_dlm_results <- data.frame(
-    lag_group = all_labels,
-    RR = NA,
-    LB = NA,
-    UB = NA,
-    AF = NA,
-    AN = NA,
-    I2 = NA,
-    Q_p = NA
-  )
-  for (lg in all_labels) {
-    lag_data <- region_dlm_results %>%
-      dplyr::filter(.data$lag_group == lg) %>%
-      dplyr::filter(!is.na(.data$RR))
-    if (nrow(lag_data) < 2) next
-    lag_data$yi <- log(lag_data$RR)
-    lag_data$sei <- (log(lag_data$UB) - log(lag_data$LB)) / (2 * 1.96)
-    meta_res <- tryCatch(
-      {
-        metafor::rma(yi = lag_data$yi, sei = lag_data$sei, method = "REML")
-      },
-      error = function(e) NULL
-    )
-    if (!is.null(meta_res)) {
-      pooled_rr <- exp(meta_res$b)
-      pooled_af <- mean(lag_data$AF, na.rm = TRUE)
-      pooled_an <- mean(lag_data$AN, na.rm = TRUE)
-      meta_dlm_results[meta_dlm_results$lag_group == lg, "RR"] <- pooled_rr
-      meta_dlm_results[meta_dlm_results$lag_group == lg, "LB"] <- exp(meta_res$ci.lb)
-      meta_dlm_results[meta_dlm_results$lag_group == lg, "UB"] <- exp(meta_res$ci.ub)
-      meta_dlm_results[meta_dlm_results$lag_group == lg, "AF"] <- pooled_af
-      meta_dlm_results[meta_dlm_results$lag_group == lg, "AN"] <- pooled_an
-      meta_dlm_results[meta_dlm_results$lag_group == lg, "I2"] <- meta_res$I2
-      meta_dlm_results[meta_dlm_results$lag_group == lg, "Q_p"] <- meta_res$QEp
+  
+  # Add national power using meta-analysis results
+  meta_coefs <- meta_results$meta_results
+  cum_row_meta <- meta_coefs[grepl("0-", meta_coefs$lag), ]
+  
+  if (nrow(cum_row_meta) > 0) {
+    # Aggregate national PM2.5
+    national_pm25 <- unlist(lapply(unique(data_with_lags$region), 
+                                   function(r) data_with_lags$pm25[data_with_lags$region == r]))
+    thresh_national <- round(quantile(national_pm25, attr_thr / 100, na.rm = TRUE), 1)
+    
+    pm25_above_national <- unique(national_pm25[national_pm25 >= thresh_national])
+    pm25_above_national <- sort(pm25_above_national)
+    
+    if (length(pm25_above_national) > 0) {
+      power_df_national <- data.frame(
+        region = "National",
+        pm25 = pm25_above_national,
+        cen = ref_pm25,
+        log_rr = cum_row_meta$coef * (pm25_above_national - ref_pm25),
+        se = cum_row_meta$se * abs(pm25_above_national - ref_pm25),
+        z_alpha = stats::qnorm(1 - alpha / 2)
+      )
+      
+      power_df_national <- power_df_national %>%
+        dplyr::mutate(power = stats::pnorm(
+          .data$log_rr / .data$se - .data$z_alpha
+        ) + (1 - stats::pnorm(.data$log_rr / .data$se + .data$z_alpha))) %>%
+        dplyr::select(-z_alpha) %>%
+        dplyr::mutate(
+          log_rr = round(.data$log_rr, 3),
+          se = round(.data$se, 3),
+          power_pct = round(.data$power * 100, 1)
+        )
+      
+      power_list[["National"]] <- power_df_national
     }
   }
-  return(list(
-    region_results = region_dlm_results,
-    meta_results = meta_dlm_results
-  ))
+  
+  return(power_list)
 }
 
-
-#' Create distributed lag plots for countries (national) and regions
+#===============================================================================
+#' Plot Power vs PM2.5 Concentration
 #'
-#' @description Create distributed lag plots for countries (national) and regions.
+#' @description Plots the power statistic for each reference PM2.5 at and above
+#' the attributable risk threshold for each region.
 #'
-#' @param dlm_results Results from climatehealth::analyze_air_pollution_dlm.
-#' @param output_dir String. Directory to save plots. Defaults to NULL.
-#' @param max_lag Integer. Maximum lag days. Defaults to to 2.
-#' @param width_per_panel Integer. Width per panel for saving. Defaults to 4.
-#' @param height_per_panel Integer. Height per panel for saving. Defaults to 4.
+#' @param power_list A list containing power information by region.
+#' @param output_dir Character. Directory to save plot. Defaults to NULL.
+#' @param save_plot Logical. Whether to save the plot. Defaults to FALSE.
+#' @param ref_name Character. Reference standard name for plot title.
 #'
-#' @return List of ggplot objects.
+#' @returns Invisible list of plot information
 #'
 #' @keywords internal
-plot_air_pollution_dlm <- function(dlm_results,
-                                   output_dir = NULL,
-                                   max_lag = 2,
-                                   width_per_panel = 4,
-                                   height_per_panel = 4) {
-  region_results <- dlm_results$region_results
-  meta_results <- dlm_results$meta_results
-  all_labels <- c("0", paste0("", 1:max_lag), paste0("0-", max_lag))
-
-  plots_list <- list()
-
-  # Create meta plot
-  meta_plot_data <- meta_results %>%
-    filter(!is.na(.data$RR)) %>%
-    dplyr::mutate(lag_group = factor(.data$lag_group, levels = all_labels))
-
-  meta_plot <- ggplot2::ggplot(meta_plot_data, ggplot2::aes(x = .data$lag_group, y = .data$RR)) +
-    ggplot2::geom_errorbar(ggplot2::aes(ymin = .data$LB, ymax = .data$UB), width = 0.2, color = "darkred") +
-    ggplot2::geom_point(size = 2, color = "red") +
-    ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "red", size = 1) +
-    ggplot2::labs(x = "Lag (days)", y = "RR", title = "Countrywide") +
-    ggplot2::ylim(0.98, max(meta_plot_data$UB) * 1.05) +
-    ggplot2::theme_bw() +
-    ggplot2::theme(
-      plot.title = ggplot2::element_text(hjust = 0.5, size = 10),
-      axis.title = ggplot2::element_text(face = "bold", size = 8),
-      axis.text = ggplot2::element_text(size = 8),
-      panel.border = ggplot2::element_rect(colour = "black", fill = NA, size = 1)
-    )
-
-  plots_list[["Countrywide"]] <- meta_plot
-
-  # Create regional plots
-  regions <- unique(region_results$region)
-
-  for (prov in regions) {
-    prov_data <- region_results %>%
-      filter(.data$region == prov) %>%
-      filter(!is.na(.data$RR)) %>%
-      dplyr::mutate(lag_group = factor(.data$lag_group, levels = all_labels))
-
-    if (nrow(prov_data) == 0) next
-
-    prov_plot <- ggplot2::ggplot(prov_data, ggplot2::aes(x = .data$lag_group, y = .data$RR)) +
-      ggplot2::geom_errorbar(ggplot2::aes(ymin = .data$LB, ymax = .data$UB), width = 0.2, color = "darkblue") +
-      ggplot2::geom_point(size = 2, color = "blue") +
-      ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "red", size = 1) +
-      ggplot2::labs(x = "Lag (days)", y = "RR", title = prov) +
-      ggplot2::ylim(0.98, max(prov_data$UB) * 1.05) +
-      ggplot2::theme_bw() +
-      ggplot2::theme(
-        plot.title = ggplot2::element_text(hjust = 0.5, size = 10),
-        axis.title = ggplot2::element_text(face = "bold", size = 8),
-        axis.text = ggplot2::element_text(size = 8),
-        panel.border = ggplot2::element_rect(colour = "black", fill = NA, size = 1)
-      )
-
-    plots_list[[prov]] <- prov_plot
+plot_air_pollution_power <- function(
+    power_list,
+    output_dir = NULL,
+    save_plot = FALSE,
+    ref_name = "WHO") {
+  
+  if (save_plot && is.null(output_dir)) {
+    stop("Output directory must be specified if save_plot==TRUE")
   }
-
-  # Calculate grid and create combined plot
-  n_plots <- length(plots_list)
-  grid_dims <- calculate_air_pollution_grid_dims(n_plots)
-
-  combined_plot <- gridExtra::grid.arrange(
-    grobs = plots_list,
+  
+  # Combine all power data
+  all_power <- do.call(rbind, power_list)
+  
+  # Create plots for each region
+  regions <- unique(all_power$region)
+  n_regions <- length(regions)
+  
+  # Calculate grid dimensions
+  grid_dims <- calculate_air_pollution_grid_dims(n_regions)
+  
+  plots <- list()
+  
+  for (region in regions) {
+    region_power <- all_power[all_power$region == region, ]
+    
+    p <- ggplot2::ggplot(region_power, ggplot2::aes(x = pm25, y = power_pct)) +
+      ggplot2::geom_line(color = "#296991", linewidth = 1.5) +
+      ggplot2::geom_hline(yintercept = 80, linetype = "dashed", color = "black") +
+      ggplot2::scale_y_continuous(
+        limits = c(0, 100),
+        breaks = seq(0, 100, 20)
+      ) +
+      ggplot2::labs(
+        title = region,
+        x = "PM2.5 (µg/m³)",
+        y = "Power (%)"
+      ) +
+      ggplot2::theme_minimal(base_size = 12) +
+      ggplot2::theme(
+        plot.title = ggplot2::element_text(hjust = 0.5, face = "bold"),
+        panel.grid.minor = ggplot2::element_blank()
+      )
+    
+    plots[[region]] <- p
+  }
+  
+  # Combine plots
+  combined_plot <- patchwork::wrap_plots(
+    plots,
     ncol = grid_dims$ncol,
     nrow = grid_dims$nrow
-  )
-
-  # Use unified save_plot function
-  if (!is.null(output_dir)) {
-    save_air_pollution_plot(
-      plot_object = combined_plot,
-      output_dir = output_dir,
-      filename = "distributed_lag_plots",
-      width_per_panel = width_per_panel,
-      height_per_panel = height_per_panel,
-      grid_dims = grid_dims
+  ) +
+    patchwork::plot_annotation(
+      title = paste("Power vs PM2.5 Concentration -", ref_name, "Standard"),
+      subtitle = "Dashed line shows 80% power threshold",
+      theme = ggplot2::theme(
+        plot.title = ggplot2::element_text(size = 16, face = "bold", hjust = 0.5),
+        plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5, color = "gray40")
+      )
+    )
+  
+  # Save if requested
+  if (save_plot) {
+    if (!dir.exists(output_dir)) {
+      dir.create(output_dir, recursive = TRUE)
+    }
+    
+    safe_refname <- tolower(gsub("\\s+", "_", ref_name))
+    output_file <- file.path(output_dir, 
+                             paste0("power_vs_pm25_", safe_refname, ".png"))
+    
+    ggplot2::ggsave(
+      filename = output_file,
+      plot = combined_plot,
+      width = 4 * grid_dims$ncol,
+      height = 3.5 * grid_dims$nrow,
+      dpi = 300,
+      bg = "white"
     )
   }
-
-  return(list(
-    individual_plots = plots_list,
+  
+  return(invisible(list(
+    plots = plots,
     combined_plot = combined_plot,
-    grid_dimensions = grid_dims
-  ))
+    power_data = all_power
+  )))
 }
 
-
-#' Create adaptive exposure-response plots with optimal grid layout
+#===============================================================================
+#' Comprehensive Air Pollution Analysis Pipeline
 #'
-#' @param data_with_lags Data frame containing pre-processed data with exposure lags.
-#' Must include columns: region, date, deaths, population, and exposure variable.
-#' @param meta_results List. Meta-analysis results from previous analysis.
-#' Should include overall relative risk estimate (overall_rr).
-#' @param reference_pm25 Numeric value specifying the reference PM2.5
-#' concentration for risk calculations and plot centering, expressed in \eqn{\mu g/m^3}.
-#' @param reference_name Character string describing the reference scenario
-#' (e.g., "WHO", "National"). Defaults to "Reference".
-#' @param tlag Integer. Maximum lag days for distributed lag models.
-#' Defaults to 2.
-#' @param vardf Integer. Degrees of freedom for exposure-response functions. Defaults to 3.
-#' @param dfseas Integer. Seasonal degrees of freedom per year. Defaults to 4.
-#' @param max_ylim Maximum Y-axis limit for relative risk. Defaults to 2.0.
-#' @param output_file Character. Full path for output PNG file. If NULL, output path will
-#' default to 'air_pollution_results/(reference_name)_exposure_response_plots.png'.
-#' Default to NULL.
-#' @param plot_width_per_panel Width (inches) per panel in output. Defaults to 4.
-#' @param plot_height_per_panel Height (inches) per panel in output. Defaults to 3.5.
-#' @param res Integer. Resolution (DPI) for output PNG. Defaults to 150.
-#' @param include_af_an Logical. Whether to include AF/AN calculations in plots.
-#' Defaults to TRUE.
-#' @param var_name Character. Name of PM2.5 variable in dataset. Defaults to "pm25".
-#' @param max_lag Integer. Maximum lag days. Defaults to 2.
-#' @param family Character. Distribution family for GAM. Defaults to "quasipoisson".
+#' @description Master function that runs the complete air pollution analysis
+#' including data loading, modeling, plotting, and power analysis
 #'
-#' @return List containing predictions, meta model, and AF/AN values
+#' @param data_path Path to CSV data file
+#' @param date_col Name of date column
+#' @param region_col Name of region column
+#' @param pm25_col Name of PM2.5 column
+#' @param deaths_col Name of deaths column
+#' @param humidity_col Name of humidity column
+#' @param precipitation_col Name of precipitation column
+#' @param tmax_col Name of maximum temperature column
+#' @param wind_speed_col Name of wind speed column
+#' @param Categorical_Others Optional vector of categorical variable names
+#' @param Continuous_Others Optional vector of continuous variable names
+#' @param max_lag Integer. Maximum lag days. Defaults to 14.
+#' @param family Character. GAM family (default: "quasipoisson")
+#' @param reference_standards List of reference standards, each with 'value' and 'name'
+#' @param output_dir Directory to save outputs
+#' @param save_outputs Logical. Whether to save outputs
+#' @param run_descriptive Logical. Whether to run descriptive statistics
+#' @param run_power Logical. Whether to run power analysis
+#' @param moving_average_window Integer. Window for moving average in descriptive stats
+#' @param years_filter Optional numeric vector of years to include (e.g., c(2020, 2021))
+#' @param regions_filter Optional character vector of regions to include
 #'
-#' @keywords internal
-create_air_pollution_exposure_plots <- function(data_with_lags,
-                                                meta_results,
-                                                reference_pm25,
-                                                reference_name = "Reference",
-                                                tlag = 2,
-                                                vardf = 3,
-                                                dfseas = 4,
-                                                max_ylim = 2.0,
-                                                output_file = NULL,
-                                                plot_width_per_panel = 4,
-                                                plot_height_per_panel = 3.5,
-                                                res = 150,
-                                                include_af_an = TRUE,
-                                                var_name = "pm25",
-                                                max_lag = 2,
-                                                family = "quasipoisson") {
-  # Validate essential columns
-  required_cols <- c(
-    "region", "date", "year", "month", "day", "deaths", "population", "pm25",
-    "tmax", "humidity"
-  )
-  missing_cols <- required_cols[!(required_cols %in% colnames(data_with_lags))]
-  if (length(missing_cols) > 0) {
-    stop(paste0(
-      "Missing required columns in 'data_with_lags': ",
-      paste(missing_cols, collapse = " ,")
-    ))
-  }
-
-  if (is.null(output_file)) {
-    output_file <- paste0(
-      "air_pollution_results/", tolower(reference_name),
-      "_exposure_response_plots.png"
-    )
-  }
-
-  dir.create(dirname(output_file), recursive = TRUE, showWarnings = FALSE)
-
-  data_aggreg <- data_with_lags %>%
-    dplyr::filter(!is.na(.data$date)) %>%
-    dplyr::group_by(.data$region, .data$date, .data$year, .data$month, .data$day) %>%
-    dplyr::summarise(
-      deaths = sum(.data$deaths, na.rm = TRUE),
-      pm25 = mean(.data$pm25, na.rm = TRUE),
-      tmax = mean(.data$tmax, na.rm = TRUE),
-      humidity = mean(.data$humidity, na.rm = TRUE),
-      precipitation = mean(.data$precipitation, na.rm = TRUE),
-      population = sum(.data$population, na.rm = TRUE),
-      .groups = "drop"
-    ) %>%
-    dplyr::arrange(.data$region, .data$date) %>%
-    dplyr::group_by(.data$region) %>%
-    dplyr::mutate(days = dplyr::row_number()) %>%
-    dplyr::ungroup()
-
-  plist <- plist <- split(data_aggreg, data_aggreg$region)
-  prov <- names(plist)
-
-  varfun <- "bs"
-  degree <- 1
-  yr <- length(unique(data_aggreg$year))
-  knots_values <- c(0.25, 0.5, 0.75)
-
-  # Fit GAM models
-  coef_matrix <- NULL
-  vcov_list <- vector("list", length(prov))
-  names(vcov_list) <- prov
-  region_deaths <- numeric(length(prov))
-  names(region_deaths) <- prov
-
-  region_af_an <- list()
-
-  for (j in 1:length(prov)) {
-    dat <- plist[[prov[j]]]
-    var1 <- dat$pm25
-    region_deaths[j] <- sum(dat$deaths, na.rm = TRUE)
-
-    if (nrow(dat) < 100) {
-      next
-    }
-
-    argvar <- list(
-      fun = varfun, degree = degree,
-      knots = quantile(var1, knots_values, na.rm = TRUE)
-    )
-    arglag <- list(fun = "ns", df = min(2, tlag))
-
-    cb <- tryCatch(
-      {
-        dlnm::crossbasis(var1, lag = tlag, argvar = argvar, arglag = arglag)
-      },
-      error = function(e) {
-        warning("Error creating cross-basis for ", prov[j], ": ", e$message)
-        return(NULL)
-      }
-    )
-
-    if (is.null(cb)) next
-
-    fmla_prov <- as.formula(paste(
-      "deaths ~ offset(log(population)) + cb +",
-      "ns(days, df =", dfseas * yr, ") + factor(year)"
-    ))
-
-    mod <- tryCatch(
-      {
-        mgcv::gam(fmla_prov, data = dat, family = quasipoisson)
-      },
-      error = function(e) {
-        warning("Error fitting model for ", prov[j], ": ", e$message)
-        return(NULL)
-      }
-    )
-
-    if (is.null(mod)) next
-
-    red <- tryCatch(
-      {
-        dlnm::crossreduce(cb, mod, cen = reference_pm25)
-      },
-      error = function(e) {
-        warning("Error reducing cross-basis for ", prov[j], ": ", e$message)
-        return(NULL)
-      }
-    )
-
-    if (is.null(red)) next
-
-    if (is.null(coef_matrix)) {
-      actual_df <- length(coef(red))
-      coef_matrix <- matrix(
-        data = NA, nrow = length(prov), ncol = actual_df,
-        dimnames = list(prov)
-      )
-    }
-
-    coef_matrix[j, ] <- coef(red)
-    vcov_list[[j]] <- vcov(red)
-
-    prov_data <- data_with_lags %>% filter(.data$region == prov[j])
-
-    simple_model <- tryCatch(
-      {
-        fit_air_pollution_gam(prov_data, var_name, family)
-      },
-      error = function(e) NULL
-    )
-
-    if (!is.null(simple_model)) {
-      coef_info <- extract_air_pollution_coef(simple_model, var_name)
-      if (!is.na(coef_info$coef)) {
-        af_an_ref <- calculate_air_pollution_af_an(
-          prov_data, reference_pm25,
-          var_name, family
-        )
-        region_af_an[[prov[j]]] <- af_an_ref
-      }
-    }
-
-    rm(dat, var1, argvar, arglag, cb, mod, red, fmla_prov)
-  }
-
-  valid_rows <- which(!apply(is.na(coef_matrix), 1, all))
-  if (length(valid_rows) < 2) {
-    stop("Insufficient regions with successful model fits for meta-analysis")
-  }
-
-  meta_model <- tryCatch(
-    {
-      mixmeta::mixmeta(coef_matrix[valid_rows, ] ~ 1,
-        S = vcov_list[valid_rows],
-        control = list(showiter = FALSE)
-      )
-    },
-    error = function(e) {
-      stop("Error in meta-analysis: ", e$message)
-    }
-  )
-
-  blup_results <- mixmeta::blup(meta_model, vcov = TRUE)
-
-  t1 <- unlist(lapply(plist[prov[valid_rows]], function(x) x$pm25))
-  argvar_national <- list(
-    x = t1, fun = varfun, degree = degree,
-    knots = quantile(t1, knots_values, na.rm = TRUE)
-  )
-  bvar_national <- do.call(dlnm::onebasis, argvar_national)
-
-  pred_national <- dlnm::crosspred(bvar_national,
-    coef = meta_model$coefficients,
-    vcov = meta_model$vcov, model.link = "log",
-    by = 0.1, cen = reference_pm25
-  )
-
-  national_af_an <- list(af = 0, an = 0)
-  if (!is.null(meta_results)) {
-    overall_beta <- log(meta_results$overall_rr) / 10
-    all_data <- data_with_lags
-    national_af_an <- calculate_air_pollution_af_an(
-      all_data, reference_pm25,
-      var_name, family
-    )
-  }
-
-  n_regions <- length(valid_rows)
-  n_plots <- n_regions + 1
-  grid_dims <- calculate_air_pollution_grid_dims(n_plots)
-
-  # Create Plots
-  fig_width <- plot_width_per_panel * grid_dims$ncol
-  fig_height <- plot_height_per_panel * grid_dims$nrow
-
-  png(output_file,
-    width = fig_width * res, height = fig_height * res,
-    res = res, bg = "white"
-  )
-
-  par(
-    mfrow = c(grid_dims$nrow, grid_dims$ncol), mar = c(3, 3, 3, 3),
-    oma = c(4, 4, 3, 1), cex.main = 1.1, cex.lab = 0.9, cex.axis = 0.8,
-    mgp = c(2, 0.7, 0), tcl = -0.3
-  )
-
-  predictions <- list()
-  plot_count <- 0
-
-  plot_count <- plot_count + 1
-  y_seq <- seq(0, max_ylim, by = 0.5)
-
-  plot(pred_national,
-    ylab = "", ylim = c(0.0, max_ylim), xlab = "", xaxt = "n",
-    yaxt = "n", main = "Nationwide", lwd = 2, col = "red",
-    ci.arg = list(col = rgb(0, 0, 1, 0.2), density = NULL)
-  )
-
-  abline(h = 1, col = "black", lwd = 1, lty = 1)
-  axis(2,
-    at = y_seq, labels = format(y_seq, nsmall = 1), cex.axis = 0.8,
-    las = 1, tck = -0.02
-  )
-  axis(1,
-    at = seq(floor(min(t1)), ceiling(max(t1)), by = 20), cex.axis = 0.8,
-    tck = -0.02
-  )
-
-  breaks <- c(min(t1) - 1, seq(pred_national$predvar[1],
-    pred_national$predvar[length(pred_national$predvar)],
-    length = 30
-  ), max(t1) + 1)
-  hist_data <- hist(t1, breaks = breaks, plot = FALSE)
-  hist_data$density <- hist_data$density / max(hist_data$density) * 0.7
-  prop <- max(hist_data$density) / max(hist_data$counts)
-  counts <- pretty(hist_data$count, 3)
-
-  hist_scaling_factor <- max_ylim / 1.8
-  plot(hist_data,
-    ylim = c(0, max(hist_data$density) * hist_scaling_factor),
-    axes = FALSE, ann = FALSE,
-    col = rgb(0.8, 0.8, 0.8, 0.5),
-    border = rgb(0.7, 0.7, 0.7, 0.8),
-    breaks = breaks, freq = FALSE, add = TRUE
-  )
-
-  axis(4,
-    at = counts * prop, labels = counts, cex.axis = 0.8, las = 1,
-    tck = -0.02
-  )
-  abline(v = reference_pm25, col = "red", lty = 2, lwd = 2)
-  abline(v = quantile(t1, c(0.05, 0.95)), col = grey(0.5), lty = 3, lwd = 1.5)
-
-  predictions[["Nationwide"]] <- pred_national
-
-  valid_regions <- prov[valid_rows]
-
-  for (i in 1:length(valid_regions)) {
-    plot_count <- plot_count + 1
-    region_name <- valid_regions[i]
-    dat <- plist[[region_name]]
-    var1 <- dat$pm25
-
-    argvar <- list(
-      x = var1, fun = varfun, degree = degree,
-      knots = quantile(var1, knots_values, na.rm = TRUE)
-    )
-    bvar <- do.call(dlnm::onebasis, argvar)
-
-    valid_idx <- which(prov[valid_rows] == region_name)
-    cp <- dlnm::crosspred(bvar,
-      coef = blup_results[[valid_idx]]$blup,
-      vcov = blup_results[[valid_idx]]$vcov,
-      model.link = "log", by = 0.1, cen = reference_pm25
-    )
-
-    plot(cp, "overall",
-      ylim = c(0.0, max_ylim), lwd = 2, col = "red",
-      ci.arg = list(col = rgb(0, 0, 1, 0.2), density = NULL),
-      xaxt = "n", yaxt = "n", xlab = "", ylab = "",
-      main = region_name
-    )
-
-    abline(h = 1, col = "black", lwd = 1, lty = 1)
-    axis(2,
-      at = y_seq, labels = format(y_seq, nsmall = 1), cex.axis = 0.8,
-      las = 1, tck = -0.02
-    )
-    axis(1,
-      at = seq(floor(min(var1)), ceiling(max(var1)), by = 20),
-      cex.axis = 0.8, tck = -0.02
-    )
-
-    breaks_prov <- c(min(var1) - 1, seq(cp$predvar[1],
-      cp$predvar[length(cp$predvar)],
-      length = 30
-    ), max(var1) + 1)
-    hist_prov <- hist(var1, breaks = breaks_prov, plot = FALSE)
-    hist_prov$density <- hist_prov$density / max(hist_prov$density) * 0.7
-    prop_prov <- max(hist_prov$density) / max(hist_prov$counts)
-    counts_prov <- pretty(hist_prov$count, 3)
-
-    plot(hist_prov,
-      ylim = c(0, max(hist_prov$density) * hist_scaling_factor),
-      axes = FALSE, ann = FALSE,
-      col = rgb(0.8, 0.8, 0.8, 0.5),
-      border = rgb(0.7, 0.7, 0.7, 0.8),
-      breaks = breaks_prov, freq = FALSE, add = TRUE
-    )
-
-    axis(4,
-      at = counts_prov * prop_prov, labels = counts_prov, cex.axis = 0.8,
-      las = 1, tck = -0.02
-    )
-    abline(v = reference_pm25, col = "red", lty = 2, lwd = 2)
-    abline(v = quantile(var1, c(0.05, 0.95)), col = grey(0.5), lty = 3, lwd = 1.5)
-
-    predictions[[region_name]] <- cp
-    rm(argvar, bvar, cp, var1)
-  }
-
-  if (plot_count < grid_dims$nrow * grid_dims$ncol) {
-    remaining_panels <- (grid_dims$nrow * grid_dims$ncol) - plot_count
-    for (i in 1:remaining_panels) {
-      plot.new()
-    }
-  }
-
-  mtext(
-    text = "Daily PM2.5 (\u03bc\u0067\u002f\u006d\u00b3)", side = 1, line = 2.5, outer = TRUE,
-    cex = 1.1
-  )
-  mtext(text = "Relative risk", side = 2, line = 2.5, outer = TRUE, cex = 1.1)
-  mtext(
-    text = paste0(
-      reference_name, " (PM2.5 reference: ",
-      reference_pm25, " \u03bc\u0067\u002f\u006d\u00b3)"
-    ),
-    side = 3, line = 1, outer = TRUE, cex = 1.2, font = 2
-  )
-
-  if (plot_count < grid_dims$nrow * grid_dims$ncol) {
-    legend_row <- ceiling((plot_count + 1) / grid_dims$ncol)
-    legend_col <- ((plot_count) %% grid_dims$ncol) + 1
-
-    par(mfg = c(legend_row, legend_col))
-    plot(1, type = "n", axes = FALSE, xlab = "", ylab = "")
-
-    legend_items <- c(
-      "RR curve", "95% CI",
-      paste0("Reference (", reference_pm25, " \u03bc\u0067\u002f\u006d\u00b3)"),
-      "5th/95th percentile"
-    )
-
-    legend("center",
-      legend = legend_items,
-      col = c("red", rgb(0, 0, 1, 0.2), "red", grey(0.5)),
-      lty = c(1, NA, 2, 3),
-      pch = c(NA, 15, NA, NA),
-      pt.bg = c(NA, rgb(0, 0, 1, 0.2), NA, NA),
-      pt.cex = c(NA, 2, NA, NA),
-      cex = 0.9,
-      bg = "white",
-      box.lty = 1
-    )
-  }
-
-  dev.off()
-
-  invisible(list(
-    predictions = predictions,
-    meta_model = meta_model,
-    reference_pm25 = reference_pm25,
-    reference_name = reference_name,
-    grid_dimensions = grid_dims,
-    region_af_an = region_af_an,
-    national_af_an = national_af_an
-  ))
-}
-
-
-#' PM2.5 Mortality Analysis with Enhanced Features (Air Pollution)
-#'
-#' @description This function performs comprehensive analysis of the relationship
-#' between PM2.5 and all-cause mortality using GAM models. It includes meta-analysis,
-#' lag analysis, distributed lag modeling, and exposure-response plots with
-#' attributable fraction (AF) and attributable number (AN) calculations for
-#' multiple reference standards.
-#'
-#' @param data_path Character. Path to data file
-#' @param date_col Character. Name of date column
-#' @param region_col Character. Name of region column
-#' @param pm25_col Character. Name of PM2.5 column
-#' @param deaths_col Character. Name of deaths column
-#' @param humidity_col Character. Name of humidity column
-#' @param precipitation_col Character. Name of precipitation column
-#' @param tmax_col Character. Name of temperature column
-#' @param population_col Character. Name of population column
-#' @param max_lag Integer. Maximum lag days. Defaults to 2.
-#' @param var_name Character. Variable name for labeling. Defaults to "pm25".
-#' @param family Character. Distribution family for GAM model. Defaults to "quasipoisson".
-#' @param reference Numeric. Reference value for AF/AN calculations. Defaults to 15.
-#' @param output_dir Character. Output directory for results. Defaults to NULL.
-#' @param save_outputs Logical. Whether to save plots and results. Defaults to FALSE.
-#' @param include_distributed_lags Logical. Whether to include distributed lag .
-#' analysis. Defaults to TRUE.
-#' @param create_plots Logical. Whether to create exposure-response plots.
-#' Defaults to TRUE.
-#' @param reference_standards List of reference thresholds used in exposure-response plots.
-#' Defaults include WHO (\eqn{15~\mu g/m^3}) and Rwanda (\eqn{50~\mu g/m^3}) air quality standards.
-#'
-#' @return List containing:
-#' \describe{
-#'   \item{data}{Processed data with lag variables}
-#'   \item{meta_analysis}{Meta-analysis results with AF/AN calculations}
-#'   \item{lag_analysis}{Lag-specific analysis results}
-#'   \item{distributed_lag_analysis}{Distributed lag model results (if requested)}
-#'   \item{plots}{List of generated plots (forest, lags, distributed lags)}
-#'   \item{exposure_response_plots}{Exposure-response plots for each reference
-#'   standard (if requested)}
-#'   \item{reference_specific_af_an}{AF/AN calculations specific to each
-#'   reference standard (if requested)}
-#'   \item{descriptive_stats}{Summary statistics of key variables}
-#' }
-#'
+#' @return List containing all analysis results
 #' @export
-air_pollution_do_analysis <- function(data_path,
-                                      date_col,
-                                      region_col,
-                                      pm25_col,
-                                      deaths_col,
-                                      humidity_col,
-                                      precipitation_col,
-                                      tmax_col,
-                                      population_col,
-                                      max_lag = 2,
-                                      var_name = "pm25",
-                                      family = "quasipoisson",
-                                      reference = 15,
-                                      output_dir = NULL,
-                                      save_outputs = FALSE,
-                                      include_distributed_lags = TRUE,
-                                      create_plots = TRUE,
-                                      reference_standards = list(
-                                        list(value = 15, name = "WHO"),
-                                        list(value = 50, name = "Rwanda")
-                                      )) {
+do_air_pollution_analysis <- function(
+    data_path,
+    date_col = "date",
+    region_col = "region",
+    pm25_col = "pm25",
+    deaths_col = "deaths",
+    humidity_col = "humidity",
+    precipitation_col = "precipitation",
+    tmax_col = "tmax",
+    wind_speed_col = "wind_speed",
+    Categorical_Others = NULL,
+    Continuous_Others = c("population"),
+    max_lag = 14,
+    family = "quasipoisson",
+    reference_standards = list(
+      list(value = 15, name = "WHO")
+    ),
+    output_dir = "air_pollution_results",
+    save_outputs = TRUE,
+    run_descriptive = TRUE,
+    run_power = TRUE,
+    moving_average_window = 3L,
+    years_filter = NULL,
+    regions_filter = NULL
+) {
+  
+  # Create output directory
+  if (save_outputs && !dir.exists(output_dir)) {
+    dir.create(output_dir, recursive = TRUE)
+    message("Created output directory: ", output_dir)
+  }
+  
+  results <- list()
+  
+  # LOAD AND PREPARE DATA
   data <- load_air_pollution_data(
     data_path = data_path,
     date_col = date_col,
@@ -1553,174 +2702,281 @@ air_pollution_do_analysis <- function(data_path,
     humidity_col = humidity_col,
     precipitation_col = precipitation_col,
     tmax_col = tmax_col,
-    population_col = population_col
+    wind_speed_col = wind_speed_col,
+    Categorical_Others = Categorical_Others,
+    Continuous_Others = Continuous_Others
   )
-
-  data_with_lags <- create_air_pollution_lags(data, max_lag)
-
-  # Display descriptive statistics
-  key_variables <- c(deaths_col, pm25_col, tmax_col, humidity_col, population_col)
-  desc_stats <- air_pollution_descriptive_stats(
-    data_with_lags,
-    variables = key_variables,
-    output_dir = output_dir,
-    save_outputs = save_outputs
-  )
-
-  # Create scatterplots of key relationships
-  if (save_outputs || create_plots) {
-    plot_air_pollution_variables(data_with_lags, "pm25", "deaths", output_dir, save_outputs)
-    plot_air_pollution_variables(data_with_lags, "tmax", "deaths", output_dir, save_outputs)
-    plot_air_pollution_variables(data_with_lags, "humidity", "deaths", output_dir, save_outputs)
-    plot_air_pollution_variables(data_with_lags, "precipitation", "deaths", output_dir, save_outputs)
+  
+  # Apply filters if specified
+  if (!is.null(years_filter)) {
+    data <- data %>% dplyr::filter(year %in% years_filter)
+    message("Filtering data for years: ", paste(years_filter, collapse = ", "))
   }
-
-  meta_results <- air_pollution_meta_analysis(data_with_lags, var_name, family)
-
-  lag_results <- analyze_air_pollution_lags(data_with_lags, max_lag, family)
-
-  forest_plot <- plot_air_pollution_forest(
-    meta_results,
-    output_dir = output_dir,
-    save_plot = save_outputs
-  )
-  lag_plot <- plot_air_pollution_lags(
-    lag_results,
-    max_lag,
-    output_dir = output_dir,
-    save_plot = save_outputs
-  )
-
-  dlm_results <- NULL
-  dlm_plots <- NULL
-
-  if (include_distributed_lags) {
-    dlm_results <- analyze_air_pollution_dlm(
-      data_with_lags,
-      reference, max_lag, family
+  
+  if (!is.null(regions_filter)) {
+    data <- data %>% dplyr::filter(region %in% regions_filter)
+    message("Filtering data for regions: ", paste(regions_filter, collapse = ", "))
+  }
+  
+  results$data_raw <- data
+  
+  # CREATE LAGS
+  data_with_lags <- create_air_pollution_lags(data, max_lag = max_lag)
+  
+  results$data_with_lags <- data_with_lags
+  
+  # DESCRIPTIVE STATISTICS (run on filtered data)
+  if (run_descriptive) {
+    env_labels <- c(
+      "pm25" = "PM2.5 (µg/m³)",
+      "tmax" = "Max Temperature (°C)",
+      "precipitation" = "Precipitation (mm)",
+      "humidity" = "Humidity (%)",
+      "wind_speed" = "Wind Speed (m/s)"
     )
-    dlm_plots <- plot_air_pollution_dlm(dlm_results, output_dir, max_lag)
+    
+    if ("tmean" %in% names(data)) {
+      env_labels <- c(env_labels, "tmean" = "Mean Temperature (°C)")
+    }
+    
+    air_pollution_descriptive_stats(
+      data = data,
+      env_lables = env_labels,
+      save_outputs = save_outputs,
+      output_dir = output_dir,
+      moving_average_window = moving_average_window,
+      plot_corr_matrix = TRUE,
+      correlation_method = "pearson",
+      plot_dist = TRUE,
+      plot_na_counts = TRUE,
+      plot_scatter = TRUE,
+      plot_box = TRUE,
+      plot_seasonal = TRUE,
+      plot_regional = TRUE,
+      plot_total = TRUE,
+      detect_outliers = TRUE,
+      calculate_rate = FALSE
+    )
+    
+    if (save_outputs) {
+      message("Descriptive statistics saved to: ", output_dir)
+    }
   }
-
-  exposure_response_plots <- NULL
-  reference_specific_af_an <- NULL
-
-  if (create_plots && !is.null(meta_results)) {
-    exposure_response_plots <- list()
-    reference_specific_af_an <- list()
-
-    for (ref_std in reference_standards) {
-      ref_af_an <- analyze_air_pollution_dlm(
-        data_with_lags,
-        reference = ref_std$value, max_lag, family
-      )
-
-      reference_specific_af_an[[ref_std$name]] <- ref_af_an
-
-      meta_summary <- ref_af_an$meta_results %>%
-        filter(.data$lag_group == "0") %>%
-        dplyr::select(all_of(c("AF", "AN")))
-
-      if (nrow(meta_summary) > 0) {
-        cat(
-          "  Overall AF for", ref_std$name, "reference:",
-          round(meta_summary$AF * 100, 2), "%\n"
-        )
-        cat(
-          "  Overall AN for", ref_std$name, "reference:",
-          round(meta_summary$AN, 0), "deaths\n"
-        )
-      }
-
-      plot_results <- create_air_pollution_exposure_plots(
-        data_with_lags = data_with_lags,
+  
+  # FIT MODELS AND META-ANALYSIS
+  meta_results <- air_pollution_meta_analysis(
+    data_with_lags = data_with_lags,
+    max_lag = max_lag,
+    family = family
+  )
+  
+  results$meta_results <- meta_results
+  
+  # CALCULATE ATTRIBUTABLE BURDEN FOR EACH REFERENCE
+  results$analysis_results <- list()
+  
+  # Which PM2.5 variable to use for calculations
+  var_name <- paste0("pm25_lag0_", max_lag) # Use paste0("pm25_lag0_", max_lag) for cumulative effect
+  
+  # Calculations by REGION (TRUE or FALSE)
+  by_region <- TRUE
+  
+  for (ref_standard in reference_standards) {
+    ref_pm25 <- ref_standard$value
+    ref_name <- ref_standard$name
+    
+    analysis_daily <- analyze_air_pollution_daily(
+      data_with_lags = data_with_lags,
+      meta_results = meta_results,
+      ref_pm25 = ref_pm25,
+      ref_name = ref_name,
+      max_lag = max_lag
+    )
+    
+    results$analysis_results[[ref_name]] <- analysis_daily
+    
+    results$plots <- list()
+    analysis_res <- results$analysis_results[[ref_name]]
+    
+    # PLOTS (run on filtered data)
+    results$plots[[ref_name]]$ar_monthly <- plot_air_pollution_ar_monthly(
+      analysis_results = analysis_res,
+      var_name = var_name,
+      max_lag = max_lag,
+      by_region = by_region,
+      output_dir = output_dir,
+      save_plot = save_outputs
+    )
+    
+    results$plots[[ref_name]]$an_monthly <- plot_air_pollution_an_monthly(
+      analysis_results = analysis_res,
+      var_name = var_name,
+      max_lag = max_lag,
+      by_region = by_region,
+      output_dir = output_dir,
+      save_plot = save_outputs
+    )
+    
+    results$plots[[ref_name]]$ar_by_year <- plot_air_pollution_ar_by_year(
+      analysis_results = analysis_res,
+      var_name = var_name,
+      max_lag = max_lag,
+      by_region = by_region,
+      output_dir = output_dir,
+      save_plot = save_outputs
+    )
+    
+    results$plots[[ref_name]]$an_by_year <- plot_air_pollution_an_by_year(
+      analysis_results = analysis_res,
+      var_name = var_name,
+      max_lag = max_lag,
+      by_region = by_region,
+      output_dir = output_dir,
+      save_plot = save_outputs
+    )
+    
+    results$plots[[ref_name]]$forest_by_region <- plot_air_pollution_forest_by_region(
+      analysis_results = analysis_res,
+      var_name = var_name,
+      output_dir = output_dir,
+      save_plot = save_outputs
+    )
+    
+    results$plots[[ref_name]]$forest_by_lag <- plot_air_pollution_forest_by_lag(
+      analysis_results = analysis_res,
+      max_lag = max_lag,
+      output_dir = output_dir,
+      save_plot = save_outputs
+    )
+    
+    results$plots[[ref_name]]$monthly_histograms <- plot_air_pollution_monthly_histograms(
+      analysis_results = analysis_res,
+      var_name = var_name,
+      output_dir = output_dir,
+      save_plot = save_outputs
+    )
+    
+    results$plots[[ref_name]]$exposure_response <- plot_air_pollution_exposure_response(
+      analysis_results = analysis_res,
+      var_name = var_name,
+      ref_pm25 = ref_pm25,
+      output_dir = output_dir,
+      save_plot = save_outputs
+    )
+    
+    results$plots[[ref_name]]$aggregate_by_region <- aggregate_air_pollution_by_region (
+      analysis_results = analysis_res,
+      var_name = var_name,
+      max_lag = 14)
+    
+    results$plots[[ref_name]]$aggregate_by_year <- aggregate_air_pollution_by_year (
+      analysis_results = analysis_res,
+      var_name = var_name,
+      max_lag = 14,
+      by_region = by_region)
+    
+    results$plots[[ref_name]]$aggregate_by_month <- aggregate_air_pollution_by_month (
+      analysis_results = analysis_res,
+      var_name = var_name,
+      max_lag = 14,
+      by_region = by_region)
+    
+    results$plots[[ref_name]]$ar_by_region <- plot_air_pollution_ar_by_region(
+      analysis_results = analysis_res,
+      var_name = var_name,
+      max_lag = max_lag,
+      output_dir = output_dir,
+      save_plot = save_outputs
+    )
+    
+    # POWER ANALYSIS (run on filtered data)
+    if (run_power) {
+      results$power_results <- list()
+      power_list <- air_pollution_power_list(
         meta_results = meta_results,
-        reference_pm25 = ref_std$value,
-        reference_name = ref_std$name,
-        output_file = file.path(
-          ifelse(is.null(output_dir), "results", output_dir),
-          paste0(tolower(ref_std$name), "_exposure_response_plots.png")
-        ),
-        include_af_an = TRUE,
-        var_name = var_name,
-        max_lag = max_lag,
-        family = family
+        data_with_lags = data_with_lags,
+        ref_pm25 = ref_pm25,
+        attr_thr = 95
       )
-
-      exposure_response_plots[[ref_std$name]] <- plot_results
+      
+      results$power_results[[ref_name]] <- power_list
+      
+      power_plot <- plot_air_pollution_power(
+        power_list = power_list,
+        output_dir = output_dir,
+        save_plot = save_outputs,
+        ref_name = ref_name
+      )
+      
+      results$plots[[ref_name]]$power_plot <- power_plot
     }
   }
-
-  cat("\n=== COMPREHENSIVE RESULTS SUMMARY ===\n")
-  cat(
-    "Overall RR (10 \u03bc\u0067\u002f\u006d\u00b3):",
-    round(meta_results$overall_rr, 3), "\n"
-  )
-  cat("95% CI:", paste(round(meta_results$overall_ci, 3), collapse = "-"), "\n")
-  cat("Overall AF:", round(meta_results$overall_af * 100, 2), "%\n")
-  cat("Overall AN:", round(meta_results$overall_an, 0), "deaths\n")
-  cat("Heterogeneity I\u00b2:", round(meta_results$heterogeneity$I2, 1), "%\n")
-
-  if (!is.null(reference_specific_af_an)) {
-    cat("\n--- Reference-specific AF/AN Summary ---\n")
-    for (ref_name in names(reference_specific_af_an)) {
-      ref_data <- reference_specific_af_an[[ref_name]]$meta_results %>%
-        filter(.data$lag_group == "0")
-      if (nrow(ref_data) > 0) {
-        cat(
-          ref_name, "standard: AF =", round(ref_data$AF * 100, 2), "%, AN =",
-          round(ref_data$AN, 0), "deaths\n"
-        )
-      }
-    }
+  
+  if (save_outputs) {
+    message("\n  All outputs saved to: ", output_dir)
   }
-
-  if (save_outputs && !is.null(output_dir)) {
-    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-
-    # Save cleaned region results
-    region_results_clean <- meta_results$region_results %>%
-      dplyr::select(all_of(c(-"data", -"model")))
-    write.csv(region_results_clean, file.path(output_dir, "region_results.csv"),
-      row.names = FALSE
-    )
-    write.csv(lag_results, file.path(output_dir, "lag_results.csv"), row.names = FALSE)
-
-    if (!is.null(dlm_results)) {
-      write.csv(dlm_results$region_results, file.path(
-        output_dir,
-        "region_dlm_results.csv"
-      ),
-      row.names = FALSE
-      )
-      write.csv(dlm_results$meta_results, file.path(output_dir, "meta_dlm_results.csv"),
-        row.names = FALSE
-      )
-    }
-
-    if (!is.null(reference_specific_af_an)) {
-      for (ref_name in names(reference_specific_af_an)) {
-        write.csv(
-          reference_specific_af_an[[ref_name]]$meta_results,
-          file.path(output_dir, paste0(tolower(ref_name), "_af_an_results.csv")),
-          row.names = FALSE
-        )
-      }
-    }
-  }
-
-  return(list(
-    data = data_with_lags,
-    meta_analysis = meta_results,
-    lag_analysis = lag_results,
-    distributed_lag_analysis = dlm_results,
-    plots = list(
-      forest = forest_plot,
-      lags = lag_plot,
-      distributed_lags = dlm_plots
-    ),
-    exposure_response_plots = exposure_response_plots,
-    reference_specific_af_an = reference_specific_af_an,
-    descriptive_stats = desc_stats
-  ))
+  
+  class(results) <- c("air_pollution_analysis", "list")
+  
+  return(invisible(results))
 }
+
+#===============================================================================
+# Load required libraries
+library(tidyverse)
+library(splines)
+library(mixmeta)
+library(metafor)
+library(lubridate)
+library(gridExtra)
+library(mgcv)
+library(tools)
+library(patchwork)
+library(data.table)
+library(zoo)
+library(corrplot)
+library(RColorBrewer)
+library(dplyr)
+library(ggplot2)
+library(gplots)
+
+# #===============================================================================
+# # EXAMPLE USAGE WHO GUIDELINE
+# #===============================================================================
+# 
+# # Run complete analysis for specific years and regions
+# results <- do_air_pollution_analysis(
+#   # Data specification
+#   data_path = "data.csv",
+#   date_col = "date",
+#   region_col = "province",
+#   pm25_col = "pm25",
+#   deaths_col = "deaths",
+#   humidity_col = "humidity",
+#   precipitation_col = "precipitation",
+#   tmax_col = "tmax",
+#   wind_speed_col = "wind_speed",
+#   Continuous_Others = c("tmean", "population"),
+#   
+#   # Analysis parameters
+#   max_lag = 14,
+#   family = "quasipoisson",
+#   
+#   # Reference standards to analyze
+#   reference_standards = list(
+#     list(value = 15, name = "WHO")
+#   ),
+#   
+#   # Filter parameters (Years and Regions)
+#   years_filter = NULL, # Use for example c(2019, 2020, 2021) for specific year(s)    
+#   regions_filter = NULL, # Use for example c("East", "South") for specific region(s)
+#   
+#   # Output settings
+#   output_dir = "air_pollution_results",
+#   save_outputs = TRUE,
+#   
+#   # Optional analyses
+#   run_descriptive = TRUE,
+#   run_power = TRUE,
+#   moving_average_window = 7
+# )
