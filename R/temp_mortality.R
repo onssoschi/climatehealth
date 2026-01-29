@@ -434,9 +434,10 @@ hc_model_validation <- function(df_list,
   for (geog in names(df_list)) {
     geog_data <- df_list[[geog]]
     formula_list <- residuals_list[[geog]]
-    named_label <- named_label_list[[geog]]
 
     if (save_fig == TRUE) {
+      # named_label_list is only defined when save_fig == TRUE (line 424)
+      named_label <- named_label_list[[geog]]
       geog_folder <- gsub(pattern = " ", replacement = "_", x = geog)
 
       output_folder_main <- file.path(output_folder_path, "model_validation", geog_folder)
