@@ -9,6 +9,7 @@ plot_rate_overall(
   dependent_col,
   population_col,
   date_col,
+  title,
   save_rate = FALSE,
   output_path = NULL
 )
@@ -21,6 +22,8 @@ plot_rate_overall(
 \item{population_col}{The name of the column representing the population.}
 
 \item{date_col}{The name of the column containing date values.}
+
+\item{title}{Character. The specific title for the subset of data being used.}
 
 \item{save_rate}{Whether to save the plot as a PDF.}
 
