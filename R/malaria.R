@@ -42,7 +42,7 @@
 #' effect with one basis column, \code{nk = 1} generates a simple spline with two
 #' columns, \code{nk = 2} yields a more flexible spline with three columns,
 #' and higher values of \code{nk} further increase flexibility but may also
-#' raise collinearity among spline terms. Defaults to 1.
+#' raise collinearity among spline terms. Defaults to 2.
 #' @param basis_matrices_choices Character vector. Specifies which climate variables
 #' to include in the basis matrix (e.g., `c("tmax", "rainfall", "r_humidity")`).
 #' @param inla_param Character vector. Specifies exposure variables included in
@@ -84,7 +84,7 @@
 #' }
 #'
 #' @export
-Malaria_do_analysis <- function(health_data_path,
+malaria_do_analysis <- function(health_data_path,
                                 climate_data_path,
                                 map_path,
                                 region_col,
@@ -347,18 +347,18 @@ Malaria_do_analysis <- function(health_data_path,
                                              save_fig =save_fig,
                                              output_dir = output_dir)
   # Average monthly attribution plot
-  plot_avg_AR_Num<-plot_avg_monthly(data = attr_frac_num,
+  plot_avg_AR_Num<-plot_avg_monthly(attr_data = attr_frac_num,
                                     level = level,
                                     metric = "AR_Number",
-                                    c_data = combined_data$data,
+                                    data = combined_data$data,
                                     param_term = param_term,
                                     save_fig = TRUE,
                                     output_dir = output_dir )
 
-  plot_avg_AR_per_100k<-plot_avg_monthly(data = attr_frac_num,
+  plot_avg_AR_per_100k<-plot_avg_monthly(attr_data = attr_frac_num,
                                          level = level,
                                          metric = "AR_per_100k",
-                                         c_data = combined_data$data,
+                                         data = combined_data$data,
                                          param_term = param_term,
                                          save_fig = TRUE,
                                          output_dir = output_dir )

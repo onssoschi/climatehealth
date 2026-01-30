@@ -347,18 +347,18 @@ diarrhea_do_analysis <- function(health_data_path,
                                              save_fig =save_fig,
                                              output_dir = output_dir)
   # Average monthly attribution plot
-  plot_avg_AR_Num<-plot_avg_monthly(data = attr_frac_num,
+  plot_avg_AR_Num<-plot_avg_monthly(attr_data = attr_frac_num,
                                     level = level,
                                     metric = "AR_Number",
-                                    c_data = combined_data$data,
+                                    data = combined_data$data,
                                     param_term = param_term,
                                     save_fig = TRUE,
                                     output_dir = output_dir )
 
-  plot_avg_AR_per_100k<-plot_avg_monthly(data = attr_frac_num,
+  plot_avg_AR_per_100k<-plot_avg_monthly(attr_data = attr_frac_num,
                                          level = level,
                                          metric = "AR_per_100k",
-                                         c_data = combined_data$data,
+                                         data = combined_data$data,
                                          param_term = param_term,
                                          save_fig = TRUE,
                                          output_dir = output_dir )
