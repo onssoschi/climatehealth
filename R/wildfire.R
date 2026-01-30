@@ -310,7 +310,9 @@ load_wildfire_data <- function(
   # Join wildfire data to climate data
   joined_df <- join_health_and_climate_data(
     climate_data = wildfire_df,
-    health_data = health_df
+    health_data = health_df,
+    region_col = region_col,
+    date_col = date_col
   )
   return(joined_df)
 }
