@@ -19,7 +19,7 @@
 #' @param year_col Character. Column name for the year variable.
 #' @param month_col Character. Column name for the month variable.
 #' @param case_col Character. Column name for diarrhea case counts.
-#' @param case_type Character. Type of malaria cases (e.g., `"diarrhea"`,
+#' @param case_type Character. Type of diarrhea cases (e.g., `"diarrhea"`,
 #' `"diarrhea_under_five"`).
 #' @param tot_pop_col Character. Column name for total population.
 #' @param tmin_col Character. Column name for minimum temperature.
