@@ -631,6 +631,7 @@ create_inla_indices <- function(data, case_type) {
 #' @keywords internal
 check_diseases_vif <- function(data,
                                inla_param,
+                               max_lag,
                                basis_matrices_choices,
                                case_type) {
 
@@ -700,12 +701,15 @@ check_diseases_vif <- function(data,
 #' @keywords internal
 check_and_write_vif <- function(data,
                                 inla_param,
+                                max_lag,
                                 basis_matrices_choices,
                                 case_type,
                                 output_dir
 ) {
   # Calculate VIF
-  VIF <- check_diseases_vif(data=data,inla_param=inla_param,
+  VIF <- check_diseases_vif(data=data,
+                            inla_param=inla_param,
+                            max_lag=max_lag,
                             basis_matrices_choices=basis_matrices_choices,
                             case_type=case_type
   )
@@ -754,6 +758,7 @@ check_and_write_vif <- function(data,
 run_inla_models <- function(combined_data,
                             basis_matrices_choices,
                             inla_param,
+                            max_lag,
                             case_type,
                             output_dir = NULL,
                             save_model = FALSE,
@@ -999,6 +1004,7 @@ plot_yearly_spatial_random_effect <- function(combined_data ,
 #' @keywords internal
 get_predictions <- function(data,
                             param_term,
+                            max_lag,
                             model,
                             level,
                             case_type){
@@ -1084,6 +1090,7 @@ contour_plot <- function(data,
                          param_term,
                          model,
                          level,
+                         max_lag,
                          case_type,
                          filter_year = NULL,
                          save_fig = FALSE,
@@ -1097,7 +1104,12 @@ contour_plot <- function(data,
     if (!"year" %in% names(data)) stop("'year' column not found in data.")
     data <- filter(data, year %in% filter_year)
   }
-  predt <- get_predictions(data, param_term=param_term, model, level=level, case_type)
+  predt <- get_predictions(data,
+                           param_term=param_term,
+                           max_lag=max_lag,
+                           model,
+                           level=level,
+                           case_type=case_type)
 
   plot_contour <- function(x, y, z, title) {
     nlag <- max(x)
@@ -1181,6 +1193,7 @@ contour_plot <- function(data,
 plot_rr_map <- function(combined_data,
                         model,
                         param_term = "tmax",
+                        max_lag,
                         level = "district",
                         case_type,
                         filter_year = NULL,
@@ -1223,7 +1236,8 @@ plot_rr_map <- function(combined_data,
 
   # Get RR per year
   get_rr_df <- function(yr) {
-    pred <- get_predictions(filter(data, year == yr), param_term, model, level, case_type)
+    pred <- get_predictions(filter(data, year == yr), param_term, max_lag,
+                            model, level, case_type)
     purrr::map_dfr(names(pred), function(name) {
       vals <- pred[[name]]
       if (anyNA(vals$allRRfit)) return(NULL)
@@ -1409,6 +1423,7 @@ plot_rr_map <- function(combined_data,
 plot_relative_risk <- function(data,
                                model,
                                param_term,
+                               max_lag,
                                level,
                                case_type,
                                filter_year = NULL,
@@ -1461,7 +1476,7 @@ plot_relative_risk <- function(data,
   if (level == "country") {
     if (is.null(filter_year)) {
       data_all <- data
-      pred <- get_predictions(data_all, param_term, model, level, case_type)
+      pred <- get_predictions(data_all, param_term, max_lag, model, level, case_type)
       if (is.list(pred) && !is.null(names(pred)) && length(pred) == 1) {
         pred <- pred[[1]]
       }
@@ -1537,7 +1552,8 @@ plot_relative_risk <- function(data,
 
     filter_year <- sort(unique(filter_year))
     plots <- lapply(filter_year, function(yr) {
-      pred <- get_predictions(dplyr::filter(data, year == yr), param_term, model, level, case_type)
+      pred <- get_predictions(dplyr::filter(data, year == yr), param_term,
+                              max_lag, model, level, case_type)
       all_predictions[[as.character(yr)]] <- pred
       build_plot(pred, as.character(yr))
     }) %>% purrr::keep(~ !is.null(.))
@@ -1576,7 +1592,7 @@ plot_relative_risk <- function(data,
     group_plots <- list()
 
     if (is.null(filter_year)) {
-      preds <- get_predictions(data, param_term, model, level, case_type)
+      preds <- get_predictions(data, param_term, max_lag, model, level, case_type)
       all_predictions[["All Years"]] <- preds
       for (grp in names(preds)) {
         p <- build_plot(preds[[grp]], grp)
@@ -1586,7 +1602,7 @@ plot_relative_risk <- function(data,
       }
     } else {
       for (yr in filter_year) {
-        preds <- get_predictions(dplyr::filter(data, year == yr), param_term,
+        preds <- get_predictions(dplyr::filter(data, year == yr), param_term, max_lag,
                                  model, level, case_type)
         all_predictions[[as.character(yr)]] <- preds
         for (grp in names(preds)) {
@@ -1685,6 +1701,7 @@ attribution_calculation <- function(data,
                                     model,
                                     level,
                                     param_threshold = 1,
+                                    max_lag,
                                     filter_year = NULL,
                                     group_by_year = FALSE,
                                     case_type,
