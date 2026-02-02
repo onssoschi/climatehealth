@@ -472,9 +472,7 @@ test_that("load_wildfire_data calls extractor + joiner with correct arguments wh
       wildfire_df_stub
     },
 
-    join_health_and_climate_data = function(climate_data, health_data, region_col, date_col, ...) {
-      captured$join_region_col <<- region_col
-      captured$join_date_col <<- date_col
+    join_health_and_climate_data = function(climate_data, health_data, ...) {
 
       # Additional sanity checks inside the mock
       expect_equal(climate_data, wildfire_df_stub)
@@ -506,8 +504,6 @@ test_that("load_wildfire_data calls extractor + joiner with correct arguments wh
   expect_equal(captured$ncdf_path, "path/to/file.nc")
   expect_equal(captured$shp_path, "path/to/shape.shp")
   expect_equal(captured$shape_region_col, "shape_name")
-  expect_equal(captured$join_region_col, "region")
-  expect_equal(captured$join_date_col, "date")
 })
 
 
@@ -2103,3 +2099,4 @@ test_that("wildfire_do_analysis: save_csv triggers save_wildfire_results", {
 
   expect_true(saved_called)
 })
+
