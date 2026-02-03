@@ -123,6 +123,37 @@ of the temperature-mortality association as well as attributable numbers,
 rates and fractions of moralities to specified temperature thresholds for
 high and low temperatures. Model validation statistics are also provided.
 }
+\details{
+This analysis pipeline requires a daily time series of temperature and
+death counts with population values as a minimum. This is then processed
+using a quasi-Poisson time series regression analysis with a distributed
+lag non-linear model and optional meta-analysis. Meta-analysis is
+recommended if the input data is disaggregated by area.
+
+The model parameters have default values, which are recommended to keep as
+based on existing studies. However, if desired these can be adjusted for
+if appropriate for the user's context.
+
+Model validation testing is provided as a standard output from the pipeline
+so a user can assess the quality of the model. If a user has additional
+independent variables these can be specified as \code{independent_cols} and
+assessed within different model combinations in the outputs of this testing.
+These can be added in the final model via \code{control_cols}. Note, a user
+should include variables if contextually relevant, and not simply
+based on model optimisation.
+
+For attributable deaths the default is to use a high temperature threshold,
+defined as the 97.5th percentile of temperature over the corresponding time
+period for each geography. The low temperature thresholds is similarly
+defined at the 2.5th percentile. These can be adjusted if desired, following
+review of the relative risk association between temperature and mortality,
+using \code{attr_thr_high} or \code{attr_thr_low}.
+
+Further details on the input data requirements, methodology, quality
+information and guidance on interpreting outputs can be found in the
+accompanying published
+\href{https://doi.org/10.5281/zenodo.14865904}{Zenodo documentation}.
+}
 \examples{
 \dontrun{
 temp_mortality_do_analysis(
@@ -130,7 +161,7 @@ temp_mortality_do_analysis(
   date_col = "date",
   region_col = "region",
   temperature_col = "tmean",
-  dependent_col = "death",
+  dependent_col = "deaths",
   population_col = "pop",
   country = "England",
   meta_analysis = TRUE,
@@ -151,24 +182,24 @@ temp_mortality_do_analysis(
 )
 }
 
- @references
+}
+\references{
 \enumerate{
- \item Watkins E, Hunt C, Lewis B, Ingole V, Glickman M. Standards for
- Official Statistics on Climate-Health Interactions (SOSCHI): Mortality
- attributed to high and low temperatures: methodology. Zenodo; 2026.
- Available from: \url{https://doi:10.5281/zenodo.14865904}
- \item Gasparrini A, Guo Y, Hashizume M, Lavigne E, Zanobetti A, Schwartz J,
- et al. Mortality risk attributable to high and low ambient temperature: a
- multicountry observational study. Lancet. 2015 Jul;386(9991):369–75.
- Available from:
-  \url{https://linkinghub.elsevier.com/retrieve/pii/S0140673614621140}
- \item Gasparrini A, Armstrong B. Reducing and meta-analysing estimates from
-  distributed lag non-linear models. BMC Medical Research Methodology. 2013
-  Jan 9;13:1. Available from: \url{https://doi.org/10.1186/1471-2288-13-1}
-	\item Gasparrini A, Armstrong B, Kenward MG. Multivariate meta‐analysis for
-	non‐linear and other multi‐parameter associations. Statistics in Medicine.
-	2012 Dec 20;31(29):3821–39. Available from:
-	 \url{https://doi.org/10.1002/sim.5471}
-	}
-
+\item Watkins E, Hunt C, Lewis B, Ingole V, Glickman M. Standards for
+Official Statistics on Climate-Health Interactions (SOSCHI): Mortality
+attributed to high and low temperatures: methodology. Zenodo; 2026.
+Available from: \url{https://doi.org/10.5281/zenodo.14865904}
+\item Gasparrini A, Guo Y, Hashizume M, Lavigne E, Zanobetti A, Schwartz J,
+et al. Mortality risk attributable to high and low ambient temperature: a
+multicountry observational study. Lancet. 2015 Jul;386(9991):369–75.
+Available from:
+\url{https://linkinghub.elsevier.com/retrieve/pii/S0140673614621140}
+\item Gasparrini A, Armstrong B. Reducing and meta-analysing estimates from
+distributed lag non-linear models. BMC Medical Research Methodology. 2013
+Jan 9;13:1. Available from: \url{https://doi.org/10.1186/1471-2288-13-1}
+\item Gasparrini A, Armstrong B, Kenward MG. Multivariate meta‐analysis for
+non‐linear and other multi‐parameter associations. Statistics in Medicine.
+2012 Dec 20;31(29):3821–39. Available from:
+\url{https://doi.org/10.1002/sim.5471}
+}
 }
