@@ -15,13 +15,17 @@ hc_model_validation(
 )
 }
 \arguments{
-\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
-and climate variables which may be disaggregated by a particular geography.}
+\item{df_list}{A list of dataframes containing daily timeseries data for a
+health outcome and climate variables which may be disaggregated by a
+particular geography.}
 
-\item{cb_list}{List of cross_basis matrices from create_crossbasis function.}
+\item{cb_list}{List of cross-basis matrices from hc_create_crossbasis
+function.}
 
-\item{independent_cols}{Additional independent variables to test in model validation
-as confounders.}
+\item{independent_cols}{Character/list. Additional independent variables to
+test in model validation as confounders. Defaults to NULL.}
+
+\item{dfseas}{Integer. Degrees of freedom for seasonality. Defaults to 8.}
 
 \item{save_fig}{Boolean. Whether to save the plot as an output. Defaults to
 FALSE.}
@@ -34,15 +38,20 @@ Defaults to NULL.}
 }
 \value{
 \itemize{
-\item \code{qaic_results} A dataframe of QAIC and dispersion metrics for each model combination and geography.
-\item \code{qaic_summary} A dataframe with the mean QAIC and dispersion metrics for each model combination.
-\item \code{vif_results} A dataframe of variance inflation factors for each independent variables by geography.
-\item \code{vif_summary} A dataframe with the mean variance inflation factors for each independent variable.
+\item \code{qaic_results} A dataframe of QAIC and dispersion metrics for each
+model combination and geography.
+\item \code{qaic_summary} A dataframe with the mean QAIC and dispersion metrics
+for each model combination.
+\item \code{vif_results} A dataframe of variance inflation factors for each
+independent variables by geography.
+\item \code{vif_summary} A dataframe with the mean variance inflation factors
+for each independent variable.
 \item \code{adf_results} A dataframe of ADF test results for each geography.
 }
 }
 \description{
-Produces results on QAIC for each model combination, variance inflation
-factor for each independent variable, ADF test for stationarity, and plots for residuals to assess the models
+Produces results on QAIC for each model combination, variance
+inflation factor for each independent variable, ADF test for stationarity,
+and plots for residuals to assess the models.
 }
 \keyword{internal}

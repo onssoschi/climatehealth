@@ -7,23 +7,28 @@
 hc_model_combo_res(df_list, cb_list, independent_cols = NULL, dfseas = 8)
 }
 \arguments{
-\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
-and climate variables which may be disaggregated by a particular geography.}
+\item{df_list}{A list of dataframes containing daily timeseries data for a
+health outcome and climate variables which may be disaggregated by a
+particular geography.}
 
-\item{cb_list}{List of cross_basis matrices from create_crossbasis function.}
+\item{cb_list}{List of cross-basis matrices from hc_create_crossbasis
+function.}
 
-\item{independent_cols}{Additional independent variables to test in model validation
-as confounders.}
+\item{independent_cols}{Character/list. Additional independent variables to
+test in model validation as confounders. Defaults to NULL.}
+
+\item{dfseas}{Integer. Degrees of freedom for seasonality. Defaults to 8.}
 }
 \value{
 \itemize{
-\item \code{qaic_results} A dataframe of QAIC and dispersion metrics for each model
-combination.
-\item \code{residuals_list} A list. Residuals for each model combination.
+\item \code{qaic_results} A dataframe of QAIC and dispersion metrics for each
+model combination.
+\item \code{residuals_list} List. Residuals for each model combination.
 }
 }
 \description{
-Runs every combination of model based on user selected additional
-independent variables and returns model diagnostic checks for each.
+Runs every combination of model based on user selected
+additional independent variables and returns model diagnostic checks
+for each.
 }
 \keyword{internal}

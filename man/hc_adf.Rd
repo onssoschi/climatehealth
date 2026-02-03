@@ -2,19 +2,21 @@
 % Please edit documentation in R/temp_mortality.R
 \name{hc_adf}
 \alias{hc_adf}
-\title{Run ADF test and produce PACF plots for each model combo}
+\title{Run ADF test and produce PACF plots for each model combination}
 \usage{
 hc_adf(df_list)
 }
 \arguments{
-\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
-and climate variables which may be disaggregated by a particular geography.}
+\item{df_list}{A list of dataframes containing daily timeseries data for a
+health outcome and climate variables which may be disaggregated by a
+particular geography.}
 }
 \value{
-adf_result for each geography.
+'adf_list'. List of ADF results for each geography.
 }
 \description{
-Run augmented Dickey-Fuller test for stationarity of dependent variable
-and produce partial autocorrelation function plot of residuals for each model combo
+Run augmented Dickey-Fuller test for stationarity of dependent
+variable and produce a partial autocorrelation function plot of residuals
+for each model combination.
 }
 \keyword{internal}
