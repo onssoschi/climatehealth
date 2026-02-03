@@ -3134,7 +3134,7 @@ temp_mortality_do_analysis <- function(data_path,
   df_list <- hc_read_data(
     input_csv_path = data_path,
     date_col = date_col,
-    region_col = geography_col,
+    region_col = region_col,
     temperature_col = temperature_col,
     dependent_col = dependent_col,
     population_col = population_col
