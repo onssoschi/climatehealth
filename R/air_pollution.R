@@ -2974,64 +2974,64 @@ library(ggplot2)
 library(gplots)
 library(ggtext)
 
-#===============================================================================
-# EXAMPLE USAGE WHO
-#===============================================================================
-
-# Run complete analysis example
-results <- do_air_pollution_analysis(
-  # Data specification
-  data_path = "data_deaths_from_NISR.csv",
-  date_col = "date",
-  region_col = "province",
-  pm25_col = "pm25",
-  deaths_col = "deaths",
-  population_col = "population",
-  humidity_col = "humidity",
-  precipitation_col = "precipitation",
-  tmax_col = "tmax",
-  wind_speed_col = "wind_speed",
-  Continuous_Others = NULL,
-  
-  # Analysis parameters
-  max_lag = 14L,
-  df_seasonal = 6,
-  family = "quasipoisson",
-  
-  # Reference standards to analyze
-  reference_standards = list(
-    list(value = 15, name = "WHO")
-  ),
-  
-  # Filter parameters (Years and Regions)
-  years_filter = NULL, # Use a vector of specific year. Recommended to consider at least 3 consecutive years
-  regions_filter = NULL, # Use a vector of specific region(s)
-  
-  # National results parameter
-  include_national = TRUE,  # Set to FALSE to exclude national/combined results from plots
-  
-  # Output settings
-  output_dir = "air_pollution_results2",
-  save_outputs = TRUE,
-  
-  # Optional analyses
-  run_descriptive = TRUE,
-  run_power = TRUE,
-  moving_average_window = 7L,
-  
-  # Power statistics upper threshold
-  attr_thr = 95,
-  
-  # Descriptive statistics settings
-  plot_corr_matrix = TRUE,
-  correlation_method = "pearson",
-  plot_dist = TRUE,
-  plot_na_counts = TRUE,
-  plot_scatter = TRUE,
-  plot_box = TRUE,
-  plot_seasonal = TRUE,
-  plot_regional = TRUE,
-  plot_total = TRUE,
-  detect_outliers = TRUE,
-  calculate_rate = FALSE
-)
+# #===============================================================================
+# # EXAMPLE USAGE WHO
+# #===============================================================================
+# 
+# # Run complete analysis example
+# results <- do_air_pollution_analysis(
+#   # Data specification
+#   data_path = "data.csv",
+#   date_col = "date",
+#   region_col = "province",
+#   pm25_col = "pm25",
+#   deaths_col = "deaths",
+#   population_col = "population",
+#   humidity_col = "humidity",
+#   precipitation_col = "precipitation",
+#   tmax_col = "tmax",
+#   wind_speed_col = "wind_speed",
+#   Continuous_Others = NULL,
+#   
+#   # Analysis parameters
+#   max_lag = 14L,
+#   df_seasonal = 6,
+#   family = "quasipoisson",
+#   
+#   # Reference standards to analyze
+#   reference_standards = list(
+#     list(value = 15, name = "WHO")
+#   ),
+#   
+#   # Filter parameters (Years and Regions)
+#   years_filter = NULL, # Use a vector of specific year. Recommended to consider at least 3 consecutive years
+#   regions_filter = NULL, # Use a vector of specific region(s)
+#   
+#   # National results parameter
+#   include_national = TRUE,  # Set to FALSE to exclude national/combined results from plots
+#   
+#   # Output settings
+#   output_dir = "air_pollution_results2",
+#   save_outputs = TRUE,
+#   
+#   # Optional analyses
+#   run_descriptive = TRUE,
+#   run_power = TRUE,
+#   moving_average_window = 7L,
+#   
+#   # Power statistics upper threshold
+#   attr_thr = 95,
+#   
+#   # Descriptive statistics settings
+#   plot_corr_matrix = TRUE,
+#   correlation_method = "pearson",
+#   plot_dist = TRUE,
+#   plot_na_counts = TRUE,
+#   plot_scatter = TRUE,
+#   plot_box = TRUE,
+#   plot_seasonal = TRUE,
+#   plot_regional = TRUE,
+#   plot_total = TRUE,
+#   detect_outliers = TRUE,
+#   calculate_rate = FALSE
+# )
