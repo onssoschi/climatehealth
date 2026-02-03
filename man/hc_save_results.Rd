@@ -2,7 +2,7 @@
 % Please edit documentation in R/temp_mortality.R
 \name{hc_save_results}
 \alias{hc_save_results}
-\title{Save results of analysis - Mental Health}
+\title{Save results of analysis}
 \usage{
 hc_save_results(
   rr_results,
@@ -15,17 +15,17 @@ hc_save_results(
 )
 }
 \arguments{
-\item{rr_results}{Dataframe containing cumulative relative risk and confidence
-intervals from analysis.}
+\item{rr_results}{Dataframe containing cumulative relative risk and
+confidence intervals from analysis.}
 
-\item{res_attr_tot}{Matrix containing total attributable fractions, numbers and rates for each
-area over the whole time series.}
+\item{res_attr_tot}{Matrix containing total attributable fractions,
+numbers and rates for each geography over the whole time series.}
 
-\item{attr_yr_list}{A list of matrices containing yearly estimates of attributable
-fractions, numbers and rates by area}
+\item{attr_yr_list}{A list of matrices containing yearly estimates of
+attributable fractions, numbers and rates by geography.}
 
 \item{attr_mth_list}{A list of data frames containing total attributable
-fractions, numbers and rates by calendar month and area.}
+fractions, numbers and rates by calendar month and geography.}
 
 \item{output_folder_path}{Path to folder where results should be saved.
 Defaults to NULL.}

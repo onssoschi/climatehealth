@@ -90,7 +90,7 @@ dlnm_vif <- function(
 #' @param cenper Integer. Value for the percentile in calculating the centering
 #' value 0-100. Defaults to NULL.
 #' @param cb_list List of cross_basis matrices from create_crossbasis function.
-#' @param model_list List of models produced from case-crossover and DLNM
+#' @param model_list List of models produced from DLNM
 #' analysis.
 #'
 #' @returns

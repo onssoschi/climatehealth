@@ -2,16 +2,17 @@
 % Please edit documentation in R/temp_mortality.R
 \name{temp_mortality_do_analysis}
 \alias{temp_mortality_do_analysis}
-\title{Run pipeline to analyse the impact of extreme heat on suicides using a time-
-stratified case-crossover approach with distributed lag non-linear model}
+\title{Full analysis pipeline for the 'mortality attributable to high and low
+temperatures' indicator}
 \usage{
 temp_mortality_do_analysis(
   data_path,
   date_col,
-  geography_col,
+  region_col,
   temperature_col,
   dependent_col,
   population_col,
+  country = "National",
   independent_cols = NULL,
   control_cols = NULL,
   var_fun = "bs",
@@ -20,40 +21,42 @@ temp_mortality_do_analysis(
   lagn = 21,
   lagnk = 3,
   dfseas = 8,
-  save_fig = FALSE,
-  save_csv = FALSE,
-  country = "National",
   meta_analysis = FALSE,
   attr_thr_high = 97.5,
   attr_thr_low = 2.5,
+  save_fig = FALSE,
+  save_csv = FALSE,
   output_folder_path = NULL
 )
 }
 \arguments{
 \item{data_path}{Path to a csv file containing a daily time series of data
 for a particular health outcome and climate variables, which may be
-disaggregated by region.}
+disaggregated by geography.}
 
-\item{date_col}{Character. Name of the column in the dataframe that contains
+\item{date_col}{Character. Name of the column in the dataframe containing
 the date.}
 
-\item{geography_col}{Character. Name of the column in the dataframe that contains
-the region names. Defaults to NULL.}
+\item{region_col}{Character. Name of the column in the dataframe that
+contains the geography name(s).}
 
 \item{temperature_col}{Character. Name of the column in the dataframe that
 contains the temperature column.}
 
-\item{dependent_col}{Character. Name of the column in the dataframe that
-contains the health outcome count column (e.g. number of deaths, hospital
-admissions).}
+\item{dependent_col}{Character. Name of the column in the dataframe
+containing the dependent health outcome variable e.g,. deaths.}
 
 \item{population_col}{Character. Name of the column in the dataframe that
-contains the population estimate column.}
+contains the population estimate per geography.}
 
-\item{independent_cols}{Additional independent variables to test in model validation}
+\item{country}{Character. Name of country for national level estimates.
+Defaults to 'National'.}
 
-\item{control_cols}{A list of confounders to include in the final model adjustment.
-Defaults to NULL if none.}
+\item{independent_cols}{List. Additional independent variables to test in
+model validation as confounders. Defaults to NULL.}
+
+\item{control_cols}{List. Confounders to include in the final model
+adjustment. Defaults to NULL.}
 
 \item{var_fun}{Character. Exposure function for argvar
 (see dlnm::crossbasis). Defaults to 'bs'.}
@@ -62,7 +65,7 @@ Defaults to NULL if none.}
 (see dlnm:crossbasis). Defaults to 2 (quadratic).}
 
 \item{var_per}{Vector. Internal knot positions for argvar
-(see dlnm::crossbasis). Defaults to c(25,50,75).}
+(see dlnm::crossbasis). Defaults to c(10, 75, 90).}
 
 \item{lagn}{Integer. Number of days in the lag period. Defaults to 21.
 (see dlnm::crossbasis).}
@@ -70,7 +73,16 @@ Defaults to NULL if none.}
 \item{lagnk}{Integer. Number of knots in lag function. Defaults to 3.
 (see dlnm::logknots).}
 
-\item{dfseas}{Integer. Degrees of freedom for seasonality.}
+\item{dfseas}{Integer. Degrees of freedom for seasonality. Defaults to 8.}
+
+\item{meta_analysis}{Boolean. Whether to perform a meta-analysis. Defaults
+to FALSE.}
+
+\item{attr_thr_high}{Integer. Percentile at which to define the upper
+temperature threshold for calculating attributable risk. Defaults to 97.5.}
+
+\item{attr_thr_low}{Integer. Percentile at which to define the lower
+temperature threshold for calculating attributable risk. Defaults to 2.5.}
 
 \item{save_fig}{Boolean. Whether to save the plot as an output. Defaults to
 FALSE.}
@@ -78,32 +90,85 @@ FALSE.}
 \item{save_csv}{Boolean. Whether to save the results as a CSV. Defaults to
 FALSE.}
 
-\item{country}{Character. Name of country for national level estimates.}
-
-\item{meta_analysis}{Boolean. Whether to perform a meta-analysis.}
-
-\item{attr_thr_high}{Integer. Percentile at which to define the upper temperature threshold for
-calculating attributable risk. Defaults to 97.5.}
-
-\item{attr_thr_low}{Integer. Percentile at which to define the lower temperature threshold for
-calculating attributable risk. Defaults to 2.5.}
-
 \item{output_folder_path}{Path to folder where plots and/or CSV should be
 saved. Defaults to NULL.}
 }
 \value{
 \itemize{
-\item \code{rr_results} Dataframe containing cumulative relative risk and confidence
-intervals from analysis.
-\item \code{an_ar_results} Dataframe. Total attributable fractions, numbers and
+\item \code{qaic_results} Dataframe. QAIC and dispersion metrics for each model
+combination and geography.
+\item \code{qaic_summary} Dataframe. Mean QAIC and dispersion metrics for each
+model combination.
+\item \code{vif_results} Dataframe. Variance inflation factors for each
+independent variables by geography.
+\item \code{vif_summary} Dataframe. Mean variance inflation factors for each
+independent variable.
+\item \code{adf_results} Dataframe. ADF test results for each geography.
+\item \code{power_list} List. Power information by area.
+\item \code{rr_results} Dataframe containing cumulative relative risk and
+confidence intervals from analysis.
+\item \code{res_attr_tot} Dataframe. Total attributable fractions, numbers and
 rates for each area over the whole time series.
-\item \code{annual_an_ar_results} List. Dataframes containing yearly estimates of
+\item \code{attr_yr_list} List. Dataframes containing yearly estimates of
 attributable fractions, numbers and rates by area.
-\item \code{monthly_an_ar_results} List. Dataframes containing total attributable
+\item \code{attr_mth_list} List. Dataframes containing total attributable
 fractions, numbers and rates by calendar month and area.
 }
 }
 \description{
-Runs full analysis pipeline for analysis of the impact of
-extreme heat on suicides
+Runs the full pipeline to analyse the impact of high and low
+temperatures on mortality using a quasi-Poisson time series approach with a
+distributed lag non-linear model. This function generates the relative risk
+of the temperature-mortality association as well as attributable numbers,
+rates and fractions of moralities to specified temperature thresholds for
+high and low temperatures. Model validation statistics are also provided.
+}
+\examples{
+\dontrun{
+temp_mortality_do_analysis(
+  data_path = "data/inputs/daily_temperature_mortality_1995_2025.csv",
+  date_col = "date",
+  region_col = "region",
+  temperature_col = "tmean",
+  dependent_col = "death",
+  population_col = "pop",
+  country = "England",
+  meta_analysis = TRUE,
+  independent_cols = c("wind_speed", "relative_humidity"),
+  control_cols = NULL,
+  var_fun = "bs",
+  var_degree = 2,
+  var_per = c(10, 75, 90),
+  lag_fun = "strata",
+  lagn = 21,
+  lagnk = 3
+  dfseas = 8,
+  attr_thr_high = 97.5,
+  attr_thr_low = 2.5,
+  save_fig = TRUE,
+  save_csv = TRUE,
+  output_folder_path = "data/outputs/england_analysis"
+)
+}
+
+ @references
+\enumerate{
+ \item Watkins E, Hunt C, Lewis B, Ingole V, Glickman M. Standards for
+ Official Statistics on Climate-Health Interactions (SOSCHI): Mortality
+ attributed to high and low temperatures: methodology. Zenodo; 2026.
+ Available from: \url{https://doi:10.5281/zenodo.14865904}
+ \item Gasparrini A, Guo Y, Hashizume M, Lavigne E, Zanobetti A, Schwartz J,
+ et al. Mortality risk attributable to high and low ambient temperature: a
+ multicountry observational study. Lancet. 2015 Jul;386(9991):369–75.
+ Available from:
+  \url{https://linkinghub.elsevier.com/retrieve/pii/S0140673614621140}
+ \item Gasparrini A, Armstrong B. Reducing and meta-analysing estimates from
+  distributed lag non-linear models. BMC Medical Research Methodology. 2013
+  Jan 9;13:1. Available from: \url{https://doi.org/10.1186/1471-2288-13-1}
+	\item Gasparrini A, Armstrong B, Kenward MG. Multivariate meta‐analysis for
+	non‐linear and other multi‐parameter associations. Statistics in Medicine.
+	2012 Dec 20;31(29):3821–39. Available from:
+	 \url{https://doi.org/10.1002/sim.5471}
+	}
+
 }
