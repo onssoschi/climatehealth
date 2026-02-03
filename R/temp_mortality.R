@@ -46,7 +46,7 @@ hc_read_data <- function(input_csv_path,
     population_col
   )
   standard_cols <- c(
-    "depdendent", "date", "region", "temp", "population"
+    "deaths", "date", "region", "temp", "population"
   )
   for (i in seq_along(standard_cols)) {
     std_col <- standard_cols[i]
@@ -58,7 +58,7 @@ hc_read_data <- function(input_csv_path,
   # Rename the columns
   df <- df %>%
     dplyr::rename(
-      dependent = dependent_col,
+      deaths = dependent_col,
       date = date_col,
       region = region_col,
       temp = temperature_col,
@@ -75,7 +75,7 @@ hc_read_data <- function(input_csv_path,
   # Reformat data and fill NaNs
   df <- reformat_data(df,
     reformat_date = TRUE,
-    fill_na = c("dependent"),
+    fill_na = c("deaths"),
     year_from_date = TRUE
   )
   # Split the data by region
@@ -661,7 +661,7 @@ hc_quasipoisson_dlnm <- function(df_list,
 
   # model formula
   base_formula <- paste(
-    "dependent ~",
+    "deaths ~",
     paste(base_independent_cols,
       collapse = " + "
     )
@@ -862,7 +862,7 @@ hc_add_national_data <- function(df_list,
     dplyr::group_by(date) %>%
     dplyr::summarise(
       temp = round(sum(.data$weighted_temp, na.rm = TRUE), 2),
-      dependent = sum(.data$dependent, na.rm = TRUE),
+      deaths = sum(.data$deaths, na.rm = TRUE),
       population = unique(nat_pop)
     ) %>%
     mutate(
@@ -1324,7 +1324,7 @@ hc_attr <- function(df_list,
     heat <- an_attrdl(
       x = geog_data$temp,
       basis = cb,
-      cases = geog_data$dependent,
+      cases = geog_data$deaths,
       coef = pred$coefficients,
       vcov = pred$vcov,
       dir = "forw",
@@ -1337,7 +1337,7 @@ hc_attr <- function(df_list,
     cold <- an_attrdl(
       x = geog_data$temp,
       basis = cb,
-      cases = geog_data$dependent,
+      cases = geog_data$deaths,
       coef = pred$coefficients,
       vcov = pred$vcov,
       dir = "forw",
@@ -1352,7 +1352,7 @@ hc_attr <- function(df_list,
     }
     results <- geog_data %>%
       dplyr::select(
-        any_of(c("region", "date", "temp", "year", "month", "dependent",
+        any_of(c("region", "date", "temp", "year", "month", "deaths",
                  "population"))
       ) %>%
       dplyr::mutate(
@@ -1436,7 +1436,7 @@ hc_attr_tables <- function(attr_list,
         threshold_temp_low = mean(.data$threshold_temp_low, na.rm = TRUE),
         dplyr::across(
           c(
-            "dependent", "an_heat", "an_heat_lower_ci", "an_heat_upper_ci",
+            "deaths", "an_heat", "an_heat_lower_ci", "an_heat_upper_ci",
             "an_cold", "an_cold_lower_ci", "an_cold_upper_ci"
           ),
           ~ sum(.x, na.rm = TRUE)
@@ -1444,15 +1444,15 @@ hc_attr_tables <- function(attr_list,
         .groups = "drop"
       ) %>%
       dplyr::mutate(
-        af_heat           = .data$an_heat / .data$dependent * 100,
-        af_heat_lower_ci  = .data$an_heat_lower_ci / .data$dependent * 100,
-        af_heat_upper_ci  = .data$an_heat_upper_ci / .data$dependent * 100,
+        af_heat           = .data$an_heat / .data$deaths * 100,
+        af_heat_lower_ci  = .data$an_heat_lower_ci / .data$deaths * 100,
+        af_heat_upper_ci  = .data$an_heat_upper_ci / .data$deaths * 100,
         ar_heat           = .data$an_heat / .data$population * 100000,
         ar_heat_lower_ci  = .data$an_heat_lower_ci / .data$population * 100000,
         ar_heat_upper_ci  = .data$an_heat_upper_ci / .data$population * 100000,
-        af_cold           = .data$an_cold / .data$dependent * 100,
-        af_cold_lower_ci  = .data$an_cold_lower_ci / .data$dependent * 100,
-        af_cold_upper_ci  = .data$an_cold_upper_ci / .data$dependent * 100,
+        af_cold           = .data$an_cold / .data$deaths * 100,
+        af_cold_lower_ci  = .data$an_cold_lower_ci / .data$deaths * 100,
+        af_cold_upper_ci  = .data$an_cold_upper_ci / .data$deaths * 100,
         ar_cold           = .data$an_cold / .data$population * 100000,
         ar_cold_lower_ci  = .data$an_cold_lower_ci / .data$population * 100000,
         ar_cold_upper_ci  = .data$an_cold_upper_ci / .data$population * 100000
@@ -3013,7 +3013,7 @@ hc_save_results <- function(rr_results,
 #'   date_col = "date",
 #'   region_col = "region",
 #'   temperature_col = "tmean",
-#'   dependent_col = "death",
+#'   dependent_col = "deaths",
 #'   population_col = "pop",
 #'   country = "England",
 #'   meta_analysis = TRUE,
@@ -3034,7 +3034,7 @@ hc_save_results <- function(rr_results,
 #' )
 #' }
 #'
-#'  @references
+#' @references
 #' \enumerate{
 #'  \item Watkins E, Hunt C, Lewis B, Ingole V, Glickman M. Standards for
 #'  Official Statistics on Climate-Health Interactions (SOSCHI): Mortality
