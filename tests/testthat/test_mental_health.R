@@ -705,7 +705,6 @@ test_that("test mh_add_national_data", {
 })
 
 
-
 test_that("mh_plot_power produces plots correctly", {
   # Create sample power_list with two regions
   power_list <- list(
