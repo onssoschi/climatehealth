@@ -17,34 +17,38 @@ hc_predict_subnat(
 )
 }
 \arguments{
-\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
-and climate variables which may be disaggregated by a particular region.}
+\item{df_list}{A list of dataframes containing daily timeseries data for a
+health outcome and climate variables which may be disaggregated by a
+particular geography.}
 
 \item{var_fun}{Character. Exposure function for argvar
 (see dlnm::crossbasis). Defaults to 'bs'.}
 
 \item{var_per}{Vector. Internal knot positions for argvar
-(see dlnm::crossbasis). Defaults to c(25,50,75).}
+(see dlnm::crossbasis). Defaults to c(10, 75, 90).}
 
 \item{var_degree}{Integer. Degree of the piecewise polynomial for argvar
 (see dlnm::crossbasis). Defaults to 2 (quadratic).}
 
-\item{mintempgeog_}{Vector. Percentile of maximum suicide temperature for each region.}
+\item{mintempgeog_}{Vector. Percentile of minimum mortality temperature for
+each geography.}
 
 \item{blup}{A list. BLUP (best linear unbiased predictions) from the
-meta-analysis model for each region.}
+meta-analysis model for each geography.}
 
 \item{coef_}{A matrix of coefficients for the reduced model.}
 
-\item{vcov_}{A list. Covariance matrices for each region for the reduced model.}
+\item{vcov_}{A list. Covariance matrices for each geography for the reduced
+model.}
 
-\item{meta_analysis}{Boolean. Whether to perform a meta-analysis.}
+\item{meta_analysis}{Boolean. Whether to perform a meta-analysis. Defaults
+to FALSE.}
 }
 \value{
-A list containing predictions by region
+'pred_list'. A list containing predictions by geography.
 }
 \description{
-Use model to run predictions. Predictions can be produced for a single input geography,
-or multiple disaggregated geographies.
+Use model to run predictions. Predictions can be produced for a
+single input geography, or multiple disaggregated geographies.
 }
 \keyword{internal}
