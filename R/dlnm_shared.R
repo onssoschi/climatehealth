@@ -47,7 +47,9 @@ dlnm_vif <- function(
     df_list,
     independent_cols = NULL) {
   # determine formula var
-  col_name <- ifelse("suicides" %in% colnames(df_list[[1]]), "suicides", "dependent")
+  col_name <- ifelse("deaths"   %in% names(df_list[[1]]), "deaths",
+                     ifelse("suicides" %in% names(df_list[[1]]), "suicides", "dependent"))
+
   # get all combinations
   all_combos <- unlist(lapply(1:length(independent_cols), function(i) {
     combn(independent_cols, i, simplify = FALSE)
