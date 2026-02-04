@@ -217,7 +217,7 @@ hc_model_combo_res <- function(df_list,
 
     for (vars in all_combos) {
       # Build the full formula string
-      base_formula <- paste("dependent ~",
+      base_formula <- paste("deaths ~",
                             paste(base_independent_cols, collapse = " + "))
       formula_str <- paste(base_formula,
                            if (length(vars) > 0)
@@ -285,7 +285,7 @@ hc_adf <- function(df_list) {
     # Perform Augmented Dickey-Fuller Test - values can only be missing in
     # first and last rows of series.
     # null hypothesis = time series is non stationary.
-    adf_test_res <- tseries::adf.test(geog_data$dependent)
+    adf_test_res <- tseries::adf.test(geog_data$deaths)
     # cat("ADF Test for", geog, ":\n")
     # print(adf_test_res)
 
@@ -2544,9 +2544,9 @@ hc_plot_af_cold_monthly <- function(attr_mth_list,
           side = 1, line = 1, cex = 0.8, col = "red", font = 3)
     mtext(ovr_warning, outer = TRUE,
           side = 1, line = 2, cex = 0.8, col = "red", font = 3)
-  }
 
   dev.off()
+  }
 }
 
 #' Plot attributable rates by calendar month - high temperatures
@@ -2697,9 +2697,8 @@ hc_plot_ar_heat_monthly <- function(attr_mth_list,
           side = 1, line = 1, cex = 0.8, col = "red", font = 3)
     mtext(ovr_warning, outer = TRUE,
           side = 1, line = 2, cex = 0.8, col = "red", font = 3)
+    dev.off()
   }
-
-  dev.off()
 }
 
 #' Plot attributable rates by calendar month - low temperatures
@@ -2850,9 +2849,8 @@ hc_plot_ar_cold_monthly <- function(attr_mth_list,
           side = 1, line = 1, cex = 0.8, col = "red", font = 3)
     mtext(ovr_warning, outer = TRUE,
           side = 1, line = 2, cex = 0.8, col = "red", font = 3)
+    dev.off()
   }
-
-  dev.off()
 }
 
 #' Save results of analysis
