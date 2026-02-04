@@ -40,7 +40,6 @@ test_that("Test hc_read_data", {
   control_input <- mock_read_input_data("ignored.csv")
   control_df <- control_input %>%
     dplyr::rename(
-      dependent  = deaths,
       date       = date_col,
       region     = regnames,
       temp       = tmean,
@@ -88,7 +87,7 @@ test_that("hc_create_crossbasis creates correct cross-basis matrices", {
       by   = "day"
     ),
     temp = seq(10, 25, length.out = 46),
-    dependent = sample(5:15, 46, replace = TRUE)
+    deaths = sample(5:15, 46, replace = TRUE)
   )
 
   # Create sample dataframe list with two geographies
@@ -156,7 +155,7 @@ test_that("hc_model_combo_res creates correct model combinations and diagnostics
                           to   = as.Date("2023-01-30"),
                           by   = "day"),
     temp       = rnorm(30, mean = 23, sd = 2),
-    dependent  = rpois(30, lambda = 10),
+    deaths  = rpois(30, lambda = 10),
     humidity   = rnorm(30, mean = 70, sd = 10),
     pollution  = rnorm(30, mean = 50, sd = 15)
   ) %>%
@@ -205,7 +204,7 @@ test_that("hc_model_combo_res creates correct model combinations and diagnostics
 
   # Test formulas generated - verify all expected combinations exist
   # Base formula includes cb, dow, and the date spline with dfseas * length(unique(year))
-  base_formula <- "dependent ~ cb + dow + splines::ns(date, df = 8 * length(unique(year)))"
+  base_formula <- "deaths ~ cb + dow + splines::ns(date, df = 8 * length(unique(year)))"
 
   expected_formulas <- c(
     base_formula,
@@ -246,7 +245,7 @@ test_that("hc_model_combo_res works when independent_cols = NULL (base model onl
                           to   = as.Date("2023-03-02"),
                           by   = "day"),
     temp       = rnorm(30, mean = 20, sd = 3),
-    dependent  = rpois(30, lambda = 8)
+    deaths  = rpois(30, lambda = 8)
   ) %>%
     dplyr::mutate(
       year = as.factor(lubridate::year(date)),
@@ -274,7 +273,7 @@ test_that("hc_model_combo_res works when independent_cols = NULL (base model onl
   expect_setequal(qaic_results$geography, c("GeogA", "GeogB"))
 
   # Base formula should include date spline with dfseas = 8
-  base_formula <- "dependent ~ cb + dow + splines::ns(date, df = 8 * length(unique(year)))"
+  base_formula <- "deaths ~ cb + dow + splines::ns(date, df = 8 * length(unique(year)))"
   expect_true(all(trimws(qaic_results$formula) == base_formula))
 
   # Residuals list should have one entry per geography (1 model each)
@@ -294,7 +293,7 @@ test_that("hc_model_combo_res respects custom dfseas in formula construction", {
                           to   = as.Date("2023-03-30"),
                           by   = "day"),
     temp       = rnorm(30, mean = 18, sd = 2),
-    dependent  = rpois(30, lambda = 7),
+    deaths  = rpois(30, lambda = 7),
     humidity   = rnorm(30, mean = 65, sd = 8)
   ) %>%
     dplyr::mutate(
@@ -320,7 +319,7 @@ test_that("hc_model_combo_res respects custom dfseas in formula construction", {
 
   # Check that dfseas value appears in formula construction
   base_formula_custom <- paste0(
-    "dependent ~ cb + dow + splines::ns(date, df = ", custom_dfseas, " * length(unique(year)))"
+    "deaths ~ cb + dow + splines::ns(date, df = ", custom_dfseas, " * length(unique(year)))"
   )
   expected_forms <- c(
     base_formula_custom,
@@ -339,7 +338,7 @@ test_that("hc_adf runs ADF test and returns expected results by geography", {
     date = seq.Date(from = as.Date("2023-01-01"),
                     to   = as.Date("2023-02-15"),
                     by   = "day"),
-    dependent = rnorm(46, mean = 10, sd = 2)
+    deaths = rnorm(46, mean = 10, sd = 2)
   )
 
   # Create input dataframe list
@@ -388,7 +387,7 @@ test_that("hc_model_validation performs complete model validation", {
       by = "day"
     ),
     temp       = rnorm(n_days, mean = 22, sd = 2),
-    dependent  = rpois(n_days, lambda = 10),
+    deaths  = rpois(n_days, lambda = 10),
     humidity   = rnorm(n_days, mean = 70, sd = 10),
     pollution  = rnorm(n_days, mean = 50, sd = 15),
     year       = factor(rep(2023, n_days)),
@@ -517,7 +516,7 @@ test_that("hc_quasipoisson_dlnm fits DLNM GLMs correctly with controls", {
   sample_df <- data.frame(
     date       = seq.Date(from = as.Date("2023-01-01"), length.out = n_days, by = "day"),
     temp       = rnorm(n_days, mean = 22, sd = 2),   # not used in model here
-    dependent  = rpois(n_days, lambda = 10),
+    deaths  = rpois(n_days, lambda = 10),
     humidity   = rnorm(n_days, mean = 70, sd = 10),
     pollution  = rnorm(n_days, mean = 50, sd = 15)
   ) %>%
@@ -571,7 +570,7 @@ test_that("hc_quasipoisson_dlnm fits DLNM GLMs correctly with controls", {
 
     # Formula content
     f_str <- paste(deparse(formula(m)), collapse = " ")
-    expect_true(grepl("dependent ~", f_str, fixed = TRUE))
+    expect_true(grepl("deaths ~", f_str, fixed = TRUE))
     expect_true(grepl(" cb", f_str, fixed = TRUE))
     expect_true(grepl(" dow", f_str, fixed = TRUE))
     expect_true(grepl("splines::ns\\(date, df = 8 \\* length\\(unique\\(year\\)\\)\\)", f_str))
@@ -600,7 +599,7 @@ test_that("hc_quasipoisson_dlnm respects custom dfseas in the date spline", {
 
   sample_df <- data.frame(
     date       = seq.Date(from = as.Date("2023-02-01"), length.out = n_days, by = "day"),
-    dependent  = rpois(n_days, 9),
+    deaths  = rpois(n_days, 9),
     humidity   = rnorm(n_days, 65, 8),
     pollution  = rnorm(n_days, 45, 12)
   ) %>%
@@ -639,7 +638,7 @@ test_that("hc_quasipoisson_dlnm errors on invalid control_cols types", {
 
   sample_df <- data.frame(
     date       = seq.Date(from = as.Date("2023-03-01"), length.out = n_days, by = "day"),
-    dependent  = rpois(n_days, 8),
+    deaths  = rpois(n_days, 8),
     humidity   = rnorm(n_days, 60, 7),
     pollution  = rnorm(n_days, 40, 10)
   ) %>%
@@ -675,7 +674,7 @@ test_that("fwald returns a valid p-value for variables in the model", {
   # Minimal data for glm with 'humidity' so we can test fwald("humidity")
   df <- data.frame(
     date       = seq.Date(from = as.Date("2023-01-01"), length.out = n_days, by = "day"),
-    dependent  = rpois(n_days, 10),
+    deaths  = rpois(n_days, 10),
     humidity   = rnorm(n_days, 65, 9),
     pollution  = rnorm(n_days, 45, 12)
   ) %>%
@@ -689,7 +688,7 @@ test_that("fwald returns a valid p-value for variables in the model", {
   class(cb) <- c("crossbasis", "matrix")
 
   # Fit a model similar to hc_quasipoisson_dlnm outcome
-  form <- as.formula("dependent ~ cb + dow + splines::ns(date, df = 8 * length(unique(year))) + humidity")
+  form <- as.formula("deaths ~ cb + dow + splines::ns(date, df = 8 * length(unique(year))) + humidity")
   m <- glm(formula = form, data = df, family = quasipoisson, na.action = "na.exclude")
 
   # Get p-value for 'humidity' using fwald
@@ -705,7 +704,7 @@ test_that("fwald validates inputs and errors when variable not present", {
   n <- 50
   df <- data.frame(
     date      = seq.Date(as.Date("2023-04-01"), by = "day", length.out = n),
-    dependent = rpois(n, 7),
+    deaths = rpois(n, 7),
     humidity  = rnorm(n, 60, 8)
   ) %>%
     dplyr::mutate(
@@ -714,7 +713,7 @@ test_that("fwald validates inputs and errors when variable not present", {
     )
 
   cb <- matrix(rnorm(n), nrow = n); class(cb) <- c("crossbasis", "matrix")
-  m <- glm(dependent ~ cb + dow + splines::ns(date, df = 8 * length(unique(year))) + humidity,
+  m <- glm(deaths ~ cb + dow + splines::ns(date, df = 8 * length(unique(year))) + humidity,
            data = df, family = quasipoisson, na.action = "na.exclude")
 
   # Invalid 'var' type
@@ -898,7 +897,7 @@ test_that("test hc_add_national_data", {
       date = dates,
       year = years,
       temp = rnorm(n_days, mean = 15 + i * 2, sd = 5),
-      dependent = rpois(n_days, lambda = 5 + i),  # <-- outcome column is 'dependent'
+      deaths = rpois(n_days, lambda = 5 + i),  # <-- outcome column is 'deaths'
       population = sample(100000:200000, n_days, replace = TRUE),
       geog = paste0("region", i)                   # <-- name consistent with function output
     )
@@ -985,7 +984,7 @@ test_that("test hc_add_national_data", {
   nat_df <- df_out[["National"]]
 
   expect_s3_class(nat_df, "data.frame")
-  expect_true(all(c("date", "temp", "dependent", "population", "year", "month", "geog") %in% names(nat_df)))
+  expect_true(all(c("date", "temp", "deaths", "population", "year", "month", "geog") %in% names(nat_df)))
   expect_equal(nrow(nat_df), length(unique(df_list[[1]]$date)))
   expect_true(all(nat_df$geog == "National"))
 
@@ -1104,7 +1103,7 @@ test_that("hc_rr_results produces expected cumulative RR results", {
   df_list <- lapply(1:n_geog, function(i) {
     data.frame(
       temp = rnorm(n_days, mean = 20 + i * 2, sd = 3),
-      dependent = rpois(n_days, lambda = 10 + i)
+      deaths = rpois(n_days, lambda = 10 + i)
     )
   })
   names(df_list) <- paste0("geog", 1:n_geog)
@@ -1143,7 +1142,7 @@ test_that("hc_rr_results produces expected cumulative RR results", {
     "Area",
     "MMT",
     "Attr_Threshold_High_Temp",
-    "Attr_Threshold_Ligh_Temp",  # note: Ligh in function output
+    "Attr_Threshold_Low_Temp",
     "Temperature",
     "Temp_Frequency",
     "RR",
@@ -1177,7 +1176,7 @@ test_that("hc_rr_results produces expected cumulative RR results", {
     expect_equal(actual_high, expected_high)
 
     expected_low <- unname(round(quantile(temps, 2.5 / 100, na.rm = TRUE), 1))
-    actual_low <- unique(result[result$Area == geog, "Attr_Threshold_Ligh_Temp"])
+    actual_low <- unique(result[result$Area == geog, "Attr_Threshold_Low_Temp"])
     expect_equal(actual_low, expected_low)
   }
 })
@@ -1244,7 +1243,7 @@ test_that("hc_plot_rr produces plots correctly", {
       date = seq.Date(as.Date("2023-01-01"), by = "day", length.out = 10),
       geog = "Geog1",
       temp = rnorm(10, 20, 3),
-      dependent = rpois(10, lambda = 5),
+      deaths = rpois(10, lambda = 5),
       population = rep(1000000, 10),
       year = rep(2023, 10),
       month = rep(1, 10)
@@ -1312,7 +1311,7 @@ test_that("hc_attr produces expected output structure and values", {
       date = seq.Date(as.Date("2000-01-01"), by = "day", length.out = n_rows),
       region = "Geog 1",
       temp = rnorm(n_rows, 5, 2.5),
-      dependent = rpois(n_rows, lambda = 2),
+      deaths = rpois(n_rows, lambda = 2),
       population = rep(2600000, n_rows),
       year = rep(2000, n_rows),
       month = rep(1, n_rows)
@@ -1357,7 +1356,7 @@ test_that("hc_attr produces expected output structure and values", {
 
   # Expected columns
   expected_cols <- c(
-    "region", "date", "temp", "year", "month", "dependent", "population",
+    "region", "date", "temp", "year", "month", "deaths", "population",
     "threshold_temp_high",
     "af_heat", "af_heat_lower_ci", "af_heat_upper_ci",
     "an_heat", "an_heat_lower_ci", "an_heat_upper_ci",
@@ -1416,7 +1415,7 @@ test_that("hc_attr adds region column when missing", {
     GeoNoRegion = data.frame(
       date = seq.Date(as.Date("2001-01-01"), by = "day", length.out = n_rows),
       temp = rnorm(n_rows, 7, 2),
-      dependent = rpois(n_rows, lambda = 3),
+      deaths = rpois(n_rows, lambda = 3),
       population = rep(500000, n_rows),
       year = rep(2001, n_rows),
       month = rep(2, n_rows)
@@ -1470,7 +1469,7 @@ test_that("hc_attr_tables aggregates attributable estimates correctly", {
       temp = rnorm(n_rows, mean = 15, sd = 3),
       threshold_temp_high = rep(27, n_rows),
       threshold_temp_low  = rep(3, n_rows),
-      dependent = rep(10 + sample(0:5, 1), n_rows),
+      deaths = rep(10 + sample(0:5, 1), n_rows),
 
       # Heat component: totals = n_rows * 2, CI wider around it
       an_heat            = rep(2, n_rows),
@@ -1521,7 +1520,7 @@ test_that("hc_attr_tables aggregates attributable estimates correctly", {
   required_cols_tot <- c(
     "region", "population", "temp",
     "threshold_temp_high", "threshold_temp_low",
-    "dependent",
+    "deaths",
     "an_heat", "an_heat_lower_ci", "an_heat_upper_ci",
     "an_cold", "an_cold_lower_ci", "an_cold_upper_ci",
     "af_heat", "af_heat_lower_ci", "af_heat_upper_ci",
@@ -1569,7 +1568,7 @@ test_that("hc_attr_tables aggregates attributable estimates correctly", {
   expect_true(is.numeric(res_attr_tot$ar_cold))
 
   # Positive denominator check (dependent > 0, population > 0) => finite AF/AR
-  denom_rows <- with(res_attr_tot, is.finite(dependent) & dependent > 0 & is.finite(population) & population > 0)
+  denom_rows <- with(res_attr_tot, is.finite(deaths) & deaths > 0 & is.finite(population) & population > 0)
   if (any(denom_rows)) {
     expect_true(all(is.finite(res_attr_tot$af_heat[denom_rows])))
     expect_true(all(is.finite(res_attr_tot$ar_heat[denom_rows])))
@@ -2603,8 +2602,8 @@ test_that("integration: temp_mortality_do_analysis runs end-to-end (dynamic synt
 
     # Outcome: Poisson linked to temperature for variability; ensure some early non-zeros
     lambda <- exp(-0.1 + 0.03 * tmean)  # ~0.5–3.0
-    dependent <- rpois(n_days_per_region, lambda = lambda)
-    dependent[1:5] <- pmax(dependent[1:5], c(0, 1, 0, 1, 2))
+    deaths <- rpois(n_days_per_region, lambda = lambda)
+    deaths[1:5] <- pmax(deaths[1:5], c(0, 1, 0, 1, 2))
 
     data.frame(
       date = dates,
@@ -2614,7 +2613,7 @@ test_that("integration: temp_mortality_do_analysis runs end-to-end (dynamic synt
       sun = round(sun, 2),
       rainfall = round(rainfall, 2),
       population = rep(pop, n_days_per_region),
-      dependent = dependent,
+      deaths = deaths,
       check.names = FALSE
     )
   }
@@ -2625,7 +2624,7 @@ test_that("integration: temp_mortality_do_analysis runs end-to-end (dynamic synt
   # preflight checks to avoid degenerate inputs
   by_region <- split(df, df$region)
   ok_unique_temp <- all(vapply(by_region, function(x) length(unique(x$tmean)) >= 10, logical(1)))
-  ok_nonzero <- all(vapply(by_region, function(x) sum(x$dependent > 0) >= 10, logical(1)))
+  ok_nonzero <- all(vapply(by_region, function(x) sum(x$deaths > 0) >= 10, logical(1)))
   expect_true(ok_unique_temp, info = "Not enough unique temperature values for splines")
   expect_true(ok_nonzero, info = "Too few non-zero outcome counts for model fitting")
 
@@ -2638,9 +2637,9 @@ test_that("integration: temp_mortality_do_analysis runs end-to-end (dynamic synt
   result <- temp_mortality_do_analysis(
     data_path = tmp_file,
     date_col = "date",
-    geography_col = "region",
+    region_col = "region",
     temperature_col = "tmean",
-    dependent_col = "dependent",
+    dependent_col = "deaths",
     population_col = "population",
     independent_cols = c("hum", "sun", "rainfall"),
     control_cols = NULL,
@@ -2674,7 +2673,7 @@ test_that("integration: temp_mortality_do_analysis runs end-to-end (dynamic synt
   tot <- result$an_ar_results
   expect_s3_class(tot, "data.frame")
   expect_true(nrow(tot) >= length(regions), info = "overall results should include per-region rows")
-  expect_true(all(c("region", "population", "dependent") %in% names(tot)))
+  expect_true(all(c("region", "population", "deaths") %in% names(tot)))
   expect_true(any(c("af_heat", "ar_heat", "an_heat") %in% names(tot)))  # heat metrics present
   expect_true(any(c("af_cold", "ar_cold", "an_cold") %in% names(tot)))  # cold metrics present
 
