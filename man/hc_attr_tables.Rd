@@ -7,24 +7,26 @@
 hc_attr_tables(attr_list, country = "National", meta_analysis = FALSE)
 }
 \arguments{
-\item{attr_list}{A list containing attributable numbers per region.}
+\item{attr_list}{A list containing attributable numbers per geography.}
 
-\item{country}{Character. Name of country for national level estimates.}
+\item{country}{Character. Name of country for national level estimates.
+Defaults to 'National'.}
 
-\item{meta_analysis}{Boolean. Whether to perform a meta-analysis.}
+\item{meta_analysis}{Boolean. Whether to perform a meta-analysis. Defaults
+to FALSE.}
 }
 \value{
 \itemize{
 \item \code{res_attr_tot} Dataframe. Total attributable fractions, numbers and
-rates for each area over the whole time series.
+rates for each geography over the whole time series.
 \item \code{attr_yr_list} List. Dataframes containing yearly estimates of
-attributable fractions, numbers and rates by area.
+attributable fractions, numbers and rates by geography.
 \item \code{attr_mth_list} List. Dataframes containing total attributable
-fractions, numbers and rates by calendar month and area.
+fractions, numbers and rates by calendar month and geography.
 }
 }
 \description{
 Aggregate tables of attributable numbers, rates and fractions
-for total, yearly and monthly by region and nation
+for total, yearly and monthly by geography and national level.
 }
 \keyword{internal}
