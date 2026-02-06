@@ -4,27 +4,34 @@
 \alias{fit_air_pollution_gam}
 \title{Fit GAM model}
 \usage{
-fit_air_pollution_gam(data, var_name = "pm25", family = "quasipoisson")
+fit_air_pollution_gam(
+  data_with_lags,
+  max_lag = 14L,
+  df_seasonal = 6L,
+  family = "quasipoisson"
+)
 }
 \arguments{
-\item{data}{Data to fit the model.}
+\item{data_with_lags}{data.frame or tibble containing the outcome, confounders
+and pm25 lag variables.}
 
-\item{var_name}{Character. The name of the column containing PM2.5 values.
-Defaults to "pm25"}
+\item{max_lag}{integer. Maximum lag to include. Defaults to 14.}
 
-\item{family}{Character string indicating the distribution family used in the GAM.
-Must be one of the four options "quasipoisson", "nb", "ziP", and "poisson".
-"quasipoisson" (Appropriate for count data with overdispersion),
-"nb" (negativebinomial which is suitable for highly dispersed count data),
-"ziP" (zero-inflated which is suitable for count data with excess zeros (sparse data)),
-"poisson" (Suitable for count data without overdispersion (mean = variance)).
-Defaults to "quasipoisson"}
+\item{df_seasonal}{integer. Degrees of freedom for seasonal spline. Default 6.}
+
+\item{family}{character or family object passed to mgcv::gam. Default "quasipoisson".}
 }
 \value{
-GAM model object or NULL if failed.
+A list with components:
+\itemize{
+\item model: the fitted mgcv::gam object (or NULL if fit failed)
+\item coef_table: data.frame with columns: lag (0 for pm25, 1..N for pm25_lag#,
+and "0-N" for cumulative), pm25_variable, coef, se, ci.lb, ci.ub
+\item vcov_used_for_cumulative: logical; TRUE if vcov() was used to compute cumulative SE
+}
 }
 \description{
-Fits the GAM model for a single region with a natural spline
-for climate variables.
+Fit a generalized additive model (mgcv::gam) including pm25 and its lagged
+variables (pm25_lag1, ..., pm25_lagN)
 }
 \keyword{internal}

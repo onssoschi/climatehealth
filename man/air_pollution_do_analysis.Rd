@@ -2,69 +2,98 @@
 % Please edit documentation in R/air_pollution.R
 \name{air_pollution_do_analysis}
 \alias{air_pollution_do_analysis}
-\title{PM2.5 Mortality Analysis with Enhanced Features (Air Pollution)}
+\title{Comprehensive Air Pollution Analysis Pipeline}
 \usage{
 air_pollution_do_analysis(
   data_path,
-  date_col,
-  region_col,
-  pm25_col,
-  deaths_col,
-  humidity_col,
-  precipitation_col,
-  tmax_col,
-  population_col,
-  max_lag = 2,
-  var_name = "pm25",
+  date_col = "date",
+  region_col = "region",
+  pm25_col = "pm25",
+  deaths_col = "deaths",
+  population_col = "population",
+  humidity_col = "humidity",
+  precipitation_col = "precipitation",
+  tmax_col = "tmax",
+  wind_speed_col = "wind_speed",
+  Categorical_Others = NULL,
+  Continuous_Others = NULL,
+  max_lag = 14L,
+  df_seasonal = 6,
   family = "quasipoisson",
-  reference = 15,
-  output_dir = NULL,
-  save_outputs = FALSE,
-  include_distributed_lags = TRUE,
-  create_plots = TRUE,
-  reference_standards = list(list(value = 15, name = "WHO"), list(value = 50, name =
-    "Rwanda"))
+  reference_standards = list(list(value = 15, name = "WHO")),
+  output_dir = "air_pollution_results",
+  save_outputs = TRUE,
+  run_descriptive = TRUE,
+  run_power = TRUE,
+  moving_average_window = 3L,
+  include_national = TRUE,
+  years_filter = NULL,
+  regions_filter = NULL,
+  attr_thr = 95,
+  plot_corr_matrix = TRUE,
+  correlation_method = "pearson",
+  plot_dist = TRUE,
+  plot_na_counts = TRUE,
+  plot_scatter = TRUE,
+  plot_box = TRUE,
+  plot_seasonal = TRUE,
+  plot_regional = TRUE,
+  plot_total = TRUE,
+  detect_outliers = TRUE,
+  calculate_rate = FALSE
 )
 }
 \arguments{
-\item{data_path}{Character. Path to data file}
+\item{data_path}{Path to CSV data file}
 
-\item{date_col}{Character. Name of date column}
+\item{date_col}{Name of date column}
 
-\item{region_col}{Character. Name of region column}
+\item{region_col}{Name of region column}
 
-\item{pm25_col}{Character. Name of PM2.5 column}
+\item{pm25_col}{Name of PM2.5 column}
 
-\item{deaths_col}{Character. Name of deaths column}
+\item{deaths_col}{Name of deaths column}
 
-\item{humidity_col}{Character. Name of humidity column}
+\item{population_col}{Name of population column.}
 
-\item{precipitation_col}{Character. Name of precipitation column}
+\item{humidity_col}{Name of humidity column}
 
-\item{tmax_col}{Character. Name of temperature column}
+\item{precipitation_col}{Name of precipitation column}
 
-\item{population_col}{Character. Name of population column}
+\item{tmax_col}{Name of maximum temperature column}
 
-\item{max_lag}{Integer. Maximum lag days. Defaults to 2.}
+\item{wind_speed_col}{Name of wind speed column}
 
-\item{var_name}{Character. Variable name for labeling. Defaults to "pm25".}
+\item{Categorical_Others}{Optional vector of categorical variable names}
 
-\item{family}{Character. Distribution family for GAM model. Defaults to "quasipoisson".}
+\item{Continuous_Others}{Optional vector of continuous variable names (e.g., "tmean")}
 
-\item{reference}{Numeric. Reference value for AF/AN calculations. Defaults to 15.}
+\item{max_lag}{Integer. Maximum lag days. Defaults to 14.}
 
-\item{output_dir}{Character. Output directory for results. Defaults to NULL.}
+\item{df_seasonal}{Integer. Degrees of freedom for seasonal spline. Default 6.}
 
-\item{save_outputs}{Logical. Whether to save plots and results. Defaults to FALSE.}
+\item{family}{Character. GAM family (default: "quasipoisson")}
 
-\item{include_distributed_lags}{Logical. Whether to include distributed lag .
-analysis. Defaults to TRUE.}
+\item{reference_standards}{List of reference standards, each with 'value' and 'name'}
 
-\item{create_plots}{Logical. Whether to create exposure-response plots.
-Defaults to TRUE.}
+\item{output_dir}{Directory to save outputs}
 
-\item{reference_standards}{List of reference thresholds used in exposure-response plots.
-Defaults include WHO (\eqn{15~\mu g/m^3}) and Rwanda (\eqn{50~\mu g/m^3}) air quality standards.}
+\item{save_outputs}{Logical. Whether to save outputs}
+
+\item{run_descriptive}{Logical. Whether to run descriptive statistics}
+
+\item{run_power}{Logical. Whether to run power analysis}
+
+\item{moving_average_window}{Integer. Window for moving average in descriptive stats}
+
+\item{include_national}{Logical. Whether to include national results in plots. Default TRUE.}
+
+\item{years_filter}{Optional numeric vector of years to include (e.g., c(2020, 2021, 2022)).
+It is recommended to filter for at least 3 consecutive years for a minimum considerable time series}
+
+\item{regions_filter}{Optional character vector of regions to include
+
+#'}
 }
 \value{
 List containing:
@@ -82,9 +111,48 @@ reference standard (if requested)}
 }
 }
 \description{
-This function performs comprehensive analysis of the relationship
-between PM2.5 and all-cause mortality using GAM models. It includes meta-analysis,
-lag analysis, distributed lag modeling, and exposure-response plots with
-attributable fraction (AF) and attributable number (AN) calculations for
-multiple reference standards.
+Master function that runs the complete air pollution analysis
+including data loading, modeling, plotting, and power analysis
+}
+\examples{
+\dontrun{
+results <- do_air_pollution_analysis(
+ data_path = "data.csv",
+  date_col = "date",
+  region_col = "province",
+  pm25_col = "pm25",
+  deaths_col = "deaths",
+  population_col = "population",
+  humidity_col = "humidity",
+  precipitation_col = "precipitation",
+  tmax_col = "tmax",
+  wind_speed_col = "wind_speed",
+  Continuous_Others = NULL,
+  max_lag = 14L,
+  df_seasonal = 6,
+  family = "quasipoisson",
+  reference_standards = list(list(value = 15, name = "WHO")),
+  years_filter = NULL,
+  regions_filter = NULL,
+  include_national = TRUE,
+  output_dir = "air_pollution_results2",
+  save_outputs = TRUE,
+  run_descriptive = TRUE,
+  run_power = TRUE,
+  moving_average_window = 7L,
+  attr_thr = 95,
+  plot_corr_matrix = TRUE,
+  correlation_method = "pearson",
+  plot_dist = TRUE,
+  plot_na_counts = TRUE,
+  plot_scatter = TRUE,
+  plot_box = TRUE,
+  plot_seasonal = TRUE,
+  plot_regional = TRUE,
+  plot_total = TRUE,
+  detect_outliers = TRUE,
+  calculate_rate = FALSE
+)
+}
+
 }

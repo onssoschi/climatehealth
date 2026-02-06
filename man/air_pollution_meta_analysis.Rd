@@ -2,28 +2,29 @@
 % Please edit documentation in R/air_pollution.R
 \name{air_pollution_meta_analysis}
 \alias{air_pollution_meta_analysis}
-\title{Conduct two-stage meta-analysis with random effect with AF and AN calculations}
+\title{Perform meta analysis with multiple lag structures}
 \usage{
-air_pollution_meta_analysis(data, var_name = "pm25", family = "quasipoisson")
+air_pollution_meta_analysis(
+  data_with_lags,
+  max_lag = 14L,
+  df_seasonal = 6L,
+  family = "quasipoisson"
+)
 }
 \arguments{
-\item{data}{Input data with multiple regions}
+\item{data_with_lags}{Lagged data}
 
-\item{var_name}{Character. PM2.5 variable to analyze. Defaults to "pm25".}
+\item{max_lag}{Integer. Maximum lag days. Defaults to 14}
 
-\item{family}{Character string indicating the distribution family used in the GAM.
-Must be one of the four options "quasipoisson", "nb", "ziP", and "poisson".
-"quasipoisson" (Appropriate for count data with overdispersion),
-"nb" (negativebinomial which is suitable for highly dispersed count data),
-"ziP" (zero-inflated which is suitable for count data with excess zeros (sparse data)),
-"poisson" (Suitable for count data without overdispersion (mean = variance)).
-Defaults to "quasipoisson"}
+\item{df_seasonal}{Integer. Degrees of freedom for seasonal spline. Default 6.}
+
+\item{family}{Character string indicating the distribution family used in the GAM.}
 }
 \value{
-List with meta-analysis results including AF and AN.
+Dataframe with lag-specific results including for regional and national
 }
 \description{
-Performs meta-analysis across regions and calculates attributable
-fraction and attributable number.
+Implements distributed lag model. Individual lag
+coefficients and cumulative effects are extracted and perform meta analysis
 }
 \keyword{internal}
