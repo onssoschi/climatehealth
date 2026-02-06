@@ -62,3 +62,98 @@ aggregate_by_column <- function(df, column_name) {
 
   return(aggregated_dfs)
 }
+
+#' English month names
+#'
+#' @description Provides consistent English month names regardless of system locale
+#'
+#' @param month_numbers Optional vector of month numbers (1-12) to return
+#' @param short Logical. Return abbreviated names? Default FALSE.
+#'
+#' @return Character vector of month names
+#'
+#' @keywords internal
+.english_month_names <- function(month_numbers = NULL, short = FALSE) {
+  if (short) {
+    months <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+  } else {
+    months <- c("January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December")
+  }
+
+  if (is.null(month_numbers)) {
+    return(months)
+  } else {
+    return(months[month_numbers])
+  }
+}
+
+#===============================================================================
+#' English day of week names
+#'
+#' @description Provides consistent English day names regardless of system locale
+#'
+#' @param day_numbers Optional vector of day numbers (1-7, where 1=Sunday)
+#' @param short Logical. Return abbreviated names? Default FALSE.
+#'
+#' @return Character vector of day names
+#'
+#' @keywords internal
+.english_dow_names <- function(day_numbers = NULL, short = FALSE) {
+  if (short) {
+    days <- c("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+  } else {
+    days <- c("Sunday", "Monday", "Tuesday", "Wednesday",
+              "Thursday", "Friday", "Saturday")
+  }
+
+  if (is.null(day_numbers)) {
+    return(days)
+  } else {
+    return(days[day_numbers])
+  }
+}
+
+
+#' Temporarily set English locale for date operations
+#'
+#' @description Temporarily sets the locale to English for date parsing and formatting
+#'
+#' @param expr Expression to evaluate with English locale
+#'
+#' @return Result of the expression
+#'
+#' @keywords internal
+.with_english_locale <- function(expr) {
+  # Store original locale
+  original_locale <- Sys.getlocale("LC_TIME")
+
+  # Try to set to English
+  english_locales <- c("English", "en_US.UTF-8", "en_GB.UTF-8", "C")
+
+  success <- FALSE
+  for (loc in english_locales) {
+    try_locale <- tryCatch({
+      Sys.setlocale("LC_TIME", loc)
+      TRUE
+    }, error = function(e) FALSE, warning = function(w) FALSE)
+
+    if (try_locale) {
+      success <- TRUE
+      break
+    }
+  }
+
+  # Evaluate expression
+  result <- tryCatch({
+    force(expr)
+  }, finally = {
+    # Always restore original locale
+    if (success) {
+      Sys.setlocale("LC_TIME", original_locale)
+    }
+  })
+
+  return(result)
+}
