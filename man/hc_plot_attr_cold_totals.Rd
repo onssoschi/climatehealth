@@ -2,7 +2,7 @@
 % Please edit documentation in R/temp_mortality.R
 \name{hc_plot_attr_cold_totals}
 \alias{hc_plot_attr_cold_totals}
-\title{Plot total attributable fractions and rates - low temps}
+\title{Plot total attributable fractions and rates - low temperatures}
 \usage{
 hc_plot_attr_cold_totals(
   df_list,
@@ -13,11 +13,12 @@ hc_plot_attr_cold_totals(
 )
 }
 \arguments{
-\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
-and climate variables which may be disaggregated by a particular region.}
+\item{df_list}{A list of dataframes containing daily timeseries data for a
+health outcome and climate variables which may be disaggregated by a
+particular geography.}
 
-\item{res_attr_tot}{Matrix containing total attributable fractions, numbers and rates for each
-area over the whole time series.}
+\item{res_attr_tot}{Matrix containing total attributable fractions, numbers
+and rates for each geography over the whole time series.}
 
 \item{save_fig}{Boolean. Whether to save the plot as an output. Defaults to
 FALSE.}
@@ -25,12 +26,14 @@ FALSE.}
 \item{output_folder_path}{Path to folder where plots should be saved.
 Defaults to NULL.}
 
-\item{country}{Character. Name of country for national level estimates.}
+\item{country}{Character. Name of country for national level estimates.
+Defaults to 'National'.}
 }
 \value{
-Plots of total attributable fractions and rates by area
+Plots of total attributable fractions and rates by geography
 }
 \description{
-Plot total attributable fractions and rates over the whole time series by area.
+Plot total attributable fractions and rates over the whole
+time series by geography.
 }
 \keyword{internal}

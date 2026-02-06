@@ -595,6 +595,7 @@ test_that("mh_predict_reg produces expected output", {
 
 
 test_that("test mh_add_national_data", {
+  skip_if_not_installed("mvmeta")
   # Set seed for reproducibility
   set.seed(123)
 
@@ -702,7 +703,6 @@ test_that("test mh_add_national_data", {
   expect_true(is.matrix(mmpredall$vcov))
   expect_equal(length(mmpredall$fit), ncol(mmpredall$vcov))
 })
-
 
 
 test_that("mh_plot_power produces plots correctly", {

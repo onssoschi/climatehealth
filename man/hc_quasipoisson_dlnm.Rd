@@ -2,24 +2,28 @@
 % Please edit documentation in R/temp_mortality.R
 \name{hc_quasipoisson_dlnm}
 \alias{hc_quasipoisson_dlnm}
-\title{Define and run quasi-Poisson regression with distributed lag non-linear model}
+\title{Define and run quasi-Poisson regression with DLNM}
 \usage{
 hc_quasipoisson_dlnm(df_list, control_cols = NULL, cb_list, dfseas = 8)
 }
 \arguments{
-\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
-and climate variables which may be disaggregated by a particular region.}
+\item{df_list}{A list of dataframes containing daily timeseries data for a
+health outcome and climate variables which may be disaggregated by a
+particular geography.}
 
-\item{control_cols}{A list of confounders to include in the final model adjustment.
-Defaults to NULL if none.}
+\item{control_cols}{List. Confounders to include in the final model
+adjustment. Defaults to NULL.}
 
-\item{cb_list}{List of cross_basis matrices from create_crossbasis function.}
+\item{cb_list}{List of cross-basis matrices from hc_create_crossbasis
+function.}
+
+\item{dfseas}{Integer. Degrees of freedom for seasonality. Defaults to 8.}
 }
 \value{
-List containing models by region
+'model_list'. List containing models by geography.
 }
 \description{
 Fits a quasi-Poisson case-crossover with a distributed lag
-non-linear model
+non-linear model.
 }
 \keyword{internal}

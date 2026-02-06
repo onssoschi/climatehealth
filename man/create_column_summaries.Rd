@@ -4,12 +4,12 @@
 \alias{create_column_summaries}
 \title{Create statistical summaries of columns in a dataframe.}
 \usage{
-create_column_summaries(df, columns = NULL)
+create_column_summaries(df, independent_cols = NULL)
 }
 \arguments{
 \item{df}{Datarame. Input data.}
 
-\item{columns}{vector. The columns to create summaries for.}
+\item{independent_cols}{Character vector. The columns in the data containing the independent variables.}
 }
 \value{
 Dataframe. Column summaries

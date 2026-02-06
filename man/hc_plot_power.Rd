@@ -2,7 +2,7 @@
 % Please edit documentation in R/temp_mortality.R
 \name{hc_plot_power}
 \alias{hc_plot_power}
-\title{Plot power calculations for temperature mortality analysis.}
+\title{Plot statistical power for temperature mortality analysis}
 \usage{
 hc_plot_power(
   power_list_high,
@@ -13,24 +13,27 @@ hc_plot_power(
 )
 }
 \arguments{
-\item{power_list_high}{List. High power values.}
+\item{power_list_high}{List. A list containing power information for high
+temperatures by geography.}
 
-\item{power_list_low}{List. Low power values.}
+\item{power_list_low}{List. A list containing power information for low
+temperatures by geography.}
 
-\item{save_fig}{Logical. Whether or not to save the figure. Defailts to FALSE.}
+\item{save_fig}{Boolean. Whether to save the plot as an output. Defaults
+to FALSE.}
 
-\item{output_folder_path}{Character. The output location for the figure. Defaults
-to NULL.}
+\item{output_folder_path}{Character. Path to folder where plots should be
+saved. Defaults to NULL.}
 
-\item{country}{Character. The name of the country or group of regions of analysis.
-Defaults to "National".}
+\item{country}{Character. The name of the country for national level
+estimates. Defaults to 'National'.}
 }
 \value{
-Dataframe containing cumulative relative risk and confidence
-intervals from analysis.
+Plots of power by temperature for the attributable thresholds
+and above for each geography.
 }
 \description{
-Produces a plot displaying power calculation values for
-temperature mortatlity analysis.
+Plots the power statistic for each reference temperature at
+and above the attributable risk threshold for each geography.
 }
 \keyword{internal}

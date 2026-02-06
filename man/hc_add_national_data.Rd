@@ -19,16 +19,17 @@ hc_add_national_data(
 )
 }
 \arguments{
-\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
-and climate variables which may be disaggregated by a particular region.}
+\item{df_list}{A list of dataframes containing daily timeseries data for a
+health outcome and climate variables which may be disaggregated by a
+particular geography.}
 
-\item{pop_list}{List of population totals by year and region.}
+\item{pop_list}{List of population totals by year and geography.}
 
 \item{var_fun}{Character. Exposure function for argvar
 (see dlnm::crossbasis). Defaults to 'bs'.}
 
 \item{var_per}{Vector. Internal knot positions for argvar
-(see dlnm::crossbasis). Defaults to c(25,50,75).}
+(see dlnm::crossbasis). Defaults to c(10, 75, 90).}
 
 \item{var_degree}{Integer. Degree of the piecewise polynomial for argvar
 (see dlnm::crossbasis). Defaults to 2 (quadratic).}
@@ -39,20 +40,26 @@ and climate variables which may be disaggregated by a particular region.}
 \item{lagnk}{Integer. Number of knots in lag function. Defaults to 3.
 (see dlnm::logknots).}
 
-\item{country}{Character. Name of country for national level estimates.}
+\item{country}{Character. Name of country for national level estimates.
+Defaults to 'National'.}
 
-\item{cb_list}{A list of cross-basis matrices by region.}
+\item{cb_list}{A list of cross-basis matrices by geography.}
 
 \item{mm}{A model object. A multivariate meta-analysis model.}
 
-\item{minpercgeog_}{Vector. Percentile of minumum mortality temperature for each region.}
+\item{minpercgeog_}{Vector. Percentile of minimum mortality temperature for
+each geography.}
 }
 \value{
 \itemize{
-\item \code{df_list} List. A list of data frames for each region and nation.
-\item \code{cb_list} List. A list of cross-basis matrices by region and nation.
-\item \code{minpercreg} Vector. Percentile of minimum suicide temperature for each region and nation.
-\item \code{mmpredall} List. A list of national coefficients and covariance matrices.
+\item \code{df_list} List. A list of data frames for each geography and
+national level.
+\item \code{cb_list} List. A list of cross-basis matrices by geography and
+national level.
+\item \code{minpercgeog_} Vector. Percentile of minimum mortality temperature
+for each geography and national level.
+\item \code{mmpredall} List. A list of national coefficients and covariance
+matrices.
 }
 }
 \description{

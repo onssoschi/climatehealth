@@ -8,7 +8,7 @@ plot_regional_trends(
   df,
   region_col,
   outcome_cols,
-  title = "Regional Trends",
+  title = "Regional Averages",
   ylabs = NULL,
   save_plot = FALSE,
   output_path = ""

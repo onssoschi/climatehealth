@@ -2,7 +2,7 @@
 % Please edit documentation in R/temp_mortality.R
 \name{hc_plot_ar_cold_yearly}
 \alias{hc_plot_ar_cold_yearly}
-\title{Plot attributable rates by year - low temps}
+\title{Plot attributable rates by year - low temperatures}
 \usage{
 hc_plot_ar_cold_yearly(
   attr_yr_list,
@@ -12,8 +12,8 @@ hc_plot_ar_cold_yearly(
 )
 }
 \arguments{
-\item{attr_yr_list}{A list of matrices containing yearly estimates of attributable
-fractions, numbers and rates by area}
+\item{attr_yr_list}{A list of matrices containing yearly estimates of
+attributable fractions, numbers and rates by geography.}
 
 \item{save_fig}{Boolean. Whether to save the plot as an output. Defaults to
 FALSE.}
@@ -21,12 +21,14 @@ FALSE.}
 \item{output_folder_path}{Path to folder where plots should be saved.
 Defaults to NULL.}
 
-\item{country}{Character. Name of country for national level estimates.}
+\item{country}{Character. Name of country for national level estimates.
+Defaults to 'National'.}
 }
 \value{
-Plots of yearly attributable rates per area
+Plots of yearly attributable rates per geography.
 }
 \description{
-Plot attributable rates by year and area with confidence intervals
+Plot attributable rates by year and geography with confidence
+intervals.
 }
 \keyword{internal}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/temp_mortality.R
 \name{hc_plot_rr}
 \alias{hc_plot_rr}
-\title{Plot results of relative risk analysis - Mental Health}
+\title{Plot results of relative risk analysis}
 \usage{
 hc_plot_rr(
   df_list,
@@ -16,20 +16,23 @@ hc_plot_rr(
 )
 }
 \arguments{
-\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
-and climate variables which may be disaggregated by a particular region.}
+\item{df_list}{A list of dataframes containing daily timeseries data for a
+health outcome and climate variables which may be disaggregated by a
+particular geography.}
 
-\item{pred_list}{A list containing predictions from the model by region.}
+\item{pred_list}{A list containing predictions from the model by geography.}
 
-\item{attr_thr_high}{Integer. Percentile at which to define the upper temperature threshold for
-calculating attributable risk. Defaults to 97.5.}
+\item{attr_thr_high}{Integer. Percentile at which to define the upper
+temperature threshold for calculating attributable risk. Defaults to 97.5.}
 
-\item{attr_thr_low}{Integer. Percentile at which to define the lower temperature threshold for
-calculating attributable risk. Defaults to 2.5.}
+\item{attr_thr_low}{Integer. Percentile at which to define the lower
+temperature threshold for calculating attributable risk. Defaults to 2.5.}
 
-\item{minpercgeog_}{Vector. Percentile of minimum suicide temperature for each area.}
+\item{minpercgeog_}{Vector. Percentile of minimum mortality temperature for
+each geography.}
 
-\item{country}{Character. Name of country for national level estimates.}
+\item{country}{Character. Name of country for national level estimates.
+Defaults to 'National'.}
 
 \item{save_fig}{Boolean. Whether to save the plot as an output. Defaults to
 FALSE.}
@@ -38,11 +41,11 @@ FALSE.}
 Defaults to NULL.}
 }
 \value{
-Plots of cumulative lag exposure-response function with histogram of
-temperature distribution for each region
+Plots of cumulative lag exposure-response function with histogram
+of temperature distribution for each geography.
 }
 \description{
-Plots cumulative lag exposure-response function with histogram of
-temperature distribution for each region
+Plots cumulative lag exposure-response function with histogram
+of temperature distribution for each geography.
 }
 \keyword{internal}
