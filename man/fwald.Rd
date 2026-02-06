@@ -7,15 +7,15 @@
 fwald(mm, var)
 }
 \arguments{
-\item{mm}{A model object.}
+\item{mm}{A model object. A multivariate meta-analysis model.}
 
-\item{var}{A character. The name of the variable in the model to calculate
-p-values for.}
+\item{var}{A character. The name of the variable in the meta-model to
+calculate p-values for.}
 }
 \value{
 A number. The p-value of the explanatory variable.
 }
 \description{
-A function to calculate p-values for an explanatory variable.
+Calculate p-values for an explanatory variable.
 }
 \keyword{internal}

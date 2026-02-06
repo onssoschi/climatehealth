@@ -50,53 +50,80 @@ install_pkg_mock <- function(...) {
     }
 }
 
-test_that(
-    "install_INLA runs and prints messages correctly on Windows",
-    {
-        stub(install_INLA, "install.packages", install_pkg_mock)
-        stub(install_INLA, "check_has_rtools", function(...) TRUE)
-        expect_message(
-            install_INLA(os="windows"),
-            "Installing fmesher"
-        )
-        expect_message(
-            install_INLA(os="windows"),
-            "Installing INLA"
-        )
-        expect_message(
-            install_INLA(os="windows"),
-            "INLA succesfully installed"
-        )
-        expect_message(
-            install_INLA(os="windows"),
-            "windows install"
-        )
-    }
-)
 
 test_that(
-    "install_INLA runs and prints messages correctly on non-windows OS",
-    {
-        stub(install_INLA, "install.packages", install_pkg_mock)
-        stub(install_INLA, "check_has_rtools", function(...) TRUE)
-        expect_message(
-            install_INLA(os="unix"),
-            "Installing fmesher"
-        )
-        expect_message(
-            install_INLA(os="unix"),
-            "Installing INLA"
-        )
-        expect_message(
-            install_INLA(os="unix"),
-            "INLA succesfully installed"
-        )
-        expect_message(
-            install_INLA(os="unix"),
-            "other install"
-        )
-    }
+  "install_INLA runs and prints messages correctly on Windows",
+  {
+    stub(install_INLA, "install.packages", install_pkg_mock)
+    stub(install_INLA, "check_has_rtools", function(...) TRUE)
+    stub(install_INLA, "requireNamespace", function(pkg, quietly = TRUE) {
+      if (identical(pkg, "INLA")) TRUE else base::requireNamespace(pkg, quietly)
+    })
+
+
+    # Capture all messages from a single invocation
+    msgs <- testthat::capture_messages( install_INLA(os = "windows") )
+    all_msgs <- paste(msgs, collapse = "\n")
+
+    expect_true(
+      grepl("Installing fmesher", all_msgs, fixed = TRUE),
+      info = paste0("Expected to find 'Installing fmesher' in messages.\nActual messages:\n", all_msgs)
+    )
+
+    expect_true(
+      grepl("Installing INLA", all_msgs, fixed = TRUE),
+      info = paste0("Expected to find 'Installing INLA' in messages.\nActual messages:\n", all_msgs)
+    )
+
+    expect_true(
+      grepl("INLA succesfully installed", all_msgs, fixed = TRUE),
+      info = paste0("Expected to find 'INLA succesfully installed' in messages.\nActual messages:\n", all_msgs)
+    )
+
+    expect_true(
+      grepl("windows install", all_msgs, fixed = TRUE),
+      info = paste0("Expected to find 'windows install' in messages.\nActual messages:\n", all_msgs)
+    )
+  }
 )
+
+
+test_that(
+  "install_INLA runs and prints messages correctly on non-windows OS",
+  {
+    stub(install_INLA, "install.packages", install_pkg_mock)
+    stub(install_INLA, "check_has_rtools", function(...) TRUE)
+    stub(install_INLA, "requireNamespace", function(pkg, quietly = TRUE) {
+      if (identical(pkg, "INLA")) TRUE else base::requireNamespace(pkg, quietly)
+    })
+
+
+    # Capture all messages from a single invocation
+    msgs <- testthat::capture_messages( install_INLA(os = "unix") )
+    all_msgs <- paste(msgs, collapse = "\n")
+
+    expect_true(
+      grepl("Installing fmesher", all_msgs, fixed = TRUE),
+      info = paste0("Expected to find 'Installing fmesher' in messages.\nActual messages:\n", all_msgs)
+    )
+
+    expect_true(
+      grepl("Installing INLA", all_msgs, fixed = TRUE),
+      info = paste0("Expected to find 'Installing INLA' in messages.\nActual messages:\n", all_msgs)
+    )
+
+    expect_true(
+      grepl("INLA succesfully installed", all_msgs, fixed = TRUE),
+      info = paste0("Expected to find 'INLA succesfully installed' in messages.\nActual messages:\n", all_msgs)
+    )
+
+    expect_true(
+      grepl("other install", all_msgs, fixed = TRUE),
+      info = paste0("Expected to find 'other install' in messages.\nActual messages:\n", all_msgs)
+    )
+  }
+)
+
 
 # Tests for install_terra
 check_rtools_mock <- function() message("rtools check")

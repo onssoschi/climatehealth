@@ -8,7 +8,7 @@ plot_seasonal_trends(
   df,
   date_col,
   outcome_cols,
-  title = "Seasonal Trends",
+  title = "Seasonal Averages",
   ylabs = NULL,
   save_plot = FALSE,
   output_path = ""

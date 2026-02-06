@@ -2,7 +2,7 @@
 % Please edit documentation in R/temp_mortality.R
 \name{hc_plot_ar_cold_monthly}
 \alias{hc_plot_ar_cold_monthly}
-\title{Plot attributable rates by calendar month}
+\title{Plot attributable rates by calendar month - low temperatures}
 \usage{
 hc_plot_ar_cold_monthly(
   attr_mth_list,
@@ -15,15 +15,17 @@ hc_plot_ar_cold_monthly(
 }
 \arguments{
 \item{attr_mth_list}{A list of data frames containing total attributable
-fractions, numbers and rates by calendar month and area.}
+fractions, numbers and rates by calendar month and geography.}
 
-\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
-and climate variables which may be disaggregated by a particular region.}
+\item{df_list}{A list of dataframes containing daily timeseries data for a
+health outcome and climate variables which may be disaggregated by a
+particular geography.}
 
-\item{country}{Character. Name of country for national level estimates.}
+\item{country}{Character. Name of country for national level estimates.
+Defaults to 'National'.}
 
-\item{attr_thr_low}{Integer. Percentile at which to define the lower temperature threshold for
-calculating attributable risk. Defaults to 2.5.}
+\item{attr_thr_low}{Integer. Percentile at which to define the lower
+temperature threshold for calculating attributable risk. Defaults to 2.5.}
 
 \item{save_fig}{Boolean. Whether to save the plot as an output. Defaults to
 FALSE.}
@@ -32,7 +34,7 @@ FALSE.}
 Defaults to NULL.}
 }
 \value{
-Plots of attributable rates by calendar month per area
+Plots of attributable rates by calendar month per geography.
 }
 \description{
 Plot attributable rates grouped over the whole time series by
