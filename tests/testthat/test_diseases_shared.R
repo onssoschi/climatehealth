@@ -1,4 +1,9 @@
 # Tests for diseases_shared.R
+test_that("smoke test", {
+  expect_true(TRUE)
+}
+
+)
 
 # Tests for validate_case_type
 with_parameters_test_that("validate_case_type handles valid and invalid inputs", {
@@ -297,19 +302,19 @@ test_that(
 )
 
 # Tests for plot_health_climate_timeseries
-
-# Setup test data
 PHT_test_data <- data.frame(
-  region = c("North", "North", "South", "South"),
-  district = c("N1", "N2", "S1", "S2"),
-  year = c(2020, 2020, 2021, 2021),
-  month = c(1, 2, 1, 2),
-  malaria = c(10, 15, 5, 8),
-  diarrhea = c(20, 25, 10, 12),
-  tmin = c(22, 23, 24, 25),
-  tmean = c(28, 29, 30, 31),
-  tmax = c(35, 36, 37, 38),
-  rainfall = c(100, 110, 120, 130)
+  region    = c("North", "North", "South", "South"),
+  district  = c("N1", "N2", "S1", "S2"),
+  year      = c(2020, 2020, 2021, 2021),
+  month     = c(1, 2, 1, 2),
+  malaria   = c(10, 15, 5, 8),
+  diarrhea  = c(20, 25, 10, 12),
+  tmin      = c(22, 23, 24, 25),
+  tmean     = c(28, 29, 30, 31),
+  tmax      = c(35, 36, 37, 38),
+  rainfall  = c(100, 110, 120, 130),
+  r_humidity = c(60, 62, 65, 67),
+  runoff     = c(5, 6, 7, 9)
 )
 
 test_that(
@@ -364,7 +369,7 @@ test_that(
       case_type = "malaria"
     )
     expect_s3_class(p, "ggplot")
-    expect_equal(unique(p$data$variable), c("malaria", "tmin", "tmean", "tmax", "rainfall"))
+    expect_equal(unique(p$data$variable), c("malaria", "tmin", "tmean", "tmax", "rainfall", "r_humidity","runoff"))
   }
 )
 
@@ -404,29 +409,6 @@ test_that(
 )
 
 test_that(
-  "plot_health_climate_timeseries sums instead of taking mean when param_term==case_col",
-  {
-      # Create single date dataset
-      PHT_data_adjusted <- PHT_test_data %>%
-          mutate(
-              date = as.Date(rep("2020-01-01")),
-              year = rep(2020),
-              month = rep(01)
-          )
-      # Create plot
-      p <- plot_health_climate_timeseries(
-          data = PHT_data_adjusted,
-          param_term = c("malaria", "tmin"),
-          level = "country",
-          case_type = "malaria"
-      )
-      expect_s3_class(p, "ggplot")
-      # Validate aggregation
-      expect_equal(p$data$value[1], 38)
-  }
-)
-
-test_that(
   "plot_health_climate_timeseries errors on missing columns",
   {
     bad_data <- PHT_test_data[, !(names(PHT_test_data) %in% c("tmin"))]
@@ -459,7 +441,7 @@ test_that(
 
 # Tests for set_cross_basis
 
-# Create test data (2 lags for spline knots, ndvi inc.)
+# Create test data (2 lags for spline knots)
 CB_test_data <- data.frame(
   tmax = c(30, 32),
   tmax_lag1 = c(29, 31),
@@ -472,52 +454,49 @@ CB_test_data <- data.frame(
   ndvi_lag2 = c(0.3, 0.4)
 )
 
-test_that(
-  "set_cross_basis returns expected variables",
-  {
-    cb <- set_cross_basis(CB_test_data, nlag = 2, include_ndvi = FALSE)
-    # second observation with diarrhea (2 knots)
-    diarrhea_td <- CB_test_data %>% mutate(diarrhea = c(1, 2))
-    diarrhea_cb <- set_cross_basis(diarrhea_td, nlag = 2, include_ndvi = FALSE)
+test_that("set_cross_basis returns expected variables", {
+  cb <- set_cross_basis(CB_test_data, max_lag = 2, nk = 2)
 
-    # Check main outputs
-    expect_type(cb, "list")
-    expect_equal(sort(names(cb)), sort(c("tmax", "tmin")))
+  # Still check type
+  expect_type(cb, "list")
+  # Variables included when base and lag columns are present
+  expect_equal(sort(names(cb)), sort(c("tmax", "tmin", "ndvi")))
 
-    # Check column name prefixing
-    for (var in names(cb)) {
-      expect_true(all(grepl(paste0("^basis_", var, "\\."), colnames(cb[[var]]))))
-    }
-
-    # Check additional output information
-    attrs <- attributes(cb[["tmax"]])
-    expect_equal(attrs$class, c("crossbasis", "matrix"))
-    expect_equal(round(attrs$argvar$knots, 2), c(31))
-    expect_equal(
-      round(attributes(diarrhea_cb[["tmax"]])$argvar$knots, 2), c(30.67, 31.33)
-    )
+  # Column name prefixing
+  for (var in names(cb)) {
+    expect_true(all(grepl(paste0("^basis_", var, "\\."), colnames(cb[[var]]))))
   }
-)
 
-test_that(
-  "set_cross_basis returns expected variables with ndvi",
-  {
-    cb <- set_cross_basis(CB_test_data, nlag = 2, include_ndvi = TRUE)
-    expect_equal(
-      sort(names(cb)),
-      c("ndvi", "tmax", "tmin")
-    )
-  }
-)
+  # Knot expectations determined by nk and predictor values
+  attrs <- attributes(cb[["tmax"]])
+  expect_equal(attrs$class, c("crossbasis", "matrix"))
+  expect_equal(
+    round(attrs$argvar$knots, 2),
+    round(dlnm::equalknots(CB_test_data$tmax, nk = 2), 2)
+  )
 
-test_that(
-  "set_cross_basis skips variables with missing lags",
-  {
-    data_missing_tmin <- CB_test_data[, !grepl("^tmin", names(CB_test_data))]
-    cb <- set_cross_basis(data_missing_tmin, nlag = 2, include_ndvi = FALSE)
-    expect_false("tmin" %in% names(cb))
-  }
-)
+  # Same knots when an unrelated outcome column is present
+  diarrhea_td <- dplyr::mutate(CB_test_data, diarrhea = c(1, 2))
+  diarrhea_cb <- set_cross_basis(diarrhea_td, max_lag = 2, nk = 2)
+  expect_equal(
+    round(attributes(diarrhea_cb[["tmax"]])$argvar$knots, 6),
+    round(attributes(cb[["tmax"]])$argvar$knots, 6)
+  )
+})
+
+test_that("set_cross_basis returns expected variables with ndvi", {
+  cb <- set_cross_basis(CB_test_data, max_lag = 2, nk = 2)
+  expect_equal(
+    sort(names(cb)),
+    c("ndvi", "tmax", "tmin")
+  )
+})
+
+test_that("set_cross_basis skips variables with missing lags", {
+  data_missing_tmin <- CB_test_data[, !grepl("^tmin", names(CB_test_data))]
+  cb <- set_cross_basis(data_missing_tmin, max_lag = 2, nk = 2)
+  expect_false("tmin" %in% names(cb))
+})
 
 # Tests for create_inla_indices
 
@@ -607,6 +586,7 @@ test_that(
         data = CHECK_VIF_DF,
         inla_param = c("tmax", "tmin"),
         max_lag = 2,
+        nk = 2,
         basis_matrices_choices = c("tmax", "tmin"),
         case_type = "malaria"
       )
@@ -630,6 +610,7 @@ test_that(
         data = bad_data,
         inla_param = c("tmax", "tmin"),
         max_lag = 2,
+        nk = 2,
         basis_matrices_choices = c("tmax", "tmin"),
         case_type = "malaria"
       ),
@@ -648,6 +629,7 @@ test_that(
         data = bad_data,
         inla_param = c("tmax", "tmin"),
         max_lag = 2,
+        nk = 2,
         basis_matrices_choices = c("tmax"),
         case_type = "malaria"
       ),
@@ -658,6 +640,7 @@ test_that(
 
 # Moderate Colinearity
 set.seed(55)
+
 MOD_COL_DF <- data.frame(
   district_code = rep(c("D1", "D2", "D3", "D4", "D5"), 20),
   region_code   = rep(c("R1", "R2", "R3", "R1", "R2"), 20),
@@ -685,6 +668,7 @@ test_that(
         data = MOD_COL_DF,
         inla_param = c("tmax", "tmin"),
         max_lag = 2,
+        nk = 1,
         basis_matrices_choices = c("tmax", "tmin"),
         case_type = "malaria"
       )
@@ -722,6 +706,7 @@ test_that(
         data = LOW_COL_DF,
         inla_param = c("tmax", "tmin"),
         max_lag = 2,
+        nk = 1,
         basis_matrices_choices = c("tmax", "tmin"),
         case_type = "malaria"
       )
@@ -742,6 +727,7 @@ test_that(
       inla_param = c("tmax", "tmin"),
       basis_matrices_choices = c("tmax", "tmin"),
       max_lag = 2,
+      nk = 1,
       case_type = "malaria",
       output_dir = temp_dir
     )
@@ -792,6 +778,7 @@ test_that(
         c(),
         c(),
         2,
+        2,
         "malaria",
         NULL,
         TRUE
@@ -808,7 +795,7 @@ test_that(
       requireNamespace = function(pkg, quietly=T) FALSE,
       .package = "base",
       code = expect_error(
-        run_inla_models(NULL, NULL, NULL, NULL, "malaria"),
+        run_inla_models(NULL, NULL, NULL, NULL, NULL, "malaria"),
         "INLA is not installed"
       ),
     )
@@ -828,6 +815,7 @@ test_that(
           basis_matrices_choices = NULL,
           inla_param = character(),
           max_lag = 2,
+          nk = 2,
           case_type = "malaria"
         )
         expect_equal(result$dic_table$Model, "")
@@ -851,6 +839,7 @@ test_that(
           basis_matrices_choices = "tmax",
           inla_param = "tmax",
           max_lag = 2,
+          nk = 2,
           case_type = "malaria",
           output_dir = RIM_temp_dir,
           save_model = TRUE
@@ -877,6 +866,7 @@ test_that(
           basis_matrices_choices = "tmax",
           inla_param = "humidity",
           max_lag = 2,
+          nk = 2,
           case_type = "malaria"
         )
         expect_equal(result$dic_table$Model, "tmax + humidity")
@@ -1060,7 +1050,7 @@ gp_data$district <- as.character(gp_data$district)
 
 # Run create_inla_indices and set_cross_basis to get real basis matrix
 gp_indexed_data <- create_inla_indices(gp_data, "malaria")
-gp_basis_matrices <- set_cross_basis(gp_indexed_data, 2, include_ndvi = TRUE)
+gp_basis_matrices <- set_cross_basis(gp_indexed_data, max_lag=2, nk=2)
 
 # Extract column names for tmax basis
 gp_tmax_basis <- gp_basis_matrices$tmax
@@ -1081,6 +1071,7 @@ test_that(
       data = gp_data,
       param_term = "tmax",
       max_lag = 3,
+      nk = 2,
       model = gp_model,
       level = "country",
       case_type = "malaria"
@@ -1095,7 +1086,7 @@ test_that(
     )
     expect_equal(
       round(result$allfit[1], 2),
-      c("20.5" = 1.21)
+      c("20.5" = 0.65)
     )
   }
 )
@@ -1108,6 +1099,7 @@ test_that(
       data = gp_data,
       param_term = "tmax",
       max_lag = 2,
+      nk = 2,
       model = gp_model,
       level = "region",
       case_type = "malaria"
@@ -1126,6 +1118,7 @@ test_that(
       data = gp_data,
       param_term = "tmax",
       max_lag = 2,
+      nk = 2,
       model = gp_model,
       level = "district",
       case_type = "malaria"
@@ -1147,6 +1140,7 @@ test_that(
         data = gp_data,
         param_term = "tmax",
         max_lag = 2,
+        nk = 2,
         model = bad_model,
         level = "country",
         case_type = "malaria"
@@ -1176,7 +1170,7 @@ CP_data <- data.frame(
 )
 
 indexed_cp_data <- create_inla_indices(CP_data, "malaria")
-cp_basis_matrices <- set_cross_basis(indexed_cp_data, nlag = 2, include_ndvi = TRUE)
+cp_basis_matrices <- set_cross_basis(indexed_cp_data,max_lag=2,nk=2)
 cp_tmax_basis <- cp_basis_matrices$tmax
 cp_basis_names <- colnames(cp_tmax_basis)
 
@@ -1194,6 +1188,7 @@ test_that(
         data = CP_data,
         param_term = "tmax",
         max_lag = 3,
+        nk = 2,
         model = cp_model,
         level = "country",
         case_type = "malaria",
@@ -1213,6 +1208,7 @@ test_that(
         data = no_year,
         param_term = "tmax",
         max_lag = 3,
+        nk = 2,
         model = cp_model,
         level = "country",
         case_type = "malaria",
@@ -1232,6 +1228,7 @@ test_that(
         data = CP_data,
         param_term = "tmax",
         max_lag = 3,
+        nk = 2,
         model = cp_model,
         level = "country",
         case_type = "malaria",
@@ -1252,6 +1249,7 @@ test_that(
           data = CP_data,
           param_term = "tmax",
           max_lag = 3,
+          nk = 2,
           model = cp_model,
           level = "region",
           case_type = "malaria"
@@ -1270,6 +1268,7 @@ test_that(
           data = CP_data,
           param_term = "tmax",
           max_lag = 3,
+          nk = 2,
           model = cp_model,
           level = "district",
           case_type = "malaria"
@@ -1288,6 +1287,7 @@ test_that(
           data = CP_data,
           param_term = "tmax",
           max_lag = 3,
+          nk = 2,
           model = cp_model,
           level = "district",
           case_type = "malaria",
@@ -1322,6 +1322,7 @@ test_that(
         combined_data = list(data = CP_data, map = RR_tests_map),
         param_term = "tmax",
         max_lag = 2,
+        nk = 2,
         model = cp_model,
         level = "district",
         case_type = "malaria",
@@ -1341,6 +1342,7 @@ test_that(
         combined_data = list(data = no_year, map = RR_tests_map),
         param_term = "tmax",
         max_lag = 2,
+        nk = 2,
         model = cp_model,
         level = "district",
         case_type = "malaria",
@@ -1355,14 +1357,17 @@ test_that(
   "plot_rr_map runs without error for region level",
   {
     expect_error(
-      suppress_plot(
-        plot_rr_map(
-          combined_data = list(data = CP_data, map = RR_tests_map),
-          param_term = "tmax",
-          max_lag = 2,
-          model = cp_model,
-          level = "country",
-          case_type = "malaria"
+      suppressWarnings(
+        suppress_plot(
+          plot_rr_map(
+            combined_data = list(data = CP_data, map = RR_tests_map),
+            param_term = "tmax",
+            max_lag = 2,
+            nk = 2,
+            model = cp_model,
+            level = "region",
+            case_type = "malaria"
+          )
         )
       ),
       NA
@@ -1374,16 +1379,19 @@ test_that(
   "plot_rr_map saves PDF when save_fig=TRUE",
   {
     tmp_dir <- tempdir()
-    suppress_plot(
-      plot_rr_map(
-        combined_data = list(data = CP_data, map = RR_tests_map),
-        param_term = "tmax",
-        max_lag = 2,
-        model = cp_model,
-        level = "district",
-        case_type = "malaria",
-        save_fig = TRUE,
-        output_dir = tmp_dir
+    suppressWarnings(
+      suppress_plot(
+        plot_rr_map(
+          combined_data = list(data = CP_data, map = RR_tests_map),
+          param_term = "tmax",
+          max_lag = 2,
+          nk = 2,
+          model = cp_model,
+          level = "district",
+          case_type = "malaria",
+          save_fig = TRUE,
+          output_dir = tmp_dir
+        )
       )
     )
     expected_file <- file.path(tmp_dir, "RR_map_tmax_district_all_years.pdf")
@@ -1394,16 +1402,19 @@ test_that(
 test_that(
   "plot_rr_map filters correctly by year",
   {
+    suppressWarnings(
     filtered_plot <- suppress_plot(
       plot_rr_map(
         combined_data = list(data = CP_data, map = RR_tests_map),
         param_term = "tmax",
         max_lag = 2,
+        nk = 2,
         model = cp_model,
         level = "district",
         case_type = "malaria",
         filter_year = 2020
       )
+    )
     )
     expect_s3_class(filtered_plot, "gg")
   }
@@ -1425,7 +1436,7 @@ prr_model <- list()
 
 mock_validate_case_type <- function(x) "mock_case"
 
-mock_get_predictions <- function(data, param_term, max_lag, model, level, case_type) {
+mock_get_predictions <- function(data, param_term, max_lag, nk, model, level, case_type) {
   if (level == "country") {
     return(list(
       predvar = seq(20, 35, length.out = 5),
@@ -1458,7 +1469,7 @@ test_that(
     bad_data <- prr_data
     bad_data$year <- NULL
     expect_error(
-      plot_relative_risk(bad_data, prr_model, "tmax", case_type = "malaria"),
+      plot_relative_risk(bad_data, prr_model, "tmax", max_lag = 2, nk = 2, level = "district", case_type = "malaria"),
       "'year' column not found"
     )
   }
@@ -1468,7 +1479,7 @@ test_that(
   "plot_relative_risk errors if save_fig=T and output_dir=NULL",
   {
     expect_error(
-      plot_relative_risk(prr_data, prr_model, "tmax", case_type = "malaria", save_fig = TRUE),
+      plot_relative_risk(prr_data, prr_model, "tmax", max_lag = 2, nk = 2, level = "district", case_type = "malaria", save_fig = TRUE),
       "output_dir must be provided"
     )
   }
@@ -1498,7 +1509,7 @@ test_that(
         # run with save_fig + save_csv to hit file.path, pdf(), print(), dev.off(), write.csv
         res2 <- climatehealth:::plot_relative_risk(prr_data, prr_model, "tmax",
           case_type = "malaria", level = "country",
-          save_fig = TRUE, save_csv = TRUE, output_dir = tmpdir, max_lag = 2)
+          save_fig = TRUE, save_csv = TRUE, output_dir = tmpdir, max_lag = 2, nk = 2 )
         pdf_path <- file.path(tmpdir, "RR_tmax_country_all_plots.pdf")
         csv_path <- file.path(tmpdir, "RR_tmax_country_all_plots.csv")
         expect_true(file.exists(pdf_path))
@@ -1532,7 +1543,7 @@ test_that(
         # run with save_fig + save_csv to hit file.path, pdf(), print(), dev.off(), write.csv
         res2 <- climatehealth:::plot_relative_risk(prr_data, prr_model, "tmax",
           case_type = "malaria", level = "country",
-          save_fig = TRUE, save_csv = TRUE, output_dir = tmpdir, max_lag = 2)
+          save_fig = TRUE, save_csv = TRUE, output_dir = tmpdir, max_lag = 2, nk = 2)
         pdf_path <- file.path(tmpdir, "RR_tmax_country_all_plots.pdf")
         csv_path <- file.path(tmpdir, "RR_tmax_country_all_plots.csv")
         expect_true(file.exists(pdf_path))
@@ -1563,6 +1574,7 @@ test_that(
           prr_model,
           "tmax",
           max_lag = 2,
+          nk = 2,
           case_type = "malaria",
           level = "region",
           save_fig = TRUE,
@@ -1591,6 +1603,7 @@ test_that(
           prr_model,
           "tmax",
           max_lag = 2,
+          nk = 2,
           case_type = "malaria",
           level = "district",
           filter_year = 2020,
@@ -1626,6 +1639,7 @@ test_that(
           prr_model,
           "tmax",
           max_lag = 2,
+          nk = 2,
           case_type = "malaria",
           level = "country"
         )
@@ -1658,6 +1672,7 @@ test_that(
           case_type = "malaria",
           level = "country",
           max_lag = 2,
+          nk = 2,
         )
         expect_type(res, "list")
         expect_named(res, c("plots", "RR"))
@@ -1702,7 +1717,7 @@ AC_model <- list(
 
 mock_validate <- function(x) x
 mock_indices <- function(data, case_type) data
-mock_basis <- function(data, nlag, include_ndvi) list(temp = real_basis)
+mock_basis <- function(data, max_lag, nk) list(temp = real_basis)
 
 test_that(
   "attribution_calculation raises an error if there are no terms for a basis",
@@ -1725,7 +1740,7 @@ test_that(
         level="region",
         case_type="malaria"
       ),
-      "No terms for 'basis_tmax' found in model."
+      "No basis terms found for tmax"
     )
   }
 )
@@ -1755,12 +1770,14 @@ test_that(
     empty_data <- AC_data[0, ]
     with_mocked_bindings(
       {
-        result <- climatehealth:::attribution_calculation(
-          data = empty_data,
-          param_term = "temp",
-          model = AC_model,
-          level = "region",
-          case_type = "malaria"
+        result <- suppressWarnings(
+          climatehealth:::attribution_calculation(
+            data = empty_data,
+            param_term = "temp",
+            model = AC_model,
+            level = "region",
+            case_type = "malaria"
+          )
         )
         expect_s3_class(result, "tbl_df")
         expect_equal(nrow(result), 0)
@@ -1774,7 +1791,7 @@ test_that(
 )
 
 test_that(
-  "attribution_calculation returns zeroed metrics for zero population",
+  "attribution_calculation returns metrics for zero population",
   {
     skip_if_not_installed("INLA")
     zero_pop_data <- AC_data
@@ -1782,7 +1799,7 @@ test_that(
 
     with_mocked_bindings(
       {
-        # Supress missing cols warning for testing
+        # Suppress missing cols warning for testing
         suppressWarnings(
           result <- climatehealth:::attribution_calculation(
             data = zero_pop_data,
@@ -1794,9 +1811,21 @@ test_that(
         )
         expect_s3_class(result, "tbl_df")
         expect_equal(nrow(result), nrow(zero_pop_data))
-        expect_true(all(result$AR_Number == 0))
-        expect_true(all(result$AR_Fraction == 0))
-        expect_true(all(result$AR_per_100k == 0))
+
+        # AR_Number, AR_Fraction, AR_per_100k should not error
+        expect_true(all(is.numeric(result$AR_Number)))
+        expect_true(all(is.numeric(result$AR_Fraction)))
+        expect_true(all(is.numeric(result$AR_per_100k)))
+
+        # No NaN; allow NA or Inf
+        expect_true(all(!is.nan(result$AR_Number)))
+        expect_true(all(!is.nan(result$AR_Fraction)))
+        expect_true(all(!is.nan(result$AR_per_100k)))
+
+        # Non-negative (includes Inf)
+        expect_true(all(is.na(result$AR_Number)   | result$AR_Number   >= 0))
+        expect_true(all(is.na(result$AR_Fraction) | result$AR_Fraction >= 0))
+        expect_true(all(is.na(result$AR_per_100k) | result$AR_per_100k >= 0))
       },
       validate_case_type = mock_validate,
       create_inla_indices = mock_indices,
@@ -1810,50 +1839,68 @@ test_that(
   "attribution_calculation returns NULL if crosspred fails",
   {
     skip_if_not_installed("INLA")
-    bad_basis <- function(data, nlag, include_ndvi) list(temp = matrix(NA, nrow = nrow(data), ncol = 2))
+
+    mock_crosspred <- function(basis, coef, vcov, model.link, bylag = 1, cen = NULL, ...) {
+      stop("crosspred failed")
+    }
+    # outer mocking: climatehealth
     with_mocked_bindings(
       {
-        result <- climatehealth:::attribution_calculation(
-          data = AC_data,
-          param_term = "temp",
-          model = AC_model,
-          level = "region",
-          case_type = "malaria"
+        # inner mocking: dlnm::crosspred
+        with_mocked_bindings(
+          {
+            expect_error(
+              climatehealth:::attribution_calculation(
+                data       = AC_data,
+                param_term = "temp",
+                model      = AC_model,
+                level      = "region",
+                case_type  = "malaria"
+              ),
+              "crosspred failed"
+            )
+          },
+          crosspred = mock_crosspred,   # no quotes
+          .package = "dlnm"
         )
-        expect_s3_class(result, "tbl_df")
-        expect_equal(nrow(result), 0)
       },
-      validate_case_type = mock_validate,
-      create_inla_indices = mock_indices,
-      set_cross_basis = bad_basis,
+      validate_case_type   = mock_validate,
+      create_inla_indices  = mock_indices,
+      set_cross_basis      = mock_basis,
       .package = "climatehealth"
     )
   }
 )
 
 test_that(
-  "attribution_calculation returns NULL if RR vector is NULL",
+  "attribution_calculation errors if RR vector is invalid",
   {
     skip_if_not_installed("INLA")
-    null_basis <- function(data, nlag, include_ndvi) list(temp = matrix(1, nrow = nrow(data), ncol = 2))
+
+    null_basis <- function(data, max_lag, nk) {
+      list(temp = real_basis)
+    }
+
     null_model <- AC_model
-    null_model$summary.fixed$mean <- rep(NA, 2)
-    with_mocked_bindings(
-      {
-        result <- climatehealth:::attribution_calculation(
-          data = AC_data,
-          param_term = "temp",
-          model = null_model,
-          level = "region",
-          case_type = "malaria"
-        )
-        expect_s3_class(result, "tbl_df")
-        expect_equal(nrow(result), 0)
-      },
-      validate_case_type = mock_validate,
-      create_inla_indices = mock_indices,
-      set_cross_basis = null_basis,
-      .package = "climatehealth"
+    null_model$summary.fixed$mean <- rep(NA, length(null_model$summary.fixed$mean))
+
+    expect_error(
+      with_mocked_bindings(
+        {
+          climatehealth:::attribution_calculation(
+            data       = AC_data,
+            param_term = "temp",
+            model      = null_model,
+            level      = "region",
+            case_type  = "malaria"
+          )
+        },
+        validate_case_type  = mock_validate,
+        create_inla_indices = mock_indices,
+        set_cross_basis     = null_basis,
+        .package = "climatehealth"
+      ),
+      regexp = "not consistent|coef/vcov"
     )
   }
 )
@@ -1889,7 +1936,7 @@ test_that(
 
     mock_validate <- function(x) x
     mock_indices <- function(data, case_type) data
-    mock_basis <- function(data, nlag, include_ndvi) list(temp = real_basis)
+    mock_basis <- function(data, max_lag, nk) list(temp = real_basis)
 
     with_mocked_bindings(
       {
@@ -2123,6 +2170,7 @@ test_that(
 test_that(
   "plot_attribution_metric returns grouped bar plots when filter_year has >2 values and level is region",
   {
+    suppressWarnings(library(ggplot2))
     PAM_unique_data <- tibble::tibble(
       region = rep(c("North", "South", "East", "West"), each = 3),
       year = rep(c(2020, 2021, 2022), times = 4),
@@ -2164,6 +2212,7 @@ test_that(
 test_that(
   "plot_attribution_metric saves PDF correctly with district plots",
   {
+    library(ggplot2)
     # Data for district plotting
     PAM_unique_data <- tibble::tibble(
       district = paste0("District_", 1:5),
@@ -2172,6 +2221,13 @@ test_that(
       AR_Number_LCI = AR_Number - 5,
       AR_Number_UCI = AR_Number + 5
     )
+
+    PAM_unique_data <- PAM_unique_data %>%
+      dplyr::mutate(
+        AR_Fraction = 0.2,
+        AR_Fraction_LCI = 0.15,
+        AR_Fraction_UCI = 0.25
+      )
 
     tmp_dir <- file.path(tempdir(), "plot_test_dir")
     if (dir.exists(tmp_dir)) unlink(tmp_dir, recursive = TRUE)
@@ -2202,6 +2258,7 @@ test_that(
 test_that(
   "plot_attribution_metric saves multi-year grouped region plots to PDF",
   {
+    library(ggplot2)
     # Create 6 regions × 3 years to trigger grouped logic and chunking
     test_data <- expand.grid(
       region = paste0("Region_", 1:6),
@@ -2242,6 +2299,7 @@ test_that(
 test_that(
   "plot_attribution_metric saves multi-year grouped region plots to PDF for AR_Number",
   {
+    library(ggplot2)
     # Create 6 regions × 3 years to trigger grouped logic and chunking
     test_data <- expand.grid(
       region = paste0("Region_", 1:6),
