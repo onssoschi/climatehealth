@@ -101,7 +101,7 @@ diarrhea_do_analysis <- function(health_data_path,
                                  spi_col = NULL,
                                  ndvi_col = NULL,
                                  max_lag = 2,
-                                 nk=2,
+                                 nk = 2,
                                  basis_matrices_choices,
                                  inla_param,
                                  param_term,
@@ -206,7 +206,7 @@ diarrhea_do_analysis <- function(health_data_path,
     )
   }
   # create base matrice
-  basis <- set_cross_basis(combined_data$data, case_type, max_lag, nk)
+  basis <- set_cross_basis(combined_data$data, max_lag, nk)
 
   # Check for multicolinearity
   if (save_csv) {
@@ -214,6 +214,7 @@ diarrhea_do_analysis <- function(health_data_path,
       data=combined_data$data,
       inla_param=inla_param,
       max_lag=max_lag,
+      nk=nk,
       basis_matrices_choices=basis_matrices_choices,
       case_type="diarrhea",
       output_dir=output_dir
@@ -223,6 +224,7 @@ diarrhea_do_analysis <- function(health_data_path,
       data=combined_data$data,
       inla_param=inla_param,
       max_lag=max_lag,
+      nk=nk,
       basis_matrices_choices=basis_matrices_choices,
       case_type="diarrhea"
     )
@@ -234,6 +236,7 @@ diarrhea_do_analysis <- function(health_data_path,
     basis_matrices_choices=basis_matrices_choices,
     inla_param=inla_param,
     max_lag=max_lag,
+    nk=nk,
     case_type = "diarrhea",
     output_dir=output_dir,
     save_model=save_model,
@@ -321,6 +324,7 @@ diarrhea_do_analysis <- function(health_data_path,
     model=inla_result$model,
     param_threshold=param_threshold,
     max_lag=max_lag,
+    nk=nk,
     level= level,
     case_type="diarrhea",
     filter_year=filter_year,
