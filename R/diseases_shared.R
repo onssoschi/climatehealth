@@ -512,10 +512,7 @@ plot_health_climate_timeseries <- function(data,
 #' temperature, minimun temperature, cumulative rainfall, and relative humidity.
 #'
 #' @keywords internal
-set_cross_basis <- function(data, case_type, max_lag, nk=2) {
-
-  # Validate and normalize case_type
-  case_type <- validate_case_type(case_type)
+set_cross_basis <- function(data, max_lag=2, nk=2) {
 
   # Set maximum lag
   nlag <- max_lag
@@ -632,6 +629,7 @@ create_inla_indices <- function(data, case_type) {
 check_diseases_vif <- function(data,
                                inla_param,
                                max_lag,
+                               nk,
                                basis_matrices_choices,
                                case_type) {
 
@@ -639,7 +637,7 @@ check_diseases_vif <- function(data,
   case_type <- validate_case_type(case_type)
   # get inla indices and cross basis
   data  <- create_inla_indices(data, case_type)
-  basis <- set_cross_basis(data,case_type, max_lag,nk)
+  basis <- set_cross_basis(data,max_lag,nk)
   # assign variables
   vars_basis <- Filter(Negate(is.null), basis[basis_matrices_choices])
   vars_data  <- setdiff(inla_param, basis_matrices_choices)
@@ -702,6 +700,7 @@ check_diseases_vif <- function(data,
 check_and_write_vif <- function(data,
                                 inla_param,
                                 max_lag,
+                                nk,
                                 basis_matrices_choices,
                                 case_type,
                                 output_dir
@@ -710,6 +709,7 @@ check_and_write_vif <- function(data,
   VIF <- check_diseases_vif(data=data,
                             inla_param=inla_param,
                             max_lag=max_lag,
+                            nk=nk,
                             basis_matrices_choices=basis_matrices_choices,
                             case_type=case_type
   )
@@ -759,6 +759,7 @@ run_inla_models <- function(combined_data,
                             basis_matrices_choices,
                             inla_param,
                             max_lag,
+                            nk,
                             case_type,
                             output_dir = NULL,
                             save_model = FALSE,
@@ -775,7 +776,7 @@ run_inla_models <- function(combined_data,
   }
 
   data <- create_inla_indices(combined_data$data, case_type)
-  basis <- set_cross_basis(combined_data$data,case_type, max_lag,nk)
+  basis <- set_cross_basis(combined_data$data,max_lag,nk)
   graph_file <- combined_data$graph_file
 
   prior <- list(prec = list(prior = "pc.prec", param = c(0.5 / 0.31, 0.01)))
@@ -1005,6 +1006,7 @@ plot_yearly_spatial_random_effect <- function(combined_data ,
 get_predictions <- function(data,
                             param_term,
                             max_lag,
+                            nk,
                             model,
                             level,
                             case_type){
@@ -1014,7 +1016,7 @@ get_predictions <- function(data,
   data <- create_inla_indices(data, case_type)
 
   # getting basis matrices
-  basis_matrices <- set_cross_basis(data,case_type, max_lag,nk)
+  basis_matrices <- set_cross_basis(data,max_lag,nk)
 
   # Extract full coef and vcov for the region
   coef <- model$summary.fixed$mean
@@ -1702,6 +1704,7 @@ attribution_calculation <- function(data,
                                     level,
                                     param_threshold = 1,
                                     max_lag,
+                                    nk,
                                     filter_year = NULL,
                                     group_by_year = FALSE,
                                     case_type,
@@ -1732,7 +1735,7 @@ attribution_calculation <- function(data,
 
   ## INLA indices & cross-basis
   data <- create_inla_indices(data, case_type)
-  basis_matrices <- set_cross_basis(data, case_type, max_lag, nk)
+  basis_matrices <- set_cross_basis(data, max_lag, nk)
 
   ## Grouping logic
   grp_vars <- switch(level,
