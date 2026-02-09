@@ -1093,6 +1093,7 @@ contour_plot <- function(data,
                          model,
                          level,
                          max_lag,
+                         nk,
                          case_type,
                          filter_year = NULL,
                          save_fig = FALSE,
@@ -1109,6 +1110,7 @@ contour_plot <- function(data,
   predt <- get_predictions(data,
                            param_term=param_term,
                            max_lag=max_lag,
+                           nk=nk,
                            model,
                            level=level,
                            case_type=case_type)
@@ -1196,6 +1198,7 @@ plot_rr_map <- function(combined_data,
                         model,
                         param_term = "tmax",
                         max_lag,
+                        nk,
                         level = "district",
                         case_type,
                         filter_year = NULL,
@@ -1238,7 +1241,7 @@ plot_rr_map <- function(combined_data,
 
   # Get RR per year
   get_rr_df <- function(yr) {
-    pred <- get_predictions(filter(data, year == yr), param_term, max_lag,
+    pred <- get_predictions(filter(data, year == yr), param_term, max_lag, nk,
                             model, level, case_type)
     purrr::map_dfr(names(pred), function(name) {
       vals <- pred[[name]]
@@ -1426,6 +1429,7 @@ plot_relative_risk <- function(data,
                                model,
                                param_term,
                                max_lag,
+                               nk,
                                level,
                                case_type,
                                filter_year = NULL,
@@ -1478,7 +1482,7 @@ plot_relative_risk <- function(data,
   if (level == "country") {
     if (is.null(filter_year)) {
       data_all <- data
-      pred <- get_predictions(data_all, param_term, max_lag, model, level, case_type)
+      pred <- get_predictions(data_all, param_term, max_lag, nk, model, level, case_type)
       if (is.list(pred) && !is.null(names(pred)) && length(pred) == 1) {
         pred <- pred[[1]]
       }
@@ -1555,7 +1559,7 @@ plot_relative_risk <- function(data,
     filter_year <- sort(unique(filter_year))
     plots <- lapply(filter_year, function(yr) {
       pred <- get_predictions(dplyr::filter(data, year == yr), param_term,
-                              max_lag, model, level, case_type)
+                              max_lag, nk, model, level, case_type)
       all_predictions[[as.character(yr)]] <- pred
       build_plot(pred, as.character(yr))
     }) %>% purrr::keep(~ !is.null(.))
@@ -1594,7 +1598,7 @@ plot_relative_risk <- function(data,
     group_plots <- list()
 
     if (is.null(filter_year)) {
-      preds <- get_predictions(data, param_term, max_lag, model, level, case_type)
+      preds <- get_predictions(data, param_term, max_lag, nk, model, level, case_type)
       all_predictions[["All Years"]] <- preds
       for (grp in names(preds)) {
         p <- build_plot(preds[[grp]], grp)
@@ -1604,7 +1608,7 @@ plot_relative_risk <- function(data,
       }
     } else {
       for (yr in filter_year) {
-        preds <- get_predictions(dplyr::filter(data, year == yr), param_term, max_lag,
+        preds <- get_predictions(dplyr::filter(data, year == yr), param_term, max_lag, nk,
                                  model, level, case_type)
         all_predictions[[as.character(yr)]] <- preds
         for (grp in names(preds)) {
