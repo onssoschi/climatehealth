@@ -2148,7 +2148,7 @@ plot_attribution_metric <- function(attr_data,
       split_levels <- split(level_vals, ceiling(seq_along(level_vals) / 20))
 
       group_plots <- purrr::map(split_levels, function(subset_levels) {
-        df <- filter(attr_data_plot, .data[[level]] %in% subset_levels)
+        df <- dplyr::filter(attr_data_plot, .data[[level]] %in% subset_levels)
 
         # dynamic limits again
         max_y <- max(df[[metric]], na.rm = TRUE)
