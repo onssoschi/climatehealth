@@ -440,7 +440,7 @@ plot_health_climate_timeseries <- function(data,
 
   case_type <- validate_case_type(case_type)
   vars_all <- c(case_type, "tmin","tmean","tmax","rainfall","r_humidity","runoff")
-  vars_to_plot <- if (param_term == "all") vars_all else param_term
+  vars_to_plot <- if (length(param_term) == 1 && param_term == "all") vars_all else param_term
 
   if (!is.null(filter_year)) data <- dplyr::filter(data, .data$year %in% filter_year)
   data <- dplyr::mutate(data, date = as.Date(paste(.data$year, .data$month, 1, sep = "-")))
