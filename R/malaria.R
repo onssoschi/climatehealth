@@ -200,7 +200,7 @@ malaria_do_analysis <- function(health_data_path,
       combined_data$data,
       param_term = "r_humidity",
       level = "country",
-      case_type = "diarrhea",
+      case_type = "malaria",
       filter_year = filter_year,
       save_fig = save_fig,
       output_dir = output_dir
