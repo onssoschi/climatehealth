@@ -1,9 +1,4 @@
 # Tests for diseases_shared.R
-test_that("smoke test", {
-  expect_true(TRUE)
-}
-
-)
 
 # Tests for validate_case_type
 with_parameters_test_that("validate_case_type handles valid and invalid inputs", {
