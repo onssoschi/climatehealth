@@ -170,6 +170,8 @@ load_air_pollution_data <- function(data_path,
 #'
 #' @return Dataframe with added columns for lagged PM2.5 concentration.
 #'
+#' @import dplyr
+#'
 #' @keywords internal
 
 create_air_pollution_lags <- function( data, max_lag = 14L ) {
@@ -261,40 +263,6 @@ air_pollution_descriptive_stats <- function(data,
                                             plot_total = FALSE,
                                             detect_outliers = FALSE,
                                             calculate_rate = FALSE) {
-
-  # Load the file utils module
-  # Try to source the file_utils.R file
-  if (file.exists("R/file_utils.R")) {
-    source("R/file_utils.R")
-  } else {
-    stop("file_utils.R file not found. Please ensure it's in the same directory.")
-  }
-
-  # Load the cleaning utils module
-  # Try to source the cleaning_utils.R file
-  if (file.exists("R/cleaning_utils.R")) {
-    source("R/cleaning_utils.R")
-  } else {
-    stop("cleaning_utils.R file not found. Please ensure it's in the same directory.")
-  }
-
-  # Load the graph utils module
-  # Try to source the graph_utils.R file
-  if (file.exists("R/graph_utils.R")) {
-    source("R/graph_utils.R")
-  } else {
-    stop("R/graph_utils.R file not found. Please ensure it's in the same directory.")
-  }
-
-  # Load the generic descriptive stats module
-  if (!exists("common_descriptive_stats_api")) {
-    # Try to source the descriptive_stats.R file
-    if (file.exists("R/descriptive_stats.R")) {
-      source("R/descriptive_stats.R")
-    } else {
-      stop("descriptive_stats.R file not found. Please ensure it's in the same directory.")
-    }
-  }
 
   # Validate moving_average_window parameter
   if (!is.numeric(moving_average_window) || moving_average_window < 1) {
