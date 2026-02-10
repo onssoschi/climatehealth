@@ -15,7 +15,8 @@ malaria_do_analysis(
   date_col = NULL,
   year_col,
   month_col,
-  malaria_case_col,
+  case_col,
+  case_type,
   tot_pop_col,
   tmin_col,
   tmean_col,
@@ -26,7 +27,8 @@ malaria_do_analysis(
   geometry_col,
   spi_col = NULL,
   ndvi_col = NULL,
-  max_lag = 4,
+  max_lag = 2,
+  nk = 2,
   basis_matrices_choices,
   inla_param,
   param_term,
@@ -35,12 +37,12 @@ malaria_do_analysis(
   filter_year = NULL,
   family = "poisson",
   group_by_year = FALSE,
+  cumulative = FALSE,
   config = FALSE,
   save_csv = FALSE,
   save_model = FALSE,
   save_fig = FALSE,
-  output_dir = NULL,
-  api_mode = FALSE
+  output_dir = NULL
 )
 }
 \arguments{
@@ -61,7 +63,10 @@ Defaults to \code{NULL}.}
 
 \item{month_col}{Character. Column name for the month variable.}
 
-\item{malaria_case_col}{Character. Column name for malaria case counts.}
+\item{case_col}{Character. Column name for malaria case counts.}
+
+\item{case_type}{Character. Type of malaria cases (e.g., \code{"malaria"},
+\code{"malaria_under_five"}).}
 
 \item{tot_pop_col}{Character. Column name for total population.}
 
@@ -88,6 +93,13 @@ Vegetation Index (NDVI). Defaults to \code{NULL}.}
 
 \item{max_lag}{Numeric. Maximum temporal lag to include in the distributed
 lag model (e.g., \code{2}–\code{4}). Defaults to \code{4}.}
+
+\item{nk}{Numeric. Number of internal knots for the natural spline of
+each predictor, controlling its flexibility: \code{nk = 0} produces a linear
+effect with one basis column, \code{nk = 1} generates a simple spline with two
+columns, \code{nk = 2} yields a more flexible spline with three columns,
+and higher values of \code{nk} further increase flexibility but may also
+raise collinearity among spline terms. Defaults to 2.}
 
 \item{basis_matrices_choices}{Character vector. Specifies which climate variables
 to include in the basis matrix (e.g., \code{c("tmax", "rainfall", "r_humidity")}).}
@@ -126,18 +138,20 @@ Defaults to \code{TRUE}.}
 
 \item{output_dir}{Character. Directory where output files (plots, datasets, maps)
 are saved. Defaults to \code{NULL}.}
-
-\item{api_mode}{Logical, If \code{TRUE}, runs the do_analysis function for the baseline
-model only, returning lightweight results for flask/JSOn compatibility.
-Defaults to False.}
 }
 \value{
 A named list containing:
 \itemize{
 \item \code{inla_result} – Fitted INLA model object and summaries.
-\item \code{VIF} – Variance Inflation Factor results for multicollinearity assessment.
-\item \code{rr_df} – Relative risk results dataset.
+\item \code{plot_malaria}, \code{plot_tmax}, \code{plot_rainfall} – Exploratory time-series plots.
+\item \code{reff_plot_monthly} – Monthly random effects plot.
+\item \code{reff_plot_yearly} – Yearly spatial random effects plot.
+\item \code{contour_plot} – Exposure–response contour plot.
+\item \code{rr_map_plot} – Spatial relative risk map.
+\item \code{rr_plot}, \code{rr_df} – Relative risk plot and associated data.
 \item \code{attr_frac_num} – Attributable risk summary table.
+\item \code{plot_AR_num}, \code{plot_AR_frac}, \code{plot_AR_per_100k} – Plots of attributable
+number, fraction, and rate.
 }
 }
 \description{

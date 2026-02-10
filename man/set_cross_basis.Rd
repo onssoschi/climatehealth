@@ -4,17 +4,21 @@
 \alias{set_cross_basis}
 \title{Create a cross-basis matrix set for DLNM analysis}
 \usage{
-set_cross_basis(data, nlag = 2, include_ndvi = FALSE)
+set_cross_basis(data, max_lag = 2, nk = 2)
 }
 \arguments{
 \item{data}{A dataset returned from \code{combine_health_climate_data()},
 including lagged variables like \code{tmax_lag1}, \code{tmin_lag1}, etc.}
 
-\item{nlag}{Character. Number corresponding to the maximum lag to be
+\item{max_lag}{Character. Number corresponding to the maximum lag to be
 considered for the delay effect. It should be between 2 an 4. Defaults to 2.}
 
-\item{include_ndvi}{Logical. Whether or not to include NDVI in the var
-definitions. Often TRUE if vectorborne (malaria) analysis.}
+\item{nk}{Numeric. Number of internal knots for the natural spline of
+each predictor, controlling its flexibility: \code{nk = 0} produces a linear
+effect with one basis column, \code{nk = 1} generates a simple spline with two
+columns, \code{nk = 2} yields a more flexible spline with three columns,
+and higher values of \code{nk} further increase flexibility but may also
+raise collinearity among spline terms. Defaults to 1}
 }
 \value{
 A list of cross-basis matrices including the basis matrix for maximum
