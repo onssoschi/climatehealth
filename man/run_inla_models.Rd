@@ -10,6 +10,7 @@ run_inla_models(
   basis_matrices_choices,
   inla_param,
   max_lag,
+  nk,
   case_type,
   output_dir = NULL,
   save_model = FALSE,
@@ -26,9 +27,6 @@ parameters to be included in the model. Possible values are \code{tmax}, and \co
 \item{inla_param}{A character vector specifying the confounding exposures to
 be included in the model. Possible values are \code{tmax},\code{tmin}, \code{rainfall},
 \code{r_humidity}, \code{runoff}, \code{ndvi}, Etc.}
-
-\item{max_lag}{Character. Number corresponding to the maximum lag to be
-considered for the delay effect. It should be between 2 an 4.}
 
 \item{case_type}{Character. The type of disease that the case column refers
 to. Must be one of \code{diarrhea} or \code{malaria}.}

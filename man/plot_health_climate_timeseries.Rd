@@ -8,8 +8,8 @@ plot_health_climate_timeseries(
   data,
   param_term,
   level = "country",
-  case_type,
   filter_year = NULL,
+  case_type,
   save_fig = FALSE,
   output_dir = NULL
 )
@@ -23,14 +23,16 @@ tmean, tmin, Malaria). Use "all" to include all available variables.}
 \item{level}{Character. Aggregation level: one of "country", "region", or "district".
 Defaults to "country".}
 
+\item{filter_year}{Optional numeric vector to filter data by year(s). Defaults to NULL.}
+
 \item{case_type}{Character. The type of disease that the case column refers
 to. Must be one of 'diarrhea' or 'malaria'.}
-
-\item{filter_year}{Optional numeric vector to filter data by year(s). Defaults to NULL.}
 
 \item{save_fig}{Boolean. Whether to save the figure as a PDF. Defaults to FALSE.}
 
 \item{output_dir}{Character. Directory path to save the figure. Default to NULL}
+
+\item{year}{Optional numeric vector to filter data by year(s). Defaults to NULL.}
 }
 \value{
 A ggplot object.

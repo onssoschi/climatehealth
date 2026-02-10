@@ -11,25 +11,18 @@ load_and_process_map(
   geometry_col,
   output_dir = NULL
 )
-
-load_and_process_map(
-  map_path,
-  region_col,
-  district_col,
-  geometry_col,
-  output_dir = NULL
-)
 }
 \arguments{
-\item{map_path}{The path to the country's shape file "sf" data.}
+\item{map_path}{The path to the country's geographic data (shape file "sf" data).}
 
-\item{region_col}{Character. The region column in the dataset.}
+\item{region_col}{Character. The region column in the dataframe.}
 
-\item{district_col}{Character. The district column in the dataset.}
+\item{district_col}{Character. The district column in the dataframe.}
 
-\item{geometry_col}{Character. The geometry column in the dataset.}
+\item{geometry_col}{Character. The geometry column in the dataframe.}
 
-\item{output_dir}{Character. The path to output the processed map data to.}
+\item{output_dir}{Character. The path to output the processed adjacency
+(neighboring) matrix, and the map graph.}
 }
 \value{
 \itemize{
@@ -37,17 +30,8 @@ load_and_process_map(
 \item 'nb.map'
 \item 'graph_file'
 }
-
-\itemize{
-\item 'map' The processed map
-\item 'nb.map'
-\item 'graph_file'
-}
 }
 \description{
-: Read in a shape file, rename columns and create the
-adjacency matrix for spatiotemporal analysis.
-
 : Read in a shape file, rename columns and create the
 adjacency matrix for spatiotemporal analysis.
 }

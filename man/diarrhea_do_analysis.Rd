@@ -15,7 +15,8 @@ diarrhea_do_analysis(
   date_col = NULL,
   year_col,
   month_col,
-  diarrhea_case_col,
+  case_col,
+  case_type,
   tot_pop_col,
   tmin_col,
   tmean_col,
@@ -25,7 +26,9 @@ diarrhea_do_analysis(
   runoff_col,
   geometry_col,
   spi_col = NULL,
+  ndvi_col = NULL,
   max_lag = 2,
+  nk = 2,
   basis_matrices_choices,
   inla_param,
   param_term,
@@ -34,10 +37,11 @@ diarrhea_do_analysis(
   filter_year = NULL,
   family = "poisson",
   group_by_year = FALSE,
-  config = FALSE,
-  save_csv = FALSE,
-  save_model = FALSE,
-  save_fig = FALSE,
+  config = TRUE,
+  save_csv = TRUE,
+  save_model = TRUE,
+  save_fig = TRUE,
+  cumulative = FALSE,
   output_dir = NULL
 )
 }
@@ -59,7 +63,10 @@ Defaults to \code{NULL}.}
 
 \item{month_col}{Character. Column name for the month variable.}
 
-\item{diarrhea_case_col}{Character. Column name for diarrhea case counts.}
+\item{case_col}{Character. Column name for diarrhea case counts.}
+
+\item{case_type}{Character. Type of diarrhea cases (e.g., \code{"diarrhea"},
+\code{"diarrhea_under_five"}).}
 
 \item{tot_pop_col}{Character. Column name for total population.}
 
@@ -81,8 +88,18 @@ shapefile (usually \code{"geometry"}).}
 \item{spi_col}{Character (optional). Column name for the Standardized
 Precipitation Index (SPI). Defaults to \code{NULL}.}
 
+\item{ndvi_col}{Character (optional). Column name for the Normalized Difference
+Vegetation Index (NDVI). Defaults to \code{NULL}.}
+
 \item{max_lag}{Numeric. Maximum temporal lag to include in the distributed
 lag model (e.g., \code{2}–\code{4}). Defaults to \code{4}.}
+
+\item{nk}{Numeric. Number of internal knots for the natural spline of
+each predictor, controlling its flexibility: \code{nk = 0} produces a linear
+effect with one basis column, \code{nk = 1} generates a simple spline with two
+columns, \code{nk = 2} yields a more flexible spline with three columns,
+and higher values of \code{nk} further increase flexibility but may also
+raise collinearity among spline terms. Defaults to 1.}
 
 \item{basis_matrices_choices}{Character vector. Specifies which climate variables
 to include in the basis matrix (e.g., \code{c("tmax", "rainfall", "r_humidity")}).}
@@ -123,12 +140,15 @@ Defaults to \code{TRUE}.}
 are saved. Defaults to \code{NULL}.}
 }
 \value{
-A named list containing:
+A list containing:
 \itemize{
-\item \code{inla_result} – Fitted INLA model object and summaries.
-\item \code{VIF} – Variance Inflation Factor results for multicollinearity assessment.
-\item \code{rr_df} – Relative risk results dataset.
-\item \code{an_ar_results} – Attributable risk summary table.
+\item Model output from INLA
+\item Monthly random effects plot
+\item Yearly random effects plot
+\item Contour plot
+\item Relative risk map
+\item Relative risk plot
+\item Attributable fraction and number summary
 }
 }
 \description{
