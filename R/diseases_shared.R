@@ -461,7 +461,7 @@ plot_health_climate_timeseries <- function(data,
 
   # Variable labels with units & descriptive case_type
   var_labels <- c(
-    tmin="Minimum temperature (°C)", tmean="Mean temperature (°C)", tmax="Maximum temperature (°C)",
+    tmin="Minimum temperature (\u00B0C)", tmean="Mean temperature (\u00B0C)", tmax="Maximum temperature (\u00B0C)",
     rainfall="Rainfall (mm)", r_humidity="Relative humidity (%)", runoff="Runoff (mm)",
     setNames(paste("Average Monthly", gsub("_"," ", case_type), "cases"), case_type)
   )
@@ -1520,7 +1520,7 @@ plot_relative_risk <- function(data,
       y_limits <- range(y_breaks)
 
       X_label <- switch(param_term,
-                        tmax     = "Maximum Temperature (°C)",
+                        tmax     = "Maximum Temperature (\u00B0C)",
                         rainfall = "Rainfall (mm)",
                         r_humidity = "Relative Humidity (%)",
                         param_term)
@@ -2276,7 +2276,7 @@ plot_avg_monthly <- function(attr_data,
 
     # Labels and aggregation
     climate_label <- switch(param_term,
-                            tmax="Temperature (°C)",
+                            tmax="Temperature (\u00B0C)",
                             rainfall="Rainfall (mm)",
                             param_term)
     agg_fun <- switch(metric, AR_Number=sum, AR_per_100k=mean, AR_Fraction=mean)
