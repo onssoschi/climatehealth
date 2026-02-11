@@ -12,7 +12,7 @@ wildfire_do_analysis(
   shp_path = NULL,
   date_col,
   region_col,
-  shape_region_col,
+  shape_region_col = NULL,
   mean_temperature_col,
   health_outcome_col,
   rh_col = NULL,
