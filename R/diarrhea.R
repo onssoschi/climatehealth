@@ -122,6 +122,21 @@ diarrhea_do_analysis <- function(health_data_path,
     stop("'output_dir' must be provided if 'save_fig' or save_csv' are TRUE.")
   }
   check_file_exists(output_dir, TRUE)
+  if (!is.null(output_dir)) {
+    # Check output dir exists
+    check_file_exists(output_dir, TRUE)
+    # Create a centralised output dir
+    new_fpath <- file.path(
+      output_dir,
+      paste0("diarrhea_analysis_", format(Sys.time(), "%d_%m_%Y_%H_%M"))
+    )
+    if (!is.null(new_fpath)) {
+      (
+        dir.create(new_fpath)
+      )
+    }
+    output_dir <- new_fpath
+  }
 
   # level validation
   level <- tolower(level)
