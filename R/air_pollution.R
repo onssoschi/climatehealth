@@ -2514,20 +2514,24 @@ plot_air_pollution_power <- function(
 #' Comprehensive Air Pollution Analysis Pipeline
 #'
 #' @description Master function that runs the complete air pollution analysis
-#' including data loading, modeling, plotting, and power analysis
+#' including data loading, preprocessing (including lags), modeling, plotting,
+#' attribution calculations vs reference standards, power analysis and
+#' descriptive statistics
 #'
-#' @param data_path Path to CSV data file
-#' @param date_col Name of date column
-#' @param region_col Name of region column
-#' @param pm25_col Name of PM2.5 column
-#' @param deaths_col Name of deaths column
-#' @param population_col Name of population column.
-#' @param humidity_col Name of humidity column
-#' @param precipitation_col Name of precipitation column
-#' @param tmax_col Name of maximum temperature column
-#' @param wind_speed_col Name of wind speed column
-#' @param Categorical_Others Optional vector of categorical variable names
-#' @param Continuous_Others Optional vector of continuous variable names (e.g., "tmean")
+#' @param data_path Character. Path to CSV data file
+#' @param date_col Character. Name of date column
+#' @param region_col Character. Name of region column
+#' @param pm25_col Character. Name of PM2.5 column
+#' @param deaths_col Character. Name of deaths column
+#' @param population_col Character. Name of the population column.
+#' @param humidity_col Character. Name of humidity column
+#' @param precipitation_col Character. Name of precipitation column
+#' @param tmax_col Character. Name of temperature column
+#' @param wind_speed_col Character. Name of wind speed column
+#' @param Categorical_Others Optional character vector. Names of additional
+#' categorical variables.
+#' @param Continuous_Others Optional character vector. Names of additional
+#' continuous variables (e.g., "tmean")
 #' @param max_lag Integer. Maximum lag days. Defaults to 14.
 #' @param df_seasonal Integer. Degrees of freedom for seasonal spline. Default 6.
 #' @param family Character. GAM family (default: "quasipoisson")
@@ -2541,8 +2545,26 @@ plot_air_pollution_power <- function(
 #' @param years_filter Optional numeric vector of years to include (e.g., c(2020, 2021, 2022)).
 #'  It is recommended to filter for at least 3 consecutive years for a minimum considerable time series
 #' @param regions_filter Optional character vector of regions to include
+#' @param attr_thr Numeric (0–100). Percentile threshold used in power
+#' analysis to evaluate attribution detectability. Default 95.
 #'
-#'#'
+#' @param plot_corr_matrix Logical. Plot correlation matrix. Default TRUE.
+#' @param correlation_method Character. Correlation method for corr matrix
+#' (e.g.,"pearson", "spearman"). Default "pearson".
+#' @param plot_dist Logical. Plot distributions (hist/density) for key variables.
+#' Default TRUE.
+#' @param plot_na_counts Logical. Plot missingness/NA counts. Default TRUE.
+#' @param plot_scatter Logical. Plot scatter plots for key pairs. Default TRUE.
+#' @param plot_box Logical. Plot boxplots by region/season where applicable.
+#' Default TRUE.
+#' @param plot_seasonal Logical. Plot seasonal summaries. Default TRUE.
+#' @param plot_regional Logical. Plot regional summaries. Default TRUE.
+#' @param plot_total Logical. Plot overall totals where relevant. Default TRUE.
+#' @param detect_outliers Logical. Flag potential outliers in descriptive workflow.
+#' Default TRUE.
+#' @param calculate_rate Logical. Whether to calculate rate variables during
+#' descriptive stats (e.g., deaths per population). Default FALSE
+#'
 #' @examples
 #' \dontrun{
 #' results <- do_air_pollution_analysis(
