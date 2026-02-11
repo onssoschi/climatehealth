@@ -900,40 +900,6 @@ calculate_air_pollution_grid_dims <- function(n_plots){
 }
 
 #===============================================================================
-#' Save air pollution plot with standardized dimensions
-#'
-#' @param plot_object ggplot or grob object to save
-#' @param output_dir Character. Directory to save plot.
-#' @param filename Character. Name of the file (without or with .png extension).
-#'
-#' @return Invisibly returns the output path
-#'
-#' @keywords internal
-save_air_pollution_plot <- function(plot_object,
-                                    output_dir,
-                                    filename) {
-
-  # Simple Validation
-  if (is.null(output_dir)) stop("'output_dir' must be provided")
-
-  # Create output directory
-  dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-
-  # Save plot
-  if (!endsWith(filename, ".png")) {
-    output_path <- file.path(output_dir, paste0(filename, ".png"))
-  } else {
-    output_path <- file.path(output_dir, filename)
-  }
-
-  ggplot2::ggsave(output_path, plot_object,
-                  width = 10, height = 8, dpi = 150
-  )
-
-  invisible(output_path)
-}
-
-#===============================================================================
 #' Plot forest plot for PM2.5 effects by region
 #'
 #' @param analysis_results Processed results with RR/AF/AN/AR with lag variables
