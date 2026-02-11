@@ -11,7 +11,7 @@ load_wildfire_data(
   join_wildfire_data = TRUE,
   date_col,
   region_col,
-  shape_region_col,
+  shape_region_col = NULL,
   mean_temperature_col,
   health_outcome_col,
   rh_col = NULL,
