@@ -1,5 +1,10 @@
 # Tests for diseases_shared.R
 
+# Create temp_dir to be used by all MH tests
+temp_dir <- tempdir()
+temp_dir <- file.path(temp_dir, "diseases_shared_tests")
+if (!file.exists(temp_dir)) dir.create(temp_dir)
+
 # Tests for validate_case_type
 with_parameters_test_that("validate_case_type handles valid and invalid inputs", {
     expect_equal(validate_case_type(input_case), expected_case)
