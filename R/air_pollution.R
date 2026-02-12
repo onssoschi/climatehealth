@@ -366,9 +366,9 @@ air_pollution_descriptive_stats <- function(data,
 
     # Fallback: basic summary statistics (silent mode)
     try({
-      basic_summary <- create_column_summaries(data_for_stats,independent_cols)
-      basic_na_summary <- create_na_summary(data_for_stats,independent_cols)
-      corr_matrix <- create_correlation_matrix(data_for_stats, independent_cols,
+      basic_summary <- create_column_summaries(data_for_stats,independent_cols = columns)
+      basic_na_summary <- create_na_summary(data_for_stats,independent_cols = columns)
+      corr_matrix <- create_correlation_matrix(data_for_stats, independent_cols = columns,
                                                correlation_method = correlation_method)
 
       # Save fallback results if requested
