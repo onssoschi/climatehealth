@@ -121,7 +121,7 @@ diarrhea_do_analysis <- function(health_data_path,
   if (is.null(output_dir) & (save_fig | save_csv)) {
     stop("'output_dir' must be provided if 'save_fig' or save_csv' are TRUE.")
   }
-  check_file_exists(output_dir, TRUE)
+
   if (!is.null(output_dir)) {
     # Check output dir exists
     check_file_exists(output_dir, TRUE)
@@ -314,8 +314,8 @@ diarrhea_do_analysis <- function(health_data_path,
     level = "region",
     case_type = case_type,
     output_dir = output_dir,
-    save_fig = TRUE,
-    save_csv = TRUE,
+    save_fig = save_fig,
+    save_csv = save_fig,
     cumulative = TRUE
   )
 
@@ -383,7 +383,7 @@ diarrhea_do_analysis <- function(health_data_path,
                                     metrics = "AR_Number",
                                     data = combined_data$data,
                                     param_term = param_term,
-                                    save_fig = TRUE,
+                                    save_fig = save_fig,
                                     output_dir = output_dir )
 
   plot_avg_AR_per_100k<-plot_avg_monthly(attr_data = attr_frac_num,
@@ -391,7 +391,7 @@ diarrhea_do_analysis <- function(health_data_path,
                                          metrics = "AR_per_100k",
                                          data = combined_data$data,
                                          param_term = param_term,
-                                         save_fig = TRUE,
+                                         save_fig = save_fig,
                                          output_dir = output_dir )
 
   res <- list(plot_diarrhea = plot_diarrhea,

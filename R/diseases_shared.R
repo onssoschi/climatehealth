@@ -1745,7 +1745,8 @@ attribution_calculation <- function(data,
   grp_vars <- switch(level,
                      "country"  = if (group_by_year) c("year","month") else c("year","month"),
                      "region"   = if (group_by_year) c("region", "year") else c("region", "year", "month"),
-                     "district" = c("region", "district", "year"),
+                     "district" = if (group_by_year) c("region", "district", "year")
+                     else c("region", "district", "year", "month"),
                      stop("Invalid level")
   )
 
