@@ -567,7 +567,9 @@ check_wildfire_vif <- function(
   vif_results <- list()
   for (reg in unique(data$region)) {
     region_data <- subset(data, data$region == reg)
-    model <- lm(formula, data = region_data)
+    model <- glm(formula,
+                 data = region_data,
+                 family = poisson(link = "log"))
     vif_mod <- car::vif(model)
     if (print_vif) print(paste0("Variance inflation factor: ", round(vif_mod, 4)))
     for (var in names(vif_mod)) {
@@ -590,6 +592,13 @@ check_wildfire_vif <- function(
   if (save_csv) {
     fpath <- file.path(output_folder_path, "model_validation", "vif_results.csv")
     write.csv(results_df, fpath, row.names = FALSE)
+    # Note to include at the end of the file
+    note <- c(
+      "Note: VIF model validation results.",
+      "Please refer to wildfire methods documentation (section 3.7) for interpretation guidelines."
+    )
+    #Append the note at the END of the file
+    write(note, file = fpath, append = TRUE)
   }
 }
 
@@ -650,6 +659,7 @@ casecrossover_quasipoisson <- function(
         )
       )
   }
+
   # define lag columns
   lag_cols <- get_wildfire_lag_columns(data = data)
   lags <- lag_cols$col_names
@@ -803,6 +813,15 @@ calculate_qaic <- function(
   if (save_csv == TRUE) {
     fpath <- file.path(output_folder_path, "model_validation", "qaic_results.csv")
     write.csv(results_df, fpath, row.names = FALSE)
+    # Note to include at the end of the file
+    note <- c(
+      "Note: QAIC model validation results.",
+      "Please refer to wildfire methods documentation (section 3.7) for interpretation guidelines."
+    )
+
+    #Append the note at the END of the file
+    write(note, file = fpath, append = TRUE)
+
   }
   return(results_df)
 }
@@ -874,7 +893,7 @@ plot_RR <- function(
   combined_plots <- patchwork::wrap_plots(plots)
   if (save_fig) {
     ggplot2::ggsave(
-      filename = file.path(output_folder_path, "wildfire_rr.pdf"),
+      filename = file.path(output_folder_path, "RR_lag_estimates.pdf"),
       plot = combined_plots,
       width = if (length(combined_plots) == 1) 8 else 5 * length(combined_plots),
       height = if (length(combined_plots) == 1) 8 else 4 * length(combined_plots),
@@ -963,7 +982,7 @@ plot_RR_core <- function(
     # Create output path and PDF
     formatted_region_name <- gsub(" ", "_", tolower(region_name))
     file_name <- paste(
-      "wildfire_rr_", formatted_region_name, ".pdf",
+      "RR_lag_estimates_", formatted_region_name, ".pdf",
       sep = ""
     )
     pdf(file.path(output_folder_path, file_name), width = 8, height = 8)
@@ -998,19 +1017,19 @@ save_wildfire_results <- function(
   # Save RR results
   write.csv(
     rr_results,
-    file = file.path(output_folder_path, "wildfire_rr.csv"),
+    file = file.path(output_folder_path, "RR_lag_estimates.csv"),
     row.names = FALSE
   )
   # conditionally save AN/AR results
   if (!is.null(an_ar_results)) {
     write.csv(
       an_ar_results,
-      file = file.path(output_folder_path, "wildfire_an_ar_monthly.csv"),
+      file = file.path(output_folder_path, "wildfire_health_monthly_estimates.csv"),
       row.names = FALSE
     )
     write.csv(
       annual_af_an_results,
-      file = file.path(output_folder_path, "wildfire_an_ar_yearly.csv"),
+      file = file.path(output_folder_path, "wildfire_health_yearly_estimates.csv"),
       row.names = FALSE
     )
   }
@@ -1225,7 +1244,7 @@ summarise_AF_AN <- function(data, monthly = TRUE) {
 #' @description Generates a PDF containing one or more plots of average attributable
 #' fractions over time. If by_region is TRUE, the function creates separate
 #' plots for each region. All plots are saved to a single PDF
-#' file named "aggregated_AR_by_region.pdf" in the specified output_dir.
+#' file named "aggregated_AF_by_region.pdf" in the specified output_dir.
 #'
 #' @param data A data frame containing annual attributable fraction estimates.
 #' Must include columns: year, average_attributable_fraction,
@@ -1261,22 +1280,50 @@ plot_aggregated_AF <- function(data, by_region = FALSE, output_dir = ".") {
   }
   if (is.null(output_dir)) stop("'output_dir' is NULL.")
   if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
+
+  #Convert AF to percent for plotting
+  data_pct <- data
+  af_cols <- c("average_attributable_fraction",
+               "lower_ci_attributable_fraction",
+               "upper_ci_attributable_fraction")
+  for (col in af_cols) {
+    data_pct[[col]] <- data_pct[[col]] * 100
+  }
+
   # set up plot
-  pname <- "aggregated_AN"
+  pname <- "aggregated_AF"
   if (by_region) pname <- paste0(pname, "_by_region")
   fpath <- file.path(output_dir, paste0(pname, ".pdf"))
   plots <- list()
   # plot for full dataset
-  plots[[1]] <- plot_aggregated_AF_core(data = data, region_name = "All Regions")
+  p_all <- plot_aggregated_AF_core(
+    data = data_pct,
+    region_name = "All Regions"
+  )
+  # ensure y-axis is labeled as percent
+  p_all <- p_all + ggplot2::labs(y = "Attributable Fraction (%)")
+  plots[[1]] <- p_all
+
+
   # plot for regions (conditional)
   if (by_region == TRUE) {
-    for (region in unique(data$region)) {
-      region_data <- data[data$region == region, ]
-      plots[[length(plots) + 1]] <- plot_aggregated_AF_core(data = region_data, region_name = region)
+    for (region in unique(data_pct$region)) {
+      region_data <- data_pct[data_pct$region == region, ]
+      p_reg <- plot_aggregated_AF_core(
+        data = region_data,
+        region_name = region
+      )
+      p_reg <- p_reg + ggplot2::labs(y = "Attributable Fraction (%)")
+      plots[[length(plots) + 1]] <- p_reg
     }
   }
   # combine and save plots
   combined_plots <- patchwork::wrap_plots(plots)
+  # add caption
+  combined_plots <- combined_plots +
+    patchwork::plot_annotation(
+      caption = "Note: Attributable fraction(s) are based on relative risk(s) at lag 0."
+    )
   ggplot2::ggsave(
     fpath,
     combined_plots,
@@ -1315,8 +1362,9 @@ plot_aggregated_AF_core <- function(data, region_name = NULL) {
     ) %>%
     mutate(year = as.numeric(as.character(.data$year)))
   # create output plot
-  title <- "Attributable Mortality Rate to Wildfire smoke-related PM2.5"
+  title <- "Annual Attributable Fraction (%) due to Wildfire-related PM2.5 exposure"
   if (!is.null(region_name)) title <- paste0(title, " (", region_name, ")")
+  title_wrapped <- stringr::str_wrap(title, width = 45)
   plot_agg_an <- ggplot2::ggplot(
     agg_data,
     ggplot2::aes(x = .data$year, y = .data$sum_total_deaths)
@@ -1329,9 +1377,9 @@ plot_aggregated_AF_core <- function(data, region_name = NULL) {
     ggplot2::geom_line(color = "#003c57", linewidth = 1) +
     ggplot2::theme_minimal(base_size = 14) +
     ggplot2::labs(
-      title = title,
+      title = title_wrapped,
       x = "Year",
-      y = "Attributable Rate"
+      y = "Attributable Fraction (%)"
     ) +
     ggplot2::theme(
       axis.line = ggplot2::element_line(linewidth = 0.5, colour = "black")
@@ -1449,6 +1497,7 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
       "Monthly Deaths and Mean PM2.5 Concentration - ",
       reg, " (", min(data$year), " - ", max(data$year), ")"
     )
+    title_wrapped <- stringr::str_wrap(title, width = 45)
     plot_ar_pm <- ggplot2::ggplot(
       region_data,
       ggplot2::aes(x = .data$month_name)
@@ -1476,7 +1525,7 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
         )
       ) +
       ggplot2::labs(
-        title = title,
+        title = title_wrapped,
         x = "Month"
       ) +
       ggplot2::theme_light() +
@@ -1496,9 +1545,9 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
   sorted_data <- sorted_data %>% select(all_of(c("region", "month_name", "mean_deaths_per_100k", "mean_pm")))
   # save csv
   if (save_outputs) {
-    fpath <- file.path(output_dir, "ar_and_pm_monthly_average")
+    fpath <- file.path(output_dir, "Monthly_deaths_pm_trends")
     ggplot2::ggsave(
-      paste0(fpath, ".png"),
+      paste0(fpath, ".pdf"),
       combined_plots,
       width = length(all_plots) * 5,
       height = length(all_plots) * 4,
@@ -1536,7 +1585,7 @@ generate_rr_pm_overall <- function(
     relative_risk_overall,
     scale_factor_wildfire_pm,
     wildfire_lag = 0,
-    pm_vals = seq(0, 50, by = 1)) {
+    pm_vals = seq(0, max(data$mean_PM, na.rm = TRUE), by = 1)) {
   # filter by lag
   data_lagged <- subset(relative_risk_overall, lag == wildfire_lag)
   rr <- data_lagged$relative_risk
@@ -1587,7 +1636,7 @@ generate_rr_pm_by_region <- function(
     relative_risk_overall,
     scale_factor_wildfire_pm,
     wildfire_lag = 0,
-    pm_vals = seq(0, 50, by = 1)) {
+    pm_vals = seq(0, max(data$mean_PM, na.rm = TRUE), by = 1)) {
   results <- list()
   regions <- unique(relative_risk_overall$region_name)
   for (reg in regions) {
@@ -1669,8 +1718,13 @@ plot_rr_by_pm <- function(
   }
   # combine and save
   combined_plots <- patchwork::wrap_plots(all_plots)
+  # add caption
+  combined_plots <- combined_plots +
+    patchwork::plot_annotation(
+      caption = "Note: Exposure–response curve(s) are based on relative risk(s) at lag 0."
+    )
   if (save_fig) {
-    fpath <- file.path(output_dir, "rr_by_pm.pdf")
+    fpath <- file.path(output_dir, "ER_curve.pdf")
     ggplot2::ggsave(
       fpath,
       combined_plots,
@@ -1795,7 +1849,7 @@ plot_ar_by_region <- function(data, output_dir = ".") {
   ) +
     ggplot2::geom_col(fill = "#003c57") +
     ggplot2::labs(
-      title = "Deaths per 100k attributable to Wildfire-specific PM2.5",
+      title = "Average deaths per 100k attributable to Wildfire-related PM2.5 exposure",
       x = "Regions",
       y = "Deaths per 100k population"
     ) +
@@ -1811,7 +1865,7 @@ plot_ar_by_region <- function(data, output_dir = ".") {
     )
   # save plot
   ggplot2::ggsave(
-    file.path(output_dir, "ar_by_region.png"),
+    file.path(output_dir, "AR_by_region.pdf"),
     p,
     width = 8,
     height = 6
@@ -1865,7 +1919,7 @@ plot_an_by_region <- function(data, output_dir = ".") {
   ) +
     ggplot2::geom_col(fill = "#003c57") +
     ggplot2::labs(
-      title = "Total attributable number of deaths to Wildfire smoke-related PM2.5",
+      title = "Total attributable number of deaths due to Wildfire-related PM2.5 exposure",
       x = "Regions",
       y = "Attributable Number of Deaths"
     ) +
@@ -1882,7 +1936,7 @@ plot_an_by_region <- function(data, output_dir = ".") {
 
   # save plot
   ggplot2::ggsave(
-    file.path(output_dir, "an_by_region.png"),
+    file.path(output_dir, "AN_by_region.pdf"),
     p,
     width = 8,
     height = 6
