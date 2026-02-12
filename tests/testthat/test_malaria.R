@@ -77,10 +77,6 @@ mock_min_data <- tibble(
   E=5
 )
 
-fake_inla_result <- readRDS(
-  testthat::test_path("fixtures/inla_model_fixture.rds")
-)
-
 # tests/testthat/test_malaria.R
 test_that("malaria_do_analysis runs end-to-end on synthetic data", {
   skip_if_not_installed("sf")
