@@ -33,12 +33,11 @@ make_health_fixture_d <- function() {
 
   rd |>
     tidyr::crossing(
-      year = 2020L,
+      year  = 2020L,
       month = 1:12
     ) |>
     dplyr::arrange(region, district, month) |>
     dplyr::mutate(
-      # synthetic diarrhea counts with mild seasonal pattern
       diarrhea = round(40 + 8*sin(month/12*2*pi) + as.numeric(factor(district))*2),
       tot_pop  = 1000L
     )
@@ -48,20 +47,16 @@ make_climate_fixture_d <- function() {
   tibble::tibble(district = c("D1","D2","D3")) |>
     tidyr::crossing(year = 2020, month = 1:12) |>
     dplyr::mutate(
-      # stable but non-collinear seasonal temperature curves
-      tmin       = 20 + sin((month+0)*pi/6)  + as.numeric(factor(district))*0.1,
-      tmean      = 22 + sin((month+1)*pi/6)  + as.numeric(factor(district))*0.2,
-      tmax       = 25 + sin((month+2)*pi/6)  + as.numeric(factor(district))*0.3,
-
-      # rainfall drives diarrhea risk here
+      tmin       = 20 + sin((month+0)*pi/6) + as.numeric(factor(district))*0.1,
+      tmean      = 22 + sin((month+1)*pi/6) + as.numeric(factor(district))*0.2,
+      tmax       = 25 + sin((month+2)*pi/6) + as.numeric(factor(district))*0.3,
       rainfall   = 60 + 35*sin((month-2)*pi/6) + as.numeric(factor(district))*1,
-      r_humidity = 60 +  5*cos(month*pi/6)     + as.numeric(factor(district))*0.5,
-      runoff     =  5 +  2*sin((month+3)*pi/6) + as.numeric(factor(district))*0.2
+      r_humidity = 60 + 5*cos(month*pi/6)     + as.numeric(factor(district))*0.5,
+      runoff     = 5  + 2*sin((month+3)*pi/6) + as.numeric(factor(district))*0.2
     )
 }
 
-# Test
-
+# tests/testthat/test_diarrhea.R
 test_that("diarrhea_do_analysis runs end-to-end on synthetic data", {
   skip_if_not_installed("sf")
   skip_if_not_installed("INLA")  # guard in case CI lacks INLA
@@ -76,8 +71,8 @@ test_that("diarrhea_do_analysis runs end-to-end on synthetic data", {
 
   res <- suppressWarnings(
     diarrhea_do_analysis(
-      health_data_path  = health,        # pass data.frame directly
-      climate_data_path = climate,       # pass data.frame directly
+      health_data_path  = health,     # pass data.frame directly
+      climate_data_path = climate,    # pass data.frame directly
       map_path          = map_path,
       region_col        = "region",
       district_col      = "district",
@@ -106,8 +101,8 @@ test_that("diarrhea_do_analysis runs end-to-end on synthetic data", {
       filter_year       = NULL,
       family            = "poisson",
       group_by_year     = FALSE,
-      config            = FALSE,    # keep simple in CI
-      save_csv          = FALSE,    # avoid output_dir requirement
+      config            = FALSE,
+      save_csv          = FALSE,
       save_model        = FALSE,
       save_fig          = FALSE,
       cumulative        = FALSE,
@@ -115,13 +110,117 @@ test_that("diarrhea_do_analysis runs end-to-end on synthetic data", {
     )
   )
 
-  rr_df <- res$rr_df
-  dput(names(rr_df))
+  # Helper to convert crosspred objects
+  extract_rr <- function(rr_entry) {
+    tibble::tibble(
+      predvar = rr_entry$predvar,
+      RR      = rr_entry$allRRfit,
+      RR_low  = rr_entry$allRRlow,
+      RR_high = rr_entry$allRRhigh
+    )
+  }
 
-  # Basic structural assertions
-  expect_type(res, "list")
-  expect_true(all(c("inla_result", "attr_frac_num", "rr_df") %in% names(res)))
+  # Validate high‑level structure of rr_df
+  expect_true(is.list(res$rr_df))
+  expect_equal(length(res$rr_df), 1)
+  expect_true("All Years" %in% names(res$rr_df))
 
-  # For monthly runs we expect `month` in the attribution table
-  expect_true(all(c("region","district","year","month") %in% names(res$attr_frac_num)))
+  rr_list <- res$rr_df[[1]]
+
+  # Validate district-level RR objects
+  expect_true(is.list(rr_list))
+  expect_true(all(names(rr_list) %in% c("D1","D2","D3")))
+  expect_true(all(purrr::map_lgl(rr_list, ~ inherits(.x, "crosspred"))))
+
+  # Build RR table
+  rr_tables <- purrr::imap_dfr(
+    rr_list,
+    ~ extract_rr(.x) |> dplyr::mutate(district = .y),
+    .id = "district_id"
+  )
+
+  # Expected columns
+  expect_true(all(c("predvar","RR","RR_low","RR_high","district") %in% names(rr_tables)))
+
+  # RR numeric + finite
+  expect_type(rr_tables$predvar, "integer")
+  expect_type(rr_tables$RR, "double")
+  expect_true(all(is.finite(rr_tables$RR)))
+
+  # CIs logically consistent
+  expect_true(all(rr_tables$RR_low <= rr_tables$RR))
+  expect_true(all(rr_tables$RR <= rr_tables$RR_high))
+
+  # District identifiers correct
+  expect_true(all(rr_tables$district %in% c("D1","D2","D3")))
+
+  # RR table should not be trivial
+  expect_gt(nrow(rr_tables), 10)
+
+  # Validate INLA output structure
+  expect_true(is.list(res$inla_result))
+  expect_true("model" %in% names(res$inla_result))
+  expect_true(inherits(res$inla_result$model, "inla"))
+
+  # Fixed effects exist
+  expect_true("summary.fixed" %in% names(res$inla_result$model))
+  expect_true(is.data.frame(res$inla_result$model$summary.fixed))
+
+  # Random effects present
+  expect_true(any(grepl("random", names(res$inla_result$model))),
+              info = "INLA model should contain some random effect components")
+
+  # Monthly + yearly random effects exist (null ok)
+  expect_true(all(c("reff_plot_monthly","reff_plot_yearly") %in% names(res)))
+
+  # RR map returned
+  expect_true("rr_map_plot" %in% names(res))
+
+  # Attribution table checks
+  attr_df <- res$attr_frac_num
+  expect_true(is.data.frame(attr_df))
+  expect_true(all(c("region","district","year","month") %in% names(attr_df)))
+
+  numeric_cols <- purrr::keep(attr_df, is.numeric)
+  expect_true(length(numeric_cols) >= 1)
+  expect_true(any(is.finite(unlist(numeric_cols))))
+  expect_true(all(purrr::map_lgl(numeric_cols, ~ any(!is.na(.x)))))
+
+  expect_gt(nrow(attr_df), 5)
+  expect_true("attr_frac_num" %in% names(res))
+
+  # Ensure more than trivial output
+  expect_gt(nrow(rr_tables), 10)
+})
+
+test_that("diarrhea_do_analysis errors when save_fig=TRUE and output_dir=NULL", {
+  skip_if_not_installed("INLA")
+
+  expect_error(
+    diarrhea_do_analysis(
+      health_data_path = tibble::tibble(),
+      climate_data_path = tibble::tibble(),
+      map_path = system.file("shape/nc.shp", package = "sf"),
+      region_col = "region",
+      district_col = "district",
+      year_col = "year",
+      month_col = "month",
+      case_col = "diarrhea",
+      case_type = "diarrhea",
+      tot_pop_col = "tot_pop",
+      tmin_col = "tmin",
+      tmean_col = "tmean",
+      tmax_col = "tmax",
+      rainfall_col = "rainfall",
+      r_humidity_col = "r_humidity",
+      runoff_col = "runoff",
+      geometry_col = "geometry",
+      basis_matrices_choices = "tmax",
+      inla_param = "tmax",
+      param_term = "tmax",
+      save_fig = TRUE,
+      output_dir = NULL
+    ),
+    regexp = "output_dir"
+  )
 })
