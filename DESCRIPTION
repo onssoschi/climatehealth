@@ -64,6 +64,7 @@ Suggests:
     mvmeta,
     openxlsx,
     patrick,
+    stringdist,
     terra,
     testthat (>= 3.2.1.1),
     withr
