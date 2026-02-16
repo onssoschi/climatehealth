@@ -15,3 +15,17 @@ TRUE if the error inherits from "climate_error", FALSE otherwise.
 \description{
 Utility function to check if a caught condition is a typed climate error.
 }
+\examples{
+\dontrun{
+tryCatch({
+  some_function()
+}, error = function(e) {
+  if (is_climate_error(e)) {
+    # Handle structured error
+  } else {
+    # Handle untyped error
+  }
+})
+}
+
+}
