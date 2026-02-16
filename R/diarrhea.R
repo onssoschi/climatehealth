@@ -315,7 +315,7 @@ diarrhea_do_analysis <- function(health_data_path,
     case_type = case_type,
     output_dir = output_dir,
     save_fig = save_fig,
-    save_csv = save_fig,
+    save_csv = save_csv,
     cumulative = TRUE
   )
 
