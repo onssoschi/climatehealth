@@ -35,7 +35,7 @@ malaria_do_analysis(
   level,
   param_threshold = 1,
   filter_year = NULL,
-  family = "poisson",
+  family = "nbinomial",
   group_by_year = FALSE,
   cumulative = FALSE,
   config = FALSE,
