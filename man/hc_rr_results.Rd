@@ -13,22 +13,24 @@ hc_rr_results(
 )
 }
 \arguments{
-\item{pred_list}{A list containing predictions from the model by region.}
+\item{pred_list}{A list containing predictions from the model by geography.}
 
-\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
-and climate variables which may be disaggregated by a particular region.}
+\item{df_list}{A list of dataframes containing daily timeseries data for a
+health outcome and climate variables which may be disaggregated by a
+particular geography.}
 
-\item{minpercgeog_}{Vector. Percentile of minimum suicide temperature for each area.}
+\item{minpercgeog_}{Vector. Percentile of minimum mortality temperature for
+each geography.}
 
-\item{attr_thr_high}{Integer. Percentile at which to define the upper temperature threshold for
-calculating attributable risk. Defaults to 97.5.}
+\item{attr_thr_high}{Integer. Percentile at which to define the upper
+temperature threshold for calculating attributable risk. Defaults to 97.5.}
 
-\item{attr_thr_low}{Integer. Percentile at which to define the lower temperature threshold for
-calculating attributable risk. Defaults to 2.5.}
+\item{attr_thr_low}{Integer. Percentile at which to define the lower
+temperature threshold for calculating attributable risk. Defaults to 2.5.}
 }
 \value{
-Dataframe containing cumulative relative risk and confidence
-intervals from analysis.
+'rr_results'. Dataframe containing cumulative relative risk and
+confidence intervals from analysis.
 }
 \description{
 Produces cumulative relative risk and confidence intervals
