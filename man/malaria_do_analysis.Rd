@@ -125,6 +125,9 @@ Options include \code{"poisson"} (default) and \code{"nbinomial"} for a negative
 \item{group_by_year}{Logical. Whether to group attributable metrics by year.
 Defaults to \code{FALSE}.}
 
+\item{cumulative}{Boolean. If TRUE, plot and save cumulative risk of all year
+for the specific exposure at region and district level. Defaults to FALSE.}
+
 \item{config}{Logical. Whether to enable additional INLA model configurations.
 Defaults to \code{TRUE}.}
 
