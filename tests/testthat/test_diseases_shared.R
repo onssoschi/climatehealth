@@ -2347,3 +2347,192 @@ test_that(
     expect_true(all(purrr::map_lgl(flat_plots, ~ inherits(.x, "ggplot"))))
   }
 )
+
+# Tests for plot_avg_monthly
+
+# Synthetic test fixtures
+set.seed(123)
+
+attr_df <- data.frame(
+  month   = rep(1:12, 2),
+  year    = rep(2020:2021, each = 12),
+  region  = rep(c("North", "South"), each = 12),
+  district = rep(c("A", "B"), times = 12),
+  AR_Number    = runif(24, 10, 50),
+  AR_per_100k  = runif(24, 0, 20),
+  AR_Fraction  = runif(24, 0, 0.1)
+)
+
+c_df <- data.frame(
+  month   = rep(1:12, 2),
+  year    = rep(2020:2021, each = 12),
+  region  = rep(c("North", "South"), each = 12),
+  district = rep(c("A", "B"), times = 12),
+  tmax     = runif(24, 20, 35),
+  rainfall = runif(24, 0, 100)
+)
+
+
+# Basic structure tests
+test_that("plot_avg_monthly returns a named list per metric", {
+  res <- plot_avg_monthly(
+    attr_data = attr_df,
+    c_data = c_df,
+    metrics = c("AR_Number", "AR_Fraction"),
+    param_term = "tmax",
+    level = "country",
+    save_fig = FALSE
+  )
+
+  expect_type(res, "list")
+  expect_named(res, c("AR_Number", "AR_Fraction"))
+})
+
+test_that("country-level output returns exactly one plot per metric", {
+  res <- plot_avg_monthly(
+    attr_data = attr_df,
+    c_data = c_df,
+    metrics = "AR_Number",
+    param_term = "tmax",
+    level = "country",
+    save_fig = FALSE
+  )
+
+  expect_equal(length(res[["AR_Number"]]), 1)
+  expect_s3_class(res[["AR_Number"]][["Country"]], "ggplot")
+})
+
+
+# Region and district grouping tests
+test_that("region-level plots return one entry per region", {
+  res <- plot_avg_monthly(
+    attr_data = attr_df,
+    c_data = c_df,
+    metrics = "AR_Number",
+    param_term = "tmax",
+    level = "region",
+    save_fig = FALSE
+  )
+
+  expect_equal(sort(names(res$AR_Number)), sort(unique(attr_df$region)))
+  lapply(res$AR_Number, function(p) expect_s3_class(p, "ggplot"))
+})
+
+test_that("district-level plots return one entry per district", {
+  res <- plot_avg_monthly(
+    attr_data = attr_df,
+    c_data = c_df,
+    metrics = "AR_Number",
+    param_term = "tmax",
+    level = "district",
+    save_fig = FALSE
+  )
+
+  expect_equal(sort(names(res$AR_Number)), sort(unique(attr_df$district)))
+})
+
+
+# 3. Filtering by year
+test_that("filter_year restricts data before aggregation", {
+  res <- plot_avg_monthly(
+    attr_data = attr_df,
+    c_data = c_df,
+    metrics = "AR_Number",
+    filter_year = 2020,
+    param_term = "tmax",
+    level = "country",
+    save_fig = FALSE
+  )
+
+  # Extract the plotted y-values
+  p_dat <- ggplot_build(res$AR_Number$Country)$data[[1]]
+  expect_equal(nrow(p_dat), 12)     # only one year's worth of months
+})
+
+# 4. Validation errors
+test_that("invalid level throws an error", {
+  expect_error(
+    plot_avg_monthly(
+      attr_data = attr_df,
+      c_data = c_df,
+      metrics = "AR_Number",
+      param_term = "tmax",
+      level = "banana"
+    ),
+    "should be one of"
+  )
+})
+
+test_that("invalid metrics throw an error", {
+  expect_error(
+    plot_avg_monthly(
+      attr_data = attr_df,
+      c_data = c_df,
+      metrics = "BadMetric",
+      param_term = "tmax"
+    ),
+    "should be one of"
+  )
+})
+
+test_that("missing metric column errors", {
+  bad_df <- attr_df %>% select(-AR_Number)  # remove needed column
+
+  expect_error(
+    plot_avg_monthly(
+      attr_data = bad_df,
+      c_data = c_df,
+      metrics = "AR_Number",
+      param_term = "tmax"
+    ),
+    regexp = "Column `AR_Number` not found"
+  )
+})
+
+test_that("missing param_term in climate data errors", {
+  expect_error(
+    plot_avg_monthly(
+      attr_data = attr_df,
+      c_data = c_df %>% select(-tmax),
+      metrics = "AR_Number",
+      param_term = "tmax"
+    ),
+    regexp = "Column `tmax` not found"
+  )
+})
+
+
+# 5. Multiple metrics behave independently
+test_that("multiple metrics produce independent plot lists", {
+  res <- plot_avg_monthly(
+    attr_data = attr_df,
+    c_data = c_df,
+    metrics = c("AR_Number", "AR_per_100k"),
+    param_term = "rainfall",
+    level = "country"
+  )
+
+  expect_true("AR_Number" %in% names(res))
+  expect_true("AR_per_100k" %in% names(res))
+  expect_false(identical(res$AR_Number, res$AR_per_100k))
+})
+
+
+# 6. PDF saving (safe test)
+test_that("saving PDF produces a file", {
+  tmp <- tempdir()
+
+  plot_avg_monthly(
+    attr_data = attr_df,
+    c_data = c_df,
+    metrics = "AR_Number",
+    param_term = "tmax",
+    level = "country",
+    save_fig = TRUE,
+    output_dir = tmp
+  )
+
+  out_path <- file.path(tmp, "monthly_AR_Number_country.pdf")
+  expect_true(file.exists(out_path))
+  file.remove(out_path)
+})
