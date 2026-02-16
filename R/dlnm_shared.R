@@ -47,7 +47,9 @@ dlnm_vif <- function(
     df_list,
     independent_cols = NULL) {
   # determine formula var
-  col_name <- ifelse("suicides" %in% colnames(df_list[[1]]), "suicides", "dependent")
+  col_name <- ifelse("deaths"   %in% colnames(df_list[[1]]), "deaths",
+                     ifelse("suicides" %in% colnames(df_list[[1]]), "suicides", "dependent"))
+
   # get all combinations
   all_combos <- unlist(lapply(1:length(independent_cols), function(i) {
     combn(independent_cols, i, simplify = FALSE)
@@ -90,7 +92,7 @@ dlnm_vif <- function(
 #' @param cenper Integer. Value for the percentile in calculating the centering
 #' value 0-100. Defaults to NULL.
 #' @param cb_list List of cross_basis matrices from create_crossbasis function.
-#' @param model_list List of models produced from case-crossover and DLNM
+#' @param model_list List of models produced from DLNM
 #' analysis.
 #'
 #' @returns

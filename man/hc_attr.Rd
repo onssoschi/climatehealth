@@ -14,26 +14,28 @@ hc_attr(
 )
 }
 \arguments{
-\item{df_list}{A list of dataframes containing daily timeseries data for a health outcome
-and climate variables which may be disaggregated by a particular region.}
+\item{df_list}{A list of dataframes containing daily timeseries data for a
+health outcome and climate variables which may be disaggregated by a
+particular geography.}
 
-\item{cb_list}{A list of cross-basis matrices by region.}
+\item{cb_list}{A list of cross-basis matrices by geography.}
 
-\item{pred_list}{A list containing predictions from the model by region.}
+\item{pred_list}{A list containing predictions from the model by geography.}
 
-\item{minpercgeog_}{Vector. Percentile of maximum suicide temperature for each region.}
+\item{minpercgeog_}{Vector. Percentile of minimum mortality temperature for
+each geography.}
 
-\item{attr_thr_high}{Integer. Percentile at which to define the upper temperature threshold for
-calculating attributable risk. Defaults to 97.5.}
+\item{attr_thr_high}{Integer. Percentile at which to define the upper
+temperature threshold for calculating attributable risk. Defaults to 97.5.}
 
-\item{attr_thr_low}{Integer. Percentile at which to define the lower temperature threshold for
-calculating attributable risk. Defaults to 2.5.}
+\item{attr_thr_low}{Integer. Percentile at which to define the lower
+temperature threshold for calculating attributable risk. Defaults to 2.5.}
 }
 \value{
-A list containing attributable numbers per region
+'attr_list'. A list containing attributable numbers per geography.
 }
 \description{
-Estimate attributable numbers for each region and confidence
-intervals using Monte Carlo simulations.
+Estimate attributable numbers and confidence intervals for
+each geography using Monte Carlo simulations.
 }
 \keyword{internal}

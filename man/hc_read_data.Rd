@@ -2,7 +2,7 @@
 % Please edit documentation in R/temp_mortality.R
 \name{hc_read_data}
 \alias{hc_read_data}
-\title{Read heat and cold indicator data}
+\title{Read temperature-related mortality indicator data}
 \usage{
 hc_read_data(
   input_csv_path,
@@ -14,24 +14,27 @@ hc_read_data(
 )
 }
 \arguments{
-\item{input_csv_path}{Path to a CSV containing a
-daily time series of death counts and temperature per geography.}
+\item{input_csv_path}{Path to a CSV containing a daily time series of health
+outcome and climate data per geography.}
 
-\item{dependent_col}{the column name of the health outcome
-dependent variable of interest e.g,. deaths.}
+\item{dependent_col}{Character. Name of the column in the dataframe
+containing the dependent health outcome variable e.g,. deaths.}
 
-\item{date_col}{Date column.}
+\item{date_col}{Character. Name of the column in the dataframe containing
+the date.}
 
-\item{region_col}{The geography column over which the data
-are spatially aggregated e.g., geognames.}
+\item{region_col}{Character. Name of the column in the dataframe that
+contains the geography name(s).}
 
-\item{temperature_col}{The temperature variable column e.g., tmean.}
+\item{temperature_col}{Character. Name of the column in the dataframe that
+contains the temperature column.}
 
-\item{population_col}{The population estimate column e.g., pop.}
+\item{population_col}{Character. Name of the column in the dataframe that
+contains the population estimate per geography.}
 }
 \value{
-An alphabetically-ordered list of dataframes for each
-geography comprising of dates, deaths, and temperatures.
+'df_list'. A list of dataframes for each geography with formatted
+and renamed columns.
 }
 \description{
 Reads in data and geography names for analysis from a CSV file.

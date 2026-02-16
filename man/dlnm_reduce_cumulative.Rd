@@ -28,7 +28,7 @@ value 0-100. Defaults to NULL.}
 
 \item{cb_list}{List of cross_basis matrices from create_crossbasis function.}
 
-\item{model_list}{List of models produced from case-crossover and DLNM
+\item{model_list}{List of models produced from DLNM
 analysis.}
 }
 \value{
