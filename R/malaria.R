@@ -59,6 +59,8 @@
 #' Options include `"poisson"` (default) and `"nbinomial"` for a negative binomial model.
 #' @param group_by_year Logical. Whether to group attributable metrics by year.
 #' Defaults to `FALSE`.
+#' @param cumulative Boolean. If TRUE, plot and save cumulative risk of all year
+#' for the specific exposure at region and district level. Defaults to FALSE.
 #' @param config Logical. Whether to enable additional INLA model configurations.
 #'  Defaults to `TRUE`.
 #' @param save_csv Logical. If `TRUE`, saves intermediate datasets to CSV.

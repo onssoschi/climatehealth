@@ -92,14 +92,14 @@ Precipitation Index (SPI). Defaults to \code{NULL}.}
 Vegetation Index (NDVI). Defaults to \code{NULL}.}
 
 \item{max_lag}{Numeric. Maximum temporal lag to include in the distributed
-lag model (e.g., \code{2}–\code{4}). Defaults to \code{4}.}
+lag model (e.g., \code{2}–\code{4}). Defaults to \code{2}.}
 
 \item{nk}{Numeric. Number of internal knots for the natural spline of
 each predictor, controlling its flexibility: \code{nk = 0} produces a linear
 effect with one basis column, \code{nk = 1} generates a simple spline with two
 columns, \code{nk = 2} yields a more flexible spline with three columns,
 and higher values of \code{nk} further increase flexibility but may also
-raise collinearity among spline terms. Defaults to 1.}
+raise collinearity among spline terms. Defaults to 2.}
 
 \item{basis_matrices_choices}{Character vector. Specifies which climate variables
 to include in the basis matrix (e.g., \code{c("tmax", "rainfall", "r_humidity")}).}
@@ -135,6 +135,9 @@ Defaults to \code{TRUE}.}
 Defaults to \code{TRUE}.}
 
 \item{save_fig}{Logical. If \code{TRUE}, saves generated plots. Defaults to \code{TRUE}.}
+
+\item{cumulative}{Boolean. If TRUE, plot and save cumulative risk of all year
+for the specific exposure at region and district level. Defaults to FALSE.}
 
 \item{output_dir}{Character. Directory where output files (plots, datasets, maps)
 are saved. Defaults to \code{NULL}.}

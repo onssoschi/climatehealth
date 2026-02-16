@@ -35,13 +35,13 @@
 #' @param ndvi_col Character (optional). Column name for the Normalized Difference
 #' Vegetation Index (NDVI). Defaults to `NULL`.
 #' @param max_lag Numeric. Maximum temporal lag to include in the distributed
-#' lag model (e.g., `2`–`4`). Defaults to `4`.
+#' lag model (e.g., `2`–`4`). Defaults to `2`.
 #' @param nk Numeric. Number of internal knots for the natural spline of
 #' each predictor, controlling its flexibility: \code{nk = 0} produces a linear
 #' effect with one basis column, \code{nk = 1} generates a simple spline with two
 #' columns, \code{nk = 2} yields a more flexible spline with three columns,
 #' and higher values of \code{nk} further increase flexibility but may also
-#' raise collinearity among spline terms. Defaults to 1.
+#' raise collinearity among spline terms. Defaults to 2.
 #' @param basis_matrices_choices Character vector. Specifies which climate variables
 #' to include in the basis matrix (e.g., `c("tmax", "rainfall", "r_humidity")`).
 #' @param inla_param Character vector. Specifies exposure variables included in
@@ -58,6 +58,8 @@
 #' Options include `"poisson"` (default) and `"nbinomial"` for a negative binomial model.
 #' @param group_by_year Logical. Whether to group attributable metrics by year.
 #' Defaults to `FALSE`.
+#' @param cumulative Boolean. If TRUE, plot and save cumulative risk of all year
+#' for the specific exposure at region and district level. Defaults to FALSE.
 #' @param config Logical. Whether to enable additional INLA model configurations.
 #'  Defaults to `TRUE`.
 #' @param save_csv Logical. If `TRUE`, saves intermediate datasets to CSV.

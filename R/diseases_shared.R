@@ -763,7 +763,7 @@ run_inla_models <- function(combined_data,
                             case_type,
                             output_dir = NULL,
                             save_model = FALSE,
-                            family = "poisson",
+                            family = "nbinomial",
                             config = FALSE) {
 
   if (save_model && is.null(output_dir)) stop("output_dir must be provided if save_model = TRUE")
@@ -805,7 +805,7 @@ run_inla_models <- function(combined_data,
   # Optional control.family for Negative binomial
   cfam <- NULL
   if (tolower(family) %in% c("nbinomial", "nbinomial2")) {
-    cfam <- list(hyper = list(theta = list(prior = "pc.prec", param = c(1, 0.01))))
+    cfam <- list(hyper = list(theta = list(prior = "loggamma", param = c(1, 0.01))))
   }
 
   fit <- function(f) INLA::inla.rerun(INLA::inla(

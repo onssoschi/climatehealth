@@ -14,7 +14,7 @@ run_inla_models(
   case_type,
   output_dir = NULL,
   save_model = FALSE,
-  family = "poisson",
+  family = "nbinomial",
   config = FALSE
 )
 }
