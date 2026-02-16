@@ -512,39 +512,59 @@ plot_health_climate_timeseries <- function(data,
 #' temperature, minimun temperature, cumulative rainfall, and relative humidity.
 #'
 #' @keywords internal
-set_cross_basis <- function(data, max_lag=2, nk=2) {
+set_cross_basis <- function(data, max_lag = 2, nk = 2) {
 
-  # Set maximum lag
   nlag <- max_lag
 
-  #Variable definition.
-  var_defs <- list(tmax = "tmax_lag", tmin = "tmin_lag", tmean = "tmean_lag",
-                   rainfall = "rainfall_lag", r_humidity = "r_humidity_lag",
-                   runoff = "runoff_lag", ndvi = "ndvi_lag", spi = "spi_lag")
-
+  var_defs <- list(
+    tmax="tmax_lag", tmin="tmin_lag", tmean="tmean_lag",
+    rainfall="rainfall_lag", r_humidity="r_humidity_lag",
+    runoff="runoff_lag", ndvi="ndvi_lag", spi="spi_lag"
+  )
   vars <- lapply(names(var_defs), function(var) {
-    cols <- c(var, paste0(var_defs[[var]], 1:nlag))
-    if (all(cols %in% names(data))) dplyr::select(data, all_of(cols)) else NULL
-  })
-  names(vars) <- names(var_defs)
-  vars <- vars[!sapply(vars, is.null)]
+    expected_cols <- c(var, paste0(var_defs[[var]], seq_len(nlag)))
 
-  lagknot <- dlnm::equalknots(0:nlag, nk)
+    # skip if variable absent
+    if (!var %in% names(data)) return(NULL)
+
+    # stop if lag columns missing
+    miss <- setdiff(expected_cols, names(data))
+    if (length(miss) > 0)
+      stop(var, ": missing lag columns -> ", paste(miss, collapse=", "))
+
+    # Correct lag order
+    x <- data[, expected_cols, drop = FALSE]
+
+    # check dimension
+    stopifnot(ncol(x) == nlag + 1)
+
+    x
+  })
+
+  names(vars) <- names(var_defs)
+  vars <- Filter(Negate(is.null), vars)
 
   basis_matrices <- lapply(names(vars), function(var) {
+
     x <- vars[[var]]
+
     cb <- dlnm::crossbasis(
       x,
-      argvar = list(fun = "ns", knots = dlnm::equalknots(x[[1]], nk)),
-      arglag = list(fun = "ns", knots = nlag / 2)
+      lag = c(0, nlag),
+      argvar = list(fun="ns",
+                    knots=dlnm::equalknots(as.numeric(as.matrix(x)), nk)),
+      arglag = list(fun="ns",
+                    knots=dlnm::equalknots(0:nlag, nk))
     )
+
     colnames(cb) <- paste0("basis_", var, ".", colnames(cb))
     cb
   })
 
   names(basis_matrices) <- names(vars)
-  return(basis_matrices)
+  basis_matrices
 }
+
 
 
 #' Create indices for INLA models
