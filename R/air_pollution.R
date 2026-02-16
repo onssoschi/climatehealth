@@ -92,6 +92,9 @@ load_air_pollution_data <- function(data_path,
     names(data)[names(data) %in% Others] <- Nospace
   }
 
+  Categorical_Others = if(is.null(Categorical_Others)) NULL else gsub(" ", "_", Categorical_Others)
+  Continuous_Others = if(is.null(Continuous_Others)) NULL else gsub(" ", "_", Continuous_Others)
+
   # Enhanced date parsing function
   universal_date <- function(x) {
     # Try to parse with English locale first
@@ -682,8 +685,7 @@ analyze_air_pollution_daily <- function(data_with_lags,
 
   # Helper to extract a coef_table from each model_results element
   get_coef_table <- function(x) {
-    if (!is.null(x$coef)) return(x$coef)
-    if (is.data.frame(x)) return(x)
+    if (!is.null(x$coef_table)) return(x$coef_table)
     stop("Could not find coefficient table inside model_results element")
   }
 
@@ -732,9 +734,9 @@ analyze_air_pollution_daily <- function(data_with_lags,
       if (is.na(coef) || is.na(se)) {
         rr <- rr.lb <- rr.ub <- af <- af.lb <- af.ub <- an <- an.lb <- an.ub <- ar <- ar.lb <- ar.ub <- NA_real_
       } else {
-        rr <- exp(coef * pmax(prov_data$pm25 - ref_pm25, 0))
-        rr.lb <- exp(ci.lb * pmax(prov_data$pm25 - ref_pm25, 0))
-        rr.ub <- exp(ci.ub * pmax(prov_data$pm25 - ref_pm25, 0))
+        rr <- exp(coef * pmax(prov_data[[var]] - ref_pm25, 0))
+        rr.lb <- exp(ci.lb * pmax(prov_data[[var]] - ref_pm25, 0))
+        rr.ub <- exp(ci.ub * pmax(prov_data[[var]] - ref_pm25, 0))
 
         af <- (rr - 1) / rr
         af.lb <- (rr.lb - 1) / rr.lb
@@ -830,9 +832,9 @@ analyze_air_pollution_daily <- function(data_with_lags,
       rr <- rr.lb <- rr.ub <- af <- af.lb <- af.ub <- an <- an.lb <- an.ub <- ar <- ar.lb <- ar.ub <- NA_real_
     } else {
       # use the national pm25 vector (data_national$pm25) for per-date RR/AF/AN/AR
-      rr <- exp(coef * pmax(data_national$pm25 - ref_pm25, 0))
-      rr.lb <- exp(ci.lb * pmax(data_national$pm25 - ref_pm25, 0))
-      rr.ub <- exp(ci.ub * pmax(data_national$pm25 - ref_pm25, 0))
+      rr <- exp(coef * pmax(data_national[[var]] - ref_pm25, 0))
+      rr.lb <- exp(ci.lb * pmax(data_national[[var]] - ref_pm25, 0))
+      rr.ub <- exp(ci.ub * pmax(data_national[[var]] - ref_pm25, 0))
 
       af <- (rr - 1) / rr
       af.lb <- (rr.lb - 1) / rr.lb
@@ -2754,6 +2756,8 @@ air_pollution_do_analysis <- function(
 
   # CALCULATE ATTRIBUTABLE BURDEN FOR EACH REFERENCE
   results$analysis_results <- list()
+  results$plots <- list()
+  if (run_power) results$power_results <- list()
 
   for (ref_standard in reference_standards) {
     ref_pm25 <- ref_standard$value
@@ -2769,7 +2773,6 @@ air_pollution_do_analysis <- function(
 
     results$analysis_results[[ref_name]] <- analysis_daily
 
-    results$plots <- list()
     analysis_res <- results$analysis_results[[ref_name]]
 
     # PLOTS
@@ -2845,7 +2848,6 @@ air_pollution_do_analysis <- function(
 
     # POWER ANALYSIS
     if (run_power) {
-      results$power_results <- list()
       power_list <- air_pollution_power_list(
         meta_results = meta_results,
         data_with_lags = data_with_lags,
