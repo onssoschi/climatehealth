@@ -8,7 +8,7 @@ generate_rr_pm_overall(
   relative_risk_overall,
   scale_factor_wildfire_pm,
   wildfire_lag = 0,
-  pm_vals = seq(0, 50, by = 1)
+  pm_vals = seq(0, max(data$mean_PM, na.rm = TRUE), by = 1)
 )
 }
 \arguments{
