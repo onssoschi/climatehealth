@@ -1633,10 +1633,25 @@ generate_rr_pm_overall <- function(
 #'
 #' @keywords internal
 generate_rr_pm_by_region <- function(
+    data,
     relative_risk_overall,
     scale_factor_wildfire_pm,
     wildfire_lag = 0,
     pm_vals = seq(0, max(data$mean_PM, na.rm = TRUE), by = 1)) {
+    pm_vals = NULL
+    ) {
+  if (!"mean_PM" %in% names(data)) {
+    stop("`data` must contain a column named `mean_PM`.")
+    }
+  if (!"region_name" %in% names(relative_risk_overall)) {
+    stop("`relative_risk_overall` must contain a column named `region_name`.")
+  }
+  if (is.null(pm_vals)) {
+    pm_vals <- seq(
+      from = 0,
+      to = max(data$mean_PM, na.rm = TRUE),
+      by = 1)
+    }
   results <- list()
   regions <- unique(relative_risk_overall$region_name)
   for (reg in regions) {
@@ -1655,10 +1670,12 @@ generate_rr_pm_by_region <- function(
       rr_pm_region
     )
   }
+    }
   results_all <- do.call(rbind, results)
   row.names(results_all) <- NULL
   return(results_all)
 }
+  }
 
 #' Plot relative risk by PM2.5 levels for all regions and individually
 #'
@@ -2149,6 +2166,7 @@ wildfire_do_analysis <- function(
   )
   # Plot RR by PM2.5 levels
   rr_pm <- generate_rr_pm_by_region(
+    data = data,
     relative_risk_overall = rr_results,
     scale_factor_wildfire_pm = scale_factor_wildfire_pm,
     wildfire_lag = wildfire_lag,
