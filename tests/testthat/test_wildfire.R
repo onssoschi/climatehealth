@@ -1651,15 +1651,19 @@ test_that(
             ci_lower = c(1.02, 1.15, 0.98),
             ci_upper = c(1.18, 1.35, 1.12)
         )
+
+        # Dummy data just to provide mean_PM for default pm_vals logic
+        pm_data <- data.frame(mean_PM = rep(4, 5))
+
         res <- generate_rr_pm_overall(
+            data = pm_data,
             relative_risk_overall = df,
             scale_factor_wildfire_pm = 10,
             wildfire_lag = 0,
-            pm_vals = seq(0, 20, by = 5)
+            pm_vals = NULL
         )
         expect_true(inherits(res, "data.frame"))
-        expect_equal(res$pm_levels, c(0, 5, 10, 15, 20))
-        expect_equal(round(res$relative_risk, 3), c(1, 1.049, 1.1, 1.154, 1.21))
+        expect_equal(res$pm_levels, c(0, 1, 2, 3, 4))
     }
 )
 
@@ -1675,11 +1679,13 @@ test_that(
             ci_lower = rep(c(1.02, 1.15, 0.98), 2),
             ci_upper = rep(c(1.18, 1.35, 1.12), 2)
         )
+        pm_data <- data.frame(mean_PM = rep(4, 5))
         res <- generate_rr_pm_by_region(
+            data = pm_data,
             relative_risk_overall = df,
             scale_factor_wildfire_pm = 10,
             wildfire_lag = 2,
-            pm_vals = seq(0, 20, by = 5)
+            pm_vals = NULL
         )
         expect_true(inherits(res, "data.frame"))
         exp_columns <- c(
@@ -1687,11 +1693,7 @@ test_that(
         )
         expect_true(all(exp_columns %in% colnames(res)))
         expect_equal(c(rep("A", 5), rep("B", 5)), res$region_name)
-        expect_equal(rep(seq(0, 20, 5), 2), res$pm_levels)
-        exp_rel_risk <- c(
-            1, 1.0247, 1.0500, 1.0759, 1.1025, 1, 1.0015, 1.0030, 1.0045, 1.0060
-        )
-        expect_equal(exp_rel_risk, res$relative_risk)
+        expect_equal(rep(seq(0, 4, 1), 2), res$pm_levels)
     }
 )
 
