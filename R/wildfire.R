@@ -1564,6 +1564,8 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
 #' of PM2.5 concentrations for a specified wildfire-related lag, using
 #' log-linear extrapolation from a reference estimate.
 #'
+#' @param data Dataframe containing a daily time series of climate and health
+#' data
 #' @param relative_risk_overall Data frame containing relative risk estimates
 #' and confidence intervals for wildfire-related PM2.5 exposure at different
 #' lags. Must include columns: 'lag', 'relative_risk', 'ci_lower', and
@@ -1582,6 +1584,7 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
 #'
 #' @keywords internal
 generate_rr_pm_overall <- function(
+    data,
     relative_risk_overall,
     scale_factor_wildfire_pm,
     wildfire_lag = 0,
@@ -1617,6 +1620,8 @@ generate_rr_pm_overall <- function(
 #' @description Computes relative risk estimates for wildfire-specific PM2.5 exposure
 #' across regions as PM values changes.
 #'
+#' @param data Dataframe containing a daily time series of climate and health
+#' data
 #' @param relative_risk_overall Data frame containing relative risk estimates
 #' and confidence intervals for wildfire-related PM2.5 exposure at different
 #' lags. Must include columns: 'lag', 'relative_risk', 'ci_lower', and
@@ -1637,7 +1642,6 @@ generate_rr_pm_by_region <- function(
     relative_risk_overall,
     scale_factor_wildfire_pm,
     wildfire_lag = 0,
-    pm_vals = seq(0, max(data$mean_PM, na.rm = TRUE), by = 1)) {
     pm_vals = NULL
     ) {
   if (!"mean_PM" %in% names(data)) {
@@ -1660,6 +1664,7 @@ generate_rr_pm_by_region <- function(
       relative_risk_overall$region_name == reg
     )
     rr_pm_region <- generate_rr_pm_overall(
+      data = data,
       relative_risk_overall = region_df,
       scale_factor_wildfire_pm = scale_factor_wildfire_pm,
       wildfire_lag = wildfire_lag,
@@ -1669,12 +1674,10 @@ generate_rr_pm_by_region <- function(
       region_name = reg,
       rr_pm_region
     )
-  }
     }
   results_all <- do.call(rbind, results)
   row.names(results_all) <- NULL
   return(results_all)
-}
   }
 
 #' Plot relative risk by PM2.5 levels for all regions and individually
