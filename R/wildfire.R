@@ -1564,8 +1564,9 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
 #' of PM2.5 concentrations for a specified wildfire-related lag, using
 #' log-linear extrapolation from a reference estimate.
 #'
-#' @param data Dataframe containing a daily time series of climate and health
-#' data
+#' @param data Data frame containing a daily time series of mean_PM values, either
+#' from the original input csv file or produced after merging wildfire data with
+#'  the initial csv file.
 #' @param relative_risk_overall Data frame containing relative risk estimates
 #' and confidence intervals for wildfire-related PM2.5 exposure at different
 #' lags. Must include columns: 'lag', 'relative_risk', 'ci_lower', and
@@ -1576,9 +1577,10 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
 #' @param wildfire_lag Integer. Lag day to filter from the input data for
 #' extrapolation. Defaults to 0.
 #' @param pm_vals Numeric vector. PM2.5 concentrations over which to compute
-#' relative risk. Defaults to seq(0, 50, by = 1).
+#' relative risk. Defaults to a sequence from 0 to the maximum observed
+#' wildfire-related PM2.5 in dataset, max(mean_PM).
 #'
-#' @return A dataframe with columns: 'pm_levels', 'relative_risk', 'ci_lower',
+#' @return A data frame with columns: 'pm_levels', 'relative_risk', 'ci_lower',
 #' and 'ci_upper', representing estimated relative risk and 95% confidence
 #' intervals across the specified PM2.5 levels.
 #'
@@ -1588,7 +1590,16 @@ generate_rr_pm_overall <- function(
     relative_risk_overall,
     scale_factor_wildfire_pm,
     wildfire_lag = 0,
-    pm_vals = seq(0, max(data$mean_PM, na.rm = TRUE), by = 1)) {
+    pm_vals = NULL) {
+  if (!"mean_PM" %in% names(data)) {
+    stop("`data` must contain a column named `mean_PM`.")
+  }
+  if (is.null(pm_vals)) {
+    pm_vals <- seq(
+      from = 0,
+      to = max(data$mean_PM, na.rm = TRUE),
+      by = 1)
+  }
   # filter by lag
   data_lagged <- subset(relative_risk_overall, lag == wildfire_lag)
   rr <- data_lagged$relative_risk
@@ -1620,8 +1631,9 @@ generate_rr_pm_overall <- function(
 #' @description Computes relative risk estimates for wildfire-specific PM2.5 exposure
 #' across regions as PM values changes.
 #'
-#' @param data Dataframe containing a daily time series of climate and health
-#' data
+#' @param data Data frame containing a daily time series of mean_PM values, either
+#' from the original input csv file or produced after merging wildfire data with
+#'  the initial csv file.
 #' @param relative_risk_overall Data frame containing relative risk estimates
 #' and confidence intervals for wildfire-related PM2.5 exposure at different
 #' lags. Must include columns: 'lag', 'relative_risk', 'ci_lower', and
@@ -1632,7 +1644,8 @@ generate_rr_pm_overall <- function(
 #' @param wildfire_lag Integer. Lag day to filter from the input data for
 #' extrapolation. Defaults to 0.
 #' @param pm_vals Numeric vector. PM2.5 concentrations over which to compute
-#' relative risk. Defaults to seq(0, 50, by = 1).
+#' relative risk. Defaults to a sequence from 0 to the maximum observed
+#' wildfire-related PM2.5 in dataset, max(mean_PM).
 #'
 #' @return A data frame with relative risk estimates for each region and PM value.
 #'
