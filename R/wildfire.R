@@ -2186,7 +2186,7 @@ wildfire_do_analysis <- function(
     relative_risk_overall = rr_results,
     scale_factor_wildfire_pm = scale_factor_wildfire_pm,
     wildfire_lag = wildfire_lag,
-    pm_vals = seq(0, 50, by = 2)
+    pm_vals = NULL
   )
   plot_rr_by_pm(
     data = rr_pm,
