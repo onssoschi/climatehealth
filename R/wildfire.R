@@ -569,7 +569,7 @@ check_wildfire_vif <- function(
     region_data <- subset(data, data$region == reg)
     model <- glm(formula,
                  data = region_data,
-                 family = poisson(link = "log"))
+                 family = stats::poisson(link = "log"))
     vif_mod <- car::vif(model)
     if (print_vif) print(paste0("Variance inflation factor: ", round(vif_mod, 4)))
     for (var in names(vif_mod)) {
