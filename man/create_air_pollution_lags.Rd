@@ -4,12 +4,13 @@
 \alias{create_air_pollution_lags}
 \title{Create lagged values for PM2.5 variable and average lag column.}
 \usage{
-create_air_pollution_lags(data, max_lag = 2)
+create_air_pollution_lags(data, max_lag = 14L)
 }
 \arguments{
-\item{data}{Dataframe containing a daily time series of health and environmental data.}
+\item{data}{Dataframe from  load_air_pollution_data() containing a daily
+time series of health and environmental data.}
 
-\item{max_lag}{Integer. The maximum lag days for outdoor PM2.5. Defaults to 2.}
+\item{max_lag}{Integer. The maximum lag days for outdoor PM2.5. Defaults to 14.}
 }
 \value{
 Dataframe with added columns for lagged PM2.5 concentration.
