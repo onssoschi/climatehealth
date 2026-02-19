@@ -53,7 +53,9 @@ load_air_pollution_data <- function(data_path,
     stop("Data file not found at: ", data_path)
   }
 
-  # Check for missing columns
+  # Standardize columns by removing spaces
+  Categorical_Others = if(is.null(Categorical_Others)) NULL else gsub(" ", "_", Categorical_Others)
+  Continuous_Others = if(is.null(Continuous_Others)) NULL else gsub(" ", "_", Continuous_Others)
   Others <- c(Categorical_Others, Continuous_Others) # all additional variables
   data0 <- if(is.character(data_path)) read.csv(data_path) else data_path
 
@@ -86,14 +88,6 @@ load_air_pollution_data <- function(data_path,
       tmax, wind_speed, all_of(Others)
     )
 
-  # Rename 'Others' after removing spaces
-  Nospace <- if(is.null(Others)) NULL else gsub(" ","_", Others)
-  if(!is.null(Others)){
-    names(data)[names(data) %in% Others] <- Nospace
-  }
-
-  Categorical_Others = if(is.null(Categorical_Others)) NULL else gsub(" ", "_", Categorical_Others)
-  Continuous_Others = if(is.null(Continuous_Others)) NULL else gsub(" ", "_", Continuous_Others)
 
   # Enhanced date parsing function
   universal_date <- function(x) {
@@ -685,7 +679,8 @@ analyze_air_pollution_daily <- function(data_with_lags,
 
   # Helper to extract a coef_table from each model_results element
   get_coef_table <- function(x) {
-    if (!is.null(x$coef_table)) return(x$coef_table)
+    if (!is.null(x$coef)) return(x$coef)
+    if (is.data.frame(x)) return(x)
     stop("Could not find coefficient table inside model_results element")
   }
 
@@ -764,7 +759,7 @@ analyze_air_pollution_daily <- function(data_with_lags,
         ar = ar, ar.lb = ar.lb, ar.ub = ar.ub,
         tot_deaths = deaths_prov,
         pop = population_prov,
-        pm25_values = prov_data$pm25,
+        pm25_values = prov_data[[var]],
         ref_pm25 = ref_pm25,
         ref_name = ref_name
       )
@@ -862,7 +857,7 @@ analyze_air_pollution_daily <- function(data_with_lags,
       ar = ar, ar.lb = ar.lb, ar.ub = ar.ub,
       tot_deaths = deaths_national,
       pop = population_national,
-      pm25_values = data_national$pm25,
+      pm25_values = data_national[[var]],
       ref_pm25 = ref_pm25,
       ref_name = ref_name
     )
@@ -1522,6 +1517,10 @@ plot_air_pollution_an_ar_by_year <- function(analysis_results,
   grid_dims <- calculate_air_pollution_grid_dims(n_regions)
   n_cols <- grid_dims$ncol
 
+  # Calculate year breaks for x-axis
+  year_range <- range(annual_data$year, na.rm = TRUE)
+  year_breaks <- seq(floor(year_range[1]), ceiling(year_range[2]), by = 1)
+
   # Calculate global y-axis limits for consistent scaling
   # For AR plot: use maximum of ar_upper across all regions
   ar_global_max <- max(annual_data$ar_upper, na.rm = TRUE) * 1.05
@@ -1546,7 +1545,8 @@ plot_air_pollution_an_ar_by_year <- function(analysis_results,
     ggplot2::geom_line(color = "darkblue", linewidth = 1) +
     ggplot2::facet_wrap(~ region, ncol = n_cols) +
     ggplot2::scale_x_continuous(
-      breaks = scales::pretty_breaks(n = 6)
+      breaks = year_breaks,
+      labels = function(x) format(x, big.mark = "", scientific = FALSE)
     ) +
     ggplot2::scale_y_continuous(
       limits = c(ar_global_min, ar_global_max)
@@ -1585,7 +1585,8 @@ plot_air_pollution_an_ar_by_year <- function(analysis_results,
     ggplot2::geom_line(color = "darkblue", linewidth = 1) +
     ggplot2::facet_wrap(~ region, ncol = n_cols) +
     ggplot2::scale_x_continuous(
-      breaks = scales::pretty_breaks(n = 6)
+      breaks = year_breaks,
+      labels = function(x) format(x, big.mark = "", scientific = FALSE)
     ) +
     ggplot2::scale_y_continuous(
       labels = scales::comma,
@@ -2322,21 +2323,22 @@ air_pollution_power_list <- function(
     cum_row_meta <- meta_coefs[grepl("0-", meta_coefs$lag), ]
 
     if (nrow(cum_row_meta) > 0) {
+
       # Aggregate national PM2.5
       national_pm25 <- unlist(lapply(unique(data_with_lags$region),
                                      function(r) data_with_lags$pm25[data_with_lags$region == r]))
       thresh_national <- round(quantile(national_pm25, attr_thr / 100, na.rm = TRUE), 1)
+      # Create power dataframe for PM2.5 values above threshold
+      national_pm25_above <- unique(national_pm25[national_pm25 >= thresh_national])
+      national_pm25_above <- sort(national_pm25_above)
 
-      pm25_above_national <- unique(national_pm25[national_pm25 >= thresh_national])
-      pm25_above_national <- sort(pm25_above_national)
-
-      if (length(pm25_above_national) > 0) {
+      if (length(national_pm25_above) > 0) {
         power_df_national <- data.frame(
           region = "National",
-          pm25 = pm25_above_national,
+          pm25 = national_pm25_above,
           cen = ref_pm25,
-          log_rr = cum_row_meta$coef * (pm25_above_national - ref_pm25),
-          se = cum_row_meta$se * abs(pm25_above_national - ref_pm25),
+          log_rr = cum_row$coef * (national_pm25_above - ref_pm25),
+          se = cum_row$se * abs(national_pm25_above - ref_pm25),
           z_alpha = stats::qnorm(1 - alpha / 2)
         )
 
@@ -2581,11 +2583,13 @@ plot_air_pollution_power <- function(
 #'   \item{lag_analysis}{Lag-specific analysis results}
 #'   \item{distributed_lag_analysis}{Distributed lag model results (if requested)}
 #'   \item{plots}{List of generated plots (forest, lags, distributed lags)}
+#'   \item{power_list} {A list containing power information by area}
 #'   \item{exposure_response_plots}{Exposure-response plots for each reference
 #'   standard (if requested)}
 #'   \item{reference_specific_af_an}{AF/AN calculations specific to each
 #'   reference standard (if requested)}
 #'   \item{descriptive_stats}{Summary statistics of key variables}
+#'
 #' }
 #'
 #' @export
@@ -2756,8 +2760,6 @@ air_pollution_do_analysis <- function(
 
   # CALCULATE ATTRIBUTABLE BURDEN FOR EACH REFERENCE
   results$analysis_results <- list()
-  results$plots <- list()
-  if (run_power) results$power_results <- list()
 
   for (ref_standard in reference_standards) {
     ref_pm25 <- ref_standard$value
@@ -2773,6 +2775,7 @@ air_pollution_do_analysis <- function(
 
     results$analysis_results[[ref_name]] <- analysis_daily
 
+    results$plots <- list()
     analysis_res <- results$analysis_results[[ref_name]]
 
     # PLOTS
@@ -2848,6 +2851,7 @@ air_pollution_do_analysis <- function(
 
     # POWER ANALYSIS
     if (run_power) {
+      results$power_results <- list()
       power_list <- air_pollution_power_list(
         meta_results = meta_results,
         data_with_lags = data_with_lags,
