@@ -9,11 +9,14 @@ plot_rr_map(
   model,
   param_term = "tmax",
   max_lag,
-  level = "District",
-  filter_year = NULL,
+  nk,
+  level = "district",
   case_type,
+  filter_year = NULL,
   output_dir = NULL,
-  save_fig = FALSE
+  save_fig = FALSE,
+  save_csv = FALSE,
+  cumulative = FALSE
 )
 }
 \arguments{
@@ -26,22 +29,22 @@ function. This list should include both the health-climate data and the map data
 (e.g., \code{tmax} for maximum temperature, \code{rainfall} for precipitation) to
 include in the map. Defaults to \code{tmax}.}
 
-\item{max_lag}{Character. Number corresponding to the maximum lag to be
-considered for the delay effect. It should be between 2 an 4.}
-
 \item{level}{A character string indicating the spatial aggregation level.
-Options are \code{region} or \code{district}. Defaults to \code{District}.}
-
-\item{filter_year}{Integer. The year to filter to data to. Defaults to NULL.}
+Options are \code{region} or \code{district}. Defaults to \code{district}.}
 
 \item{case_type}{Character. The type of disease that the case column refers
 to. Must be one of \code{diarrhea} or \code{malaria}.}
+
+\item{filter_year}{Integer. The year to filter to data to. Defaults to NULL.}
 
 \item{output_dir}{Character. The directory path where the output PDF file
 should be saved. Defaults to NULL.}
 
 \item{save_fig}{Boolean. If TRUE, saves the plot to the specified directory.
 Defaults to FALSE.}
+
+\item{cumulative}{Boolean. If TRUE, plot and save cumulative risk of all year
+for the specific exposure at region and district level. Defaults to FALSE.}
 }
 \value{
 Relative risk map at the chosen level.
