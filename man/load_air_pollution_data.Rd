@@ -2,22 +2,22 @@
 % Please edit documentation in R/air_pollution.R
 \name{load_air_pollution_data}
 \alias{load_air_pollution_data}
-\title{R-code for I1: All-cause mortality attributable to Outdoor PM2.5.
+\title{R-code for I1: All-cause mortality attributable to short-term exposure to outdoor PM2.5
 Read in climate, environmental and health data and rename columns}
 \usage{
 load_air_pollution_data(
   data_path,
   date_col = "date",
-  region_col = "province",
+  region_col = "region",
   pm25_col = "pm25",
   deaths_col = "deaths",
+  population_col = "population",
   humidity_col = "humidity",
   precipitation_col = "precipitation",
   tmax_col = "tmax",
-  population_col = NULL,
-  age_col = NULL,
-  sex_col = NULL,
-  urbanisation_col = NULL
+  wind_speed_col = "wind_speed",
+  Categorical_Others = NULL,
+  Continuous_Others = NULL
 )
 }
 \arguments{
@@ -27,13 +27,17 @@ load_air_pollution_data(
 YYYY-MM-DD. Defaults to "date".}
 
 \item{region_col}{Character. Name of region column in the dataframe. Defaults
-to "province".}
+to "region".}
 
 \item{pm25_col}{Character. Name of PM2.5 column in the dataframe. Defaults to
 "pm25".}
 
-\item{deaths_col}{Character. Name of all-cause mortality column in the dataframe.
-Defaults to "deaths"}
+\item{deaths_col}{Character. Name of all-cause mortality column in the dataframe
+(Note that deaths_col variable has value 1 for each recorded death).
+'Defaults to "deaths"}
+
+\item{population_col}{Character. Name of population column in the dataframe.
+This is REQUIRED for calculating Attributable Rate (AR). Defaults to "population".}
 
 \item{humidity_col}{Character. Name of humidity column in the dataframe. Defaults
 to "humidity".}
@@ -41,18 +45,17 @@ to "humidity".}
 \item{precipitation_col}{Character. Name of precipitation column in the dataframe.
 Defaults to "precipitation".}
 
-\item{tmax_col}{Character. Name of temperature column in the dataframe.
+\item{tmax_col}{Character. Name of maximum temperature column in the dataframe.
 Defaults to "tmax".}
 
-\item{population_col}{Character. Name of population column in the dataframe.
-Defaults to NULL.}
+\item{wind_speed_col}{Character. Name of wind speed column in the dataframe.
+Defaults to "wind_speed".}
 
-\item{age_col}{Character. Name of age column in the dataframe. Defaults to NULL.}
+\item{Categorical_Others}{Optional. Character vector of additional categorical
+variables (e.g., "sex", "age_group"). Defaults to NULL.}
 
-\item{sex_col}{Character. Name of sex column in the dataframe. Defaults to NULL.}
-
-\item{urbanisation_col}{Character. Name of urbanisation column in the dataframe.
-Defaults to NULL.}
+\item{Continuous_Others}{Optional. Character vector of additional continuous
+variables (e.g., "tmean"). Defaults to NULL.}
 }
 \value{
 Dataframe with formatted and renamed with standardized column names.

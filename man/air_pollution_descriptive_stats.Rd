@@ -2,32 +2,68 @@
 % Please edit documentation in R/air_pollution.R
 \name{air_pollution_descriptive_stats}
 \alias{air_pollution_descriptive_stats}
-\title{Show descriptive statistics}
+\title{Descriptive statistics}
 \usage{
 air_pollution_descriptive_stats(
   data,
-  variables,
-  bin_width = 1,
+  env_lables = c(pm25 = "PM2.5 (µg/m³)", tmax = "Max Temperature (°C)", precipitation
+    = "Precipitation (mm)", humidity = "Humidity (\%)", wind_speed = "Wind Speed (m/s)"),
+  save_outputs = FALSE,
   output_dir = NULL,
-  save_outputs = FALSE
+  moving_average_window = 3L,
+  plot_corr_matrix = FALSE,
+  correlation_method = "pearson",
+  plot_dist = FALSE,
+  plot_na_counts = FALSE,
+  plot_scatter = FALSE,
+  plot_box = FALSE,
+  plot_seasonal = FALSE,
+  plot_regional = FALSE,
+  plot_total = FALSE,
+  detect_outliers = FALSE,
+  calculate_rate = FALSE
 )
 }
 \arguments{
 \item{data}{Dataframe containing a daily time series of climate, environmental
 and health data}
 
-\item{variables}{Character or character vector with variable(s) to produce
-summary statistics for. Must include at least 1 variable.}
+\item{env_lables}{Named vector. Labels for environmental variables with units.}
 
-\item{bin_width}{Integer. Width of each bin in a histogram of the outcome
-variable. Defaults to 1.}
+\item{save_outputs}{Logical. Whether to save outputs. Defaults to FALSE.}
 
 \item{output_dir}{Character. Directory to save descriptive statistics.
 Defaults to NULL.}
 
-\item{save_outputs}{Logical. Whether to save outputs. Defaults to FALSE.}
+\item{moving_average_window}{Numeric. Window size for moving average calculations.
+Defaults to 3 (3-day moving average).}
+
+\item{plot_corr_matrix}{Logical. Whether to plot correlation matrix. Defaults to FALSE.}
+
+\item{correlation_method}{Character. Correlation method. One of 'pearson', 'spearman', 'kendall'.}
+
+\item{plot_dist}{Logical. Whether to plot distribution histograms. Defaults to FALSE.}
+
+\item{plot_na_counts}{Logical. Whether to plot NA counts. Defaults to FALSE.}
+
+\item{plot_scatter}{Logical. Whether to plot scatter plots. Defaults to FALSE.}
+
+\item{plot_box}{Logical. Whether to plot box plots. Defaults to FALSE.}
+
+\item{plot_seasonal}{Logical. Whether to plot seasonal trends. Defaults to FALSE.}
+
+\item{plot_regional}{Logical. Whether to plot regional trends. Defaults to FALSE.}
+
+\item{plot_total}{Logical. Whether to plot total health outcomes per year. Defaults to FALSE.}
+
+\item{detect_outliers}{Logical. Whether to detect outliers. Defaults to FALSE.}
+
+\item{calculate_rate}{Logical. Whether to calculate rate per 100k people.. Defaults to FALSE.}
+}
+\value{
+Invisibly returns the national data with moving averages
 }
 \description{
-Generates summary statistics for climate, environmental and health data.
+Generates summary statistics for climate, environmental and health data
 }
 \keyword{internal}
