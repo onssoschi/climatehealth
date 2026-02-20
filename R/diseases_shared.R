@@ -2182,19 +2182,19 @@ plot_attribution_metric <- function(attr_data,
           c(0, 1.5*max(attr_data_plot[[metric]], na.rm = TRUE))
         }
 
-        ggplot(df, aes(x = .data[[level]], y = .data[[metric]], fill = factor(year))) +
-          geom_col(position = position_dodge(width = 0.8)) +
-          geom_text(aes(label = label_text),
-                    position = position_dodge(width = 0.8), vjust = -0.3, size = 3.5) +
-          scale_y_continuous(labels = y_formatter, limits = y_limits) +
-          labs(x = tools::toTitleCase(level), y = y_label, fill = "Year") +
+        ggplot2::ggplot(df, ggplot2::aes(x = .data[[level]], y = .data[[metric]], fill = factor(year))) +
+          ggplot2::geom_col(position = ggplot2::position_dodge(width = 0.8)) +
+          ggplot2::geom_text(ggplot2::aes(label = label_text),
+                    position = ggplot2::position_dodge(width = 0.8), vjust = -0.3, size = 3.5) +
+          ggplot2::scale_y_continuous(labels = y_formatter, limits = y_limits) +
+          ggplot2::labs(x = tools::toTitleCase(level), y = y_label, fill = "Year") +
           {if (length(unique(df$year)) == 1) {
-            scale_fill_manual(values = c("steelblue"))
-          } else {scale_fill_brewer(palette = "Set2")}} +
-          theme_minimal(base_size = 12) +
-          theme(axis.text.x = element_text(angle = 70, hjust = 1, size = 12),
-                axis.text.y = element_text(size = 12),
-                plot.margin = margin(t = 5, r = 5, b = 50, l = 5))
+            ggplot2::scale_fill_manual(values = c("steelblue"))
+          } else {ggplot2::scale_fill_brewer(palette = "Set2")}} +
+          ggplot2::theme_minimal(base_size = 12) +
+          ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 70, hjust = 1, size = 12),
+                axis.text.y = ggplot2::element_text(size = 12),
+                plot.margin = ggplot2::margin(t = 5, r = 5, b = 50, l = 5))
       })
 
       if (save_fig && !is.null(output_dir)) {
@@ -2205,7 +2205,7 @@ plot_attribution_metric <- function(attr_data,
           merged <- patchwork::wrap_plots(group_plots[i], ncol = 1) +
             patchwork::plot_annotation(
               title = paste(title, "by Year and", tools::toTitleCase(level)),
-              theme = theme(plot.title = element_text(size = 10, face = "bold", hjust = 0.5))
+              theme = ggplot2::theme(plot.title = ggplot2::element_text(size = 10, face = "bold", hjust = 0.5))
             )
           print(merged)
         }

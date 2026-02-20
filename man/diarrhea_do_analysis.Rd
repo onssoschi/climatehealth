@@ -38,9 +38,9 @@ diarrhea_do_analysis(
   family = "nbinomial",
   group_by_year = FALSE,
   config = TRUE,
-  save_csv = TRUE,
+  save_csv = FALSE,
   save_model = TRUE,
-  save_fig = TRUE,
+  save_fig = FALSE,
   cumulative = FALSE,
   output_dir = NULL
 )
