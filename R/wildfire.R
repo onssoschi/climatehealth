@@ -739,7 +739,7 @@ casecrossover_quasipoisson <- function(
 
 #' QAIC calculation
 #'
-#' @description Computes the Quasi–Akaike Information Criterion (QAIC) for models,
+#' @description Computes the Quasi-Akaike Information Criterion (QAIC) for models,
 #' enabling model comparison
 #'
 #' @param data Dataframe containing a daily time series of climate and health
@@ -1754,7 +1754,7 @@ plot_rr_by_pm <- function(
   # add caption
   combined_plots <- combined_plots +
     patchwork::plot_annotation(
-      caption = "Note: Exposure–response curve(s) are based on relative risk(s) at lag 0."
+      caption = "Note: Exposure-response curve(s) are based on relative risk(s) at lag 0."
     )
   if (save_fig) {
     fpath <- file.path(output_dir, "ER_curve.pdf")
@@ -2057,7 +2057,7 @@ plot_an_by_region <- function(data, output_dir = ".") {
 #'
 #' Model validation testing is provided as a standard output from the pipeline so
 #' a user can assess the quality of the model. Additionally, users can incorporate
-#' extra independent variables—such as relative humidity or wind speed—directly
+#' extra independent variables-such as relative humidity or wind speed-directly
 #' into the model for enhanced analysis.
 #'
 #' Further details on the input data requirements, methodology, quality information
