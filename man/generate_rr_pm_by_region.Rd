@@ -5,13 +5,18 @@
 \title{Generate Relative Risk Estimates by Region}
 \usage{
 generate_rr_pm_by_region(
+  data,
   relative_risk_overall,
   scale_factor_wildfire_pm,
   wildfire_lag = 0,
-  pm_vals = seq(0, 50, by = 1)
+  pm_vals = NULL
 )
 }
 \arguments{
+\item{data}{Data frame containing a daily time series of mean_PM values, either
+from the original input csv file or produced after merging wildfire data with
+the initial csv file.}
+
 \item{relative_risk_overall}{Data frame containing relative risk estimates
 and confidence intervals for wildfire-related PM2.5 exposure at different
 lags. Must include columns: 'lag', 'relative_risk', 'ci_lower', and
@@ -25,7 +30,8 @@ estimate.}
 extrapolation. Defaults to 0.}
 
 \item{pm_vals}{Numeric vector. PM2.5 concentrations over which to compute
-relative risk. Defaults to seq(0, 50, by = 1).}
+relative risk. Defaults to a sequence from 0 to the maximum observed
+wildfire-related PM2.5 in dataset, max(mean_PM).}
 }
 \value{
 A data frame with relative risk estimates for each region and PM value.

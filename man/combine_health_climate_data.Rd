@@ -88,7 +88,7 @@ Vegetation Index (ndvi) data. Defaults to NULL.}
 contains the standardized precipitation index. Defaults to NULL.}
 
 \item{max_lag}{Character. Number corresponding to the maximum lag to be
-considered for the delay effect. It should be between 2 an 4.}
+considered for the delay effect. It should be between 2 an 4. Defaults to 2.}
 
 \item{output_dir}{Path to folder where the processed map data should be
 saved. Defaults to NULL.}

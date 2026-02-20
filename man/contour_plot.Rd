@@ -8,11 +8,12 @@ region or district level for each disease cases type (\code{diarrhea} and \code{
 contour_plot(
   data,
   param_term,
-  max_lag,
   model,
   level,
-  filter_year = NULL,
+  max_lag,
+  nk,
   case_type,
+  filter_year = NULL,
   save_fig = FALSE,
   output_dir = NULL
 )
@@ -24,18 +25,15 @@ contour_plot(
 as \code{tmax} (temperature exposure) and \code{rainfall}(rainfall exposure).
 Default to \code{tmax}.}
 
-\item{max_lag}{Character. Number corresponding to the maximum lag to be
-considered for the delay effect. It should be between 2 an 4.}
-
 \item{model}{The fitted model from the \code{run_inla_models()} function.}
 
 \item{level}{A character vector specifying the geographical disaggregation.
 Can take one of the following values: "country", "region", or "district".}
 
-\item{filter_year}{Integer. The year to filter to data to. Defaults to NULL.}
-
 \item{case_type}{Character. The type of disease that the case column refers
 to. Must be one of \code{diarrhea} or \code{malaria}.}
+
+\item{filter_year}{Integer. The year to filter to data to. Defaults to NULL.}
 
 \item{save_fig}{Boolean. Whether to save the outputted plot. Defaults to
 FALSE.}
