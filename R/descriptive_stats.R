@@ -59,7 +59,8 @@ create_correlation_matrix <- function(
   # calculate correlation
   corr_df <- df %>%
     select(all_of(independent_cols)) %>%
-    cor(method = correlation_method)
+    cor(method = correlation_method,
+        use = "pairwise.complete.obs")
   return(corr_df)
 }
 

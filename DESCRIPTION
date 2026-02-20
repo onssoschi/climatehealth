@@ -20,6 +20,7 @@ Imports:
     forcats,
     exactextractr,
     ggplot2,
+    ggtext,
     gnm,
     graphics,
     grDevices,
