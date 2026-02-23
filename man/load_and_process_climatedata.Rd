@@ -17,7 +17,7 @@ load_and_process_climatedata(
   runoff_col = NULL,
   ndvi_col = NULL,
   spi_col = NULL,
-  max_lag = 4
+  max_lag
 )
 }
 \arguments{
