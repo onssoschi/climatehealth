@@ -11,6 +11,7 @@ attribution_calculation(
   level,
   param_threshold = 1,
   max_lag,
+  nk,
   filter_year = NULL,
   group_by_year = FALSE,
   case_type,
@@ -32,9 +33,6 @@ the following values: \code{"country"}, \code{"region"}, or \code{"district"}.}
 
 \item{param_threshold}{Numeric. Threshold above which relative risks (RR) are
 considered attributable. Defaults to \code{1}.}
-
-\item{max_lag}{Character. Number corresponding to the maximum lag to be
-considered for the delay effect. It should be between 2 an 4.}
 
 \item{filter_year}{Integer. The year to filter to data to. Defaults to NULL.}
 

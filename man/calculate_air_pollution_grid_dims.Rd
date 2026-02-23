@@ -2,27 +2,17 @@
 % Please edit documentation in R/air_pollution.R
 \name{calculate_air_pollution_grid_dims}
 \alias{calculate_air_pollution_grid_dims}
-\title{Calculate Optimal Grid Dimensions for Multiple Plot Display}
+\title{Generate a grid size for a certain number of plots.}
 \usage{
 calculate_air_pollution_grid_dims(n_plots)
 }
 \arguments{
-\item{n_plots}{Integer. Number of plots to display. Must be positive.}
+\item{n_plots}{The number of plots required for the grid.}
 }
 \value{
-A named list with two components:
-\itemize{
-\item nrow: Number of rows in the grid
-\item ncol: Number of columns in the grid
-}
+A list containing ncol and nrow values for the grid.
 }
 \description{
-Determines the optimal grid layout (rows x columns) for displaying multiple plots
-in a single figure. The function prioritizes aesthetically pleasing arrangements
-that are wider than tall, minimizing empty cells while maintaining visual balance.
-}
-\note{
-For plot counts exceeding 400, the function will return a 20x20 grid.
-Consider whether such large grids are appropriate for your visualization needs.
+Generate a grid size for a certain number of plots.
 }
 \keyword{internal}
