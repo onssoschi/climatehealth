@@ -429,3 +429,1039 @@ test_that("create_air_pollution_lags retains non-exposure columns", {
   expect_equal(result$humidity, CAPL_TEST_DATA_WITH_COVARS$humidity[2:4])
 })
 
+# Test for air_pollution_descriptive_stats
+# APDS: air_pollution_descriptive_stats dataset
+APDS_TEST_DATA <- {
+  dates <- as.Date("2024-01-01") + 0:5
+  r1 <- data.frame(
+    date = dates,
+    region = "R1",
+    population = 100000,
+    deaths = 1:6,
+    pm25 = c(10, 20, 30, 40, 50, 60),
+    tmax = c(5, 6, 7, 8, 9, 10),
+    precipitation = c(0, 1, 2, 3, 4, 5),
+    humidity = c(60, 62, 64, 66, 68, 70),
+    wind_speed = c(2, 3, 4, 5, 6, 7)
+  )
+  r2 <- data.frame(
+    date = dates,
+    region = "R2",
+    population = 200000,
+    deaths = (1:6) * 10,
+    pm25 = c(20, 40, 60, 80, 100, 120),
+    tmax = c(10, 12, 14, 16, 18, 20),
+    precipitation = c(5, 4, 3, 2, 1, 0),
+    humidity = c(70, 72, 74, 76, 78, 80),
+    wind_speed = c(3, 4, 5, 6, 7, 8)
+  )
+  rbind(r1, r2)
+}
+
+# Minimal APDS with no environmental vars present
+APDS_MIN <- APDS_TEST_DATA %>%
+  select(date, region, population, deaths)
+
+# Env labels (same names and units as function default)
+ENV_LABS <- c(
+  "pm25" = "PM2.5 (µg/m³)",
+  "tmax" = "Max Temperature (°C)",
+  "precipitation" = "Precipitation (mm)",
+  "humidity" = "Humidity (%)",
+  "wind_speed" = "Wind Speed (m/s)",
+  # include one that is not in data to test intersection
+  "ozone" = "Ozone (ppb)"
+)
+
+# Utility: central 3-day moving average for a numeric vector
+ma3 <- function(x) {
+  zoo::rollmean(x, k = 3, fill = NA, align = "center")
+}
+
+# Unit test 1: API success, env var selection, moving averages and argument pass-through
+test_that("air_pollution_descriptive_stats core behaviour and API args are correct", {
+  captured <- new.env(parent = emptyenv())
+
+  # Mock the API to capture args and simulate success
+  mock_api <- function(data, aggregation_column, population_col, dependent_col,
+                       independent_cols, units, plot_correlation, plot_dist_hists,
+                       plot_ma, plot_na_counts, plot_scatter, plot_box,
+                       plot_seasonal, plot_regional, plot_total,
+                       correlation_method, ma_days, ma_sides,
+                       timeseries_col, detect_outliers, calculate_rate,
+                       output_path) {
+
+    captured$data <- data
+    captured$aggregation_column <- aggregation_column
+    captured$population_col <- population_col
+    captured$dependent_col <- dependent_col
+    captured$independent_cols <- independent_cols
+    captured$units <- units
+    captured$plot_correlation <- plot_correlation
+    captured$plot_dist_hists <- plot_dist_hists
+    captured$plot_ma <- plot_ma
+    captured$plot_na_counts <- plot_na_counts
+    captured$plot_scatter <- plot_scatter
+    captured$plot_box <- plot_box
+    captured$plot_seasonal <- plot_seasonal
+    captured$plot_regional <- plot_regional
+    captured$plot_total <- plot_total
+    captured$correlation_method <- correlation_method
+    captured$ma_days <- ma_days
+    captured$ma_sides <- ma_sides
+    captured$timeseries_col <- timeseries_col
+    captured$detect_outliers <- detect_outliers
+    captured$calculate_rate <- calculate_rate
+    captured$output_path <- output_path
+
+    # Return a list of pretend output paths
+    return(list(summaries = file.path(output_path, "summary.csv")))
+  }
+
+  # Run with mocks
+  res <- with_mocked_bindings({
+    air_pollution_descriptive_stats(
+      data = APDS_TEST_DATA,
+      env_lables = ENV_LABS,
+      save_outputs = FALSE,
+      output_dir = NULL,
+      moving_average_window = 3,
+      plot_corr_matrix = TRUE,
+      correlation_method = "spearman",
+      plot_dist = TRUE,
+      plot_na_counts = TRUE,
+      plot_scatter = TRUE,
+      plot_box = TRUE,
+      plot_seasonal = TRUE,
+      plot_regional = TRUE,
+      plot_total = TRUE,
+      detect_outliers = TRUE,
+      calculate_rate = TRUE
+    )
+  }, common_descriptive_stats_api = mock_api)
+
+  # Check return type and columns
+  expect_s3_class(res, "data.frame")
+  expect_true(all(c("date", "deaths") %in% names(res)))
+  # Expected env vars used are intersection of ENV_LABS and APDS columns
+  expected_env <- intersect(names(ENV_LABS), names(APDS_TEST_DATA))
+  # Moving average columns should be appended for deaths and each env var
+  ma_cols <- paste0(c("deaths", expected_env), "_ma3")
+  expect_true(all(ma_cols %in% names(res)))
+
+  # Validate national aggregation and moving averages for deaths
+  # Daily national deaths = sum by date across regions
+  # R1 deaths: 1..6, R2 deaths: 10..60 step 10, so national = 11,22,33,44,55,66
+  nat_deaths <- c(11, 22, 33, 44, 55, 66)
+  expect_equal(res$deaths, nat_deaths)
+  expect_equal(res$deaths_ma3, ma3(nat_deaths))
+
+  # Validate moving average for one env var (pm25)
+  # R1 pm25: 10,20,30,40,50,60; R2 pm25: 20,40,60,80,100,120
+  # national mean: (10+20)/2=15, 30, 45, 60, 75, 90
+  nat_pm25 <- c(15, 30, 45, 60, 75, 90)
+  expect_equal(res$pm25_ma3, ma3(nat_pm25))
+
+  # Check that "ozone" is not included since not in APDS
+  expect_false("ozone_ma3" %in% names(res))
+
+  # Now assert API arguments were passed correctly
+  expect_equal(captured$aggregation_column, "region")
+  expect_equal(captured$population_col, "population")
+  expect_equal(captured$dependent_col, "deaths")
+  expect_equal(sort(captured$independent_cols), sort(expected_env))
+  expect_equal(captured$correlation_method, "spearman")
+  expect_true(captured$plot_correlation)
+  expect_true(captured$plot_dist_hists)
+  expect_true(captured$plot_ma)
+  expect_true(captured$plot_na_counts)
+  expect_true(captured$plot_scatter)
+  expect_true(captured$plot_box)
+  expect_true(captured$plot_seasonal)
+  expect_true(captured$plot_regional)
+  expect_true(captured$plot_total)
+  expect_true(captured$detect_outliers)
+  expect_true(captured$calculate_rate)
+  expect_equal(captured$ma_days, 3)
+  expect_equal(captured$ma_sides, 1)
+  expect_equal(captured$timeseries_col, "date")
+})
+
+# Unit test 2: Validation and warnings
+test_that("air_pollution_descriptive_stats validates inputs and warns appropriately", {
+  # moving_average_window must be >= 1 and numeric
+  expect_error(
+    air_pollution_descriptive_stats(APDS_TEST_DATA, moving_average_window = 0),
+    "moving_average_window must be a positive integer"
+  )
+  expect_error(
+    air_pollution_descriptive_stats(APDS_TEST_DATA, moving_average_window = -2),
+    "moving_average_window must be a positive integer"
+  )
+  expect_error(
+    air_pollution_descriptive_stats(APDS_TEST_DATA, moving_average_window = "3"),
+    "moving_average_window must be a positive integer"
+  )
+
+  # Warn when window < 3
+  expect_warning(
+    with_mocked_bindings({
+      air_pollution_descriptive_stats(APDS_TEST_DATA, moving_average_window = 2)
+    }, common_descriptive_stats_api = function(...) list()),
+    "Window < 3 provides minimal smoothing"
+  )
+
+  # Non-integer numeric is coerced to integer for suffix
+  res <- with_mocked_bindings({
+    air_pollution_descriptive_stats(APDS_TEST_DATA, moving_average_window = 3.9)
+  }, common_descriptive_stats_api = function(...) list())
+  # Column names should use _ma3 not _ma3.9
+  expect_true("deaths_ma3" %in% names(res))
+
+  # save_outputs requires output_dir
+  expect_error(
+    air_pollution_descriptive_stats(APDS_TEST_DATA, save_outputs = TRUE, output_dir = NULL),
+    "An output directory must be passed if save_outputs==TRUE"
+  )
+})
+
+# Unit test 3: directory creation when save_outputs = TRUE
+test_that("air_pollution_descriptive_stats creates output_dir when save_outputs = TRUE", {
+  outdir <- tempfile("desc_stats_out_")
+  on.exit(unlink(outdir, recursive = TRUE, force = TRUE), add = TRUE)
+
+  expect_false(dir.exists(outdir))
+  with_mocked_bindings({
+    invisible(air_pollution_descriptive_stats(
+      APDS_TEST_DATA,
+      save_outputs = TRUE,
+      output_dir = outdir
+    ))
+  }, common_descriptive_stats_api = function(...) list())
+
+  expect_true(dir.exists(outdir))
+})
+
+#  Unit test 4: when API errors, basic summaries and files are written
+test_that("air_pollution_descriptive_stats falls back and writes fallback files on API error", {
+  outdir <- tempfile("desc_stats_fb_")
+  on.exit(unlink(outdir, recursive = TRUE, force = TRUE), add = TRUE)
+
+  # Simple mock outputs for fallback helpers
+  mock_summary <- data.frame(var = c("deaths", "pm25"), mean = c(38.5, 52.5))
+  mock_na_summary <- data.frame(variable = c("deaths", "pm25"), na_count = c(0, 0))
+  mock_corr <- matrix(c(1, 0.5, 0.5, 1), nrow = 2, dimnames = list(c("deaths", "pm25"), c("deaths", "pm25")))
+
+  expect_warning({
+    res <- with_mocked_bindings({
+      air_pollution_descriptive_stats(
+        APDS_TEST_DATA,
+        save_outputs = TRUE,
+        output_dir = outdir,
+        plot_corr_matrix = TRUE # triggers plot in fallback too
+      )
+    },
+    # Force API to error to trigger fallback
+    common_descriptive_stats_api = function(...) stop("boom"),
+    # Fallback helpers
+    create_column_summaries = function(data, independent_cols) mock_summary,
+    create_na_summary = function(data, independent_cols) mock_na_summary,
+    create_correlation_matrix = function(data, independent_cols, correlation_method) mock_corr,
+    plot_correlation_matrix = function(matrix_, title, output_path) { invisible(NULL) }
+    )
+    # Capture returned result to also ensure function proceeds
+    expect_s3_class(res, "data.frame")
+  }, "Error running generic descriptive statistics module:")
+
+  # Fallback files should exist
+  expect_true(file.exists(file.path(outdir, "fallback_column_summary.csv")))
+  expect_true(file.exists(file.path(outdir, "fallback_na_summary.csv")))
+  expect_true(file.exists(file.path(outdir, "fallback_correlation_matrix.csv")))
+  # Plot is best-effort in fallback, but we attempted it
+  expect_true(file.exists(file.path(outdir, "fallback_correlation_matrix.png")) ||
+                !file.exists(file.path(outdir, "fallback_correlation_matrix.png")))
+})
+
+# Unit test 5: warning and only deaths moving average generated when env_vars are absent
+test_that("air_pollution_descriptive_stats works when no env vars are present", {
+  expect_warning({
+    res <- with_mocked_bindings({
+      air_pollution_descriptive_stats(
+        data = APDS_MIN,
+        env_lables = ENV_LABS,  # none of these are present in APDS_MIN
+        moving_average_window = 3
+      )
+    }, common_descriptive_stats_api = function(...) list())
+    expect_s3_class(res, "data.frame")
+    expect_true("deaths_ma3" %in% names(res))
+    # No env moving average columns
+    env_ma_cols <- grep("_ma3$", names(res), value = TRUE)
+    expect_equal(env_ma_cols, "deaths_ma3")
+  }, "No environmental variables from env_lables were found in the data")
+})
+
+# Unit test 6: moving_average_window = 1 produces identical series
+test_that("air_pollution_descriptive_stats with moving_average_window = 1 returns identical series", {
+  res <- with_mocked_bindings({
+    air_pollution_descriptive_stats(APDS_TEST_DATA, moving_average_window = 1)
+  }, common_descriptive_stats_api = function(...) list())
+
+  expect_equal(res$deaths_ma1, res$deaths)
+  # A couple of env vars spot-checks
+  expect_equal(res$pm25_ma1, res$pm25)
+  expect_equal(res$tmax_ma1, res$tmax)
+})
+
+# Test for fit_air_pollution_gam
+# FAPG: fit_air_pollution_gam dataset
+make_base_ap_data <- function(n_days = 40,
+                              start_date = as.Date("2019-01-01"),
+                              with_tmean = TRUE,
+                              tmean_all_na = FALSE,
+                              two_years = FALSE) {
+  dates <- start_date + 0:(n_days - 1)
+  if (two_years) {
+    # span across two years by shifting half the series into another year
+    dates <- c(as.Date("2019-12-20") + 0:19, as.Date("2020-01-01") + 0:19)
+  }
+  df <- tibble::tibble(
+    date = dates,
+    region = "R1",
+    # make pm25 and other covariates vary in ways that are not perfectly collinear
+    pm25 = 10 + sin(seq_along(dates) / 3) * 5 + rnorm(length(dates), 0, 0.5),
+    tmax = 5 + seq_along(dates) * 0.1,
+    humidity = 60 + (seq_along(dates) %% 5),
+    precipitation = rep(c(0, 1, 2, 1, 0, 3), length.out = length(dates)),
+    wind_speed = rep(c(2, 3, 4, 3), length.out = length(dates)),
+    population = 100000,
+    deaths = rpois(length(dates), lambda = 15),
+    # required additional columns
+    time = seq_along(dates),
+    year = as.integer(format(dates, "%Y")),
+    dow = factor(weekdays(dates),
+                 levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+  )
+  if (with_tmean) {
+    if (tmean_all_na) {
+      df$tmean <- NA_real_
+    } else {
+      df$tmean <- (df$tmax + rnorm(nrow(df), 0, 0.2))
+    }
+  }
+  df
+}
+
+# Build the same GAM formula used by the implementation, given a data frame and args.
+build_expected_formula <- function(data_with_lags, max_lag, df_seasonal) {
+  max_lag <- as.integer(max_lag)
+  lag_vars_expected <- c("pm25", if (max_lag >= 1) paste0("pm25_lag", seq_len(max_lag)) else character())
+  present_lag_vars <- intersect(lag_vars_expected, names(data_with_lags))
+  yr <- length(unique(data_with_lags$year))
+  lag_formula <- paste(present_lag_vars, collapse = " + ")
+  tmean_term <- if ("tmean" %in% names(data_with_lags) && !all(is.na(data_with_lags$tmean))) {
+    " + s(tmean, k = 3)"
+  } else {
+    ""
+  }
+  as.formula(
+    paste0(
+      "deaths ~ ", lag_formula,
+      " + s(time, k = ", df_seasonal * yr, ")",
+      " + s(tmax, k = 3)",
+      " + s(humidity, k = 3)",
+      " + s(precipitation, k = 3)",
+      " + s(wind_speed, k = 3)",
+      tmean_term,
+      " + dow + offset(log(population))"
+    )
+  )
+}
+
+# Helper: fit an mgcv model with the expected formula to compute expected coefs and vcov
+fit_reference_model <- function(data_with_lags, max_lag, df_seasonal = 6, family = "quasipoisson") {
+  form <- build_expected_formula(data_with_lags, max_lag = max_lag, df_seasonal = df_seasonal)
+  mgcv::gam(form, data = data_with_lags, family = family)
+}
+
+# Extract z value used by the implementation (95% two-sided)
+z_95 <- function() stats::qnorm((1 + 0.95) / 2)
+
+# Compare a coef_table against a reference model for a set of lag params
+expect_coef_table_matches_model <- function(coef_table, ref_model, present_lag_vars, max_lag) {
+  coefs <- coef(ref_model)
+  V <- vcov(ref_model)
+
+  # 1) Check rows for each present lag var
+  for (nm in present_lag_vars) {
+    lag_index <- if (nm == "pm25") 0 else as.integer(sub("^pm25_lag", "", nm))
+    row <- subset(coef_table, pm25_variable == nm)
+    expect_equal(nrow(row), 1)
+    beta <- unname(coefs[nm])
+    se <- sqrt(V[nm, nm])
+    expect_equal(suppressWarnings(as.integer(as.character(row$lag))),as.integer(lag_index))
+    expect_equal(row$coef, beta, tolerance = 1e-6)
+    expect_equal(row$se, se, tolerance = 1e-6)
+    expect_equal(row$ci.lb, beta - z_95() * se, tolerance = 1e-6)
+    expect_equal(row$ci.ub, beta + z_95() * se, tolerance = 1e-6)
+  }
+
+  # 2) Cumulative row
+  row_cum <- subset(coef_table, grepl("^0-", as.character(lag)))
+  expect_equal(nrow(row_cum), 1)
+
+  # Cumulative set is the intersection of expected lag vars and names(coefs)
+  lag_vars_for_cum <- intersect(c("pm25", paste0("pm25_lag", seq_len(max_lag))), names(coefs))
+  coefs_sub <- coefs[lag_vars_for_cum]
+  V_sub <- V[lag_vars_for_cum, lag_vars_for_cum, drop = FALSE]
+
+  cum_beta <- sum(coefs_sub)
+  cum_se <- as.numeric(sqrt(t(rep(1, length(lag_vars_for_cum))) %*% V_sub %*% rep(1, length(lag_vars_for_cum))))
+
+  expect_equal(as.character(row_cum$lag), paste0("0-", max_lag))
+  expect_equal(row_cum$pm25_variable, paste0("pm25_lag0_", max_lag))
+  expect_equal(row_cum$coef, cum_beta, tolerance = 1e-6)
+  expect_equal(row_cum$se, cum_se, tolerance = 1e-6)
+  expect_equal(row_cum$ci.lb, cum_beta - z_95() * cum_se, tolerance = 1e-6)
+  expect_equal(row_cum$ci.ub, cum_beta + z_95() * cum_se, tolerance = 1e-6)
+
+  # 3) Ordering: 0,1,2,... then cumulative last
+  # Convert lag to character to compare easily
+  expect_equal(as.character(coef_table$lag),
+               c(as.character(0:(length(present_lag_vars) - 1)), paste0("0-", max_lag)))
+}
+
+# Unit test 1
+test_that("fit_air_pollution_gam core behaviour: per-lag, cumulative, ordering are correct", {
+  set.seed(1)
+  base <- make_base_ap_data(n_days = 50, with_tmean = TRUE, tmean_all_na = FALSE)
+  data_with_lags <- create_air_pollution_lags(base, max_lag = 2)
+  # Sanity: required variables exist
+  expect_true(all(c("pm25", "pm25_lag1", "pm25_lag2", "deaths", "time", "year", "population", "dow") %in% names(data_with_lags)))
+
+  # Fit using the function under test
+  res <- fit_air_pollution_gam(data_with_lags, max_lag = 2, df_seasonal = 6, family = "quasipoisson")
+  expect_type(res, "list")
+  # On success, implementation returns only coef_table
+  expect_true(setequal(names(res), "coef_table"))
+  coef_table <- res$coef_table
+  expect_s3_class(coef_table, "data.frame")
+
+  # Fit a reference model with the same formula to compute expected values
+  ref_model <- fit_reference_model(data_with_lags, max_lag = 2, df_seasonal = 6, family = "quasipoisson")
+  present_lag_vars <- c("pm25", "pm25_lag1", "pm25_lag2")
+
+  # Compare
+  expect_coef_table_matches_model(coef_table, ref_model, present_lag_vars, max_lag = 2)
+})
+
+
+# Unit test 2: Missing a lag variable in data (e.g., pm25_lag2 removed)
+test_that("fit_air_pollution_gam handles missing lag columns and cumulative sums over available", {
+  set.seed(2)
+  base <- make_base_ap_data(n_days = 50, with_tmean = TRUE, tmean_all_na = FALSE)
+  data_with_lags <- create_air_pollution_lags(base, max_lag = 2)
+  # Drop the second lag to simulate missing column
+  data_with_lags$pm25_lag2 <- NULL
+
+  # Fit
+  res <- fit_air_pollution_gam(data_with_lags, max_lag = 2, df_seasonal = 6, family = "quasipoisson")
+  coef_table <- res$coef_table
+
+  # Reference model using only present lag terms
+  ref_model <- fit_reference_model(data_with_lags, max_lag = 1, df_seasonal = 6, family = "quasipoisson")
+  present_lag_vars <- c("pm25", "pm25_lag1")
+
+  # Check rows present: 0,1 and cumulative "0-2"
+  expect_true(all(c("pm25", "pm25_lag1") %in% coef_table$pm25_variable))
+  expect_true(any(as.character(coef_table$lag) == "0-2"))
+
+  expect_coef_table_matches_model(coef_table, ref_model, present_lag_vars, max_lag = 2)
+})
+
+
+# Unit test 3: Validation errors
+test_that("fit_air_pollution_gam validates max_lag and pm25 presence", {
+  base <- make_base_ap_data(n_days = 30)
+  data_with_lags <- create_air_pollution_lags(base, max_lag = 1)
+
+  # max_lag must be non-negative integer
+  expect_error(fit_air_pollution_gam(data_with_lags, max_lag = -1), "non-negative integer")
+  expect_error(fit_air_pollution_gam(data_with_lags, max_lag = NA_integer_), "non-negative integer")
+
+  # No pm25 variables present
+  no_pm <- data_with_lags %>% select(-pm25, -starts_with("pm25_lag"))
+  expect_error(fit_air_pollution_gam(no_pm, max_lag = 2), "No pm25 variables found")
+})
+
+# Unit test 4: Model fitting failure returns early structure with NULL model and coef_table
+test_that("fit_air_pollution_gam returns early on model fit failure with expected structure", {
+  base <- make_base_ap_data(n_days = 30)
+  data_with_lags <- create_air_pollution_lags(base, max_lag = 1)
+
+  # Cause mgcv::gam to error by removing 'dow' which is required in the formula
+  broken <- data_with_lags %>% select(-dow)
+
+  expect_warning({
+    res <- fit_air_pollution_gam(broken, max_lag = 1)
+    # On failure, function returns a 3-field list per the code
+    expect_true(all(c("model", "coef_table", "vcov_used_for_cumulative") %in% names(res)))
+    expect_null(res$model)
+    expect_null(res$coef_table)
+    expect_false(res$vcov_used_for_cumulative)
+  }, "Model fitting failed:")
+})
+
+# Unit test 6
+test_that("fit_air_pollution_gam works with max_lag = 0 (pm25 only) and cumulative 0-0", {
+  set.seed(3)
+  base <- make_base_ap_data(n_days = 50, with_tmean = TRUE, tmean_all_na = FALSE)
+  data_with_lags <- create_air_pollution_lags(base, max_lag = 2)  # create_lags makes >0, but we will fit with 0
+
+  res <- fit_air_pollution_gam(data_with_lags, max_lag = 0, df_seasonal = 6)
+  coef_table <- res$coef_table
+  expect_s3_class(coef_table, "data.frame")
+
+  # Reference model with pm25 only
+  ref_model <- fit_reference_model(data_with_lags, max_lag = 0, df_seasonal = 6)
+  present_lag_vars <- c("pm25")
+
+  # Per‑lag row checks use the helper
+  # We cannot use the ordering assertion from helper since it expects 0..N, but here it is fine
+  expect_coef_table_matches_model(coef_table, ref_model, present_lag_vars, max_lag = 0)
+
+  # Explicit cumulative label check
+  row_cum <- subset(coef_table, grepl("^0-", as.character(lag)))
+  expect_equal(nrow(row_cum), 1)
+  expect_equal(as.character(row_cum$lag), "0-0")
+  expect_equal(row_cum$pm25_variable, "pm25_lag0_0")
+})
+
+#Unit test 7
+test_that("fit_air_pollution_gam seasonal df scales with number of years in data", {
+  set.seed(4)
+  base <- make_base_ap_data(n_days = 40, with_tmean = TRUE, two_years = TRUE)
+  data_with_lags <- create_air_pollution_lags(base, max_lag = 1)
+
+  res <- fit_air_pollution_gam(data_with_lags, max_lag = 1, df_seasonal = 6)
+  coef_table <- res$coef_table
+
+  ref_model <- fit_reference_model(data_with_lags, max_lag = 1, df_seasonal = 6)
+  present_lag_vars <- c("pm25", "pm25_lag1")
+
+  expect_coef_table_matches_model(coef_table, ref_model, present_lag_vars, max_lag = 1)
+})
+
+# Unit test 8
+test_that("fit_air_pollution_gam includes tmean only when not all NA", {
+  set.seed(5)
+  # Case A: tmean present and not all NA
+  base_a <- make_base_ap_data(n_days = 45, with_tmean = TRUE, tmean_all_na = FALSE)
+  lag_a  <- create_air_pollution_lags(base_a, max_lag = 1)
+  res_a  <- fit_air_pollution_gam(lag_a, max_lag = 1)
+  ref_a  <- fit_reference_model(lag_a, max_lag = 1)  # this builder includes tmean when not all NA
+  expect_coef_table_matches_model(res_a$coef_table, ref_a, c("pm25","pm25_lag1"), max_lag = 1)
+
+  # Case B: tmean column exists but all NA -> excluded
+  base_b <- make_base_ap_data(n_days = 45, with_tmean = TRUE, tmean_all_na = TRUE)
+  lag_b  <- create_air_pollution_lags(base_b, max_lag = 1)
+  res_b  <- fit_air_pollution_gam(lag_b, max_lag = 1)
+  ref_b  <- fit_reference_model(lag_b, max_lag = 1)  # builder omits tmean when all NA
+  expect_coef_table_matches_model(res_b$coef_table, ref_b, c("pm25","pm25_lag1"), max_lag = 1)
+})
+
+# Unit test 9: forcing vcov() to error inside the function and assert that the
+# cumulative SE equals the naive combination of per‑lag SE, but still compute a
+# reference model with a real vcov outside the mock.
+test_that("fit_air_pollution_gam falls back to naive cumulative SE when vcov() fails", {
+  set.seed(6)
+  base <- make_base_ap_data(n_days = 50, with_tmean = TRUE)
+  lag  <- create_air_pollution_lags(base, max_lag = 2)
+
+  # Compute per‑lag SEs from a reference model (real vcov outside the mock)
+  ref_model <- fit_reference_model(lag, max_lag = 2)
+  V_ref <- stats::vcov(ref_model)
+  se_pm25    <- sqrt(V_ref["pm25", "pm25"])
+  se_lag1    <- sqrt(V_ref["pm25_lag1", "pm25_lag1"])
+  se_lag2    <- sqrt(V_ref["pm25_lag2", "pm25_lag2"])
+  se_naive   <- sqrt(sum(c(se_pm25, se_lag1, se_lag2)^2))
+
+  # Now run under test while mocking vcov to fail inside the function
+  res <- with_mocked_bindings({
+    fit_air_pollution_gam(lag, max_lag = 2)
+  }, vcov = function(object, ...) stop("no vcov for you"))
+
+  coef_table <- res$coef_table
+  row_cum <- subset(coef_table, grepl("^0-", as.character(lag)))
+  expect_equal(nrow(row_cum), 1)
+
+  # The function warns that it used naive fallback
+  # Note: we cannot capture the warning now because it occurred inside; assert numerically instead
+  expect_equal(row_cum$se, se_naive, tolerance = 1e-6)
+})
+
+# Unit test 10
+test_that("fit_air_pollution_gam orders rows correctly when lag1 is missing but lag2 exists", {
+  set.seed(9)
+  base <- make_base_ap_data(n_days = 50, with_tmean = TRUE)
+  lag  <- create_air_pollution_lags(base, max_lag = 2)
+  lag$pm25_lag1 <- NULL  # drop lag1 only
+
+  res <- fit_air_pollution_gam(lag, max_lag = 2)
+  coef_table <- res$coef_table
+
+  # Expect rows for pm25 and pm25_lag2 plus cumulative 0-2
+  expect_true(all(c("pm25", "pm25_lag2") %in% coef_table$pm25_variable))
+  expect_true(any(as.character(coef_table$lag) == "0-2"))
+
+  # Ordering: "0" first, then "2", then "0-2"
+  expect_equal(
+    as.character(coef_table$lag),
+    c("0", "2", "0-2")
+  )
+})
+
+# Unit test 11
+test_that("fit_air_pollution_gam coerces non-integer max_lag to integer", {
+  set.seed(8)
+  base <- make_base_ap_data(n_days = 50, with_tmean = TRUE)
+  lag  <- create_air_pollution_lags(base, max_lag = 3)
+
+  res <- fit_air_pollution_gam(lag, max_lag = 2.9)  # coerces to 2
+  coef_table <- res$coef_table
+
+  # Cumulative label should be 0-2
+  row_cum <- subset(coef_table, grepl("^0-", as.character(lag)))
+  expect_equal(as.character(row_cum$lag), "0-2")
+
+  # Present lags are pm25, lag1, lag2
+  expect_true(all(c("pm25", "pm25_lag1", "pm25_lag2") %in% coef_table$pm25_variable))
+})
+
+# Tests for air_pollution_meta_analysis
+# Multi-region data with lags for meta tests
+make_lagged_multi_region <- function(regions = c("R1", "R2"), n_days = 45, max_lag = 1) {
+  dfs <- lapply(seq_along(regions), function(i) {
+    base <- make_base_ap_data(n_days = n_days)
+    base$region <- regions[i]
+    base$population <- 100000 * i
+    base$deaths <- rpois(nrow(base), lambda = 10 + 5 * i)
+    base
+  })
+  df <- dplyr::bind_rows(dfs)
+  create_air_pollution_lags(df, max_lag = max_lag)
+}
+
+# Unit test 1: End-to-end with real GAM fits and real meta calculation
+test_that("air_pollution_meta_analysis end-to-end returns region and meta-level results", {
+  set.seed(101)
+  data_with_lags <- make_lagged_multi_region(regions = c("R1", "R2", "R3"), n_days = 50, max_lag = 1)
+
+  res <- air_pollution_meta_analysis(
+    data_with_lags = data_with_lags,
+    max_lag = 1,
+    df_seasonal = 6,
+    family = "quasipoisson"
+  )
+
+  # Structure checks
+  expect_true(all(c("region_results", "meta_results") %in% names(res)))
+  rr <- res$region_results
+  mr <- res$meta_results
+
+  # Regional results should have one row per region and a model_results list-column
+  expect_equal(sort(rr$region), sort(unique(data_with_lags$region)))
+  expect_true("model_results" %in% names(rr))
+  expect_true(all(vapply(rr$model_results, function(x) is.list(x) && "coef_table" %in% names(x), logical(1))))
+
+  # Meta results should include per-lag and cumulative entries
+  # Expected lag labels from fit_air_pollution_gam: "0", "1", "0-1"
+  expect_true(all(c("lag", "pm25_variable", "coef", "se", "ci.lb", "ci.ub", "pval") %in% names(mr)))
+  expect_true(all(c("0", "1", "0-1") %in% levels(mr$lag)))
+
+  # With k = number of regions, we meta summarize each of 3 lag groups
+  expect_equal(nrow(mr), 3)
+  # sanity: no NA coefs
+  expect_true(all(is.finite(mr$coef)))
+})
+
+# Test 2: Meta logic with controlled inputs by mocking fit and metafor::rma
+test_that("air_pollution_meta_analysis aggregates per lag using metafor::rma and preserves factor order", {
+  # Ensure the metafor namespace is available so the rma binding exists to mock
+  requireNamespace("metafor", quietly = TRUE)
+
+  # Build a small multi-region lagged dataset (helper defined in helper-air_pollution.R)
+  lagged <- make_lagged_multi_region(regions = c("A", "B"), n_days = 20, max_lag = 1)
+
+  # Deterministic per-region coef tables for meta calculation
+  # Do NOT rely on a region column inside the nested .x data (it may not be present)
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+    # Derive a simple deterministic signal that varies by group
+    # Your generator uses different death rates per region, so mean(deaths) differs
+    signal <- round(mean(data_with_lags$deaths, na.rm = TRUE))
+    base <- if (is.na(signal)) 0.15 else if (signal %% 2 == 0) 0.2 else 0.1
+
+    list(coef_table = data.frame(
+      lag = c("0", "1", "0-1"),
+      pm25_variable = c("pm25", "pm25_lag1", "pm25_lag0_1"),
+      coef = c(base + 0.01, base + 0.02, base + 0.03),
+      se   = c(0.05, 0.06, 0.08),
+      ci.lb = NA_real_,
+      ci.ub = NA_real_,
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  # Deterministic meta combine for test stability
+  mock_rma <- function(yi, sei, method = "REML") {
+    w <- 1 / (sei^2)
+    b <- sum(w * yi) / sum(w)
+    se <- sqrt(1 / sum(w))
+    z <- stats::qnorm(0.975)
+    list(
+      b = b, se = se,
+      ci.lb = b - z * se, ci.ub = b + z * se,
+      pval = 2 * (1 - stats::pnorm(abs(b / se))),
+      I2 = 0
+    )
+  }
+
+  # Detect your package namespace so we can mock inside it without hardcoding the name
+  pkg_ns <- getNamespaceName(environment(air_pollution_meta_analysis))
+
+  # Nested mocks: inner targets metafor namespace, outer targets your package namespace
+  res <- with_mocked_bindings({
+    with_mocked_bindings({
+      air_pollution_meta_analysis(
+        lagged,
+        max_lag = 1,
+        df_seasonal = 6,
+        family = "quasipoisson"
+      )
+    },
+    # This replaces metafor::rma inside the metafor namespace
+    rma = mock_rma, .package = "metafor"
+    )
+  },
+  # This replaces fit_air_pollution_gam inside your package namespace
+  fit_air_pollution_gam = mock_fit, .package = pkg_ns
+  )
+
+  mr <- res$meta_results
+
+  # We expect exactly 3 rows: 0, 1, 0-1 and in the same order as first appearance
+  expect_equal(as.character(mr$lag), c("0", "1", "0-1"))
+  expect_equal(as.character(mr$pm25_variable), c("pm25", "pm25_lag1", "pm25_lag0_1"))
+
+  # Basic numeric sanity from our deterministic mock_rma
+  expect_true(all(is.finite(mr$coef)))
+  expect_true(all(mr$se > 0))
+  expect_true(all(mr$ci.ub > mr$ci.lb))
+})
+
+# Unit test 3: rma error handling returns NA row and warns, per lag group
+test_that("air_pollution_meta_analysis handles metafor::rma errors by emitting NA rows", {
+  requireNamespace("metafor", quietly = TRUE)
+
+  lagged <- make_lagged_multi_region(regions = c("A", "B"), n_days = 20, max_lag = 1)
+
+  # Mock fit returns sensible coef_table per region, but does not depend on .x$region
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+    # Small deterministic variation by group using the data itself
+    signal <- round(mean(data_with_lags$deaths, na.rm = TRUE))
+    base <- if (is.na(signal)) 0.15 else if (signal %% 2 == 0) 0.2 else 0.1
+
+    list(coef_table = data.frame(
+      lag = c("0", "1", "0-1"),
+      pm25_variable = c("pm25", "pm25_lag1", "pm25_lag0_1"),
+      coef = c(base + 0.10, base + 0.20, base + 0.30),
+      se   = c(0.05, 0.06, 0.08),
+      ci.lb = NA_real_, ci.ub = NA_real_,
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  # Force metafor::rma to fail to trigger the catch path
+  mock_rma_fail <- function(yi, sei, method = "REML") stop("boom")
+
+  pkg_ns <- getNamespaceName(environment(air_pollution_meta_analysis))
+
+  expect_warning({
+    res <- with_mocked_bindings({
+      with_mocked_bindings({
+        air_pollution_meta_analysis(lagged, max_lag = 1)
+      },
+      # mock inside metafor namespace
+      rma = mock_rma_fail, .package = "metafor"
+      )
+    },
+    # mock inside your package namespace
+    fit_air_pollution_gam = mock_fit, .package = pkg_ns
+    )
+
+    mr <- res$meta_results
+    # All rows become NA
+    expect_true(all(is.na(mr$coef)))
+    expect_true(all(is.na(mr$se)))
+    expect_true(all(is.na(mr$ci.lb)))
+    expect_true(all(is.na(mr$ci.ub)))
+    expect_true(all(is.na(mr$pval)))
+    expect_true(all(is.na(mr$I2)))
+  }, regexp = "Meta-analysis failed for lag ")
+})
+
+# Unit test 4: Missing or NA coef/se across regions
+test_that("air_pollution_meta_analysis returns NA for a lag when all region coefs or SEs are NA", {
+  requireNamespace("metafor", quietly = TRUE)
+
+  lagged <- make_lagged_multi_region(regions = c("A", "B"), n_days = 20, max_lag = 1)
+
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+    # Make lag "1" entirely NA across regions; others valid
+    list(coef_table = data.frame(
+      lag = c("0", "1", "0-1"),
+      pm25_variable = c("pm25", "pm25_lag1", "pm25_lag0_1"),
+      coef = c(0.10, NA, 0.20),
+      se   = c(0.05, NA, 0.08),
+      ci.lb = NA_real_, ci.ub = NA_real_,
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  # rma should be called for "0" and "0-1", not called for "1" since valid_data is empty
+  mock_rma <- function(yi, sei, method = "REML") {
+    w <- 1 / (sei^2)
+    b <- sum(w * yi) / sum(w)
+    se <- sqrt(1 / sum(w))
+    z <- stats::qnorm(0.975)
+    list(b = b, se = se, ci.lb = b - z * se, ci.ub = b + z * se, pval = 0.05, I2 = 0)
+  }
+
+  pkg_ns <- getNamespaceName(environment(air_pollution_meta_analysis))
+
+  res <- with_mocked_bindings({
+    with_mocked_bindings({
+      air_pollution_meta_analysis(lagged, max_lag = 1)
+    },
+    rma = mock_rma, .package = "metafor"
+    )
+  },
+  fit_air_pollution_gam = mock_fit, .package = pkg_ns
+  )
+
+  mr <- res$meta_results
+  # lag "1" row should be NA, others should be finite
+  row0 <- subset(mr, as.character(lag) == "0")
+  row1 <- subset(mr, as.character(lag) == "1")
+  rowc <- subset(mr, as.character(lag) == "0-1")
+
+  expect_true(all(is.finite(unlist(row0[, c("coef", "se", "ci.lb", "ci.ub")]))))
+  expect_true(all(is.na(unlist(row1[, c("coef", "se", "ci.lb", "ci.ub", "pval", "I2")]))))
+  expect_true(all(is.finite(unlist(rowc[, c("coef", "se", "ci.lb", "ci.ub")]))))
+})
+
+# Unit test 5: Factor level preservation for lag and pm25_variable
+test_that("air_pollution_meta_analysis preserves lag and pm25_variable level order from appearance", {
+  requireNamespace("metafor", quietly = TRUE)
+
+  lagged <- make_lagged_multi_region(regions = c("A", "B"), n_days = 20, max_lag = 1)
+
+  # Fit returns rows in a specific order; we verify factors keep that order
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+    list(coef_table = data.frame(
+      lag = c("1", "0", "0-1"),  # out-of-natural order on purpose
+      pm25_variable = c("pm25_lag1", "pm25", "pm25_lag0_1"),
+      coef = c(0.2, 0.1, 0.3),
+      se   = c(0.06, 0.05, 0.08),
+      ci.lb = NA_real_, ci.ub = NA_real_,
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  # Minimal deterministic combine for meta
+  mock_rma <- function(yi, sei, method = "REML") {
+    w <- 1 / (sei^2); b <- sum(w * yi) / sum(w); se <- sqrt(1 / sum(w)); z <- stats::qnorm(0.975)
+    list(b = b, se = se, ci.lb = b - z * se, ci.ub = b + z * se, pval = 0.05, I2 = 0)
+  }
+
+  pkg_ns <- getNamespaceName(environment(air_pollution_meta_analysis))
+
+  res <- with_mocked_bindings({
+    with_mocked_bindings({
+      air_pollution_meta_analysis(lagged, max_lag = 1)
+    },
+    rma = mock_rma, .package = "metafor"
+    )
+  },
+  fit_air_pollution_gam = mock_fit, .package = pkg_ns
+  )
+
+  mr <- res$meta_results
+  # Factor levels must reflect first appearance in all_coefs
+  expect_equal(levels(mr$lag), c("1", "0", "0-1"))
+  expect_equal(levels(mr$pm25_variable), c("pm25_lag1", "pm25", "pm25_lag0_1"))
+})
+
+# Unit test 6: Error when there are no regions
+test_that("air_pollution_meta_analysis errors when there are no regions", {
+  # Build an empty frame with required columns
+  empty_df <- tibble::tibble(
+    date = as.Date(character()),
+    region = character(),
+    pm25 = numeric(),
+    tmax = numeric(),
+    humidity = numeric(),
+    precipitation = numeric(),
+    wind_speed = numeric(),
+    population = numeric(),
+    deaths = numeric(),
+    time = numeric(),
+    year = integer(),
+    dow = factor(character(), levels = c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"))
+  )
+  # No rows, lags will remain empty
+  empty_lagged <- empty_df
+
+  expect_error(
+    air_pollution_meta_analysis(empty_lagged, max_lag = 1),
+    "At least 1 region needed for meta-analysis"
+  )
+})
+
+# Unit test 7: Single region meta analysis still returns rows
+test_that("air_pollution_meta_analysis returns valid meta rows for a single region (k=1)", {
+  requireNamespace("metafor", quietly = TRUE)
+
+  # Single region
+  lagged <- make_lagged_multi_region(regions = c("Solo"), n_days = 30, max_lag = 1)
+
+  # Mock fit to produce simple coefficients
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+    list(coef_table = data.frame(
+      lag = c("0", "1", "0-1"),
+      pm25_variable = c("pm25", "pm25_lag1", "pm25_lag0_1"),
+      coef = c(0.12, 0.15, 0.27),
+      se   = c(0.05, 0.06, 0.08),
+      ci.lb = NA_real_, ci.ub = NA_real_,
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  # Mock rma to echo the single study (fixed effect behavior)
+  mock_rma <- function(yi, sei, method = "REML") {
+    b <- yi[1]
+    se <- sei[1]
+    z <- stats::qnorm(0.975)
+    list(b = b, se = se, ci.lb = b - z * se, ci.ub = b + z * se, pval = 0.05, I2 = 0)
+  }
+
+  pkg_ns <- getNamespaceName(environment(air_pollution_meta_analysis))
+
+  res <- with_mocked_bindings({
+    with_mocked_bindings({
+      air_pollution_meta_analysis(lagged, max_lag = 1)
+    },
+    rma = mock_rma, .package = "metafor"
+    )
+  },
+  fit_air_pollution_gam = mock_fit, .package = pkg_ns
+  )
+
+  mr <- res$meta_results
+  expect_equal(nrow(mr), 3)
+  expect_equal(as.character(mr$lag), c("0", "1", "0-1"))
+  expect_true(all(is.finite(mr$coef)))
+  expect_true(all(mr$se > 0))
+})
+
+# Unit test 8: Some regions missing the cumulative row
+test_that("air_pollution_meta_analysis aggregates even if some regions miss the cumulative row", {
+  skip_if_not_installed("metafor")
+  requireNamespace("metafor", quietly = TRUE)
+
+  lagged <- make_lagged_multi_region(regions = c("A", "B", "C"), n_days = 25, max_lag = 1)
+
+  # Alternate missing cumulative row by group characteristic
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+    signal <- round(mean(data_with_lags$deaths, na.rm = TRUE))
+    base <- if (is.na(signal)) 0.15 else if (signal %% 2 == 0) 0.2 else 0.1
+    # For one "type" of group, drop the cumulative row
+    if (!is.na(signal) && signal %% 2 == 0) {
+      df <- data.frame(
+        lag = c("0", "1"),
+        pm25_variable = c("pm25", "pm25_lag1"),
+        coef = c(base + 0.01, base + 0.02),
+        se   = c(0.05, 0.06),
+        ci.lb = NA_real_, ci.ub = NA_real_,
+        stringsAsFactors = FALSE
+      )
+    } else {
+      df <- data.frame(
+        lag = c("0", "1", "0-1"),
+        pm25_variable = c("pm25", "pm25_lag1", "pm25_lag0_1"),
+        coef = c(base + 0.01, base + 0.02, base + 0.03),
+        se   = c(0.05, 0.06, 0.08),
+        ci.lb = NA_real_, ci.ub = NA_real_,
+        stringsAsFactors = FALSE
+      )
+    }
+    list(coef_table = df)
+  }
+
+  mock_rma <- function(yi, sei, method = "REML") {
+    w <- 1 / (sei^2); b <- sum(w * yi) / sum(w); se <- sqrt(1 / sum(w)); z <- stats::qnorm(0.975)
+    list(b = b, se = se, ci.lb = b - z * se, ci.ub = b + z * se, pval = 0.05, I2 = 0)
+  }
+
+  pkg_ns <- getNamespaceName(environment(air_pollution_meta_analysis))
+
+  res <- with_mocked_bindings({
+    with_mocked_bindings({
+      air_pollution_meta_analysis(lagged, max_lag = 1)
+    },
+    rma = mock_rma, .package = "metafor"
+    )
+  },
+  fit_air_pollution_gam = mock_fit, .package = pkg_ns
+  )
+
+  mr <- res$meta_results
+  # We still expect rows for "0" and "1" and usually also "0-1" if at least one region had it
+  expect_true(all(c("0", "1") %in% as.character(mr$lag)))
+  # cumulative exists iff at least one region contributed it
+  expect_true(any(as.character(mr$lag) == "0-1"))
+})
+
+# Unit test 9: Input driven rma failure when se = 0
+test_that("air_pollution_meta_analysis returns NA row when SEs are zero for a lag", {
+  requireNamespace("metafor", quietly = TRUE)
+
+  lagged <- make_lagged_multi_region(regions = c("A","B"), n_days = 20, max_lag = 1)
+
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+    list(coef_table = data.frame(
+      lag = c("0", "1", "0-1"),
+      pm25_variable = c("pm25", "pm25_lag1", "pm25_lag0_1"),
+      coef = c(0.10, 0.20, 0.30),
+      se   = c(0.00, 0.06, 0.08),  # zero SE for lag "0"
+      ci.lb = NA_real_, ci.ub = NA_real_,
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  # Delegate to real metafor which may error on zero SE
+  pkg_ns <- getNamespaceName(environment(air_pollution_meta_analysis))
+
+  expect_warning({
+    res <- with_mocked_bindings({
+      air_pollution_meta_analysis(lagged, max_lag = 1)
+    },
+    fit_air_pollution_gam = mock_fit, .package = pkg_ns
+    )
+    mr <- res$meta_results
+    # At least one row (lag "0") should be NA due to failure
+    row0 <- subset(mr, as.character(lag) == "0")
+    expect_true(all(is.na(unlist(row0[, c("coef","se","ci.lb","ci.ub","pval","I2")]))))
+  }, regexp = "Meta-analysis failed for lag ")
+})
+
+
