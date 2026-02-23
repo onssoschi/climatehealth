@@ -1,4 +1,4 @@
-test_that("Synthetic air pollution data loaded in and formatted", {
+test_that("Synthetic air pollution data loaded in and formatted using default settings", {
 
   set.seed(123)
 
@@ -19,7 +19,7 @@ test_that("Synthetic air pollution data loaded in and formatted", {
     n, replace = TRUE
   )
 
-  tmp <- tempfile(fileext = ".csv")
+  temp_synth_data <- tempfile(fileext = ".csv")
 
   # Build frame
   data.frame(
@@ -45,7 +45,9 @@ test_that("Synthetic air pollution data loaded in and formatted", {
 
     stringsAsFactors = FALSE
   ) %>%
-    write.csv(tmp)
+    write.csv(temp_synth_data)
+
+
 
   expected_df <- data.table::data.table(
     date = as.Date(c("2019-01-05", "2019-01-20", "2019-01-23", "2019-01-26",
@@ -282,6 +284,7 @@ test_that("Synthetic air pollution data loaded in and formatted", {
              18, 35, 43, 6, 16)
     )
 
-  actual_df <- load_air_pollution_data(tmp)
+  actual_df <- load_air_pollution_data(temp_synth_data)
   expect_equal(actual_df, expected_df)
+
 })
