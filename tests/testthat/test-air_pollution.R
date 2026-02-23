@@ -288,3 +288,147 @@ test_that("Synthetic air pollution data loaded in and formatted using default se
   expect_equal(actual_df, expected_df)
 
 })
+
+# Test for create_air_pollution_lags
+# Synthetic datasets
+CAPL_TEST_DATA <- data.frame(
+  date = as.Date("2024-01-01") + 0:4,
+  region = rep("RegionA", 5),
+  pm25 = c(10, 20, 30, 40, 50)
+)
+
+CAPL_TEST_DATA_MULTI_REGION <- data.frame(
+  date = rep(as.Date("2024-01-01") + 0:3, 2),
+  region = rep(c("R1", "R2"), each = 4),
+  pm25 = c(1, 2, 3, 4, 10, 20, 30, 40)
+)
+
+CAPL_TEST_DATA_WITH_COVARS <- data.frame(
+  date = as.Date("2024-01-01") + 0:3,
+  region = rep("RegionA", 4),
+  pm25 = c(10, 20, 30, 40),
+  humidity = c(80, 81, 82, 83),
+  deaths = c(5, 6, 7, 8)
+)
+
+# Unit test 1
+test_that("create_air_pollution_lags core behaviour works correctly", {
+  # Standard case: max_lag = 2
+  result <- create_air_pollution_lags(CAPL_TEST_DATA, max_lag = 2)
+
+  # Check new columns exist
+  expect_true(all(c("pm25_lag1", "pm25_lag2", "pm25_lag0_2") %in% names(result)))
+
+  # Check number of rows (should drop first 2 rows)
+  expect_equal(nrow(result), 3)
+
+  # For Region A the remaining dates should be from 3rd orginal row onwards
+  expect_equal(result$date, CAPL_TEST_DATA$date[3:5])
+
+  # Check lag values
+  expect_equal(result$pm25_lag1, c(20, 30, 40))
+  expect_equal(result$pm25_lag2, c(10, 20, 30))
+
+  # Check average lag column
+  expected_avg <- rowMeans(cbind(result$pm25, result$pm25_lag1, result$pm25_lag2))
+  expect_equal(result$pm25_lag0_2, expected_avg)
+
+  # Subtest: max_lag = 1
+  result1 <- create_air_pollution_lags(CAPL_TEST_DATA, max_lag = 1)
+  expect_true(all(c("pm25_lag1", "pm25_lag0_1") %in% names(result1)))
+  expect_equal(nrow(result1), 4)
+  # Check if it returns ungrouped data
+  expect_equal(dplyr::group_vars(result1), character(0))
+
+  # Subtest: max_lag = 14
+  CAPL_TEST_DATA <- CAPL_TEST_DATA[1:3, ]
+  result2 <- create_air_pollution_lags(CAPL_TEST_DATA, max_lag = 6)
+  expect_equal(nrow(result2), 0) #returns empty when max_lag > available rows
+
+  # Subtest: max_lag < 1
+  expect_error(create_air_pollution_lags(CAPL_TEST_DATA, max_lag = 0),
+               "max_lag must be at least 1")
+  expect_error(create_air_pollution_lags(CAPL_TEST_DATA, max_lag = -5),
+               "max_lag must be at least 1")
+
+  #Subtest: max_lag > 14
+  expect_message(
+    create_air_pollution_lags(CAPL_TEST_DATA, max_lag = 15),
+    "not recommended"
+  )
+})
+
+# Unit test 2
+test_that("create_air_pollution_lags works with multiple regions", {
+  result <- create_air_pollution_lags(CAPL_TEST_DATA_MULTI_REGION, max_lag = 1)
+
+  # One row dropped per region due to lag, so total rows should be 6
+  expect_equal(nrow(result), 6)
+
+  r1 <- result[result$region == "R1", ]
+  r2 <- result[result$region == "R2", ]
+
+  expect_equal(r1$pm25, c(2, 3, 4))
+  expect_equal(r1$pm25_lag1, c(1, 2, 3))
+
+
+  expect_equal(r2$pm25, c(20, 30, 40))
+  expect_equal(r2$pm25_lag1, c(10, 20, 30))
+
+  CAPL_TEST_DATA$region <- factor(CAPL_TEST_DATA$region)
+
+
+})
+
+# Unit test 3
+test_that("create_air_pollution_lags handles unsorted rows and date gaps correctly", {
+  # Unsorted within region
+  CAPL_TEST_DATA_UNSORTED <- data.frame(
+    date = as.Date(c("2024-01-03","2024-01-01","2024-01-02","2024-01-04")),
+    region = "A",
+    pm25 = c(30, 10, 20, 40)
+  )
+
+  res1 <- create_air_pollution_lags(CAPL_TEST_DATA_UNSORTED, max_lag = 1)
+  expect_equal(res1$date, as.Date(c("2024-01-02","2024-01-03","2024-01-04")))
+  expect_equal(res1$pm25_lag1, c(10,20,30))
+
+  # Date gaps (lag based on row order)
+  CAPL_TEST_DATA_GAPS <- data.frame(
+    date = as.Date(c("2024-01-01","2024-01-10","2024-01-20","2024-01-21")),
+    region = "A",
+    pm25 = c(10, 20, 30, 40)
+  )
+
+  res2 <- create_air_pollution_lags(CAPL_TEST_DATA_GAPS, max_lag = 2)
+  expect_equal(nrow(res2), 2)
+  expect_equal(res2$pm25_lag1, c(20,30))
+  expect_equal(res2$pm25_lag2, c(10,20))
+})
+
+# Unit test 4
+test_that("create_air_pollution_lags drops rows containing NA in the lag window", {
+  CAPL_TEST_DATA <- data.frame(
+    date = as.Date("2024-01-01") + 0:4,
+    region = "A",
+    pm25 = c(10, NA, 30, 40, 50)
+  )
+
+  res <- create_air_pollution_lags(CAPL_TEST_DATA, max_lag = 2)
+
+  expect_equal(nrow(res), 1)
+  expect_equal(res$date, as.Date("2024-01-05"))
+  expect_equal(res$pm25_lag1, 40)
+  expect_equal(res$pm25_lag2, 30)
+  expect_equal(res$pm25_lag0_2, mean(c(50,40,30)))
+})
+
+# Unit test 5
+test_that("create_air_pollution_lags retains non-exposure columns", {
+  result <- create_air_pollution_lags(CAPL_TEST_DATA_WITH_COVARS, max_lag = 1)
+
+  # Compare unchanged columns (after filtering rows)
+  expect_equal(result$deaths, CAPL_TEST_DATA_WITH_COVARS$deaths[2:4])
+  expect_equal(result$humidity, CAPL_TEST_DATA_WITH_COVARS$humidity[2:4])
+})
+
