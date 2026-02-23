@@ -337,7 +337,7 @@ test_that("create_air_pollution_lags core behaviour works correctly", {
   # Check if it returns ungrouped data
   expect_equal(dplyr::group_vars(result1), character(0))
 
-  # Subtest: max_lag = 14
+  # Subtest: max_lag = 6
   CAPL_TEST_DATA <- CAPL_TEST_DATA[1:3, ]
   result2 <- create_air_pollution_lags(CAPL_TEST_DATA, max_lag = 6)
   expect_equal(nrow(result2), 0) #returns empty when max_lag > available rows
@@ -1375,7 +1375,6 @@ test_that("air_pollution_meta_analysis returns valid meta rows for a single regi
 
 # Unit test 8: Some regions missing the cumulative row
 test_that("air_pollution_meta_analysis aggregates even if some regions miss the cumulative row", {
-  skip_if_not_installed("metafor")
   requireNamespace("metafor", quietly = TRUE)
 
   lagged <- make_lagged_multi_region(regions = c("A", "B", "C"), n_days = 25, max_lag = 1)
