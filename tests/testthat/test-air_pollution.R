@@ -1,4 +1,4 @@
-test_that("Synthetic air pollution data loaded in and formatted using default settings", {
+test_that("Synthetic air pollution data loaded in and formatted as expected", {
 
   set.seed(123)
 
@@ -22,7 +22,8 @@ test_that("Synthetic air pollution data loaded in and formatted using default se
   temp_synth_data <- tempfile(fileext = ".csv")
 
   # Build frame
-  data.frame(
+
+  synth_data <- data.frame(
     region = sample(provinces, n, replace = TRUE),
     date = format(dates, "%d/%m/%Y"),
     year = as.integer(format(dates, "%Y")),
@@ -44,8 +45,25 @@ test_that("Synthetic air pollution data loaded in and formatted using default se
     wind_speed = runif(n, 0.5, 9),
 
     stringsAsFactors = FALSE
-  ) %>%
-    write.csv(temp_synth_data)
+  )
+
+  write.csv(synth_data, temp_synth_data)
+
+  temp_synth_data_diff_names <- tempfile(fileext = ".csv")
+
+  synth_data_diff_names <- dplyr::rename(
+    synth_data,
+    "place" = region,
+    "dy_mnth_yr" = date,
+    "pm" = pm25,
+    "num_dth" = deaths,
+    "pop" = population,
+    "t_max" = tmax,
+    "precip" = precipitation,
+    "humid" = humidity,
+    "wnd_spd" = wind_speed
+  )
+  write.csv(synth_data_diff_names, temp_synth_data_diff_names)
 
 
 
@@ -285,9 +303,22 @@ test_that("Synthetic air pollution data loaded in and formatted using default se
     )
 
   actual_df <- load_air_pollution_data(temp_synth_data)
+
+  actual_df_initially_diff <- load_air_pollution_data(temp_synth_data_diff_names,
+                                                      date_col = "dy_mnth_yr",
+                                                      region_col = "place",
+                                                      pm25_col = "pm",
+                                                      deaths_col = "num_dth",
+                                                      population_col = "pop",
+                                                      humidity_col = "humid",
+                                                      precipitation_col = "precip",
+                                                      tmax_col = "t_max",
+                                                      wind_speed_col = "wnd_spd")
   expect_equal(actual_df, expected_df)
+  expect_equal(actual_df_initially_diff, expected_df)
 
 })
+
 
 # Test for create_air_pollution_lags
 # Synthetic datasets
