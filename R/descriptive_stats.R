@@ -40,16 +40,35 @@ create_correlation_matrix <- function(
   if (!is.vector(independent_cols)) {
     stop("'independent_cols' expected a vector of column names.")
   }
+  independent_cols <- unique(as.character(independent_cols))
 
-  if (length(independent_cols) <= 1) {
-    independent_cols <- names(df)[vapply(df, is.numeric, logical(1))]
-  }
   # assert columns exist in the dataset
-  for (col in independent_cols) {
-    if (!(col %in% colnames(df))) {
-      stop(paste0("Column ", col, " not in dataset."))
-    }
+  missing_cols <- setdiff(independent_cols, colnames(df))
+  if (length(missing_cols) > 0) {
+    stop(
+      paste0(
+        "Column(s) not in dataset: ",
+        paste(missing_cols, collapse = ", ")
+      )
+    )
   }
+
+  # keep only numeric columns for correlation
+  numeric_cols <- independent_cols[vapply(
+    df[independent_cols],
+    is.numeric,
+    logical(1)
+  )]
+  if (length(numeric_cols) < 2) {
+    stop(
+      paste0(
+        "Correlation matrix requires at least 2 numeric columns after filtering. Found ",
+        length(numeric_cols),
+        "."
+      )
+    )
+  }
+
   # assert that the chosen correlation method is valid
   correlation_method <- tolower(correlation_method)
   VALID_METHODS <- c("pearson", "kendall", "spearman")
@@ -58,7 +77,7 @@ create_correlation_matrix <- function(
   }
   # calculate correlation
   corr_df <- df %>%
-    select(all_of(independent_cols)) %>%
+    select(all_of(numeric_cols)) %>%
     cor(method = correlation_method,
         use = "pairwise.complete.obs")
   return(corr_df)
