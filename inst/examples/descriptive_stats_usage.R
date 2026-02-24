@@ -17,8 +17,8 @@
 # ------------------------------------------------------------------------------
 # Input data used in these examples
 # ------------------------------------------------------------------------------
-data_path <- "data/inputs/synthetic_suicide_climate_data 1.csv"
-output_base <- "data/outputs"
+data_path <- "path-to-your-csv-file"
+output_base <- "path-to-folder-where-you-want-outputs: e.g. data/outputs"
 
 # Ensure output directory exists (or set create_base_dir=TRUE below)
 if (!dir.exists(output_base)) {
@@ -37,12 +37,13 @@ if (!dir.exists(output_base)) {
 
 # Minimal direct call (single dataframe, minimal plots)
 df <- read.csv(data_path)
+dependent_col = "suicides" #specify the dependent or outcome col
 
 direct_min_res <- climatehealth::run_descriptive_stats(
   data = df,
   output_path = output_base,
   aggregation_column = "region",
-  dependent_col = "suicides",
+  dependent_col = dependent_col,
   independent_cols = c("tmean", "hum", "sun", "rainfall"),
   plot_corr_matrix = TRUE,
   plot_dist = TRUE,
@@ -72,7 +73,7 @@ direct_adv_res <- climatehealth::run_descriptive_stats(
   output_path = output_base,
   aggregation_column = "region",
   population_col = "population",
-  dependent_col = "suicides",
+  dependent_col = dependent_col,
   independent_cols = c("tmean", "hum", "sun", "rainfall"),
   units = c(
     suicides = "count",
@@ -108,7 +109,7 @@ direct_list_res <- climatehealth::run_descriptive_stats(
   data = df_by_region,
   output_path = output_base,
   aggregation_column = "region",
-  dependent_col = "suicides",
+  dependent_col = dependent_col,
   independent_cols = c("tmean", "hum"),
   plot_corr_matrix = TRUE,
   plot_dist = TRUE,
@@ -131,7 +132,7 @@ api_min_res <- climatehealth::run_descriptive_stats_api(
   data = data_path,
   output_path = output_base,
   aggregation_column = "region",
-  dependent_col = "suicides",
+  dependent_col = "suicides", #specify exact outcome variable in your dataset
   independent_cols = c("tmean", "hum", "sun", "rainfall"),
   plot_corr_matrix = TRUE,
   plot_dist = TRUE,
@@ -155,7 +156,7 @@ api_adv_res <- climatehealth::run_descriptive_stats_api(
   output_path = output_base,
   aggregation_column = "region",
   population_col = "population",
-  dependent_col = "suicides",
+  dependent_col = "suicides", #specify exact outcome variable in your dataset
   independent_cols = c("tmean", "hum", "sun", "rainfall"),
   units = c(
     suicides = "count",
@@ -202,7 +203,7 @@ plumber_min_payload <- list(
   data = df_payload,
   output_path = output_base,
   aggregation_column = "region",
-  dependent_col = "suicides",
+  dependent_col = "suicides", #specify exact outcome variable in your dataset
   independent_cols = c("tmean", "hum", "sun", "rainfall"),
   plot_corr_matrix = TRUE,
   plot_dist = TRUE,
@@ -230,7 +231,7 @@ plumber_adv_payload <- list(
   output_path = output_base,
   aggregation_column = "region",
   population_col = "population",
-  dependent_col = "suicides",
+  dependent_col = "suicides", #specify exact outcome variable in your dataset
   independent_cols = c("tmean", "hum", "sun", "rainfall"),
   units = c(
     suicides = "count",
