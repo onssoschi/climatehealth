@@ -17,12 +17,13 @@
 # ------------------------------------------------------------------------------
 # Input data used in these examples
 # ------------------------------------------------------------------------------
-# data_path <- "path-to-your-csv-file"
-# output_base <- "path-to-folder-where-you-want-outputs: e.g. data/outputs"
 
+data_path <- "path-to-your-csv-file"
+output_base <- "path-to-folder-where-you-want-outputs: e.g. data/outputs"
 
-data_path <- "D:/HAPI/data/synthetic_suicide_climate_data_1.csv"
-output_base <- "D:/HAPI/data/outputs"
+# Example based on my local path setup
+# data_path <- "D:/soschi/data/synthetic_suicide_climate_data_1.csv"
+# output_base <- "D:/soschi/data/outputs"
 
 # Ensure output directory exists (or set create_base_dir=TRUE below)
 if (!dir.exists(output_base)) {
