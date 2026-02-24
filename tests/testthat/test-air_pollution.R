@@ -2052,3 +2052,186 @@ test_that("analyze_air_pollution_daily computes rr.lb/rr.ub when pooled CI colum
   expect_true(any(is.finite(nat_pm25$rr.ub)))
 })
 
+# Tests for plot_air_pollution_forest_by_region()
+#Utility to build analysis_results for a given max_lag
+.build_analysis_results <- function(regions = c("R1","R2"),
+                                    n_days = 8,
+                                    max_lag = 1L,
+                                    ref_pm25 = 20,
+                                    ref_name = "WHO",
+                                    meta_args = list()) {
+  data_lag <- make_lagged_multi_region(regions = regions, n_days = n_days, max_lag = max_lag)
+  # Build a simple meta consistent with max_lag
+  if (max_lag == 0L) {
+    # pm25 and pm25_lag0_0 only
+    z <- stats::qnorm(0.975)
+    mk <- function() {
+      data.frame(
+        lag = c("0","0-0"),
+        pm25_variable = c("pm25","pm25_lag0_0"),
+        coef = c(0.01, 0.01),
+        se = c(0.001, 0.001),
+        ci.lb = c(0.01 - z*0.001, 0.01 - z*0.001),
+        ci.ub = c(0.01 + z*0.001, 0.01 + z*0.001),
+        stringsAsFactors = FALSE
+      )
+    }
+    meta <- list(
+      region_results = tibble::tibble(region = regions,
+                                      model_results = replicate(length(regions), mk(), simplify = FALSE)),
+      meta_results = mk()
+    )
+  } else if (max_lag == 1L) {
+    meta <- do.call(build_meta_results_simple, meta_args)
+  } else if (max_lag == 2L) {
+    z <- stats::qnorm(0.975)
+    mk_ct <- function() {
+      data.frame(
+        lag = c("0","1","2","0-2"),
+        pm25_variable = c("pm25","pm25_lag1","pm25_lag2","pm25_lag0_2"),
+        coef = c(0.01,0.005,0.003,0.018),
+        se   = c(0.001,0.002,0.002,0.003),
+        ci.lb = c(0.01 - z*0.001, 0.005 - z*0.002, 0.003 - z*0.002, 0.018 - z*0.003),
+        ci.ub = c(0.01 + z*0.001, 0.005 + z*0.002, 0.003 + z*0.002, 0.018 + z*0.003),
+        stringsAsFactors = FALSE
+      )
+    }
+    meta <- list(
+      region_results = tibble::tibble(region = regions,
+                                      model_results = replicate(length(regions), mk_ct(), simplify = FALSE)),
+      meta_results = mk_ct()
+    )
+  } else {
+    stop("Test helper not implemented for max_lag > 2")
+  }
+
+  analyze_air_pollution_daily(
+    data_with_lags = data_lag,
+    meta_results   = meta,
+    ref_pm25       = ref_pm25,
+    ref_name       = ref_name,
+    max_lag        = max_lag
+  )
+}
+
+# Unit test 1
+test_that("plot_air_pollution_forest_by_region returns ggplot and includes National by default", {
+  analysis_results <- .build_analysis_results(regions = c("R1","R2"),
+                                              n_days = 80, max_lag = 1L,
+                                              ref_pm25 = 20, ref_name = "WHO")
+
+  p <- plot_air_pollution_forest_by_region(
+    analysis_results = analysis_results,
+    max_lag = 1L,
+    include_national = TRUE,
+    save_plot = FALSE
+  )
+
+  expect_s3_class(p, "ggplot")
+  expect_true(all(unique(p$data$var_name) == "pm25_lag0_1"))
+  expect_true(all(c("R1","R2","National") %in% levels(p$data$region)))
+  levs <- levels(p$data$region)
+  expect_equal(levs[length(levs)], "National")
+  expect_true(grepl('Ref: "WHO" = 20', p$labels$title, fixed = TRUE))
+
+  # Updated y-limit assertions (ggplot2 compatible)
+  expect_s3_class(p$coordinates, "CoordCartesian")
+  lims <- tryCatch(p$coordinates$limits$y, error = function(e) NULL)
+  expect_true(!is.null(lims))
+  expect_length(lims, 2)
+  expect_true(lims[1] < 1 && lims[2] > 1)
+})
+
+# Unit test 2
+test_that("plot_air_pollution_forest_by_region excludes National when include_national = FALSE", {
+  analysis_results <- .build_analysis_results(regions = c("R1","R2"),
+                                              n_days = 8, max_lag = 1L,
+                                              ref_pm25 = 20, ref_name = "WHO")
+
+  p <- plot_air_pollution_forest_by_region(
+    analysis_results = analysis_results,
+    max_lag = 1L,
+    include_national = FALSE,
+    save_plot = FALSE
+  )
+
+  # Regions should not include National
+  expect_false("National" %in% levels(p$data$region))
+  expect_true(all(c("R1","R2") %in% levels(p$data$region)))
+})
+
+# Unit test 3
+test_that("plot_air_pollution_forest_by_region errors when save_plot = TRUE and output_dir is NULL", {
+  analysis_results <- .build_analysis_results(regions = c("R1","R2"),
+                                              n_days = 8, max_lag = 1L)
+
+  expect_error(
+    plot_air_pollution_forest_by_region(
+      analysis_results = analysis_results,
+      max_lag = 1L,
+      include_national = TRUE,
+      output_dir = NULL,
+      save_plot = TRUE
+    ),
+    "output_dir must be specified"
+  )
+})
+
+# Unit test 4
+test_that("plot_air_pollution_forest_by_region calls save_air_pollution_plot with expected filename", {
+  analysis_results <- .build_analysis_results(regions = c("R1","R2"),
+                                              n_days = 8, max_lag = 1L,
+                                              ref_pm25 = 25, ref_name = "UKHSA")
+
+  outdir <- tempfile("forest_out_")
+  dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
+  on.exit(unlink(outdir, recursive = TRUE, force = TRUE), add = TRUE)
+
+  captured <- new.env(parent = emptyenv())
+  mock_save <- function(plot_object, output_dir, filename) {
+    captured$plot_object <- plot_object
+    captured$output_dir  <- output_dir
+    captured$filename    <- filename
+    invisible(TRUE)
+  }
+
+  pkg_ns <- getNamespaceName(environment(plot_air_pollution_forest_by_region))
+
+  p <- with_mocked_bindings({
+    plot_air_pollution_forest_by_region(
+      analysis_results = analysis_results,
+      max_lag = 1L,
+      include_national = TRUE,
+      output_dir = outdir,
+      save_plot = TRUE
+    )
+  },
+  save_air_pollution_plot = mock_save, .package = pkg_ns
+  )
+
+  expect_s3_class(p, "ggplot")
+  expect_identical(captured$output_dir, outdir)
+  # Expected parts in file name: var_name, ref_name, ref_pm25
+  expect_true(grepl("pm25_lag0_1", captured$filename))
+  expect_true(grepl("UKHSA", captured$filename))
+  expect_true(grepl("25", captured$filename))
+})
+
+# Unit test 5
+test_that("plot_air_pollution_forest_by_region errors when cumulative var for max_lag is absent", {
+  # Build analysis_results for max_lag = 1
+  analysis_results <- .build_analysis_results(regions = c("R1","R2"),
+                                              n_days = 8, max_lag = 1L)
+
+  # Ask the plotter for max_lag = 2 (pm25_lag0_2 will not be present)
+  expect_error(
+    plot_air_pollution_forest_by_region(
+      analysis_results = analysis_results,
+      max_lag = 2L,
+      include_national = TRUE,
+      save_plot = FALSE
+    ),
+    "No results for the selected var_name"
+  )
+})
+
