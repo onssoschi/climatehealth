@@ -103,44 +103,99 @@ create_column_summaries <- function(df, independent_cols = NULL) {
   if (!is.vector(independent_cols)) {
     stop("'independent_cols' expected a vector of column names.")
   }
-  # assert columns exist in the dataset
-  for (col in independent_cols) {
-    if (!(col %in% colnames(df))) {
-      stop(paste0("Column ", col, " not in dataset."))
-    }
+  independent_cols <- unique(as.character(independent_cols))
+
+  final_fields <- c(
+    "Data_Type", "Non_Missing", "Missing", "Unique",
+    "Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.",
+    "IQR", "Variance", "SD", "Top", "Top_Freq"
+  )
+
+  # explicit output for empty column selections
+  if (length(independent_cols) == 0) {
+    empty_result <- data.frame(matrix(nrow = 0, ncol = length(final_fields)))
+    colnames(empty_result) <- final_fields
+    return(empty_result)
   }
-  # get summaries
+
+  # assert columns exist in the dataset
+  missing_cols <- setdiff(independent_cols, colnames(df))
+  if (length(missing_cols) > 0) {
+    stop(
+      paste0(
+        "Column(s) not in dataset: ",
+        paste(missing_cols, collapse = ", ")
+      )
+    )
+  }
+
+  # get type-aware summaries
   summary_list <- list()
   for (col in independent_cols) {
     col_data <- df[[col]]
-    stats <- summary(col_data)
+    non_missing <- sum(!is.na(col_data))
+    missing <- sum(is.na(col_data))
+    unique_vals <- length(unique(col_data[!is.na(col_data)]))
 
-    # Ensure all expected fields are present
-    expected_fields <- c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.")
-    stats <- stats[expected_fields]
-    # Calculate IQR, Variance, and SD if numeric
+    min_val <- NA_real_
+    q1_val <- NA_real_
+    median_val <- NA_real_
+    mean_val <- NA_real_
+    q3_val <- NA_real_
+    max_val <- NA_real_
+    iqr_val <- NA_real_
+    var_val <- NA_real_
+    sd_val <- NA_real_
+    top_val <- NA_character_
+    top_freq <- NA_integer_
+
     if (is.numeric(col_data)) {
-      iqr <- stats["3rd Qu."] - stats["1st Qu."]
-      var_val <- var(col_data, na.rm = TRUE)
-      sd_val <- sd(col_data, na.rm = TRUE)
+      if (non_missing > 0) {
+        q_vals <- as.numeric(stats::quantile(
+          col_data,
+          probs = c(0, 0.25, 0.5, 0.75, 1),
+          na.rm = TRUE,
+          names = FALSE
+        ))
+        min_val <- q_vals[1]
+        q1_val <- q_vals[2]
+        median_val <- q_vals[3]
+        mean_val <- mean(col_data, na.rm = TRUE)
+        q3_val <- q_vals[4]
+        max_val <- q_vals[5]
+        iqr_val <- stats::IQR(col_data, na.rm = TRUE)
+        var_val <- stats::var(col_data, na.rm = TRUE)
+        sd_val <- stats::sd(col_data, na.rm = TRUE)
+      }
     } else {
-      iqr <- NA
-      var_val <- NA
-      sd_val <- NA
+      if (non_missing > 0) {
+        mode_counts <- sort(table(as.character(col_data[!is.na(col_data)])), decreasing = TRUE)
+        top_val <- names(mode_counts)[1]
+        top_freq <- as.integer(mode_counts[1])
+      }
     }
 
-    summary_df <- as.data.frame(t(c(stats,
-                                    IQR = iqr,
-                                    Variance = var_val,
-                                    SD = sd_val
-    )))
-    final_fields <- c(
-      "Min.", "1st Qu.", "Median", "Mean", "3rd Qu.",
-      "Max.", "IQR", "Variance", "SD"
+    summary_list[[col]] <- data.frame(
+      Data_Type = class(col_data)[1],
+      Non_Missing = non_missing,
+      Missing = missing,
+      Unique = unique_vals,
+      `Min.` = min_val,
+      `1st Qu.` = q1_val,
+      Median = median_val,
+      Mean = mean_val,
+      `3rd Qu.` = q3_val,
+      `Max.` = max_val,
+      IQR = iqr_val,
+      Variance = var_val,
+      SD = sd_val,
+      Top = top_val,
+      Top_Freq = top_freq,
+      stringsAsFactors = FALSE,
+      check.names = FALSE
     )
-    colnames(summary_df) <- final_fields
-    summary_list[[col]] <- summary_df
   }
+
   # Combine all summaries into one data frame
   result <- do.call(rbind, summary_list)
   rownames(result) <- independent_cols
