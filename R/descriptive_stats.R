@@ -384,8 +384,9 @@ descriptive_stats_core <- function(
     })
 
     plot_boxplots(
-      df,
-      selected_cols,
+      df = df,
+      columns = selected_cols,
+      select_numeric = FALSE,
       ylabs = ylabs,
       title = boxplot_title,
       save_plot = TRUE,
@@ -398,14 +399,14 @@ descriptive_stats_core <- function(
     full_corr <- create_correlation_matrix(df, independent_cols, correlation_method)
     corr_path <- file.path(output_path, "correlation_matrix.png")
     plot_correlation_matrix(
-      full_corr,
-      paste0(
+      matrix_ = full_corr,
+      title = paste0(
         "Correlation Matrix, Method: ",
         stringr::str_to_title(correlation_method),
         "\n",
         title
       ),
-      corr_path
+      output_path = corr_path
     )
   }
 
@@ -420,86 +421,91 @@ descriptive_stats_core <- function(
     })
 
     plot_distributions(
-      df,
-      independent_cols,
+      df = df,
+      columns = independent_cols,
+      title = paste0("Histograms - ", title),
       xlabs = xlabs,
-      paste0("Histograms - ", title),
-      TRUE,
-      dist_path
+      save_hists = TRUE,
+      output_path = dist_path
     )
   }
   # Count NAs and visualise
   na_counts_path <- file.path(output_path, "na_counts.pdf")
   if (plot_na_counts == TRUE) {
     na_summary <- create_na_summary(df)
-    pdf(na_counts_path, width = 14)
-    par(mar = c(8, 4, 4, 4) + 0.1)
+    with_pdf_device(
+      output_path = na_counts_path,
+      width = 14,
+      height = 8,
+      context = paste0("NA counts plot for ", title),
+      plot_fn = function() {
+        par(mar = c(8, 4, 4, 4) + 0.1)
 
-    # left axis: counts - force a sensible upper bound even if all zeros
-    y_max <- max(na_summary$na_count, na.rm = TRUE)
+        # left axis: counts - force a sensible upper bound even if all zeros
+        y_max <- max(na_summary$na_count, na.rm = TRUE)
 
-    ylim <- c(0, max(10, y_max))
-    y_ticks <- pretty(ylim, n = 11)
-    ylim <- c(0, max(y_ticks))
+        ylim <- c(0, max(10, y_max))
+        y_ticks <- pretty(ylim, n = 11)
+        ylim <- c(0, max(y_ticks))
 
-    bar_midpoints <- barplot(
-      height = na_summary$na_count,
-      names.arg = na_summary$column,
-      las = 2,
-      col = "#296991",
-      ylab = "NA Count",
-      main = paste0("NA counts - ", title),
-      ylim = ylim,
-      yaxs = "i",
-      yaxt = "n"
+        bar_midpoints <- barplot(
+          height = na_summary$na_count,
+          names.arg = na_summary$column,
+          las = 2,
+          col = "#296991",
+          ylab = "NA Count",
+          main = paste0("NA counts - ", title),
+          ylim = ylim,
+          yaxs = "i",
+          yaxt = "n"
+        )
+        axis(side = 2,
+             at = y_ticks)
+
+        pmax <- max(na_summary$na_percent, na.rm = TRUE)
+        lim_hi <- if (is.finite(pmax) && pmax <= 2) 2 else 100
+        epsilon <- lim_hi * 0.02
+        ticks <- if (lim_hi == 100) seq(0, 100, by = 10) else seq(0, lim_hi, length.out = 11)
+        par(new = TRUE)
+        plot(
+          x = bar_midpoints,
+          y = na_summary$na_percent + epsilon,
+          type = "b",
+          axes = FALSE,
+          xlab = "",
+          ylab = "",
+          col = "#C75E70",
+          pch = 16,
+          ylim = c(0, lim_hi),
+          yaxs = "i"
+        )
+        axis(side = 4,
+             at = ticks,
+             labels = ticks)
+        mtext("NA Percent", side = 4, line = 3, col = "black")
+
+        legend("topright",
+               inset = 0.02,
+               legend = c("NA count", "NA percent"),
+               col = c("#296991", "#C75E70"),
+               pch = c(15, 16),
+               lty = c(NA, 1),
+               pt.cex = 1)
+      }
     )
-    axis(side = 2,
-         at = y_ticks)
-
-    pmax <- max(na_summary$na_percent, na.rm = TRUE)
-    lim_hi <- if (is.finite(pmax) && pmax <= 2) 2 else 100
-    epsilon <- lim_hi * 0.02
-    ticks  <- if (lim_hi == 100) seq(0, 100, by = 10) else seq(0, lim_hi, length.out = 11)
-    par(new = TRUE)
-    plot(
-      x = bar_midpoints,
-      y = na_summary$na_percent + epsilon,
-      type = "b",
-      axes = FALSE,
-      xlab = "",
-      ylab = "",
-      col = "#C75E70",
-      pch = 16,
-      ylim = c(0, lim_hi),
-      yaxs = "i"
-    )
-    axis(side = 4,
-         at = ticks,
-         labels = ticks)
-    mtext("NA Percent", side = 4, line = 3, col = "black")
-
-    legend("topright",
-           inset = 0.02,
-           legend = c("NA count", "NA percent"),
-           col = c("#296991", "#C75E70"),
-           pch = c(15, 16),
-           lty = c(NA, 1),
-           pt.cex = 1)
-
-    dev.off()
   }
 
   # Dependent vs independent variables
   scatter_path <- file.path(output_path, "dependent_vs_independents.pdf")
   if (plot_scatter == TRUE) {
     plot_scatter_grid(
-      df,
-      dependent_col,
-      independent_cols,
-      units = units,
-      paste0("Dependent vs Independent Column(s) - ", title),
-      TRUE,
-      scatter_path
+      df = df,
+      main_col = dependent_col,
+      comparison_cols = independent_cols,
+      title = paste0("Dependent vs Independent Column(s) - ", title),
+      save_scatters = TRUE,
+      output_path = scatter_path,
+      units = units
     )
   }
   # Seasonal trends
@@ -632,6 +638,45 @@ raise_if_null <- function(param_nm, value) {
   if (is.null(value)) {
     stop(paste0("Unexpected NULL in ", param_nm))
   }
+}
+
+#' Run plotting code inside a safely managed PDF device.
+#'
+#' @param output_path Character. Output path for the PDF file.
+#' @param width Numeric. PDF width in inches.
+#' @param height Numeric. PDF height in inches.
+#' @param context Character. Context label used in error messages.
+#' @param plot_fn Function. Plotting function to execute.
+#'
+#' @return None. Writes a PDF and closes device safely.
+#'
+#' @keywords internal
+with_pdf_device <- function(
+    output_path,
+    width = 14,
+    height = 8,
+    context = "plot",
+    plot_fn) {
+  if (!is.function(plot_fn)) {
+    stop("`plot_fn` must be a function.")
+  }
+
+  output_path <- enforce_file_extension(output_path, ".pdf")
+  dir.create(dirname(output_path), recursive = TRUE, showWarnings = FALSE)
+  grDevices::pdf(output_path, width = width, height = height)
+  on.exit(grDevices::dev.off(), add = TRUE)
+
+  tryCatch(
+    {
+      plot_fn()
+    },
+    error = function(e) {
+      stop(
+        paste0("Failed while creating ", context, ": ", e$message),
+        call. = FALSE
+      )
+    }
+  )
 }
 
 #' Emit a consistent deprecation warning for descriptive stats wrappers.
@@ -1073,38 +1118,46 @@ run_descriptive_stats <- function(
     for (region_name in names(ma_df_list)) {
       region_folder <- region_output_paths[[region_name]]
       file_path <- file.path(region_folder, "moving_average.pdf")
-      pdf(file_path, width = 14, height = 8)
-      par(oma = c(0, 0, 4, 0), mar = c(5, 4, 3.5, 2) + 0.1)
+      with_pdf_device(
+        output_path = file_path,
+        width = 14,
+        height = 8,
+        context = paste0("moving average plot for region '", region_name, "'"),
+        plot_fn = function() {
+          par(oma = c(0, 0, 4, 0), mar = c(5, 4, 3.5, 2) + 0.1)
 
-      for (col_i in seq_along(ma_vars)) {
-        plot_moving_average(
-          df = ma_df_list[[region_name]],
-          time_col = timeseries_col,
-          value_col = ma_vars[[col_i]],
-          ma_days = ma_days,
-          ma_sides = ma_sides,
-          title = paste0("Moving average - ", region_name),
-          units = units
-        )
-        if (col_i == 1) {
-          mtext(
-            paste0("Moving average - ", region_name),
-            outer = TRUE,
-            cex = 1.5,
-            line = 1.2,
-            font = 2,
-            col = "black"
-          )
-          mtext(
-            paste0("(n=", ma_days, ", sides=", ma_sides, ")"),
-            outer = TRUE,
-            cex = 1.1,
-            line = 0.1,
-            col = "black"
-          )
+          for (col_i in seq_along(ma_vars)) {
+            plot_moving_average(
+              df = ma_df_list[[region_name]],
+              time_col = timeseries_col,
+              value_col = ma_vars[[col_i]],
+              ma_days = ma_days,
+              ma_sides = ma_sides,
+              title = paste0("Moving average - ", region_name),
+              save_plot = FALSE,
+              output_path = "",
+              units = units
+            )
+            if (col_i == 1) {
+              mtext(
+                paste0("Moving average - ", region_name),
+                outer = TRUE,
+                cex = 1.5,
+                line = 1.2,
+                font = 2,
+                col = "black"
+              )
+              mtext(
+                paste0("(n=", ma_days, ", sides=", ma_sides, ")"),
+                outer = TRUE,
+                cex = 1.1,
+                line = 0.1,
+                col = "black"
+              )
+            }
+          }
         }
-      }
-      dev.off()
+      )
     }
   }
 
