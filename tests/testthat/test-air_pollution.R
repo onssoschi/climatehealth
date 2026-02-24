@@ -2052,3 +2052,21 @@ test_that("analyze_air_pollution_daily computes rr.lb/rr.ub when pooled CI colum
   expect_true(any(is.finite(nat_pm25$rr.ub)))
 })
 
+test_that("calculate_air_pollution_grid_dims is outputting appropriate dimensions from valid input", {
+
+  expect_equal(calculate_air_pollution_grid_dims(4),
+               list(ncol = c(2), nrow = c(2)))
+
+  expect_equal(calculate_air_pollution_grid_dims(5),
+               list(ncol = c(3), nrow = c(2)))
+
+  expect_equal(calculate_air_pollution_grid_dims(9),
+               list(ncol = c(3), nrow = c(3)))
+
+  expect_equal(calculate_air_pollution_grid_dims(c(5)),
+               list(ncol = c(3), nrow = c(2)))
+
+  expect_error(calculate_air_pollution_grid_dims(c(5, 2)))
+  expect_error(calculate_air_pollution_grid_dims("boop"))
+})
+
