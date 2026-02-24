@@ -42,13 +42,12 @@ if (!dir.exists(output_base)) {
 
 # Minimal direct call (single dataframe, minimal plots)
 df <- read.csv(data_path)
-dependent_col = "suicides" #specify the dependent or outcome col
 
 direct_min_res <- climatehealth::run_descriptive_stats(
   data = df,
   output_path = output_base,
   aggregation_column = "region",
-  dependent_col = dependent_col,
+  dependent_col = "suicides",
   independent_cols = c("tmean", "hum", "sun", "rainfall"),
   plot_corr_matrix = TRUE,
   plot_dist = TRUE,
