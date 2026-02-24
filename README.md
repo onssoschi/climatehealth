@@ -9,6 +9,7 @@
 ## Table of Contents
 - [Package Overview](#package-overview)  
 - [Package Installation](#package-installation)  
+- [Descriptive Statistics Module](#descriptive-statistics-module)  
 - [Example Datasets](#example-datasets)  
 - [Contributing](#contributing)  
 - [Authors](#authors)  
@@ -106,6 +107,140 @@ The pipelines repository contains the following:
 
 For additional information on the climatehealth_pieplines repository, see the README in the repository itself.
 
+## Descriptive Statistics Module
+
+The updated descriptive statistics module exposes two main entry points:
+
+- `run_descriptive_stats()` for direct package usage.
+- `run_descriptive_stats_api()` for API/plumber-friendly usage.
+
+Outputs are written under:
+`<output_path>/descriptive_stats/<run_id>/All/` and
+`<output_path>/descriptive_stats/<run_id>/<Region>/`
+
+### Optional install/load (if not already installed)
+
+```r
+install.packages("devtools")
+devtools::install_github("onssoschi/climatehealth")
+library(climatehealth)
+```
+
+### Direct package usage
+
+```r
+# Alternative import:
+#
+# library(climatehealth)
+# run_descriptive_stats(...)
+
+df <- read.csv("data/inputs/synthetic_suicide_climate_data 1.csv")
+
+res <- climatehealth::run_descriptive_stats(
+  data = df,
+  output_path = "data/outputs",
+  aggregation_column = "region",
+  population_col = "population",
+  dependent_col = "suicides",
+  independent_cols = c("tmean", "hum", "sun", "rainfall"),
+  timeseries_col = "date",
+  plot_corr_matrix = TRUE,
+  plot_dist = TRUE,
+  plot_ma = TRUE,
+  ma_days = 30,
+  ma_sides = 1,
+  plot_na_counts = TRUE,
+  plot_scatter = TRUE,
+  plot_box = TRUE,
+  plot_seasonal = TRUE,
+  plot_regional = TRUE,
+  plot_total = TRUE,
+  detect_outliers = TRUE,
+  calculate_rate = TRUE,
+  create_base_dir = TRUE
+)
+
+res$run_output_path
+res$region_output_paths
+```
+
+### API-style usage from R (wrapper call)
+
+```r
+api_res <- climatehealth::run_descriptive_stats_api(
+  data = "data/inputs/synthetic_suicide_climate_data 1.csv",
+  output_path = "data/outputs",
+  aggregation_column = "region",
+  population_col = "population",
+  dependent_col = "suicides",
+  independent_cols = c("tmean", "hum", "sun", "rainfall"),
+  timeseries_col = "date",
+  plot_corr_matrix = TRUE,
+  plot_dist = TRUE,
+  plot_ma = TRUE,
+  ma_days = 30,
+  ma_sides = 1,
+  plot_na_counts = TRUE,
+  plot_scatter = TRUE,
+  plot_box = TRUE,
+  plot_seasonal = TRUE,
+  plot_regional = TRUE,
+  plot_total = TRUE,
+  detect_outliers = TRUE,
+  calculate_rate = TRUE,
+  create_base_dir = TRUE
+)
+```
+
+### Plumber endpoint usage (HTTP)
+
+```r
+library(httr2)
+
+base_url <- "http://localhost:8000"
+endpoint_path <- "/run_descriptive_stats"
+url <- paste0(base_url, endpoint_path)
+
+payload <- list(
+  data = as.list(read.csv("data/inputs/synthetic_suicide_climate_data 1.csv")),
+  output_path = "data/outputs",
+  aggregation_column = "region",
+  population_col = "population",
+  dependent_col = "suicides",
+  independent_cols = c("tmean", "hum", "sun", "rainfall"),
+  timeseries_col = "date",
+  plot_corr_matrix = TRUE,
+  plot_dist = TRUE,
+  plot_ma = TRUE,
+  ma_days = 30,
+  ma_sides = 1,
+  plot_na_counts = TRUE,
+  plot_scatter = TRUE,
+  plot_box = TRUE,
+  plot_seasonal = TRUE,
+  plot_regional = TRUE,
+  plot_total = TRUE,
+  detect_outliers = TRUE,
+  calculate_rate = TRUE,
+  create_base_dir = TRUE
+)
+
+resp <- request(url) |>
+  req_method("POST") |>
+  req_body_json(payload) |>
+  req_perform()
+
+resp_body_json(resp)
+```
+
+If your plumber route maps directly to `run_descriptive_stats_api()`, the JSON body keys
+should match that function's arguments.
+
+### Full runnable examples
+
+See:
+`inst/examples/descriptive_stats_usage.R`
+
 ## Example Datasets
 
 ### Heat-related mortality data
@@ -129,5 +264,3 @@ Coming soon...
 
 ## Funding
 ![Static Badge](https://img.shields.io/badge/Wellcome_Trust-224682%2FZ%2F21%2FZ-%23ff24de)
-
-
