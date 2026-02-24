@@ -281,7 +281,29 @@ descriptive_stats_core <- function(
     timeseries_col = "date",
     write_outlier_table = FALSE,
     calculate_rate = FALSE) {
+  check_empty_dataframe(df)
   raise_if_null("dependent_col", dependent_col)
+  independent_cols <- unique(as.character(independent_cols))
+  validate_descriptive_columns(
+    df = df,
+    context = paste0("'", title, "'"),
+    dependent_col = dependent_col,
+    independent_cols = independent_cols,
+    aggregation_column = aggregation_column,
+    population_col = population_col,
+    timeseries_col = timeseries_col,
+    plot_corr_matrix = plot_corr_matrix,
+    plot_dist = plot_dist,
+    plot_ma = FALSE,
+    plot_scatter = plot_scatter,
+    plot_box = plot_box,
+    plot_seasonal = plot_seasonal,
+    plot_regional = plot_regional,
+    plot_total = plot_total,
+    write_outlier_table = write_outlier_table,
+    calculate_rate = calculate_rate,
+    is_full_dataset = grepl("\\bfull dataset\\b", tolower(title))
+  )
   dir.create(output_path, recursive = TRUE, showWarnings = FALSE)
 
   # get dataframe summary
@@ -673,6 +695,131 @@ prepare_descriptive_input <- function(data, aggregation_column = NULL) {
   return(list(combined_df = combined_df, region_df_list = region_df_list))
 }
 
+#' Preflight validation for descriptive statistics columns based on enabled features.
+#'
+#' @param df Dataframe. Dataset to validate.
+#' @param context Character. Context label for error messages.
+#' @param dependent_col Character. Dependent column.
+#' @param independent_cols Character vector. Independent columns.
+#' @param aggregation_column Character. Region aggregation column.
+#' @param population_col Character. Population column.
+#' @param timeseries_col Character. Timeseries column.
+#' @param plot_corr_matrix Logical. Correlation matrix toggle.
+#' @param plot_dist Logical. Distribution plot toggle.
+#' @param plot_ma Logical. Moving average toggle.
+#' @param plot_scatter Logical. Scatter plot toggle.
+#' @param plot_box Logical. Boxplot toggle.
+#' @param plot_seasonal Logical. Seasonal plot toggle.
+#' @param plot_regional Logical. Regional plot toggle.
+#' @param plot_total Logical. Total-by-year plot toggle.
+#' @param write_outlier_table Logical. Outlier table toggle.
+#' @param calculate_rate Logical. Rate plot toggle.
+#' @param is_full_dataset Logical. Whether this dataset is the full combined dataset.
+#'
+#' @return None. Stops execution if required columns/params are missing.
+#'
+#' @keywords internal
+validate_descriptive_columns <- function(
+    df,
+    context = "dataset",
+    dependent_col,
+    independent_cols,
+    aggregation_column = NULL,
+    population_col = NULL,
+    timeseries_col = NULL,
+    plot_corr_matrix = FALSE,
+    plot_dist = FALSE,
+    plot_ma = FALSE,
+    plot_scatter = FALSE,
+    plot_box = FALSE,
+    plot_seasonal = FALSE,
+    plot_regional = FALSE,
+    plot_total = FALSE,
+    write_outlier_table = FALSE,
+    calculate_rate = FALSE,
+    is_full_dataset = FALSE) {
+  check_empty_dataframe(df)
+
+  if (!is.character(dependent_col) || length(dependent_col) != 1 || !nzchar(dependent_col)) {
+    stop("`dependent_col` must be a single non-empty character string.")
+  }
+
+  if (!is.vector(independent_cols) || length(independent_cols) == 0) {
+    stop("`independent_cols` must be a non-empty character vector.")
+  }
+  independent_cols <- unique(as.character(independent_cols))
+  if (any(!nzchar(independent_cols))) {
+    stop("`independent_cols` contains empty column names.")
+  }
+
+  feature_flags <- c(
+    plot_corr_matrix,
+    plot_dist,
+    plot_ma,
+    plot_scatter,
+    plot_box,
+    plot_seasonal,
+    plot_regional,
+    plot_total,
+    write_outlier_table,
+    calculate_rate
+  )
+  if (any(!is.logical(feature_flags) | is.na(feature_flags))) {
+    stop("Feature toggles must be non-NA logical values.")
+  }
+
+  missing_params <- c()
+  needs_time_col <- (plot_ma || plot_seasonal || plot_total || calculate_rate)
+  if (needs_time_col && (is.null(timeseries_col) || !is.character(timeseries_col) ||
+      length(timeseries_col) != 1 || !nzchar(timeseries_col))) {
+    missing_params <- c(missing_params, "`timeseries_col` is required for enabled time-based features.")
+  }
+  if (calculate_rate && (is.null(population_col) || !is.character(population_col) ||
+      length(population_col) != 1 || !nzchar(population_col))) {
+    missing_params <- c(missing_params, "`population_col` is required when `calculate_rate=TRUE`.")
+  }
+  if (plot_regional && is_full_dataset && (is.null(aggregation_column) ||
+      !is.character(aggregation_column) || length(aggregation_column) != 1 ||
+      !nzchar(aggregation_column))) {
+    missing_params <- c(missing_params, "`aggregation_column` is required when `plot_regional=TRUE` on the full dataset.")
+  }
+  if (length(missing_params) > 0) {
+    stop(
+      paste0(
+        "Preflight validation failed for ",
+        context,
+        ": ",
+        paste(missing_params, collapse = " ")
+      )
+    )
+  }
+
+  required_cols <- unique(c(dependent_col, independent_cols))
+  if (needs_time_col) {
+    required_cols <- c(required_cols, timeseries_col)
+  }
+  if (calculate_rate) {
+    required_cols <- c(required_cols, population_col)
+  }
+  if (plot_regional && is_full_dataset && !is.null(aggregation_column)) {
+    required_cols <- c(required_cols, aggregation_column)
+  }
+  required_cols <- unique(required_cols)
+
+  missing_cols <- setdiff(required_cols, names(df))
+  if (length(missing_cols) > 0) {
+    stop(
+      paste0(
+        "Preflight validation failed for ",
+        context,
+        ". Missing required column(s): ",
+        paste(missing_cols, collapse = ", "),
+        "."
+      )
+    )
+  }
+}
+
 #' Run generic descriptive statistics and EDA outputs for indicator datasets.
 #'
 #' @param data Dataframe or named list of dataframes. If a dataframe is provided and `aggregation_column`
@@ -751,6 +898,7 @@ run_descriptive_stats <- function(
     create_base_dir = FALSE) {
   raise_if_null("dependent_col", dependent_col)
   raise_if_null("independent_cols", independent_cols)
+  independent_cols <- unique(as.character(independent_cols))
 
   # Validate output path and create run folder
   output_path <- prepare_descriptive_output_dir(
@@ -770,6 +918,31 @@ run_descriptive_stats <- function(
   )
   combined_df <- input_data$combined_df
   region_df_list <- input_data$region_df_list
+
+  # Preflight validation across all datasets before writing outputs
+  preflight_df_list <- c(list(All = combined_df), region_df_list)
+  for (nm in names(preflight_df_list)) {
+    validate_descriptive_columns(
+      df = preflight_df_list[[nm]],
+      context = paste0("dataset '", nm, "'"),
+      dependent_col = dependent_col,
+      independent_cols = independent_cols,
+      aggregation_column = aggregation_column,
+      population_col = population_col,
+      timeseries_col = timeseries_col,
+      plot_corr_matrix = plot_corr_matrix,
+      plot_dist = plot_dist,
+      plot_ma = plot_ma,
+      plot_scatter = plot_scatter,
+      plot_box = plot_box,
+      plot_seasonal = plot_seasonal,
+      plot_regional = plot_regional,
+      plot_total = plot_total,
+      write_outlier_table = detect_outliers,
+      calculate_rate = calculate_rate,
+      is_full_dataset = identical(nm, "All")
+    )
+  }
 
   # Always produce full dataset outputs under All
   all_output_path <- file.path(run_output_path, "All")
