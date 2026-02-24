@@ -1800,4 +1800,255 @@ test_that("air_pollution_meta_analysis returns NA row when SEs are zero for a la
   }, regexp = "Meta-analysis failed for lag ")
 })
 
+# Tests for analyze_air_pollution_daily()
+# Build meta_results object with region_results and meta_results data.frames
+# with coefficients for pm25, pm25_lag1, and pm25_lag0_1 (max_lag=1)
+build_meta_results_simple <- function(coef_pm25 = 0.01, coef_lag1 = 0.005, coef_cum = 0.015,
+                                      se_pm25 = 0.001, se_lag1 = 0.002, se_cum = 0.003) {
+  z <- stats::qnorm(0.975)
+  ci <- function(b, s) c(lb = b - z * s, ub = b + z * s)
+
+  make_coef_table <- function() {
+    c0 <- ci(coef_pm25, se_pm25)
+    c1 <- ci(coef_lag1, se_lag1)
+    cc <- ci(coef_cum, se_cum)
+    # note lag uses hyphen; analyze_* converts "-" -> "_" internally
+    data.frame(
+      lag = c("0", "1", "0-1"),
+      pm25_variable = c("pm25", "pm25_lag1", "pm25_lag0_1"),
+      coef = c(coef_pm25, coef_lag1, coef_cum),
+      se   = c(se_pm25, se_lag1, se_cum),
+      ci.lb = c(c0["lb"], c1["lb"], cc["lb"]),
+      ci.ub = c(c0["ub"], c1["ub"], cc["ub"]),
+      stringsAsFactors = FALSE
+    )
+  }
+
+  region_results <- tibble::tibble(
+    region = c("R1", "R2"),
+    model_results = list(make_coef_table(), make_coef_table())
+  )
+
+  pooled <- data.frame(
+    lag = c("0", "1", "0-1"),
+    pm25_variable = c("pm25", "pm25_lag1", "pm25_lag0_1"),
+    coef = c(coef_pm25, coef_lag1, coef_cum),
+    se   = c(se_pm25, se_lag1, se_cum),
+    ci.lb = c(ci(coef_pm25, se_pm25)["lb"], ci(coef_lag1, se_lag1)["lb"], ci(coef_cum, se_cum)["lb"]),
+    ci.ub = c(ci(coef_pm25, se_pm25)["ub"], ci(coef_lag1, se_lag1)["ub"], ci(coef_cum, se_cum)["ub"]),
+    stringsAsFactors = FALSE
+  )
+
+  list(region_results = region_results, meta_results = pooled)
+}
+
+# Utility to pick a specific slice for assertions
+pick_slice <- function(df, region, lag, var_name, date) {
+  idx <- df$region == region &
+    df$lag == lag &
+    df$var_name == var_name &
+    df$date == as.Date(date)
+  df[idx, , drop = FALSE]
+}
+
+# Unit test 1
+test_that("analyze_air_pollution_daily returns correct structure and core math using shared base helpers", {
+  # Build a deterministic two-region dataset and add lags
+  data_lag <- make_lagged_multi_region(regions = c("R1", "R2"), n_days = 4, max_lag = 1L)
+  meta <- build_meta_results_simple()
+  ref <- 20
+
+  res <- analyze_air_pollution_daily(
+    data_with_lags = data_lag,
+    meta_results   = meta,
+    ref_pm25       = ref,
+    ref_name       = "WHO",
+    max_lag        = 1L
+  )
+
+  # Structure
+  expect_s3_class(res, "data.frame")
+  expect_true(all(c(
+    "region","date","lag","var_name","coef","se",
+    "rr","rr.lb","rr.ub",
+    "af","af.lb","af.ub",
+    "an","an.lb","an.ub",
+    "ar","ar.lb","ar.ub",
+    "tot_deaths","pop","pm25_values",
+    "ref_pm25","ref_name"
+  ) %in% names(res)))
+
+  # Expected combos present
+  expect_true(all(c("0","1","0_1") %in% unique(res$lag)))
+  expect_true(all(c("pm25","pm25_lag1","pm25_lag0_1") %in% unique(res$var_name)))
+  expect_true("National" %in% res$region)
+
+  # Count sanity: 2 regions * 3 kept dates per region * 3 lag vars = 18
+  # plus national 3 dates * 3 lag vars = 9; total 27
+  expect_equal(nrow(res), 27)
+
+  # Compute the first and second kept dates for R1, pm25, lag "0" from the result itself
+  r1_pm25_0_dates <- res$date[res$region == "R1" & res$var_name == "pm25" & res$lag == "0"]
+  r1_pm25_0_dates <- sort(unique(r1_pm25_0_dates))
+  expect_equal(length(r1_pm25_0_dates), 3)  # three kept dates after lagging
+
+  d1 <- r1_pm25_0_dates[1]
+  d2 <- r1_pm25_0_dates[2]
+
+  # Slice 1: R1, pm25, lag "0", first kept date
+  s <- pick_slice(res, "R1", "0", "pm25", d1)
+  expect_equal(nrow(s), 1L)
+
+  # Compute expected metrics from the row itself
+  expected_rr <- exp(s$coef * pmax(s$pm25_values - ref, 0))
+  expected_af <- (expected_rr - 1) / expected_rr
+  expected_an <- expected_af * s$tot_deaths
+  expected_ar <- expected_an / s$pop * 100000
+
+  expect_equal(s$rr, expected_rr, tolerance = 1e-12)
+  expect_equal(s$af, expected_af, tolerance = 1e-12)
+  expect_equal(s$an, expected_an, tolerance = 1e-12)
+  expect_equal(s$ar, expected_ar, tolerance = 1e-12)
+
+  # Slice 2: R1, pm25, lag "0", second kept date
+  s2 <- pick_slice(res, "R1", "0", "pm25", d2)
+  expect_equal(nrow(s2), 1L)
+  expected_rr2 <- exp(s2$coef * pmax(s2$pm25_values - ref, 0))
+  expect_equal(s2$rr, expected_rr2, tolerance = 1e-12)
+
+  # ref fields preserved
+  expect_true(all(res$ref_pm25 == ref))
+  expect_true(all(res$ref_name == "WHO"))
+})
+
+# Unit test 2
+test_that("analyze_air_pollution_daily national rows use mean pm25 and summed deaths/pop", {
+  data_lag <- make_lagged_multi_region(regions = c("R1","R2"), n_days = 4, max_lag = 1L)
+  meta <- build_meta_results_simple(coef_pm25 = 0.02, coef_lag1 = 0.00, coef_cum = 0.02,
+                                    se_pm25 = 0.001, se_lag1 = 0.001, se_cum = 0.001)
+  ref <- 20
+
+  res <- analyze_air_pollution_daily(data_lag, meta, ref_pm25 = ref, max_lag = 1L)
+
+  nat_pm25 <- res |>
+    dplyr::filter(region == "National", var_name == "pm25", lag == "0") |>
+    dplyr::arrange(date)
+
+  # Rebuild the national aggregation per the function (round mean to 2 dp)
+  nat_df <- data_lag |>
+    dplyr::group_by(date) |>
+    dplyr::summarise(
+      deaths = sum(deaths, na.rm = TRUE),
+      population = sum(population, na.rm = TRUE),
+      pm25 = round(mean(pm25, na.rm = TRUE), 2),
+      .groups = "drop"
+    ) |>
+    dplyr::arrange(date)
+
+  # Check for the middle kept date, 2024-01-03
+  idx <- which(nat_pm25$date == as.Date("2024-01-03"))
+  expected_rr <- exp(0.02 * (nat_df$pm25[nat_df$date==as.Date("2024-01-03")] - ref))
+  expect_equal(nat_pm25$rr[idx], expected_rr, tolerance = 1e-12)
+
+  # an = af * deaths; af = (rr - 1)/rr
+  rr_val <- nat_pm25$rr[idx]
+  af_val <- (rr_val - 1) / rr_val
+  expected_an <- af_val * nat_df$deaths[nat_df$date==as.Date("2024-01-03")]
+  expect_equal(nat_pm25$an[idx], expected_an, tolerance = 1e-12)
+
+  expected_ar <- expected_an / nat_df$population[nat_df$date==as.Date("2024-01-03")] * 100000
+  expect_equal(nat_pm25$ar[idx], expected_ar, tolerance = 1e-12)
+})
+
+# Unit test 3
+test_that("analyze_air_pollution_daily sets RR/AF/AN/AR to NA when region coef or se is NA", {
+  data_lag <- make_lagged_multi_region(regions = c("R1","R2"), n_days = 4, max_lag = 1L)
+  meta <- build_meta_results_simple()
+
+  # Make R1's pm25_lag1 entirely NA in region_results
+  meta$region_results$model_results[[1]] <- data.frame(
+    lag = c("0", "1", "0-1"),
+    pm25_variable = c("pm25", "pm25_lag1", "pm25_lag0_1"),
+    coef = c(0.01, NA, 0.015),
+    se   = c(0.001, NA, 0.003),
+    ci.lb = c(0.01 - 1.96*0.001, NA, 0.015 - 1.96*0.003),
+    ci.ub = c(0.01 + 1.96*0.001, NA, 0.015 + 1.96*0.003),
+    stringsAsFactors = FALSE
+  )
+
+  res <- analyze_air_pollution_daily(data_lag, meta, ref_pm25 = 20, max_lag = 1L)
+
+  r1_lag1 <- res |> dplyr::filter(region == "R1", var_name == "pm25_lag1", lag == "1")
+  expect_true(all(is.na(r1_lag1$rr)))
+  expect_true(all(is.na(r1_lag1$af)))
+  expect_true(all(is.na(r1_lag1$an)))
+  expect_true(all(is.na(r1_lag1$ar)))
+
+  # National pm25_lag1 still computed from pooled meta
+  nat_lag1 <- res |> dplyr::filter(region == "National", var_name == "pm25_lag1", lag == "1")
+  expect_true(any(is.finite(nat_lag1$rr)))
+})
+
+# Unit test 4
+test_that("analyze_air_pollution_daily errors if meta_results$meta_results missing pm25_variable", {
+  data_lag <- make_lagged_multi_region(regions = c("R1","R2"), n_days = 4, max_lag = 1L)
+  meta <- build_meta_results_simple()
+  meta$meta_results$pm25_variable <- NULL
+
+  expect_error(
+    analyze_air_pollution_daily(data_lag, meta, max_lag = 1L),
+    "must include a 'pm25_variable' column"
+  )
+})
+# Unit test 5
+test_that("analyze_air_pollution_daily includes rows for pm25, pm25_lag1, pm25_lag0_1 for all geographies", {
+  data_lag <- make_lagged_multi_region(regions = c("R1","R2"), n_days = 4, max_lag = 1L)
+  meta <- build_meta_results_simple()
+  res <- analyze_air_pollution_daily(data_lag, meta, max_lag = 1L)
+
+  expected_vars <- c("pm25", "pm25_lag1", "pm25_lag0_1")
+  expected_lags <- c("0", "1", "0_1")
+
+  for (who in c("R1","R2","National")) {
+    sub <- res |> dplyr::filter(region == who)
+    expect_true(all(expected_vars %in% unique(sub$var_name)))
+    expect_true(all(expected_lags %in% unique(sub$lag)))
+  }
+})
+
+# Unit test 6
+test_that("analyze_air_pollution_daily integrates with real air_pollution_meta_analysis when available", {
+  requireNamespace("metafor", quietly = TRUE)
+
+  data_lag <- make_lagged_multi_region(regions = c("R1","R2","R3"), n_days = 60, max_lag = 1L)
+
+  meta_e2e <- air_pollution_meta_analysis(
+    data_with_lags = data_lag,
+    max_lag = 1L,
+    df_seasonal = 6,
+    family = "quasipoisson"
+  )
+
+  out <- analyze_air_pollution_daily(data_lag, meta_e2e, ref_pm25 = 20, max_lag = 1L)
+
+  # Basic shape checks
+  expect_true(all(c("region","date","lag","var_name","rr","af","an","ar") %in% names(out)))
+  expect_true("National" %in% out$region)
+  expect_true(all(c("0","1","0_1") %in% unique(out$lag)))
+  expect_true(all(c("pm25","pm25_lag1","pm25_lag0_1") %in% unique(out$var_name)))
+})
+
+# Unit test 7
+test_that("analyze_air_pollution_daily computes rr.lb/rr.ub when pooled CI columns are absent", {
+  data_lag <- make_lagged_multi_region(regions = c("R1","R2"), n_days = 5, max_lag = 1L)
+  meta <- build_meta_results_simple()
+  meta$meta_results$ci.lb <- NULL
+  meta$meta_results$ci.ub <- NULL
+
+  res <- analyze_air_pollution_daily(data_lag, meta, ref_pm25 = 20, max_lag = 1L)
+  nat_pm25 <- subset(res, region == "National" & var_name == "pm25" & lag == "0")
+  # Some finite interval should exist now
+  expect_true(any(is.finite(nat_pm25$rr.lb)))
+  expect_true(any(is.finite(nat_pm25$rr.ub)))
+})
 
