@@ -752,11 +752,12 @@ prepare_descriptive_output_dir <- function(output_path, create_base_dir = FALSE)
 #'
 #' @param data Dataframe or list of dataframes.
 #' @param aggregation_column Character. Region column for splitting dataframes.
+#' @param timeseries_col Character. Date column for timeseries analysis.
 #'
 #' @return A list with `combined_df` and `region_df_list`.
 #'
 #' @keywords internal
-prepare_descriptive_input <- function(data, aggregation_column = NULL) {
+prepare_descriptive_input <- function(data, aggregation_column = NULL, timeseries_col = NULL) {
   if (is.data.frame(data)) {
     combined_df <- data
     region_df_list <- list()
@@ -790,6 +791,34 @@ prepare_descriptive_input <- function(data, aggregation_column = NULL) {
     }
   } else {
     stop("`data` must be either a dataframe or a named list of dataframes.")
+  }
+
+  if (!is.null(timeseries_col)) {
+    if (timeseries_col %in% names(combined_df)) {
+      combined_df <- combined_df %>%
+        dplyr::mutate(
+          !!rlang::sym(timeseries_col) :=
+            as.Date(
+              !!rlang::sym(timeseries_col),
+              tryFormats = c("%d/%m/%Y", "%Y-%m-%d")
+            )
+        )
+    }
+    if (length(region_df_list)) {
+      for (nm in names(region_df_list)) {
+        df_i <- region_df_list[[nm]]
+        if (timeseries_col %in% names(df_i)) {
+          region_df_list[[nm]] <- df_i %>%
+            dplyr::mutate(
+              !!rlang::sym(timeseries_col) :=
+                as.Date(
+                  !!rlang::sym(timeseries_col),
+                  tryFormats = c("%d/%m/%Y", "%Y-%m-%d")
+                )
+            )
+        }
+      }
+    }
   }
 
   return(list(combined_df = combined_df, region_df_list = region_df_list))
@@ -918,6 +947,7 @@ validate_descriptive_columns <- function(
       )
     )
   }
+
 }
 
 #' Run generic descriptive statistics and EDA outputs for indicator datasets.
@@ -1014,7 +1044,8 @@ run_descriptive_stats <- function(
   # Normalise input into full and regional datasets
   input_data <- prepare_descriptive_input(
     data = data,
-    aggregation_column = aggregation_column
+    aggregation_column = aggregation_column,
+    timeseries_col = timeseries_col
   )
   combined_df <- input_data$combined_df
   region_df_list <- input_data$region_df_list
