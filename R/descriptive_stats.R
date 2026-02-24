@@ -235,34 +235,35 @@ label_with_unit <- function(col, units) {
 #' @param plot_regional Logical. Whether to plot regional plots.
 #' @param plot_total Logical. Whether to plot total health outcomes per year.
 #' @param timeseries_col Character. Column containing timeseries data (e.g., date).
-#' @param detect_outliers Logical. Whether to output a table containing outlier information.
+#' @param write_outlier_table Logical. Whether to output a table containing outlier information.
 #' @param calculate_rate Logical. Whether to calculate the rate of health outcomes per 100k people.
 #'
 #' @return None. Outputs are written to files.
 #'
 #' @keywords internal
-common_descriptive_stats_core <- function(
+descriptive_stats_core <- function(
     df,
     output_path,
     title,
     aggregation_column = NULL,
     population_col = NULL,
-    plot_corr_matrix = F,
+    plot_corr_matrix = FALSE,
     correlation_method = "pearson",
-    plot_dist = F,
+    plot_dist = FALSE,
     dependent_col,
     independent_cols = c(),
     units = NULL,
-    plot_na_counts = F,
-    plot_scatter = F,
-    plot_box = F,
-    plot_seasonal = F,
-    plot_regional = F,
-    plot_total = F,
+    plot_na_counts = FALSE,
+    plot_scatter = FALSE,
+    plot_box = FALSE,
+    plot_seasonal = FALSE,
+    plot_regional = FALSE,
+    plot_total = FALSE,
     timeseries_col = "date",
-    detect_outliers = F,
-    calculate_rate = F) {
+    write_outlier_table = FALSE,
+    calculate_rate = FALSE) {
   raise_if_null("dependent_col", dependent_col)
+  dir.create(output_path, recursive = TRUE, showWarnings = FALSE)
 
   # get dataframe summary
   full_summary <- create_column_summaries(df, independent_cols)
@@ -276,7 +277,7 @@ common_descriptive_stats_core <- function(
   selected_cols <- unique(c(independent_cols, dependent_col))
 
   # plot box plots
-  if (plot_box == T) {
+  if (plot_box == TRUE) {
     boxplot_title <- paste0("Boxplots - ", title)
     boxplot_path <- file.path(output_path, "boxplots.pdf")
 
@@ -297,7 +298,7 @@ common_descriptive_stats_core <- function(
   }
 
   # plot correlation matrix
-  if (plot_corr_matrix) {
+  if (plot_corr_matrix == TRUE) {
     full_corr <- create_correlation_matrix(df, independent_cols, correlation_method)
     corr_path <- file.path(output_path, "correlation_matrix.png")
     plot_correlation_matrix(
@@ -313,7 +314,7 @@ common_descriptive_stats_core <- function(
   }
 
   # Column distributions
-  if (plot_dist == T) {
+  if (plot_dist == TRUE) {
     dist_path <- file.path(output_path, "histograms.pdf")
 
     xlabs <- sapply(independent_cols, function(col) {
@@ -327,18 +328,18 @@ common_descriptive_stats_core <- function(
       independent_cols,
       xlabs = xlabs,
       paste0("Histograms - ", title),
-      T,
+      TRUE,
       dist_path
     )
   }
   # Count NAs and visualise
   na_counts_path <- file.path(output_path, "na_counts.pdf")
-  if (plot_na_counts == T) {
+  if (plot_na_counts == TRUE) {
     na_summary <- create_na_summary(df)
     pdf(na_counts_path, width = 14)
     par(mar = c(8, 4, 4, 4) + 0.1)
 
-    # left axis: counts — force a sensible upper bound even if all zeros
+    # left axis: counts - force a sensible upper bound even if all zeros
     y_max <- max(na_summary$na_count, na.rm = TRUE)
 
     ylim <- c(0, max(10, y_max))
@@ -384,9 +385,9 @@ common_descriptive_stats_core <- function(
     legend("topright",
            inset = 0.02,
            legend = c("NA count", "NA percent"),
-           col = c("#296991","#C75E70"),
-           pch = c(15,16),
-           lty = c(NA,1),
+           col = c("#296991", "#C75E70"),
+           pch = c(15, 16),
+           lty = c(NA, 1),
            pt.cex = 1)
 
     dev.off()
@@ -394,19 +395,19 @@ common_descriptive_stats_core <- function(
 
   # Dependent vs independent variables
   scatter_path <- file.path(output_path, "dependent_vs_independents.pdf")
-  if (plot_scatter == T) {
+  if (plot_scatter == TRUE) {
     plot_scatter_grid(
       df,
       dependent_col,
       independent_cols,
       units = units,
       paste0("Dependent vs Independent Column(s) - ", title),
-      T,
+      TRUE,
       scatter_path
     )
   }
-  # Seasonal tends
-  if (plot_seasonal && !is.null(timeseries_col)) {
+  # Seasonal trends
+  if (plot_seasonal == TRUE && !is.null(timeseries_col)) {
     seasonal_path <- file.path(output_path, "monthly_averages.pdf")
 
     # Create y-axis labels with units
@@ -427,12 +428,11 @@ common_descriptive_stats_core <- function(
     )
   }
   # Plot regional trends
-  if (plot_regional && !is.null(timeseries_col)) {
+  if (plot_regional == TRUE && !is.null(timeseries_col)) {
     # only produce on the full dataset and when regional disaggregation exists
     has_regions <- aggregation_column %in% names(df) && length(unique(stats::na.omit(df[[aggregation_column]]))) > 1
-    is_full     <- grepl("\\bfull dataset\\b", tolower(title))
+    is_full <- grepl("\\bfull dataset\\b", tolower(title))
     if (has_regions && is_full) {
-
       # y-axis labels with units
       ylabs <- vapply(independent_cols, function(col) {
         u <- units[[col]]
@@ -454,12 +454,12 @@ common_descriptive_stats_core <- function(
   }
 
   # Outlier table
-  # Note: Use get() to avoid shadowing - parameter 'detect_outliers' shadows function detect_outliers()
-  if (detect_outliers == TRUE) {
+  if (write_outlier_table == TRUE) {
     outlier_columns <- setdiff(
-      selected_cols[sapply(df[selected_cols], is.numeric)], dependent_col
+      selected_cols[sapply(df[selected_cols], is.numeric)],
+      dependent_col
     )
-    outlier_flags <- get("detect_outliers", envir = asNamespace("climatehealth"))(df, outlier_columns)
+    outlier_flags <- detect_outliers(df, outlier_columns)
 
     # Add outlier flags to df
     for (col in outlier_columns) {
@@ -471,7 +471,7 @@ common_descriptive_stats_core <- function(
     outlier_flag_cols <- outlier_flag_cols[outlier_flag_cols %in% names(df)]
 
     if (length(outlier_flag_cols) > 0) {
-      outlier_rows <- df[apply(df[, outlier_flag_cols, drop = FALSE], 1, any, na.rm = T), ]
+      outlier_rows <- df[apply(df[, outlier_flag_cols, drop = FALSE], 1, any, na.rm = TRUE), ]
     } else {
       warning("No valid outlier flag columns found in the dataframe.")
       outlier_rows <- df[FALSE, ] # empty dataframe with same structure
@@ -524,8 +524,541 @@ common_descriptive_stats_core <- function(
   write.csv(full_summary, summary_path)
 }
 
+#' Raise an Error if a Parameter's Value is NULL
+#'
+#' @param param_nm Character. The parameter name.
+#' @param value Any. The value of the parameter.
+#'
+#' @return None. Stops execution if value is NULL.
+#'
+#' @keywords internal
+raise_if_null <- function(param_nm, value) {
+  if (is.null(value)) {
+    stop(paste0("Unexpected NULL in ", param_nm))
+  }
+}
 
-#' Wrapper Function to Compute Descriptive Statistics for Heat and Cold Indicators
+#' Emit a consistent deprecation warning for descriptive stats wrappers.
+#'
+#' @param old_fn Character. Deprecated function name.
+#' @param new_fn Character. Replacement function name.
+#'
+#' @return None. Emits a warning.
+#'
+#' @keywords internal
+deprecate_descriptive_stats <- function(old_fn, new_fn) {
+  if (requireNamespace("lifecycle", quietly = TRUE)) {
+    lifecycle::deprecate_warn(
+      when = "next-release",
+      what = paste0("climatehealth::", old_fn, "()"),
+      with = paste0("climatehealth::", new_fn, "()")
+    )
+  } else {
+    warning(
+      paste0("`", old_fn, "()` is deprecated; use `", new_fn, "()` instead."),
+      call. = FALSE
+    )
+  }
+}
+
+#' Generate a run id for descriptive statistics output folders.
+#'
+#' @return Character. Run id in the format YYYYmmdd_HHMMSS_NNNN.
+#'
+#' @keywords internal
+generate_descriptive_stats_run_id <- function() {
+  paste0(
+    format(Sys.time(), "%Y%m%d_%H%M%S"),
+    "_",
+    sprintf("%04d", sample.int(9999, 1))
+  )
+}
+
+#' Validate and prepare base output directory for descriptive stats.
+#'
+#' @param output_path Character. Base output path.
+#' @param create_base_dir Logical. Whether to create a missing base directory.
+#'
+#' @return Character. Validated output path.
+#'
+#' @keywords internal
+prepare_descriptive_output_dir <- function(output_path, create_base_dir = FALSE) {
+  if (!is.character(output_path) || length(output_path) != 1 || !nzchar(output_path)) {
+    stop("`output_path` must be a single non-empty character string.")
+  }
+
+  exists <- check_file_exists(output_path, raise = FALSE)
+  if (!exists && create_base_dir == TRUE) {
+    dir.create(output_path, recursive = TRUE, showWarnings = FALSE)
+    exists <- check_file_exists(output_path, raise = FALSE)
+  }
+
+  if (!exists) {
+    stop(
+      paste0(
+        "No file or directory was found at `output_path`: ", output_path,
+        ". Set `create_base_dir = TRUE` to create it."
+      )
+    )
+  }
+  if (!dir.exists(output_path)) {
+    stop("`output_path` exists but is not a directory.")
+  }
+  return(output_path)
+}
+
+#' Normalise descriptive stats data input to combined and regional dataframes.
+#'
+#' @param data Dataframe or list of dataframes.
+#' @param aggregation_column Character. Region column for splitting dataframes.
+#'
+#' @return A list with `combined_df` and `region_df_list`.
+#'
+#' @keywords internal
+prepare_descriptive_input <- function(data, aggregation_column = NULL) {
+  if (is.data.frame(data)) {
+    combined_df <- data
+    region_df_list <- list()
+
+    if (!is.null(aggregation_column)) {
+      if (!(aggregation_column %in% names(data))) {
+        stop(paste0("Column '", aggregation_column, "' not in passed dataset."))
+      }
+      region_df_list <- aggregate_by_column(data, aggregation_column)
+    }
+  } else if (is.list(data)) {
+    if (length(data) == 0) {
+      stop("`data` list cannot be empty.")
+    }
+    if (!all(vapply(data, is.data.frame, logical(1)))) {
+      stop("`data` list must contain only dataframes.")
+    }
+
+    if (is.null(names(data))) {
+      names(data) <- rep("", length(data))
+    }
+    empty_names <- names(data) == ""
+    names(data)[empty_names] <- paste0("Region_", which(empty_names))
+
+    if ("All" %in% names(data)) {
+      combined_df <- data[["All"]]
+      region_df_list <- data[setdiff(names(data), "All")]
+    } else {
+      combined_df <- do.call(rbind, data)
+      region_df_list <- data
+    }
+  } else {
+    stop("`data` must be either a dataframe or a named list of dataframes.")
+  }
+
+  return(list(combined_df = combined_df, region_df_list = region_df_list))
+}
+
+#' Run generic descriptive statistics and EDA outputs for indicator datasets.
+#'
+#' @param data Dataframe or named list of dataframes. If a dataframe is provided and `aggregation_column`
+#'   is passed, data are split by that column.
+#' @param output_path Character. Base output directory.
+#' @param aggregation_column Character. Column used to aggregate/split data by region.
+#' @param population_col Character. The column containing population data.
+#' @param plot_corr_matrix Logical. Whether to plot correlation matrix.
+#' @param correlation_method Character. Correlation method. One of 'pearson', 'spearman', 'kendall'.
+#' @param plot_dist Logical. Whether to plot distribution histograms.
+#' @param plot_ma Logical. Whether to plot moving averages over a timeseries.
+#' @param ma_days Integer. Number of days to use for moving average.
+#' @param ma_sides Integer. Sides to use for moving average (1 or 2).
+#' @param timeseries_col Character. Timeseries column used for moving averages and time-based plots.
+#' @param dependent_col Character. Dependent variable column.
+#' @param independent_cols Character vector. Independent variable columns.
+#' @param units Named character vector. Units for variables.
+#' @param plot_na_counts Logical. Whether to plot NA counts.
+#' @param plot_scatter Logical. Whether to plot scatter plots.
+#' @param plot_box Logical. Whether to plot box plots.
+#' @param plot_seasonal Logical. Whether to plot seasonal trends.
+#' @param plot_regional Logical. Whether to plot regional trends.
+#' @param plot_total Logical. Whether to plot total health outcomes by year.
+#' @param detect_outliers Logical. Whether to output an outlier table.
+#' @param calculate_rate Logical. Whether to plot annual rates per 100k.
+#' @param run_id Character. Optional run id. If `NULL`, a timestamped id is generated.
+#' @param create_base_dir Logical. Whether to create `output_path` if missing.
+#'
+#' @return A list with `base_output_path`, `run_id`, `run_output_path`, and `region_output_paths`.
+#'
+#' @examples
+#' \dontrun{
+#' df <- data.frame(
+#'   date = as.Date("2024-01-01") + 0:29,
+#'   region = rep(c("A", "B"), each = 15),
+#'   outcome = sample(1:20, 30, replace = TRUE),
+#'   temp = rnorm(30, 25, 3)
+#' )
+#'
+#' run_descriptive_stats(
+#'   data = df,
+#'   output_path = tempdir(),
+#'   aggregation_column = "region",
+#'   dependent_col = "outcome",
+#'   independent_cols = c("temp"),
+#'   timeseries_col = "date",
+#'   run_id = NULL
+#' )
+#' }
+#'
+#' @export
+run_descriptive_stats <- function(
+    data,
+    output_path,
+    aggregation_column = NULL,
+    population_col = NULL,
+    plot_corr_matrix = FALSE,
+    correlation_method = "pearson",
+    plot_dist = FALSE,
+    plot_ma = FALSE,
+    ma_days = 100,
+    ma_sides = 1,
+    timeseries_col = NULL,
+    dependent_col,
+    independent_cols,
+    units = NULL,
+    plot_na_counts = FALSE,
+    plot_scatter = FALSE,
+    plot_box = FALSE,
+    plot_seasonal = FALSE,
+    plot_regional = FALSE,
+    plot_total = FALSE,
+    detect_outliers = FALSE,
+    calculate_rate = FALSE,
+    run_id = NULL,
+    create_base_dir = FALSE) {
+  raise_if_null("dependent_col", dependent_col)
+  raise_if_null("independent_cols", independent_cols)
+
+  # Validate output path and create run folder
+  output_path <- prepare_descriptive_output_dir(
+    output_path = output_path,
+    create_base_dir = create_base_dir
+  )
+  if (is.null(run_id)) {
+    run_id <- generate_descriptive_stats_run_id()
+  }
+  run_output_path <- file.path(output_path, "descriptive_stats", run_id)
+  dir.create(run_output_path, recursive = TRUE, showWarnings = FALSE)
+
+  # Normalise input into full and regional datasets
+  input_data <- prepare_descriptive_input(
+    data = data,
+    aggregation_column = aggregation_column
+  )
+  combined_df <- input_data$combined_df
+  region_df_list <- input_data$region_df_list
+
+  # Always produce full dataset outputs under All
+  all_output_path <- file.path(run_output_path, "All")
+  dir.create(all_output_path, recursive = TRUE, showWarnings = FALSE)
+  descriptive_stats_core(
+    df = combined_df,
+    output_path = all_output_path,
+    title = "Full Dataset",
+    aggregation_column = aggregation_column,
+    population_col = population_col,
+    plot_corr_matrix = plot_corr_matrix,
+    correlation_method = correlation_method,
+    plot_dist = plot_dist,
+    dependent_col = dependent_col,
+    independent_cols = independent_cols,
+    units = units,
+    plot_na_counts = plot_na_counts,
+    plot_scatter = plot_scatter,
+    plot_box = plot_box,
+    plot_seasonal = plot_seasonal,
+    plot_regional = plot_regional,
+    plot_total = plot_total,
+    timeseries_col = timeseries_col,
+    write_outlier_table = detect_outliers,
+    calculate_rate = calculate_rate
+  )
+
+  region_output_paths <- list(All = all_output_path)
+
+  # Create summary and plots for each regional subset
+  for (region_name in names(region_df_list)) {
+    df <- region_df_list[[region_name]]
+    region_output_path <- file.path(run_output_path, region_name)
+    dir.create(region_output_path, recursive = TRUE, showWarnings = FALSE)
+
+    descriptive_stats_core(
+      df = df,
+      output_path = region_output_path,
+      title = region_name,
+      aggregation_column = aggregation_column,
+      population_col = population_col,
+      plot_corr_matrix = plot_corr_matrix,
+      correlation_method = correlation_method,
+      plot_dist = plot_dist,
+      dependent_col = dependent_col,
+      independent_cols = independent_cols,
+      units = units,
+      plot_na_counts = plot_na_counts,
+      plot_scatter = plot_scatter,
+      plot_box = plot_box,
+      plot_seasonal = plot_seasonal,
+      plot_regional = plot_regional,
+      plot_total = plot_total,
+      timeseries_col = timeseries_col,
+      write_outlier_table = detect_outliers,
+      calculate_rate = calculate_rate
+    )
+
+    region_output_paths[[region_name]] <- region_output_path
+  }
+
+  # Moving Average (wrapper concern)
+  if (plot_ma == TRUE) {
+    raise_if_null("ma_days", ma_days)
+    raise_if_null("ma_sides", ma_sides)
+    raise_if_null("timeseries_col", timeseries_col)
+    ma_days <- as.numeric(ma_days)
+    ma_sides <- as.numeric(ma_sides)
+
+    ma_vars <- c(independent_cols, dependent_col)
+    ma_df_list <- c(list(All = combined_df), region_df_list)
+
+    for (region_name in names(ma_df_list)) {
+      region_folder <- region_output_paths[[region_name]]
+      file_path <- file.path(region_folder, "moving_average.pdf")
+      pdf(file_path, width = 14, height = 8)
+      par(oma = c(0, 0, 4, 0), mar = c(5, 4, 3.5, 2) + 0.1)
+
+      for (col_i in seq_along(ma_vars)) {
+        plot_moving_average(
+          df = ma_df_list[[region_name]],
+          time_col = timeseries_col,
+          value_col = ma_vars[[col_i]],
+          ma_days = ma_days,
+          ma_sides = ma_sides,
+          title = paste0("Moving average - ", region_name),
+          units = units
+        )
+        if (col_i == 1) {
+          mtext(
+            paste0("Moving average - ", region_name),
+            outer = TRUE,
+            cex = 1.5,
+            line = 1.2,
+            font = 2,
+            col = "black"
+          )
+          mtext(
+            paste0("(n=", ma_days, ", sides=", ma_sides, ")"),
+            outer = TRUE,
+            cex = 1.1,
+            line = 0.1,
+            col = "black"
+          )
+        }
+      }
+      dev.off()
+    }
+  }
+
+  result <- list(
+    base_output_path = output_path,
+    run_id = run_id,
+    run_output_path = run_output_path,
+    region_output_paths = region_output_paths
+  )
+  class(result) <- c("descriptive_stats_run", "list")
+  return(result)
+}
+
+#' Create descriptive statistics via API-friendly inputs.
+#'
+#' @param data The dataset for descriptive stats (list-like object or CSV path).
+#' @param output_path Character. Base output directory.
+#' @param aggregation_column Character. Column used to aggregate/split data by region.
+#' @param population_col Character. The column containing the population.
+#' @param dependent_col Character. The dependent column.
+#' @param independent_cols Character vector. The independent columns.
+#' @param units Named character vector. Units for each variable.
+#' @param plot_corr_matrix Logical. Whether to plot a correlation matrix.
+#' @param plot_dist Logical. Whether to plot histograms.
+#' @param plot_ma Logical. Whether to plot moving averages over a timeseries.
+#' @param plot_na_counts Logical. Whether to plot counts of NAs in each column.
+#' @param plot_scatter Logical. Whether to plot dependent vs independent columns.
+#' @param plot_box Logical. Whether to generate box plots for selected columns.
+#' @param plot_seasonal Logical. Whether to plot seasonal trends.
+#' @param plot_regional Logical. Whether to plot regional trends.
+#' @param plot_total Logical. Whether to plot total dependent values per year.
+#' @param correlation_method Character. Correlation method. One of 'pearson', 'spearman', 'kendall'.
+#' @param ma_days Integer. Number of days used in moving average calculations.
+#' @param ma_sides Integer. Number of sides used in moving average calculations (1 or 2).
+#' @param timeseries_col Character. Timeseries column.
+#' @param detect_outliers Logical. Whether to output an outlier table.
+#' @param calculate_rate Logical. Whether to plot annual rates per 100k.
+#' @param run_id Character. Optional run id.
+#' @param create_base_dir Logical. Whether to create `output_path` if missing. Defaults to `TRUE`.
+#'
+#' @return A list with `base_output_path`, `run_id`, `run_output_path`, and `region_output_paths`.
+#'
+#' @examples
+#' \dontrun{
+#' run_descriptive_stats_api(
+#'   data = list(
+#'     date = as.character(as.Date("2024-01-01") + 0:29),
+#'     region = rep(c("A", "B"), each = 15),
+#'     outcome = sample(1:20, 30, replace = TRUE),
+#'     temp = rnorm(30, 25, 3)
+#'   ),
+#'   output_path = tempdir(),
+#'   aggregation_column = "region",
+#'   dependent_col = "outcome",
+#'   independent_cols = c("temp"),
+#'   timeseries_col = "date",
+#'   plot_corr_matrix = TRUE
+#' )
+#' }
+#'
+#' @export
+run_descriptive_stats_api <- function(
+    data,
+    output_path,
+    aggregation_column = NULL,
+    population_col = NULL,
+    dependent_col,
+    independent_cols,
+    units = NULL,
+    plot_corr_matrix = TRUE,
+    plot_dist = TRUE,
+    plot_ma = TRUE,
+    plot_na_counts = TRUE,
+    plot_scatter = TRUE,
+    plot_box = TRUE,
+    plot_seasonal = TRUE,
+    plot_regional = TRUE,
+    plot_total = TRUE,
+    correlation_method = "pearson",
+    ma_days = NULL,
+    ma_sides = 1,
+    timeseries_col = NULL,
+    detect_outliers = TRUE,
+    calculate_rate = TRUE,
+    run_id = NULL,
+    create_base_dir = TRUE) {
+  # Parameter checks
+  if (plot_ma == TRUE) {
+    raise_if_null("ma_days", ma_days)
+    raise_if_null("ma_sides", ma_sides)
+    raise_if_null("independent_cols", independent_cols)
+    raise_if_null("timeseries_col", timeseries_col)
+    ma_days <- as.numeric(ma_days)
+    ma_sides <- as.numeric(ma_sides)
+  }
+  if (plot_corr_matrix == TRUE) {
+    raise_if_null("correlation_method", correlation_method)
+  }
+
+  # Convert data to the correct format
+  df <- read_input_data(data)
+
+  # Check columns
+  exp_columns <- c(dependent_col, independent_cols)
+  for (col in exp_columns) {
+    if (!(col %in% colnames(df))) {
+      stop(paste0("Column '", col, "' not in passed dataset."))
+    }
+  }
+
+  # Reformat Date
+  if (!is.null(timeseries_col)) {
+    df <- df %>%
+      dplyr::mutate(
+        !!rlang::sym(timeseries_col) :=
+          as.Date(!!rlang::sym(timeseries_col), tryFormats = c("%d/%m/%Y", "%Y-%m-%d"))
+      )
+  }
+
+  run_descriptive_stats(
+    data = df,
+    output_path = output_path,
+    aggregation_column = aggregation_column,
+    population_col = population_col,
+    plot_corr_matrix = plot_corr_matrix,
+    correlation_method = correlation_method,
+    plot_dist = plot_dist,
+    plot_ma = plot_ma,
+    ma_days = ma_days,
+    ma_sides = ma_sides,
+    timeseries_col = timeseries_col,
+    dependent_col = dependent_col,
+    independent_cols = independent_cols,
+    units = units,
+    plot_na_counts = plot_na_counts,
+    plot_scatter = plot_scatter,
+    plot_box = plot_box,
+    plot_seasonal = plot_seasonal,
+    plot_regional = plot_regional,
+    plot_total = plot_total,
+    detect_outliers = detect_outliers,
+    calculate_rate = calculate_rate,
+    run_id = run_id,
+    create_base_dir = create_base_dir
+  )
+}
+
+#' Deprecated alias for `descriptive_stats_core()`.
+#'
+#' @deprecated Use `descriptive_stats_core()` instead.
+#'
+#' @keywords internal
+common_descriptive_stats_core <- function(
+    df,
+    output_path,
+    title,
+    aggregation_column = NULL,
+    population_col = NULL,
+    plot_corr_matrix = FALSE,
+    correlation_method = "pearson",
+    plot_dist = FALSE,
+    dependent_col,
+    independent_cols = c(),
+    units = NULL,
+    plot_na_counts = FALSE,
+    plot_scatter = FALSE,
+    plot_box = FALSE,
+    plot_seasonal = FALSE,
+    plot_regional = FALSE,
+    plot_total = FALSE,
+    timeseries_col = "date",
+    detect_outliers = FALSE,
+    calculate_rate = FALSE) {
+  deprecate_descriptive_stats("common_descriptive_stats_core", "descriptive_stats_core")
+  descriptive_stats_core(
+    df = df,
+    output_path = output_path,
+    title = title,
+    aggregation_column = aggregation_column,
+    population_col = population_col,
+    plot_corr_matrix = plot_corr_matrix,
+    correlation_method = correlation_method,
+    plot_dist = plot_dist,
+    dependent_col = dependent_col,
+    independent_cols = independent_cols,
+    units = units,
+    plot_na_counts = plot_na_counts,
+    plot_scatter = plot_scatter,
+    plot_box = plot_box,
+    plot_seasonal = plot_seasonal,
+    plot_regional = plot_regional,
+    plot_total = plot_total,
+    timeseries_col = timeseries_col,
+    write_outlier_table = detect_outliers,
+    calculate_rate = calculate_rate
+  )
+}
+
+#' Deprecated alias for `run_descriptive_stats()`.
+#'
+#' Generic wrapper function to compute descriptive statistics and EDA outputs.
 #'
 #' @param df_list List of dataframes. A list of input dataframes.
 #' @param output_path Character. The path to write outputs to.
@@ -550,7 +1083,9 @@ common_descriptive_stats_core <- function(
 #' @param detect_outliers Logical. Whether to output a table containing outlier information.
 #' @param calculate_rate Logical. Whether to calculate the rate of health outcomes per 100k people.
 #'
-#' @return Character vector. The output directory path and summary directory name.
+#' @return Character vector. Backward-compatible output path format.
+#'
+#' @deprecated Use `run_descriptive_stats()` instead.
 #'
 #' @keywords internal
 common_descriptive_stats <- function(
@@ -558,47 +1093,38 @@ common_descriptive_stats <- function(
     output_path,
     aggregation_column = NULL,
     population_col = NULL,
-    plot_corr_matrix = F,
+    plot_corr_matrix = FALSE,
     correlation_method = "pearson",
-    plot_dist = F,
-    plot_ma = F,
+    plot_dist = FALSE,
+    plot_ma = FALSE,
     ma_days = 100,
     ma_sides = 1,
     timeseries_col = NULL,
     dependent_col,
     independent_cols,
     units = NULL,
-    plot_na_counts = F,
-    plot_scatter = F,
-    plot_box = F,
-    plot_seasonal = F,
-    plot_regional = F,
-    plot_total = F,
-    detect_outliers = F,
-    calculate_rate = F) {
-  # validate output path
-  check_file_exists(output_path)
-  output_path <- file.path(output_path, paste0("descriptive_stats"))
-  if (!check_file_exists(output_path, raise = F)) {
-    dir.create(output_path)
-  }
-  # combine all smaller df's into one
-  combined_df <- do.call(rbind, df_list)
-  # Create the folder if it doesn't exist
-  all_folder <- file.path(output_path, "All")
-  if (!dir.exists(all_folder)) {
-    dir.create(all_folder, recursive = TRUE)
-  }
-  # obtain desc. stats
-  common_descriptive_stats_core(
-    df = combined_df,
-    output_path = all_folder,
-    title = "Full Dataset",
+    plot_na_counts = FALSE,
+    plot_scatter = FALSE,
+    plot_box = FALSE,
+    plot_seasonal = FALSE,
+    plot_regional = FALSE,
+    plot_total = FALSE,
+    detect_outliers = FALSE,
+    calculate_rate = FALSE) {
+  deprecate_descriptive_stats("common_descriptive_stats", "run_descriptive_stats")
+
+  final_paths <- run_descriptive_stats(
+    data = df_list,
+    output_path = output_path,
     aggregation_column = aggregation_column,
     population_col = population_col,
     plot_corr_matrix = plot_corr_matrix,
     correlation_method = correlation_method,
     plot_dist = plot_dist,
+    plot_ma = plot_ma,
+    ma_days = ma_days,
+    ma_sides = ma_sides,
+    timeseries_col = timeseries_col,
     dependent_col = dependent_col,
     independent_cols = independent_cols,
     units = units,
@@ -609,98 +1135,13 @@ common_descriptive_stats <- function(
     plot_regional = plot_regional,
     plot_total = plot_total,
     detect_outliers = detect_outliers,
-    calculate_rate = calculate_rate
+    calculate_rate = calculate_rate,
+    create_base_dir = FALSE
   )
-  # Moving Average
-  if (plot_ma) {
-    ma_vars <- c(independent_cols, dependent_col)
-    for (i in seq_along(df_list)) {
-      region_name <- names(df_list)[i]
-      region_folder <- file.path(output_path, region_name)
-
-      # Create the folder if it doesn't exist
-      if (!dir.exists(region_folder)) {
-        dir.create(region_folder, recursive = TRUE)
-      }
-
-      file_path <- file.path(region_folder, "moving_average.pdf")
-      pdf(file_path, width = 14, height = 8)
-      par(oma = c(0, 0, 4, 0), mar = c(5, 4, 3.5, 2) + 0.1)
-
-      for (col_i in seq_along(ma_vars)) {
-        plot_moving_average(
-          df_list[[i]],
-          timeseries_col,
-          ma_vars[[col_i]],
-          ma_days,
-          ma_sides,
-          units = units
-        )
-        if (col_i == 1) {
-          mtext(paste0("Moving average - ", region_name),
-                outer = TRUE, cex = 1.5, line = 1.2, font = 2, col = "black")
-          mtext(paste0("(n=", ma_days, ", sides=", ma_sides, ")"),
-                outer = TRUE, cex = 1.1, line = 0.1, col = "black")
-        }
-      }
-
-      dev.off()
-    }
-  }
-
-  # create summary, corr. and dist. for each df
-  for (region_name in setdiff(names(df_list), "All")) {
-    df <- df_list[[region_name]]
-
-    # Use group_name in titles or filenames
-    region_title <- region_name
-    region_output_path <- file.path(output_path, region_name)
-    if (!dir.exists(region_output_path)) {
-      dir.create(region_output_path, recursive = TRUE)
-    }
-
-    # save out statistics
-    common_descriptive_stats_core(
-      df = df,
-      output_path = region_output_path,
-      title = region_title,
-      aggregation_column = aggregation_column,
-      population_col = population_col,
-      plot_corr_matrix = plot_corr_matrix,
-      correlation_method = correlation_method,
-      plot_dist = plot_dist,
-      dependent_col = dependent_col,
-      independent_cols = independent_cols,
-      units = units,
-      plot_na_counts = plot_na_counts,
-      plot_scatter = plot_scatter,
-      plot_box = plot_box,
-      plot_seasonal = plot_seasonal,
-      plot_regional = plot_regional,
-      plot_total = plot_total,
-      detect_outliers = detect_outliers,
-      calculate_rate = calculate_rate
-    )
-  }
-  return(c(output_path, paste0("descriptive_stats")))
+  return(c(final_paths$run_output_path, "descriptive_stats"))
 }
 
-#' Raise an Error if a Parameter's Value is NULL
-#'
-#' @param param_nm Character. The parameter name.
-#' @param value Any. The value of the parameter.
-#'
-#' @return None. Stops execution if value is NULL.
-#'
-#' @keywords internal
-raise_if_null <- function(param_nm, value) {
-  if (is.null(value)) {
-    stop(paste0("Unexpected NULL in ", param_nm))
-  }
-}
-
-
-#' Create Descriptive Statistics via an API Endpoint
+#' Deprecated alias for `run_descriptive_stats_api()`.
 #'
 #' @param data The dataset used for descriptive stats (as a vector).
 #' @param aggregation_column Character. The column to use for aggregating the dataset into smaller subsets.
@@ -725,7 +1166,9 @@ raise_if_null <- function(param_nm, value) {
 #' @param calculate_rate Logical. Whether to plot a rate based metric of the dependent column per year.
 #' @param output_path Character. The path to save outputs to.
 #'
-#' @return Character vector. The full directory path that the descriptive stats are saved to.
+#' @return Character vector. Backward-compatible output path format.
+#'
+#' @deprecated Use `run_descriptive_stats_api()` instead.
 #'
 #' @keywords internal
 common_descriptive_stats_api <- function(
@@ -735,87 +1178,48 @@ common_descriptive_stats_api <- function(
     dependent_col,
     independent_cols,
     units = NULL,
-    plot_correlation = T,
-    plot_dist_hists = T,
-    plot_ma = T,
-    plot_na_counts = T,
-    plot_scatter = T,
-    plot_box = T,
-    plot_seasonal = T,
-    plot_regional = T,
-    plot_total = T,
+    plot_correlation = TRUE,
+    plot_dist_hists = TRUE,
+    plot_ma = TRUE,
+    plot_na_counts = TRUE,
+    plot_scatter = TRUE,
+    plot_box = TRUE,
+    plot_seasonal = TRUE,
+    plot_regional = TRUE,
+    plot_total = TRUE,
     correlation_method = NULL,
     ma_days = NULL,
     ma_sides = 1,
     timeseries_col = NULL,
-    detect_outliers = T,
-    calculate_rate = T,
+    detect_outliers = TRUE,
+    calculate_rate = TRUE,
     output_path) {
-  # Parameter Checks
-  if (plot_ma) {
-    raise_if_null("ma_days", ma_days)
-    raise_if_null("ma_sides", ma_sides)
-    raise_if_null("independent_cols", independent_cols)
-    raise_if_null("timeseries_col", timeseries_col)
-    ma_days <- as.numeric(ma_days)
-    ma_sides <- as.numeric(ma_sides)
-  }
-  if (plot_correlation) {
-    raise_if_null("correlation_method", correlation_method)
-  }
+  deprecate_descriptive_stats("common_descriptive_stats_api", "run_descriptive_stats_api")
 
-  # Convert data to the correct format
-  df <- read_input_data(data)
-  # Check columns
-  exp_columns <- c(
-    dependent_col,
-    independent_cols
-  )
-  for (col in 1:length(exp_columns)) {
-    if (!(exp_columns[col] %in% colnames(df))) {
-      stop(paste0("Column '", exp_columns[col], "' not in passed dataset."))
-    }
-  }
-  # Reformat Date
-  if (!is.null(timeseries_col)) {
-    df <- df %>%
-      dplyr::mutate(
-        !!rlang::sym(timeseries_col) :=
-          as.Date(!!rlang::sym(timeseries_col), tryFormats = c("%d/%m/%Y", "%Y-%m-%d"))
-      )
-  }
-  # Full dataset under All and per region
-  df_list <- list(All = df)
-  # Split per region
-  if (!is.null(aggregation_column)) {
-    region_list <- aggregate_by_column(df, aggregation_column)
-    df_list <- c(df_list, region_list)
-  }
-
-  # Create descriptive stats
-  final_paths <- common_descriptive_stats(
-    df_list = df_list,
+  final_paths <- run_descriptive_stats_api(
+    data = data,
     output_path = output_path,
     aggregation_column = aggregation_column,
     population_col = population_col,
-    plot_corr_matrix = plot_correlation,
-    correlation_method = correlation_method,
-    plot_dist = plot_dist_hists,
-    plot_ma = plot_ma,
-    ma_days = ma_days,
-    ma_sides = ma_sides,
-    timeseries_col = timeseries_col,
     dependent_col = dependent_col,
     independent_cols = independent_cols,
     units = units,
+    plot_corr_matrix = plot_correlation,
+    plot_dist = plot_dist_hists,
+    plot_ma = plot_ma,
     plot_na_counts = plot_na_counts,
     plot_scatter = plot_scatter,
     plot_box = plot_box,
     plot_seasonal = plot_seasonal,
     plot_regional = plot_regional,
     plot_total = plot_total,
+    correlation_method = correlation_method,
+    ma_days = ma_days,
+    ma_sides = ma_sides,
+    timeseries_col = timeseries_col,
     detect_outliers = detect_outliers,
-    calculate_rate = calculate_rate
+    calculate_rate = calculate_rate,
+    create_base_dir = TRUE
   )
-  return(final_paths)
+  return(c(final_paths$run_output_path, "descriptive_stats"))
 }
