@@ -1,3 +1,7 @@
+# Unit tests for air_pollution.R
+
+# Test for load_air_pollution_data
+# Unit test 1
 test_that("Synthetic air pollution data loaded in and formatted as expected", {
 
   set.seed(123)
@@ -623,7 +627,7 @@ test_that("Synthetic air pollution data loaded in and formatted as expected", {
 })
 
 
-# Test for create_air_pollution_lags
+# Tests for create_air_pollution_lags
 # Synthetic datasets
 CAPL_TEST_DATA <- data.frame(
   date = as.Date("2024-01-01") + 0:4,
@@ -2052,6 +2056,26 @@ test_that("analyze_air_pollution_daily computes rr.lb/rr.ub when pooled CI colum
   expect_true(any(is.finite(nat_pm25$rr.ub)))
 })
 
+# Test for calculate_air_pollution_grid_dims
+# Unit test 1
+test_that("calculate_air_pollution_grid_dims is outputting appropriate dimensions from valid input", {
+
+  expect_equal(calculate_air_pollution_grid_dims(4),
+               list(ncol = c(2), nrow = c(2)))
+
+  expect_equal(calculate_air_pollution_grid_dims(5),
+               list(ncol = c(3), nrow = c(2)))
+
+  expect_equal(calculate_air_pollution_grid_dims(9),
+               list(ncol = c(3), nrow = c(3)))
+
+  expect_equal(calculate_air_pollution_grid_dims(c(5)),
+               list(ncol = c(3), nrow = c(2)))
+
+  expect_error(calculate_air_pollution_grid_dims(c(5, 2)))
+  expect_error(calculate_air_pollution_grid_dims("boop"))
+})
+
 # Tests for plot_air_pollution_forest_by_region()
 #Utility to build analysis_results for a given max_lag
 .build_analysis_results <- function(regions = c("R1","R2"),
@@ -2235,22 +2259,230 @@ test_that("plot_air_pollution_forest_by_region errors when cumulative var for ma
   )
 })
 
+# Test for plot_air_pollution_forest_by_lag
+# Unit test 1
+test_that("plot_air_pollution_forest_by_lag returns ggplot and highlights cumulative for max_lag = 1", {
+  analysis_results <- .build_analysis_results(
+    regions  = c("R1","R2"),
+    n_days   = 80,
+    max_lag  = 1L,
+    ref_pm25 = 20,
+    ref_name = "WHO"
+  )
 
-test_that("calculate_air_pollution_grid_dims is outputting appropriate dimensions from valid input", {
+  p <- plot_air_pollution_forest_by_lag(
+    analysis_results = analysis_results,
+    max_lag = 1L,
+    save_plot = FALSE
+  )
 
-  expect_equal(calculate_air_pollution_grid_dims(4),
-               list(ncol = c(2), nrow = c(2)))
+  expect_s3_class(p, "ggplot")
 
-  expect_equal(calculate_air_pollution_grid_dims(5),
-               list(ncol = c(3), nrow = c(2)))
+  # data is summarised by var_name: should include pm25, pm25_lag1, pm25_lag0_1
+  expect_true(all(c("pm25","pm25_lag1","pm25_lag0_1") %in% levels(p$data$var_name)))
+  # cumulative flag: only pm25_lag0_1 is TRUE
+  is_cum <- p$data$is_cumulative
+  expect_identical(as.character(p$data$var_name[is_cum]), "pm25_lag0_1")
+  expect_true(sum(is_cum) == 1)
 
-  expect_equal(calculate_air_pollution_grid_dims(9),
-               list(ncol = c(3), nrow = c(3)))
+  # axis labels and title contain ref metadata
+  expect_identical(p$labels$y, "Relative Risk")
+  # x label is currently "Region" in the code (even though x = var_name)
+  expect_identical(p$labels$x, "Region")
+  expect_true(grepl('Ref: "WHO" = 20', p$labels$title, fixed = TRUE))
 
-  expect_equal(calculate_air_pollution_grid_dims(c(5)),
-               list(ncol = c(3), nrow = c(2)))
+  # y limits exist and straddle 1 (coord_cartesian)
+  expect_s3_class(p$coordinates, "CoordCartesian")
+  lims <- tryCatch(p$coordinates$limits$y, error = function(e) NULL)
+  expect_true(!is.null(lims))
+  expect_length(lims, 2)
+  expect_true(lims[1] < 1 && lims[2] > 1)
 
-  expect_error(calculate_air_pollution_grid_dims(c(5, 2)))
-  expect_error(calculate_air_pollution_grid_dims("boop"))
+  # Hline at y = 1 present (robust check using ggplot_build)
+  pb <- ggplot2::ggplot_build(p)
+  has_y1 <- any(vapply(
+    pb$data,
+    function(d) ("yintercept" %in% names(d)) && all(is.finite(d$yintercept)) && all(d$yintercept == 1),
+    logical(1)
+  ))
+  expect_true(has_y1)
+
+  # Build plot to access mapped colours in layer data
+  pb <- ggplot2::ggplot_build(p)
+
+  # Find the GeomPoint layer in the built data
+  layer_ix <- which(vapply(p$layers, function(L) inherits(L$geom, "GeomPoint"), logical(1)))
+  expect_true(length(layer_ix) == 1)  # we expect exactly one point layer
+
+  pt <- pb$data[[layer_ix]]
+
+  # Map x positions (integers) back to var_name levels
+  levs <- levels(p$data$var_name)
+  cum_level <- paste0("pm25_lag0_", 1L)
+  cum_x <- match(cum_level, levs)
+  expect_true(is.finite(cum_x))
+
+  # Helper to normalize to uppercase and accept named or hex (with or without alpha)
+  norm <- function(x) toupper(as.character(x))
+  is_red  <- function(x) norm(x) %in% c("RED",  "#FF0000", "#FF0000FF")
+  is_blue <- function(x) norm(x) %in% c("BLUE", "#0000FF", "#0000FFFF")
+
+  # Colours used for cumulative vs non-cumulative points
+  cum_cols     <- pt$colour[pt$x == cum_x]
+  non_cum_cols <- pt$colour[pt$x != cum_x]
+
+  # At least one cumulative point is red-ish, and at least one non-cumulative is blue-ish
+  expect_true(any(is_red(cum_cols)))
+  expect_true(any(is_blue(non_cum_cols)))
+
+  sc <- p$scales$get_scales("colour")
+  expect_true(inherits(sc, "ScaleDiscrete"))
+
+  # Legend hidden
+  pos <- if (!is.null(p$theme$legend.position)) p$theme$legend.position else ggplot2::theme_get()$legend.position
+  expect_identical(pos, "none")
+
 })
+
+# Unit test 2
+test_that("plot_air_pollution_forest_by_lag includes lag 2 and cumulative 0_2 when max_lag = 2", {
+  analysis_results <- .build_analysis_results(
+    regions  = c("R1","R2"),
+    n_days   = 80,
+    max_lag  = 2L,
+    ref_pm25 = 20,
+    ref_name = "WHO"
+  )
+
+  p <- plot_air_pollution_forest_by_lag(
+    analysis_results = analysis_results,
+    max_lag = 2L,
+    save_plot = FALSE
+  )
+
+  expected_levels <- c("pm25","pm25_lag1","pm25_lag2","pm25_lag0_2")
+  expect_identical(levels(p$data$var_name), expected_levels)
+  expect_identical(as.character(p$data$var_name[p$data$is_cumulative]), "pm25_lag0_2")
+})
+
+# Unit test 3
+test_that("plot_air_pollution_forest_by_lag errors when save_plot = TRUE and output_dir is NULL", {
+  analysis_results <- .build_analysis_results(
+    regions = c("R1","R2"), n_days = 8, max_lag = 1L
+  )
+
+  expect_error(
+    plot_air_pollution_forest_by_lag(
+      analysis_results = analysis_results,
+      max_lag = 1L,
+      output_dir = NULL,
+      save_plot = TRUE
+    ),
+    "output_dir must be specified"
+  )
+})
+
+# Unit test 4
+test_that("plot_air_pollution_forest_by_lag calls save_air_pollution_plot with expected filename", {
+  analysis_results <- .build_analysis_results(
+    regions = c("R1","R2"),
+    n_days = 20, max_lag = 1L,
+    ref_pm25 = 25, ref_name = "UKHSA"
+  )
+
+  outdir <- tempfile("forest_by_lag_out_")
+  dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
+  on.exit(unlink(outdir, recursive = TRUE, force = TRUE), add = TRUE)
+
+  captured <- new.env(parent = emptyenv())
+  mock_save <- function(plot_object, output_dir, filename) {
+    captured$plot_object <- plot_object
+    captured$output_dir  <- output_dir
+    captured$filename    <- filename
+    invisible(TRUE)
+  }
+
+  pkg_ns <- getNamespaceName(environment(plot_air_pollution_forest_by_lag))
+
+  p <- with_mocked_bindings({
+    plot_air_pollution_forest_by_lag(
+      analysis_results = analysis_results,
+      max_lag = 1L,
+      output_dir = outdir,
+      save_plot = TRUE
+    )
+  },
+  save_air_pollution_plot = mock_save, .package = pkg_ns
+  )
+
+  expect_s3_class(p, "ggplot")
+  expect_identical(captured$output_dir, outdir)
+  # Filename pattern: "forest_plot_by_lag_<ref_name>_<ref_pm25>"
+  expect_true(grepl("forest_plot_by_lag_", captured$filename))
+  expect_true(grepl("UKHSA", captured$filename))
+  expect_true(grepl("25", captured$filename))
+})
+
+# Unit test 5
+test_that("plot_air_pollution_forest_by_lag errors when there are no rows", {
+  empty_df <- data.frame(
+    region = character(),
+    date = as.Date(character()),
+    lag = character(),
+    var_name = character(),
+    coef = numeric(),
+    se = numeric(),
+    rr = numeric(),
+    rr.lb = numeric(),
+    rr.ub = numeric(),
+    af = numeric(),
+    af.lb = numeric(),
+    af.ub = numeric(),
+    an = numeric(),
+    an.lb = numeric(),
+    an.ub = numeric(),
+    ar = numeric(),
+    ar.lb = numeric(),
+    ar.ub = numeric(),
+    tot_deaths = numeric(),
+    pop = numeric(),
+    pm25_values = numeric(),
+    ref_pm25 = numeric(),
+    ref_name = character(),
+    stringsAsFactors = FALSE
+  )
+
+  expect_error(
+    plot_air_pollution_forest_by_lag(empty_df, max_lag = 1L, save_plot = FALSE),
+    "No results for the selected var_name"
+  )
+})
+
+# Unit test 6
+test_that("plot_air_pollution_forest_by_lag tolerates some NA rr values", {
+  analysis_results <- .build_analysis_results(
+    regions = c("R1","R2"),
+    n_days = 30, max_lag = 1L
+  )
+
+  # Introduce NAs for one lag's RR rows
+  is_target <- analysis_results$var_name == "pm25_lag1"
+  idx <- which(is_target & analysis_results$region == "R1")[1:5]
+  analysis_results$rr[idx]    <- NA_real_
+  analysis_results$rr.lb[idx] <- NA_real_
+  analysis_results$rr.ub[idx] <- NA_real_
+
+  p <- plot_air_pollution_forest_by_lag(
+    analysis_results = analysis_results,
+    max_lag = 1L,
+    save_plot = FALSE
+  )
+
+  expect_s3_class(p, "ggplot")
+  # Still contains the expected var set
+  expect_true(all(c("pm25","pm25_lag1","pm25_lag0_1") %in% levels(p$data$var_name)))
+})
+
+
+
 
