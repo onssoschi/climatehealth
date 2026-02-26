@@ -9,6 +9,11 @@
 # ------------------------------------------------------------------------------
 # Optional install/load (if needed)
 # ------------------------------------------------------------------------------
+# Preferred (match the main README instructions):
+# install.packages("devtools")
+# devtools::load_all(path = "{path/to/climatehealth}")
+#
+# Alternative:
 # install.packages("devtools")
 # devtools::install_github("onssoschi/climatehealth")
 # library(climatehealth)
