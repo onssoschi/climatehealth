@@ -2,31 +2,31 @@
 % Please edit documentation in R/descriptive_stats.R
 \name{common_descriptive_stats}
 \alias{common_descriptive_stats}
-\title{Wrapper Function to Compute Descriptive Statistics for Heat and Cold Indicators}
+\title{Deprecated alias for \code{run_descriptive_stats()}.}
 \usage{
 common_descriptive_stats(
   df_list,
   output_path,
   aggregation_column = NULL,
   population_col = NULL,
-  plot_corr_matrix = F,
+  plot_corr_matrix = FALSE,
   correlation_method = "pearson",
-  plot_dist = F,
-  plot_ma = F,
+  plot_dist = FALSE,
+  plot_ma = FALSE,
   ma_days = 100,
   ma_sides = 1,
   timeseries_col = NULL,
   dependent_col,
   independent_cols,
   units = NULL,
-  plot_na_counts = F,
-  plot_scatter = F,
-  plot_box = F,
-  plot_seasonal = F,
-  plot_regional = F,
-  plot_total = F,
-  detect_outliers = F,
-  calculate_rate = F
+  plot_na_counts = FALSE,
+  plot_scatter = FALSE,
+  plot_box = FALSE,
+  plot_seasonal = FALSE,
+  plot_regional = FALSE,
+  plot_total = FALSE,
+  detect_outliers = FALSE,
+  calculate_rate = FALSE
 )
 }
 \arguments{
@@ -75,9 +75,9 @@ common_descriptive_stats(
 \item{calculate_rate}{Logical. Whether to calculate the rate of health outcomes per 100k people.}
 }
 \value{
-Character vector. The output directory path and summary directory name.
+Character vector. Backward-compatible output path format.
 }
 \description{
-Wrapper Function to Compute Descriptive Statistics for Heat and Cold Indicators
+Generic wrapper function to compute descriptive statistics and EDA outputs.
 }
 \keyword{internal}

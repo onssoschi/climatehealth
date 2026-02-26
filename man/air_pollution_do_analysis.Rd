@@ -133,11 +133,13 @@ List containing:
 \item{lag_analysis}{Lag-specific analysis results}
 \item{distributed_lag_analysis}{Distributed lag model results (if requested)}
 \item{plots}{List of generated plots (forest, lags, distributed lags)}
+\item{power_list} {A list containing power information by area}
 \item{exposure_response_plots}{Exposure-response plots for each reference
 standard (if requested)}
 \item{reference_specific_af_an}{AF/AN calculations specific to each
 reference standard (if requested)}
 \item{descriptive_stats}{Summary statistics of key variables}
+
 }
 }
 \description{
