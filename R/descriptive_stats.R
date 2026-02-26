@@ -1338,7 +1338,7 @@ run_descriptive_stats_api <- function(
 
 #' Deprecated alias for `descriptive_stats_core()`.
 #'
-#' @deprecated Use `descriptive_stats_core()` instead.
+#' Deprecated. Use `descriptive_stats_core()` instead.
 #'
 #' @keywords internal
 common_descriptive_stats_core <- function(
@@ -1416,7 +1416,7 @@ common_descriptive_stats_core <- function(
 #'
 #' @return Character vector. Backward-compatible output path format.
 #'
-#' @deprecated Use `run_descriptive_stats()` instead.
+#' Deprecated. Use `run_descriptive_stats()` instead.
 #'
 #' @keywords internal
 common_descriptive_stats <- function(
@@ -1499,7 +1499,7 @@ common_descriptive_stats <- function(
 #'
 #' @return Character vector. Backward-compatible output path format.
 #'
-#' @deprecated Use `run_descriptive_stats_api()` instead.
+#' Deprecated. Use `run_descriptive_stats_api()` instead.
 #'
 #' @keywords internal
 common_descriptive_stats_api <- function(
