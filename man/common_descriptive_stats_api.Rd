@@ -2,7 +2,7 @@
 % Please edit documentation in R/descriptive_stats.R
 \name{common_descriptive_stats_api}
 \alias{common_descriptive_stats_api}
-\title{Create Descriptive Statistics via an API Endpoint}
+\title{Deprecated alias for \code{run_descriptive_stats_api()}.}
 \usage{
 common_descriptive_stats_api(
   data,
@@ -11,21 +11,21 @@ common_descriptive_stats_api(
   dependent_col,
   independent_cols,
   units = NULL,
-  plot_correlation = T,
-  plot_dist_hists = T,
-  plot_ma = T,
-  plot_na_counts = T,
-  plot_scatter = T,
-  plot_box = T,
-  plot_seasonal = T,
-  plot_regional = T,
-  plot_total = T,
+  plot_correlation = TRUE,
+  plot_dist_hists = TRUE,
+  plot_ma = TRUE,
+  plot_na_counts = TRUE,
+  plot_scatter = TRUE,
+  plot_box = TRUE,
+  plot_seasonal = TRUE,
+  plot_regional = TRUE,
+  plot_total = TRUE,
   correlation_method = NULL,
   ma_days = NULL,
   ma_sides = 1,
   timeseries_col = NULL,
-  detect_outliers = T,
-  calculate_rate = T,
+  detect_outliers = TRUE,
+  calculate_rate = TRUE,
   output_path
 )
 }
@@ -75,9 +75,9 @@ common_descriptive_stats_api(
 \item{output_path}{Character. The path to save outputs to.}
 }
 \value{
-Character vector. The full directory path that the descriptive stats are saved to.
+Character vector. Backward-compatible output path format.
 }
 \description{
-Create Descriptive Statistics via an API Endpoint
+Deprecated alias for \code{run_descriptive_stats_api()}.
 }
 \keyword{internal}

@@ -150,7 +150,7 @@ analysis.
 
 Model validation testing is provided as a standard output from the pipeline so
 a user can assess the quality of the model. Additionally, users can incorporate
-extra independent variables—such as relative humidity or wind speed—directly
+extra independent variables-such as relative humidity or wind speed-directly
 into the model for enhanced analysis.
 
 Further details on the input data requirements, methodology, quality information
