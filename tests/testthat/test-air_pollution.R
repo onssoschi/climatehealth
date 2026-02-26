@@ -54,11 +54,10 @@ test_that("Synthetic air pollution data loaded in and formatted as expected", {
     stringsAsFactors = FALSE
   )
 
-
   write.csv(synth_data, temp_synth_data)
 
+  # For testing that the function renames the columns and nothing else
   temp_synth_data_diff_names <- tempfile(fileext = ".csv")
-
   synth_data_diff_names <- dplyr::rename(
     synth_data,
     "place" = region,
@@ -72,8 +71,6 @@ test_that("Synthetic air pollution data loaded in and formatted as expected", {
     "wnd_spd" = wind_speed
   )
   write.csv(synth_data_diff_names, temp_synth_data_diff_names)
-
-
 
   expected_df <- data.table::data.table(
     date = as.Date(c("2019-01-05", "2019-01-20", "2019-01-23", "2019-01-26",
@@ -2252,5 +2249,125 @@ test_that("calculate_air_pollution_grid_dims is outputting appropriate dimension
 
   expect_error(calculate_air_pollution_grid_dims(c(5, 2)))
   expect_error(calculate_air_pollution_grid_dims("boop"))
+})
+
+test_that("aggregate_air_pollution_by_region proper groupings and NAs ignored", {
+  sample_data <- tibble::tibble(
+    region = rep(c("North", "South"), 25),
+    ref_name = "RefA",
+    ref_pm25 = c(rep(c(10, 9, 8, 11), 10), 7, 7, 8, 12, 13, 6, 11, 9, 10, 7),
+    var_name = "pm25_lag0_14",
+
+    # Attributable Rate
+    ar = c(
+      1, 2, 5, 3, 4, NA, 6, 7, 2, 1, 3, 4,
+      2, 3, 4, 5, NA, 6, 7, 8, 3, 4, 5, 2,
+      3, 4, 1, 2, 3, 4, NA, 2, 5, 6, 1, 3,
+      2, 1, 4, 3, 5, 6, NA, 2, 1, 4, 3, 2,
+      1, 3
+    ),
+    # Attributable Rate bounds
+    ar.lb = c(
+      0.5, 1, 3, 1.5, 2, NA, 3, 4, 1, 0.5, 1.2, 2,
+      1.2, 2, 3, 2.5, NA, 4, 5, 6, 2, 3, 3.5, 1.1,
+      2, 3, 0.7, 1, 1.5, 2, NA, 1, 3, 4, 0.8, 1.5,
+      1.2, 0.6, 2, 1.5, 3, 4, NA, 1.2, 0.5, 2.5, 1.8, 1,
+      1, 2
+    ),
+    ar.ub = c(
+      2, 3, 4, 3, 5, NA, 7, 8, 3, 2, 4.5, 6,
+      3, 4, 5, 6, NA, 7, 8, 9, 4, 5, 6, 3,
+      4.2, 5, 2, 3, 4, 5, NA, 3.5, 6, 7, 2.2, 4,
+      3, 2, 5, 4, 6, 7, NA, 3, 2, 5, 4, 3, 4, 5
+    ),
+    # Attributable Number
+    an = c(
+      10, 20, 30, 25, 40, NA, 45, 60, 20, 15, 35, 50,
+      18, 25, 30, 40, NA, 55, 70, 80, 32, 40, 45, 28,
+      26, 36, 15, 18, 24, 32, NA, 30, 48, 52, 20, 31,
+      22, 18, 40, 34, 50, 65, NA, 28, 16, 38, 33, 27,
+      10, 30
+    ),
+    an.lb = c(
+      8, 15, 25, 20, 35, NA, 38, 50, 15, 12, 28, 40,
+      14, 20, 25, 32, NA, 45, 60, 70, 25, 32, 36, 20,
+      20, 30, 10, 14, 18, 26, NA, 25, 40, 45, 15, 24,
+      18, 14, 32, 28, 42, 55, NA, 20, 12, 30, 26, 21,
+      10, 20
+    ),
+    an.ub = c(
+      12, 25, 35, 30, 45, NA, 55, 70, 25, 18, 40, 60,
+      22, 30, 35, 48, NA, 65, 80, 90, 38, 48, 55, 34,
+      32, 42, 20, 22, 30, 38, NA, 35, 55, 60, 24, 38,
+      26, 22, 48, 42, 58, 75, NA, 32, 20, 46, 40, 33,
+      25, 22
+    ),
+    # Attributable Fraction
+    af = c(
+      0.1, 0.2, 0.2, 0.3, 0.4, NA, 0.35, 0.25, 0.15, 0.12, 0.18, 0.22,
+      0.2, 0.25, 0.3, 0.35, NA, 0.4, 0.45, 0.5, 0.28, 0.32, 0.34, 0.26,
+      0.22, 0.28, 0.12, 0.15, 0.2, 0.25, NA, 0.18, 0.3, 0.32, 0.14, 0.2,
+      0.12, 0.1, 0.25, 0.22, 0.35, 0.42, NA, 0.16, 0.09, 0.28, 0.24, 0.18,
+      0.24, 0.18
+
+    ),
+    af.lb = pmax(af - 0.05, 0),
+    af.ub = pmin(af + 0.1, 1),
+    tot_deaths = c(
+      100, 200, 300, 200, 400, NA, 380, 450, 150, 120, 340, 410,
+      180, 240, 260, 320, NA, 390, 470, 520, 210, 280, 300, 190,
+      210, 310, 140, 160, 190, 230, NA, 200, 340, 360, 145, 220,
+      180, 150, 280, 260, 330, 410, NA, 175, 130, 300, 255, 198,
+      255, 198
+    ),
+    pm25_values = c(
+      12, 14, 20, 20, 25, NA, 18, 16, 14, 13, 19, 21,
+      15, 18, 22, 23, NA, 26, 28, 30, 17, 16, 18, 19,
+      20, 23, 12, 13, 14, 16, NA, 15, 23, 24, 13, 17,
+      14, 12, 18, 17, 22, 26, NA, 13, 11, 19, 18, 15,
+      18, 15
+    ),
+    pop = c(
+      100000, 120000, 100000, 150000, 160000, NA, 140000, 135000, 110000, 105000, 130000, 145000,
+      115000, 125000, 135000, 140000, NA, 150000, 160000, 170000, 120000, 130000, 140000, 110000,
+      118000, 128000, 98000, 102000, 108000, 112000, NA, 120000, 138000, 142000, 100000, 122000,
+      110000, 98000, 130000, 125000, 145000, 155000, NA, 108000, 95000, 132000, 128000, 115000,
+      128000, 115000
+    )
+  )
+
+
+  actual_df <- aggregate_air_pollution_by_region(sample_data)
+
+  expect_true(all(c("region", "ref_name", "ref_pm25", "ar_per_100k", "ar_lower",
+                "ar_upper", "an", "an_lower", "an_upper", "af", "af_lower",
+                "af_upper", "total_deaths", "mean_pm25",
+                "population") %in% names(actual_df)))
+
+  expected_df <- tibble(
+    region = c(rep("North", 5), rep("South", 5)),
+    ref_name = c(rep("RefA", 10)),
+    ref_pm25 = c(7, 8, 10, 11, 13, 6, 7, 9, 11, 12),
+    ar_per_100k = c(5, 36, 26, 3, 1, 4, 9, 33, 39, 2),
+    ar_lower = c(3, 22.2, 15.4, 1.8, 0.5, 2.5, 6, 21.1, 22.1, 1.2),
+    ar_upper = c(6, 43.7, 38.2, 4, 2, 5, 12, 43, 49.5, 3),
+    an = c(50, 330, 250, 33, 16, 38, 95, 320, 396, 28),
+    an_lower = c(42, 269, 203, 26, 12, 30, 75, 260, 323, 20),
+    an_upper = c(58, 392, 310, 40, 20, 46, 97, 381, 469, 32),
+    af = c(0.35, 0.258888888888889, 0.221, 0.24, 0.09, 0.28, 0.3,
+           0.242, 0.263, 0.16),
+    af_lower = c(0.3, 0.208888888888889, 0.171, 0.19, 0.04, 0.23, 0.25, 0.192,
+                 0.213, 0.11),
+    af_upper = c(0.45, 0.358888888888889, 0.321, 0.34, 0.19, 0.38, 0.4, 0.342,
+                 0.363, 0.26),
+    total_deaths = c(330, 2615, 2215, 255, 130, 300, 608, 2478, 2930, 175),
+    mean_pm25 = c(22, 18.6666666666667, 17.2, 18, 11, 19, 20.5, 17.7, 19.1, 13),
+    population = c(145000, 125888.888888889, 120700, 128000, 95000, 132000,
+                   135000, 122500, 131900, 108000)
+
+  )
+
+  expect_equal(actual_df, expected_df)
+
 })
 
