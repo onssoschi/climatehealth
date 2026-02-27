@@ -2289,7 +2289,6 @@ plot_avg_monthly <- function(attr_data,
 
   level <- match.arg(level, choices = c("country", "region", "district"))
   if (save_fig && !dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
-  if (length(dev.list()) > 0) dev.off()
 
   # Loop over metrics if multiple
   all_plots <- list()
