@@ -2632,10 +2632,22 @@ test_that("aggregate_air_pollution_by_region proper groupings, errors thrown whe
 
 })
 
+
+#' Title
+#'
+#' @param region_name String containing the name for the current region being
+#' generated
+#' @param ref_pm25_value Numeric reference PM2.5 concentration associated with the
+#' region.
+#' @param lag_val Numeric suffix used in naming the pm25_lag0_ column
+#'
+#' @return Tibble with simulated daily values
+#' @export
+#'
+#' @examples
 make_block_for_aggre_air_poll_by_yr <- function(region_name,
                                                 ref_pm25_value,
                                                 lag_val = 14) {
-
   set.seed(123)
 
   base_dates <- seq.Date(as.Date("2019-12-20"), as.Date("2021-01-10"), by = "day")
