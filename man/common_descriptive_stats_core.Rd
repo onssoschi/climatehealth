@@ -28,6 +28,6 @@ common_descriptive_stats_core(
 )
 }
 \description{
-Deprecated alias for \code{descriptive_stats_core()}.
+Deprecated. Use \code{descriptive_stats_core()} instead.
 }
 \keyword{internal}

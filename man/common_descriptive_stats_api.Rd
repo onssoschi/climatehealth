@@ -76,6 +76,8 @@ common_descriptive_stats_api(
 }
 \value{
 Character vector. Backward-compatible output path format.
+
+Deprecated. Use \code{run_descriptive_stats_api()} instead.
 }
 \description{
 Deprecated alias for \code{run_descriptive_stats_api()}.

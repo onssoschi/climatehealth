@@ -76,6 +76,8 @@ common_descriptive_stats(
 }
 \value{
 Character vector. Backward-compatible output path format.
+
+Deprecated. Use \code{run_descriptive_stats()} instead.
 }
 \description{
 Generic wrapper function to compute descriptive statistics and EDA outputs.
