@@ -2480,8 +2480,7 @@ test_that("plot_air_pollution_forest_by_lag tolerates some NA rr values", {
   expect_true(all(c("pm25","pm25_lag1","pm25_lag0_1") %in% levels(p$data$var_name)))
 })
 
-# Test for aggregate_air_pollution_by_region
-test_that("aggregate_air_pollution_by_region proper groupings and NAs ignored", {
+test_that("aggregate_air_pollution_by_region proper groupings, errors thrown when expected, and NAs ignored", {
   sample_data <- tibble::tibble(
     region = rep(c("North", "South"), 25),
     ref_name = "RefA",
@@ -2632,6 +2631,130 @@ test_that("aggregate_air_pollution_by_region proper groupings and NAs ignored", 
   expect_equal(actual_df, expected_df)
 
 })
+
+make_block_for_aggre_air_poll_by_yr <- function(region_name,
+                                                ref_pm25_value,
+                                                lag_val = 14) {
+
+  set.seed(123)
+
+  base_dates <- seq.Date(as.Date("2019-12-20"), as.Date("2021-01-10"), by = "day")
+  n <- length(base_dates)
+
+  tibble(
+    region = region_name,
+    ref_name = "RefA",
+    ref_pm25 = ref_pm25_value,
+    var_name = paste0("pm25_lag0_", lag_val),
+    date = base_dates,
+    ar = sample(c(0:6, NA), n, replace = TRUE, prob = c(rep(1,7), 0.5)),
+    ar.lb = sample(c(0:4, NA), n, replace = TRUE, prob = c(rep(1,5), 0.3)),
+    ar.ub = sample(c(1:8, NA), n, replace = TRUE, prob = c(rep(1,8), 0.3)),
+    an = sample(c(seq(10, 60, 5), NA), n, replace = TRUE, prob = c(rep(1,11), 0.3)),
+    an.lb = pmax(an - sample(c(5,10,15), n, replace = TRUE), 0),
+    an.ub = an + sample(c(5,10,15), n, replace = TRUE),
+    af = sample(c(seq(0.1, 0.5, by = 0.05), NA), n, replace = TRUE, prob = c(rep(1,9), 0.2)),
+    af.lb = pmax(af - 0.05, 0),
+    af.ub = pmin(af + 0.1, 1),
+    tot_deaths = sample(c(seq(100, 500, 25), NA), n, replace = TRUE, prob = c(rep(1,17), 0.2)),
+    pm25_values = sample(c(10:30, NA), n, replace = TRUE, prob = c(rep(1,21), 0.2)),
+    pop = sample(c(90000:110000, NA), n, replace = TRUE, prob = c(rep(1,20001), 0.1))
+  )
+}
+
+
+test_that("aggregate_air_pollution_by_year proper groupings, errors thrown when expected, and NAs ignored", {
+
+  sample_data <- bind_rows(
+    make_block_for_aggre_air_poll_by_yr("North", 10, 14),
+    make_block_for_aggre_air_poll_by_yr("South", 8, 14),
+    make_block_for_aggre_air_poll_by_yr("East", 9, 14),
+    make_block_for_aggre_air_poll_by_yr("West", 11, 14),
+    make_block_for_aggre_air_poll_by_yr("National", 10, 14) # to exercise include_national flag
+  ) %>%
+    # add a few rows with a different lag to test filtering
+    bind_rows(
+      make_block_for_aggre_air_poll_by_yr("North", 10, 7) %>% slice(1:5)
+    )
+
+  actual_df <- aggregate_air_pollution_by_year(sample_data)
+
+  #Everything included as expected
+  expect_true(all(c("year", "ref_name", "ref_pm25", "region", "ar_per_100k",
+                    "ar_lower", "ar_upper", "an", "an_lower", "an_upper", "af",
+                    "af_lower", "af_upper", "total_deaths", "mean_pm25",
+                    "population") %in% names(actual_df)))
+  expect_equal(nrow(actual_df), 15)
+
+
+  # Should error if missing important columns
+  expect_error(aggregate_air_pollution_by_year(sample_data %>% select(-ar)))
+  expect_error(aggregate_air_pollution_by_year(sample_data %>% select(-year)))
+
+  # Should throw error if data types are not usable for processing
+  broken <- sample_data
+  broken$ar <- as.character(broken$ar)
+  expect_error(aggregate_air_pollution_by_year(broken))
+
+  #Filters right when matching rows exist...
+  result <- aggregate_air_pollution_by_year(sample_data, max_lag = 14)
+  expect_gt(nrow(result), 0)
+
+  #...otherwise return empty tibble
+  result <- aggregate_air_pollution_by_year(sample_data, max_lag = 99)
+  expect_equal(nrow(result), 0)
+
+  #Stability of data if input ordering is different:
+  # Row-wise
+  shuffled <- sample_data[sample(1:nrow(sample_data)), ]
+  actual_df_row_shuffled <- aggregate_air_pollution_by_year(shuffled)
+
+  expect_equal(actual_df_row_shuffled, actual_df)
+
+  # Column-wise
+  reordered <- sample_data %>% select(sample(ncol(sample_data)))
+  actual_df_col_shuffled <- aggregate_air_pollution_by_year(reordered)
+  expect_equal(actual_df_col_shuffled, actual_df)
+
+  expected_df <- tibble(
+    year = c(2019, 2019, 2019, 2019, 2019, 2020, 2020, 2020,
+             2020, 2020, 2021, 2021, 2021, 2021, 2021),
+    ref_name = c(rep("RefA", 15)),
+    ref_pm25 = c(8, 9, 10, 10, 11, 8, 9, 10, 10, 11, 8, 9, 10, 10, 11),
+    region = c(rep(c("South", "East", "National", "North", "West"), 3)),
+    ar_per_100k = as.integer(c(rep(34, 5), rep(1033, 5), rep(30, 5))),
+    ar_lower = as.integer(c(rep(10, 5), rep(676, 5), rep(23, 5))),
+    ar_upper = as.integer(c(rep(57, 5), rep(1648, 5), rep(40, 5))),
+    an = c(rep(345, 5), rep(12635, 5), rep(285, 5)),
+    an_lower = c(rep(225, 5), rep(9155, 5), rep(205, 5)),
+    an_upper = c(rep(465, 5), rep(16265, 5), rep(390, 5)),
+    af = c(0.241666666666667, 0.241666666666667, 0.241666666666667,
+           0.241666666666667, 0.241666666666667, 0.305401662049862,
+           0.305401662049862, 0.305401662049862, 0.305401662049862,
+           0.305401662049862, 0.32, 0.32, 0.32, 0.32, 0.32),
+    af_lower = c(0.191666666666667, 0.191666666666667, 0.191666666666667,
+                 0.191666666666667, 0.191666666666667, 0.255401662049862,
+                 0.255401662049862, 0.255401662049862, 0.255401662049862,
+                 0.255401662049862, 0.27, 0.27, 0.27, 0.27, 0.27),
+    af_upper = c(0.341666666666667, 0.341666666666667, 0.341666666666667,
+                 0.341666666666667, 0.341666666666667, 0.405401662049861,
+                 0.405401662049861, 0.405401662049861, 0.405401662049861,
+                 0.405401662049861, 0.42, 0.42, 0.42, 0.42, 0.42),
+    total_deaths = c(rep(3375, 5), rep(109275, 5), rep(3475, 5)),
+    mean_pm25 = c(22.4166666666667, 22.4166666666667, 22.4166666666667,
+                  22.4166666666667, 22.4166666666667, 20.0606060606061,
+                  20.0606060606061, 20.0606060606061, 20.0606060606061,
+                  20.0606060606061, 19.3, 19.3, 19.3, 19.3, 19.3),
+    population = c(96776.25, 96776.25, 96776.25, 96776.25, 96776.25,
+                   99920.2568306011, 99920.2568306011, 99920.2568306011,
+                   99920.2568306011, 99920.2568306011, 101384.6, 101384.6,
+                   101384.6, 101384.6, 101384.6)
+  )
+
+  expect_equal(actual_df, expected_df)
+
+})
+
 
 
 # Tests for plot_air_pollution_an_ar_monthly()
