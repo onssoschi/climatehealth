@@ -281,10 +281,15 @@ detect_outliers <- function(df, independent_cols = NULL) {
 #'
 #' @keywords internal
 label_with_unit <- function(col, units) {
-  unit <- units[[col]]
-  lbl_with_unit <- (
-    if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
-  )
+  unit <- NULL
+  if (!is.null(units) && !is.null(names(units)) && col %in% names(units)) {
+    unit <- units[[col]]
+  }
+  lbl_with_unit <- if (!is.null(unit) && nzchar(unit)) {
+    paste0(col, " (", unit, ")")
+  } else {
+    col
+  }
   return(lbl_with_unit)
 }
 
@@ -378,9 +383,7 @@ descriptive_stats_core <- function(
     boxplot_path <- file.path(output_path, "boxplots.pdf")
 
     ylabs <- sapply(independent_cols, function(col) {
-      unit <- units[[col]]
-      unit <- if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
-      return(unit)
+      label_with_unit(col, units)
     })
 
     plot_boxplots(
@@ -415,9 +418,7 @@ descriptive_stats_core <- function(
     dist_path <- file.path(output_path, "histograms.pdf")
 
     xlabs <- sapply(independent_cols, function(col) {
-      unit <- units[[col]]
-      unit <- if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
-      return(unit)
+      label_with_unit(col, units)
     })
 
     plot_distributions(
@@ -514,9 +515,7 @@ descriptive_stats_core <- function(
 
     # Create y-axis labels with units
     ylabs <- sapply(independent_cols, function(col) {
-      unit <- units[[col]]
-      unit <- if (!is.null(unit) && nzchar(unit)) paste0(col, " (", unit, ")") else col
-      return(unit)
+      label_with_unit(col, units)
     })
 
     plot_seasonal_trends(
@@ -537,8 +536,7 @@ descriptive_stats_core <- function(
     if (has_regions && is_full) {
       # y-axis labels with units
       ylabs <- vapply(independent_cols, function(col) {
-        u <- units[[col]]
-        if (!is.null(u) && nzchar(u)) paste0(col, " (", u, ")") else col
+        label_with_unit(col, units)
       }, character(1))
 
       regional_path <- file.path(output_path, "regional_averages.pdf")
