@@ -331,16 +331,17 @@ air_pollution_descriptive_stats <- function(data,
 
   # Run the generic descriptive statistics module
   tryCatch({
-    # Use the API wrapper for comprehensive descriptive statistics
-    result_paths <- common_descriptive_stats_api(
+    # Use the package wrapper for internal module integration
+    result_paths <- run_descriptive_stats(
       data = data_for_stats,
+      output_path = desc_stats_dir,
       aggregation_column = "region",
       population_col = "population",
       dependent_col = "deaths",
       independent_cols = env_vars,
       units = units,
-      plot_correlation = plot_corr_matrix,
-      plot_dist_hists = plot_dist,
+      plot_corr_matrix = plot_corr_matrix,
+      plot_dist = plot_dist,
       plot_ma = TRUE,
       plot_na_counts = plot_na_counts,
       plot_scatter = plot_scatter,
@@ -354,7 +355,7 @@ air_pollution_descriptive_stats <- function(data,
       timeseries_col = "date",
       detect_outliers = detect_outliers,
       calculate_rate = calculate_rate,
-      output_path = desc_stats_dir
+      create_base_dir = TRUE
     )
 
   }, error = function(e) {
