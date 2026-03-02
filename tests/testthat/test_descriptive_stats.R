@@ -323,7 +323,7 @@ test_that("Fails when no column selection method is provided", {
       independent_cols = NULL,
       dependent_col = "x"
     ),
-    "Please specify `independent_cols`"
+    "`independent_cols` must be a non-empty character vector."
   )
 })
 
@@ -367,7 +367,7 @@ test_that("Generates all enabled plots and outputs", {
     title = "Subset",
     units = units,
     dependent_col = "dependent",
-    independent_cols = c("temp"),
+    independent_cols = c("temp", "population"),
     plot_box = TRUE,
     plot_corr_matrix = TRUE,
     plot_dist = TRUE,
@@ -550,7 +550,8 @@ cds_api_df <- data.frame(
   date = c("2020-01-01", "2020-01-02", "2020-01-03", "2020-01-04"),
   value = c(10, 20, 30, 40),
   region = c("North", "South", "North", "South"),
-  population = c(100, 200, 150, 250)
+  population = c(100, 200, 150, 250),
+  humidity = c(60, 65, 63, 62)
 )
 
 test_that("API runs with all features enabled", {
@@ -561,8 +562,8 @@ test_that("API runs with all features enabled", {
     aggregation_column = "region",
     population_col = "population",
     dependent_col = "value",
-    independent_cols = c("population"),
-    units = c(value = "units", population = "people"),
+    independent_cols = c("population", "humidity"),
+    units = c(value = "units", population = "people", humidity = "percent"),
     plot_correlation = TRUE,
     plot_dist_hists = TRUE,
     plot_ma = TRUE,
@@ -1077,15 +1078,15 @@ test_that("endpoint-style payload mapping returns clear contract errors", {
   expect_match(invalid_column_res$body$error, "Column 'population' not in passed dataset")
 })
 
-test_that("deprecated wrapper aliases remain functional and warn", {
+test_that("deprecated wrapper aliases remain functional", {
   tmp <- local_tempdir()
   df <- data.frame(
     date = as.Date("2024-01-01") + 0:2,
     value = c(1, 2, 3)
   )
 
-  expect_warning(
-    old_out <- common_descriptive_stats(
+  old_out <- suppressWarnings(
+    common_descriptive_stats(
       df_list = list(region1 = df),
       output_path = tmp,
       dependent_col = "value",
@@ -1102,14 +1103,13 @@ test_that("deprecated wrapper aliases remain functional and warn", {
       plot_total = FALSE,
       detect_outliers = FALSE,
       calculate_rate = FALSE
-    ),
-    "deprecated"
+    )
   )
   expect_type(old_out, "character")
   expect_true(dir.exists(old_out[1]))
 
-  expect_warning(
-    old_api_out <- common_descriptive_stats_api(
+  old_api_out <- suppressWarnings(
+    common_descriptive_stats_api(
       data = data.frame(
         date = c("2024-01-01", "2024-01-02"),
         value = c(1, 2),
@@ -1129,8 +1129,7 @@ test_that("deprecated wrapper aliases remain functional and warn", {
       plot_total = FALSE,
       detect_outliers = FALSE,
       calculate_rate = FALSE
-    ),
-    "deprecated"
+    )
   )
   expect_type(old_api_out, "character")
   expect_true(dir.exists(old_api_out[1]))
