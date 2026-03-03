@@ -4392,3 +4392,193 @@ test_that("plot_air_pollution_an_ar_by_region captions mention 95% CI", {
   expect_true(grepl("95% confidence interval", out$ar_plot$labels$caption))
   expect_true(grepl("95% confidence interval", out$an_plot$labels$caption))
 })
+
+
+test_that("air_pollution_power_list function returns a list and correct names", {
+
+  meta_results <- list(
+    region_results = data.frame(
+      region = c("RegionA", "RegionB"),
+      model_results = I(list(
+        list(coef_table = data.frame(
+          pm25_variable = "pm25_lag0_3",
+          coef = 0.02,
+          se = 0.005
+        )),
+        list(coef_table = data.frame(
+          pm25_variable = "pm25_lag0_3",
+          coef = 0.01,
+          se = 0.004
+        ))
+      ))
+    ),
+    meta_results = data.frame(
+      lag = "0-3",
+      coef = 0.015,
+      se = 0.003
+    )
+  )
+
+  data_with_lags <- data.frame(
+    region = rep(c("RegionA", "RegionB"), each = 5),
+    pm25 = c(10, 12, 15, 18, 20, 8, 16, 17, 22, 25),
+    pm25_lag0_3 = rnorm(10)
+  )
+
+  actual_result <- air_pollution_power_list(
+    meta_results,
+    data_with_lags,
+    ref_pm25 = 15,
+    attr_thr = 90,
+    include_national = TRUE
+  )
+
+  expect_type(actual_result, "list")
+  expect_true("RegionA" %in% names(actual_result))
+  expect_true("RegionB" %in% names(actual_result))
+  expect_true("National" %in% names(actual_result))
+
+  # Each entry should be a data.frame
+  expect_s3_class(actual_result$RegionA, "data.frame")
+  expect_s3_class(actual_result$RegionB, "data.frame")
+  expect_s3_class(actual_result$National, "data.frame")
+
+  # Required columns exist
+  expect_true(all(c("region", "pm25", "cen", "log_rr", "se", "power", "power_pct")
+                  %in% names(actual_result$RegionA)))
+  expect_true(all(c("region", "pm25", "cen", "log_rr", "se", "power", "power_pct")
+                  %in% names(actual_result$RegionB)))
+  expect_true(all(c("region", "pm25", "cen", "log_rr", "se", "power", "power_pct")
+                  %in% names(actual_result$National)))
+
+  expected_result <- list(
+    "RegionA" = data.frame(
+      "region" = c("RegionA"),
+      "pm25" = as.double(c(20)),
+      "cen" = as.double(c(15)),
+      "log_rr" = as.double(c(0.1)),
+      "se" = as.double(c(0.025)),
+      "power" = as.double(c(0.9907423)),
+      "power_pct" = as.double(c(99.1))
+    ),
+    "RegionB" = data.frame(
+      "region" = c("RegionB"),
+      "pm25" = as.double(c(25)),
+      "cen" = as.double(c(15)),
+      "log_rr" = as.double(c(0.1)),
+      "se" = as.double(c(0.04)),
+      "power" = as.double(c(0.8037819)),
+      "power_pct" = as.double(c(80.4))
+    ),
+    "National" = data.frame(
+      "region" = c("National"),
+      "pm25" = as.double(c(25)),
+      "cen" = as.double(c(15)),
+      "log_rr" = as.double(c(0.1)),
+      "se" = as.double(c(0.04)),
+      "power" = as.double(c(0.8037819)),
+      "power_pct" = as.double(c(80.4))
+    )
+  )
+
+  expect_equal(actual_result, expected_result, tolerance = 1e-6)
+})
+
+
+test_that("air_pollution_power_list handles region with no excess PM2.5 above reference", {
+
+  meta_results <- list(
+    region_results = data.frame(
+      region = "LowPM",
+      model_results = I(list(list(
+        coef_table = data.frame(
+          pm25_variable = "pm25_lag0_2",
+          coef = 0.02,
+          se = 0.005
+        )
+      )))
+    ),
+    meta_results = data.frame(lag = "0-2", coef = 0.01, se = 0.003)
+  )
+
+  data_with_lags <- data.frame(
+    region = rep("LowPM", 5),
+    pm25 = c(5, 6, 7, 8, 9),
+    pm25_lag0_2 = rnorm(5)
+  )
+
+  result <- air_pollution_power_list(meta_results, data_with_lags, ref_pm25 = 15)
+
+  # No values exceed reference → region should be missing from list
+  expect_false("LowPM" %in% names(result))
+})
+
+
+test_that("air_pollution_power_list National results excluded if include_national = FALSE", {
+
+  meta_results <- list(
+    region_results = data.frame(
+      region = c("RegionA", "RegionB"),
+      model_results = I(list(
+        list(coef_table = data.frame(
+          pm25_variable = "pm25_lag0_3",
+          coef = 0.02,
+          se = 0.005
+        )),
+        list(coef_table = data.frame(
+          pm25_variable = "pm25_lag0_3",
+          coef = 0.01,
+          se = 0.004
+        ))
+      ))
+    ),
+    meta_results = data.frame(
+      lag = "0-3",
+      coef = 0.015,
+      se = 0.003
+    )
+  )
+
+  data_with_lags <- data.frame(
+    region = rep(c("RegionA", "RegionB"), each = 5),
+    pm25 = c(10, 12, 15, 18, 20, 8, 16, 17, 22, 25),
+    pm25_lag0_3 = rnorm(10)
+  )
+
+  actual_result <- air_pollution_power_list(
+    meta_results, data_with_lags,
+    ref_pm25 = 15,
+    attr_thr = 90,
+    include_national = FALSE
+  )
+
+  boop <- air_pollution_power_list(
+    meta_results, data_with_lags,
+    include_national = TRUE
+  )
+
+  expected_result <- list(
+    "RegionA" = data.frame(
+      "region" = c("RegionA"),
+      "pm25" = as.double(c(20)),
+      "cen" = as.double(c(15)),
+      "log_rr" = as.double(c(0.1)),
+      "se" = as.double(c(0.025)),
+      "power" = as.double(c(0.9907423)),
+      "power_pct" = as.double(c(99.1))
+    ),
+    "RegionB" = data.frame(
+      "region" = c("RegionB"),
+      "pm25" = as.double(c(25)),
+      "cen" = as.double(c(15)),
+      "log_rr" = as.double(c(0.1)),
+      "se" = as.double(c(0.04)),
+      "power" = as.double(c(0.8037819)),
+      "power_pct" = as.double(c(80.4))
+    )
+  )
+
+  expect_false("National" %in% names(actual_result))
+  expect_equal(actual_result, expected_result, tolerance = 1e-6)
+})
+
