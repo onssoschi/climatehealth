@@ -1024,6 +1024,11 @@ run_descriptive_stats <- function(
     calculate_rate = FALSE,
     run_id = NULL,
     create_base_dir = FALSE) {
+
+  if ("data.table" %in% class(data)) {
+    data <- as.data.frame(data)
+  }
+
   raise_if_null("dependent_col", dependent_col)
   raise_if_null("independent_cols", independent_cols)
   independent_cols <- unique(as.character(independent_cols))
