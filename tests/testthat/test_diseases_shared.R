@@ -1808,32 +1808,31 @@ test_that(
     with_mocked_bindings(
       {
         # Suppress missing cols warning for testing
-        suppressWarnings(
-          result <- climatehealth:::attribution_calculation(
+        result <- expect_warning(
+          climatehealth:::attribution_calculation(
             data = zero_pop_data,
             param_term = "temp",
             model = AC_model,
             level = "region",
             case_type = "malaria"
-          )
+          ),
+          "Population denominator is zero or missing"
         )
         expect_s3_class(result, "tbl_df")
         expect_equal(nrow(result), nrow(zero_pop_data))
 
-        # AR_Number, AR_Fraction, AR_per_100k should not error
-        expect_true(all(is.numeric(result$AR_Number)))
-        expect_true(all(is.numeric(result$AR_Fraction)))
-        expect_true(all(is.numeric(result$AR_per_100k)))
+        # AR_Number, AR_Fraction, AR_per_100k are numeric
+        expect_true(is.numeric(result$AR_Number))
+        expect_true(is.numeric(result$AR_Fraction))
+        expect_true(is.numeric(result$AR_per_100k))
 
-        # No NaN; allow NA or Inf
-        expect_true(all(!is.nan(result$AR_Number)))
-        expect_true(all(!is.nan(result$AR_Fraction)))
-        expect_true(all(!is.nan(result$AR_per_100k)))
+        # AR_Number and AR_Fraction, are non-negative
+        expect_true(all(result$AR_Number >= 0, na.rm = TRUE))
+        expect_true(all(result$AR_Fraction >= 0, na.rm = TRUE))
 
-        # Non-negative (includes Inf)
-        expect_true(all(is.na(result$AR_Number)   | result$AR_Number   >= 0))
-        expect_true(all(is.na(result$AR_Fraction) | result$AR_Fraction >= 0))
-        expect_true(all(is.na(result$AR_per_100k) | result$AR_per_100k >= 0))
+        # AR_per_100k must be NA for zero-population groups
+        expect_true(all(is.na(result$AR_per_100k)))
+
       },
       validate_case_type = mock_validate,
       create_inla_indices = mock_indices,

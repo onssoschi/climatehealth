@@ -1764,7 +1764,7 @@ attribution_calculation <- function(data,
 
   ## Grouping logic
   grp_vars <- switch(level,
-                     "country"  = if (group_by_year) c("year","month") else c("year","month"),
+                     "country"  = if (group_by_year) c("year") else c("year","month"),
                      "region"   = if (group_by_year) c("region", "year") else c("region", "year", "month"),
                      "district" = if (group_by_year) c("region", "district", "year")
                      else c("region", "district", "year", "month"),
@@ -1808,22 +1808,34 @@ attribution_calculation <- function(data,
     tot_pop <- sum(df$tot_pop, na.rm = TRUE)
     cases   <- df[[case_type]]
 
-    get_vals <- function(rr) {
+    get_vals <- function(rr, warn = FALSE) {
 
       id <- which(df[[param_term]] >= MER_L &
                     df[[param_term]] <= MER_U &
                     rr > param_threshold)
 
-      if (length(id) == 0) return(c(0, 0, 0))
+      if (length(id) == 0) return(c(0, 0, NA_real_))
 
       af <- 1 - 1 / mean(rr[id])
       an <- af * sum(cases[id], na.rm = TRUE)
-      ar <- (an / tot_pop) * 1e5
+      if (is.na(tot_pop) || tot_pop == 0) {
+        if (warn) {
+          warning(
+            "Population denominator is zero or missing for group: ",
+            paste(df[1, grp_vars, drop = TRUE], collapse = ", "),
+            ". AR_per_100k set to NA."
+          )
+        }
+
+        ar <- NA_real_
+      } else {
+        ar <- (an / tot_pop) * 1e5
+      }
 
       c(af, an, ar)
     }
 
-    fit  <- get_vals(rr_fit)
+    fit  <- get_vals(rr_fit, warn = TRUE)
     low  <- get_vals(rr_low)
     high <- get_vals(rr_high)
 
