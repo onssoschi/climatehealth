@@ -68,7 +68,29 @@ test_that("Non-vector columns argument throws error", {
 test_that("Non-existent column throws error", {
   expect_error(
     create_correlation_matrix(CORR_MATRIX_DATA, independent_cols = c("A", "Z")),
-    "Column Z not in dataset"
+    "Column\\(s\\) not in dataset: Z"
+  )
+})
+
+test_that("Non-numeric columns are filtered before correlation", {
+  mixed_df <- data.frame(
+    A = c(1, 2, 3, 4),
+    B = c(2, 3, 4, 5),
+    C = c("x", "y", "z", "w")
+  )
+  result <- create_correlation_matrix(mixed_df, independent_cols = c("A", "B", "C"))
+  expect_true(is.matrix(result))
+  expect_equal(rownames(result), c("A", "B"))
+})
+
+test_that("Correlation errors clearly when fewer than 2 numeric columns remain", {
+  mixed_df <- data.frame(
+    A = c(1, 2, 3, 4),
+    C = c("x", "y", "z", "w")
+  )
+  expect_error(
+    create_correlation_matrix(mixed_df, independent_cols = c("A", "C")),
+    "requires at least 2 numeric columns"
   )
 })
 
@@ -114,7 +136,7 @@ test_that("Mixed column types are handled correctly", {
 test_that("Invalid column name throws error", {
   expect_error(
     create_column_summaries(COL_SUM_TEST_DATA, independent_cols = c("num1", "missing_col")),
-    "Column missing_col not in dataset"
+    "Column\\(s\\) not in dataset: missing_col"
   )
 })
 
@@ -123,6 +145,20 @@ test_that("Non-vector columns argument throws error", {
     create_column_summaries(COL_SUM_TEST_DATA, independent_cols = data.frame(x = 1)),
     "'independent_cols' expected a vector of column names"
   )
+})
+
+test_that("Empty independent_cols returns explicit empty summary output", {
+  result <- create_column_summaries(COL_SUM_TEST_DATA, independent_cols = character(0))
+  expect_true(is.data.frame(result))
+  expect_equal(nrow(result), 0)
+  expect_true(all(c("Data_Type", "Top", "Top_Freq") %in% names(result)))
+})
+
+test_that("Non-numeric summaries include mode-style fields", {
+  result <- create_column_summaries(COL_SUM_TEST_DATA, independent_cols = c("char1", "factor1"))
+  expect_true(all(!is.na(result$Top)))
+  expect_true(all(!is.na(result$Top_Freq)))
+  expect_true(all(is.na(result$Mean)))
 })
 
 # Tests for create_na_summary
@@ -287,7 +323,7 @@ test_that("Fails when no column selection method is provided", {
       independent_cols = NULL,
       dependent_col = "x"
     ),
-    "Please specify `independent_cols`"
+    "`independent_cols` must be a non-empty character vector."
   )
 })
 
@@ -331,7 +367,7 @@ test_that("Generates all enabled plots and outputs", {
     title = "Subset",
     units = units,
     dependent_col = "dependent",
-    independent_cols = c("temp"),
+    independent_cols = c("temp", "population"),
     plot_box = TRUE,
     plot_corr_matrix = TRUE,
     plot_dist = TRUE,
@@ -447,18 +483,22 @@ test_that("common_descriptive_stats creates the expected files", {
     calculate_rate = FALSE
   )
   # Validate outputs have been created
-  expected_root_folder <- file.path(tmp_root, "descriptive_stats")
-  expect_true(dir.exists(expected_root_folder))
-  expect_equal(out[1], expected_root_folder)
+  expected_parent <- file.path(tmp_root, "descriptive_stats")
+  expect_true(dir.exists(expected_parent))
+  expect_true(dir.exists(out[1]))
+  expect_true(startsWith(
+    normalizePath(out[1], winslash = "/", mustWork = TRUE),
+    normalizePath(expected_parent, winslash = "/", mustWork = TRUE)
+  ))
   expect_equal(out[2], "descriptive_stats")
 
   # Validate correct output files are present
-  all_folder <- file.path(expected_root_folder, "All")
+  all_folder <- file.path(out[1], "All")
   expect_true(dir.exists(all_folder))
   expect_true(file.exists(file.path(all_folder, "dataset_summary.csv")))
 
   for (region in c("RegionA", "RegionB")) {
-    region_folder <- file.path(expected_root_folder, region)
+    region_folder <- file.path(out[1], region)
     expect_true(dir.exists(region_folder), info = paste("Missing region folder:", region))
     pdf_path <- file.path(region_folder, "moving_average.pdf")
     expect_true(file.exists(pdf_path), info = paste("Missing moving average PDF for", region))
@@ -510,7 +550,8 @@ cds_api_df <- data.frame(
   date = c("2020-01-01", "2020-01-02", "2020-01-03", "2020-01-04"),
   value = c(10, 20, 30, 40),
   region = c("North", "South", "North", "South"),
-  population = c(100, 200, 150, 250)
+  population = c(100, 200, 150, 250),
+  humidity = c(60, 65, 63, 62)
 )
 
 test_that("API runs with all features enabled", {
@@ -521,8 +562,8 @@ test_that("API runs with all features enabled", {
     aggregation_column = "region",
     population_col = "population",
     dependent_col = "value",
-    independent_cols = c("population"),
-    units = c(value = "units", population = "people"),
+    independent_cols = c("population", "humidity"),
+    units = c(value = "units", population = "people", humidity = "percent"),
     plot_correlation = TRUE,
     plot_dist_hists = TRUE,
     plot_ma = TRUE,
@@ -653,4 +694,443 @@ test_that("API converts date column correctly", {
   )
 
   expect_true(dir.exists(out[1]))
+})
+
+# Tests for run_descriptive_stats / run_descriptive_stats_api
+
+test_that("run_descriptive_stats returns structured output with run folder", {
+  tmp <- local_tempdir()
+  df <- data.frame(
+    date = as.Date("2024-01-01") + 0:5,
+    region = rep(c("North", "South"), each = 3),
+    value = c(10, 12, 11, 8, 9, 10),
+    population = c(100, 100, 100, 120, 120, 120)
+  )
+
+  out <- run_descriptive_stats(
+    data = df,
+    output_path = tmp,
+    aggregation_column = "region",
+    population_col = "population",
+    dependent_col = "value",
+    independent_cols = c("population"),
+    timeseries_col = "date",
+    plot_corr_matrix = FALSE,
+    plot_dist = FALSE,
+    plot_ma = FALSE,
+    plot_na_counts = FALSE,
+    plot_scatter = FALSE,
+    plot_box = FALSE,
+    plot_seasonal = FALSE,
+    plot_regional = FALSE,
+    plot_total = FALSE,
+    detect_outliers = FALSE,
+    calculate_rate = FALSE
+  )
+
+  expect_s3_class(out, "descriptive_stats_run")
+  expect_true(all(c(
+    "base_output_path",
+    "run_id",
+    "run_output_path",
+    "region_output_paths"
+  ) %in% names(out)))
+  expect_true(dir.exists(out$run_output_path))
+  expect_true(startsWith(
+    normalizePath(out$run_output_path, winslash = "/", mustWork = TRUE),
+    normalizePath(file.path(tmp, "descriptive_stats"), winslash = "/", mustWork = TRUE)
+  ))
+  expect_true(dir.exists(out$region_output_paths$All))
+  expect_true(dir.exists(out$region_output_paths$North))
+  expect_true(dir.exists(out$region_output_paths$South))
+})
+
+test_that("run_descriptive_stats respects provided run_id", {
+  tmp <- local_tempdir()
+  df <- data.frame(
+    date = as.Date("2024-01-01") + 0:2,
+    value = c(1, 2, 3)
+  )
+  out <- run_descriptive_stats(
+    data = df,
+    output_path = tmp,
+    dependent_col = "value",
+    independent_cols = c("value"),
+    timeseries_col = "date",
+    run_id = "req_12345",
+    plot_corr_matrix = FALSE,
+    plot_dist = FALSE,
+    plot_ma = FALSE,
+    plot_na_counts = FALSE,
+    plot_scatter = FALSE,
+    plot_box = FALSE,
+    plot_seasonal = FALSE,
+    plot_regional = FALSE,
+    plot_total = FALSE,
+    detect_outliers = FALSE,
+    calculate_rate = FALSE
+  )
+  expect_equal(out$run_id, "req_12345")
+  expect_true(grepl("req_12345$", out$run_output_path))
+})
+
+test_that("run_descriptive_stats create_base_dir handling is enforced", {
+  missing_dir <- tempfile("missing_ds_")
+  df <- data.frame(
+    date = as.Date("2024-01-01") + 0:2,
+    value = c(1, 2, 3)
+  )
+
+  expect_error(
+    run_descriptive_stats(
+      data = df,
+      output_path = missing_dir,
+      dependent_col = "value",
+      independent_cols = c("value"),
+      timeseries_col = "date",
+      create_base_dir = FALSE,
+      plot_corr_matrix = FALSE,
+      plot_dist = FALSE,
+      plot_ma = FALSE,
+      plot_na_counts = FALSE,
+      plot_scatter = FALSE,
+      plot_box = FALSE,
+      plot_seasonal = FALSE,
+      plot_regional = FALSE,
+      plot_total = FALSE,
+      detect_outliers = FALSE,
+      calculate_rate = FALSE
+    ),
+    "Set `create_base_dir = TRUE`"
+  )
+
+  expect_error(
+    run_descriptive_stats(
+      data = df,
+      output_path = missing_dir,
+      dependent_col = "value",
+      independent_cols = c("value"),
+      timeseries_col = "date",
+      create_base_dir = TRUE,
+      plot_corr_matrix = FALSE,
+      plot_dist = FALSE,
+      plot_ma = FALSE,
+      plot_na_counts = FALSE,
+      plot_scatter = FALSE,
+      plot_box = FALSE,
+      plot_seasonal = FALSE,
+      plot_regional = FALSE,
+      plot_total = FALSE,
+      detect_outliers = FALSE,
+      calculate_rate = FALSE
+    ),
+    regexp = NA
+  )
+  expect_true(dir.exists(missing_dir))
+})
+
+test_that("run_descriptive_stats preflight validation errors on missing required fields", {
+  tmp <- local_tempdir()
+  df <- data.frame(
+    date = as.Date("2024-01-01") + 0:2,
+    value = c(1, 2, 3)
+  )
+
+  expect_error(
+    run_descriptive_stats(
+      data = df,
+      output_path = tmp,
+      dependent_col = "value",
+      independent_cols = c("value"),
+      plot_ma = TRUE,
+      ma_days = 2,
+      ma_sides = 1
+    ),
+    "timeseries_col"
+  )
+
+  expect_error(
+    run_descriptive_stats(
+      data = df,
+      output_path = tmp,
+      dependent_col = "value",
+      independent_cols = c("value"),
+      timeseries_col = "date",
+      calculate_rate = TRUE
+    ),
+    "population_col"
+  )
+})
+
+test_that("run_descriptive_stats_api contract works with list payload input", {
+  tmp <- local_tempdir()
+  payload_df <- data.frame(
+    date = c("2024-01-01", "2024-01-02", "2024-01-03"),
+    region = c("N", "S", "N"),
+    value = c(1, 2, 3),
+    population = c(10, 20, 10)
+  )
+
+  out <- run_descriptive_stats_api(
+    data = as.list(payload_df),
+    output_path = tmp,
+    aggregation_column = "region",
+    population_col = "population",
+    dependent_col = "value",
+    independent_cols = c("population"),
+    plot_corr_matrix = FALSE,
+    plot_dist = FALSE,
+    plot_ma = FALSE,
+    plot_na_counts = FALSE,
+    plot_scatter = FALSE,
+    plot_box = FALSE,
+    plot_seasonal = FALSE,
+    plot_regional = FALSE,
+    plot_total = FALSE,
+    detect_outliers = FALSE,
+    calculate_rate = FALSE,
+    create_base_dir = TRUE
+  )
+
+  expect_s3_class(out, "descriptive_stats_run")
+  expect_true(dir.exists(out$run_output_path))
+  expect_true(all(c("All", "N", "S") %in% names(out$region_output_paths)))
+})
+
+test_that("run_descriptive_stats_api contract returns clear errors for bad payloads", {
+  tmp <- local_tempdir()
+
+  missing_col_payload <- list(
+    date = c("2024-01-01", "2024-01-02"),
+    region = c("N", "S"),
+    value = c(1, 2)
+  )
+
+  expect_error(
+    run_descriptive_stats_api(
+      data = missing_col_payload,
+      output_path = tmp,
+      aggregation_column = "region",
+      dependent_col = "value",
+      independent_cols = c("population"),
+      plot_corr_matrix = FALSE,
+      plot_dist = FALSE,
+      plot_ma = FALSE,
+      plot_na_counts = FALSE,
+      plot_scatter = FALSE,
+      plot_box = FALSE,
+      plot_seasonal = FALSE,
+      plot_regional = FALSE,
+      plot_total = FALSE,
+      detect_outliers = FALSE,
+      calculate_rate = FALSE,
+      create_base_dir = TRUE
+    ),
+    "Column 'population' not in passed dataset"
+  )
+
+  expect_error(
+    run_descriptive_stats_api(
+      data = list(
+        date = c("2024-01-01", "2024-01-02"),
+        value = c(1, 2),
+        population = c(10, 20)
+      ),
+      output_path = tmp,
+      dependent_col = "value",
+      independent_cols = c("population"),
+      plot_ma = TRUE,
+      ma_days = 2,
+      ma_sides = 1,
+      plot_corr_matrix = FALSE,
+      plot_dist = FALSE,
+      plot_na_counts = FALSE,
+      plot_scatter = FALSE,
+      plot_box = FALSE,
+      plot_seasonal = FALSE,
+      plot_regional = FALSE,
+      plot_total = FALSE,
+      detect_outliers = FALSE,
+      calculate_rate = FALSE,
+      create_base_dir = TRUE
+    ),
+    "timeseries_col"
+  )
+})
+
+invoke_descriptive_stats_endpoint <- function(payload) {
+  tryCatch(
+    {
+      result <- do.call(run_descriptive_stats_api, payload)
+      list(
+        status = 200L,
+        body = list(
+          success = TRUE,
+          result = result
+        )
+      )
+    },
+    error = function(e) {
+      list(
+        status = 400L,
+        body = list(
+          success = FALSE,
+          error = conditionMessage(e)
+        )
+      )
+    }
+  )
+}
+
+test_that("endpoint-style payload mapping returns expected response shape", {
+  tmp <- local_tempdir()
+  payload <- list(
+    data = list(
+      date = c("2024-01-01", "2024-01-02", "2024-01-03"),
+      region = c("N", "S", "N"),
+      value = c(2, 3, 4),
+      population = c(100, 200, 100)
+    ),
+    output_path = tmp,
+    aggregation_column = "region",
+    population_col = "population",
+    dependent_col = "value",
+    independent_cols = c("population"),
+    timeseries_col = "date",
+    plot_corr_matrix = FALSE,
+    plot_dist = FALSE,
+    plot_ma = FALSE,
+    plot_na_counts = FALSE,
+    plot_scatter = FALSE,
+    plot_box = FALSE,
+    plot_seasonal = FALSE,
+    plot_regional = FALSE,
+    plot_total = FALSE,
+    detect_outliers = FALSE,
+    calculate_rate = FALSE,
+    create_base_dir = TRUE
+  )
+
+  res <- invoke_descriptive_stats_endpoint(payload)
+  expect_equal(res$status, 200L)
+  expect_true(isTRUE(res$body$success))
+  expect_s3_class(res$body$result, "descriptive_stats_run")
+  expect_true(all(c(
+    "base_output_path",
+    "run_id",
+    "run_output_path",
+    "region_output_paths"
+  ) %in% names(res$body$result)))
+})
+
+test_that("endpoint-style payload mapping returns clear contract errors", {
+  tmp <- local_tempdir()
+
+  missing_required <- list(
+    data = list(
+      date = c("2024-01-01", "2024-01-02"),
+      value = c(1, 2)
+    ),
+    output_path = tmp,
+    independent_cols = c("value"),
+    plot_corr_matrix = FALSE,
+    plot_dist = FALSE,
+    plot_ma = FALSE,
+    plot_na_counts = FALSE,
+    plot_scatter = FALSE,
+    plot_box = FALSE,
+    plot_seasonal = FALSE,
+    plot_regional = FALSE,
+    plot_total = FALSE,
+    detect_outliers = FALSE,
+    calculate_rate = FALSE,
+    create_base_dir = TRUE
+  )
+  missing_required_res <- invoke_descriptive_stats_endpoint(missing_required)
+  expect_equal(missing_required_res$status, 400L)
+  expect_false(missing_required_res$body$success)
+  expect_match(missing_required_res$body$error, "dependent_col")
+
+  invalid_column <- list(
+    data = list(
+      date = c("2024-01-01", "2024-01-02"),
+      value = c(1, 2)
+    ),
+    output_path = tmp,
+    dependent_col = "value",
+    independent_cols = c("population"),
+    plot_corr_matrix = FALSE,
+    plot_dist = FALSE,
+    plot_ma = FALSE,
+    plot_na_counts = FALSE,
+    plot_scatter = FALSE,
+    plot_box = FALSE,
+    plot_seasonal = FALSE,
+    plot_regional = FALSE,
+    plot_total = FALSE,
+    detect_outliers = FALSE,
+    calculate_rate = FALSE,
+    create_base_dir = TRUE
+  )
+  invalid_column_res <- invoke_descriptive_stats_endpoint(invalid_column)
+  expect_equal(invalid_column_res$status, 400L)
+  expect_false(invalid_column_res$body$success)
+  expect_match(invalid_column_res$body$error, "Column 'population' not in passed dataset")
+})
+
+test_that("deprecated wrapper aliases remain functional", {
+  tmp <- local_tempdir()
+  df <- data.frame(
+    date = as.Date("2024-01-01") + 0:2,
+    value = c(1, 2, 3)
+  )
+
+  old_out <- suppressWarnings(
+    common_descriptive_stats(
+      df_list = list(region1 = df),
+      output_path = tmp,
+      dependent_col = "value",
+      independent_cols = c("value"),
+      timeseries_col = "date",
+      plot_corr_matrix = FALSE,
+      plot_dist = FALSE,
+      plot_ma = FALSE,
+      plot_na_counts = FALSE,
+      plot_scatter = FALSE,
+      plot_box = FALSE,
+      plot_seasonal = FALSE,
+      plot_regional = FALSE,
+      plot_total = FALSE,
+      detect_outliers = FALSE,
+      calculate_rate = FALSE
+    )
+  )
+  expect_type(old_out, "character")
+  expect_true(dir.exists(old_out[1]))
+
+  old_api_out <- suppressWarnings(
+    common_descriptive_stats_api(
+      data = data.frame(
+        date = c("2024-01-01", "2024-01-02"),
+        value = c(1, 2),
+        population = c(10, 20)
+      ),
+      output_path = tmp,
+      dependent_col = "value",
+      independent_cols = c("population"),
+      plot_correlation = FALSE,
+      plot_dist_hists = FALSE,
+      plot_ma = FALSE,
+      plot_na_counts = FALSE,
+      plot_scatter = FALSE,
+      plot_box = FALSE,
+      plot_seasonal = FALSE,
+      plot_regional = FALSE,
+      plot_total = FALSE,
+      detect_outliers = FALSE,
+      calculate_rate = FALSE
+    )
+  )
+  expect_type(old_api_out, "character")
+  expect_true(dir.exists(old_api_out[1]))
 })
