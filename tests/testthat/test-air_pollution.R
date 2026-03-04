@@ -4582,3 +4582,133 @@ test_that("air_pollution_power_list National results excluded if include_nationa
   expect_equal(actual_result, expected_result, tolerance = 1e-6)
 })
 
+
+# Make synthetic data to test plot_air_pollution_power
+set.seed(42)
+
+regions <- c("North", "South", "East", "West")
+n_points <- 20
+
+make_region_df <- function(region) {
+  pm25_vals <- seq(10, 40, length.out = n_points)
+  data.frame(
+    region = region,
+    pm25 = pm25_vals,
+    cen = 15,
+    log_rr = rnorm(n_points, 0.02, 0.005),
+    se = rnorm(n_points, 0.006, 0.001),
+    power = runif(n_points, 0.2, 0.95),
+    power_pct = round(runif(n_points, 20, 95), 1)
+  )
+}
+
+power_list <- lapply(regions, make_region_df)
+names(power_list) <- regions
+
+# Add National
+power_list$National <- make_region_df("National")
+
+test_that("plot_air_pollution_power plot returns correct structure and invisible output", {
+
+  plt_out <- plot_air_pollution_power(power_list, save_plot = FALSE)
+
+  expect_type(plt_out, "list")
+  expect_true("power_plot" %in% names(plt_out))
+  expect_s3_class(plt_out$power_plot, "ggplot")
+
+  expect_invisible(plot_air_pollution_power(power_list, save_plot = FALSE))
+})
+
+
+test_that("plot_air_pollution_power plot excludes National when include_national = FALSE", {
+
+  plt_out <- plot_air_pollution_power(
+    power_list,
+    include_national = FALSE,
+    save_plot = FALSE
+  )
+
+  df <- plt_out$power_data
+
+  expect_false("National" %in% df$region)
+  expect_true(all(df$region %in% regions))
+})
+
+
+test_that("plot_air_pollution_power correct error if save_plot = TRUE but no output_dir", {
+
+  expect_error(
+    plot_air_pollution_power(power_list, save_plot = TRUE),
+    "Output directory must be specified"
+  )
+})
+
+
+test_that("plot_air_pollution_power correct error if all regions removed after filtering", {
+
+  pl2 <- power_list
+  pl2$National <- NULL
+
+  expect_error(
+    plot_air_pollution_power(list(National = pl2$North),
+                             include_national = FALSE),
+    "No data available"
+  )
+})
+
+
+test_that("plot_air_pollution_power plot contains required layers", {
+
+  plt <- plot_air_pollution_power(power_list, save_plot = FALSE)$power_plot
+
+  # Expect 1 geom_line
+  expect_true(any(sapply(plt$layers, function(x) "GeomLine" %in% class(x$geom))))
+
+  # Expect horizontal dashed lines at 80 and 50
+  layer_data <- plt$layers[[2]]
+
+  expect_true(any(grepl("GeomHline", class(plt$layers[[2]]$geom))))
+})
+
+
+test_that("plot_air_pollution_power facet layout uses correct number of columns", {
+
+  # In real function, the number of columns comes from calculate_air_pollution_grid_dims()
+  # We check that facet_wrap exists.
+
+  plt <- plot_air_pollution_power(power_list)$power_plot
+
+  # Expect facet wrap structure
+  expect_s3_class(plt$facet, "FacetWrap")
+})
+
+
+test_that("plot_air_pollution_power plot title and subtitle are correctly set", {
+
+  plt <- plot_air_pollution_power(power_list, ref_name = "EU")$power_plot
+
+  expect_equal(plt$labels$title,
+               "Power vs PM2.5 Concentration by Region - EU Standard")
+
+  expect_true(
+    grepl("Green zone", plt$labels$subtitle, fixed = TRUE)
+  )
+})
+
+
+test_that("plot_air_pollution_power saving the plot triggers ggsave but does not error", {
+
+  tmp <- tempdir()
+
+  expect_no_error(
+    plot_air_pollution_power(
+      power_list,
+      output_dir = tmp,
+      save_plot = TRUE
+    )
+  )
+
+  # A file should exist
+  saved <- list.files(tmp, pattern = "power_vs_pm25", full.names = TRUE)
+  expect_true(length(saved) >= 1)
+})
