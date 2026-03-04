@@ -2,7 +2,7 @@
 % Please edit documentation in R/descriptive_stats.R
 \name{common_descriptive_stats_core}
 \alias{common_descriptive_stats_core}
-\title{Core Functionality for Producing Descriptive Statistics}
+\title{Deprecated alias for \code{descriptive_stats_core()}.}
 \usage{
 common_descriptive_stats_core(
   df,
@@ -10,68 +10,24 @@ common_descriptive_stats_core(
   title,
   aggregation_column = NULL,
   population_col = NULL,
-  plot_corr_matrix = F,
+  plot_corr_matrix = FALSE,
   correlation_method = "pearson",
-  plot_dist = F,
+  plot_dist = FALSE,
   dependent_col,
   independent_cols = c(),
   units = NULL,
-  plot_na_counts = F,
-  plot_scatter = F,
-  plot_box = F,
-  plot_seasonal = F,
-  plot_regional = F,
-  plot_total = F,
+  plot_na_counts = FALSE,
+  plot_scatter = FALSE,
+  plot_box = FALSE,
+  plot_seasonal = FALSE,
+  plot_regional = FALSE,
+  plot_total = FALSE,
   timeseries_col = "date",
-  detect_outliers = F,
-  calculate_rate = F
+  detect_outliers = FALSE,
+  calculate_rate = FALSE
 )
 }
-\arguments{
-\item{df}{Dataframe. The input DataFrame.}
-
-\item{output_path}{Character. The path to write outputs to.}
-
-\item{title}{Character. The specific title for the subset of data being used.}
-
-\item{aggregation_column}{Character. Column to aggregate data by.}
-
-\item{population_col}{Character. Column containing population data.}
-
-\item{plot_corr_matrix}{Logical. Whether or not to plot correlation matrix.}
-
-\item{correlation_method}{Character. The correlation method. One of 'pearson', 'spearman', 'kendall'.}
-
-\item{plot_dist}{Logical. Whether or not to plot distribution histograms.}
-
-\item{dependent_col}{Character. The dependent column.}
-
-\item{independent_cols}{Character vector. The independent columns.}
-
-\item{units}{Named character vector. Units to use for plots (maps to columns parameter).}
-
-\item{plot_na_counts}{Logical. Whether to plot NA counts.}
-
-\item{plot_scatter}{Logical. Whether to plot scatter plots.}
-
-\item{plot_box}{Logical. Whether to plot box plots.}
-
-\item{plot_seasonal}{Logical. Whether to plot seasonal plots.}
-
-\item{plot_regional}{Logical. Whether to plot regional plots.}
-
-\item{plot_total}{Logical. Whether to plot total health outcomes per year.}
-
-\item{timeseries_col}{Character. Column containing timeseries data (e.g., date).}
-
-\item{detect_outliers}{Logical. Whether to output a table containing outlier information.}
-
-\item{calculate_rate}{Logical. Whether to calculate the rate of health outcomes per 100k people.}
-}
-\value{
-None. Outputs are written to files.
-}
 \description{
-Core Functionality for Producing Descriptive Statistics
+Deprecated. Use \code{descriptive_stats_core()} instead.
 }
 \keyword{internal}
