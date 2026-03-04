@@ -152,8 +152,8 @@ test_that("extract_means_for_geography returns expected structure for a tiny Net
     )
 
     # Write ESRI Shapefile
-    shp_path <- file.path(temp_dir, "regions.shp")
-    sf::st_write(shp, shp_path, quiet = TRUE)
+    shp_path <- file.path(dsn_dir, "regions.shp")
+    sf::st_write(shp, shp_path, quiet = TRUE, delete_layer = TRUE)
     shp_path
   }
 
@@ -213,7 +213,7 @@ test_that("extract_means_for_geography errors when region_col is missing", {
       crs = 4326
     )
     shp_path <- file.path(dsn_dir, "bad_regions.shp")
-    sf::st_write(shp, shp_path, quiet = TRUE)
+    sf::st_write(shp, shp_path, quiet = TRUE, delete_layer = TRUE)
     shp_path
   }
 
@@ -261,11 +261,11 @@ test_that("extract_means_for_geography uses custom output_value_col", {
       crs = 4326
     )
     shp_path <- file.path(dsn_dir, "one_region.shp")
-    sf::st_write(shp, shp_path, quiet = TRUE)
+    sf::st_write(shp, shp_path, quiet = TRUE, delete_layer = TRUE)
     shp_path
   }
 
-  tmp <- tempdir()
+  tmp <- withr::local_tempdir()
   nc_path <- file.path(tmp, "tiny_pm25_custom_col.nc")
   create_test_ncdf(nc_path)
   shp_path <- create_test_shapefile(tmp)
@@ -318,7 +318,7 @@ test_that("extract_means_for_geography handles shapefile CRS different from rast
     shp_3857 <- sf::st_transform(shp_ll, 3857)
 
     shp_path <- file.path(dsn_dir, "region_3857.shp")
-    sf::st_write(shp_3857, shp_path, quiet = TRUE)
+    sf::st_write(shp_3857, shp_path, quiet = TRUE, delete_layer = TRUE)
     shp_path
   }
 
@@ -2183,4 +2183,3 @@ test_that("wildfire_do_analysis: save_csv triggers save_wildfire_results", {
 
   expect_true(saved_called)
 })
-

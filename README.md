@@ -9,6 +9,7 @@
 ## Table of Contents
 - [Package Overview](#package-overview)  
 - [Package Installation](#package-installation)  
+- [Descriptive Statistics Module](#descriptive-statistics-module)  
 - [Example Datasets](#example-datasets)  
 - [Contributing](#contributing)  
 - [Authors](#authors)  
@@ -106,6 +107,18 @@ The pipelines repository contains the following:
 
 For additional information on the climatehealth_pieplines repository, see the README in the repository itself.
 
+## Descriptive Statistics Module
+
+This module enables users to run descriptive statistics and exploratory data analysis (EDA)
+on their data before moving into indicator-specific analysis in the package.
+
+Main entry points:
+- `run_descriptive_stats()` for direct package usage.
+- `run_descriptive_stats_api()` for API/plumber-oriented usage.
+
+For usage instructions and runnable examples (direct calls and plumber endpoint calls), see:
+`inst/examples/descriptive_stats_usage.R`
+
 ## Example Datasets
 
 ### Heat-related mortality data
@@ -129,5 +142,3 @@ Coming soon...
 
 ## Funding
 ![Static Badge](https://img.shields.io/badge/Wellcome_Trust-224682%2FZ%2F21%2FZ-%23ff24de)
-
-

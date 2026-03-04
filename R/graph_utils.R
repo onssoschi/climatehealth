@@ -489,7 +489,8 @@ plot_seasonal_trends <- function(
       names.arg = monthly_avg$Month,
       col = "#296991",
       main = paste(col),
-      ylab = ylab
+      ylab = ylab,
+      las = 2
     )
   }
 
