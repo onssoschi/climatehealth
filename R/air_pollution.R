@@ -680,7 +680,7 @@ analyze_air_pollution_daily <- function(data_with_lags,
 
   # Helper to extract a coef_table from each model_results element
   get_coef_table <- function(x) {
-    if (!is.null(x$coef)) return(x$coef)
+    if (!is.null(x$coef_table)) return(x$coef_table)
     if (is.data.frame(x)) return(x)
     stop("Could not find coefficient table inside model_results element")
   }
