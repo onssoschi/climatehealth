@@ -1,6 +1,3 @@
-#===============================================================================
-#' @title R-code for I1: All-cause mortality attributable to short-term exposure to outdoor PM2.5
-#===============================================================================
 #' Read in climate, environmental and health data and rename columns
 #'
 #' @description Reads in a CSV file for a daily time series of climate, environmental
@@ -27,9 +24,9 @@
 #' Defaults to "tmax".
 #' @param wind_speed_col Character. Name of wind speed column in the dataframe.
 #' Defaults to "wind_speed".
-#' @param Categorical_Others Optional. Character vector of additional categorical
+#' @param categorical_others Optional. Character vector of additional categorical
 #' variables (e.g., "sex", "age_group"). Defaults to NULL.
-#' @param Continuous_Others Optional. Character vector of additional continuous
+#' @param continuous_others Optional. Character vector of additional continuous
 #' variables (e.g., "tmean"). Defaults to NULL.
 #'
 #' @return Dataframe with formatted and renamed with standardized column names.
@@ -45,8 +42,8 @@ load_air_pollution_data <- function(data_path,
                                     precipitation_col = "precipitation",
                                     tmax_col = "tmax",
                                     wind_speed_col = "wind_speed",
-                                    Categorical_Others= NULL,
-                                    Continuous_Others= NULL
+                                    categorical_others= NULL,
+                                    continuous_others= NULL
 ) {
 
   if (!file.exists(data_path)) {
@@ -54,16 +51,16 @@ load_air_pollution_data <- function(data_path,
   }
 
   # Standardize columns by removing spaces
-  Categorical_Others = if(is.null(Categorical_Others)) NULL else gsub(" ", "_", Categorical_Others)
-  Continuous_Others = if(is.null(Continuous_Others)) NULL else gsub(" ", "_", Continuous_Others)
-  Others <- c(Categorical_Others, Continuous_Others) # all additional variables
+  categorical_others <- if(is.null(categorical_others)) NULL else gsub(" ", "_", categorical_others)
+  continuous_others <- if(is.null(continuous_others)) NULL else gsub(" ", "_", continuous_others)
+  others <- c(categorical_others, continuous_others) # all additional variables
   data0 <- if(is.character(data_path)) read.csv(data_path) else data_path
 
   # Define REQUIRED columns
   required_cols <- c(date_col, region_col, pm25_col, deaths_col, population_col,
                      humidity_col, precipitation_col, tmax_col, wind_speed_col)
 
-  Col_NA <- setdiff(c(required_cols, Others), names(data0))
+  Col_NA <- setdiff(c(required_cols, others), names(data0))
 
   if(length(Col_NA) > 0) {
     stop(paste0("Variables not found: ", paste(Col_NA, collapse = ", "),
@@ -85,9 +82,8 @@ load_air_pollution_data <- function(data_path,
     ) %>%
     select(
       date, region, pm25, deaths, population, humidity, precipitation,
-      tmax, wind_speed, all_of(Others)
+      tmax, wind_speed, all_of(others)
     )
-
 
   # Enhanced date parsing function
   universal_date <- function(x) {
@@ -135,7 +131,7 @@ load_air_pollution_data <- function(data_path,
   data <- data.table::as.data.table(data)
 
   # Define grouping variables
-  group_vars <- c("date", "region", "dow", Categorical_Others)
+  group_vars <- c("date", "region", "dow", categorical_others)
 
   # Define variables to aggregate
   agg_vars <- setdiff(names(data), c("deaths", "population", group_vars))
@@ -155,7 +151,6 @@ load_air_pollution_data <- function(data_path,
   return(data)
 }
 
-#===============================================================================
 #' Create lagged values for PM2.5 variable and average lag column.
 #'
 #' @description Creates new variables in a dataframe for lags and means over lag
@@ -170,7 +165,6 @@ load_air_pollution_data <- function(data_path,
 #' @import dplyr
 #'
 #' @keywords internal
-
 create_air_pollution_lags <- function( data, max_lag = 14L ) {
   # Add guidance about max_lag for short-term impact assessment
   if (max_lag > 14) {
@@ -211,14 +205,13 @@ create_air_pollution_lags <- function( data, max_lag = 14L ) {
   return(data_with_lags)
 }
 
-#===============================================================================
 #' Descriptive statistics
 #'
 #' @description Generates summary statistics for climate, environmental and health data
 #'
 #' @param data Dataframe containing a daily time series of climate, environmental
 #' and health data
-#' @param env_lables Named vector. Labels for environmental variables with units.
+#' @param env_labels Named vector. Labels for environmental variables with units.
 #' @param save_outputs Logical. Whether to save outputs. Defaults to FALSE.
 #' @param output_dir Character. Directory to save descriptive statistics.
 #' Defaults to NULL.
@@ -240,9 +233,9 @@ create_air_pollution_lags <- function( data, max_lag = 14L ) {
 #'
 #' @keywords internal
 air_pollution_descriptive_stats <- function(data,
-                                            env_lables = c(
-                                              "pm25" = "PM2.5 (µg/m³)",
-                                              "tmax" = "Max Temperature (°C)",
+                                            env_labels = c(
+                                              "pm25" = "PM2.5 (\u00B5g/m\u00B3)",
+                                              "tmax" = "Max Temperature (\u00B0C)",
                                               "precipitation" = "Precipitation (mm)",
                                               "humidity" = "Humidity (%)",
                                               "wind_speed" = "Wind Speed (m/s)"),
@@ -277,16 +270,16 @@ air_pollution_descriptive_stats <- function(data,
     stop("data must contain at least the columns: date, deaths, region")
   }
 
-  # Determine which environmental variables to use based on env_lables and data columns
-  env_vars <- intersect(names(env_lables), names(data))
+  # Determine which environmental variables to use based on env_labels and data columns
+  env_vars <- intersect(names(env_labels), names(data))
   if (length(env_vars) == 0) {
-    warning("No environmental variables from env_lables were found in the data. Continuing with deaths only.")
+    warning("No environmental variables from env_labels were found in the data. Continuing with deaths only.")
   }
 
   # Create units mapping
   units <- c(deaths = "Number of Deaths")
   if (length(env_vars) > 0) {
-    units <- c(units, env_lables[env_vars])
+    units <- c(units, env_labels[env_vars])
   }
 
   # Check save_outputs / output_dir
@@ -399,7 +392,6 @@ air_pollution_descriptive_stats <- function(data,
   invisible(national_df_ma)
 }
 
-#===============================================================================
 #' Fit GAM model
 #'
 #' @description Fit a generalized additive model (mgcv::gam) including pm25 and its lagged
@@ -568,7 +560,6 @@ fit_air_pollution_gam <- function(data_with_lags,
   return(list(coef_table = coef_table))
 }
 
-#===============================================================================
 #' Perform meta analysis with multiple lag structures
 #'
 #' @description Implements distributed lag model. Individual lag
@@ -649,7 +640,6 @@ air_pollution_meta_analysis <- function(data_with_lags,
   return(list(region_results = region_results, meta_results = meta_results))
 }
 
-#===============================================================================
 #' Calculate daily RR/AF/AN/AR for region-specific/national distributed lag effects
 #' for a chosen PM2.5 reference.
 #'
@@ -872,7 +862,6 @@ analyze_air_pollution_daily <- function(data_with_lags,
   return(final)
 }
 
-#===============================================================================
 #' Generate a grid size for a certain number of plots.
 #'
 #' @param n_plots The number of plots required for the grid.
@@ -897,7 +886,6 @@ calculate_air_pollution_grid_dims <- function(n_plots){
   return(list(ncol = x, nrow = y))
 }
 
-#===============================================================================
 #' Plot forest plot for PM2.5 effects by region
 #'
 #' @param analysis_results Processed results with RR/AF/AN/AR with lag variables
@@ -976,7 +964,7 @@ plot_air_pollution_forest_by_region <- function(analysis_results,
     ggplot2::labs(
       x = "Region",
       y = "Relative Risk",
-      title = sprintf('PM2.5 effects by region — Ref: "%s" = %s', ref_name, ref_pm25)
+      title = sprintf('PM2.5 effects by region - Ref: "%s" = %s', ref_name, ref_pm25)
     ) +
     ggplot2::theme_minimal() +
     ggplot2::theme(
@@ -997,7 +985,6 @@ plot_air_pollution_forest_by_region <- function(analysis_results,
   return(forest_plot)
 }
 
-#===============================================================================
 #' Plot Relative Risk (RR) by lag
 #'
 #' @param analysis_results Processed results with RR/AF/AN/AR with lag variables
@@ -1062,7 +1049,7 @@ plot_air_pollution_forest_by_lag <- function(analysis_results,
     ggplot2::labs(
       x = "Region",
       y = "Relative Risk",
-      title = sprintf('PM2.5 effects by region — Ref: "%s" = %s', ref_name, ref_pm25)
+      title = sprintf('PM2.5 effects by region - Ref: "%s" = %s', ref_name, ref_pm25)
     ) +
     ggplot2::theme_minimal() +
     ggplot2::theme(
@@ -1084,7 +1071,6 @@ plot_air_pollution_forest_by_lag <- function(analysis_results,
   return(forest_plot)
 }
 
-#===============================================================================
 #' Aggregate air pollution results by region
 #'
 #' @description Aggregates daily analysis results to regional summaries
@@ -1133,7 +1119,6 @@ aggregate_air_pollution_by_region <- function(analysis_results,
   return(regional_summary)
 }
 
-#===============================================================================
 #' Aggregate air pollution results by year
 #'
 #' @description Aggregates daily analysis results to annual summaries
@@ -1193,7 +1178,6 @@ aggregate_air_pollution_by_year <- function(analysis_results,
   return(annual_summary)
 }
 
-#===============================================================================
 #' Aggregate air pollution results by month
 #'
 #' @description Aggregates daily analysis results to monthly summaries
@@ -1256,7 +1240,6 @@ aggregate_air_pollution_by_month <- function(analysis_results,
   return(monthly_summary)
 }
 
-#===============================================================================
 #' Combined Monthly Time Series Plots of AN and AR
 #'
 #' @description Creates both Attributable Number (AN) and Attributable Rate (AR)
@@ -1371,7 +1354,7 @@ plot_air_pollution_an_ar_monthly <- function(analysis_results,
     ) +
     ggplot2::labs(
       title = sprintf(
-        "Monthly Attributable Number (AN) by Region\n(%s Standard: %s µg/m³)",
+        "Monthly Attributable Number (AN) by Region\n(%s Standard: %s \u00B5g/m\u00B3)",
         ref_name, ref_pm25
       ),
       subtitle = "Shaded area shows 95% confidence interval",
@@ -1411,7 +1394,7 @@ plot_air_pollution_an_ar_monthly <- function(analysis_results,
     ) +
     ggplot2::labs(
       title = sprintf(
-        "Monthly Attributable Rate (AR) by Region\n(%s Standard: %s µg/m³)",
+        "Monthly Attributable Rate (AR) by Region\n(%s Standard: %s \u00B5g/m\u00B3)",
         ref_name, ref_pm25
       ),
       subtitle = "Shaded area shows 95% confidence interval",
@@ -1472,7 +1455,6 @@ plot_air_pollution_an_ar_monthly <- function(analysis_results,
   return(list(an_plot = an_plot, ar_plot = ar_plot))
 }
 
-#===============================================================================
 #' Plot the AN and AR by year
 #'
 #' @description Creates both Attributable Number (AN) and Attributable Rate (AR)
@@ -1554,7 +1536,7 @@ plot_air_pollution_an_ar_by_year <- function(analysis_results,
     ) +
     ggplot2::labs(
       title = sprintf(
-        "Annual Attributable Rate (AR) by Region\n(%s Standard: %s µg/m³)",
+        "Annual Attributable Rate (AR) by Region\n(%s Standard: %s \u00B5g/m\u00B3)",
         ref_name, ref_pm25
       ),
       subtitle = "Shaded area shows 95% confidence interval",
@@ -1595,7 +1577,7 @@ plot_air_pollution_an_ar_by_year <- function(analysis_results,
     ) +
     ggplot2::labs(
       title = sprintf(
-        "Annual Attributable Number (AN) by Region\n(%s Standard: %s µg/m³)",
+        "Annual Attributable Number (AN) by Region\n(%s Standard: %s \u00B5g/m\u00B3)",
         ref_name, ref_pm25
       ),
       subtitle = "Shaded area shows 95% confidence interval",
@@ -1648,7 +1630,6 @@ plot_air_pollution_an_ar_by_year <- function(analysis_results,
   return(list(ar_plot = ar_plot, an_plot = an_plot))
 }
 
-#===============================================================================
 #' Plot histograms for AN and AR by month
 #'
 #' @description Creates histogram plots for Attributable Number (AN) and
@@ -1734,7 +1715,7 @@ plot_air_pollution_monthly_histograms <- function(analysis_results,
       ggplot2::scale_color_manual(values = c("National" = "#F00001", "Regional" = "#2E86AB")) +
       ggplot2::labs(
         title = paste("Monthly Attributable Number (AN) by Region -", ref_name, "Standard"),
-        subtitle = paste("Reference PM2.5:", ref_pm25, "µg/m³"),
+        subtitle = paste("Reference PM2.5:", ref_pm25, "\u00B5g/m\u00B3"),
         x = "Month",
         y = "Total Attributable Number"
       ) +
@@ -1752,7 +1733,7 @@ plot_air_pollution_monthly_histograms <- function(analysis_results,
       ggplot2::scale_color_brewer(palette = "Set3") +
       ggplot2::labs(
         title = paste("Monthly Attributable Number (AN) by Region -", ref_name, "Standard"),
-        subtitle = paste("Reference PM2.5:", ref_pm25, "µg/m³"),
+        subtitle = paste("Reference PM2.5:", ref_pm25, "\u00B5g/m\u00B3"),
         x = "Month",
         y = "Total Attributable Number"
       ) +
@@ -1793,7 +1774,7 @@ plot_air_pollution_monthly_histograms <- function(analysis_results,
       ggplot2::scale_color_manual(values = c("National" = "#F00001", "Regional" = "#2E86AB")) +
       ggplot2::labs(
         title = paste("Monthly Attributable Rate (AR) by Region -", ref_name, "Standard"),
-        subtitle = paste("Reference PM2.5:", ref_pm25, "µg/m³"),
+        subtitle = paste("Reference PM2.5:", ref_pm25, "\u00B5g/m\u00B3"),
         x = "Month",
         y = "Aggregated AR (per 100,000 population)"
       ) +
@@ -1811,7 +1792,7 @@ plot_air_pollution_monthly_histograms <- function(analysis_results,
       ggplot2::scale_color_brewer(palette = "Set3") +
       ggplot2::labs(
         title = paste("Monthly Attributable Rate (AR) by Region -", ref_name, "Standard"),
-        subtitle = paste("Reference PM2.5:", ref_pm25, "µg/m³"),
+        subtitle = paste("Reference PM2.5:", ref_pm25, "\u00B5g/m\u00B3"),
         x = "Month",
         y = "Aggregated AR (per 100,000 population)"
       ) +
@@ -1872,7 +1853,6 @@ plot_air_pollution_monthly_histograms <- function(analysis_results,
   return(list(an_plot = an_plot, ar_plot = ar_plot))
 }
 
-#===============================================================================
 #' Combined AN and AR plots by region
 #'
 #' @description Creates both Attributable Number (AN) and Attributable Rate (AR)
@@ -1932,7 +1912,7 @@ plot_air_pollution_an_ar_by_region <- function(analysis_results,
     ) +
     ggplot2::labs(
       title = sprintf(
-        "Attributable Rate (AR) by Region\n(%s Standard: %s µg/m³)",
+        "Attributable Rate (AR) by Region\n(%s Standard: %s \u00B5g/m\u00B3)",
         ref_name, ref_pm25
       ),
       x = "Region",
@@ -1970,7 +1950,7 @@ plot_air_pollution_an_ar_by_region <- function(analysis_results,
       ggplot2::scale_fill_manual(values = c("blue" = "#2E86AB", "red" = "#F00001")) +
       ggplot2::labs(
         title = sprintf(
-          "Attributable Rate (AR) by Region\n(%s Standard: %s µg/m³)",
+          "Attributable Rate (AR) by Region\n(%s Standard: %s \u00B5g/m\u00B3)",
           ref_name, ref_pm25
         ),
         x = "Region",
@@ -2002,7 +1982,7 @@ plot_air_pollution_an_ar_by_region <- function(analysis_results,
     ) +
     ggplot2::labs(
       title = sprintf(
-        "Attributable Number (AN) by Region\n(%s Standard: %s µg/m³)",
+        "Attributable Number (AN) by Region\n(%s Standard: %s \u00B5g/m\u00B3)",
         ref_name, ref_pm25
       ),
       x = "Region",
@@ -2042,7 +2022,7 @@ plot_air_pollution_an_ar_by_region <- function(analysis_results,
       ggplot2::scale_y_continuous(labels = scales::comma) +
       ggplot2::labs(
         title = sprintf(
-          "Attributable Number (AN) by Region\n(%s Standard: %s µg/m³)",
+          "Attributable Number (AN) by Region\n(%s Standard: %s \u00B5g/m\u00B3)",
           ref_name, ref_pm25
         ),
         x = "Region",
@@ -2088,7 +2068,6 @@ plot_air_pollution_an_ar_by_region <- function(analysis_results,
   return(list(ar_plot = ar_plot, an_plot = an_plot))
 }
 
-#===============================================================================
 #' Plot exposure-response relationship with confidence intervals by region
 #'
 #' @description Creates faceted exposure-response plots showing RR with confidence
@@ -2184,8 +2163,8 @@ plot_air_pollution_exposure_response <- function(analysis_results,
     ) +
     ggplot2::labs(
       title = paste("Exposure-Response Relationship by Region: PM2.5 vs Relative Risk -", ref_name, "Standard"),
-      subtitle = paste("Reference guideline:", ref_pm25, "µg/m³"),
-      x = "PM2.5 Concentration (µg/m³)",
+      subtitle = paste("Reference guideline:", ref_pm25, "\u00B5g/m\u00B3"),
+      x = "PM2.5 Concentration (\u00B5g/m\u00B3)",
       y = "Relative Risk (RR)",
       caption = paste("Red line: RR estimate | Blue band: 95% CI | Green line: Reference guideline")
     ) +
@@ -2229,7 +2208,6 @@ plot_air_pollution_exposure_response <- function(analysis_results,
   return(exp_plot)
 }
 
-#===============================================================================
 #' Air Pollution Power Calculation using Meta Results
 #'
 #' @description Produce a power statistic by region for PM2.5 attributable mortality
@@ -2362,7 +2340,6 @@ air_pollution_power_list <- function(
   return(power_list)
 }
 
-#===============================================================================
 #' Plot Power vs PM2.5 Concentration
 #'
 #' @description Plots the power statistic for each reference PM2.5 at and above
@@ -2429,12 +2406,12 @@ plot_air_pollution_power <- function(
     ggplot2::labs(
       title = paste("Power vs PM2.5 Concentration by Region -", ref_name, "Standard"),
       subtitle = paste(
-        "<span style='color:#2ECC71;'><b>Green zone:</b> ≥80% (Adequate statistical power range to detect effect)</span><br>",
+        "<span style='color:#2ECC71;'><b>Green zone:</b> \u226580% (Adequate statistical power range to detect effect)</span><br>",
         "<span style='color:#F39C12;'><b>Yellow zone:</b> 50-79% (Moderate power - effect may be detectable but with less certainty)</span><br>",
         "<span style='color:#E74C3C;'><b>Red zone:</b> <50% (Low power - study may be underpowered to detect the effect)</span>",
         sep = ""
       ),
-      x = "PM2.5 Concentration (µg/m³)",
+      x = "PM2.5 Concentration (\u00B5g/m\u00B3)",
       y = "Statistical Power (%)"
     ) +
     ggplot2::theme_minimal(base_size = 12) +
@@ -2481,7 +2458,6 @@ plot_air_pollution_power <- function(
   )))
 }
 
-#===============================================================================
 #' Comprehensive Air Pollution Analysis Pipeline
 #'
 #' @description Master function that runs the complete air pollution analysis
@@ -2499,9 +2475,9 @@ plot_air_pollution_power <- function(
 #' @param precipitation_col Character. Name of precipitation column
 #' @param tmax_col Character. Name of temperature column
 #' @param wind_speed_col Character. Name of wind speed column
-#' @param Categorical_Others Optional character vector. Names of additional
+#' @param categorical_others Optional character vector. Names of additional
 #' categorical variables.
-#' @param Continuous_Others Optional character vector. Names of additional
+#' @param continuous_others Optional character vector. Names of additional
 #' continuous variables (e.g., "tmean")
 #' @param max_lag Integer. Maximum lag days. Defaults to 14.
 #' @param df_seasonal Integer. Degrees of freedom for seasonal spline. Default 6.
@@ -2516,7 +2492,7 @@ plot_air_pollution_power <- function(
 #' @param years_filter Optional numeric vector of years to include (e.g., c(2020, 2021, 2022)).
 #'  It is recommended to filter for at least 3 consecutive years for a minimum considerable time series
 #' @param regions_filter Optional character vector of regions to include
-#' @param attr_thr Numeric (0–100). Percentile threshold used in power
+#' @param attr_thr Numeric (0-100). Percentile threshold used in power
 #' analysis to evaluate attribution detectability. Default 95.
 #'
 #' @param plot_corr_matrix Logical. Plot correlation matrix. Default TRUE.
@@ -2549,7 +2525,7 @@ plot_air_pollution_power <- function(
 #'   precipitation_col = "precipitation",
 #'   tmax_col = "tmax",
 #'   wind_speed_col = "wind_speed",
-#'   Continuous_Others = NULL,
+#'   continuous_others = NULL,
 #'   max_lag = 14L,
 #'   df_seasonal = 6,
 #'   family = "quasipoisson",
@@ -2584,7 +2560,7 @@ plot_air_pollution_power <- function(
 #'   \item{lag_analysis}{Lag-specific analysis results}
 #'   \item{distributed_lag_analysis}{Distributed lag model results (if requested)}
 #'   \item{plots}{List of generated plots (forest, lags, distributed lags)}
-#'   \item{power_list} {A list containing power information by area}
+#'   \item{power_list}{A list containing power information by area}
 #'   \item{exposure_response_plots}{Exposure-response plots for each reference
 #'   standard (if requested)}
 #'   \item{reference_specific_af_an}{AF/AN calculations specific to each
@@ -2606,8 +2582,8 @@ air_pollution_do_analysis <- function(
   precipitation_col = "precipitation",
   tmax_col = "tmax",
   wind_speed_col = "wind_speed",
-  Categorical_Others = NULL,
-  Continuous_Others = NULL,
+  categorical_others = NULL,
+  continuous_others = NULL,
 
   # Analysis parameters
   max_lag = 14L,
@@ -2695,8 +2671,8 @@ air_pollution_do_analysis <- function(
     precipitation_col = precipitation_col,
     tmax_col = tmax_col,
     wind_speed_col = wind_speed_col,
-    Categorical_Others = Categorical_Others,
-    Continuous_Others = Continuous_Others
+    categorical_others = categorical_others,
+    continuous_others = continuous_others
   )
 
   # Apply filters if specified
@@ -2718,20 +2694,20 @@ air_pollution_do_analysis <- function(
   # DESCRIPTIVE STATISTICS
   if (run_descriptive) {
     env_labels <- c(
-      "pm25" = "PM2.5 (µg/m³)",
-      "tmax" = "Max Temperature (°C)",
+      "pm25" = "PM2.5 (\u00B5g/m\u00B3)",
+      "tmax" = "Max Temperature (\u00B0C)",
       "precipitation" = "Precipitation (mm)",
       "humidity" = "Humidity (%)",
       "wind_speed" = "Wind Speed (m/s)"
     )
 
     if ("tmean" %in% names(data)) {
-      env_labels <- c(env_labels, "tmean" = "Mean Temperature (°C)")
+      env_labels <- c(env_labels, "tmean" = "Mean Temperature (\u00B0C)")
     }
 
     air_pollution_descriptive_stats(
       data = data,
-      env_lables = env_labels,
+      env_labels = env_labels,
       save_outputs = save_outputs,
       output_dir = output_dir,
       moving_average_window = moving_average_window,
