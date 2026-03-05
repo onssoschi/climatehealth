@@ -20,8 +20,6 @@
 #' @param year_col Character. Column name for the year variable.
 #' @param month_col Character. Column name for the month variable.
 #' @param case_col Character. Column name for malaria case counts.
-#' @param case_type Character. Type of malaria cases (e.g., `"malaria"`,
-#' `"malaria_under_five"`).
 #' @param tot_pop_col Character. Column name for total population.
 #' @param tmin_col Character. Column name for minimum temperature.
 #' @param tmean_col Character. Column name for mean temperature.
@@ -95,7 +93,6 @@ malaria_do_analysis <- function(health_data_path,
                                 year_col,
                                 month_col,
                                 case_col,
-                                case_type,
                                 tot_pop_col,
                                 tmin_col,
                                 tmean_col,
@@ -170,7 +167,7 @@ malaria_do_analysis <- function(health_data_path,
                                                year_col,
                                                month_col,
                                                case_col,
-                                               case_type,
+                                               case_type = "malaria",
                                                tot_pop_col,
                                                tmin_col,
                                                tmean_col,
@@ -314,7 +311,7 @@ malaria_do_analysis <- function(health_data_path,
     max_lag=max_lag,
     nk=nk,
     level = "region",
-    case_type = case_type,
+    case_type = "malaria",
     output_dir = output_dir,
     save_fig = save_fig,
     save_csv = save_csv,
@@ -385,6 +382,7 @@ malaria_do_analysis <- function(health_data_path,
                                     metrics = "AR_Number",
                                     c_data = combined_data$data,
                                     param_term = param_term,
+                                    case_type = "malaria",
                                     save_fig = save_fig,
                                     output_dir = output_dir )
 
@@ -393,6 +391,7 @@ malaria_do_analysis <- function(health_data_path,
                                          metrics = "AR_per_100k",
                                          c_data = combined_data$data,
                                          param_term = param_term,
+                                         case_type = "malaria",
                                          save_fig = save_fig,
                                          output_dir = output_dir )
   # Return results
