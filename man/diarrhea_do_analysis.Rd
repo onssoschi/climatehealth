@@ -16,7 +16,6 @@ diarrhea_do_analysis(
   year_col,
   month_col,
   case_col,
-  case_type,
   tot_pop_col,
   tmin_col,
   tmean_col,
@@ -64,9 +63,6 @@ Defaults to \code{NULL}.}
 \item{month_col}{Character. Column name for the month variable.}
 
 \item{case_col}{Character. Column name for diarrhea case counts.}
-
-\item{case_type}{Character. Type of diarrhea cases (e.g., \code{"diarrhea"},
-\code{"diarrhea_under_five"}).}
 
 \item{tot_pop_col}{Character. Column name for total population.}
 
