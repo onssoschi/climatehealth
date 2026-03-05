@@ -2362,6 +2362,8 @@ attr_df <- data.frame(
   AR_Fraction  = runif(24, 0, 0.1)
 )
 
+attr_list <- list(overall_month = attr_df)
+
 c_df <- data.frame(
   month   = rep(1:12, 2),
   year    = rep(2020:2021, each = 12),
@@ -2371,14 +2373,16 @@ c_df <- data.frame(
   rainfall = runif(24, 0, 100)
 )
 
+case_type = "malaria"
 
 # Basic structure tests
 test_that("plot_avg_monthly returns a named list per metric", {
   res <- plot_avg_monthly(
-    attr_data = attr_df,
+    attr_data = attr_list,
     c_data = c_df,
     metrics = c("AR_Number", "AR_Fraction"),
     param_term = "tmax",
+    case_type = case_type,
     level = "country",
     save_fig = FALSE
   )
@@ -2389,10 +2393,11 @@ test_that("plot_avg_monthly returns a named list per metric", {
 
 test_that("country-level output returns exactly one plot per metric", {
   res <- plot_avg_monthly(
-    attr_data = attr_df,
+    attr_data = attr_list,
     c_data = c_df,
     metrics = "AR_Number",
     param_term = "tmax",
+    case_type = case_type,
     level = "country",
     save_fig = FALSE
   )
@@ -2405,10 +2410,11 @@ test_that("country-level output returns exactly one plot per metric", {
 # Region and district grouping tests
 test_that("region-level plots return one entry per region", {
   res <- plot_avg_monthly(
-    attr_data = attr_df,
+    attr_data = attr_list,
     c_data = c_df,
     metrics = "AR_Number",
     param_term = "tmax",
+    case_type = case_type,
     level = "region",
     save_fig = FALSE
   )
@@ -2419,10 +2425,11 @@ test_that("region-level plots return one entry per region", {
 
 test_that("district-level plots return one entry per district", {
   res <- plot_avg_monthly(
-    attr_data = attr_df,
+    attr_data = attr_list,
     c_data = c_df,
     metrics = "AR_Number",
     param_term = "tmax",
+    case_type = case_type,
     level = "district",
     save_fig = FALSE
   )
@@ -2434,11 +2441,12 @@ test_that("district-level plots return one entry per district", {
 # 3. Filtering by year
 test_that("filter_year restricts data before aggregation", {
   res <- plot_avg_monthly(
-    attr_data = attr_df,
+    attr_data = attr_list,
     c_data = c_df,
     metrics = "AR_Number",
     filter_year = 2020,
     param_term = "tmax",
+    case_type = case_type,
     level = "country",
     save_fig = FALSE
   )
@@ -2452,10 +2460,11 @@ test_that("filter_year restricts data before aggregation", {
 test_that("invalid level throws an error", {
   expect_error(
     plot_avg_monthly(
-      attr_data = attr_df,
+      attr_data = attr_list,
       c_data = c_df,
       metrics = "AR_Number",
       param_term = "tmax",
+      case_type = case_type,
       level = "banana"
     ),
     "should be one of"
@@ -2465,12 +2474,13 @@ test_that("invalid level throws an error", {
 test_that("invalid metrics throw an error", {
   expect_error(
     plot_avg_monthly(
-      attr_data = attr_df,
+      attr_data = attr_list,
       c_data = c_df,
       metrics = "BadMetric",
-      param_term = "tmax"
+      param_term = "tmax",
+      case_type = case_type
     ),
-    "should be one of"
+    "'arg' should be one of \"AR_Number\", \"AR_per_100k\", \"AR_Fraction\""
   )
 })
 
@@ -2482,19 +2492,21 @@ test_that("missing metric column errors", {
       attr_data = bad_df,
       c_data = c_df,
       metrics = "AR_Number",
-      param_term = "tmax"
+      param_term = "tmax",
+      case_type = case_type,
     ),
-    regexp = "Column `AR_Number` not found"
+    regexp = "Metric `AR_Number` is not available in `attr_data`."
   )
 })
 
 test_that("missing param_term in climate data errors", {
   expect_error(
     plot_avg_monthly(
-      attr_data = attr_df,
+      attr_data = attr_list,
       c_data = c_df %>% select(-tmax),
       metrics = "AR_Number",
-      param_term = "tmax"
+      param_term = "tmax",
+      case_type = case_type
     ),
     regexp = "Column `tmax` not found"
   )
@@ -2504,10 +2516,11 @@ test_that("missing param_term in climate data errors", {
 # 5. Multiple metrics behave independently
 test_that("multiple metrics produce independent plot lists", {
   res <- plot_avg_monthly(
-    attr_data = attr_df,
+    attr_data = attr_list,
     c_data = c_df,
     metrics = c("AR_Number", "AR_per_100k"),
     param_term = "rainfall",
+    case_type = case_type,
     level = "country"
   )
 
@@ -2522,10 +2535,11 @@ test_that("saving PDF produces a file", {
   tmp <- tempdir()
 
   plot_avg_monthly(
-    attr_data = attr_df,
+    attr_data = attr_list,
     c_data = c_df,
     metrics = "AR_Number",
     param_term = "tmax",
+    case_type = case_type,
     level = "country",
     save_fig = TRUE,
     output_dir = tmp
