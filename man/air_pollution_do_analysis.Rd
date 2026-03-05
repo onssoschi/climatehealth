@@ -15,8 +15,8 @@ air_pollution_do_analysis(
   precipitation_col = "precipitation",
   tmax_col = "tmax",
   wind_speed_col = "wind_speed",
-  Categorical_Others = NULL,
-  Continuous_Others = NULL,
+  categorical_others = NULL,
+  continuous_others = NULL,
   max_lag = 14L,
   df_seasonal = 6,
   family = "quasipoisson",
@@ -64,10 +64,10 @@ air_pollution_do_analysis(
 
 \item{wind_speed_col}{Character. Name of wind speed column}
 
-\item{Categorical_Others}{Optional character vector. Names of additional
+\item{categorical_others}{Optional character vector. Names of additional
 categorical variables.}
 
-\item{Continuous_Others}{Optional character vector. Names of additional
+\item{continuous_others}{Optional character vector. Names of additional
 continuous variables (e.g., "tmean")}
 
 \item{max_lag}{Integer. Maximum lag days. Defaults to 14.}
@@ -95,7 +95,7 @@ It is recommended to filter for at least 3 consecutive years for a minimum consi
 
 \item{regions_filter}{Optional character vector of regions to include}
 
-\item{attr_thr}{Numeric (0–100). Percentile threshold used in power
+\item{attr_thr}{Numeric (0-100). Percentile threshold used in power
 analysis to evaluate attribution detectability. Default 95.}
 
 \item{plot_corr_matrix}{Logical. Plot correlation matrix. Default TRUE.}
@@ -133,7 +133,7 @@ List containing:
 \item{lag_analysis}{Lag-specific analysis results}
 \item{distributed_lag_analysis}{Distributed lag model results (if requested)}
 \item{plots}{List of generated plots (forest, lags, distributed lags)}
-\item{power_list} {A list containing power information by area}
+\item{power_list}{A list containing power information by area}
 \item{exposure_response_plots}{Exposure-response plots for each reference
 standard (if requested)}
 \item{reference_specific_af_an}{AF/AN calculations specific to each
@@ -161,7 +161,7 @@ results <- do_air_pollution_analysis(
   precipitation_col = "precipitation",
   tmax_col = "tmax",
   wind_speed_col = "wind_speed",
-  Continuous_Others = NULL,
+  continuous_others = NULL,
   max_lag = 14L,
   df_seasonal = 6,
   family = "quasipoisson",
