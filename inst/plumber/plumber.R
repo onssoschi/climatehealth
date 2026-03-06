@@ -2,6 +2,7 @@
 #* @apiDescription An API that computes statistics using the climatehealth package
 
 API_STARTUP_TIME <- Sys.time()
+options(climatehealth.api_mode = TRUE)
 
 #* @filter cors
 function(res) {
