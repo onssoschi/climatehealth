@@ -158,7 +158,9 @@ malaria_do_analysis <- function(health_data_path,
   if (is.character(climate_data_path)) {
     check_file_exists(climate_data_path, TRUE)
   }
-  check_file_exists(map_path, TRUE)
+  if (is.character(map_path)) {
+    check_file_exists(map_path, TRUE)
+  }
 
   # Get combined data
   combined_data <- combine_health_climate_data(health_data_path,
