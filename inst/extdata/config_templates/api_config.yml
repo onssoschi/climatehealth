@@ -1,6 +1,6 @@
 default:
   api:
-    port: 8080
+    port: 8000
     host: "0.0.0.0"
     move_to_shared: TRUE
     shared_dir_name: "shared"
