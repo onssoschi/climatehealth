@@ -30,7 +30,7 @@ This package contains scientific functions dedicated to the following topics in 
 
 | **Indicator**                                                       | **Topic Owner** | **Documents**                                                      |
 |--------------------------------------------------------------------|-----------------|---------------------------------------------------------------------|
-| Heat- and cold-related mortality                                   | ONS             | [Methodology Document](https://doi.org/10.5281/zenodo.14865904)     |
+| Temperature-related health effects                                   | ONS             | [Methodology Document](https://doi.org/10.5281/zenodo.14865904)     |
 | Injury and mortality from extreme weather events: Wildfires        | ONS             | [Methodology Document](https://doi.org/10.5281/zenodo.14052183)     |
 | Mental health                                                      | ONS             | [Methodology Document](https://doi.org/10.5281/zenodo.14050224)     |
 | Waterborne                                                         | AIMS            | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     |
