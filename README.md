@@ -151,14 +151,15 @@ testing, documentation, and review work:
 
 - Felix Scarbrough
 - Treesa Shaji
-- JO
+- Joe Panes
 
 ## Acknowledgements
 
 We acknowledge the following people and groups for higher-level leadership,
 methodological input, and subject-area support to the SOSCHI climate-health work:
 
-- Project and workstream leadership: Myer Glickman, Bonnie Lewis, and Vijendra Ingole
+- SOSCHI Workstream Leads: Bonnie Lewis, and Vijendra Ingole
+- SOSCHI Project Lead: Myer Glickman
 - Methodology review: Sewe Maquines
 - Subject-area support and guidance: Antonio Gaspirni, Topic Expert Group members, and Expert Advisory Group members
 
@@ -166,7 +167,7 @@ We also acknowledge the use of external data and code examples that informed
 testing and early prototyping, including the example heat-mortality dataset
 described in the Example Datasets section.
 
-Copyright for the package is held by the Office for National Statistics as part
+Copyright for the package is held by the Office for National Statistics on behalf
 of the SOSCHI Project.
 
 ## Citation
