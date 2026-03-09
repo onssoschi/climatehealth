@@ -153,13 +153,18 @@ testing, documentation, and review work:
 - Treesa Shaji
 - Joe Panes
 
+## Project and Workstream Lead
+- Vijendra Ingole, Bonnie Lewis, and Myer Glickman
+
+## Methodology review
+- Sewe Maquines
+
 ## Acknowledgements
 
 We acknowledge the following people and groups for higher-level leadership,
 methodological input, and subject-area support to the SOSCHI climate-health work:
 
-- SOSCHI Workstream Leads: Bonnie Lewis, and Vijendra Ingole
-- SOSCHI Project Lead: Myer Glickman
+
 - Methodology review: Sewe Maquines
 - Subject-area support and guidance: Antonio Gaspirni, Topic Expert Group members, and Expert Advisory Group members
 
@@ -176,7 +181,7 @@ If you use `climatehealth` in publications, cite the package as:
 
 Browning, C., Omeke, K., Dzakpa, E. Y., Jose, G., Pearce, M., Watkins, E., Hunt,
 C., Byukusenge, B., Habyarimana, C., and Nyagahakwa, V. (2026).
-`climatehealth: Standards for Official Statistics on Climate-Health Interactions (SOSCHI)`.
+`climatehealth R package: Standards for Official Statistics on Climate-Health Interactions (SOSCHI)`.
 R package.
 
 An R package citation file is provided at `inst/CITATION`.
