@@ -145,7 +145,6 @@ package architecture, module methods, and reproducible analytical workflows.
 - Authors: Etse Yawo Dzakpa, Gladin Jose, Matt Pearce, Ellie Watkins, Claire Hunt, Beatrice Byukusenge, Cassien Habyarimana, and Venuste Nyagahakwa
 
 ## Contributors
-
 The following contributors supported the package through bug fixes, minor features,
 testing, documentation, and review work:
 
