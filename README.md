@@ -14,6 +14,8 @@
 - [Contributing](#contributing)  
 - [Authors](#authors)  
 - [Contributors](#contributors)  
+- [Acknowledgements](#acknowledgements)  
+- [Citation](#citation)  
 - [Funding](#funding)  
 
 ## Package Overview
@@ -135,13 +137,50 @@ See [CONTRIBUTING](CONTRIBUTING.md) for guidance on contributing to this reposit
 
 ## Authors
 
-Climate and Health Team, Health and International Partnerships, Office for National Statistics  
+The package authors reflect direct intellectual and technical contributions to the
+package architecture, module methods, and reproducible analytical workflows.
 
-[Charlie Browning]
+- Lead author: Charlie Browning
+- Lead maintainer and platform developer: Kenechi Omeke
+- Authors: Etse Yawo Dzakpa, Gladin Jose, Matt Pearce, Ellie Watkins, Claire Hunt, Beatrice Byukusenge, Cassien Habyarimana, and Venuste Nyagahakwa
 
 ## Contributors
 
-Coming soon...
+The following contributors supported the package through bug fixes, minor features,
+testing, documentation, and review work:
+
+- Felix Scarbrough
+- Treesa Shaji
+- JO
+
+## Acknowledgements
+
+We acknowledge the following people and groups for higher-level leadership,
+methodological input, and subject-area support to the SOSCHI climate-health work:
+
+- Project and workstream leadership: Myer Glickman, Bonnie Lewis, and Vijendra Ingole
+- Methodology review: Sewe Maquines
+- Subject-area support and guidance: Antonio Gaspirni, Topic Expert Group members, and Expert Advisory Group members
+
+We also acknowledge the use of external data and code examples that informed
+testing and early prototyping, including the example heat-mortality dataset
+described in the Example Datasets section.
+
+Copyright for the package is held by the Office for National Statistics as part
+of the SOSCHI Project.
+
+## Citation
+
+If you use `climatehealth` in publications, cite the package as:
+
+Browning, C., Omeke, K., Dzakpa, E. Y., Jose, G., Pearce, M., Watkins, E., Hunt,
+C., Byukusenge, B., Habyarimana, C., and Nyagahakwa, V. (2026).
+`climatehealth: Standards for Official Statistics on Climate-Health Interactions (SOSCHI)`.
+R package.
+
+An R package citation file is provided at `inst/CITATION`.
 
 ## Funding
 ![Static Badge](https://img.shields.io/badge/Wellcome_Trust-224682%2FZ%2F21%2FZ-%23ff24de)
+
+This work was supported by Wellcome.
