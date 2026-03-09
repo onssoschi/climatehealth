@@ -16,7 +16,7 @@ Authors@R:
       person("Venuste", "Nyagahakwa", role = "aut"),
       person("Felix", "Scarbrough", role = "ctb"),
       person("Treesa", "Shaji", role = "ctb"),
-      person("JO", role = "ctb"),
+      person("Joe", "Panes", role = "ctb"),
       person("Wellcome", role = "fnd"),
       person("Office for National Statistics", role = "cph",
              comment = "SOSCHI Project")
