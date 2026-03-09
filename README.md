@@ -28,7 +28,7 @@ This repository contains code for an R package dedicated to calculating climate-
 
 This package contains scientific functions dedicated to the following topics in the SOSCHI framework:
 
-| **Topic**                                                       | **Topic Owner** | **Documents**                                                      |
+| **Topic**                                                       | **Topic Owner** | **Methods**                                                      |
 |--------------------------------------------------------------------|-----------------|---------------------------------------------------------------------|
 | Temperature-related health effects                                   | ONS             | [Methodology Document](https://doi.org/10.5281/zenodo.14865904)     |
 | Injury and mortality from extreme weather events: Wildfires        | ONS             | [Methodology Document](https://doi.org/10.5281/zenodo.14052183)     |
