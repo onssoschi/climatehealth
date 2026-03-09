@@ -77,48 +77,48 @@ test_that("Synthetic air pollution data loaded in and formatted as expected", {
 
   expected_df <- data.table::data.table(
     date = as.Date(c("2019-01-05", "2019-01-20", "2019-01-23", "2019-01-26",
-             "2019-02-08", "2019-02-10", "2019-03-05", "2019-03-08",
-             "2019-03-15", "2019-03-24", "2019-03-30", "2019-03-31",
-             "2019-04-26", "2019-04-28", "2019-06-02", "2019-06-07",
-             "2019-06-08", "2019-06-26", "2019-07-28", "2019-08-05",
-             "2019-08-12", "2019-08-17", "2019-08-24", "2019-09-09",
-             "2019-09-22", "2019-10-04", "2019-10-05", "2019-10-13",
-             "2019-10-21", "2019-10-29", "2019-11-04", "2019-11-22",
-             "2019-11-26", "2019-12-14", "2019-12-21", "2019-12-28",
-             "2020-01-09", "2020-01-16", "2020-02-13", "2020-02-17",
-             "2020-02-28", "2020-03-04", "2020-03-31", "2020-04-02",
-             "2020-04-03", "2020-04-21", "2020-04-24", "2020-04-27",
-             "2020-05-14", "2020-06-02", "2020-06-05", "2020-06-11",
-             "2020-06-20", "2020-06-27", "2020-07-08", "2020-08-03",
-             "2020-08-11", "2020-08-25", "2020-08-28", "2020-09-12",
-             "2020-10-10", "2020-10-24", "2020-11-02", "2020-11-10",
-             "2020-11-26", "2020-12-06", "2020-12-12", "2020-12-22",
-             "2019-01-13", "2019-02-03", "2019-02-09", "2019-02-20",
-             "2019-02-23", "2019-03-13", "2019-04-01", "2019-04-20",
-             "2019-05-07", "2019-05-17", "2019-05-23", "2019-06-09",
-             "2019-06-13", "2019-07-04", "2019-07-05", "2019-07-30",
-             "2019-07-31", "2019-08-11", "2019-08-23", "2019-09-07",
-             "2019-10-16", "2019-10-17", "2019-10-26", "2019-11-05",
-             "2019-11-06", "2019-11-12", "2019-12-05", "2020-01-08",
-             "2020-01-09", "2020-03-03", "2020-03-05", "2020-03-06",
-             "2020-03-30", "2020-04-17", "2020-04-21", "2020-05-04",
-             "2020-06-06", "2020-06-11", "2020-06-17", "2020-07-07",
-             "2020-07-13", "2020-07-20", "2020-07-28", "2020-08-10",
-             "2020-08-11", "2020-08-12", "2020-08-19", "2020-09-01",
-             "2020-09-10", "2020-09-18", "2020-10-09", "2020-10-10",
-             "2020-10-26", "2020-11-16", "2020-12-10", "2020-12-11",
-             "2020-12-26", "2019-01-14", "2019-02-08", "2019-02-21",
-             "2019-03-10", "2019-03-25", "2019-03-26", "2019-04-23",
-             "2019-05-01", "2019-05-05", "2019-05-15", "2019-05-21",
-             "2019-05-31", "2019-06-01", "2019-06-04", "2019-06-14",
-             "2019-06-15", "2019-06-27", "2019-07-14", "2019-07-15",
-             "2019-07-19", "2019-08-26", "2019-08-31", "2019-09-01",
-             "2019-10-07", "2019-10-18", "2019-11-06", "2019-12-10",
-             "2020-01-26", "2020-01-27", "2020-02-02", "2020-03-01",
-             "2020-04-07", "2020-05-30", "2020-06-05", "2020-06-21",
-             "2020-06-28", "2020-07-26", "2020-08-15", "2020-08-20",
-             "2020-08-24", "2020-08-28", "2020-09-05", "2020-09-10",
-             "2020-09-24", "2020-10-27", "2020-11-01", "2020-12-09")),
+                     "2019-02-08", "2019-02-10", "2019-03-05", "2019-03-08",
+                     "2019-03-15", "2019-03-24", "2019-03-30", "2019-03-31",
+                     "2019-04-26", "2019-04-28", "2019-06-02", "2019-06-07",
+                     "2019-06-08", "2019-06-26", "2019-07-28", "2019-08-05",
+                     "2019-08-12", "2019-08-17", "2019-08-24", "2019-09-09",
+                     "2019-09-22", "2019-10-04", "2019-10-05", "2019-10-13",
+                     "2019-10-21", "2019-10-29", "2019-11-04", "2019-11-22",
+                     "2019-11-26", "2019-12-14", "2019-12-21", "2019-12-28",
+                     "2020-01-09", "2020-01-16", "2020-02-13", "2020-02-17",
+                     "2020-02-28", "2020-03-04", "2020-03-31", "2020-04-02",
+                     "2020-04-03", "2020-04-21", "2020-04-24", "2020-04-27",
+                     "2020-05-14", "2020-06-02", "2020-06-05", "2020-06-11",
+                     "2020-06-20", "2020-06-27", "2020-07-08", "2020-08-03",
+                     "2020-08-11", "2020-08-25", "2020-08-28", "2020-09-12",
+                     "2020-10-10", "2020-10-24", "2020-11-02", "2020-11-10",
+                     "2020-11-26", "2020-12-06", "2020-12-12", "2020-12-22",
+                     "2019-01-13", "2019-02-03", "2019-02-09", "2019-02-20",
+                     "2019-02-23", "2019-03-13", "2019-04-01", "2019-04-20",
+                     "2019-05-07", "2019-05-17", "2019-05-23", "2019-06-09",
+                     "2019-06-13", "2019-07-04", "2019-07-05", "2019-07-30",
+                     "2019-07-31", "2019-08-11", "2019-08-23", "2019-09-07",
+                     "2019-10-16", "2019-10-17", "2019-10-26", "2019-11-05",
+                     "2019-11-06", "2019-11-12", "2019-12-05", "2020-01-08",
+                     "2020-01-09", "2020-03-03", "2020-03-05", "2020-03-06",
+                     "2020-03-30", "2020-04-17", "2020-04-21", "2020-05-04",
+                     "2020-06-06", "2020-06-11", "2020-06-17", "2020-07-07",
+                     "2020-07-13", "2020-07-20", "2020-07-28", "2020-08-10",
+                     "2020-08-11", "2020-08-12", "2020-08-19", "2020-09-01",
+                     "2020-09-10", "2020-09-18", "2020-10-09", "2020-10-10",
+                     "2020-10-26", "2020-11-16", "2020-12-10", "2020-12-11",
+                     "2020-12-26", "2019-01-14", "2019-02-08", "2019-02-21",
+                     "2019-03-10", "2019-03-25", "2019-03-26", "2019-04-23",
+                     "2019-05-01", "2019-05-05", "2019-05-15", "2019-05-21",
+                     "2019-05-31", "2019-06-01", "2019-06-04", "2019-06-14",
+                     "2019-06-15", "2019-06-27", "2019-07-14", "2019-07-15",
+                     "2019-07-19", "2019-08-26", "2019-08-31", "2019-09-01",
+                     "2019-10-07", "2019-10-18", "2019-11-06", "2019-12-10",
+                     "2020-01-26", "2020-01-27", "2020-02-02", "2020-03-01",
+                     "2020-04-07", "2020-05-30", "2020-06-05", "2020-06-21",
+                     "2020-06-28", "2020-07-26", "2020-08-15", "2020-08-20",
+                     "2020-08-24", "2020-08-28", "2020-09-05", "2020-09-10",
+                     "2020-09-24", "2020-10-27", "2020-11-01", "2020-12-09")),
     region = c(rep("Province 1", 68),
                rep("Province 2", 57),
                rep("Province 3", 47)),
@@ -308,7 +308,7 @@ test_that("Synthetic air pollution data loaded in and formatted as expected", {
              23, 31, 47, 4, 8, 21, 24, 42, 22, 25, 28, 40, 48, 5, 14, 27, 12,
              19, 37, 41, 7, 1.5, 13, 46, 10, 32, 44, 39, 26, 29, 34, 45, 11,
              18, 35, 43, 6, 16)
-    )
+  )
 
   actual_df <- load_air_pollution_data(temp_synth_data)
   expect_equal(actual_df, expected_df)
@@ -347,49 +347,49 @@ test_that("Synthetic air pollution data loaded in and formatted as expected", {
 
   expected_df_categ <- data.table::data.table(
     date = as.Date(c("2019-01-05", "2019-01-20", "2019-01-23", "2019-01-26",
-             "2019-02-08", "2019-02-10", "2019-03-05", "2019-03-08",
-             "2019-03-15", "2019-03-24", "2019-03-30", "2019-03-31",
-             "2019-04-26", "2019-04-28", "2019-06-02", "2019-06-07",
-             "2019-06-08", "2019-06-26", "2019-07-28", "2019-08-05",
-             "2019-08-12", "2019-08-17", "2019-08-24", "2019-09-09",
-             "2019-09-22", "2019-10-04", "2019-10-05", "2019-10-13",
-             "2019-10-21", "2019-10-29", "2019-11-04", "2019-11-22",
-             "2019-11-26", "2019-12-14", "2019-12-21", "2019-12-28",
-             "2020-01-09", "2020-01-16", "2020-02-13", "2020-02-17",
-             "2020-02-28", "2020-03-04", "2020-03-31", "2020-04-02",
-             "2020-04-03", "2020-04-21", "2020-04-24", "2020-04-27",
-             "2020-05-14", "2020-06-02", "2020-06-05", "2020-06-11",
-             "2020-06-20", "2020-06-27", "2020-07-08", "2020-08-03",
-             "2020-08-11", "2020-08-25", "2020-08-28", "2020-09-12",
-             "2020-10-10", "2020-10-24", "2020-11-02", "2020-11-10",
-             "2020-11-26", "2020-12-06", "2020-12-12", "2020-12-22",
-             "2019-01-13", "2019-02-03", "2019-02-09", "2019-02-20",
-             "2019-02-23", "2019-03-13", "2019-04-01", "2019-04-20",
-             "2019-05-07", "2019-05-17", "2019-05-23", "2019-06-09",
-             "2019-06-13", "2019-07-04", "2019-07-05", "2019-07-30",
-             "2019-07-31", "2019-08-11", "2019-08-23", "2019-09-07",
-             "2019-10-16", "2019-10-17", "2019-10-26", "2019-11-05",
-             "2019-11-06", "2019-11-12", "2019-12-05", "2020-01-08",
-             "2020-01-09", "2020-03-03", "2020-03-05", "2020-03-06",
-             "2020-03-30", "2020-04-17", "2020-04-21", "2020-05-04",
-             "2020-06-06", "2020-06-11", "2020-06-17", "2020-07-07",
-             "2020-07-13", "2020-07-20", "2020-07-28", "2020-08-10",
-             "2020-08-11", "2020-08-12", "2020-08-19", "2020-09-01",
-             "2020-09-10", "2020-09-18", "2020-10-09", "2020-10-10",
-             "2020-10-26", "2020-11-16", "2020-12-10", "2020-12-11",
-             "2020-12-26", "2019-01-14", "2019-02-08", "2019-02-21",
-             "2019-03-10", "2019-03-25", "2019-03-26", "2019-04-23",
-             "2019-05-01", "2019-05-05", "2019-05-15", "2019-05-21",
-             "2019-05-31", "2019-06-01", "2019-06-04", "2019-06-14",
-             "2019-06-15", "2019-06-27", "2019-07-14", "2019-07-15",
-             "2019-07-19", "2019-08-26", "2019-08-31", "2019-09-01",
-             "2019-10-07", "2019-10-18", "2019-11-06", "2019-12-10",
-             "2020-01-26", "2020-01-27", "2020-02-02", "2020-03-01",
-             "2020-03-01", "2020-04-07", "2020-05-30", "2020-06-05",
-             "2020-06-21", "2020-06-28", "2020-07-26", "2020-08-15",
-             "2020-08-20", "2020-08-24", "2020-08-28", "2020-09-05",
-             "2020-09-10", "2020-09-24", "2020-10-27", "2020-11-01",
-             "2020-12-09")),
+                     "2019-02-08", "2019-02-10", "2019-03-05", "2019-03-08",
+                     "2019-03-15", "2019-03-24", "2019-03-30", "2019-03-31",
+                     "2019-04-26", "2019-04-28", "2019-06-02", "2019-06-07",
+                     "2019-06-08", "2019-06-26", "2019-07-28", "2019-08-05",
+                     "2019-08-12", "2019-08-17", "2019-08-24", "2019-09-09",
+                     "2019-09-22", "2019-10-04", "2019-10-05", "2019-10-13",
+                     "2019-10-21", "2019-10-29", "2019-11-04", "2019-11-22",
+                     "2019-11-26", "2019-12-14", "2019-12-21", "2019-12-28",
+                     "2020-01-09", "2020-01-16", "2020-02-13", "2020-02-17",
+                     "2020-02-28", "2020-03-04", "2020-03-31", "2020-04-02",
+                     "2020-04-03", "2020-04-21", "2020-04-24", "2020-04-27",
+                     "2020-05-14", "2020-06-02", "2020-06-05", "2020-06-11",
+                     "2020-06-20", "2020-06-27", "2020-07-08", "2020-08-03",
+                     "2020-08-11", "2020-08-25", "2020-08-28", "2020-09-12",
+                     "2020-10-10", "2020-10-24", "2020-11-02", "2020-11-10",
+                     "2020-11-26", "2020-12-06", "2020-12-12", "2020-12-22",
+                     "2019-01-13", "2019-02-03", "2019-02-09", "2019-02-20",
+                     "2019-02-23", "2019-03-13", "2019-04-01", "2019-04-20",
+                     "2019-05-07", "2019-05-17", "2019-05-23", "2019-06-09",
+                     "2019-06-13", "2019-07-04", "2019-07-05", "2019-07-30",
+                     "2019-07-31", "2019-08-11", "2019-08-23", "2019-09-07",
+                     "2019-10-16", "2019-10-17", "2019-10-26", "2019-11-05",
+                     "2019-11-06", "2019-11-12", "2019-12-05", "2020-01-08",
+                     "2020-01-09", "2020-03-03", "2020-03-05", "2020-03-06",
+                     "2020-03-30", "2020-04-17", "2020-04-21", "2020-05-04",
+                     "2020-06-06", "2020-06-11", "2020-06-17", "2020-07-07",
+                     "2020-07-13", "2020-07-20", "2020-07-28", "2020-08-10",
+                     "2020-08-11", "2020-08-12", "2020-08-19", "2020-09-01",
+                     "2020-09-10", "2020-09-18", "2020-10-09", "2020-10-10",
+                     "2020-10-26", "2020-11-16", "2020-12-10", "2020-12-11",
+                     "2020-12-26", "2019-01-14", "2019-02-08", "2019-02-21",
+                     "2019-03-10", "2019-03-25", "2019-03-26", "2019-04-23",
+                     "2019-05-01", "2019-05-05", "2019-05-15", "2019-05-21",
+                     "2019-05-31", "2019-06-01", "2019-06-04", "2019-06-14",
+                     "2019-06-15", "2019-06-27", "2019-07-14", "2019-07-15",
+                     "2019-07-19", "2019-08-26", "2019-08-31", "2019-09-01",
+                     "2019-10-07", "2019-10-18", "2019-11-06", "2019-12-10",
+                     "2020-01-26", "2020-01-27", "2020-02-02", "2020-03-01",
+                     "2020-03-01", "2020-04-07", "2020-05-30", "2020-06-05",
+                     "2020-06-21", "2020-06-28", "2020-07-26", "2020-08-15",
+                     "2020-08-20", "2020-08-24", "2020-08-28", "2020-09-05",
+                     "2020-09-10", "2020-09-24", "2020-10-27", "2020-11-01",
+                     "2020-12-09")),
     region = c(
       rep("Province 1", 68),
       rep("Province 2", 57),
@@ -583,7 +583,7 @@ test_that("Synthetic air pollution data loaded in and formatted as expected", {
   )
 
   actual_df_categ <- load_air_pollution_data(temp_synth_data,
-                                             Categorical_Others = c("sector"))
+                                             categorical_others = c("sector"))
   expect_equal(actual_df_categ, expected_df_categ)
 
   expected_df_contin <- expected_df
@@ -617,7 +617,7 @@ test_that("Synthetic air pollution data loaded in and formatted as expected", {
 
 
   actual_df_contin <- load_air_pollution_data(temp_synth_data,
-                                              Continuous_Others = c("ozone"))
+                                              continuous_others = c("ozone"))
   expect_equal(actual_df_contin, expected_df_contin)
 
 })
@@ -855,7 +855,7 @@ test_that("air_pollution_descriptive_stats core behaviour and API args are corre
   res <- with_mocked_bindings({
     air_pollution_descriptive_stats(
       data = APDS_TEST_DATA,
-      env_lables = ENV_LABS,
+      env_labels = ENV_LABS,
       save_outputs = FALSE,
       output_dir = NULL,
       moving_average_window = 3,
@@ -1028,7 +1028,7 @@ test_that("air_pollution_descriptive_stats works when no env vars are present", 
     res <- with_mocked_bindings({
       air_pollution_descriptive_stats(
         data = APDS_MIN,
-        env_lables = ENV_LABS,  # none of these are present in APDS_MIN
+        env_labels = ENV_LABS,  # none of these are present in APDS_MIN
         moving_average_window = 3
       )
     }, run_descriptive_stats = function(...) list())
@@ -1037,7 +1037,7 @@ test_that("air_pollution_descriptive_stats works when no env vars are present", 
     # No env moving average columns
     env_ma_cols <- grep("_ma3$", names(res), value = TRUE)
     expect_equal(env_ma_cols, "deaths_ma3")
-  }, "No environmental variables from env_lables were found in the data")
+  }, "No environmental variables from env_labels were found in the data")
 })
 
 test_that("air_pollution_descriptive_stats with moving_average_window = 1 returns identical series", {
@@ -2538,9 +2538,9 @@ test_that("aggregate_air_pollution_by_region proper groupings, errors thrown whe
 
   #Everything included as expected
   expect_true(all(c("region", "ref_name", "ref_pm25", "ar_per_100k", "ar_lower",
-                "ar_upper", "an", "an_lower", "an_upper", "af", "af_lower",
-                "af_upper", "total_deaths", "mean_pm25",
-                "population") %in% names(actual_df)))
+                    "ar_upper", "an", "an_lower", "an_upper", "af", "af_lower",
+                    "af_upper", "total_deaths", "mean_pm25",
+                    "population") %in% names(actual_df)))
   expect_equal(nrow(actual_df), 10)
 
 
@@ -2802,11 +2802,11 @@ test_that("aggregate_air_pollution_by_month proper groupings, errors thrown when
                  10, 11),
     region = c(rep(c("South", "East", "National", "North", "West"), 14)),
     ar_per_100k = as.integer(c(34, 34, 34, 34, 34, 95, 95, 95, 95, 95, 84, 84,
-                             84, 84, 84, 87, 87, 87, 87, 87, 78, 78, 78, 78,
-                             78, 85, 85, 85, 85, 85, 101, 101, 101, 101, 101,
-                             88, 88, 88, 88, 88, 97, 97, 97, 97, 97, 78, 78,
-                             78, 78, 78, 82, 82, 82, 82, 82, 73, 73, 73, 73,
-                             73, 85, 85, 85, 85, 85, 30, 30, 30, 30, 30)),
+                               84, 84, 84, 87, 87, 87, 87, 87, 78, 78, 78, 78,
+                               78, 85, 85, 85, 85, 85, 101, 101, 101, 101, 101,
+                               88, 88, 88, 88, 88, 97, 97, 97, 97, 97, 78, 78,
+                               78, 78, 78, 82, 82, 82, 82, 82, 73, 73, 73, 73,
+                               73, 85, 85, 85, 85, 85, 30, 30, 30, 30, 30)),
     ar_lower = as.integer(c(rep(10, 5), rep(54, 5), rep(49, 5), rep(60, 5),
                             rep(46, 5), rep(49, 5), rep(78, 5), rep(43, 5),
                             rep(52, 5), rep(62, 5), rep(60, 5), rep(75, 5),
@@ -3907,7 +3907,7 @@ test_that("plot_air_pollution_monthly_histograms monthly AN sums match daily cum
   names(obs_by_region)[2] <- "an"
 
   # Compare where region names overlap
-  m <- merge(exp_by_region, obs_by_region, by = "region", suffixes = c("_daily", "_monthly"))
+  m <- base::merge(exp_by_region, obs_by_region, by = "region", suffixes = c("_daily", "_monthly"))
   expect_true(nrow(m) >= 2)
   expect_equal(m$an_daily, m$an_monthly, tolerance = 1e-8)
 })
@@ -3924,7 +3924,6 @@ test_that("plot_air_pollution_monthly_histograms sanitizes ref_name and creates 
   )
 
   outdir <- file.path(tempdir(), "nested", "monthly", "hist", sprintf("t%s", as.integer(runif(1, 1, 1e6))))
-  expect_false(dir.exists(outdir))  # ensure it doesn't exist
 
   captured <- new.env(parent = emptyenv())
   captured$files <- character(0)
@@ -4074,7 +4073,7 @@ test_that("plot_air_pollution_an_ar_by_region AN bars equal sum of daily cumulat
                       sum, na.rm = TRUE)
   names(obs_an)[2] <- "an"
 
-  m <- merge(exp_an, obs_an, by = "region", suffixes = c("_daily","_bars"))
+  m <- base::merge(exp_an, obs_an, by = "region", suffixes = c("_daily","_bars"))
   expect_true(nrow(m) >= 2)
   expect_equal(m$an_daily, m$an_bars, tolerance = 1e-8)
 })
@@ -4751,6 +4750,7 @@ test_that("air_pollution_power_list National results excluded if include_nationa
 })
 
 
+# Tests for plot_air_pollution_power
 # Make synthetic data to test plot_air_pollution_power
 set.seed(42)
 
@@ -4787,7 +4787,6 @@ test_that("plot_air_pollution_power plot returns correct structure and invisible
   expect_invisible(plot_air_pollution_power(power_list, save_plot = FALSE))
 })
 
-
 test_that("plot_air_pollution_power plot excludes National when include_national = FALSE", {
 
   plt_out <- plot_air_pollution_power(
@@ -4802,7 +4801,6 @@ test_that("plot_air_pollution_power plot excludes National when include_national
   expect_true(all(df$region %in% regions))
 })
 
-
 test_that("plot_air_pollution_power correct error if save_plot = TRUE but no output_dir", {
 
   expect_error(
@@ -4810,7 +4808,6 @@ test_that("plot_air_pollution_power correct error if save_plot = TRUE but no out
     "Output directory must be specified"
   )
 })
-
 
 test_that("plot_air_pollution_power correct error if all regions removed after filtering", {
 
@@ -4823,7 +4820,6 @@ test_that("plot_air_pollution_power correct error if all regions removed after f
     "No data available"
   )
 })
-
 
 test_that("plot_air_pollution_power plot contains required layers", {
 
@@ -4838,7 +4834,6 @@ test_that("plot_air_pollution_power plot contains required layers", {
   expect_true(any(grepl("GeomHline", class(plt$layers[[2]]$geom))))
 })
 
-
 test_that("plot_air_pollution_power facet layout uses correct number of columns", {
 
   # In real function, the number of columns comes from calculate_air_pollution_grid_dims()
@@ -4849,7 +4844,6 @@ test_that("plot_air_pollution_power facet layout uses correct number of columns"
   # Expect facet wrap structure
   expect_s3_class(plt$facet, "FacetWrap")
 })
-
 
 test_that("plot_air_pollution_power plot title and subtitle are correctly set", {
 
@@ -4862,7 +4856,6 @@ test_that("plot_air_pollution_power plot title and subtitle are correctly set", 
     grepl("Green zone", plt$labels$subtitle, fixed = TRUE)
   )
 })
-
 
 test_that("plot_air_pollution_power saving the plot triggers ggsave but does not error", {
 
@@ -4881,8 +4874,6 @@ test_that("plot_air_pollution_power saving the plot triggers ggsave but does not
   expect_true(length(saved) >= 1)
 
 })
-
-# Tests for plot_air_pollution_power
 
 
 # Integration test: air_pollution_do_analysis runs end-to-end on
@@ -5147,4 +5138,62 @@ test_that("integration: do_analysis saves the expected number of images per refe
   # At least one saved file for UKHSA mentions both the ref name and the value
   expect_true(any(grepl("ukhsa", lower_files) & grepl("ref?\\s*25", lower_files)))
 
+})
+
+test_that("air_pollution_do_analysis accepts legacy other-column argument names", {
+  pkg_ns <- getNamespaceName(environment(air_pollution_do_analysis))
+  captured <- new.env(parent = emptyenv())
+
+  mock_load_air_pollution_data <- function(...,
+                                           categorical_others = NULL,
+                                           continuous_others = NULL) {
+    captured$categorical_others <- categorical_others
+    captured$continuous_others <- continuous_others
+    stop("load sentinel")
+  }
+
+  expect_error(
+    with_mocked_bindings(
+      air_pollution_do_analysis(
+        data_path = tempfile(fileext = ".csv"),
+        Categorical_Others = c("sex", "age_group"),
+        Continuous_Others = "tmean",
+        save_outputs = FALSE,
+        run_descriptive = FALSE,
+        run_power = FALSE
+      ),
+      load_air_pollution_data = mock_load_air_pollution_data,
+      .package = pkg_ns
+    ),
+    "load sentinel"
+  )
+
+  expect_equal(captured$categorical_others, c("sex", "age_group"))
+  expect_equal(captured$continuous_others, "tmean")
+})
+
+test_that("air_pollution_do_analysis rejects legacy and new aliases together", {
+  expect_error(
+    air_pollution_do_analysis(
+      data_path = tempfile(fileext = ".csv"),
+      categorical_others = "sex",
+      Categorical_Others = "age_group",
+      save_outputs = FALSE,
+      run_descriptive = FALSE,
+      run_power = FALSE
+    ),
+    "Use only one of `categorical_others` or `Categorical_Others`."
+  )
+
+  expect_error(
+    air_pollution_do_analysis(
+      data_path = tempfile(fileext = ".csv"),
+      continuous_others = "tmean",
+      Continuous_Others = "humidity",
+      save_outputs = FALSE,
+      run_descriptive = FALSE,
+      run_power = FALSE
+    ),
+    "Use only one of `continuous_others` or `Continuous_Others`."
+  )
 })
