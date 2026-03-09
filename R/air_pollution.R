@@ -2479,6 +2479,8 @@ plot_air_pollution_power <- function(
 #' categorical variables.
 #' @param continuous_others Optional character vector. Names of additional
 #' continuous variables (e.g., "tmean")
+#' @param Categorical_Others Deprecated alias for `categorical_others`.
+#' @param Continuous_Others Deprecated alias for `continuous_others`.
 #' @param max_lag Integer. Maximum lag days. Defaults to 14.
 #' @param df_seasonal Integer. Degrees of freedom for seasonal spline. Default 6.
 #' @param family Character. GAM family (default: "quasipoisson")
@@ -2584,6 +2586,8 @@ air_pollution_do_analysis <- function(
   wind_speed_col = "wind_speed",
   categorical_others = NULL,
   continuous_others = NULL,
+  Categorical_Others = NULL,
+  Continuous_Others = NULL,
 
   # Analysis parameters
   max_lag = 14L,
@@ -2623,6 +2627,20 @@ air_pollution_do_analysis <- function(
   detect_outliers = TRUE,
   calculate_rate = FALSE
 ) {
+
+  if (!is.null(Categorical_Others)) {
+    if (!is.null(categorical_others)) {
+      stop("Use only one of `categorical_others` or `Categorical_Others`.")
+    }
+    categorical_others <- Categorical_Others
+  }
+
+  if (!is.null(Continuous_Others)) {
+    if (!is.null(continuous_others)) {
+      stop("Use only one of `continuous_others` or `Continuous_Others`.")
+    }
+    continuous_others <- Continuous_Others
+  }
 
   # AUTO-SET ENGLISH LOCALE FOR ENTIRE ANALYSIS
   original_locale <- Sys.getlocale("LC_TIME")
