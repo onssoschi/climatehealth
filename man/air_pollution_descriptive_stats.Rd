@@ -6,7 +6,7 @@
 \usage{
 air_pollution_descriptive_stats(
   data,
-  env_lables = c(pm25 = "PM2.5 (µg/m³)", tmax = "Max Temperature (°C)", precipitation
+  env_labels = c(pm25 = "PM2.5 (µg/m³)", tmax = "Max Temperature (°C)", precipitation
     = "Precipitation (mm)", humidity = "Humidity (\%)", wind_speed = "Wind Speed (m/s)"),
   save_outputs = FALSE,
   output_dir = NULL,
@@ -28,7 +28,7 @@ air_pollution_descriptive_stats(
 \item{data}{Dataframe containing a daily time series of climate, environmental
 and health data}
 
-\item{env_lables}{Named vector. Labels for environmental variables with units.}
+\item{env_labels}{Named vector. Labels for environmental variables with units.}
 
 \item{save_outputs}{Logical. Whether to save outputs. Defaults to FALSE.}
 
