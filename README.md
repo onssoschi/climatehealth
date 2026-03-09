@@ -164,9 +164,7 @@ testing, documentation, and review work:
 We acknowledge the following people and groups for higher-level leadership,
 methodological input, and subject-area support to the SOSCHI climate-health work:
 
-
-- Methodology review: Sewe Maquines
-- Subject-area support and guidance: Antonio Gaspirni, Topic Expert Group members, and Expert Advisory Group members
+- Subject-area support and guidance: Antonio Gasparrini, Topic Expert Group members, and Expert Advisory Group members
 
 We also acknowledge the use of external data and code examples that informed
 testing and early prototyping, including the example heat-mortality dataset
