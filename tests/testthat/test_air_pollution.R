@@ -5139,3 +5139,61 @@ test_that("integration: do_analysis saves the expected number of images per refe
   expect_true(any(grepl("ukhsa", lower_files) & grepl("ref?\\s*25", lower_files)))
 
 })
+
+test_that("air_pollution_do_analysis accepts legacy other-column argument names", {
+  pkg_ns <- getNamespaceName(environment(air_pollution_do_analysis))
+  captured <- new.env(parent = emptyenv())
+
+  mock_load_air_pollution_data <- function(...,
+                                           categorical_others = NULL,
+                                           continuous_others = NULL) {
+    captured$categorical_others <- categorical_others
+    captured$continuous_others <- continuous_others
+    stop("load sentinel")
+  }
+
+  expect_error(
+    with_mocked_bindings(
+      air_pollution_do_analysis(
+        data_path = tempfile(fileext = ".csv"),
+        Categorical_Others = c("sex", "age_group"),
+        Continuous_Others = "tmean",
+        save_outputs = FALSE,
+        run_descriptive = FALSE,
+        run_power = FALSE
+      ),
+      load_air_pollution_data = mock_load_air_pollution_data,
+      .package = pkg_ns
+    ),
+    "load sentinel"
+  )
+
+  expect_equal(captured$categorical_others, c("sex", "age_group"))
+  expect_equal(captured$continuous_others, "tmean")
+})
+
+test_that("air_pollution_do_analysis rejects legacy and new aliases together", {
+  expect_error(
+    air_pollution_do_analysis(
+      data_path = tempfile(fileext = ".csv"),
+      categorical_others = "sex",
+      Categorical_Others = "age_group",
+      save_outputs = FALSE,
+      run_descriptive = FALSE,
+      run_power = FALSE
+    ),
+    "Use only one of `categorical_others` or `Categorical_Others`."
+  )
+
+  expect_error(
+    air_pollution_do_analysis(
+      data_path = tempfile(fileext = ".csv"),
+      continuous_others = "tmean",
+      Continuous_Others = "humidity",
+      save_outputs = FALSE,
+      run_descriptive = FALSE,
+      run_power = FALSE
+    ),
+    "Use only one of `continuous_others` or `Continuous_Others`."
+  )
+})
