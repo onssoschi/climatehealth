@@ -1,0 +1,31 @@
+citHeader("To cite climatehealth in publications use:")
+
+citEntry(
+  entry = "Manual",
+  title = "climatehealth: Standards for Official Statistics on Climate-Health Interactions (SOSCHI)",
+  author = c(
+    person("Charlie", "Browning"),
+    person("Kenechi", "Omeke"),
+    person("Etse Yawo", "Dzakpa"),
+    person("Gladin", "Jose"),
+    person("Matt", "Pearce"),
+    person("Ellie", "Watkins"),
+    person("Claire", "Hunt"),
+    person("Beatrice", "Byukusenge"),
+    person("Cassien", "Habyarimana"),
+    person("Venuste", "Nyagahakwa")
+  ),
+  organization = "SOSCHI Project, Office for National Statistics",
+  year = "2026",
+  note = paste("R package version", meta$Version),
+  url = "https://github.com/onssoschi/climatehealth",
+  textVersion = paste(
+    "Browning, C., Omeke, K., Dzakpa, E. Y., Jose, G., Pearce, M.,",
+    "Watkins, E., Hunt, C., Byukusenge, B., Habyarimana, C., and",
+    "Nyagahakwa, V. (2026). climatehealth: Standards for Official",
+    "Statistics on Climate-Health Interactions (SOSCHI).",
+    paste("R package version", meta$Version, "."),
+    "SOSCHI Project, Office for National Statistics.",
+    "https://github.com/onssoschi/climatehealth"
+  )
+)
