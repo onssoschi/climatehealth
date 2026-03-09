@@ -17,6 +17,8 @@ air_pollution_do_analysis(
   wind_speed_col = "wind_speed",
   categorical_others = NULL,
   continuous_others = NULL,
+  Categorical_Others = NULL,
+  Continuous_Others = NULL,
   max_lag = 14L,
   df_seasonal = 6,
   family = "quasipoisson",
@@ -69,6 +71,10 @@ categorical variables.}
 
 \item{continuous_others}{Optional character vector. Names of additional
 continuous variables (e.g., "tmean")}
+
+\item{Categorical_Others}{Deprecated alias for \code{categorical_others}.}
+
+\item{Continuous_Others}{Deprecated alias for \code{continuous_others}.}
 
 \item{max_lag}{Integer. Maximum lag days. Defaults to 14.}
 
