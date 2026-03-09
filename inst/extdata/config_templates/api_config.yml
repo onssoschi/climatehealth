@@ -1,0 +1,54 @@
+default:
+  api:
+    port: 8000
+    host: "0.0.0.0"
+    move_to_shared: TRUE
+    shared_dir_name: "shared"
+
+  throttling:
+    enabled: TRUE
+    min_system_buffer_mb: 512
+    default_base_mb: 500
+    default_multiplier: 20
+    endpoints:
+      temperature:
+        base_mb: 800
+        multiplier: 25
+        arg_name: "data_path"
+        arg_type: "json_records"
+        category: "dlnm"
+
+      wildfires:
+        base_mb: 800
+        multiplier: 25
+        arg_name: "health_path"
+        arg_type: "json_records"
+        category: "dlnm"
+
+      mental_health:
+        base_mb: 800
+        multiplier: 25
+        arg_name: "data_path"
+        arg_type: "json_records"
+        category: "dlnm"
+
+      descriptive_stats:
+        base_mb: 100
+        multiplier: 5
+        arg_name: "data"
+        arg_type: "json_records"
+        category: "light"
+
+      diarrhea:
+        base_mb: 2000
+        multiplier: 40
+        arg_name: "health_data_path"
+        arg_type: "json_records"
+        category: "inla"
+
+      malaria:
+        base_mb: 2000
+        multiplier: 40
+        arg_name: "health_data_path"
+        arg_type: "json_records"
+        category: "inla"
