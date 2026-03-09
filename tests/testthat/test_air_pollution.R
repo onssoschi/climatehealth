@@ -3907,7 +3907,7 @@ test_that("plot_air_pollution_monthly_histograms monthly AN sums match daily cum
   names(obs_by_region)[2] <- "an"
 
   # Compare where region names overlap
-  m <- merge(exp_by_region, obs_by_region, by = "region", suffixes = c("_daily", "_monthly"))
+  m <- base::merge(exp_by_region, obs_by_region, by = "region", suffixes = c("_daily", "_monthly"))
   expect_true(nrow(m) >= 2)
   expect_equal(m$an_daily, m$an_monthly, tolerance = 1e-8)
 })
@@ -4073,7 +4073,7 @@ test_that("plot_air_pollution_an_ar_by_region AN bars equal sum of daily cumulat
                       sum, na.rm = TRUE)
   names(obs_an)[2] <- "an"
 
-  m <- merge(exp_an, obs_an, by = "region", suffixes = c("_daily","_bars"))
+  m <- base::merge(exp_an, obs_an, by = "region", suffixes = c("_daily","_bars"))
   expect_true(nrow(m) >= 2)
   expect_equal(m$an_daily, m$an_bars, tolerance = 1e-8)
 })
