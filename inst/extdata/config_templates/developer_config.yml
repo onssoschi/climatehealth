@@ -1,0 +1,16 @@
+default:
+  # Local development paths for running examples/scripts outside the API runtime.
+  # Keep these machine-specific values in a user copy, not in committed code.
+  paths:
+    input_dir: "/absolute/path/to/local/inputs"
+    output_dir: "/absolute/path/to/local/outputs"
+    logs_dir: "/absolute/path/to/local/logs"
+
+  runtime:
+    log_level: "INFO"
+    save_logs: true
+    use_installed_package: true
+
+  api:
+    base_url: "http://127.0.0.1:8080"
+    config_file: "/absolute/path/to/api_config.yml"
