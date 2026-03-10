@@ -15,8 +15,6 @@
 #' @param health_outcome_col Character. Name of the column in the dataframe that
 #' contains the daily health outcome count (e.g. number of deaths, hospital
 #' admissions)
-#' @param population_col Character. Name of the column in the dataframe that
-#' contains the population data.
 #' @param region_col Character. Name of the column in the dataframe that contains
 #' the region names. Defaults to NULL.
 #' @param rh_col Character. Name of the column in the dataframe that contains daily relative humidity
@@ -24,7 +22,8 @@
 #' @param wind_speed_col Character. Name of the column in the dataframe that contains daily wind speed.
 #' Defaults to NULL.
 #' @param population_col Character. Name of the column in the dataframe that
-#' contains the population data.
+#' contains the population data. Defaults to NULL. If omitted, a `pop` column
+#' is used when present.
 #'
 #' @returns Dataframe with formatted and renamed columns
 #'
@@ -34,7 +33,7 @@ read_and_format_data <- function(
     date_col,
     mean_temperature_col,
     health_outcome_col,
-    population_col,
+    population_col = NULL,
     region_col = NULL,
     rh_col = NULL,
     wind_speed_col = NULL) {
@@ -53,12 +52,16 @@ read_and_format_data <- function(
     wind_speed_col <- "wind_speed"
     df <- df %>% dplyr::mutate(wind_speed = NA)
   }
-  #population column rename
+  if (is.null(population_col) && "pop" %in% names(df)) {
+    population_col <- "pop"
+  }
+  # population column rename
   if (!is.null(population_col) && population_col != "pop") {
     df <- df %>%
       dplyr::rename(pop = !!rlang::sym(population_col))
     population_col <- "pop"
   }
+
   # Date format identification
   date_function <- lubridate::ymd
   if (grepl("^\\d{2}[-/]\\d{2}[-/]\\d{4}$", df[[date_col]][1])) {
@@ -72,12 +75,15 @@ read_and_format_data <- function(
     health_outcome_col,
     region_col,
     rh_col,
-    wind_speed_col,
-    population_col
+    wind_speed_col
   )
   standard_cols <- c(
-    "date", "tmean", "health_outcome", "region", "rh", "wind_speed", "pop"
+    "date", "tmean", "health_outcome", "region", "rh", "wind_speed"
   )
+  if (!is.null(population_col)) {
+    needed_cols <- c(needed_cols, population_col)
+    standard_cols <- c(standard_cols, "pop")
+  }
   for (i in seq_along(standard_cols)) {
     std_col <- standard_cols[i]
     need_col <- needed_cols[i]
@@ -86,16 +92,19 @@ read_and_format_data <- function(
     }
   }
   # Data set pre processing
+  rename_args <- list(
+    date = rlang::sym(date_col),
+    tmean = rlang::sym(mean_temperature_col),
+    health_outcome = rlang::sym(health_outcome_col),
+    region = rlang::sym(region_col),
+    rh = rlang::sym(rh_col),
+    wind_speed = rlang::sym(wind_speed_col)
+  )
+  if (!is.null(population_col)) {
+    rename_args$pop <- rlang::sym(population_col)
+  }
   df <- df %>%
-    dplyr::rename(
-      date = all_of(date_col),
-      tmean = all_of(mean_temperature_col),
-      health_outcome = all_of(health_outcome_col),
-      region = all_of(region_col),
-      rh = all_of(rh_col),
-      wind_speed = all_of(wind_speed_col),
-      pop = all_of(population_col)
-    ) %>%
+    dplyr::rename(!!!rename_args) %>%
     dplyr::mutate(
       date = date_function(date),
       year = lubridate::year(date),
@@ -274,7 +283,8 @@ join_health_and_climate_data <- function(
 #' contains the health outcome count column (e.g. number of deaths, hospital
 #' admissions)
 #' @param population_col Character. Name of the column in the dataframe that
-#' contains the population data.
+#' contains the population data. Defaults to NULL. If omitted, a `pop` column
+#' is used when present.
 #' @param rh_col Character. Name of the column in the dataframe that
 #' contains daily relative humidity values.Defaults to NULL.
 #' @param wind_speed_col Character. Name of the column in the dataframe that
@@ -296,7 +306,7 @@ load_wildfire_data <- function(
     shape_region_col = NULL,
     mean_temperature_col,
     health_outcome_col,
-    population_col,
+    population_col = NULL,
     rh_col = NULL,
     wind_speed_col = NULL,
     pm_2_5_col = NULL) {
@@ -2028,7 +2038,9 @@ plot_an_by_region <- function(data, output_dir = ".") {
 #' contains the health outcome count column (e.g. number of deaths, hospital
 #' admissions)
 #' @param population_col Character. Name of the column in the dataframe that
-#' contains the population data.
+#' contains the population data. Defaults to NULL. This is only required when
+#' requesting region-level AF/AN outputs and no `pop` column is already present
+#' in the input data.
 #' @param rh_col Character. Name of the column containing relative humidity
 #' values. Defaults to NULL.
 #' @param wind_speed_col Character. Name of the column containing wind speed.
@@ -2058,6 +2070,8 @@ plot_an_by_region <- function(data, output_dir = ".") {
 #' @param save_csv Boolean. Whether to save the results as a CSV
 #' @param output_folder_path Path. Path to folder where plots and/or CSV should
 #' be saved.
+#' @param create_run_subdir Boolean. If TRUE, create a timestamped subdirectory
+#' under `output_folder_path` for this run's outputs. Defaults to FALSE.
 #' @param print_vif Bool, whether or not to print VIF (variance inflation factor)
 #' for each predictor. Defaults to FALSE.
 #' @param print_model_summaries Bool. Whether to print the model summaries to
@@ -2112,7 +2126,7 @@ wildfire_do_analysis <- function(
     shape_region_col = NULL,
     mean_temperature_col,
     health_outcome_col,
-    population_col,
+    population_col = NULL,
     rh_col = NULL,
     wind_speed_col = NULL,
     pm_2_5_col = NULL,
@@ -2126,22 +2140,20 @@ wildfire_do_analysis <- function(
     save_fig = FALSE,
     save_csv = FALSE,
     output_folder_path = NULL,
+    create_run_subdir = FALSE,
     print_vif = FALSE,
     print_model_summaries = FALSE) {
-  # Setup additional output DIR
-  if (!is.null(output_folder_path)) {
-    # Check output dir exists
-    check_file_exists(output_folder_path, TRUE)
-    new_fpath <- file.path(
-      output_folder_path,
-      paste0("wildfires_analysis_", format(Sys.time(), "%d_%m_%Y_%H_%M"))
-    )
-    if (!is.null(new_fpath)) {
-      (
-        dir.create(new_fpath)
-      )
+  if (create_run_subdir) {
+    if (is.null(output_folder_path)) {
+      stop("`output_folder_path` is required when `create_run_subdir = TRUE`.")
     }
-    output_folder_path <- new_fpath
+    check_file_exists(output_folder_path, TRUE)
+    run_id <- format(Sys.time(), "%Y%m%d_%H%M%S")
+    output_folder_path <- file.path(
+      output_folder_path,
+      paste0("wildfires_analysis_", run_id)
+    )
+    dir.create(output_folder_path, recursive = TRUE, showWarnings = FALSE)
   }
   # Setup additional output DIR
   if (save_fig == TRUE && !file.exists(file.path(output_folder_path, "model_validation"))) {
@@ -2167,6 +2179,14 @@ wildfire_do_analysis <- function(
     wind_speed_col = wind_speed_col,
     pm_2_5_col = pm_2_5_col
   )
+  if (calc_relative_risk_by_region && !"pop" %in% names(data)) {
+    stop(
+      paste(
+        "Population data are required when calc_relative_risk_by_region = TRUE.",
+        "Supply `population_col` or include a `pop` column in the input data."
+      )
+    )
+  }
   # Create raw pm dataframe for late
   pm_data <- data[c("month", "year", "region", "mean_PM")]
   # Create lagged variables
