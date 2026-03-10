@@ -32,7 +32,8 @@ read_and_format_data <- function(
     health_outcome_col,
     region_col = NULL,
     rh_col = NULL,
-    wind_speed_col = NULL) {
+    wind_speed_col = NULL,
+    population_col = NULL) {
   # Read input dataset
   df <- read_input_data(health_path)
   # Fill optional cols where neccesary
@@ -48,6 +49,10 @@ read_and_format_data <- function(
     wind_speed_col <- "wind_speed"
     df <- df %>% dplyr::mutate(wind_speed = NA)
   }
+  if (is.null(population_col)) {
+    population_col <- "pop"
+    df <- df %>% dplyr::mutate(pop = NA)
+  }
   # Date format identification
   date_function <- lubridate::ymd
   if (grepl("^\\d{2}[-/]\\d{2}[-/]\\d{4}$", df[[date_col]][1])) {
@@ -61,10 +66,11 @@ read_and_format_data <- function(
     health_outcome_col,
     region_col,
     rh_col,
-    wind_speed_col
+    wind_speed_col,
+    population_col
   )
   standard_cols <- c(
-    "date", "tmean", "health_outcome", "region", "rh", "wind_speed"
+    "date", "tmean", "health_outcome", "region", "rh", "wind_speed", "pop"
   )
   for (i in seq_along(standard_cols)) {
     std_col <- standard_cols[i]
@@ -81,7 +87,8 @@ read_and_format_data <- function(
       health_outcome = all_of(health_outcome_col),
       region = all_of(region_col),
       rh = all_of(rh_col),
-      wind_speed = all_of(wind_speed_col)
+      wind_speed = all_of(wind_speed_col),
+      pop = all_of(population_col)
     ) %>%
     dplyr::mutate(
       date = date_function(date),
