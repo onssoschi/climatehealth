@@ -42,82 +42,82 @@ For information on how to use this R package, see our official website [here](ht
 
 ### Requirements
 
-To install the package and utilise its functionality, an R build is required.  
-This package was largely developed on **R-4.4.1**, therefore it is recommended. **R-4.4.1** can be downloaded [here](https://cran.r-project.org/bin/windows/base/old/4.4.1/)
+To install and use the package, you need an R environment.
+This package has been developed primarily with **R 4.4.1**, and that version is recommended where possible. 
 
-### Installation Methods
+**R-4.4.1** can be downloaded [here](https://cran.r-project.org/bin/windows/base/old/4.4.1/)
 
-Installing the _climatehealth_ R package in your R environment can be done in various different ways. Your installation method can vary on your requirements and preference.  
+### Installation options
 
+You can use the package in three main ways, depending on whether you want a stable release or want to work with the source code.
 
-#### Devtools
-If you would like to make updates to the package code in realtime, `devtools` should be used to load the functions into memory.  
+#### 1. Load from a local GitHub clone for development
 
-Firstly, you must install the devtools package in your R environment. This can be done in R by using the following:
+Use this option if you want to inspect the source code, make changes locally, test updates, or contribute to the package.
+
+First clone the repository from GitHub to your machine. Then in R:
+
 ```r
 install.packages("devtools")
-```
-Once devtools has been installed, the climatehealth package can be loaded in to memory by running
-```r
 devtools::load_all(path = "{path/to/climatehealth}")
 ```
-This will allow the package functions to be utilised. Once relevant edits are made to the source code (climatehealth package) in your local environment, simply run the above code again to update the functions.
+
+This loads the package directly from the local source directory into your current R session. This is useful for development, but won't make climatehealth available as a standard installed package in your library. Once the source code changes, run devtools::load_all() again to reload the updated functions. If you are an end user, follow the standard installation procedure outlined below for your operating system.
 
 
-#### Windows Binary (Pre-Compiled)
-
-If you would like to install the latest official release of the package, the pre-compiled binary for windows can be installed [here](https://github.com/onssoschi/climatehealth/releases/latest).  
-> [!TIP]
-> Press on this file to begin download  
-> <img width="203" height="36" alt="image" src="https://github.com/user-attachments/assets/94dd3fa7-aeeb-4a26-b468-b263af122151" />
-
-By using this, you can avoid downloading the source code from the git repository. Using the latest release build also guarantees that the package is stable. This is the most efficient way to install the package on a windows machine, however you will not be able to make modifications to the source code.  
-
-Once the zip has been downloaded, the following code snippet can be used in R to install the package:
+#### 2. Install the latest Windows binary release (pre-compiled)
+If you would like to install the latest official release of the package, download the `.zip` file from the latest GitHub release [here](https://github.com/onssoschi/climatehealth/releases/latest).  
+Then install it in R with:
 ```r
-install.packages(path = "{path/to/climatehealth/binary/.zip}", repos = NULL, type = "win.binary")
+install.packages(path = "{path/to/climatehealth_<version>.zip}", repos = NULL, type = "win.binary")
 ```
-The functions from the R package can then be used either by directly referencing the namespace (e.g., `climatehealth::heat_and_cold_do_analysis()`) or by loading all of the package functions at once (e.g., `library(climatehealth)`).
+where `<version>` is the version number of the release you downloaded.
 
-
-#### MacOS Source Tarball (Needs Compilation)
-
-If you are using MacOS and would like to install the latest official release of the package, you must download the tarball (.tar.gz) containing the package source [here](https://github.com/onssoschi/climatehealth/releases/latest).  
-> [!TIP]
-> Press on this file to begin download  
-> <img width="223" height="41" alt="image" src="https://github.com/user-attachments/assets/4f1ce1c4-95c6-4086-995a-3aa107babab7" />
-
-This tarball contains the compressed package source that can be used to compile and install the package on a MacOS device. When installing the package using this method, the github repository does not need to be downloaded and the code is coming from a stable release.   
-
-Once the .tar.gz has been downloaded, the following code snipped can be used in R to install the package:
+#### 3. Install the latest source release for MacOS or other platforms (needs compilation)
+If you are using MacOS and would like to install from the source, download the `.tar.gz` file from the latest GitHub release [here](https://github.com/onssoschi/climatehealth/releases/latest).  
+Then install it in R with:
 ```r
-install.packages(path = "{path/to/climatehealth/source/.tar.gz}", repos = NULL, type = "source")
+install.packages(path = "{path/to/climatehealth_<version>.tar.gz}", repos = NULL, type = "source")
 ```
-The functions from the R package can then be used either by directly referencing the namespace (e.g., `climatehealth::heat_and_cold_do_analysis()`) or by loading all of the package functions at once (e.g., `library(climatehealth)`).
+where `<version>` is the version number of the release you downloaded.
 
-## Integrated API and Runtime Assets
-The package now includes the essential runtime assets that were previously held in
-`climatehealth_pipelines`.
+## Running analysis
+Once the package is installed or loaded, you can run any of the main analysis entry points depending on your use case.
 
-Included package paths:
-- `inst/plumber/` for API routes, startup scripts, OpenAPI export, and throttling modules.
-- `inst/extdata/config_templates/` for package-scoped runtime config templates.
-- `inst/scripts/` for operational helpers.
-- `tests/testthat/test_throttle_*.R` for throttle behavior tests.
+### Indicator workflows
+Most indicator modules are run through a top-level `*_do_analysis()` function. For example:
 
-Configuration best practice:
-- Keep machine-specific input/output paths in user-local config copies.
-- Use `inst/extdata/config_templates/developer_config.yml` and
-  `inst/extdata/config_templates/api_config.yml` as templates.
-- Avoid committing environment-specific paths into package code.
+```r
+result <- climatehealth::air_pollution_do_analysis(
+  data_path = "{path/to/your_data.csv}"
+)
+```
+Other indicators follow the same pattern, for example:
+```r
+temp_mortality_do_analysis()
+wildfire_do_analysis()
+malaria_do_analysis()
+diarrhea_do_analysis()
+suicides_heat_do_analysis()
+```
+Each analysis function expects specific input data and parameters for that indicator, so refer to the package documentation for the relevant module before running it.
+Alternatively, you can load all of the package functions at once (e.g., `library(climatehealth)`).
 
-## Open-Source development
-See [CONTRIBUTING](CONTRIBUTING.md) for guidance on contributing to this repository before making changes to support open-source development of this R package. This includes guidance on branching, merge requests, and code style. 
+### Descriptive statistics
+You can also run the descriptive statistics workflow directly:
+```r
+result <- climatehealth::run_descriptive_stats(data = my_data,
+  output_path = "{path/to/output}"
+)
+```
+This is useful for checking data quality, exploring variables, and generating summary outputs before running an indicator-specific workflow.
+
+## Contributing to the package
+We welcome contributions from public users, collaborators, and developers who want to improve the package.
+If you want to contribute code, documentation, tests, or bug fixes, please start by reading [CONTRIBUTING](CONTRIBUTING.md). This includes guidance on setting up a local development workflow, making changes safely, and submitting updates through GitHub. 
 
 ## Authors
-
-The package authors reflect direct intellectual and technical contributions to the
-package architecture, module methods, and reproducible analytical workflows.
+The package authors reflect direct intellectual and technical contributions to the package architecture, module methods, and reproducible analytical workflows.
 
 - Lead author: Charlie Browning
 - Lead maintainer and platform developer: Kenechi Omeke
@@ -126,7 +126,6 @@ package architecture, module methods, and reproducible analytical workflows.
 ## Contributors
 The following contributors supported the package through bug fixes, minor features,
 testing, documentation, and review work:
-
 - Joe Panes
 - Antony Brown
 - Euan Soutter
@@ -140,12 +139,11 @@ testing, documentation, and review work:
 - Sewe Maquines
 
 ## Acknowledgements
-
 We acknowledge the Topic Expert Group members and Expert Advisory Group members for higher-level leadership, methodological input, and subject-area support to the SOSCHI climate-health work.
 We also acknowledge the use of external data and code examples that informed testing and early prototyping.
 
 ## Copyright
-This is an open access Rpackage published under a UK Open Government Licence 3.0 which is compatible with the Creative Commons CC-BY-SA 4.0 licence. You are free to copy, publish, distribute and adapt the information, provided you acknowledge the source and link to this R package (see citation below). Enquiries concerning the application of this R package can be made to the project team at climate.health@ons.gov.uk
+This is an open access R package published under a UK Open Government Licence 3.0 which is compatible with the Creative Commons CC-BY-SA 4.0 licence. You are free to copy, publish, distribute and adapt the information, provided you acknowledge the source and link to this R package (see citation below). Enquiries concerning the application of this R package can be made to the project team at climate.health@ons.gov.uk
 
 ## Citation
 
