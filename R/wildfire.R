@@ -15,6 +15,8 @@
 #' @param health_outcome_col Character. Name of the column in the dataframe that
 #' contains the daily health outcome count (e.g. number of deaths, hospital
 #' admissions)
+#' @param population_col Character. Name of the column in the dataframe that
+#' contains the population data.
 #' @param region_col Character. Name of the column in the dataframe that contains
 #' the region names. Defaults to NULL.
 #' @param rh_col Character. Name of the column in the dataframe that contains daily relative humidity
@@ -271,6 +273,8 @@ join_health_and_climate_data <- function(
 #' @param health_outcome_col Character. Name of the column in the dataframe that
 #' contains the health outcome count column (e.g. number of deaths, hospital
 #' admissions)
+#' @param population_col Character. Name of the column in the dataframe that
+#' contains the population data.
 #' @param rh_col Character. Name of the column in the dataframe that
 #' contains daily relative humidity values.Defaults to NULL.
 #' @param wind_speed_col Character. Name of the column in the dataframe that
