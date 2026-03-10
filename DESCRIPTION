@@ -1,12 +1,27 @@
 Package: climatehealth
-Title: Package for Calculating Climate-Health Indicators
-Version: 0.9.25
-Date: 2026-01-16
-Maintainer: Charlie Browning <charlie.browning@ons.gov.uk>
-Author: Charlie Browning, Kenechi Omeke, Felix Scarbrough, Treesa Shaji [aut, cre]
+Title: Standards for Official Statistics on Climate-Health Interactions (SOSCHI) Package
+Version: 0.9.30
+Date: 2026-03-10
 Authors@R: 
-    c(person("Charlie", "Browning", email = "charlie.browning@ons.gov.uk", role = c("aut", "cre")))
-Description: R code allowing users to calculate climate-health indicators.
+    c(
+      person("Charlie", "Browning", email = "charlie.browning@ons.gov.uk", role = "aut"),
+      person("Kenechi", "Omeke", email = "kenechi.omeke@ons.gov.uk", role = c("aut", "cre")),
+      person("Etse Yawo", "Dzakpa", role = "aut"),
+      person("Gladin", "Jose", role = "aut"),
+      person("Matt", "Pearce", role = "aut"),
+      person("Ellie", "Watkins", role = "aut"),
+      person("Claire", "Hunt", role = "aut"),
+      person("Beatrice", "Byukusenge", role = "aut"),
+      person("Cassien", "Habyarimana", role = "aut"),
+      person("Venuste", "Nyagahakwa", role = "aut"),
+      person("Felix", "Scarbrough", role = "aut"),
+      person("Treesa", "Shaji", role = "aut"),
+      person("Joe", "Panes", role = "ctb"),
+      person("Wellcome", role = "fnd"),
+      person("Office for National Statistics", role = "cph",
+             comment = "SOSCHI Project")
+    )
+Description: R code allowing users to calculate climate-health indicators based on the SOSCHI methods.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
