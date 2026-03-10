@@ -21,6 +21,8 @@
 #' values. Defaults to NULL.
 #' @param wind_speed_col Character. Name of the column in the dataframe that contains daily wind speed.
 #' Defaults to NULL.
+#' @param population_col Character. Name of the column in the dataframe that
+#' contains the population data.
 #'
 #' @returns Dataframe with formatted and renamed columns
 #'
