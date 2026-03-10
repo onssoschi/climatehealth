@@ -2010,6 +2010,8 @@ plot_an_by_region <- function(data, output_dir = ".") {
 #' @param health_outcome_col Character. Name of the column in the dataframe that
 #' contains the health outcome count column (e.g. number of deaths, hospital
 #' admissions)
+#' @param population_col Character. Name of the column in the dataframe that
+#' contains the population data.
 #' @param rh_col Character. Name of the column containing relative humidity
 #' values. Defaults to NULL.
 #' @param wind_speed_col Character. Name of the column containing wind speed.
@@ -2093,6 +2095,7 @@ wildfire_do_analysis <- function(
     shape_region_col = NULL,
     mean_temperature_col,
     health_outcome_col,
+    population_col,
     rh_col = NULL,
     wind_speed_col = NULL,
     pm_2_5_col = NULL,
@@ -2108,6 +2111,21 @@ wildfire_do_analysis <- function(
     output_folder_path = NULL,
     print_vif = FALSE,
     print_model_summaries = FALSE) {
+    # Setup additional output DIR
+    if (!is.null(output_folder_path)) {
+      # Check output dir exists
+      check_file_exists(output_folder_path, TRUE)
+      new_fpath <- file.path(
+        output_folder_path,
+        paste0("wildfires_analysis_", format(Sys.time(), "%d_%m_%Y_%H_%M"))
+      )
+      if (!is.null(new_fpath)) {
+        (
+          dir.create(new_fpath)
+        )
+      }
+      output_folder_path <- new_fpath
+    }
   # Setup additional output DIR
   if (save_fig == TRUE && !file.exists(file.path(output_folder_path, "model_validation"))) {
     dir.create(file.path(output_folder_path, "model_validation"), recursive = TRUE)
@@ -2171,7 +2189,7 @@ wildfire_do_analysis <- function(
     calc_relative_risk_by_region = calc_relative_risk_by_region,
     save_fig = save_fig,
     output_folder_path = output_folder_path,
-    print_model_summaries = print_model_summaries
+    #print_model_summaries = print_model_summaries
   )
   plot_RR(
     rr_data = rr_results,
