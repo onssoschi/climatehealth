@@ -10,8 +10,6 @@
 - [Package Overview](#package-overview)
 - [SOSCHI Topics and Indicators](#package-overview)
 - [Package Installation](#package-installation)  
-- [Descriptive Statistics Module](#descriptive-statistics-module)  
-- [Example Datasets](#example-datasets)  
 - [Contributing](#contributing)  
 - [Authors](#authors)  
 - [Contributors](#contributors)  
@@ -139,17 +137,11 @@ testing, documentation, and review work:
 
 ## Acknowledgements
 
-We acknowledge the following people and groups for higher-level leadership,
-methodological input, and subject-area support to the SOSCHI climate-health work:
+We acknowledge the Topic Expert Group members and Expert Advisory Group members for higher-level leadership, methodological input, and subject-area support to the SOSCHI climate-health work.
+We also acknowledge the use of external data and code examples that informed testing and early prototyping.
 
-- Subject-area support and guidance: Antonio Gasparrini, Topic Expert Group members, and Expert Advisory Group members
-
-We also acknowledge the use of external data and code examples that informed
-testing and early prototyping, including the example heat-mortality dataset
-described in the Example Datasets section.
-
-Copyright for the package is held by the Office for National Statistics on behalf
-of the SOSCHI Project.
+## Copyright
+This is an open access Rpackage published under a UK Open Government Licence 3.0 which is compatible with the Creative Commons CC-BY-SA 4.0 licence. You are free to copy, publish, distribute and adapt the information, provided you acknowledge the source and link to this R package (see citation below). Enquiries concerning the application of this R package can be made to the project team at climate.health@ons.gov.uk
 
 ## Citation
 
