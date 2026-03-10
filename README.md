@@ -113,26 +113,6 @@ Configuration best practice:
   `inst/extdata/config_templates/api_config.yml` as templates.
 - Avoid committing environment-specific paths into package code.
 
-## Descriptive Statistics Module
-
-This module enables users to run descriptive statistics and exploratory data analysis (EDA)
-on their data before moving into indicator-specific analysis in the package.
-
-Main entry points:
-- `run_descriptive_stats()` for direct package usage.
-- `run_descriptive_stats_api()` for API/plumber-oriented usage.
-
-For usage instructions and runnable examples (direct calls and plumber endpoint calls), see:
-`inst/examples/descriptive_stats_usage.R`
-
-## Example Datasets
-
-### Heat-related mortality data
-
-The heat- and cold-related mortality indicator was tested using real data for England and Wales (`inst/testdata/temperature_test_data.csv`). This has been modified from https://github.com/gasparrini/2015_gasparrini_Lancet_Rcodedata, with an additional dummy column of population estimates.
-
-This dataset contains daily number of deaths and minimum, maximum, and mean temperature. The dataset is also disaggregated by [International Territorial Level (ITL 1, previously known as NUTS 1)](https://www.ons.gov.uk/methodology/geography/ukgeographies/eurostat) regions. The dataset includes data for nine England regions and Wales (i.e. a total of ten ITL 1 regions).
-
 ## Contributing
 See [CONTRIBUTING](CONTRIBUTING.md) for guidance on contributing to this repository before making changes to the code. This includes guidance on branching, merge requests, and code style. 
 
