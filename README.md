@@ -1,4 +1,4 @@
-![Static Badge](https://img.shields.io/badge/Status-In%20Development-darkgreen?logo=git&logoColor=white) ![Static Badge](https://img.shields.io/badge/Release%20Version-0.9.22-pink?logo=github) ![Static Badge](https://img.shields.io/badge/R_Version-4.4.1-pink?logo=R) [![codecov](https://codecov.io/gh/onssoschi/climatehealth/graph/badge.svg?token=YKRAUQ3JAU)](https://codecov.io/gh/onssoschi/climatehealth)  
+![Static Badge](https://img.shields.io/badge/Status-In%20Development-darkgreen?logo=git&logoColor=white) ![Static Badge](https://img.shields.io/badge/Release%20Version-0.9.30-pink?logo=github) ![Static Badge](https://img.shields.io/badge/R_Version-4.4.1-pink?logo=R) [![codecov](https://codecov.io/gh/onssoschi/climatehealth/graph/badge.svg?token=YKRAUQ3JAU)](https://codecov.io/gh/onssoschi/climatehealth)  
 [![Build R Package on Release](https://github.com/onssoschi/climatehealth/actions/workflows/r_release.yml/badge.svg)](https://github.com/onssoschi/climatehealth/actions/workflows/r_release.yml) [![R CMD Check and Coverage](https://github.com/onssoschi/climatehealth/actions/workflows/r_check_and_coverage.yml/badge.svg)](https://github.com/onssoschi/climatehealth/actions/workflows/r_check_and_coverage.yml)
 
 # Climatehealth Package
@@ -8,14 +8,18 @@
 
 ## Table of Contents
 - [Package Overview](#package-overview)
-- [SOSCHI Topics and Indicators](#package-overview)
-- [Package Installation](#package-installation)  
-- [Open-Source development](#Open-Source-development)  
-- [Authors](#authors)  
-- [Contributors](#contributors)  
-- [Acknowledgements](#acknowledgements)  
-- [Citation](#citation)  
-- [Funding](#funding)  
+- [SOSCHI Topics and Indicators](#soschi-topics-and-indicators)
+- [Package Installation](#package-installation)
+- [Running analysis](#running-analysis)
+- [Contributing to the package](#contributing-to-the-package)
+- [Authors](#authors)
+- [Contributors](#contributors)
+- [Project Lead](#project-lead)
+- [Methodology review](#methodology-review)
+- [Acknowledgements](#acknowledgements)
+- [Copyright](#copyright)
+- [Citation](#citation)
+- [Funding](#funding)
 
 ## Package Overview
 
@@ -25,7 +29,7 @@ This package provides functions for calculating climate–health indicators and 
 
 ### SOSCHI Topics and Indicators
 
-This package contains scientific functions dedicated to the following topics in the SOSCHI framework. Please note the final methods documents are still in development, so those linked below in the section are an earlier alpha version. :
+This package contains scientific functions dedicated to the following topics in the SOSCHI framework. Please note the final methods documents are still in development, so the versions linked below are earlier alpha versions.
 
 | **Topic**                                                       | **Topic Owner** | **Methods**                                                      |
 |--------------------------------------------------------------------|-----------------|---------------------------------------------------------------------|
@@ -47,7 +51,7 @@ This package has been developed primarily with **R 4.4.1**, and that version is 
 
 ### Installation options
 
-You can use the package in many ways, depending on whether you want a stable release or want to work with the source code.
+You can use the package in several ways, depending on whether you want a stable release or want to work with the source code.
 
 #### 1. Load from a local GitHub clone for development
 Use this option if you want to inspect the source code, make changes locally, test updates, or contribute to the package.
@@ -116,8 +120,9 @@ Alternatively, you can load all of the package functions at once (e.g., `library
 ### Descriptive statistics
 You can also run the descriptive statistics workflow directly:
 ```r
-result <- climatehealth::run_descriptive_stats(data = my_data,
-  output_path = "{path/to/output}"
+result <- climatehealth::run_descriptive_stats(
+  data = my_data,
+  output_path = "{path/to/output}"
 )
 ```
 This is useful for checking data quality, exploring variables, and generating summary outputs before running an indicator-specific workflow.
@@ -131,7 +136,7 @@ The package authors reflect direct intellectual and technical contributions to t
 
 - Lead author: Charlie Browning
 - Lead maintainer and platform developer: Kenechi Omeke
-- Authors: Etse Yawo Dzakpa, Gladin Jose, Matt Pearce, Ellie Watkins, Claire Hunt, Beatrice Byukusenge, Cassien Habyarimana, Venuste Nyagahakwa, Felix Scarbrough, Treesa Shaji, Bonnie Lewis and Ingole Vijendra 
+- Authors: Etse Yawo Dzakpa, Gladin Jose, Matt Pearce, Ellie Watkins, Claire Hunt, Beatrice Byukusenge, Cassien Habyarimana, Venuste Nyagahakwa, Felix Scarbrough, Treesa Shaji, Bonnie Lewis, and Vijendra Ingole
 
 ## Contributors
 The following contributors supported the package through bug fixes, minor features,
@@ -154,7 +159,7 @@ We acknowledge the Topic Expert Group members and Expert Advisory Group members 
 We also acknowledge the use of external data and code examples that informed testing and early prototyping.
 
 ## Copyright
-This is an open access R package published under a UK Open Government Licence 3.0 which is compatible with the Creative Commons CC-BY-SA 4.0 licence. You are free to copy, publish, distribute and adapt the information, provided you acknowledge the source and link to this R package (see citation below). Enquiries concerning the application of this R package can be made to the project team at climate.health@ons.gov.uk
+This is an open access R package published under a UK Open Government Licence 3.0 which is compatible with the Creative Commons CC-BY-SA 4.0 licence. You are free to copy, publish, distribute and adapt the information, provided you acknowledge the source and link to this R package (see citation below). Enquiries concerning the application of this R package can be made to the project team at climate.health@ons.gov.uk.
 
 ## Citation
 
