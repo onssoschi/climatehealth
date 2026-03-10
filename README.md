@@ -131,6 +131,7 @@ testing, documentation, and review work:
 - Antony Brown
 - Euan Soutter
 - Gillian Flower
+- David Furley
 
 ## Project Lead
 - Myer Glickman
