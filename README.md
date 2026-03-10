@@ -152,8 +152,8 @@ This is an open access Rpackage published under a UK Open Government Licence 3.0
 If you use `climatehealth` in publications, cite the package as:
 
 Browning, C., Omeke, K., Dzakpa, E. Y., Jose, G., Pearce, M., Watkins, E., Hunt,
-C., Byukusenge, B., Habyarimana, C., Nyagahakwa, V., Scarbrough, F., and
-Shaji, T. (2026).
+C., Byukusenge, B., Habyarimana, C., Nyagahakwa, V., Scarbrough, F., Shaji, T.,
+Lewis, B., and Ingole, V. (2026).
 `climatehealth R package: Standards for Official Statistics on Climate-Health Interactions (SOSCHI)`.
 R package.
 
