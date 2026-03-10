@@ -76,7 +76,6 @@ Suggests:
     DT,
     htmltools,
     INLA,
-    lifecycle,
     mockery,
     mvmeta,
     openxlsx,
