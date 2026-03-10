@@ -128,9 +128,12 @@ The following contributors supported the package through bug fixes, minor featur
 testing, documentation, and review work:
 
 - Joe Panes
+- Antony Brown
+- Euan Soutter
+- Gillian Flower
 
-## Project and Workstream Lead
-- Vijendra Ingole, Bonnie Lewis, and Myer Glickman
+## Project Lead
+- Myer Glickman
 
 ## Methodology review
 - Sewe Maquines
