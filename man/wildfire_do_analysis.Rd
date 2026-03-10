@@ -15,7 +15,7 @@ wildfire_do_analysis(
   shape_region_col = NULL,
   mean_temperature_col,
   health_outcome_col,
-  population_col,
+  population_col = NULL,
   rh_col = NULL,
   wind_speed_col = NULL,
   pm_2_5_col = NULL,
@@ -29,6 +29,7 @@ wildfire_do_analysis(
   save_fig = FALSE,
   save_csv = FALSE,
   output_folder_path = NULL,
+  create_run_subdir = FALSE,
   print_vif = FALSE,
   print_model_summaries = FALSE
 )
@@ -66,7 +67,9 @@ contains the health outcome count column (e.g. number of deaths, hospital
 admissions)}
 
 \item{population_col}{Character. Name of the column in the dataframe that
-contains the population data.}
+contains the population data. Defaults to NULL. This is only required when
+requesting region-level AF/AN outputs and no \code{pop} column is already
+present in the input data.}
 
 \item{rh_col}{Character. Name of the column containing relative humidity
 values. Defaults to NULL.}
@@ -109,6 +112,9 @@ PM2.5). Setting this parameter to 0 or 1 leaves the variable unscaled.}
 
 \item{output_folder_path}{Path. Path to folder where plots and/or CSV should
 be saved.}
+
+\item{create_run_subdir}{Boolean. If TRUE, create a timestamped subdirectory
+under \code{output_folder_path} for this run's outputs. Defaults to FALSE.}
 
 \item{print_vif}{Bool, whether or not to print VIF (variance inflation factor)
 for each predictor. Defaults to FALSE.}
