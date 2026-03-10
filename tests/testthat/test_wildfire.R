@@ -55,7 +55,8 @@ test_that(
             health_path = WF_TEST_HEALTH,
             date_col = "date",
             mean_temperature_col = "tmean",
-            health_outcome_col = "deaths"
+            health_outcome_col = "deaths",
+            population_col = "population"
         )
         exp_cols = c(
             "date", "tmean", "health_outcome", "region", "rh", "wind_speed",
@@ -78,7 +79,8 @@ test_that(
             health_path = WF_DMY_DATA,
             date_col = "date",
             mean_temperature_col = "tmean",
-            health_outcome_col = "deaths"
+            health_outcome_col = "deaths",
+            population_col = "population"
         )
         expect_equal(res$dow, c("Wed", "Thu", "Fri"))
     }
@@ -348,7 +350,8 @@ test_that(
             health_outcome_col = "deaths",
             region_col = "region",
             rh_col = "relative_humidity",
-            wind_speed_col = "wind_speed"
+            wind_speed_col = "wind_speed",
+            population_col = "population"
         )
         joined <- join_health_and_climate_data(
             climate_data = WF_TEST_CLIMATE,
@@ -359,7 +362,7 @@ test_that(
         )
         exp_cols <- c(
             "date", "tmean", "health_outcome", "region", "rh", "wind_speed",
-            "year", "month", "day", "dow", "mean_PM"
+            "year", "month", "day", "dow", "mean_PM", "pop"
         )
         expect_true(all(exp_cols %in% colnames(joined)))
         expect_equal(joined$mean_PM, c(500000, 100000, 150000))
@@ -378,6 +381,7 @@ test_that("load_wildfire_data returns formatted health data and renames PM colum
     region = c("A", "A", "A"),
     rh = c(50, 55, 60),
     wind_speed = c(3, 4, 5),
+    population = c(100,700,500),
     pm_raw = c(1.1, 2.2, 3.3),
     year = c(2020, 2020, 2020),
     month = c(1, 1, 1),
@@ -405,6 +409,7 @@ test_that("load_wildfire_data returns formatted health data and renames PM colum
     region_col = "region",
     shape_region_col = "region",
     mean_temperature_col = "tmean",
+    population_col = "population",
     health_outcome_col = "deaths",
     rh_col = "relative_humidity",
     wind_speed_col = "wind_speed",
@@ -424,7 +429,7 @@ test_that("load_wildfire_data returns formatted health data and renames PM colum
   # Assert: key columns still exist
   exp_columns <- c(
     "date", "tmean", "health_outcome", "region", "rh", "wind_speed",
-    "mean_PM", "year", "month", "day", "dow"
+    "mean_PM", "year", "month", "day", "dow", "population"
   )
   expect_true(all(exp_columns %in% names(res)))
 
@@ -438,7 +443,8 @@ test_that("load_wildfire_data calls extractor + joiner with correct arguments wh
     date = as.Date(c("2020-01-01", "2020-01-02")),
     tmean = c(10, 11),
     health_outcome = c(1, 2),
-    region = c("A", "A")
+    region = c("A", "A"),
+    population = c("1000,2500")
   )
 
   wildfire_df_stub <- data.frame(
@@ -493,6 +499,7 @@ test_that("load_wildfire_data calls extractor + joiner with correct arguments wh
     date_col = "date",
     region_col = "region",
     shape_region_col = "shape_name",
+    population_col = "population",
     mean_temperature_col = "tmean",
     health_outcome_col = "deaths",
     rh_col = NULL,
@@ -514,7 +521,8 @@ test_that("load_wildfire_data defaults to joining when join_wildfire_data is not
     date = as.Date("2020-01-01"),
     tmean = 10,
     health_outcome = 1,
-    region = "A"
+    region = "A",
+    population = 1000
   )
 
   wildfire_df_stub <- data.frame(
@@ -549,6 +557,7 @@ test_that("load_wildfire_data defaults to joining when join_wildfire_data is not
     region_col = "region",
     shape_region_col = "region_in_shape",
     mean_temperature_col = "tmean",
+    population_col = "population",
     health_outcome_col = "deaths"
   )
 
@@ -2208,3 +2217,4 @@ test_that("wildfire_do_analysis: save_csv triggers save_wildfire_results", {
 
   expect_true(saved_called)
 })
+
