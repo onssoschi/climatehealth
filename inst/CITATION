@@ -30,7 +30,7 @@ citEntry(
   textVersion = paste(
     "Browning, C., Omeke, K., Dzakpa, E. Y., Jose, G., Pearce, M.,",
     "Watkins, E., Hunt, C., Byukusenge, B., Habyarimana, C.,",
-    "Nyagahakwa, V., Scarbrough, F., and Shaji, T. (2026).",
+    "Nyagahakwa, V., Scarbrough, F., and Shaji, T., Lewis, B., Ingole, V. (2026).",
     "climatehealth: Standards for Official",
     "Statistics on Climate-Health Interactions (SOSCHI).",
     paste("R package version", meta$Version, "."),
