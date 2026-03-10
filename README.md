@@ -142,14 +142,12 @@ package architecture, module methods, and reproducible analytical workflows.
 
 - Lead author: Charlie Browning
 - Lead maintainer and platform developer: Kenechi Omeke
-- Authors: Etse Yawo Dzakpa, Gladin Jose, Matt Pearce, Ellie Watkins, Claire Hunt, Beatrice Byukusenge, Cassien Habyarimana, and Venuste Nyagahakwa
+- Authors: Etse Yawo Dzakpa, Gladin Jose, Matt Pearce, Ellie Watkins, Claire Hunt, Beatrice Byukusenge, Cassien Habyarimana, Venuste Nyagahakwa, Felix Scarbrough, and Treesa Shaji
 
 ## Contributors
 The following contributors supported the package through bug fixes, minor features,
 testing, documentation, and review work:
 
-- Felix Scarbrough
-- Treesa Shaji
 - Joe Panes
 
 ## Project and Workstream Lead
@@ -177,7 +175,8 @@ of the SOSCHI Project.
 If you use `climatehealth` in publications, cite the package as:
 
 Browning, C., Omeke, K., Dzakpa, E. Y., Jose, G., Pearce, M., Watkins, E., Hunt,
-C., Byukusenge, B., Habyarimana, C., and Nyagahakwa, V. (2026).
+C., Byukusenge, B., Habyarimana, C., Nyagahakwa, V., Scarbrough, F., and
+Shaji, T. (2026).
 `climatehealth R package: Standards for Official Statistics on Climate-Health Interactions (SOSCHI)`.
 R package.
 
