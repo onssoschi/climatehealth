@@ -10,6 +10,7 @@ read_and_format_data(
   date_col,
   mean_temperature_col,
   health_outcome_col,
+  population_col,
   region_col = NULL,
   rh_col = NULL,
   wind_speed_col = NULL
@@ -28,6 +29,9 @@ that contains the daily mean temperature column.}
 \item{health_outcome_col}{Character. Name of the column in the dataframe that
 contains the daily health outcome count (e.g. number of deaths, hospital
 admissions)}
+
+\item{population_col}{Character. Name of the column in the dataframe that
+contains the population data.}
 
 \item{region_col}{Character. Name of the column in the dataframe that contains
 the region names. Defaults to NULL.}
