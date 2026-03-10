@@ -121,7 +121,7 @@ package architecture, module methods, and reproducible analytical workflows.
 
 - Lead author: Charlie Browning
 - Lead maintainer and platform developer: Kenechi Omeke
-- Authors: Etse Yawo Dzakpa, Gladin Jose, Matt Pearce, Ellie Watkins, Claire Hunt, Beatrice Byukusenge, Cassien Habyarimana, Venuste Nyagahakwa, Felix Scarbrough, and Treesa Shaji
+- Authors: Etse Yawo Dzakpa, Gladin Jose, Matt Pearce, Ellie Watkins, Claire Hunt, Beatrice Byukusenge, Cassien Habyarimana, Venuste Nyagahakwa, Felix Scarbrough, Treesa Shaji, Bonnie Lewis and Ingole Vijendra 
 
 ## Contributors
 The following contributors supported the package through bug fixes, minor features,
