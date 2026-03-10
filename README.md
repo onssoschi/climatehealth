@@ -10,7 +10,7 @@
 - [Package Overview](#package-overview)
 - [SOSCHI Topics and Indicators](#package-overview)
 - [Package Installation](#package-installation)  
-- [Open-Source developemnt](#Open-Source-development)  
+- [Open-Source development](#Open-Source-development)  
 - [Authors](#authors)  
 - [Contributors](#contributors)  
 - [Acknowledgements](#acknowledgements)  
