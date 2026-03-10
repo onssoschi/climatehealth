@@ -4,10 +4,11 @@
 # Climatehealth Package
 
 > [!CAUTION]
-> This package is still in development and methods are actively changing.
+> Please note that there may be some inconsistencies between the indicators and methods included in the Github code/R package, and those described in the corresponding SOSCHI topic document, and/or related analysis publications. This is because the final methods documents are still in development, so those linked below in the section 'SOSCHI Topics and Indicators' are an earlier alpha version. 
 
 ## Table of Contents
-- [Package Overview](#package-overview)  
+- [Package Overview](#package-overview)
+- [SOSCHI Topics and Indicators](#package-overview)
 - [Package Installation](#package-installation)  
 - [Descriptive Statistics Module](#descriptive-statistics-module)  
 - [Example Datasets](#example-datasets)  
@@ -22,9 +23,9 @@
 
 ### Description
 
-This repository contains code for an R package dedicated to calculating climate-health indicators [beta]. The functions in this package support the production of climate-health statistics. The code aligns with the methodologies set out in a statistical framework of climate-health indicators developed as part of our project Standards for Official Statistics on Climate-Health Interactions (SOSCHI).
+This package provides functions for calculating climate–health indicators and supporting the production of climate–health statistics. The methods implemented in the package follow the statistical framework for climate–health indicators developed under the Standards for Official Statistics on Climate–Health Interactions (SOSCHI) project.
 
-### Indicators
+### SOSCHI Topics and Indicators
 
 This package contains scientific functions dedicated to the following topics in the SOSCHI framework:
 
