@@ -34,6 +34,28 @@ TBC
 }
 }
 \author{
-\strong{Maintainer}: Charlie Browning \email{charlie.browning@ons.gov.uk}
+\strong{Maintainer}: Kenechi Omeke \email{kenechi.omeke@ons.gov.uk}
+
+Authors:
+\itemize{
+  \item Charlie Browning \email{charlie.browning@ons.gov.uk}
+  \item Etse Yawo Dzakpa
+  \item Gladin Jose
+  \item Matt Pearce
+  \item Ellie Watkins
+  \item Claire Hunt
+  \item Beatrice Byukusenge
+  \item Cassien Habyarimana
+  \item Venuste Nyagahakwa
+  \item Felix Scarbrough
+  \item Treesa Shaji
+}
+
+Other contributors:
+\itemize{
+  \item Joe Panes [contributor]
+  \item Wellcome [funder]
+  \item Office for National Statistics (SOSCHI Project) [copyright holder]
+}
 
 }
