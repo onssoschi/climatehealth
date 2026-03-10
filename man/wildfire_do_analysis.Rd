@@ -15,6 +15,7 @@ wildfire_do_analysis(
   shape_region_col = NULL,
   mean_temperature_col,
   health_outcome_col,
+  population_col,
   rh_col = NULL,
   wind_speed_col = NULL,
   pm_2_5_col = NULL,
@@ -63,6 +64,9 @@ that contains the mean temperature column.}
 \item{health_outcome_col}{Character. Name of the column in the dataframe that
 contains the health outcome count column (e.g. number of deaths, hospital
 admissions)}
+
+\item{population_col}{Character. Name of the column in the dataframe that
+contains the population data.}
 
 \item{rh_col}{Character. Name of the column containing relative humidity
 values. Defaults to NULL.}

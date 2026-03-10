@@ -12,7 +12,8 @@ read_and_format_data(
   health_outcome_col,
   region_col = NULL,
   rh_col = NULL,
-  wind_speed_col = NULL
+  wind_speed_col = NULL,
+  population_col = NULL
 )
 }
 \arguments{
@@ -37,6 +38,9 @@ values. Defaults to NULL.}
 
 \item{wind_speed_col}{Character. Name of the column in the dataframe that contains daily wind speed.
 Defaults to NULL.}
+
+\item{population_col}{Character. Name of the column in the dataframe that
+contains the population data.}
 }
 \value{
 Dataframe with formatted and renamed columns
