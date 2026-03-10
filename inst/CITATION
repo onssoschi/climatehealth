@@ -13,7 +13,9 @@ citEntry(
     person("Claire", "Hunt"),
     person("Beatrice", "Byukusenge"),
     person("Cassien", "Habyarimana"),
-    person("Venuste", "Nyagahakwa")
+    person("Venuste", "Nyagahakwa"),
+    person("Felix", "Scarbrough"),
+    person("Treesa", "Shaji")
   ),
   organization = "SOSCHI Project, Office for National Statistics",
   year = "2026",
@@ -21,8 +23,9 @@ citEntry(
   url = "https://github.com/onssoschi/climatehealth",
   textVersion = paste(
     "Browning, C., Omeke, K., Dzakpa, E. Y., Jose, G., Pearce, M.,",
-    "Watkins, E., Hunt, C., Byukusenge, B., Habyarimana, C., and",
-    "Nyagahakwa, V. (2026). climatehealth: Standards for Official",
+    "Watkins, E., Hunt, C., Byukusenge, B., Habyarimana, C.,",
+    "Nyagahakwa, V., Scarbrough, F., and Shaji, T. (2026).",
+    "climatehealth: Standards for Official",
     "Statistics on Climate-Health Interactions (SOSCHI).",
     paste("R package version", meta$Version, "."),
     "SOSCHI Project, Office for National Statistics.",
