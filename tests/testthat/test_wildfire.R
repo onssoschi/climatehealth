@@ -14,6 +14,7 @@ WF_TEST_HEALTH <- data.frame(
     region = c("North", "South", "East"),
     relative_humidity = c(70, 65, 80),
     wind_speed = c(3.2, 2.8, 4.0),
+    population = c(1000,4000,900),
     stringsAsFactors = FALSE,
     regnames = c("North", "South", "East")
 )
@@ -34,11 +35,12 @@ test_that(
             health_outcome_col = "deaths",
             region_col = "regnames",
             rh_col = "relative_humidity",
-            wind_speed_col = "wind_speed"
+            wind_speed_col = "wind_speed",
+            population_col = "population"
         )
         exp_cols = c(
             "date", "tmean", "health_outcome", "region", "rh", "wind_speed",
-            "year", "month", "day", "dow"
+            "year", "month", "day", "dow", "pop"
         )
         expect_true(all(exp_cols %in% colnames(res)))
         expect_equal(res$day, c(1, 2, 3))
@@ -57,7 +59,7 @@ test_that(
         )
         exp_cols = c(
             "date", "tmean", "health_outcome", "region", "rh", "wind_speed",
-            "year", "month", "day", "dow"
+            "year", "month", "day", "dow", "pop"
         )
         expect_true(all(exp_cols %in% colnames(res)))
         expect_equal(res$region, rep("no_region", 3))
@@ -67,7 +69,7 @@ test_that(
 )
 
 test_that(
-    "read_and_format_data identifies and convertsdates in dmy format.",
+    "read_and_format_data identifies and converts dates in dmy format.",
     {
         WF_DMY_DATA = WF_TEST_HEALTH %>% mutate(
             date = c("01-01-2020", "02-01-2020", "03/01/2020")
@@ -1909,6 +1911,7 @@ test_that("wildfire_do_analysis: end-to-end run (dataset-level RR only, no file 
     mean_temperature_col               = "temp_mean",
     health_outcome_col                 = "deaths",
     pm_2_5_col                         = "pm25",
+    population_col                     = "pop",
     rh_col                             = NULL,
     wind_speed_col                     = NULL,
     wildfire_lag                       = 2,
@@ -1960,7 +1963,7 @@ test_that("wildfire_do_analysis: end-to-end run with region-level outputs (AF/AN
 
   pm_base_by_region <- ifelse(df$region == "North", 5, 9)
   df$pm25 <- pmax(0.1, pm_base_by_region + stats::rnorm(nrow(df), sd = 2.5))
-  df$pop  <- ifelse(df$region == "North", 1050000, 700000)
+  df$pops  <- ifelse(df$region == "North", 1050000, 700000)
 
   eta <- -0.8 + 0.02 * df$pm25 + 0.008 * (df$temp_mean - mean(df$temp_mean))
   mu  <- pmax(0.1, exp(eta)) * 12
@@ -1981,6 +1984,7 @@ test_that("wildfire_do_analysis: end-to-end run with region-level outputs (AF/AN
     mean_temperature_col               = "temp_mean",
     health_outcome_col                 = "deaths",
     pm_2_5_col                         = "pm25",
+    population_col                     = "pops",
     rh_col                             = NULL,
     wind_speed_col                     = NULL,
     wildfire_lag                       = 1,
@@ -2030,6 +2034,7 @@ test_that("wildfire_do_analysis: save_fig creates model_validation directory", {
     year = 2020,
     region = "A",
     mean_PM = 5,
+    pop = 10000,
     stringsAsFactors = FALSE
   )
 
@@ -2064,13 +2069,29 @@ test_that("wildfire_do_analysis: save_fig creates model_validation directory", {
     shape_region_col = "region",
     mean_temperature_col = "temp",
     health_outcome_col = "deaths",
+    population_col = "pop",
     pm_2_5_col = "pm25",
     save_fig = TRUE,
     save_csv = FALSE,
     output_folder_path = tmp_out
   )
 
-  expect_true(dir.exists(file.path(tmp_out, "model_validation")))
+
+
+  # Discover timestamped directories (there may be 1 or more)
+  created_dirs <- list.dirs(tmp_out, full.names = TRUE, recursive = FALSE)
+  ts_dirs <- created_dirs[
+    grepl("wildfires_analysis_\\d{2}_\\d{2}_\\d{4}_\\d{2}_\\d{2}$", created_dirs)
+  ]
+
+  # At least one timestamped folder must exist
+  expect_gte(length(ts_dirs), 1)
+
+  # Each timestamped folder should contain the model_validation subfolder
+  for (dir in ts_dirs) {
+    expect_true(dir.exists(file.path(dir, "model_validation")))
+  }
+
   expect_type(res, "list")
 })
 
@@ -2081,6 +2102,7 @@ test_that("wildfire_do_analysis: predictors_vif triggers check_wildfire_vif", {
     year = 2020,
     region = "A",
     mean_PM = 5,
+    pop = 5000,
     stringsAsFactors = FALSE
   )
 
@@ -2117,6 +2139,7 @@ test_that("wildfire_do_analysis: predictors_vif triggers check_wildfire_vif", {
     region_col = "region",
     shape_region_col = "region",
     mean_temperature_col = "temp",
+    population_col = "pop",
     health_outcome_col = "deaths",
     pm_2_5_col = "pm25",
     predictors_vif = c("mean_PM_lag0", "tmean_lag0"),
@@ -2135,6 +2158,7 @@ test_that("wildfire_do_analysis: save_csv triggers save_wildfire_results", {
     year = 2020,
     region = "A",
     mean_PM = 5,
+    pop = 6,
     stringsAsFactors = FALSE
   )
 
@@ -2175,6 +2199,7 @@ test_that("wildfire_do_analysis: save_csv triggers save_wildfire_results", {
     shape_region_col = "region",
     mean_temperature_col = "temp",
     health_outcome_col = "deaths",
+    population_col = "pop",
     pm_2_5_col = "pm25",
     save_fig = FALSE,
     save_csv = TRUE,
