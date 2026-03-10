@@ -10,10 +10,10 @@ read_and_format_data(
   date_col,
   mean_temperature_col,
   health_outcome_col,
+  population_col,
   region_col = NULL,
   rh_col = NULL,
-  wind_speed_col = NULL,
-  population_col = NULL
+  wind_speed_col = NULL
 )
 }
 \arguments{
@@ -30,6 +30,9 @@ that contains the daily mean temperature column.}
 contains the daily health outcome count (e.g. number of deaths, hospital
 admissions)}
 
+\item{population_col}{Character. Name of the column in the dataframe that
+contains the population data.}
+
 \item{region_col}{Character. Name of the column in the dataframe that contains
 the region names. Defaults to NULL.}
 
@@ -38,9 +41,6 @@ values. Defaults to NULL.}
 
 \item{wind_speed_col}{Character. Name of the column in the dataframe that contains daily wind speed.
 Defaults to NULL.}
-
-\item{population_col}{Character. Name of the column in the dataframe that
-contains the population data.}
 }
 \value{
 Dataframe with formatted and renamed columns
