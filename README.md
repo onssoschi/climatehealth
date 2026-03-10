@@ -10,7 +10,7 @@
 - [Package Overview](#package-overview)
 - [SOSCHI Topics and Indicators](#package-overview)
 - [Package Installation](#package-installation)  
-- [Contributing](#contributing)  
+- [Open-Source developemnt](#Open-Source-development)  
 - [Authors](#authors)  
 - [Contributors](#contributors)  
 - [Acknowledgements](#acknowledgements)  
@@ -111,8 +111,8 @@ Configuration best practice:
   `inst/extdata/config_templates/api_config.yml` as templates.
 - Avoid committing environment-specific paths into package code.
 
-## Contributing
-See [CONTRIBUTING](CONTRIBUTING.md) for guidance on contributing to this repository before making changes to the code. This includes guidance on branching, merge requests, and code style. 
+## Open-Source development
+See [CONTRIBUTING](CONTRIBUTING.md) for guidance on contributing to this repository before making changes to support open-source development of this R package. This includes guidance on branching, merge requests, and code style. 
 
 ## Authors
 
