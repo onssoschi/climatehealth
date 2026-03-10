@@ -15,12 +15,16 @@
 #' @param health_outcome_col Character. Name of the column in the dataframe that
 #' contains the daily health outcome count (e.g. number of deaths, hospital
 #' admissions)
+#' @param population_col Character. Name of the column in the dataframe that
+#' contains the population data.
 #' @param region_col Character. Name of the column in the dataframe that contains
 #' the region names. Defaults to NULL.
 #' @param rh_col Character. Name of the column in the dataframe that contains daily relative humidity
 #' values. Defaults to NULL.
 #' @param wind_speed_col Character. Name of the column in the dataframe that contains daily wind speed.
 #' Defaults to NULL.
+#' @param population_col Character. Name of the column in the dataframe that
+#' contains the population data.
 #'
 #' @returns Dataframe with formatted and renamed columns
 #'
@@ -30,6 +34,7 @@ read_and_format_data <- function(
     date_col,
     mean_temperature_col,
     health_outcome_col,
+    population_col,
     region_col = NULL,
     rh_col = NULL,
     wind_speed_col = NULL) {
@@ -48,6 +53,12 @@ read_and_format_data <- function(
     wind_speed_col <- "wind_speed"
     df <- df %>% dplyr::mutate(wind_speed = NA)
   }
+  #population column rename
+  if (!is.null(population_col) && population_col != "pop") {
+    df <- df %>%
+      dplyr::rename(pop = !!rlang::sym(population_col))
+    population_col <- "pop"
+  }
   # Date format identification
   date_function <- lubridate::ymd
   if (grepl("^\\d{2}[-/]\\d{2}[-/]\\d{4}$", df[[date_col]][1])) {
@@ -61,10 +72,11 @@ read_and_format_data <- function(
     health_outcome_col,
     region_col,
     rh_col,
-    wind_speed_col
+    wind_speed_col,
+    population_col
   )
   standard_cols <- c(
-    "date", "tmean", "health_outcome", "region", "rh", "wind_speed"
+    "date", "tmean", "health_outcome", "region", "rh", "wind_speed", "pop"
   )
   for (i in seq_along(standard_cols)) {
     std_col <- standard_cols[i]
@@ -81,7 +93,8 @@ read_and_format_data <- function(
       health_outcome = all_of(health_outcome_col),
       region = all_of(region_col),
       rh = all_of(rh_col),
-      wind_speed = all_of(wind_speed_col)
+      wind_speed = all_of(wind_speed_col),
+      pop = all_of(population_col)
     ) %>%
     dplyr::mutate(
       date = date_function(date),
@@ -260,6 +273,8 @@ join_health_and_climate_data <- function(
 #' @param health_outcome_col Character. Name of the column in the dataframe that
 #' contains the health outcome count column (e.g. number of deaths, hospital
 #' admissions)
+#' @param population_col Character. Name of the column in the dataframe that
+#' contains the population data.
 #' @param rh_col Character. Name of the column in the dataframe that
 #' contains daily relative humidity values.Defaults to NULL.
 #' @param wind_speed_col Character. Name of the column in the dataframe that
@@ -281,6 +296,7 @@ load_wildfire_data <- function(
     shape_region_col = NULL,
     mean_temperature_col,
     health_outcome_col,
+    population_col,
     rh_col = NULL,
     wind_speed_col = NULL,
     pm_2_5_col = NULL) {
@@ -290,6 +306,7 @@ load_wildfire_data <- function(
     date_col = date_col,
     mean_temperature_col = mean_temperature_col,
     health_outcome_col = health_outcome_col,
+    population_col = population_col,
     region_col = region_col,
     rh_col = rh_col,
     wind_speed_col = wind_speed_col
@@ -783,10 +800,10 @@ calculate_qaic <- function(
       }
       formula <- as.formula(paste(formula_parts, collapse = " + "))
       model <- gnm::gnm(formula,
-        data = region_data,
-        family = quasipoisson,
-        subset = region_data$ind > 0,
-        eliminate = region_data$stratum
+                        data = region_data,
+                        family = quasipoisson,
+                        subset = region_data$ind > 0,
+                        eliminate = region_data$stratum
       )
       pearson_chisq <- sum(residuals(model, type = "pearson")^2, na.rm = TRUE)
       dispersion <- pearson_chisq / model$df.residual
@@ -1656,10 +1673,10 @@ generate_rr_pm_by_region <- function(
     scale_factor_wildfire_pm,
     wildfire_lag = 0,
     pm_vals = NULL
-    ) {
+) {
   if (!"mean_PM" %in% names(data)) {
     stop("`data` must contain a column named `mean_PM`.")
-    }
+  }
   if (!"region_name" %in% names(relative_risk_overall)) {
     stop("`relative_risk_overall` must contain a column named `region_name`.")
   }
@@ -1668,7 +1685,7 @@ generate_rr_pm_by_region <- function(
       from = 0,
       to = max(data$mean_PM, na.rm = TRUE),
       by = 1)
-    }
+  }
   results <- list()
   regions <- unique(relative_risk_overall$region_name)
   for (reg in regions) {
@@ -1687,11 +1704,11 @@ generate_rr_pm_by_region <- function(
       region_name = reg,
       rr_pm_region
     )
-    }
+  }
   results_all <- do.call(rbind, results)
   row.names(results_all) <- NULL
   return(results_all)
-  }
+}
 
 #' Plot relative risk by PM2.5 levels for all regions and individually
 #'
@@ -2010,6 +2027,8 @@ plot_an_by_region <- function(data, output_dir = ".") {
 #' @param health_outcome_col Character. Name of the column in the dataframe that
 #' contains the health outcome count column (e.g. number of deaths, hospital
 #' admissions)
+#' @param population_col Character. Name of the column in the dataframe that
+#' contains the population data.
 #' @param rh_col Character. Name of the column containing relative humidity
 #' values. Defaults to NULL.
 #' @param wind_speed_col Character. Name of the column containing wind speed.
@@ -2093,6 +2112,7 @@ wildfire_do_analysis <- function(
     shape_region_col = NULL,
     mean_temperature_col,
     health_outcome_col,
+    population_col,
     rh_col = NULL,
     wind_speed_col = NULL,
     pm_2_5_col = NULL,
@@ -2108,6 +2128,21 @@ wildfire_do_analysis <- function(
     output_folder_path = NULL,
     print_vif = FALSE,
     print_model_summaries = FALSE) {
+  # Setup additional output DIR
+  if (!is.null(output_folder_path)) {
+    # Check output dir exists
+    check_file_exists(output_folder_path, TRUE)
+    new_fpath <- file.path(
+      output_folder_path,
+      paste0("wildfires_analysis_", format(Sys.time(), "%d_%m_%Y_%H_%M"))
+    )
+    if (!is.null(new_fpath)) {
+      (
+        dir.create(new_fpath)
+      )
+    }
+    output_folder_path <- new_fpath
+  }
   # Setup additional output DIR
   if (save_fig == TRUE && !file.exists(file.path(output_folder_path, "model_validation"))) {
     dir.create(file.path(output_folder_path, "model_validation"), recursive = TRUE)
@@ -2127,6 +2162,7 @@ wildfire_do_analysis <- function(
     shape_region_col = shape_region_col,
     mean_temperature_col = mean_temperature_col,
     health_outcome_col = health_outcome_col,
+    population_col = population_col,
     rh_col = rh_col,
     wind_speed_col = wind_speed_col,
     pm_2_5_col = pm_2_5_col
