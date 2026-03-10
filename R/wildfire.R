@@ -2189,7 +2189,7 @@ wildfire_do_analysis <- function(
     calc_relative_risk_by_region = calc_relative_risk_by_region,
     save_fig = save_fig,
     output_folder_path = output_folder_path,
-    #print_model_summaries = print_model_summaries
+    print_model_summaries = print_model_summaries
   )
   plot_RR(
     rr_data = rr_results,
