@@ -40,7 +40,7 @@ This package contains scientific functions dedicated to the following topics in 
 | Health effects of air pollution                                                      | AIMS            | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     |
 | Vector-borne diseases                                                            | RIPS/AIMS       | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     |
 
-For information on how to use this R package, see our official website [here](https://climate-health.officialstatistics.org/r_package/)
+For information on how to use this R package, see our official website [here](https://climate-health.officialstatistics.org/r_package)
 
 ## Package Installation
 
