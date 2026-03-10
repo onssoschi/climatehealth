@@ -115,7 +115,6 @@ diarrhea_do_analysis()
 suicides_heat_do_analysis()
 ```
 Each analysis function expects specific input data and parameters for that indicator, so refer to the package documentation for the relevant module before running it.
-Alternatively, you can load all of the package functions at once (e.g., `library(climatehealth)`).
 
 ### Descriptive statistics
 You can also run the descriptive statistics workflow directly:
