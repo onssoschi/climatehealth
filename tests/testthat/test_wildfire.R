@@ -1,5 +1,9 @@
 # Unit tests for wildfire.R
 
+if (!"package:climatehealth" %in% search()) {
+  pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
+}
+
 # Create temp_dir to be used by all WF tests
 temp_dir <- tempdir()
 temp_dir <- file.path(temp_dir, "wildfire_tests")
@@ -72,7 +76,8 @@ test_that(
 test_that(
     "read_and_format_data identifies and converts dates in dmy format.",
     {
-        WF_DMY_DATA = WF_TEST_HEALTH %>% mutate(
+        WF_DMY_DATA = dplyr::mutate(
+            WF_TEST_HEALTH,
             date = c("01-01-2020", "02-01-2020", "03/01/2020")
         )
         res <- read_and_format_data(
@@ -89,8 +94,7 @@ test_that(
 test_that(
     "read_and_format_data works without population_col when no population data are supplied.",
     {
-        no_pop_data <- WF_TEST_HEALTH %>%
-            dplyr::select(-population)
+        no_pop_data <- dplyr::select(WF_TEST_HEALTH, -population)
 
         res <- read_and_format_data(
             health_path = no_pop_data,
