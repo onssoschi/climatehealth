@@ -7,33 +7,41 @@ Contribution guidelines
 
 > **NOTE: Do not upload any data to this repository, only code.**
 * `main` is the production branch and is protected. 
-* `dev` is the development branch and is the default branch. Branch off from `dev` and do changes in the new branch. **Any additions/changes you wish to make to code must be committed on your own branch. When changes are ready to be merged into the `dev` branch (e.g. on completion of a working version of the functions), please follow the [merge request process](#merge-request-process) below.**
+* `dev` is the development branch and is the default branch.
+* Create a new branch from `dev` for any change you want to make, and commit your work on that branch.
+* When changes are ready to be merged into `dev`, please follow the [pull request process](#pull-request-process) below.
 
 ## Adding indicator code
 
 Guidance on the process:
 
-* Create a new branch from `dev`, giving the new branch a clear name (e.g. `vector_borne_disease_functions`). Do changes in this new branch
-* Add scripts containing R functions for your indicator in the `R` folder. 
+* Create a new branch from `dev`, giving the new branch a clear name (e.g. `vector_borne_disease_functions`).
+* Add scripts containing R functions for your indicator in the `R` folder.
+* Add or update documentation for any new exported functions using roxygen comments.
+* Add or update tests in `tests/testthat` for new logic, bug fixes, and end-to-end indicator workflows where practical.
+* If you add files under `inst/`, make sure they are necessary package assets and not local machine output.
 * When developing R functions in these scripts:
     * Use logical atomic commits. Keep commit messages short but informative (e.g. "add plot function").
     * Ensure any new functions have unit tests and are properly documented (with roxygen).
+* Before opening a pull request, run the relevant local checks where possible:
+    * `devtools::document()`
+    * `testthat::test_dir("tests/testthat")` or the relevant subset
+    * `devtools::check()`
 
-## Merge request process
+## Pull request process
 
-**Merge requests (also called pull requests) must be reviewed by a maintainer before feature branches can be merged into the `dev` branch**
+**Pull requests must be reviewed before feature branches can be merged into the `dev` branch.**
 
-Once changes are ready to be merged into `dev`, please follow the following steps:
+Once changes are ready to be merged into `dev`, please follow these steps:
 
-1. Create a new merge request into the `dev` branch. There is a merge request template in `.gitlab/merge_request_templates`.
-    1. Give a succinct, clear summary of the changes made.
-    2. Assign a reviewer (see list of maintainers below).
-    3. Select "Delete source branch when merge request is accepted".
-    4. Do **not** select "Squash commits when merge request is accepted".
-    5. Resolve any merge conflicts after creating the request.
-2. Implement reviewer suggestions. Once the reviewer is happy with the changes, they will accept the merge request and the feature branch will be merged into `dev`.
+1. Open a pull request targeting the `dev` branch.
+2. Give a succinct, clear summary of the changes made.
+3. Link any relevant issues, checks, or background context.
+4. Resolve any merge conflicts and keep the branch up to date with `dev` while the pull request is open.
+5. Respond to review comments and push follow-up commits as needed.
+6. Once the pull request is approved, it can be merged into `dev`.
 
-The Climate and Health Team reviews merge requests on a regular basis.
+The Climate and Health Team reviews pull requests as soon as capacity allows.
 
 ## Request a feature or fix
 
@@ -44,10 +52,9 @@ To request a feature or bug fix to be implemented by the Climate and Health Team
 
 ## Current maintainers
 
-Please assign one of the following maintainers to review a new merge request:
+Current maintainer:
 
-* Antony Brown (@antonymbrown on GitHub)
-* Charlie Browning (@CBROWN-ONS on GitHub)
+* Kenechi Omeke (@kenechiomeke-ONS on GitHub)
 
 ## Code style
 
