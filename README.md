@@ -3,8 +3,8 @@
 
 # Climatehealth Package
 
-> [!CAUTION]
-> Please note that there may be some inconsistencies between the indicators and methods included in the Github code/R package, and those described in the corresponding SOSCHI topic document, and/or related analysis publications. This is because the final methods documents are still in development, so those linked below in the section 'SOSCHI Topics and Indicators' are an earlier alpha version. 
+> [!NOTE]
+> Please note that there may be some inconsistencies between the indicators and methods included in the Github code/R package, and those described in the corresponding SOSCHI topic documents, and/or related analysis publications. This is because the final methods documents are still in development, so those linked below in the section 'SOSCHI Topics and Indicators' are an earlier alpha version. 
 
 ## Table of Contents
 - [Package Overview](#package-overview)
@@ -27,7 +27,7 @@ This package provides functions for calculating climate–health indicators and 
 
 ### SOSCHI Topics and Indicators
 
-This package contains scientific functions dedicated to the following topics in the SOSCHI framework:
+This package contains scientific functions dedicated to the following topics in the SOSCHI framework. Please note the final methods documents are still in development, so those linked below in the section are an earlier alpha version. :
 
 | **Topic**                                                       | **Topic Owner** | **Methods**                                                      |
 |--------------------------------------------------------------------|-----------------|---------------------------------------------------------------------|
@@ -38,7 +38,7 @@ This package contains scientific functions dedicated to the following topics in 
 | Health effects of air pollution                                                      | AIMS            | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     |
 | Vector-borne diseases                                                            | RIPS/AIMS       | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     |
 
-For additional information on each topic/indicator, see our official website [here](https://climate-health.officialstatistics.org/framework)
+For information on how to use this R package, see our official website [here](https://climate-health.officialstatistics.org/r_package/)
 
 ## Package Installation
 
