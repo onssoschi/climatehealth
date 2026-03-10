@@ -134,7 +134,7 @@ testing, documentation, and review work:
 - David Furley
 
 ## Project Lead
-- Myer Glickman
+- Myer Glickman Bonnie Lewis and Vijendra Ingole
 
 ## Methodology review
 - Sewe Maquines
