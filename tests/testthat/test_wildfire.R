@@ -2106,7 +2106,7 @@ test_that("wildfire_do_analysis: save_fig creates model_validation directory", {
 })
 
 test_that("wildfire_do_analysis: create_run_subdir writes outputs into a timestamped run folder", {
-  tmp_out <- file.path(tempdir(), paste0("wf_runs_", as.integer(stats::runif(1, 1, 1e9))))
+  tmp_out <- tempfile("wf_runs_")
   dir.create(tmp_out, recursive = TRUE, showWarnings = FALSE)
 
   minimal_data <- data.frame(
@@ -2162,8 +2162,8 @@ test_that("wildfire_do_analysis: create_run_subdir writes outputs into a timesta
   ]
 
   expect_equal(length(ts_dirs), 1)
-  expect_identical(captured_output_dir, ts_dirs[[1]])
-  expect_true(dir.exists(file.path(ts_dirs[[1]], "model_validation")))
+  expect_true(captured_output_dir %in% ts_dirs)
+  expect_true(dir.exists(file.path(captured_output_dir, "model_validation")))
 })
 
 
