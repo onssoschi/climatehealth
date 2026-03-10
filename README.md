@@ -43,16 +43,13 @@ For information on how to use this R package, see our official website [here](ht
 ### Requirements
 
 To install and use the package, you need an R environment.
-This package has been developed primarily with **R 4.4.1**, and that version is recommended where possible. 
-
-**R-4.4.1** can be downloaded [here](https://cran.r-project.org/bin/windows/base/old/4.4.1/)
+This package has been developed primarily with **R 4.4.1**, and that version is recommended where possible. **R-4.4.1** can be downloaded [here](https://cran.r-project.org/bin/windows/base/old/4.4.1/)
 
 ### Installation options
 
 You can use the package in three main ways, depending on whether you want a stable release or want to work with the source code.
 
 #### 1. Load from a local GitHub clone for development
-
 Use this option if you want to inspect the source code, make changes locally, test updates, or contribute to the package.
 
 First clone the repository from GitHub to your machine. Then in R:
@@ -62,20 +59,18 @@ install.packages("devtools")
 devtools::load_all(path = "{path/to/climatehealth}")
 ```
 
-This loads the package directly from the local source directory into your current R session. This is useful for development, but won't make climatehealth available as a standard installed package in your library. Once the source code changes, run devtools::load_all() again to reload the updated functions. If you are an end user, follow the standard installation procedure outlined below for your operating system.
+This loads the package directly from the local source directory into your current R session. This is useful for development, but won't make the `climatehealth` package available as a standard installed package in your library. Once the source code changes, run `devtools::load_all()` again to reload the updated functions. If you are an end user, follow the standard installation procedure outlined below for your operating system.
 
 
 #### 2. Install the latest Windows binary release (pre-compiled)
-If you would like to install the latest official release of the package, download the `.zip` file from the latest GitHub release [here](https://github.com/onssoschi/climatehealth/releases/latest).  
-Then install it in R with:
+If you would like to install the latest official release of the package, download the `.zip` file from the latest GitHub release [here](https://github.com/onssoschi/climatehealth/releases/latest). Then install it in R with:
 ```r
 install.packages(path = "{path/to/climatehealth_<version>.zip}", repos = NULL, type = "win.binary")
 ```
 where `<version>` is the version number of the release you downloaded.
 
 #### 3. Install the latest source release for MacOS or other platforms (needs compilation)
-If you are using MacOS and would like to install from the source, download the `.tar.gz` file from the latest GitHub release [here](https://github.com/onssoschi/climatehealth/releases/latest).  
-Then install it in R with:
+If you are using MacOS and would like to install from the source, download the `.tar.gz` file from the latest GitHub release [here](https://github.com/onssoschi/climatehealth/releases/latest). Then install it in R with:
 ```r
 install.packages(path = "{path/to/climatehealth_<version>.tar.gz}", repos = NULL, type = "source")
 ```
@@ -126,11 +121,12 @@ The package authors reflect direct intellectual and technical contributions to t
 ## Contributors
 The following contributors supported the package through bug fixes, minor features,
 testing, documentation, and review work:
-- Joe Panes
 - Antony Brown
 - Euan Soutter
 - Gillian Flower
 - David Furley
+- Joe Panes
+- Charlotte Romaniuk
 
 ## Project Lead
 - Myer Glickman, Bonnie Lewis and Vijendra Ingole
