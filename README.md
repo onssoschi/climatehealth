@@ -31,11 +31,11 @@ This package contains scientific functions dedicated to the following topics in 
 | **Topic**                                                       | **Topic Owner** | **Methods**                                                      |
 |--------------------------------------------------------------------|-----------------|---------------------------------------------------------------------|
 | Temperature-related health effects                                   | ONS             | [Methodology Document](https://doi.org/10.5281/zenodo.14865904)     |
-| Injury and mortality from extreme weather events: Wildfires        | ONS             | [Methodology Document](https://doi.org/10.5281/zenodo.14052183)     |
+| Health effects of wildfires        | ONS             | [Methodology Document](https://doi.org/10.5281/zenodo.14052183)     |
 | Mental health                                                      | ONS             | [Methodology Document](https://doi.org/10.5281/zenodo.14050224)     |
-| Waterborne                                                         | AIMS            | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     |
-| Air Pollution                                                      | AIMS            | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     |
-| Malaria                                                            | RIPS/AIMS       | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     |
+| Water-borne diseases                                                       | AIMS            | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     |
+| Health effects of air pollution                                                      | AIMS            | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     |
+| Vector-borne diseases                                                            | RIPS/AIMS       | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     |
 
 For additional information on each topic/indicator, see our official website [here](https://climate-health.officialstatistics.org/framework)
 
