@@ -17,11 +17,7 @@ citEntry(
       person("Felix", "Scarbrough", role = "aut"),
       person("Treesa", "Shaji", role = "aut"),
       person("Bonnie", "Lewis", role = "aut"),
-      person("Vijendra", "Ingole", role = "aut"),
-      person("Joe", "Panes", role = "ctb"),
-      person("Wellcome", role = "fnd"),
-      person("Office for National Statistics", role = "cph",
-             comment = "SOSCHI Project")
+      person("Vijendra", "Ingole", role = "aut")
     ),
   organization = "SOSCHI Project, Office for National Statistics",
   year = "2026",
@@ -30,7 +26,7 @@ citEntry(
   textVersion = paste(
     "Browning, C., Omeke, K., Dzakpa, E. Y., Jose, G., Pearce, M.,",
     "Watkins, E., Hunt, C., Byukusenge, B., Habyarimana, C.,",
-    "Nyagahakwa, V., Scarbrough, F., and Shaji, T., Lewis, B., Ingole, V. (2026).",
+    "Nyagahakwa, V., Scarbrough, F., Shaji, T., Lewis, B., and Ingole, V. (2026).",
     "climatehealth: Standards for Official",
     "Statistics on Climate-Health Interactions (SOSCHI).",
     paste("R package version", meta$Version, "."),
