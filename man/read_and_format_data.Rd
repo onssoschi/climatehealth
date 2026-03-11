@@ -31,8 +31,8 @@ contains the daily health outcome count (e.g. number of deaths, hospital
 admissions)}
 
 \item{population_col}{Character. Name of the column in the dataframe that
-contains the population data. Defaults to NULL. If omitted, a \code{pop}
-column is used when present.}
+contains the population data. Defaults to NULL. If omitted, a \code{pop} column
+is used when present.}
 
 \item{region_col}{Character. Name of the column in the dataframe that contains
 the region names. Defaults to NULL.}
