@@ -116,6 +116,15 @@ suicides_heat_do_analysis()
 ```
 Each analysis function expects specific input data and parameters for that indicator, so refer to the package documentation for the relevant module before running it.
 
+Example usage scripts for the main indicator workflows are provided in [`inst/examples/`](inst/examples), including:
+- `air_pollution_usage.R`
+- `temp_mortality_usage.R`
+- `wildfires_usage.R`
+- `malaria_usage.R`
+- `diarrhea_usage.R`
+- `suicides_heat_usage.R`
+- `descriptive_stats_usage.R`
+
 ### Descriptive statistics
 You can also run the descriptive statistics workflow directly:
 ```r
