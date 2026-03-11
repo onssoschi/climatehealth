@@ -2,48 +2,37 @@
 % Please edit documentation in R/diseases_shared.R
 \name{check_and_write_vif}
 \alias{check_and_write_vif}
-\title{Check multicollinearity using VIF and Condition Number and write the results
-to file.}
+\title{Check multicollinearity using VIF and write the results to file}
 \usage{
 check_and_write_vif(
   data,
+  param_term,
   inla_param,
-  max_lag,
-  nk,
-  basis_matrices_choices,
   case_type,
-  output_dir
+  output_dir = NULL
 )
 }
 \arguments{
-\item{data}{A data frame from \code{combined_health_climate_data()} function,
-containing the columns: \code{tmax},\code{rainfall}, \code{r_humidity}, \code{runoff}, \code{tmin},\code{ndvi},
-and must be compatible with \code{set_cross_basis()} for generating DLNM matrices.}
+\item{data}{A data frame containing the disease outcome column, \code{param_term},
+and the variables listed in \code{inla_param}.}
 
-\item{inla_param}{Character vector of parameter names representing all
-climate variables to consider excluding the \code{basis_matrices_choices} parameter.}
+\item{param_term}{Character vector of exposure variable term(s) to include in
+the VIF assessment.}
 
-\item{basis_matrices_choices}{Character vector specifying the main exposure variables
-that should be included as DLNM basismatrices, and should be excluded from the \code{inla_param}.
-It might be \code{tmax}for temperature exposure and \code{rainfall} if rainfall exposure.}
+\item{inla_param}{Character vector of additional model covariates to include
+in the VIF assessment.}
 
 \item{case_type}{Character. The type of disease that the case column refers
-to. Must be one of 'diarrhea' or 'malaria'.}
+to. Must be one of \code{"diarrhea"} or \code{"malaria"}.}
 
 \item{output_dir}{Character. The output directory to save the VIF results to.
-Results are saved as 'VIF_results.csv'.}
+Results are saved as \code{VIF_results.csv}. Defaults to \code{NULL}.}
 }
 \value{
-A list with:
-\describe{
-\item{vif}{Named numeric vector of VIF values.}
-\item{condition_number}{The condition number (Kappa) of the design matrix.}
-\item{interpretation}{A qualitative interpretation of collinearity level.}
-}
+A data frame with columns \code{variable}, \code{VIF}, and \code{interpretation}.
 }
 \description{
-This function checks for multicollinearity among DLNM basis variables
-(specifically tmax and rainfall) and selected confounders (r_humidity, runoff,
-tmin, ndvi) using the Variance Inflation Factor (VIF) and condition number (Kappa).
+This function runs \code{check_diseases_vif()}, reshapes the result into a tabular
+data frame, and optionally writes the table to \code{VIF_results.csv}.
 }
 \keyword{internal}

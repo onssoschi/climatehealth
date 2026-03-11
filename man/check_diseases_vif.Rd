@@ -2,43 +2,40 @@
 % Please edit documentation in R/diseases_shared.R
 \name{check_diseases_vif}
 \alias{check_diseases_vif}
-\title{Check multicollinearity using VIF and Condition Number}
+\title{Check multicollinearity using VIF on model variables}
 \usage{
 check_diseases_vif(
   data,
+  param_term,
   inla_param,
-  max_lag,
-  nk,
-  basis_matrices_choices,
   case_type
 )
 }
 \arguments{
-\item{data}{A data frame from \code{combined_health_climate_data()} function,
-containing the columns: \code{tmax},\code{rainfall}, \code{r_humidity}, \code{runoff}, \code{tmin},\code{ndvi},
-and must be compatible with \code{set_cross_basis()} for generating DLNM matrices.}
+\item{data}{A data frame containing the disease outcome column, \code{param_term},
+and the variables listed in \code{inla_param}.}
 
-\item{inla_param}{Character vector of parameter names representing all
-climate variables to consider excluding the \code{basis_matrices_choices} parameter.}
+\item{param_term}{Character vector of exposure variable term(s) to include in
+the VIF assessment.}
 
-\item{basis_matrices_choices}{Character vector specifying the main exposure variables
-that should be included as DLNM basismatrices, and should be excluded from the \code{inla_param}.
-It might be \code{tmax}for temperature exposure and \code{rainfall} if rainfall exposure.}
+\item{inla_param}{Character vector of additional model covariates to include
+in the VIF assessment.}
 
 \item{case_type}{Character. The type of disease that the case column refers
-to. Must be one of 'diarrhea' or 'malaria'.}
+to. Must be one of \code{"diarrhea"} or \code{"malaria"}.}
 }
 \value{
 A list with:
 \describe{
-\item{vif}{Named numeric vector of VIF values.}
-\item{condition_number}{The condition number (Kappa) of the design matrix.}
-\item{interpretation}{A qualitative interpretation of collinearity level.}
+\item{variables}{Character vector of variables used in the VIF calculation.}
+\item{vif}{Numeric vector of VIF values aligned to \code{variables}.}
+\item{vif_interpretation}{Character vector of qualitative VIF interpretations
+(\code{"Low"}, \code{"Moderate"}, \code{"High"}, or \code{"Not computed"}).}
 }
 }
 \description{
-This function checks for multicollinearity among DLNM basis variables
-(specifically tmax and rainfall) and selected confounders (r_humidity, runoff,
-tmin, ndvi) using the Variance Inflation Factor (VIF) and condition number (Kappa).
+This function checks multicollinearity across the disease outcome, the
+exposure term(s) of interest, and the additional INLA covariates using a
+correlation-matrix-based variance inflation factor calculation.
 }
 \keyword{internal}
