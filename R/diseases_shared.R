@@ -687,11 +687,10 @@ create_inla_indices <- function(data, case_type) {
 #' @param data A data frame from `combined_health_climate_data()` function,
 #' containing the columns: `tmax`,`rainfall`, `r_humidity`, `runoff`, `tmin`,`ndvi`,
 #' and must be compatible with `set_cross_basis()` for generating DLNM matrices.
+#' @param param_term Character. The exposure variable term to evaluate (e.g.,`"tmax"` for
+#' maximum temperature, `"rainfall"` for precipitation). Defaults to `"tmax"`.
 #' @param inla_param Character vector of parameter names representing all
 #' climate variables to consider excluding the `basis_matrices_choices` parameter.
-#' @param basis_matrices_choices Character vector specifying the main exposure variables
-#' that should be included as DLNM basismatrices, and should be excluded from the `inla_param`.
-#' It might be `tmax`for temperature exposure and `rainfall` if rainfall exposure.
 #' @param case_type Character. The type of disease that the case column refers
 #' to. Must be one of 'diarrhea' or 'malaria'.
 #'
@@ -704,43 +703,49 @@ create_inla_indices <- function(data, case_type) {
 #'
 #' @keywords internal
 check_diseases_vif <- function(data,
+                               param_term,
                                inla_param,
-                               max_lag,
-                               nk,
-                               basis_matrices_choices,
                                case_type) {
 
-  # validate case type
-  case_type <- validate_case_type(case_type)
-  # get inla indices and cross basis
-  data  <- create_inla_indices(data, case_type)
-  basis <- set_cross_basis(data,max_lag,nk)
-  # assign variables
-  vars_basis <- Filter(Negate(is.null), basis[basis_matrices_choices])
-  vars_data  <- setdiff(inla_param, basis_matrices_choices)
-  # detect missing values are raise errors
-  miss_basis <- setdiff(basis_matrices_choices, names(vars_basis))
-  miss_data  <- setdiff(vars_data, names(data))
-  if (length(miss_basis)) stop("Missing in basis: ", paste(miss_basis, collapse = ", "))
-  if (length(miss_data))  stop("Missing in data: ", paste(miss_data, collapse = ", "))
-
-  X <- cbind(do.call(cbind, vars_basis), data[vars_data])
-  X <- as.data.frame(X[complete.cases(X), ])
+  vars <- unique(c(as.character(validate_case_type(case_type)),
+                   param_term,
+                   inla_param))
+  missing <- setdiff(vars, names(data))
+  if (length(missing)) {
+    stop("Missing variables: ", paste(missing, collapse = ", "))
+  }
+  X <- data[, vars, drop = FALSE]
   colnames(X) <- make.names(colnames(X), unique = TRUE)
 
-  vif_vals <- car::vif(lm(rep(1, nrow(X)) ~ ., data = X))
-  cond_num <- kappa(scale(X), exact = TRUE)
+  # Ensure numeric
+  X[] <- lapply(X, function(x) as.numeric(as.character(x)))
 
-  list(
-    vif = vif_vals,
-    condition_number = cond_num,
-    interpretation = if (cond_num < 10) {
-      "Low collinearity"
-    } else if (cond_num < 30) {
-      "Moderate collinearity"
-    } else {
-      "High collinearity"
+  if (ncol(X) < 2) {
+    vif_vals <- rep(NA_real_, ncol(X))
+    vif_labels <- rep("Not computed", ncol(X))
+  } else {
+    R <- cor(X, use = "pairwise.complete.obs")
+    vif_vals <- tryCatch(
+      diag(solve(R)),
+      error = function(e) rep(NA_real_, ncol(R))
+    )
+    # Create interpretation safely as CHARACTER
+    vif_labels <- character(length(vif_vals))
+
+    for (i in seq_along(vif_vals)) {
+      if (is.na(vif_vals[i])) {
+        vif_labels[i] <- "Not computed"
+      } else if (vif_vals[i] < 5) {
+        vif_labels[i] <- "Low"
+      } else if (vif_vals[i] < 10) {
+        vif_labels[i] <- "Moderate"
+      } else {
+        vif_labels[i] <- "High"
+      }
     }
+  }
+  list(variables = colnames(X), vif = as.numeric(vif_vals),
+       vif_interpretation = as.character(vif_labels)
   )
 }
 
@@ -756,11 +761,10 @@ check_diseases_vif <- function(data,
 #' @param data A data frame from `combined_health_climate_data()` function,
 #' containing the columns: `tmax`,`rainfall`, `r_humidity`, `runoff`, `tmin`,`ndvi`,
 #' and must be compatible with `set_cross_basis()` for generating DLNM matrices.
+#' @param param_term Character. The exposure variable term to evaluate (e.g.,`"tmax"` for
+#' maximum temperature, `"rainfall"` for precipitation). Defaults to `"tmax"`.
 #' @param inla_param Character vector of parameter names representing all
 #' climate variables to consider excluding the `basis_matrices_choices` parameter.
-#' @param basis_matrices_choices Character vector specifying the main exposure variables
-#' that should be included as DLNM basismatrices, and should be excluded from the `inla_param`.
-#' It might be `tmax`for temperature exposure and `rainfall` if rainfall exposure.
 #' @param case_type Character. The type of disease that the case column refers
 #' to. Must be one of 'diarrhea' or 'malaria'.
 #' @param output_dir Character. The output directory to save the VIF results to.
@@ -775,37 +779,37 @@ check_diseases_vif <- function(data,
 #'
 #' @keywords internal
 check_and_write_vif <- function(data,
+                                param_term,
                                 inla_param,
-                                max_lag,
-                                nk,
-                                basis_matrices_choices,
                                 case_type,
-                                output_dir
-) {
-  # Calculate VIF
-  VIF <- check_diseases_vif(data=data,
-                            inla_param=inla_param,
-                            max_lag=max_lag,
-                            nk=nk,
-                            basis_matrices_choices=basis_matrices_choices,
-                            case_type=case_type
+                                output_dir = NULL) {
+
+  VIF <- check_diseases_vif(data, param_term, inla_param, case_type)
+
+  vif_df <- data.frame(
+    variable = as.character(VIF$variables),
+    VIF = as.numeric(VIF$vif),
+    interpretation = as.character(VIF$vif_interpretation),
+    stringsAsFactors = FALSE
   )
-  # Create output DF
-  VIF$vif <- rbind(data.frame(VIF$vif),
-                   data.frame(
-                     row.names=c("condition_number", "interpretation"),
-                     VIF.vif=c(VIF$condition_number, VIF$interpretation)
-                   )
-  )
-  # Create FPATH
-  fpath <- file.path(output_dir, "VIF_results.csv")
-  file_connection <- file(fpath)
-  # Write to file
-  write.csv(file=fpath, VIF$vif)
-  # Return values
-  return(VIF)
+
+  # Final safety check
+  vif_df$interpretation <- as.character(vif_df$interpretation)
+
+  if (!is.null(output_dir)) {
+    if (!dir.exists(output_dir)) {
+      dir.create(output_dir, recursive = TRUE)
+    }
+
+    write.csv(vif_df,
+              file.path(output_dir, "VIF_results.csv"),
+              row.names = FALSE)
+  }
+
+  return(vif_df)
 }
 
+                
 #' Run models of increasing complexity in INLA: Fit a baseline model including
 #' spatiotemporal random effects.
 #'
