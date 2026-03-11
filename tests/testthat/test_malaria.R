@@ -4,6 +4,10 @@ if (!"package:climatehealth" %in% search()) {
   pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
 }
 
+if (!exists("suppress_plot")) {
+  source("tests/testthat/helper-utils.R", local = FALSE)
+}
+
 # Create temp_dir to be used by all MH tests
 temp_dir <- tempdir()
 temp_dir <- file.path(temp_dir, "malaria_tests")
@@ -94,7 +98,7 @@ test_that("malaria_do_analysis runs end-to-end on synthetic data", {
   map_m <- make_synthetic_map_m() |> sf::st_transform(3857)
   sf::st_write(map_m, map_path, quiet = TRUE)
 
-  res <- suppressWarnings(
+  res <- suppress_plot(suppressWarnings(
     malaria_do_analysis(
       health_data_path  = health,        # pass data.frame directly
       climate_data_path = climate,       # pass data.frame directly
@@ -132,7 +136,7 @@ test_that("malaria_do_analysis runs end-to-end on synthetic data", {
       save_fig          = FALSE,
       output_dir        = NULL
     )
-  )
+  ))
 
   extract_rr <- function(rr_entry) {
     tibble::tibble(

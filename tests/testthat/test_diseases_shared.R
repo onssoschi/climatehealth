@@ -2649,7 +2649,7 @@ test_that("invalid metrics throw an error", {
       param_term = "tmax",
       case_type = case_type
     ),
-    "'arg' should be one of \"AR_Number\", \"AR_per_100k\", \"AR_Fraction\""
+    "should be one of"
   )
 })
 

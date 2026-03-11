@@ -4,6 +4,10 @@ if (!"package:climatehealth" %in% search()) {
   pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
 }
 
+if (!exists("suppress_plot")) {
+  source("tests/testthat/helper-utils.R", local = FALSE)
+}
+
 # Create temp_dir to be used by all Diarrhea tests (kept even though not saving files)
 temp_dir <- tempdir()
 temp_dir <- file.path(temp_dir, "diarrhea_tests")
@@ -73,7 +77,7 @@ test_that("diarrhea_do_analysis runs end-to-end on synthetic data", {
   map_d <- make_synthetic_map_d() |> sf::st_transform(3857)
   sf::st_write(map_d, map_path, quiet = TRUE)
 
-  res <- suppressWarnings(
+  res <- suppress_plot(suppressWarnings(
     diarrhea_do_analysis(
       health_data_path  = health,     # pass data.frame directly
       climate_data_path = climate,    # pass data.frame directly
@@ -111,7 +115,7 @@ test_that("diarrhea_do_analysis runs end-to-end on synthetic data", {
       cumulative        = FALSE,
       output_dir        = NULL
     )
-  )
+  ))
 
   # Helper to convert crosspred objects
   extract_rr <- function(rr_entry) {

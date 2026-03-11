@@ -4,6 +4,10 @@ if (!"package:climatehealth" %in% search()) {
   pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
 }
 
+if (!exists("suppress_plot")) {
+  source("tests/testthat/helper-utils.R", local = FALSE)
+}
+
 # Create temp_dir to be used by all MH tests
 temp_dir <- tempdir()
 temp_dir <- file.path(temp_dir, "mental_health_tests")
@@ -278,14 +282,14 @@ test_that("mh_model_validation performs complete model validation", {
     }
   })
 
-  results_basic <- mh_model_validation(
+  results_basic <- suppress_plot(mh_model_validation(
     df_list = df_list,
     cb_list = cb_list,
     independent_cols = independent_vars,
     save_fig = TRUE,  # Explicitly set to FALSE
     save_csv = TRUE,
     output_folder_path = temp_dir
-  )
+  ))
 
   # Structure tests
   expect_type(results_basic, "list")
@@ -731,9 +735,9 @@ test_that("mh_plot_power produces plots correctly", {
   )
 
   # Plot without saving
-  suppressWarnings(
+  suppress_plot(suppressWarnings(
     mh_plot_power(power_list, save_fig = FALSE)
-    )
+    ))
 
   # create temporary output folder
   output_folder <- tempfile(pattern = "test_plots_", tmpdir = temp_dir)
@@ -888,9 +892,9 @@ test_that("mh_plot_rr produces plots correctly", {
   minpercreg <- c(Region1 = 50)
 
   # Plot without saving
-  suppressWarnings(
+  suppress_plot(suppressWarnings(
     mh_plot_rr(df_list, pred_list, attr_thr = 0, minpercreg, save_fig = FALSE)
-  )
+  ))
 
   # Plot with saving enabled (expect warnings)
   output_folder <- file.path(temp_dir, "test_rr_plots")
