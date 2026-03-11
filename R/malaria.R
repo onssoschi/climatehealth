@@ -233,24 +233,20 @@ malaria_do_analysis <- function(health_data_path,
   # create base matrice
   basis <- set_cross_basis(combined_data$data, max_lag, nk)
 
-  # Check for multicolinearity
+ # Check for multicolinearity
   if (save_csv) {
     VIF <- check_and_write_vif(
       data=combined_data$data,
+      param_term=param_term,
       inla_param=inla_param,
-      max_lag=max_lag,
-      nk=nk,
-      basis_matrices_choices=basis_matrices_choices,
       case_type="malaria",
       output_dir=output_dir
     )
   } else {
     VIF <- check_diseases_vif(
       data=combined_data$data,
+      param_term=param_term,
       inla_param=inla_param,
-      max_lag=max_lag,
-      nk=nk,
-      basis_matrices_choices=basis_matrices_choices,
       case_type="malaria"
     )
   }
