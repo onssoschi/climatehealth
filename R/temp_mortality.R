@@ -2400,7 +2400,9 @@ hc_plot_af_heat_monthly <- function(attr_mth_list,
           side = 1, line = 2, cex = 0.8, col = "red", font = 3)
   }
 
-  dev.off()
+  if (save_fig == TRUE) {
+    dev.off()
+  }
 }
 
 #' Plot attributable fractions by calendar month - low temperatures
@@ -2441,9 +2443,16 @@ hc_plot_af_cold_monthly <- function(attr_mth_list,
 
     par(mfrow = c(grid[2], grid[1]), mar = c(5, 5, 5, 5), oma = c(4, 0, 4, 0))
   } else {
-    old_par <- graphics::par(no.readonly = TRUE)
-    on.exit(graphics::par(old_par), add = TRUE)
-    graphics::par(mfrow = c(1, 1), mar = c(5, 5, 5, 5), oma = c(0, 0, 0, 0))
+    old_par <- graphics::par(c("mfrow", "mar", "oma", "xpd", "cex", "mex"))
+    on.exit(do.call(graphics::par, old_par), add = TRUE)
+    graphics::par(
+      mfrow = c(1, 1),
+      mar = c(5, 5, 5, 5),
+      oma = c(0, 0, 0, 0),
+      xpd = FALSE,
+      cex = 1,
+      mex = 1
+    )
   }
 
   ylim_max <- max(sapply(attr_mth_list,
@@ -2557,7 +2566,7 @@ hc_plot_af_cold_monthly <- function(attr_mth_list,
     mtext(ovr_warning, outer = TRUE,
           side = 1, line = 2, cex = 0.8, col = "red", font = 3)
 
-  dev.off()
+    dev.off()
   }
 }
 
