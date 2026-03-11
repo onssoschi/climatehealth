@@ -604,54 +604,47 @@ CHECK_VIF_DF <- data.frame(
 )
 
 test_that("check_diseases_vif detects high collinearity", {
-  skip_if_not_installed("INLA")
   res <- suppressWarnings(
     check_diseases_vif(
       data = CHECK_VIF_DF,
+      param_term = "tmax",
       inla_param = c("tmax", "tmin"),
-      max_lag = 2,
-      nk = 1,    # << USE nk = 1, safe and stable
-      basis_matrices_choices = c("tmax", "tmin"),
       case_type = "malaria"
     )
   )
-  expect_equal(res$interpretation, "High collinearity")
+  expect_equal(res$variables, c("malaria", "tmax", "tmin"))
+  expect_true(any(res$vif_interpretation == "High"))
+  expect_true(any(res$vif >= 10, na.rm = TRUE))
 })
 
 test_that(
-  "check_diseases_vif errors on missing basis matrix",
+  "check_diseases_vif errors on missing variables",
   {
-    skip_if_not_installed("INLA")
-    bad_data <- CHECK_VIF_DF[, !grepl("^tmin", names(CHECK_VIF_DF))]
+    bad_data <- CHECK_VIF_DF[, !(names(CHECK_VIF_DF) %in% "tmin")]
     expect_error(
       check_diseases_vif(
         data = bad_data,
+        param_term = "tmax",
         inla_param = c("tmax", "tmin"),
-        max_lag = 2,
-        nk = 2,
-        basis_matrices_choices = c("tmax", "tmin"),
         case_type = "malaria"
       ),
-      "Missing in basis: tmin"
+      "Missing variables: tmin"
     )
   }
 )
 
 test_that(
-  "check_diseases_vif errors on missing inla_param variable",
+  "check_diseases_vif errors on missing outcome variable",
   {
-    skip_if_not_installed("INLA")
-    bad_data <- CHECK_VIF_DF[, !(names(CHECK_VIF_DF) %in% c("tmin"))]
+    bad_data <- CHECK_VIF_DF[, !(names(CHECK_VIF_DF) %in% "malaria")]
     expect_error(
       check_diseases_vif(
         data = bad_data,
+        param_term = "tmax",
         inla_param = c("tmax", "tmin"),
-        max_lag = 2,
-        nk = 2,
-        basis_matrices_choices = c("tmax"),
         case_type = "malaria"
       ),
-      "Missing in data: tmin"
+      "Missing variables: malaria"
     )
   }
 )
@@ -680,18 +673,16 @@ MOD_COL_DF <- data.frame(
 test_that(
   "check_diseases_vif detects moderate collinearity",
   {
-    skip_if_not_installed("INLA")
     result <- suppressWarnings(
       check_diseases_vif(
         data = MOD_COL_DF,
+        param_term = "tmax",
         inla_param = c("tmax", "tmin"),
-        max_lag = 2,
-        nk = 1,
-        basis_matrices_choices = c("tmax", "tmin"),
         case_type = "malaria"
       )
     )
-    expect_equal(result$interpretation, "Moderate collinearity")
+    expect_true(any(result$vif_interpretation == "Moderate"))
+    expect_true(any(result$vif >= 5 & result$vif < 10, na.rm = TRUE))
   }
 )
 
@@ -718,18 +709,16 @@ LOW_COL_DF <- data.frame(
 test_that(
   "check_diseases_vif detects low collinearity",
   {
-    skip_if_not_installed("INLA")
     result <- suppressWarnings(
       check_diseases_vif(
         data = LOW_COL_DF,
+        param_term = "tmax",
         inla_param = c("tmax", "tmin"),
-        max_lag = 2,
-        nk = 1,
-        basis_matrices_choices = c("tmax", "tmin"),
         case_type = "malaria"
       )
     )
-    expect_equal(result$interpretation, "Low collinearity")
+    expect_true(all(result$vif_interpretation == "Low"))
+    expect_true(all(result$vif < 5, na.rm = TRUE))
   }
 )
 
@@ -737,26 +726,26 @@ test_that(
 test_that(
   "check_and_write_vif creates VIF DF and writes to a file",
   {
-    skip_if_not_installed("INLA")
     # generate and write results
     temp_dir <- tempdir()
     result <- check_and_write_vif(
       data = MOD_COL_DF,
+      param_term = "tmax",
       inla_param = c("tmax", "tmin"),
-      basis_matrices_choices = c("tmax", "tmin"),
-      max_lag = 2,
-      nk = 1,
       case_type = "malaria",
       output_dir = temp_dir
     )
     # validate returned values
-    expect_equal(result$interpretation, "Moderate collinearity")
+    expect_s3_class(result, "data.frame")
+    expect_named(result, c("variable", "VIF", "interpretation"))
+    expect_equal(result$variable, c("malaria", "tmax", "tmin"))
+    expect_true(any(result$interpretation == "Moderate"))
     # validate file outputs
     output_fpath <- file.path(temp_dir, "VIF_results.csv")
     expect_true(file.exists(output_fpath))
     outputted_df <- read.csv(output_fpath)
-    expect_equal(nrow(outputted_df), 14)
-    expect_equal(ncol(outputted_df), 2)
+    expect_equal(nrow(outputted_df), 3)
+    expect_equal(ncol(outputted_df), 3)
   }
 )
 

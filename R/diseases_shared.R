@@ -677,28 +677,28 @@ create_inla_indices <- function(data, case_type) {
 }
 
 
-#' Check multicollinearity using VIF and Condition Number
+#' Check multicollinearity using VIF on model variables
 #'
 #' @description
-#' This function checks for multicollinearity among DLNM basis variables
-#' (specifically tmax and rainfall) and selected confounders (r_humidity, runoff,
-#' tmin, ndvi) using the Variance Inflation Factor (VIF) and condition number (Kappa).
+#' This function checks multicollinearity across the disease outcome, the
+#' exposure term(s) of interest, and the additional INLA covariates using a
+#' correlation-matrix-based variance inflation factor calculation.
 #'
-#' @param data A data frame from `combined_health_climate_data()` function,
-#' containing the columns: `tmax`,`rainfall`, `r_humidity`, `runoff`, `tmin`,`ndvi`,
-#' and must be compatible with `set_cross_basis()` for generating DLNM matrices.
-#' @param param_term Character. The exposure variable term to evaluate (e.g.,`"tmax"` for
-#' maximum temperature, `"rainfall"` for precipitation). Defaults to `"tmax"`.
-#' @param inla_param Character vector of parameter names representing all
-#' climate variables to consider excluding the `basis_matrices_choices` parameter.
+#' @param data A data frame containing the disease outcome column, `param_term`,
+#' and the variables listed in `inla_param`.
+#' @param param_term Character vector of exposure variable term(s) to include in
+#' the VIF assessment.
+#' @param inla_param Character vector of additional model covariates to include
+#' in the VIF assessment.
 #' @param case_type Character. The type of disease that the case column refers
-#' to. Must be one of 'diarrhea' or 'malaria'.
+#' to. Must be one of `"diarrhea"` or `"malaria"`.
 #'
 #' @return A list with:
 #' \describe{
-#'   \item{vif}{Named numeric vector of VIF values.}
-#'   \item{condition_number}{The condition number (Kappa) of the design matrix.}
-#'   \item{interpretation}{A qualitative interpretation of collinearity level.}
+#'   \item{variables}{Character vector of variables used in the VIF calculation.}
+#'   \item{vif}{Numeric vector of VIF values aligned to `variables`.}
+#'   \item{vif_interpretation}{Character vector of qualitative VIF interpretations
+#'   (`"Low"`, `"Moderate"`, `"High"`, or `"Not computed"`).}
 #' }
 #'
 #' @keywords internal
@@ -750,32 +750,24 @@ check_diseases_vif <- function(data,
 }
 
 
-#' Check multicollinearity using VIF and Condition Number and write the results
-#' to file.
+#' Check multicollinearity using VIF and write the results to file
 #'
 #' @description
-#' This function checks for multicollinearity among DLNM basis variables
-#' (specifically tmax and rainfall) and selected confounders (r_humidity, runoff,
-#' tmin, ndvi) using the Variance Inflation Factor (VIF) and condition number (Kappa).
+#' This function runs `check_diseases_vif()`, reshapes the result into a tabular
+#' data frame, and optionally writes the table to `VIF_results.csv`.
 #'
-#' @param data A data frame from `combined_health_climate_data()` function,
-#' containing the columns: `tmax`,`rainfall`, `r_humidity`, `runoff`, `tmin`,`ndvi`,
-#' and must be compatible with `set_cross_basis()` for generating DLNM matrices.
-#' @param param_term Character. The exposure variable term to evaluate (e.g.,`"tmax"` for
-#' maximum temperature, `"rainfall"` for precipitation). Defaults to `"tmax"`.
-#' @param inla_param Character vector of parameter names representing all
-#' climate variables to consider excluding the `basis_matrices_choices` parameter.
+#' @param data A data frame containing the disease outcome column, `param_term`,
+#' and the variables listed in `inla_param`.
+#' @param param_term Character vector of exposure variable term(s) to include in
+#' the VIF assessment.
+#' @param inla_param Character vector of additional model covariates to include
+#' in the VIF assessment.
 #' @param case_type Character. The type of disease that the case column refers
-#' to. Must be one of 'diarrhea' or 'malaria'.
+#' to. Must be one of `"diarrhea"` or `"malaria"`.
 #' @param output_dir Character. The output directory to save the VIF results to.
-#' Results are saved as 'VIF_results.csv'.
+#' Results are saved as `VIF_results.csv`. Defaults to `NULL`.
 #'
-#' @return A list with:
-#' \describe{
-#'   \item{vif}{Named numeric vector of VIF values.}
-#'   \item{condition_number}{The condition number (Kappa) of the design matrix.}
-#'   \item{interpretation}{A qualitative interpretation of collinearity level.}
-#' }
+#' @return A data frame with columns `variable`, `VIF`, and `interpretation`.
 #'
 #' @keywords internal
 check_and_write_vif <- function(data,
