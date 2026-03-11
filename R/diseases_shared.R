@@ -1872,7 +1872,7 @@ attribution_calculation <- function(data,
                     df[[param_term]] <= MER_U &
                     rr > param_threshold)
 
-      if (length(id) == 0) return(c(0, 0, NA_real_))
+      if (length(id) == 0) return(c(0, 0, 0))
 
       af <- 1 - 1 / mean(rr[id])
       an <- af * sum(cases[id], na.rm = TRUE)
