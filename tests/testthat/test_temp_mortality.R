@@ -2642,7 +2642,7 @@ test_that("integration: temp_mortality_do_analysis runs end-to-end (dynamic synt
   on.exit(unlink(tmp_file), add = TRUE)
 
   # Run pipeline with stable settings (single knot; short lag; no meta-analysis)
-  result <- suppress_plot(temp_mortality_do_analysis(
+  result <- suppress_plot(suppressWarnings(temp_mortality_do_analysis(
     data_path = tmp_file,
     date_col = "date",
     region_col = "region",
@@ -2664,7 +2664,7 @@ test_that("integration: temp_mortality_do_analysis runs end-to-end (dynamic synt
     attr_thr_high = 97.5,
     attr_thr_low = 2.5,
     output_folder_path = NULL
-  ))
+  )))
 
   # Structure checks: ensure contract is met
   expect_type(result, "list")

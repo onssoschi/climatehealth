@@ -346,6 +346,9 @@ mh_model_validation <- function(
     formula_list <- residuals_list[[reg]]
     if (save_fig == TRUE) {
       named_label <- named_label_list[[reg]]
+    } else {
+      old_par <- graphics::par(no.readonly = TRUE)
+      on.exit(graphics::par(old_par), add = TRUE)
     }
 
     if (save_fig == TRUE) {
@@ -359,6 +362,8 @@ mh_model_validation <- function(
       pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
 
       par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
+    } else {
+      graphics::par(mfrow = c(1, 1), mar = c(5.1, 4.1, 4.1, 2.1), oma = c(0, 0, 0, 0))
     }
 
     for (i in names(formula_list)) {
@@ -409,6 +414,8 @@ mh_model_validation <- function(
       pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
 
       par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
+    } else {
+      graphics::par(mfrow = c(1, 1), mar = c(5.1, 4.1, 4.1, 2.1), oma = c(0, 0, 0, 0))
     }
 
     for (i in names(new_res_list)) {
@@ -441,6 +448,8 @@ mh_model_validation <- function(
       pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
 
       par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
+    } else {
+      graphics::par(mfrow = c(1, 1), mar = c(5.1, 4.1, 4.1, 2.1), oma = c(0, 0, 0, 0))
     }
 
     for (i in names(new_res_list)) {
@@ -469,6 +478,8 @@ mh_model_validation <- function(
       pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
 
       par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 5, 0))
+    } else {
+      graphics::par(mfrow = c(1, 1), mar = c(5.1, 4.1, 4.1, 2.1), oma = c(0, 0, 0, 0))
     }
 
     for (i in names(formula_list)) {

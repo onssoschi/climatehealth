@@ -2440,6 +2440,10 @@ hc_plot_af_cold_monthly <- function(attr_mth_list,
                     height = max(8, grid[2] * 4.5))
 
     par(mfrow = c(grid[2], grid[1]), mar = c(5, 5, 5, 5), oma = c(4, 0, 4, 0))
+  } else {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
+    graphics::par(mfrow = c(1, 1), mar = c(5, 5, 5, 5), oma = c(0, 0, 0, 0))
   }
 
   ylim_max <- max(sapply(attr_mth_list,
