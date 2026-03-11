@@ -33,7 +33,7 @@
 #' @param ndvi_col Character (optional). Column name for the Normalized Difference
 #' Vegetation Index (NDVI). Defaults to `NULL`.
 #' @param max_lag Numeric. Maximum temporal lag to include in the distributed
-#' lag model (e.g., `2`–`4`). Defaults to `2`.
+#' lag model (e.g., `2`-`4`). Defaults to `2`.
 #' @param nk Numeric. Number of internal knots for the natural spline of
 #' each predictor, controlling its flexibility: \code{nk = 0} produces a linear
 #' effect with one basis column, \code{nk = 1} generates a simple spline with two
@@ -49,7 +49,7 @@
 #' @param level Character. Spatial disaggregation level; must be one of
 #' `"country"`, `"region"`, or `"district"`.
 #' @param param_threshold Numeric. Threshold above which exposure is considered
-#' “attributable.” Defaults to `1`.
+#' "attributable." Defaults to `1`.
 #' @param filter_year Integer or vector (optional). Year(s) to filter the data by.
 #' Defaults to `NULL`.
 #' @param family Character. Probability distribution for the outcome variable.

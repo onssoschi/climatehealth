@@ -88,7 +88,7 @@ Precipitation Index (SPI). Defaults to \code{NULL}.}
 Vegetation Index (NDVI). Defaults to \code{NULL}.}
 
 \item{max_lag}{Numeric. Maximum temporal lag to include in the distributed
-lag model (e.g., \code{2}–\code{4}). Defaults to \code{2}.}
+lag model (e.g., \code{2}-\code{4}). Defaults to \code{2}.}
 
 \item{nk}{Numeric. Number of internal knots for the natural spline of
 each predictor, controlling its flexibility: \code{nk = 0} produces a linear
@@ -110,7 +110,7 @@ for relative risk and attribution (e.g., \code{"tmax"}, \code{"rainfall"}).}
 \code{"country"}, \code{"region"}, or \code{"district"}.}
 
 \item{param_threshold}{Numeric. Threshold above which exposure is considered
-“attributable.” Defaults to \code{1}.}
+"attributable." Defaults to \code{1}.}
 
 \item{filter_year}{Integer or vector (optional). Year(s) to filter the data by.
 Defaults to \code{NULL}.}

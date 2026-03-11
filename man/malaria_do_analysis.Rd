@@ -4,7 +4,7 @@
 \alias{malaria_do_analysis}
 \title{Code for calculating Malaria disease cases attributable to extreme rainfall
 and extreme temperature
-Run Full Malaria–Climate Analysis Pipeline}
+Run Full Malaria-Climate Analysis Pipeline}
 \usage{
 malaria_do_analysis(
   health_data_path,
@@ -88,7 +88,7 @@ Precipitation Index (SPI). Defaults to \code{NULL}.}
 Vegetation Index (NDVI). Defaults to \code{NULL}.}
 
 \item{max_lag}{Numeric. Maximum temporal lag to include in the distributed
-lag model (e.g., \code{2}–\code{4}). Defaults to \code{4}.}
+lag model (e.g., \code{2}-\code{4}). Defaults to \code{4}.}
 
 \item{nk}{Numeric. Number of internal knots for the natural spline of
 each predictor, controlling its flexibility: \code{nk = 0} produces a linear
@@ -110,7 +110,7 @@ for relative risk and attribution (e.g., \code{"tmax"}, \code{"rainfall"}).}
 \code{"country"}, \code{"region"}, or \code{"district"}.}
 
 \item{param_threshold}{Numeric. Threshold above which exposure is considered
-“attributable.” Defaults to \code{1}.}
+"attributable." Defaults to \code{1}.}
 
 \item{filter_year}{Integer or vector (optional). Year(s) to filter the data by.
 Defaults to \code{NULL}.}
@@ -141,15 +141,15 @@ are saved. Defaults to \code{NULL}.}
 \value{
 A named list containing:
 \itemize{
-\item \code{inla_result} – Fitted INLA model object and summaries.
-\item \code{plot_malaria}, \code{plot_tmax}, \code{plot_rainfall} – Exploratory time-series plots.
-\item \code{reff_plot_monthly} – Monthly random effects plot.
-\item \code{reff_plot_yearly} – Yearly spatial random effects plot.
-\item \code{contour_plot} – Exposure–response contour plot.
-\item \code{rr_map_plot} – Spatial relative risk map.
-\item \code{rr_plot}, \code{rr_df} – Relative risk plot and associated data.
-\item \code{attr_frac_num} – Attributable risk summary table.
-\item \code{plot_AR_num}, \code{plot_AR_frac}, \code{plot_AR_per_100k} – Plots of attributable
+\item \code{inla_result} - Fitted INLA model object and summaries.
+\item \code{plot_malaria}, \code{plot_tmax}, \code{plot_rainfall} - Exploratory time-series plots.
+\item \code{reff_plot_monthly} - Monthly random effects plot.
+\item \code{reff_plot_yearly} - Yearly spatial random effects plot.
+\item \code{contour_plot} - Exposure-response contour plot.
+\item \code{rr_map_plot} - Spatial relative risk map.
+\item \code{rr_plot}, \code{rr_df} - Relative risk plot and associated data.
+\item \code{attr_frac_num} - Attributable risk summary table.
+\item \code{plot_AR_num}, \code{plot_AR_frac}, \code{plot_AR_per_100k} - Plots of attributable
 number, fraction, and rate.
 }
 }
