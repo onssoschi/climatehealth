@@ -18,7 +18,7 @@ hc_read_data(
 outcome and climate data per geography.}
 
 \item{dependent_col}{Character. Name of the column in the dataframe
-containing the dependent health outcome variable e.g,. deaths.}
+containing the dependent health outcome variable e.g. deaths.}
 
 \item{date_col}{Character. Name of the column in the dataframe containing
 the date.}
