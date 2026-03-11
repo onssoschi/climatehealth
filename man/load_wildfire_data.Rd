@@ -53,8 +53,8 @@ contains the health outcome count column (e.g. number of deaths, hospital
 admissions)}
 
 \item{population_col}{Character. Name of the column in the dataframe that
-contains the population data. Defaults to NULL. If omitted, a \code{pop} column
-is used when present.}
+contains the population data. Defaults to NULL. If omitted, a \code{pop}
+column is used when present.}
 
 \item{rh_col}{Character. Name of the column in the dataframe that
 contains daily relative humidity values.Defaults to NULL.}
