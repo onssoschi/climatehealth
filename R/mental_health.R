@@ -379,9 +379,11 @@ mh_model_validation <- function(
       if (save_fig == TRUE) {
         title <- paste0("Deviance Residuals by Date: ", reg)
         mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
-
-        dev.off()
       }
+    }
+
+    if (save_fig == TRUE) {
+      dev.off()
     }
 
     if (sample_check == TRUE) {
@@ -426,9 +428,11 @@ mh_model_validation <- function(
       if (save_fig == TRUE) {
         title <- paste0("Deviance Residuals by Fitted Values: ", reg, sample_title)
         mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
-
-        dev.off()
       }
+    }
+
+    if (save_fig == TRUE) {
+      dev.off()
     }
 
     if (save_fig == TRUE) {
@@ -452,9 +456,11 @@ mh_model_validation <- function(
       if (save_fig == TRUE) {
         title <- paste0("Normal Q-Q Plot of Residuals: ", reg, sample_title)
         mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
-
-        dev.off()
       }
+    }
+
+    if (save_fig == TRUE) {
+      dev.off()
     }
 
     if (save_fig == TRUE) {
