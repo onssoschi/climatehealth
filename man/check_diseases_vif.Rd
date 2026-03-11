@@ -4,12 +4,7 @@
 \alias{check_diseases_vif}
 \title{Check multicollinearity using VIF on model variables}
 \usage{
-check_diseases_vif(
-  data,
-  param_term,
-  inla_param,
-  case_type
-)
+check_diseases_vif(data, param_term, inla_param, case_type)
 }
 \arguments{
 \item{data}{A data frame containing the disease outcome column, \code{param_term},

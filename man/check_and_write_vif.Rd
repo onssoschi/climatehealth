@@ -4,13 +4,7 @@
 \alias{check_and_write_vif}
 \title{Check multicollinearity using VIF and write the results to file}
 \usage{
-check_and_write_vif(
-  data,
-  param_term,
-  inla_param,
-  case_type,
-  output_dir = NULL
-)
+check_and_write_vif(data, param_term, inla_param, case_type, output_dir = NULL)
 }
 \arguments{
 \item{data}{A data frame containing the disease outcome column, \code{param_term},

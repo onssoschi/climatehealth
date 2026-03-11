@@ -49,6 +49,9 @@ Authors:
   \item Venuste Nyagahakwa
   \item Felix Scarbrough
   \item Treesa Shaji
+  \item Bonnie Lewis
+  \item Maquines Odhiambo Sewe
+  \item Vijendra Ingole
 }
 
 Other contributors:
