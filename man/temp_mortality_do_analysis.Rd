@@ -2,7 +2,7 @@
 % Please edit documentation in R/temp_mortality.R
 \name{temp_mortality_do_analysis}
 \alias{temp_mortality_do_analysis}
-\title{Full analysis pipeline for the 'mortality attributable to high and low
+\title{Full analysis for the 'mortality attributable to high and low
 temperatures' indicator}
 \usage{
 temp_mortality_do_analysis(
@@ -44,12 +44,12 @@ contains the geography name(s).}
 contains the temperature column.}
 
 \item{dependent_col}{Character. Name of the column in the dataframe
-containing the dependent health outcome variable e.g,. deaths.}
+containing the dependent health outcome variable e.g. deaths.}
 
 \item{population_col}{Character. Name of the column in the dataframe that
 contains the population estimate per geography.}
 
-\item{country}{Character. Name of country for national level estimates.
+\item{country}{Character. Name of country for national-level estimates.
 Defaults to 'National'.}
 
 \item{independent_cols}{List. Additional independent variables to test in
@@ -78,10 +78,10 @@ adjustment. Defaults to NULL.}
 \item{meta_analysis}{Boolean. Whether to perform a meta-analysis. Defaults
 to FALSE.}
 
-\item{attr_thr_high}{Integer. Percentile at which to define the upper
+\item{attr_thr_high}{Integer. Percentile at which to define the high
 temperature threshold for calculating attributable risk. Defaults to 97.5.}
 
-\item{attr_thr_low}{Integer. Percentile at which to define the lower
+\item{attr_thr_low}{Integer. Percentile at which to define the low
 temperature threshold for calculating attributable risk. Defaults to 2.5.}
 
 \item{save_fig}{Boolean. Whether to save the plot as an output. Defaults to
@@ -116,19 +116,19 @@ fractions, numbers and rates by calendar month and area.
 }
 }
 \description{
-Runs the full pipeline to analyse the impact of high and low
+Runs the full methodology to analyse the impact of high and low
 temperatures on mortality using a quasi-Poisson time series approach with a
 distributed lag non-linear model. This function generates the relative risk
 of the temperature-mortality association as well as attributable numbers,
-rates and fractions of moralities to specified temperature thresholds for
+rates and fractions of mortalities to specified temperature thresholds for
 high and low temperatures. Model validation statistics are also provided.
 }
 \details{
-This analysis pipeline requires a daily time series of temperature and
-death counts with population values as a minimum. This is then processed
-using a quasi-Poisson time series regression analysis with a distributed
-lag non-linear model and optional meta-analysis. Meta-analysis is
-recommended if the input data is disaggregated by area.
+This analysis requires a daily time series of temperature and death counts
+with population values as a minimum. This is then processed using a
+quasi-Poisson time series regression analysis with a distributed lag
+non-linear model and optional meta-analysis. Meta-analysis is recommended if
+the input data is disaggregated by area.
 
 The model parameters have default values, which are recommended to keep as
 based on existing studies. However, if desired these can be adjusted for
@@ -143,11 +143,11 @@ should include variables if contextually relevant, and not simply
 based on model optimisation.
 
 For attributable deaths the default is to use a high temperature threshold,
-defined as the 97.5th percentile of temperature over the corresponding time
-period for each geography. The low temperature thresholds is similarly
-defined at the 2.5th percentile. These can be adjusted if desired, following
-review of the relative risk association between temperature and mortality,
-using \code{attr_thr_high} or \code{attr_thr_low}.
+defined as the 97.5th percentile of the temperature distribution over the
+full time period for each geography. The low temperature thresholds is
+similarly defined at the 2.5th percentile. These can be adjusted if desired,
+following review of the relative risk association between temperature and
+mortality using \code{attr_thr_high} or \code{attr_thr_low}.
 
 Further details on the input data requirements, methodology, quality
 information and guidance on interpreting outputs can be found in the
@@ -159,10 +159,10 @@ accompanying published
 temp_mortality_do_analysis(
   data_path = "data/inputs/daily_temperature_mortality_1995_2025.csv",
   date_col = "date",
-  region_col = "region",
   temperature_col = "tmean",
   dependent_col = "deaths",
   population_col = "pop",
+  region_col = "region",
   country = "England",
   meta_analysis = TRUE,
   independent_cols = c("wind_speed", "relative_humidity"),
