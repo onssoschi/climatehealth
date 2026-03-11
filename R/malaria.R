@@ -1,7 +1,7 @@
 #' Code for calculating Malaria disease cases attributable to extreme rainfall
 #' and extreme temperature
 
-#' Run Full Malaria–Climate Analysis Pipeline
+#' Run Full Malaria-Climate Analysis Pipeline
 #'
 #' @description
 #' The `Malaria_do_analysis()` function executes the complete workflow for analyzing
@@ -34,7 +34,7 @@
 #' @param ndvi_col Character (optional). Column name for the Normalized Difference
 #' Vegetation Index (NDVI). Defaults to `NULL`.
 #' @param max_lag Numeric. Maximum temporal lag to include in the distributed
-#' lag model (e.g., `2`–`4`). Defaults to `4`.
+#' lag model (e.g., `2`-`4`). Defaults to `4`.
 #' @param nk Numeric. Number of internal knots for the natural spline of
 #' each predictor, controlling its flexibility: \code{nk = 0} produces a linear
 #' effect with one basis column, \code{nk = 1} generates a simple spline with two
@@ -50,7 +50,7 @@
 #' @param level Character. Spatial disaggregation level; must be one of
 #' `"country"`, `"region"`, or `"district"`.
 #' @param param_threshold Numeric. Threshold above which exposure is considered
-#' “attributable.” Defaults to `1`.
+#' "attributable." Defaults to `1`.
 #' @param filter_year Integer or vector (optional). Year(s) to filter the data by.
 #' Defaults to `NULL`.
 #' @param family Character. Probability distribution for the outcome variable.
@@ -71,15 +71,15 @@
 #'
 #' @return A named list containing:
 #' \itemize{
-#'   \item `inla_result` – Fitted INLA model object and summaries.
-#'   \item `plot_malaria`, `plot_tmax`, `plot_rainfall` – Exploratory time-series plots.
-#'   \item `reff_plot_monthly` – Monthly random effects plot.
-#'   \item `reff_plot_yearly` – Yearly spatial random effects plot.
-#'   \item `contour_plot` – Exposure–response contour plot.
-#'   \item `rr_map_plot` – Spatial relative risk map.
-#'   \item `rr_plot`, `rr_df` – Relative risk plot and associated data.
-#'   \item `attr_frac_num` – Attributable risk summary table.
-#'   \item `plot_AR_num`, `plot_AR_frac`, `plot_AR_per_100k` – Plots of attributable
+#'   \item `inla_result` - Fitted INLA model object and summaries.
+#'   \item `plot_malaria`, `plot_tmax`, `plot_rainfall` - Exploratory time-series plots.
+#'   \item `reff_plot_monthly` - Monthly random effects plot.
+#'   \item `reff_plot_yearly` - Yearly spatial random effects plot.
+#'   \item `contour_plot` - Exposure-response contour plot.
+#'   \item `rr_map_plot` - Spatial relative risk map.
+#'   \item `rr_plot`, `rr_df` - Relative risk plot and associated data.
+#'   \item `attr_frac_num` - Attributable risk summary table.
+#'   \item `plot_AR_num`, `plot_AR_frac`, `plot_AR_per_100k` - Plots of attributable
 #'   number, fraction, and rate.
 #' }
 #'
