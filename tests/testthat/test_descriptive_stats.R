@@ -353,7 +353,7 @@ test_that("Creates summary file with columns specified", {
     units = units,
     dependent_col = "dependent",
     independent_cols = c("temp")
-  )
+  ))
 
   expect_true(file.exists(file.path(temp_dir, "dataset_summary.csv")))
 })
@@ -369,7 +369,7 @@ test_that("Generates all enabled plots and outputs", {
   )
   units <- c(temp = "°C", dependent = "cases")
 
-  common_descriptive_stats_core(
+  suppressWarnings(common_descriptive_stats_core(
     df = df,
     output_path = temp_dir,
     title = "Subset",
