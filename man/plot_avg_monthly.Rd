@@ -6,10 +6,11 @@
 \usage{
 plot_avg_monthly(
   attr_data,
-  level = "country",
+  level = c("country", "region", "district"),
   metrics = c("AR_Number", "AR_per_100k", "AR_Fraction"),
   c_data,
   param_term,
+  case_type,
   filter_year = NULL,
   save_fig = FALSE,
   output_dir = NULL

@@ -1,5 +1,9 @@
 # Unit Tests for install_utils.R
 
+if (!"package:climatehealth" %in% search()) {
+  pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
+}
+
 # Tests for check_has_rtools
 test_that(
     "check_has_rtools raises an error if RTools (or build tools) aren't installed.",

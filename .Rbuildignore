@@ -5,6 +5,7 @@
 ^.git
 ^.github
 ^.gitlab
+^.vscode
 ^CODEOWNERS
 ^CONTRIBUTING.md
 ^climatehealth.Rproj

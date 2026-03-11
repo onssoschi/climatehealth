@@ -9,6 +9,7 @@
 .RDataTmp
 .Renviron
 ..Rcheck
+.vscode/
 renv
 lib
 

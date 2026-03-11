@@ -1,5 +1,13 @@
 # Tests for check_file_exists().
 
+if (!exists("with_parameters_test_that")) {
+  source("tests/testthat/helper-libraries.R", local = FALSE)
+}
+
+if (!"package:climatehealth" %in% search()) {
+  pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
+}
+
 # Passing test
 test_that(
   "Passing tests for check_file_exists().",
@@ -157,4 +165,3 @@ test_that(
         expect_equal(result, "file.pdf")
     }
 )
-

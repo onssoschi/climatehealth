@@ -58,11 +58,11 @@ hc_read_data <- function(input_csv_path,
   # Rename the columns
   df <- df %>%
     dplyr::rename(
-      deaths = dependent_col,
-      date = date_col,
-      region = region_col,
-      temp = temperature_col,
-      population = population_col,
+      deaths = all_of(dependent_col),
+      date = all_of(date_col),
+      region = all_of(region_col),
+      temp = all_of(temperature_col),
+      population = all_of(population_col)
     ) %>%
     dplyr::mutate(
       date = as.Date(date, tryFormats = c("%d/%m/%Y", "%Y-%m-%d")),
@@ -496,7 +496,9 @@ hc_model_validation <- function(df_list,
       }
     }
 
-    dev.off()
+    if (save_fig == TRUE) {
+      dev.off()
+    }
 
     if (sample_check == TRUE) {
       all_residuals <- do.call(rbind, formula_list)
@@ -547,7 +549,9 @@ hc_model_validation <- function(df_list,
       }
     }
 
-    dev.off()
+    if (save_fig == TRUE) {
+      dev.off()
+    }
 
     if (save_fig == TRUE) {
       grid <- c(min(length(formula_list), 3),
@@ -575,7 +579,9 @@ hc_model_validation <- function(df_list,
       }
     }
 
-    dev.off()
+    if (save_fig == TRUE) {
+      dev.off()
+    }
 
     # PACF plot
     if (save_fig == TRUE) {
@@ -600,7 +606,9 @@ hc_model_validation <- function(df_list,
       }
     }
 
-    dev.off()
+    if (save_fig == TRUE) {
+      dev.off()
+    }
   }
 
   return(list(qaic_results, qaic_summary, vif_results, vif_summary,
@@ -851,7 +859,7 @@ hc_add_national_data <- function(df_list,
   national_data <- as.data.frame(do.call(rbind, df_list))
 
   nat_pop <- pop_list[[country]] %>%
-    rename(nat_pop = .data$population)
+    rename(nat_pop = "population")
 
   national_data <- national_data %>%
     dplyr::left_join(nat_pop, by = "year") %>%
@@ -2392,7 +2400,9 @@ hc_plot_af_heat_monthly <- function(attr_mth_list,
           side = 1, line = 2, cex = 0.8, col = "red", font = 3)
   }
 
-  dev.off()
+  if (save_fig == TRUE) {
+    dev.off()
+  }
 }
 
 #' Plot attributable fractions by calendar month - low temperatures
@@ -2432,6 +2442,17 @@ hc_plot_af_cold_monthly <- function(attr_mth_list,
                     height = max(8, grid[2] * 4.5))
 
     par(mfrow = c(grid[2], grid[1]), mar = c(5, 5, 5, 5), oma = c(4, 0, 4, 0))
+  } else {
+    old_par <- graphics::par(c("mfrow", "mar", "oma", "xpd", "cex", "mex"))
+    on.exit(do.call(graphics::par, old_par), add = TRUE)
+    graphics::par(
+      mfrow = c(1, 1),
+      mar = c(5, 5, 5, 5),
+      oma = c(0, 0, 0, 0),
+      xpd = FALSE,
+      cex = 1,
+      mex = 1
+    )
   }
 
   ylim_max <- max(sapply(attr_mth_list,
@@ -2545,7 +2566,7 @@ hc_plot_af_cold_monthly <- function(attr_mth_list,
     mtext(ovr_warning, outer = TRUE,
           side = 1, line = 2, cex = 0.8, col = "red", font = 3)
 
-  dev.off()
+    dev.off()
   }
 }
 

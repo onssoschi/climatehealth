@@ -20,8 +20,6 @@
 #' @param year_col Character. Column name for the year variable.
 #' @param month_col Character. Column name for the month variable.
 #' @param case_col Character. Column name for malaria case counts.
-#' @param case_type Character. Type of malaria cases (e.g., `"malaria"`,
-#' `"malaria_under_five"`).
 #' @param tot_pop_col Character. Column name for total population.
 #' @param tmin_col Character. Column name for minimum temperature.
 #' @param tmean_col Character. Column name for mean temperature.
@@ -95,7 +93,6 @@ malaria_do_analysis <- function(health_data_path,
                                 year_col,
                                 month_col,
                                 case_col,
-                                case_type,
                                 tot_pop_col,
                                 tmin_col,
                                 tmean_col,
@@ -180,7 +177,7 @@ malaria_do_analysis <- function(health_data_path,
                                                year_col,
                                                month_col,
                                                case_col,
-                                               case_type,
+                                               case_type = "malaria",
                                                tot_pop_col,
                                                tmin_col,
                                                tmean_col,
@@ -330,7 +327,7 @@ malaria_do_analysis <- function(health_data_path,
       max_lag=max_lag,
       nk=nk,
       level = "region",
-      case_type = case_type,
+      case_type = "malaria",
       output_dir = output_dir,
       save_fig = save_fig,
       save_csv = save_csv,
@@ -368,7 +365,6 @@ malaria_do_analysis <- function(health_data_path,
                                            group_by_year = group_by_year,
                                            save_csv=save_csv,
                                            output_dir=output_dir)
-  #Attributable number plots
 
   plot_AR_Num <- NULL
   plot_AR_Fr <- NULL
@@ -376,6 +372,7 @@ malaria_do_analysis <- function(health_data_path,
   plot_avg_AR_Num <- NULL
   plot_avg_AR_per_100k <- NULL
   if (!api_mode) {
+    #Attributable number plots
     plot_AR_Num <-plot_attribution_metric(attr_data = attr_frac_num,
                                           param_term=param_term,
                                           level= level,
@@ -408,16 +405,18 @@ malaria_do_analysis <- function(health_data_path,
                                       metrics = "AR_Number",
                                       c_data = combined_data$data,
                                       param_term = param_term,
+                                      case_type = "malaria",
                                       save_fig = save_fig,
-                                      output_dir = output_dir )
+                                      output_dir = output_dir)
 
     plot_avg_AR_per_100k<-plot_avg_monthly(attr_data = attr_frac_num,
                                            level = level,
                                            metrics = "AR_per_100k",
                                            c_data = combined_data$data,
                                            param_term = param_term,
+                                           case_type = "malaria",
                                            save_fig = save_fig,
-                                           output_dir = output_dir )
+                                           output_dir = output_dir)
   }
 
   if (api_mode) {
