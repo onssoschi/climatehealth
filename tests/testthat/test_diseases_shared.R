@@ -576,7 +576,7 @@ set.seed(101)
 
 n <- 160   # slightly larger reduces spline/aliasing instability
 tmax_base <- rnorm(n, 32, 2)
-tmin_base <- rnorm(n, 22, 2)
+tmin_base <- 0.985 * tmax_base + rnorm(n, 0, 0.18)
 ndvi_base <- runif(n, 0.4, 0.8)
 
 CHECK_VIF_DF <- data.frame(
@@ -651,6 +651,7 @@ test_that(
 
 # Moderate Colinearity
 set.seed(55)
+mod_tmax <- rnorm(100, mean = 32, sd = 2)
 
 MOD_COL_DF <- data.frame(
   district_code = rep(c("D1", "D2", "D3", "D4", "D5"), 20),
@@ -659,10 +660,10 @@ MOD_COL_DF <- data.frame(
   time          = 1:100,
   tot_pop       = sample(1000:1500, 100, replace = TRUE),
   malaria       = sample(10:30, 100, replace = TRUE),
-  tmax          = rnorm(100, mean = 32, sd = 2),
+  tmax          = mod_tmax,
   tmax_lag1     = 0.85 * rnorm(100, mean = 32, sd = 2) + rnorm(100, 0, 1.2),
   tmax_lag2     = 0.65 * rnorm(100, mean = 32, sd = 2) + rnorm(100, 0, 1.5),
-  tmin          = rnorm(100, mean = 22, sd = 2),
+  tmin          = 0.92 * mod_tmax + rnorm(100, 0, 0.8),
   tmin_lag1     = 0.85 * rnorm(100, mean = 22, sd = 2) + rnorm(100, 0, 1.2),
   tmin_lag2     = 0.65 * rnorm(100, mean = 22, sd = 2) + rnorm(100, 0, 1.5),
   ndvi          = runif(100, 0.4, 0.8),
