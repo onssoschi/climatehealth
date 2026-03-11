@@ -68,8 +68,8 @@ admissions)}
 
 \item{population_col}{Character. Name of the column in the dataframe that
 contains the population data. Defaults to NULL. This is only required when
-requesting region-level AF/AN outputs and no \code{pop} column is already
-present in the input data.}
+requesting region-level AF/AN outputs and no \code{pop} column is already present
+in the input data.}
 
 \item{rh_col}{Character. Name of the column containing relative humidity
 values. Defaults to NULL.}
@@ -167,6 +167,86 @@ Further details on the input data requirements, methodology, quality information
 and guidance on interpreting outputs can be found in the accompanying published
 \href{https://doi.org/10.5281/zenodo.14052184}{Zenodo documentation}.
 }
+\examples{
+\dontrun{
+wildfire_do_analysis(
+health_path = "input/ data_with_wildfire_pm.csv",
+join_wildfire_data = FALSE,
+ncdf_path = NULL,
+shp_path = NULL,
+date_col = "date",
+region_col = "region",
+shape_region_col = NULL,
+mean_temperature_col = "tmean",
+health_outcome_col = "death",
+population_col = "population",
+rh_col = NULL,
+wind_speed_col = NULL,
+pm_2_5_col = " mean_PM ",
+wildfire_lag = 3,
+temperature_lag = 1,
+spline_temperature_lag = 0,
+spline_temperature_degrees_freedom = 6,
+predictors_vif = c("mean_PM", "tmean"),
+calc_relative_risk_by_region = TRUE,
+scale_factor_wildfire_pm = 10,
+save_fig = TRUE,
+save_csv = TRUE,
+output_folder_path = "output",
+create_run_subdir = TRUE,
+print_vif = FALSE,
+print_model_summaries = FALSE)
+}
+
+\dontrun{
+wildfire_do_analysis(
+health_path ="input/data_no_wildfire_pm.csv",
+join_wildfire_data = TRUE,
+ncdf_path = "input/europePMfire01deg_2003to2024.nc4",
+shp_path = "input/RGN_DEC_2023_EN_BUC.shp",
+date_col = "date",
+region_col = "regnames",
+shape_region_col = "RGN23NM",
+mean_temperature_col = "tmean",
+health_outcome_col = "death",
+population_col = "population",
+rh_col = NULL,
+wind_speed_col = NULL,
+pm_2_5_col = "mean_PM ",
+wildfire_lag = 3,
+temperature_lag = 1,
+spline_temperature_lag = 0,
+spline_temperature_degrees_freedom = 6,
+predictors_vif = c("mean_PM", "tmean"),
+calc_relative_risk_by_region = TRUE,
+scale_factor_wildfire_pm = 10,
+save_fig = TRUE,
+save_csv = TRUE,
+output_folder_path = "output",
+create_run_subdir = TRUE,
+print_vif = FALSE,
+print_model_summaries = FALSE)
+}
+
+}
 \references{
-to be updated
+\enumerate{
+\item Brown A, Soutter E, Ingole V., Standards for Official Statistics on
+Climate-Health Interactions (SOSCHI): Wildfires: introduction. Zenodo; 2024.
+Available from: \url{https://zenodo.org/records/14052184}
+\item Hänninen R, Sofiev M, Uppstu A, Kouznetsov R.Daily surface
+concentration of fire related PM2.5 for 2003-2023, modelled by SILAM CTM
+when using the MODIS satellite data for the fire radiative power.
+Finnish Meteorological Institute; 2024. Available from:
+\url{https://doi.org/10.57707/FMI- B2SHARE.D1CAC971B3224D438D5304E945E9F16C}
+\item GADM. Database for Global Administrative Areas.Available from:
+\url{https://gadm.org/download_country.html}
+\item Tobias A, Kim Y, Madaniyazi L. Time-stratified case-crossover studies
+for aggregated data in environmental epidemiology: a tutorial.
+Int J Epidemiol. 2024;53(2). Available from:
+\url{https://doi.org/10.1093/ije/dyae020}
+\item Wu Y, Li S, Guo Y. Space-Time-Stratified Case-Crossover Design in
+Environmental Epidemiology Study. Heal Data Sci. 2021;
+Available from: \url{https://doi.org/10.34133/2021/9870798}
+}
 }
