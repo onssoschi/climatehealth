@@ -80,6 +80,7 @@ Suggests:
     mvmeta,
     openxlsx,
     patrick,
+    pkgload,
     stringdist,
     terra,
     testthat (>= 3.2.1.1),

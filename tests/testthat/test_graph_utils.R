@@ -1,5 +1,13 @@
 # Test for graph_utils.R
 
+if (!exists("with_parameters_test_that")) {
+  source("tests/testthat/helper-libraries.R", local = FALSE)
+}
+
+if (!"package:climatehealth" %in% search()) {
+  pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
+}
+
 # Tests for create_grid
 patrick::with_parameters_test_that(
   "Create grid works as intended",
@@ -620,4 +628,3 @@ test_that(
     )
   }
 )
-

@@ -3,6 +3,10 @@
 # Note: rlang::abort() stores metadata as named list elements accessible
 # via $, not as attributes accessible via attr().
 
+if (!"package:climatehealth" %in% search()) {
+  pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
+}
+
 test_that("abort_climate raises error with correct class hierarchy", {
   err <- tryCatch(
     abort_climate("Test error", "test_type"),

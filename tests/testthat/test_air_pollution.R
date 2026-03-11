@@ -1,5 +1,9 @@
 # Unit tests for air_pollution.R
 
+if (!"package:climatehealth" %in% search()) {
+  pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
+}
+
 # Test for load_air_pollution_data
 test_that("Synthetic air pollution data loaded in and formatted as expected", {
 
@@ -1041,9 +1045,9 @@ test_that("air_pollution_descriptive_stats works when no env vars are present", 
 })
 
 test_that("air_pollution_descriptive_stats with moving_average_window = 1 returns identical series", {
-  res <- with_mocked_bindings({
+  res <- suppressWarnings(with_mocked_bindings({
     air_pollution_descriptive_stats(APDS_TEST_DATA, moving_average_window = 1)
-  }, run_descriptive_stats = function(...) list())
+  }, run_descriptive_stats = function(...) list()))
 
   expect_equal(res$deaths_ma1, res$deaths)
   # A couple of env vars spot-checks
@@ -1314,9 +1318,9 @@ test_that("fit_air_pollution_gam falls back to naive cumulative SE when vcov() f
   se_naive   <- sqrt(sum(c(se_pm25, se_lag1, se_lag2)^2))
 
   # Now run under test while mocking vcov to fail inside the function
-  res <- with_mocked_bindings({
+  res <- suppressWarnings(with_mocked_bindings({
     fit_air_pollution_gam(lag, max_lag = 2)
-  }, vcov = function(object, ...) stop("no vcov for you"))
+  }, vcov = function(object, ...) stop("no vcov for you")))
 
   coef_table <- res$coef_table
   row_cum <- subset(coef_table, grepl("^0-", as.character(lag)))
@@ -5051,7 +5055,7 @@ test_that("integration: do_analysis handles multiple references and include_nati
   f <- tempfile(fileext = ".csv"); on.exit(unlink(f), add = TRUE)
   write.csv(df, f, row.names = FALSE)
 
-  res <- air_pollution_do_analysis(
+  res <- suppressWarnings(air_pollution_do_analysis(
     data_path = f,
     date_col = "date", region_col = "region",
     pm25_col = "pm25", deaths_col = "deaths", population_col = "population",
@@ -5063,7 +5067,7 @@ test_that("integration: do_analysis handles multiple references and include_nati
     include_national = FALSE,
     output_dir =  tempfile("ap_res_"), save_outputs = T,
     run_descriptive = FALSE, run_power = FALSE
-  )
+  ))
 
   # both references populated
   expect_true(all(c("WHO","UKHSA") %in% names(res$analysis_results)))
@@ -5109,7 +5113,7 @@ test_that("integration: do_analysis saves the expected number of images per refe
   }
 
   # run with saving on
-  out <- with_mocked_bindings({
+  out <- suppressWarnings(with_mocked_bindings({
     air_pollution_do_analysis(
       data_path = f,
       date_col = "date", region_col = "region",
@@ -5125,7 +5129,7 @@ test_that("integration: do_analysis saves the expected number of images per refe
     )
   },
   ggsave = mock_ggsave, .package = "ggplot2"
-  )
+  ))
 
   # Expect 11 files per reference
   expect_equal(length(captured$files), 22L)

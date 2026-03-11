@@ -1,5 +1,13 @@
 # Tests for diseases_shared.R
 
+if (!exists("with_parameters_test_that")) {
+  source("tests/testthat/helper-libraries.R", local = FALSE)
+}
+
+if (!"package:climatehealth" %in% search()) {
+  pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
+}
+
 # Create temp_dir to be used by all MH tests
 temp_dir <- tempdir()
 temp_dir <- file.path(temp_dir, "diseases_shared_tests")
@@ -77,6 +85,7 @@ with_parameters_test_that(
             return(tmp_csv)
         },
         function() {
+            testthat::skip_if_not_installed("openxlsx")
             tmp_xlsx <- file.path(tempdir(), "LAPD_test_data.xlsx")
             openxlsx::write.xlsx(LAPD_test_data, tmp_xlsx)
             return(tmp_xlsx)
@@ -256,6 +265,7 @@ with_parameters_test_that(
             return(tmp_csv)
         },
         function() {
+            testthat::skip_if_not_installed("openxlsx")
             tmp_xlsx <- file.path(tempdir(), "LAPD_test_data.xlsx")
             openxlsx::write.xlsx(LAPCD_test_data, tmp_xlsx)
             return(tmp_xlsx)
@@ -1808,32 +1818,32 @@ test_that(
     with_mocked_bindings(
       {
         # Suppress missing cols warning for testing
-        suppressWarnings(
-          result <- climatehealth:::attribution_calculation(
+        result <- expect_warning(
+          climatehealth:::attribution_calculation(
             data = zero_pop_data,
             param_term = "temp",
             model = AC_model,
             level = "region",
             case_type = "malaria"
-          )
+          ),
+          "Population denominator is zero or missing"
         )
         expect_s3_class(result, "tbl_df")
         expect_equal(nrow(result), nrow(zero_pop_data))
 
-        # AR_Number, AR_Fraction, AR_per_100k should not error
-        expect_true(all(is.numeric(result$AR_Number)))
-        expect_true(all(is.numeric(result$AR_Fraction)))
-        expect_true(all(is.numeric(result$AR_per_100k)))
+        # AR_Number, AR_Fraction, AR_per_100k are numeric
+        expect_true(is.numeric(result$AR_Number))
+        expect_true(is.numeric(result$AR_Fraction))
+        expect_true(is.numeric(result$AR_per_100k))
 
-        # No NaN; allow NA or Inf
-        expect_true(all(!is.nan(result$AR_Number)))
-        expect_true(all(!is.nan(result$AR_Fraction)))
-        expect_true(all(!is.nan(result$AR_per_100k)))
+        # AR_Number and AR_Fraction, are non-negative
+        expect_true(all(result$AR_Number >= 0, na.rm = TRUE))
+        expect_true(all(result$AR_Fraction >= 0, na.rm = TRUE))
 
-        # Non-negative (includes Inf)
-        expect_true(all(is.na(result$AR_Number)   | result$AR_Number   >= 0))
-        expect_true(all(is.na(result$AR_Fraction) | result$AR_Fraction >= 0))
-        expect_true(all(is.na(result$AR_per_100k) | result$AR_per_100k >= 0))
+        # Point estimate (fit) stored in AR_per_100k must be 0, CI columns may be NA
+        expect_true(any(result$AR_per_100k == 0))
+        expect_true(all(is.na(result$AR_per_100k) | result$AR_per_100k == 0))
+
       },
       validate_case_type = mock_validate,
       create_inla_indices = mock_indices,
@@ -1842,6 +1852,97 @@ test_that(
     )
   }
 )
+
+test_that("MER-empty with valid population returns AR_per_100k = 0", {
+  skip_if_not_installed("INLA")
+
+  flat_data <- AC_data
+  flat_data$temp <- rep(0, nrow(flat_data))
+
+  mock_crosspred <- function(basis, coef, vcov, model.link, bylag, cen, ...) {
+    list(
+      predvar    = c(0, 1),
+      allRRfit   = c(1, 1),
+      allRRlow   = c(1, 1),
+      allRRhigh  = c(1, 1)
+    )
+  }
+
+  with_mocked_bindings(
+    {
+      with_mocked_bindings(
+        {
+          result <- climatehealth:::attribution_calculation(
+            data = flat_data,
+            param_term = "temp",
+            model = AC_model,
+            level = "region",
+            case_type = "malaria"
+          )
+
+          expect_true(all(is.na(result$MER_Lower)))
+          expect_true(all(is.na(result$MER_Upper)))
+
+          expect_equal(unique(result$AR_per_100k), 0)
+        },
+        crosspred = mock_crosspred,
+        .package = "dlnm"
+      )
+    },
+    validate_case_type = mock_validate,
+    create_inla_indices = mock_indices,
+    set_cross_basis = mock_basis,
+    .package = "climatehealth"
+  )
+})
+
+
+
+test_that("MER-empty with zero population returns AR_per_100k = 0 with no warning", {
+  skip_if_not_installed("INLA")
+
+  zero_pop <- AC_data
+  zero_pop$tot_pop <- 0
+  zero_pop$temp <- rep(0, nrow(zero_pop))
+
+  mock_crosspred <- function(basis, coef, vcov, model.link, bylag, cen, ...) {
+    list(
+      predvar    = c(0, 1),
+      allRRfit   = c(1, 1),
+      allRRlow   = c(1, 1),
+      allRRhigh  = c(1, 1)
+    )
+  }
+
+  with_mocked_bindings(
+    {
+      with_mocked_bindings(
+        {
+          res <- climatehealth:::attribution_calculation(
+            data = zero_pop,
+            param_term = "temp",
+            model = AC_model,
+            level = "region",
+            case_type = "malaria"
+          )
+
+          # MER empty
+          expect_true(all(is.na(res$MER_Lower)))
+          expect_true(all(is.na(res$MER_Upper)))
+
+          # AR_per_100k must be 0 (not NA)
+          expect_equal(unique(res$AR_per_100k), 0)
+        },
+        crosspred = mock_crosspred,
+        .package = "dlnm"
+      )
+    },
+    validate_case_type = mock_validate,
+    create_inla_indices = mock_indices,
+    set_cross_basis = mock_basis,
+    .package = "climatehealth"
+  )
+})
 
 test_that(
   "attribution_calculation returns NULL if crosspred fails",
@@ -1967,6 +2068,35 @@ test_that(
     )
   }
 )
+
+test_that("Attribution with valid MER produces numeric AR_per_100k", {
+  skip_if_not_installed("INLA")
+
+  # Use AC_data as-is where temp varies enough to produce MER
+  valid_res <- with_mocked_bindings(
+    climatehealth:::attribution_calculation(
+      data = AC_data,
+      param_term = "temp",
+      model = AC_model,
+      level = "region",
+      case_type = "malaria",
+      param_threshold = 0.5   # ensure RR>threshold for some entries
+    ),
+    validate_case_type = mock_validate,
+    create_inla_indices = mock_indices,
+    set_cross_basis = mock_basis,
+    .package = "climatehealth"
+  )
+
+  # Only test the point estimate column
+  ar_point <- valid_res$AR_per_100k
+
+  # Should have some numeric output
+  expect_true(any(!is.na(ar_point)))
+
+  # All non-NA values must be finite numeric values
+  expect_true(all(is.finite(ar_point[!is.na(ar_point)])))
+})
 
 test_that(
   "attribution_calculation runs as expected.",
@@ -2363,6 +2493,8 @@ attr_df <- data.frame(
   AR_Fraction  = runif(24, 0, 0.1)
 )
 
+attr_list <- list(overall_month = attr_df)
+
 c_df <- data.frame(
   month   = rep(1:12, 2),
   year    = rep(2020:2021, each = 12),
@@ -2372,14 +2504,16 @@ c_df <- data.frame(
   rainfall = runif(24, 0, 100)
 )
 
+case_type = "malaria"
 
 # Basic structure tests
 test_that("plot_avg_monthly returns a named list per metric", {
   res <- plot_avg_monthly(
-    attr_data = attr_df,
+    attr_data = attr_list,
     c_data = c_df,
     metrics = c("AR_Number", "AR_Fraction"),
     param_term = "tmax",
+    case_type = case_type,
     level = "country",
     save_fig = FALSE
   )
@@ -2390,10 +2524,11 @@ test_that("plot_avg_monthly returns a named list per metric", {
 
 test_that("country-level output returns exactly one plot per metric", {
   res <- plot_avg_monthly(
-    attr_data = attr_df,
+    attr_data = attr_list,
     c_data = c_df,
     metrics = "AR_Number",
     param_term = "tmax",
+    case_type = case_type,
     level = "country",
     save_fig = FALSE
   )
@@ -2402,14 +2537,53 @@ test_that("country-level output returns exactly one plot per metric", {
   expect_s3_class(res[["AR_Number"]][["Country"]], "ggplot")
 })
 
+# Numeric regression test
+test_that("plot_avg_monthly correctly uses mean aggregation for AR_Number", {
+  # tiny fixture with known values
+  attr_df <- data.frame(
+    month = c(1, 1),
+    year = c(2020, 2021),
+    region = c("North", "North"),
+    district = c("A", "A"),
+    AR_Number = c(10, 30),
+    AR_per_100k = c(5, 15),
+    AR_Fraction = c(0.01, 0.02)
+  )
+
+  attr_list <- list(overall_month = attr_df)
+
+  c_df <- data.frame(
+    month = c(1,1),
+    year = c(2020,2021),
+    region = c("North","North"),
+    district = c("A","A"),
+    tmax = c(25, 25)
+  )
+
+  res <- plot_avg_monthly(
+    attr_data = attr_list,
+    c_data = c_df,
+    metrics = "AR_Number",
+    param_term = "tmax",
+    case_type = "malaria",
+    level = "region",
+    save_fig = FALSE
+  )
+
+  pd <- ggplot_build(res$AR_Number$North)$data[[1]]
+
+  # Mean(10, 30) = 20
+  expect_equal(unique(pd$y), 20)
+})
 
 # Region and district grouping tests
 test_that("region-level plots return one entry per region", {
   res <- plot_avg_monthly(
-    attr_data = attr_df,
+    attr_data = attr_list,
     c_data = c_df,
     metrics = "AR_Number",
     param_term = "tmax",
+    case_type = case_type,
     level = "region",
     save_fig = FALSE
   )
@@ -2420,10 +2594,11 @@ test_that("region-level plots return one entry per region", {
 
 test_that("district-level plots return one entry per district", {
   res <- plot_avg_monthly(
-    attr_data = attr_df,
+    attr_data = attr_list,
     c_data = c_df,
     metrics = "AR_Number",
     param_term = "tmax",
+    case_type = case_type,
     level = "district",
     save_fig = FALSE
   )
@@ -2435,11 +2610,12 @@ test_that("district-level plots return one entry per district", {
 # 3. Filtering by year
 test_that("filter_year restricts data before aggregation", {
   res <- plot_avg_monthly(
-    attr_data = attr_df,
+    attr_data = attr_list,
     c_data = c_df,
     metrics = "AR_Number",
     filter_year = 2020,
     param_term = "tmax",
+    case_type = case_type,
     level = "country",
     save_fig = FALSE
   )
@@ -2453,10 +2629,11 @@ test_that("filter_year restricts data before aggregation", {
 test_that("invalid level throws an error", {
   expect_error(
     plot_avg_monthly(
-      attr_data = attr_df,
+      attr_data = attr_list,
       c_data = c_df,
       metrics = "AR_Number",
       param_term = "tmax",
+      case_type = case_type,
       level = "banana"
     ),
     "should be one of"
@@ -2466,10 +2643,11 @@ test_that("invalid level throws an error", {
 test_that("invalid metrics throw an error", {
   expect_error(
     plot_avg_monthly(
-      attr_data = attr_df,
+      attr_data = attr_list,
       c_data = c_df,
       metrics = "BadMetric",
-      param_term = "tmax"
+      param_term = "tmax",
+      case_type = case_type
     ),
     "should be one of"
   )
@@ -2483,19 +2661,21 @@ test_that("missing metric column errors", {
       attr_data = bad_df,
       c_data = c_df,
       metrics = "AR_Number",
-      param_term = "tmax"
+      param_term = "tmax",
+      case_type = case_type,
     ),
-    regexp = "Column `AR_Number` not found"
+    regexp = "Metric `AR_Number` is not available in `attr_data`."
   )
 })
 
 test_that("missing param_term in climate data errors", {
   expect_error(
     plot_avg_monthly(
-      attr_data = attr_df,
+      attr_data = attr_list,
       c_data = c_df %>% select(-tmax),
       metrics = "AR_Number",
-      param_term = "tmax"
+      param_term = "tmax",
+      case_type = case_type
     ),
     regexp = "Column `tmax` not found"
   )
@@ -2505,10 +2685,11 @@ test_that("missing param_term in climate data errors", {
 # 5. Multiple metrics behave independently
 test_that("multiple metrics produce independent plot lists", {
   res <- plot_avg_monthly(
-    attr_data = attr_df,
+    attr_data = attr_list,
     c_data = c_df,
     metrics = c("AR_Number", "AR_per_100k"),
     param_term = "rainfall",
+    case_type = case_type,
     level = "country"
   )
 
@@ -2523,10 +2704,11 @@ test_that("saving PDF produces a file", {
   tmp <- tempdir()
 
   plot_avg_monthly(
-    attr_data = attr_df,
+    attr_data = attr_list,
     c_data = c_df,
     metrics = "AR_Number",
     param_term = "tmax",
+    case_type = case_type,
     level = "country",
     save_fig = TRUE,
     output_dir = tmp

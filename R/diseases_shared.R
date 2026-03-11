@@ -190,7 +190,7 @@ load_and_process_data <- function(health_data_path,
   }
   if (!is.null(date_col)) {
     data <- data %>% rename(
-      date = date_col
+      date = all_of(date_col)
     ) %>%
       mutate(
         year = lubridate::year(date),
@@ -1822,7 +1822,7 @@ attribution_calculation <- function(data,
 
   ## Grouping logic
   grp_vars <- switch(level,
-                     "country"  = if (group_by_year) c("year","month") else c("year","month"),
+                     "country"  = if (group_by_year) c("year") else c("year","month"),
                      "region"   = if (group_by_year) c("region", "year") else c("region", "year", "month"),
                      "district" = if (group_by_year) c("region", "district", "year")
                      else c("region", "district", "year", "month"),
@@ -1866,7 +1866,7 @@ attribution_calculation <- function(data,
     tot_pop <- sum(df$tot_pop, na.rm = TRUE)
     cases   <- df[[case_type]]
 
-    get_vals <- function(rr) {
+    get_vals <- function(rr, warn = FALSE) {
 
       id <- which(df[[param_term]] >= MER_L &
                     df[[param_term]] <= MER_U &
@@ -1876,12 +1876,24 @@ attribution_calculation <- function(data,
 
       af <- 1 - 1 / mean(rr[id])
       an <- af * sum(cases[id], na.rm = TRUE)
-      ar <- (an / tot_pop) * 1e5
+      if (is.na(tot_pop) || tot_pop == 0) {
+        if (warn) {
+          warning(
+            "Population denominator is zero or missing for group: ",
+            paste(df[1, grp_vars, drop = TRUE], collapse = ", "),
+            ". AR_per_100k set to NA."
+          )
+        }
+
+        ar <- NA_real_
+      } else {
+        ar <- (an / tot_pop) * 1e5
+      }
 
       c(af, an, ar)
     }
 
-    fit  <- get_vals(rr_fit)
+    fit  <- get_vals(rr_fit, warn = TRUE)
     low  <- get_vals(rr_low)
     high <- get_vals(rr_high)
 
@@ -2335,137 +2347,194 @@ plot_attribution_metric <- function(attr_data,
 #' is returned invisibly when plots are saved to file.
 #'
 #' @keywords internal
-
 plot_avg_monthly <- function(attr_data,
-                             level = "country",
+                             level = c("country","region","district"),
                              metrics = c("AR_Number","AR_per_100k","AR_Fraction"),
                              c_data,
                              param_term,
+                             case_type,
                              filter_year = NULL,
                              save_fig = FALSE,
                              output_dir = NULL) {
 
+
   level <- match.arg(level, choices = c("country", "region", "district"))
-  if (save_fig && !dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
   if (length(dev.list()) > 0) dev.off()
 
-  # Loop over metrics if multiple
+  capt_start <- function(x){
+    paste0(toupper(substr(x,1,1)), substr(x,2,nchar(x)))
+  }
+
+  if(save_fig){
+    if(is.null(output_dir)) stop("'output_dir' must be provided when saving figures")
+    if(!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
+  }
+
+  # allowable metrics for function
+  valid_metrics <- c("AR_Number","AR_per_100k","AR_Fraction")
+
+  # validate metrics argument
+  metrics <- match.arg(metrics, valid_metrics, several.ok = TRUE)
+
+  # extract attr_df
+  if (is.list(attr_data) && "overall_month" %in% names(attr_data)) {
+    attr_df <- attr_data$overall_month
+  } else {
+    attr_df <- attr_data
+  }
+
+  # Validate required metric columns exist
+  for (m in metrics) {
+    if (!m %in% names(attr_df)) {
+      stop(sprintf(
+        "Metric `%s` is not available in `attr_data`. Available numeric columns are: %s",
+        m,
+        paste(names(attr_df), collapse = ", ")
+      ))
+    }
+  }
+
+  clim_df <- c_data
+
+  # Validate climate param column
+  if (!param_term %in% names(clim_df)) {
+    stop(sprintf("Column `%s` not found", param_term))
+  }
+
+  if(!is.null(filter_year)){
+    attr_df <- dplyr::filter(attr_df, year %in% filter_year)
+    clim_df <- dplyr::filter(clim_df, year %in% filter_year)
+  }
+
+  group_col <- switch(level,
+                      country = NULL,
+                      region = "region",
+                      district = "district")
+
+  groups <- if(is.null(group_col)) list(NULL) else sort(unique(attr_df[[group_col]]))
+
+  climate_label <- switch(param_term,
+                          tmax = "Temperature (\u00B0C)",
+                          rainfall = "Rainfall (mm)",
+                          param_term)
+
   all_plots <- list()
 
-  for (metric in metrics) {
-    # ensure metric is allowed
-    metric <- match.arg(metric, c("AR_Number", "AR_per_100k", "AR_Fraction"))
-
-    # Labels and aggregation
-    climate_label <- switch(param_term,
-                            tmax="Temperature (\u00B0C)",
-                            rainfall="Rainfall (mm)",
-                            param_term)
-    agg_fun <- switch(metric, AR_Number=sum, AR_per_100k=mean, AR_Fraction=mean)
+  for(metric in metrics){
     y_lab <- switch(metric,
-                    AR_Number="Attributable Number",
-                    AR_per_100k="AR per 100,000",
-                    AR_Fraction="Attributable Fraction")
+                    AR_Number = "Attributable Number",
+                    AR_per_100k = "AR per 100,000",
+                    AR_Fraction = "Attributable Fraction (%)")
+
     y_fmt <- switch(metric,
-                    AR_Number=scales::label_comma(),
-                    AR_per_100k=scales::label_number(0.1),
-                    AR_Fraction=scales::label_number(0.01))
+                    AR_Number = scales::label_comma(),
+                    AR_per_100k = scales::label_number(accuracy=0.1),
+                    AR_Fraction = scales::label_number(accuracy=0.01))
+
     title_lab <- switch(metric,
-                        AR_Number="Under-five Diarrhea Attributable Number",
-                        AR_per_100k="Under-five Diarrhea Attributable Rate per 100,000 population",
-                        AR_Fraction="Under-five Diarrhea Attributable Fraction")
+                        AR_Number = paste(capt_start(case_type),"Attributable Number"),
+                        AR_per_100k = paste(capt_start(case_type),"Attributable Rate per 100,000 population"),
+                        AR_Fraction = paste(capt_start(case_type),"Attributable Fraction"))
 
-    # Filter by year
-    if (!is.null(filter_year)) {
-      attr_data <- dplyr::filter(attr_data, year %in% filter_year)
-      c_data <- dplyr::filter(c_data, year %in% filter_year)
-    }
-
-    group_col <- switch(level, country=NULL, region="region", district="district")
-    groups <- if (is.null(group_col)) list(NULL) else sort(unique(attr_data[[group_col]]))
-
-    # Climate overlay function
-    add_climate <- function(p, ydat, cdat) {
-      pad <- 0.05 * max(ydat$value, na.rm=TRUE)
+    add_climate <- function(p, ydat, cdat){
+      ymax <- max(ydat$value, na.rm=TRUE)
+      if(!is.finite(ymax)) ymax <- 0
+      pad <- 0.05*ymax
       rng <- range(cdat$climate, na.rm=TRUE)
-      if(diff(rng) == 0) rng[2] <- rng[1] + 1
-      sf <- (max(ydat$value, na.rm=TRUE) + 2*pad) / diff(rng)
-      cdat$climate_scaled <- (cdat$climate - min(rng)) * sf + pad
-      p + ggplot2::geom_line(data=cdat,
-                             ggplot2::aes(x=month, y=climate_scaled, group=1),
-                             color="red", linewidth=1) +
-        ggplot2::scale_y_continuous(labels=y_fmt,
-                                    breaks=scales::pretty_breaks(5),
-                                    expand=ggplot2::expansion(mult=c(0,0.05)),
-                                    sec.axis=ggplot2::sec_axis(~(. - pad)/sf + min(rng),
-                                                               name=climate_label,
-                                                               breaks=scales::pretty_breaks(5)))
+      if(!all(is.finite(rng))) return(p)
+      if(diff(rng)==0) rng[2] <- rng[1]+1
+      sf <- (ymax+2*pad)/diff(rng)
+      cdat$climate_scaled <- (cdat$climate-min(rng))*sf + pad
+
+      p +
+        ggplot2::geom_line(data=cdat,
+                           ggplot2::aes(x=month,y=climate_scaled,group=1),
+                           colour="red",
+                           linewidth=1) +
+        ggplot2::scale_y_continuous(
+          labels=y_fmt,
+          breaks=scales::pretty_breaks(5),
+          expand=ggplot2::expansion(mult=c(0,0.05)),
+          sec.axis=ggplot2::sec_axis(~(. - pad)/sf + min(rng),
+                                     name=climate_label,
+                                     breaks=scales::pretty_breaks(5))
+        )
     }
 
-    # Generate plots
-    plots <- lapply(groups, function(g) {
-      df <- if(is.null(group_col)) attr_data else dplyr::filter(attr_data, .data[[group_col]] == g)
+    plots <- lapply(groups, function(g){
+      df <- if(is.null(group_col)) attr_df else dplyr::filter(attr_df,.data[[group_col]]==g)
+      if(nrow(df)==0) return(NULL)
       ydat <- df %>%
         dplyr::group_by(month) %>%
-        dplyr::summarise(value = agg_fun(.data[[metric]], na.rm=TRUE), .groups = "drop") %>%
-        dplyr::mutate(month = factor(month, 1:12, month.abb))
+        dplyr::summarise(
+          value = mean(.data[[metric]], na.rm=TRUE),
+          .groups="drop"
+        ) %>%
+        dplyr::mutate(month=factor(month,levels=1:12,labels=month.abb))
 
-      p <- ggplot2::ggplot(ydat, ggplot2::aes(month, value)) +
+      cdat <- clim_df %>%
+        dplyr::filter(if(is.null(group_col)) TRUE else .data[[group_col]]==g) %>%
+        dplyr::group_by(month) %>%
+        dplyr::summarise(climate=mean(.data[[param_term]],na.rm=TRUE),
+                         .groups="drop") %>%
+        dplyr::mutate(month=factor(month,levels=1:12,labels=month.abb))
+      p <- ggplot2::ggplot(ydat, ggplot2::aes(month,value)) +
         ggplot2::geom_col(fill="steelblue") +
-        ggplot2::labs(x="Month", y=y_lab, subtitle=if(!is.null(g)) g else NULL,
+        ggplot2::labs(x="Month",
+                      y=y_lab,
+                      subtitle=if(!is.null(g)) g else NULL,
                       title=if(is.null(g)) title_lab else NULL) +
         ggplot2::theme_minimal() +
-        ggplot2::theme(axis.title.y.left=ggplot2::element_text(size=13, face="bold"),
-                       axis.title.y.right=ggplot2::element_text(size=13, face="bold"),
-                       axis.text.y.left=ggplot2::element_text(size=16, face="bold"),
-                       axis.text.y.right=ggplot2::element_text(size=16, face="bold"),
-                       axis.text.x=ggplot2::element_text(size=14, face="bold"),
-                       plot.title=ggplot2::element_text(hjust=0.5, face="bold", size=14),
-                       plot.subtitle=ggplot2::element_text(hjust=0.5, face="bold", size=12))
-
-      # Climate overlay
-      cdat <- c_data %>%
-        dplyr::filter(if(is.null(group_col)) TRUE else .data[[group_col]] == g) %>%
-        dplyr::group_by(month) %>%
-        dplyr::summarise(climate = mean(.data[[param_term]], na.rm=TRUE), .groups="drop") %>%
-        dplyr::mutate(month = factor(month, 1:12, month.abb))
-      p <- add_climate(p, ydat, cdat)
-
-      p
+        ggplot2::theme(
+          axis.title.y.left=ggplot2::element_text(size=12,face="bold"),
+          axis.title.y.right=ggplot2::element_text(size=12,face="bold"),
+          axis.text.y=ggplot2::element_text(size=12,face="bold"),
+          axis.text.x=ggplot2::element_text(size=8,face="bold"),
+          plot.title=ggplot2::element_text(hjust=0.5,face="bold",size=14),
+          plot.subtitle=ggplot2::element_text(hjust=0.5,face="bold",size=12)
+        )
+      add_climate(p,ydat,cdat)
     })
 
-    names(plots) <- if(is.null(group_col)) "Country" else groups
+    plots <- Filter(Negate(is.null),plots)
+    if(length(plots)>0){
+      names(plots) <- if(is.null(group_col)) "Country" else groups
+    }
     all_plots[[metric]] <- plots
   }
 
-  # Save / print all plots
-  for (metric_name in names(all_plots)) {
+  for(metric_name in names(all_plots)){
     plots <- all_plots[[metric_name]]
-    title_lab <- switch(metric_name,
-                        AR_Number="Under-five Diarrhea Attributable Number",
-                        AR_per_100k="Under-five Diarrhea Attributable Rate per 100,000 population",
-                        AR_Fraction="Under-five Diarrhea Attributable Fraction")
-
-    if(save_fig && !is.null(output_dir)) {
+    if(length(plots)==0) next
+    if(save_fig){
       grDevices::pdf(file.path(output_dir,
-                               paste0("monthly_", metric_name, "_", level, ".pdf")),
-                     width=12, height=12)
-      if(level == "country") {
-        lapply(plots, print)
+                               paste0("monthly_",metric_name,"_",level,".pdf")),
+                     width=12,height=12)
+
+      if(level=="country"){
+        lapply(plots,print)
       } else {
-        plot_pages <- split(plots, ceiling(seq_along(plots)/9))
-        for(pg in plot_pages) print(
-          patchwork::wrap_plots(pg, ncol=3, nrow=3) +
-            patchwork::plot_annotation(title = title_lab,
-                                       theme = ggplot2::theme(
-                                         plot.title = ggplot2::element_text(hjust=0.5, face="bold", size=12))))
+        plot_pages <- split(plots,ceiling(seq_along(plots)/9))
+        for(pg in plot_pages){
+          print(
+            patchwork::wrap_plots(pg,ncol=3,nrow=3) +
+              patchwork::plot_annotation(
+                title=switch(metric_name,
+                             AR_Number=paste(capt_start(case_type),"Attributable Number"),
+                             AR_per_100k=paste(capt_start(case_type),"Attributable Rate per 100,000 population"),
+                             AR_Fraction=paste(capt_start(case_type),"Attributable Fraction")),
+
+                theme=ggplot2::theme(
+                  plot.title=ggplot2::element_text(hjust=0.5,face="bold",size=12)
+                )
+              )
+          )
+        }
       }
       dev.off()
-    } else if (interactive()) {
-      lapply(plots, print)
+    } else {
+      lapply(plots,print)
     }
-
   }
-
   invisible(all_plots)
 }

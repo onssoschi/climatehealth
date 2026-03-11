@@ -2,6 +2,10 @@
 #'
 #' Tests cross-platform memory detection.
 
+if (!exists("load_throttle_modules")) {
+  source("tests/testthat/helper-throttle_modules.R", local = FALSE)
+}
+
 context("Throttle Memory")
 
 if (!exists("get_system_memory")) {
