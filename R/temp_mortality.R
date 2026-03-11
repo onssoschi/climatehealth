@@ -8,7 +8,7 @@
 #' outcome and climate data per geography.
 #'
 #' @param dependent_col Character. Name of the column in the dataframe
-#' containing the dependent health outcome variable e.g,. deaths.
+#' containing the dependent health outcome variable e.g. deaths.
 #' @param date_col Character. Name of the column in the dataframe containing
 #' the date.
 #' @param region_col Character. Name of the column in the dataframe that
@@ -2941,22 +2941,22 @@ hc_save_results <- function(rr_results,
   }
 }
 
-#' Full analysis pipeline for the 'mortality attributable to high and low
+#' Full analysis for the 'mortality attributable to high and low
 #' temperatures' indicator
 #'
-#' @description Runs the full pipeline to analyse the impact of high and low
+#' @description Runs the full methodology to analyse the impact of high and low
 #' temperatures on mortality using a quasi-Poisson time series approach with a
 #' distributed lag non-linear model. This function generates the relative risk
 #' of the temperature-mortality association as well as attributable numbers,
-#' rates and fractions of moralities to specified temperature thresholds for
+#' rates and fractions of mortalities to specified temperature thresholds for
 #' high and low temperatures. Model validation statistics are also provided.
 #'
 #' @details
-#' This analysis pipeline requires a daily time series of temperature and
-#' death counts with population values as a minimum. This is then processed
-#' using a quasi-Poisson time series regression analysis with a distributed
-#' lag non-linear model and optional meta-analysis. Meta-analysis is
-#' recommended if the input data is disaggregated by area.
+#' This analysis requires a daily time series of temperature and death counts
+#' with population values as a minimum. This is then processed using a
+#' quasi-Poisson time series regression analysis with a distributed lag
+#' non-linear model and optional meta-analysis. Meta-analysis is recommended if
+#' the input data is disaggregated by area.
 #'
 #' The model parameters have default values, which are recommended to keep as
 #' based on existing studies. However, if desired these can be adjusted for
@@ -2971,11 +2971,11 @@ hc_save_results <- function(rr_results,
 #' based on model optimisation.
 #'
 #' For attributable deaths the default is to use a high temperature threshold,
-#' defined as the 97.5th percentile of temperature over the corresponding time
-#' period for each geography. The low temperature thresholds is similarly
-#' defined at the 2.5th percentile. These can be adjusted if desired, following
-#' review of the relative risk association between temperature and mortality,
-#' using `attr_thr_high` or `attr_thr_low`.
+#' defined as the 97.5th percentile of the temperature distribution over the
+#' full time period for each geography. The low temperature thresholds is
+#' similarly defined at the 2.5th percentile. These can be adjusted if desired,
+#' following review of the relative risk association between temperature and
+#' mortality using `attr_thr_high` or `attr_thr_low`.
 #'
 #' Further details on the input data requirements, methodology, quality
 #' information and guidance on interpreting outputs can be found in the
@@ -2987,15 +2987,15 @@ hc_save_results <- function(rr_results,
 #' disaggregated by geography.
 #' @param date_col Character. Name of the column in the dataframe containing
 #' the date.
-#' @param region_col Character. Name of the column in the dataframe that
-#' contains the geography name(s).
 #' @param temperature_col Character. Name of the column in the dataframe that
 #' contains the temperature column.
 #' @param dependent_col Character. Name of the column in the dataframe
-#' containing the dependent health outcome variable e.g,. deaths.
+#' containing the dependent health outcome variable e.g. deaths.
 #' @param population_col Character. Name of the column in the dataframe that
 #' contains the population estimate per geography.
-#' @param country Character. Name of country for national level estimates.
+#' @param region_col Character. Name of the column in the dataframe that
+#' contains the geography name(s).
+#' @param country Character. Name of country for national-level estimates.
 #' Defaults to 'National'.
 #' @param meta_analysis Boolean. Whether to perform a meta-analysis. Defaults
 #' to FALSE.
@@ -3014,9 +3014,9 @@ hc_save_results <- function(rr_results,
 #' @param lagnk Integer. Number of knots in lag function. Defaults to 3.
 #' (see dlnm::logknots).
 #' @param dfseas Integer. Degrees of freedom for seasonality. Defaults to 8.
-#' @param attr_thr_high Integer. Percentile at which to define the upper
+#' @param attr_thr_high Integer. Percentile at which to define the high
 #' temperature threshold for calculating attributable risk. Defaults to 97.5.
-#' @param attr_thr_low Integer. Percentile at which to define the lower
+#' @param attr_thr_low Integer. Percentile at which to define the low
 #' temperature threshold for calculating attributable risk. Defaults to 2.5.
 #' @param save_fig Boolean. Whether to save the plot as an output. Defaults to
 #' FALSE.
@@ -3030,10 +3030,10 @@ hc_save_results <- function(rr_results,
 #' temp_mortality_do_analysis(
 #'   data_path = "data/inputs/daily_temperature_mortality_1995_2025.csv",
 #'   date_col = "date",
-#'   region_col = "region",
 #'   temperature_col = "tmean",
 #'   dependent_col = "deaths",
 #'   population_col = "pop",
+#'   region_col = "region",
 #'   country = "England",
 #'   meta_analysis = TRUE,
 #'   independent_cols = c("wind_speed", "relative_humidity"),
