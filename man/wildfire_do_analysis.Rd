@@ -68,8 +68,8 @@ admissions)}
 
 \item{population_col}{Character. Name of the column in the dataframe that
 contains the population data. Defaults to NULL. This is only required when
-requesting region-level AF/AN outputs and no \code{pop} column is already
-present in the input data.}
+requesting region-level AF/AN outputs and no \code{pop} column is already present
+in the input data.}
 
 \item{rh_col}{Character. Name of the column containing relative humidity
 values. Defaults to NULL.}
