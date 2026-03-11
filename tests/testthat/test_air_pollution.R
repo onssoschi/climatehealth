@@ -1,5 +1,9 @@
 # Unit tests for air_pollution.R
 
+if (!"package:climatehealth" %in% search()) {
+  pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
+}
+
 # Test for load_air_pollution_data
 test_that("Synthetic air pollution data loaded in and formatted as expected", {
 

@@ -1,5 +1,9 @@
 # Unit tests for temp_mortality.R
 
+if (!"package:climatehealth" %in% search()) {
+  pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
+}
+
 # Create temp_dir to be used by all temp_mortality tests
 temp_dir <- tempdir()
 temp_dir <- file.path(temp_dir, "temp_mortality_tests")

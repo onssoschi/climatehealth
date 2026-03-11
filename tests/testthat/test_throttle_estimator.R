@@ -5,6 +5,10 @@
 #' - upload: Plumber multipart upload object
 #' - json_field: Path nested inside JSON payload
 
+if (!exists("load_throttle_modules")) {
+  source("tests/testthat/helper-throttle_modules.R", local = FALSE)
+}
+
 context("Throttle Estimator")
 
 if (!exists("create_cost_estimator")) {
