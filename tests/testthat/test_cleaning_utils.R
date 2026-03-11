@@ -1,5 +1,9 @@
 # Tests for cleaning_utils.R
 
+if (!"package:climatehealth" %in% search()) {
+  pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
+}
+
 # Tests for reformat_data
 
 date_test_df <- data.frame(row=c(1, 2, 3), date=c("21/01/2004", "31/12/2004", "01/03/2004"))

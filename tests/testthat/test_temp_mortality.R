@@ -1,5 +1,13 @@
 # Unit tests for temp_mortality.R
 
+if (!"package:climatehealth" %in% search()) {
+  pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
+}
+
+if (!exists("suppress_plot")) {
+  source("tests/testthat/helper-utils.R", local = FALSE)
+}
+
 # Create temp_dir to be used by all temp_mortality tests
 temp_dir <- tempdir()
 temp_dir <- file.path(temp_dir, "temp_mortality_tests")
@@ -465,14 +473,14 @@ test_that("hc_model_validation performs complete model validation", {
   )
 
   # Run function
-  results <- hc_model_validation(
+  results <- suppress_plot(hc_model_validation(
     df_list = df_list,
     cb_list = cb_list,
     independent_cols = independent_vars,
     save_fig = FALSE,
     save_csv = TRUE,
     output_folder_path = temp_dir
-  )
+  ))
 
   # Returned object structure
   expect_type(results, "list")
@@ -1056,9 +1064,9 @@ test_that("hc_plot_power produces plots correctly (high and low)", {
   )
 
   # Plot without saving
-  suppressWarnings(
+  suppress_plot(suppressWarnings(
     hc_plot_power(power_list_high, power_list_low, save_fig = FALSE)
-  )
+  ))
 
   # create temporary output folder
   output_folder <- tempfile(pattern = "test_plots_", tmpdir = temp_dir)
@@ -1264,7 +1272,7 @@ test_that("hc_plot_rr produces plots correctly", {
   minpercgeog_ <- c(Geog1 = 50)
 
   # Plot without saving
-  suppressWarnings(
+  suppress_plot(suppressWarnings(
     hc_plot_rr(
       df_list = df_list,
       pred_list = pred_list,
@@ -1273,7 +1281,7 @@ test_that("hc_plot_rr produces plots correctly", {
       minpercgeog_ = minpercgeog_,
       save_fig = FALSE
     )
-  )
+  ))
 
   # Plot with saving enabled (expect warnings)
   output_folder <- file.path(temp_dir, "test_temp_mortality_rr_plots")
@@ -2634,7 +2642,7 @@ test_that("integration: temp_mortality_do_analysis runs end-to-end (dynamic synt
   on.exit(unlink(tmp_file), add = TRUE)
 
   # Run pipeline with stable settings (single knot; short lag; no meta-analysis)
-  result <- temp_mortality_do_analysis(
+  result <- suppress_plot(suppressWarnings(temp_mortality_do_analysis(
     data_path = tmp_file,
     date_col = "date",
     region_col = "region",
@@ -2656,7 +2664,7 @@ test_that("integration: temp_mortality_do_analysis runs end-to-end (dynamic synt
     attr_thr_high = 97.5,
     attr_thr_low = 2.5,
     output_folder_path = NULL
-  )
+  )))
 
   # Structure checks: ensure contract is met
   expect_type(result, "list")

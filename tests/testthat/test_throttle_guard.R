@@ -2,6 +2,10 @@
 #'
 #' Tests admission control logic, bypass handling, and response generation.
 
+if (!exists("load_throttle_modules")) {
+  source("tests/testthat/helper-throttle_modules.R", local = FALSE)
+}
+
 context("Throttle Guard")
 
 if (!exists("check_admission")) {
