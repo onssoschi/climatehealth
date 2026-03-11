@@ -1830,8 +1830,9 @@ test_that(
         expect_true(all(result$AR_Number >= 0, na.rm = TRUE))
         expect_true(all(result$AR_Fraction >= 0, na.rm = TRUE))
 
-        # AR_per_100k must be NA for zero-population groups
-        expect_true(all(is.na(result$AR_per_100k)))
+        # Point estimate (fit) stored in AR_per_100k must be 0, CI columns may be NA
+        expect_true(any(result$AR_per_100k == 0))
+        expect_true(all(is.na(result$AR_per_100k) | result$AR_per_100k == 0))
 
       },
       validate_case_type = mock_validate,
@@ -1841,6 +1842,97 @@ test_that(
     )
   }
 )
+
+test_that("MER-empty with valid population returns AR_per_100k = 0", {
+  skip_if_not_installed("INLA")
+
+  flat_data <- AC_data
+  flat_data$temp <- rep(0, nrow(flat_data))
+
+  mock_crosspred <- function(basis, coef, vcov, model.link, bylag, cen, ...) {
+    list(
+      predvar    = c(0, 1),
+      allRRfit   = c(1, 1),
+      allRRlow   = c(1, 1),
+      allRRhigh  = c(1, 1)
+    )
+  }
+
+  with_mocked_bindings(
+    {
+      with_mocked_bindings(
+        {
+          result <- climatehealth:::attribution_calculation(
+            data = flat_data,
+            param_term = "temp",
+            model = AC_model,
+            level = "region",
+            case_type = "malaria"
+          )
+
+          expect_true(all(is.na(result$MER_Lower)))
+          expect_true(all(is.na(result$MER_Upper)))
+
+          expect_equal(unique(result$AR_per_100k), 0)
+        },
+        crosspred = mock_crosspred,
+        .package = "dlnm"
+      )
+    },
+    validate_case_type = mock_validate,
+    create_inla_indices = mock_indices,
+    set_cross_basis = mock_basis,
+    .package = "climatehealth"
+  )
+})
+
+
+
+test_that("MER-empty with zero population returns AR_per_100k = 0 with no warning", {
+  skip_if_not_installed("INLA")
+
+  zero_pop <- AC_data
+  zero_pop$tot_pop <- 0
+  zero_pop$temp <- rep(0, nrow(zero_pop))
+
+  mock_crosspred <- function(basis, coef, vcov, model.link, bylag, cen, ...) {
+    list(
+      predvar    = c(0, 1),
+      allRRfit   = c(1, 1),
+      allRRlow   = c(1, 1),
+      allRRhigh  = c(1, 1)
+    )
+  }
+
+  with_mocked_bindings(
+    {
+      with_mocked_bindings(
+        {
+          res <- climatehealth:::attribution_calculation(
+            data = zero_pop,
+            param_term = "temp",
+            model = AC_model,
+            level = "region",
+            case_type = "malaria"
+          )
+
+          # MER empty
+          expect_true(all(is.na(res$MER_Lower)))
+          expect_true(all(is.na(res$MER_Upper)))
+
+          # AR_per_100k must be 0 (not NA)
+          expect_equal(unique(res$AR_per_100k), 0)
+        },
+        crosspred = mock_crosspred,
+        .package = "dlnm"
+      )
+    },
+    validate_case_type = mock_validate,
+    create_inla_indices = mock_indices,
+    set_cross_basis = mock_basis,
+    .package = "climatehealth"
+  )
+})
 
 test_that(
   "attribution_calculation returns NULL if crosspred fails",
@@ -1966,6 +2058,35 @@ test_that(
     )
   }
 )
+
+test_that("Attribution with valid MER produces numeric AR_per_100k", {
+  skip_if_not_installed("INLA")
+
+  # Use AC_data as-is where temp varies enough to produce MER
+  valid_res <- with_mocked_bindings(
+    climatehealth:::attribution_calculation(
+      data = AC_data,
+      param_term = "temp",
+      model = AC_model,
+      level = "region",
+      case_type = "malaria",
+      param_threshold = 0.5   # ensure RR>threshold for some entries
+    ),
+    validate_case_type = mock_validate,
+    create_inla_indices = mock_indices,
+    set_cross_basis = mock_basis,
+    .package = "climatehealth"
+  )
+
+  # Only test the point estimate column
+  ar_point <- valid_res$AR_per_100k
+
+  # Should have some numeric output
+  expect_true(any(!is.na(ar_point)))
+
+  # All non-NA values must be finite numeric values
+  expect_true(all(is.finite(ar_point[!is.na(ar_point)])))
+})
 
 test_that(
   "attribution_calculation runs as expected.",
