@@ -1,6 +1,6 @@
 suppress_plot <- function(expr) {
   tmp <- tempfile(fileext = ".pdf")
-  grDevices::pdf(tmp, width = 12, height = 9)
+  grDevices::pdf(tmp, width = 16, height = 12)
   plot_dev <- grDevices::dev.cur()
   on.exit({
     open_devices <- grDevices::dev.list()

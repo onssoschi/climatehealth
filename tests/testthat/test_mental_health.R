@@ -1845,7 +1845,7 @@ test_that("integration: suicides_heat_do_analysis runs end-to-end (dynamic synth
   on.exit(unlink(tmp_file), add = TRUE)  # clean up after test
 
   # Run pipeline
-  result <- suicides_heat_do_analysis(
+  result <- suppress_plot(suppressWarnings(suicides_heat_do_analysis(
     data_path = tmp_file,       # pass the temp file path
     date_col = "date",
     region_col = "region",
@@ -1857,7 +1857,7 @@ test_that("integration: suicides_heat_do_analysis runs end-to-end (dynamic synth
     save_csv = FALSE,
     var_per = c(50),            # single knot percentile for stability
     lag_days = 1                # minimal lag
-  )
+  )))
 
   # Check structure matches expected
   expect_type(result, "list")

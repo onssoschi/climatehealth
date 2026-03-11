@@ -324,13 +324,13 @@ test_that("Fails when no column selection method is provided", {
   df <- data.frame(x = 1:5)
 
   expect_error(
-    common_descriptive_stats_core(
+    suppressWarnings(common_descriptive_stats_core(
       df = df,
       output_path = temp_dir,
       title = "Subset",
       independent_cols = NULL,
       dependent_col = "x"
-    ),
+    )),
     "`independent_cols` must be a non-empty character vector."
   )
 })
@@ -346,7 +346,7 @@ test_that("Creates summary file with columns specified", {
   )
   units <- c(temp = "degrees", dependent = "cases")
 
-  common_descriptive_stats_core(
+  suppressWarnings(common_descriptive_stats_core(
     df = df,
     output_path = temp_dir,
     title = "Subset",
@@ -388,7 +388,7 @@ test_that("Generates all enabled plots and outputs", {
     plot_total = TRUE,
     population_col = "population",
     aggregation_column = "region"
-  )
+  ))
 
   expected_files <- c(
     "dataset_summary.csv",
@@ -468,7 +468,7 @@ test_that("common_descriptive_stats creates the expected files", {
     RegionB=df_region_b
   )
   # Create descriptive stats
-  out <- common_descriptive_stats(
+  out <- suppressWarnings(common_descriptive_stats(
     df_list = df_list,
     output_path = tmp_root,
     timeseries_col = "date",
@@ -489,7 +489,7 @@ test_that("common_descriptive_stats creates the expected files", {
     plot_total = FALSE,
     detect_outliers = FALSE,
     calculate_rate = FALSE
-  )
+  ))
   # Validate outputs have been created
   expected_parent <- file.path(tmp_root, "descriptive_stats")
   expect_true(dir.exists(expected_parent))
@@ -565,7 +565,7 @@ cds_api_df <- data.frame(
 test_that("API runs with all features enabled", {
   tmp <- local_tempdir()
 
-  out <- common_descriptive_stats_api(
+  out <- suppressWarnings(common_descriptive_stats_api(
     data = cds_api_df,
     aggregation_column = "region",
     population_col = "population",
@@ -588,7 +588,7 @@ test_that("API runs with all features enabled", {
     detect_outliers = TRUE,
     calculate_rate = TRUE,
     output_path = tmp
-  )
+  ))
 
   expect_true(dir.exists(out[1]))
   expect_equal(out[2], "descriptive_stats")
