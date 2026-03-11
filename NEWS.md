@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-## 0.9.30
+## 1.0.0
 
 - Added new descriptive statistics public APIs:
   - `run_descriptive_stats()`
