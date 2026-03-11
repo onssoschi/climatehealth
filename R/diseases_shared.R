@@ -20,6 +20,27 @@ validate_case_type <- function(case_type) {
   return(case_type)
 }
 
+coerce_api_records_df <- function(x, arg_name) {
+  if (is.data.frame(x)) {
+    return(x)
+  }
+
+  if (is.list(x) && length(x) > 0 && all(vapply(x, is.list, logical(1)))) {
+    return(dplyr::bind_rows(x))
+  }
+
+  if (is.list(x)) {
+    return(as.data.frame(x, stringsAsFactors = FALSE))
+  }
+
+  stop(
+    paste0(
+      "'", arg_name, "' expected a data.frame, list of records, or path string. Got ",
+      typeof(x)
+    )
+  )
+}
+
 
 #' Read in and format country map data
 #'
@@ -46,11 +67,48 @@ load_and_process_map <- function(map_path,
                                  district_col,
                                  geometry_col,
                                  output_dir = NULL){
+  geometry_col_name <- geometry_col
+
   # Load and process map
-  map <- sf::read_sf(map_path) %>%
+  if (inherits(map_path, "sf")) {
+    map_raw <- map_path
+    geometry_col_name <- attr(map_raw, "sf_column")
+  } else if (is.data.frame(map_path) || is.list(map_path)) {
+    map_raw <- coerce_api_records_df(map_path, "map_path")
+
+    if (!(geometry_col %in% names(map_raw))) {
+      stop(paste0("Column '", geometry_col, "' not found in map payload."))
+    }
+    if (!(region_col %in% names(map_raw))) {
+      stop(paste0("Column '", region_col, "' not found in map payload."))
+    }
+    if (!(district_col %in% names(map_raw))) {
+      stop(paste0("Column '", district_col, "' not found in map payload."))
+    }
+
+    if (!inherits(map_raw[[geometry_col]], "sfc")) {
+      if (!is.character(map_raw[[geometry_col]])) {
+        stop("Map payload geometry column must contain WKT strings.")
+      }
+      map_raw <- sf::st_as_sf(map_raw, wkt = geometry_col, crs = 4326)
+      geometry_col_name <- attr(map_raw, "sf_column")
+    } else {
+      geometry_col_name <- geometry_col
+    }
+  } else if (is.character(map_path)) {
+    map_raw <- sf::read_sf(map_path)
+    geometry_col_name <- attr(map_raw, "sf_column")
+  } else {
+    stop("'map_path' must be a path, sf object, or records payload.")
+  }
+  if (is.null(geometry_col_name) || !(geometry_col_name %in% names(map_raw))) {
+    geometry_col_name <- "geometry"
+  }
+
+  map <- map_raw %>%
     select(region = !!sym(region_col),
            district = !!sym(district_col),
-           geometry = !!sym(geometry_col)) %>%
+           geometry = !!sym(geometry_col_name)) %>%
     mutate(geometry = sf::st_make_valid(geometry))
 
   # Create adjacency matrix
@@ -111,8 +169,8 @@ load_and_process_data <- function(health_data_path,
                                   case_type,
                                   tot_pop_col) {
   # Create dataframe from vector/list if data comes from the API
-  if (is.data.frame(health_data_path)) {
-    data <- health_data_path
+  if (is.data.frame(health_data_path) || is.list(health_data_path)) {
+    data <- coerce_api_records_df(health_data_path, "health_data_path")
   } else {
     ext <- tolower(xfun::file_ext(health_data_path))
     # Load data based on file extension
@@ -207,8 +265,8 @@ load_and_process_climatedata <- function(climate_data_path,
                                          spi_col = NULL,
                                          max_lag ){
 
-  if (is.data.frame(climate_data_path)) {
-    data <- climate_data_path
+  if (is.data.frame(climate_data_path) || is.list(climate_data_path)) {
+    data <- coerce_api_records_df(climate_data_path, "climate_data_path")
   } else {
     ext <- tolower(xfun::file_ext(climate_data_path))
     # Load data based on file extension
@@ -2480,5 +2538,3 @@ plot_avg_monthly <- function(attr_data,
   }
   invisible(all_plots)
 }
-
-

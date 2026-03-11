@@ -1,5 +1,9 @@
 # Unit tests for wildfire.R
 
+if (!"package:climatehealth" %in% search()) {
+  pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
+}
+
 # Create temp_dir to be used by all WF tests
 temp_dir <- tempdir()
 temp_dir <- file.path(temp_dir, "wildfire_tests")
@@ -14,6 +18,7 @@ WF_TEST_HEALTH <- data.frame(
     region = c("North", "South", "East"),
     relative_humidity = c(70, 65, 80),
     wind_speed = c(3.2, 2.8, 4.0),
+    population = c(1000,4000,900),
     stringsAsFactors = FALSE,
     regnames = c("North", "South", "East")
 )
@@ -34,11 +39,12 @@ test_that(
             health_outcome_col = "deaths",
             region_col = "regnames",
             rh_col = "relative_humidity",
-            wind_speed_col = "wind_speed"
+            wind_speed_col = "wind_speed",
+            population_col = "population"
         )
         exp_cols = c(
             "date", "tmean", "health_outcome", "region", "rh", "wind_speed",
-            "year", "month", "day", "dow"
+            "year", "month", "day", "dow", "pop"
         )
         expect_true(all(exp_cols %in% colnames(res)))
         expect_equal(res$day, c(1, 2, 3))
@@ -53,11 +59,12 @@ test_that(
             health_path = WF_TEST_HEALTH,
             date_col = "date",
             mean_temperature_col = "tmean",
-            health_outcome_col = "deaths"
+            health_outcome_col = "deaths",
+            population_col = "population"
         )
         exp_cols = c(
             "date", "tmean", "health_outcome", "region", "rh", "wind_speed",
-            "year", "month", "day", "dow"
+            "year", "month", "day", "dow", "pop"
         )
         expect_true(all(exp_cols %in% colnames(res)))
         expect_equal(res$region, rep("no_region", 3))
@@ -67,18 +74,37 @@ test_that(
 )
 
 test_that(
-    "read_and_format_data identifies and convertsdates in dmy format.",
+    "read_and_format_data identifies and converts dates in dmy format.",
     {
-        WF_DMY_DATA = WF_TEST_HEALTH %>% mutate(
+        WF_DMY_DATA = dplyr::mutate(
+            WF_TEST_HEALTH,
             date = c("01-01-2020", "02-01-2020", "03/01/2020")
         )
         res <- read_and_format_data(
             health_path = WF_DMY_DATA,
             date_col = "date",
             mean_temperature_col = "tmean",
-            health_outcome_col = "deaths"
+            health_outcome_col = "deaths",
+            population_col = "population"
         )
         expect_equal(res$dow, c("Wed", "Thu", "Fri"))
+    }
+)
+
+test_that(
+    "read_and_format_data works without population_col when no population data are supplied.",
+    {
+        no_pop_data <- dplyr::select(WF_TEST_HEALTH, -population)
+
+        res <- read_and_format_data(
+            health_path = no_pop_data,
+            date_col = "date",
+            mean_temperature_col = "tmean",
+            health_outcome_col = "deaths"
+        )
+
+        expect_false("pop" %in% colnames(res))
+        expect_true(all(c("date", "tmean", "health_outcome", "region") %in% colnames(res)))
     }
 )
 
@@ -346,7 +372,8 @@ test_that(
             health_outcome_col = "deaths",
             region_col = "region",
             rh_col = "relative_humidity",
-            wind_speed_col = "wind_speed"
+            wind_speed_col = "wind_speed",
+            population_col = "population"
         )
         joined <- join_health_and_climate_data(
             climate_data = WF_TEST_CLIMATE,
@@ -357,7 +384,7 @@ test_that(
         )
         exp_cols <- c(
             "date", "tmean", "health_outcome", "region", "rh", "wind_speed",
-            "year", "month", "day", "dow", "mean_PM"
+            "year", "month", "day", "dow", "mean_PM", "pop"
         )
         expect_true(all(exp_cols %in% colnames(joined)))
         expect_equal(joined$mean_PM, c(500000, 100000, 150000))
@@ -376,6 +403,7 @@ test_that("load_wildfire_data returns formatted health data and renames PM colum
     region = c("A", "A", "A"),
     rh = c(50, 55, 60),
     wind_speed = c(3, 4, 5),
+    pop = c(100, 700, 500),
     pm_raw = c(1.1, 2.2, 3.3),
     year = c(2020, 2020, 2020),
     month = c(1, 1, 1),
@@ -403,6 +431,7 @@ test_that("load_wildfire_data returns formatted health data and renames PM colum
     region_col = "region",
     shape_region_col = "region",
     mean_temperature_col = "tmean",
+    population_col = "population",
     health_outcome_col = "deaths",
     rh_col = "relative_humidity",
     wind_speed_col = "wind_speed",
@@ -422,7 +451,7 @@ test_that("load_wildfire_data returns formatted health data and renames PM colum
   # Assert: key columns still exist
   exp_columns <- c(
     "date", "tmean", "health_outcome", "region", "rh", "wind_speed",
-    "mean_PM", "year", "month", "day", "dow"
+    "mean_PM", "year", "month", "day", "dow", "pop"
   )
   expect_true(all(exp_columns %in% names(res)))
 
@@ -436,7 +465,8 @@ test_that("load_wildfire_data calls extractor + joiner with correct arguments wh
     date = as.Date(c("2020-01-01", "2020-01-02")),
     tmean = c(10, 11),
     health_outcome = c(1, 2),
-    region = c("A", "A")
+    region = c("A", "A"),
+    pop = c(1000, 2500)
   )
 
   wildfire_df_stub <- data.frame(
@@ -491,6 +521,7 @@ test_that("load_wildfire_data calls extractor + joiner with correct arguments wh
     date_col = "date",
     region_col = "region",
     shape_region_col = "shape_name",
+    population_col = "population",
     mean_temperature_col = "tmean",
     health_outcome_col = "deaths",
     rh_col = NULL,
@@ -512,7 +543,8 @@ test_that("load_wildfire_data defaults to joining when join_wildfire_data is not
     date = as.Date("2020-01-01"),
     tmean = 10,
     health_outcome = 1,
-    region = "A"
+    region = "A",
+    pop = 1000
   )
 
   wildfire_df_stub <- data.frame(
@@ -547,6 +579,7 @@ test_that("load_wildfire_data defaults to joining when join_wildfire_data is not
     region_col = "region",
     shape_region_col = "region_in_shape",
     mean_temperature_col = "tmean",
+    population_col = "population",
     health_outcome_col = "deaths"
   )
 
@@ -1884,9 +1917,6 @@ test_that("wildfire_do_analysis: end-to-end run (dataset-level RR only, no file 
   pm_base_by_region <- ifelse(df$region == "North", 6, 10)
   df$pm25 <- pmax(0.1, pm_base_by_region + stats::rnorm(nrow(df), sd = 3))
 
-  # Population (only needed for AF/AN, safe to include)
-  df$pop <- ifelse(df$region == "North", 1000000, 650000)
-
   # Construct a Poisson outcome with modest dependence on PM and temp
   eta <- -1 + 0.015 * df$pm25 + 0.01 * (df$temp_mean - mean(df$temp_mean))
   mu  <- pmax(0.1, exp(eta)) * 10
@@ -1960,7 +1990,7 @@ test_that("wildfire_do_analysis: end-to-end run with region-level outputs (AF/AN
 
   pm_base_by_region <- ifelse(df$region == "North", 5, 9)
   df$pm25 <- pmax(0.1, pm_base_by_region + stats::rnorm(nrow(df), sd = 2.5))
-  df$pop  <- ifelse(df$region == "North", 1050000, 700000)
+  df$pops  <- ifelse(df$region == "North", 1050000, 700000)
 
   eta <- -0.8 + 0.02 * df$pm25 + 0.008 * (df$temp_mean - mean(df$temp_mean))
   mu  <- pmax(0.1, exp(eta)) * 12
@@ -1981,6 +2011,7 @@ test_that("wildfire_do_analysis: end-to-end run with region-level outputs (AF/AN
     mean_temperature_col               = "temp_mean",
     health_outcome_col                 = "deaths",
     pm_2_5_col                         = "pm25",
+    population_col                     = "pops",
     rh_col                             = NULL,
     wind_speed_col                     = NULL,
     wildfire_lag                       = 1,
@@ -2072,6 +2103,67 @@ test_that("wildfire_do_analysis: save_fig creates model_validation directory", {
 
   expect_true(dir.exists(file.path(tmp_out, "model_validation")))
   expect_type(res, "list")
+})
+
+test_that("wildfire_do_analysis: create_run_subdir writes outputs into a timestamped run folder", {
+  tmp_out <- tempfile("wf_runs_")
+  dir.create(tmp_out, recursive = TRUE, showWarnings = FALSE)
+
+  minimal_data <- data.frame(
+    month = 1,
+    year = 2020,
+    region = "A",
+    mean_PM = 5,
+    stringsAsFactors = FALSE
+  )
+
+  captured_output_dir <- NULL
+
+  local_mocked_bindings(
+    load_wildfire_data = function(...) minimal_data,
+    create_lagged_variables = function(data, ...) data,
+    create_temperature_splines = function(data, ...) data,
+    time_stratify = function(data, ...) data,
+    calculate_qaic = function(...) data.frame(ok = TRUE),
+    calculate_wildfire_rr_by_region = function(...) data.frame(
+      lag = 0,
+      relative_risk = 1.01,
+      ci_lower = 0.99,
+      ci_upper = 1.03,
+      region_name = "All Regions"
+    ),
+    plot_RR = function(...) invisible(NULL),
+    generate_rr_pm_by_region = function(...) data.frame(region_name = "All Regions", lag = 0, pm = 0, rr = 1),
+    plot_rr_by_pm = function(...) invisible(NULL),
+    save_wildfire_results = function(rr_results, an_ar_results, annual_af_an_results, output_folder_path, ...) {
+      captured_output_dir <<- output_folder_path
+      invisible(NULL)
+    }
+  )
+
+  wildfire_do_analysis(
+    health_path = "ignored.csv",
+    join_wildfire_data = FALSE,
+    date_col = "date",
+    region_col = "region",
+    shape_region_col = "region",
+    mean_temperature_col = "temp",
+    health_outcome_col = "deaths",
+    pm_2_5_col = "pm25",
+    save_fig = TRUE,
+    save_csv = TRUE,
+    output_folder_path = tmp_out,
+    create_run_subdir = TRUE
+  )
+
+  created_dirs <- list.dirs(tmp_out, full.names = TRUE, recursive = FALSE)
+  ts_dirs <- created_dirs[
+    grepl("wildfires_analysis_\\d{8}_\\d{6}$", basename(created_dirs))
+  ]
+
+  expect_equal(length(ts_dirs), 1)
+  expect_true(captured_output_dir %in% ts_dirs)
+  expect_true(dir.exists(file.path(captured_output_dir, "model_validation")))
 })
 
 
@@ -2182,4 +2274,62 @@ test_that("wildfire_do_analysis: save_csv triggers save_wildfire_results", {
   )
 
   expect_true(saved_called)
+})
+
+test_that("wildfire_do_analysis errors clearly when AF/AN outputs are requested without population data", {
+  minimal_data <- data.frame(
+    month = 1,
+    year = 2020,
+    region = "A",
+    mean_PM = 5,
+    stringsAsFactors = FALSE
+  )
+
+  local_mocked_bindings(
+    load_wildfire_data = function(...) minimal_data
+  )
+
+  expect_error(
+    wildfire_do_analysis(
+      health_path = "ignored.csv",
+      join_wildfire_data = FALSE,
+      date_col = "date",
+      region_col = "region",
+      shape_region_col = "region",
+      mean_temperature_col = "temp",
+      health_outcome_col = "deaths",
+      pm_2_5_col = "pm25",
+      calc_relative_risk_by_region = TRUE
+    ),
+    "Population data are required when calc_relative_risk_by_region = TRUE"
+  )
+})
+
+test_that("wildfire_do_analysis errors when create_run_subdir is requested without output_folder_path", {
+  minimal_data <- data.frame(
+    month = 1,
+    year = 2020,
+    region = "A",
+    mean_PM = 5,
+    stringsAsFactors = FALSE
+  )
+
+  local_mocked_bindings(
+    load_wildfire_data = function(...) minimal_data
+  )
+
+  expect_error(
+    wildfire_do_analysis(
+      health_path = "ignored.csv",
+      join_wildfire_data = FALSE,
+      date_col = "date",
+      region_col = "region",
+      shape_region_col = "region",
+      mean_temperature_col = "temp",
+      health_outcome_col = "deaths",
+      pm_2_5_col = "pm25",
+      create_run_subdir = TRUE
+    ),
+    "`output_folder_path` is required when `create_run_subdir = TRUE`"
+  )
 })

@@ -2,8 +2,7 @@
 % Please edit documentation in R/air_pollution.R
 \name{load_air_pollution_data}
 \alias{load_air_pollution_data}
-\title{R-code for I1: All-cause mortality attributable to short-term exposure to outdoor PM2.5
-Read in climate, environmental and health data and rename columns}
+\title{Read in climate, environmental and health data and rename columns}
 \usage{
 load_air_pollution_data(
   data_path,
@@ -16,8 +15,8 @@ load_air_pollution_data(
   precipitation_col = "precipitation",
   tmax_col = "tmax",
   wind_speed_col = "wind_speed",
-  Categorical_Others = NULL,
-  Continuous_Others = NULL
+  categorical_others = NULL,
+  continuous_others = NULL
 )
 }
 \arguments{
@@ -51,10 +50,10 @@ Defaults to "tmax".}
 \item{wind_speed_col}{Character. Name of wind speed column in the dataframe.
 Defaults to "wind_speed".}
 
-\item{Categorical_Others}{Optional. Character vector of additional categorical
+\item{categorical_others}{Optional. Character vector of additional categorical
 variables (e.g., "sex", "age_group"). Defaults to NULL.}
 
-\item{Continuous_Others}{Optional. Character vector of additional continuous
+\item{continuous_others}{Optional. Character vector of additional continuous
 variables (e.g., "tmean"). Defaults to NULL.}
 }
 \value{

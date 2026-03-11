@@ -1,0 +1,36 @@
+citHeader("To cite climatehealth in publications use:")
+
+citEntry(
+  entry = "Manual",
+  title = "climatehealth: Standards for Official Statistics on Climate-Health Interactions (SOSCHI)",
+  author =   c(
+      person("Charlie", "Browning", email = "charlie.browning@ons.gov.uk", role = "aut"),
+      person("Kenechi", "Omeke", email = "kenechi.omeke@ons.gov.uk", role = c("aut", "cre")),
+      person("Etse Yawo", "Dzakpa", role = "aut"),
+      person("Gladin", "Jose", role = "aut"),
+      person("Matt", "Pearce", role = "aut"),
+      person("Ellie", "Watkins", role = "aut"),
+      person("Claire", "Hunt", role = "aut"),
+      person("Beatrice", "Byukusenge", role = "aut"),
+      person("Cassien", "Habyarimana", role = "aut"),
+      person("Venuste", "Nyagahakwa", role = "aut"),
+      person("Felix", "Scarbrough", role = "aut"),
+      person("Treesa", "Shaji", role = "aut"),
+      person("Bonnie", "Lewis", role = "aut"),
+      person("Vijendra", "Ingole", role = "aut")
+    ),
+  organization = "SOSCHI Project, Office for National Statistics",
+  year = "2026",
+  note = paste("R package version", meta$Version),
+  url = "https://github.com/onssoschi/climatehealth",
+  textVersion = paste(
+    "Browning, C., Omeke, K., Dzakpa, E. Y., Jose, G., Pearce, M.,",
+    "Watkins, E., Hunt, C., Byukusenge, B., Habyarimana, C.,",
+    "Nyagahakwa, V., Scarbrough, F., Shaji, T., Lewis, B., and Ingole, V. (2026).",
+    "climatehealth: Standards for Official",
+    "Statistics on Climate-Health Interactions (SOSCHI).",
+    paste("R package version", meta$Version, "."),
+    "SOSCHI Project, Office for National Statistics.",
+    "https://github.com/onssoschi/climatehealth"
+  )
+)
