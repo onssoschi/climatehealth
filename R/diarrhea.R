@@ -304,35 +304,36 @@ diarrhea_do_analysis <- function(health_data_path,
       output_dir=output_dir
     )
 
-  # Relative risk map plots
-  rr_map_plot <- plot_rr_map(
-    combined_data=combined_data,
-    model=inla_result$model,
-    param_term=param_term,
-    max_lag=max_lag,
-    nk=nk,
-    level="district",
-    filter_year=filter_year,
-    case_type="diarrhea",
-    output_dir=output_dir,
-    save_csv =save_csv,
-    save_fig=save_fig,
-    cumulative = FALSE
-  )
-  # Cumulative risk map
-  cum_rr_map <- plot_rr_map(
-    combined_data = combined_data,
-    model = inla_result$model,
-    param_term = param_term,
-    max_lag=max_lag,
-    nk=nk,
-    level = "region",
-    case_type = "diarrhea",
-    output_dir = output_dir,
-    save_fig = save_fig,
-    save_csv = save_csv,
-    cumulative = TRUE
-  )
+    # Relative risk map plots
+    rr_map_plot <- plot_rr_map(
+      combined_data=combined_data,
+      model=inla_result$model,
+      param_term=param_term,
+      max_lag=max_lag,
+      nk=nk,
+      level="district",
+      filter_year=filter_year,
+      case_type="diarrhea",
+      output_dir=output_dir,
+      save_csv =save_csv,
+      save_fig=save_fig,
+      cumulative = FALSE
+    )
+    # Cumulative risk map
+    cum_rr_map <- plot_rr_map(
+      combined_data = combined_data,
+      model = inla_result$model,
+      param_term = param_term,
+      max_lag=max_lag,
+      nk=nk,
+      level = "region",
+      case_type = "diarrhea",
+      output_dir = output_dir,
+      save_fig = save_fig,
+      save_csv = save_csv,
+      cumulative = TRUE
+    )
+  }
 
   # Relative risk plot
   rr_data <- plot_relative_risk(
@@ -373,49 +374,49 @@ diarrhea_do_analysis <- function(health_data_path,
   plot_avg_AR_per_100k <- NULL
   if (!api_mode) {
     plot_AR_Num <-plot_attribution_metric(attr_data = attr_frac_num,
-                                          param_term=param_term,
-                                          level= level,
-                                          metrics = "AR_Number",
-                                          case_type="diarrhea",
-                                          filter_year = filter_year,
-                                          save_fig =save_fig,
-                                          output_dir = output_dir)
+                                        param_term=param_term,
+                                        level= level,
+                                        metrics = "AR_Number",
+                                        case_type="diarrhea",
+                                        filter_year = filter_year,
+                                        save_fig =save_fig,
+                                        output_dir = output_dir)
 
     plot_AR_Fr <-plot_attribution_metric(attr_data = attr_frac_num,
-                                         param_term=param_term,
-                                         level= level,
-                                         metrics = "AR_Fraction",
-                                         case_type="diarrhea",
-                                         filter_year = filter_year,
-                                         save_fig =save_fig,
-                                         output_dir = output_dir)
+                                       param_term=param_term,
+                                       level= level,
+                                       metrics = "AR_Fraction",
+                                       case_type="diarrhea",
+                                       filter_year = filter_year,
+                                       save_fig =save_fig,
+                                       output_dir = output_dir)
 
-  plot_AR_per_100k <-plot_attribution_metric(attr_data = attr_frac_num,
-                                             param_term=param_term,
-                                             level= level,
-                                             filter_year = filter_year,
-                                             metrics = "AR_per_100k",
-                                             case_type="diarrhea",
-                                             save_fig =save_fig,
-                                             output_dir = output_dir)
-  # Average monthly attribution plot
-  plot_avg_AR_Num<-plot_avg_monthly(attr_data = attr_frac_num,
-                                    level = level,
-                                    metrics = "AR_Number",
-                                    c_data = combined_data$data,
-                                    param_term = param_term,
-                                    case_type = "diarrhea",
-                                    save_fig = save_fig,
-                                    output_dir = output_dir )
+    plot_AR_per_100k <-plot_attribution_metric(attr_data = attr_frac_num,
+                                           param_term=param_term,
+                                           level= level,
+                                           filter_year = filter_year,
+                                           metrics = "AR_per_100k",
+                                           case_type="diarrhea",
+                                           save_fig =save_fig,
+                                           output_dir = output_dir)
+    # Average monthly attribution plot
+    plot_avg_AR_Num<-plot_avg_monthly(attr_data = attr_frac_num,
+                                  level = level,
+                                  metrics = "AR_Number",
+                                  c_data = combined_data$data,
+                                  param_term = param_term,
+                                  case_type = "diarrhea",
+                                  save_fig = save_fig,
+                                  output_dir = output_dir)
 
-  plot_avg_AR_per_100k<-plot_avg_monthly(attr_data = attr_frac_num,
-                                         level = level,
-                                         metrics = "AR_per_100k",
-                                         c_data = combined_data$data,
-                                         param_term = param_term,
-                                         case_type = "diarrhea",
-                                         save_fig = save_fig,
-                                         output_dir = output_dir )
+    plot_avg_AR_per_100k<-plot_avg_monthly(attr_data = attr_frac_num,
+                                       level = level,
+                                       metrics = "AR_per_100k",
+                                       c_data = combined_data$data,
+                                       param_term = param_term,
+                                       case_type = "diarrhea",
+                                       save_fig = save_fig,
+                                       output_dir = output_dir)
   }
 
   if (api_mode) {
