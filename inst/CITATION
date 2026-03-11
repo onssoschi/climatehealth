@@ -17,6 +17,7 @@ citEntry(
       person("Felix", "Scarbrough", role = "aut"),
       person("Treesa", "Shaji", role = "aut"),
       person("Bonnie", "Lewis", role = "aut"),
+      person("Maquines Odhiambo", "Sewe", role = "aut"),
       person("Vijendra", "Ingole", role = "aut")
     ),
   organization = "SOSCHI Project, Office for National Statistics",
