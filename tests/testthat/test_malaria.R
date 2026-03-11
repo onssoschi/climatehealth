@@ -93,10 +93,12 @@ test_that("malaria_do_analysis runs end-to-end on synthetic data", {
   health  <- make_health_fixture_m()
   climate <- make_climate_fixture_m()
 
-  # Write a tiny shapefile into a temp folder
-  map_path <- file.path(tempdir(), "synthetic_map_malaria.shp")
+  # Write a tiny shapefile into a unique temp path
+  map_stub <- tempfile("synthetic_map_malaria_")
+  map_path <- paste0(map_stub, ".shp")
+  on.exit(unlink(Sys.glob(paste0(map_stub, ".*"))), add = TRUE)
   map_m <- make_synthetic_map_m() |> sf::st_transform(3857)
-  sf::st_write(map_m, map_path, quiet = TRUE)
+  sf::st_write(map_m, map_path, quiet = TRUE, delete_dsn = TRUE)
 
   res <- suppress_plot(suppressWarnings(
     malaria_do_analysis(
