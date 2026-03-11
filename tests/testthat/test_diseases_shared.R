@@ -2527,6 +2527,44 @@ test_that("country-level output returns exactly one plot per metric", {
   expect_s3_class(res[["AR_Number"]][["Country"]], "ggplot")
 })
 
+# Numeric regression test
+test_that("plot_avg_monthly correctly uses mean aggregation for AR_Number", {
+  # tiny fixture with known values
+  attr_df <- data.frame(
+    month = c(1, 1),
+    year = c(2020, 2021),
+    region = c("North", "North"),
+    district = c("A", "A"),
+    AR_Number = c(10, 30),
+    AR_per_100k = c(5, 15),
+    AR_Fraction = c(0.01, 0.02)
+  )
+
+  attr_list <- list(overall_month = attr_df)
+
+  c_df <- data.frame(
+    month = c(1,1),
+    year = c(2020,2021),
+    region = c("North","North"),
+    district = c("A","A"),
+    tmax = c(25, 25)
+  )
+
+  res <- plot_avg_monthly(
+    attr_data = attr_list,
+    c_data = c_df,
+    metrics = "AR_Number",
+    param_term = "tmax",
+    case_type = "malaria",
+    level = "region",
+    save_fig = FALSE
+  )
+
+  pd <- ggplot_build(res$AR_Number$North)$data[[1]]
+
+  # Mean(10, 30) = 20
+  expect_equal(unique(pd$y), 20)
+})
 
 # Region and district grouping tests
 test_that("region-level plots return one entry per region", {
