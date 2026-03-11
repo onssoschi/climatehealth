@@ -305,34 +305,35 @@ malaria_do_analysis <- function(health_data_path,
       output_dir=output_dir
     )
 
-  # Relative risk map plots
-  rr_map_plot <- plot_rr_map(
-    combined_data=combined_data,
-    model=inla_result$model,
-    param_term=param_term,
-    max_lag=max_lag,
-    nk=nk,
-    level="district",
-    filter_year=filter_year,
-    case_type="malaria",
-    output_dir=output_dir,
-    cumulative = FALSE,
-    save_fig=save_fig
-  )
-  # Cumulative risk map
-  cum_rr_map <- plot_rr_map(
-    combined_data = combined_data,
-    model = inla_result$model,
-    param_term = param_term,
-    max_lag=max_lag,
-    nk=nk,
-    level = "region",
-    case_type = "malaria",
-    output_dir = output_dir,
-    save_fig = save_fig,
-    save_csv = save_csv,
-    cumulative = TRUE
-  )
+    # Relative risk map plots
+    rr_map_plot <- plot_rr_map(
+      combined_data=combined_data,
+      model=inla_result$model,
+      param_term=param_term,
+      max_lag=max_lag,
+      nk=nk,
+      level="district",
+      filter_year=filter_year,
+      case_type="malaria",
+      output_dir=output_dir,
+      cumulative = FALSE,
+      save_fig=save_fig
+    )
+    # Cumulative risk map
+    cum_rr_map <- plot_rr_map(
+      combined_data = combined_data,
+      model = inla_result$model,
+      param_term = param_term,
+      max_lag=max_lag,
+      nk=nk,
+      level = "region",
+      case_type = "malaria",
+      output_dir = output_dir,
+      save_fig = save_fig,
+      save_csv = save_csv,
+      cumulative = TRUE
+    )
+  }
 
   # Relative risk plot
   rr_data <- plot_relative_risk(
@@ -364,7 +365,7 @@ malaria_do_analysis <- function(health_data_path,
                                            group_by_year = group_by_year,
                                            save_csv=save_csv,
                                            output_dir=output_dir)
-  
+
   plot_AR_Num <- NULL
   plot_AR_Fr <- NULL
   plot_AR_per_100k <- NULL
