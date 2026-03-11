@@ -116,6 +116,14 @@ diarrhea_do_analysis <- function(health_data_path,
                                  cumulative = FALSE,
                                  output_dir =NULL){
 
+  api_mode <- isTRUE(getOption("climatehealth.api_mode", FALSE))
+  if (api_mode) {
+    save_fig <- FALSE
+    save_csv <- FALSE
+    save_model <- FALSE
+    output_dir <- NULL
+  }
+
   # Simple output validation
   if (is.null(output_dir) & (save_fig | save_csv)) {
     stop("'output_dir' must be provided if 'save_fig' or save_csv' are TRUE.")
@@ -151,7 +159,9 @@ diarrhea_do_analysis <- function(health_data_path,
   if (is.character(climate_data_path)) {
     check_file_exists(climate_data_path, TRUE)
   }
-  check_file_exists(map_path, TRUE)#
+  if (is.character(map_path)) {
+    check_file_exists(map_path, TRUE)
+  }
 
   # get combined data
   combined_data <- combine_health_climate_data(health_data_path,
@@ -181,7 +191,7 @@ diarrhea_do_analysis <- function(health_data_path,
   plot_tmax <- NULL
   plot_rainfall <- NULL
   plot_rhumidity <-NULL
-  if (level=="country") {
+  if (!api_mode && level=="country") {
     plot_diarrhea <- plot_health_climate_timeseries(
       combined_data$data,
       param_term = "diarrhea",
@@ -258,35 +268,41 @@ diarrhea_do_analysis <- function(health_data_path,
     config=config
   )
 
-  # Plot seasonality
-  reff_plot_monthly <- plot_monthly_random_effects(
-    combined_data,
-    model=inla_result$model,
-    output_dir=output_dir,
-    save_fig=save_fig
-  )
+  reff_plot_monthly <- NULL
+  reff_plot_yearly <- NULL
+  contour_plot_diarrhea <- NULL
+  rr_map_plot <- NULL
+  cum_rr_map <- NULL
+  if (!api_mode) {
+    # Plot seasonality
+    reff_plot_monthly <- plot_monthly_random_effects(
+      combined_data,
+      model=inla_result$model,
+      output_dir=output_dir,
+      save_fig=save_fig
+    )
 
-  # Spatial random effect
-  reff_plot_yearly <- plot_yearly_spatial_random_effect(
-    combined_data=combined_data,
-    model=inla_result$model,
-    case_type="diarrhea",
-    save_fig=save_fig,
-    output_dir=output_dir
-  )
-  # Contour plots
-  contour_plot_diarrhea <- contour_plot(
-    data=combined_data$data,
-    param_term=param_term,
-    max_lag=max_lag,
-    nk=nk,
-    model=inla_result$model,
-    level=level,
-    filter_year=filter_year,
-    case_type="diarrhea",
-    save_fig=save_fig,
-    output_dir=output_dir
-  )
+    # Spatial random effect
+    reff_plot_yearly <- plot_yearly_spatial_random_effect(
+      combined_data=combined_data,
+      model=inla_result$model,
+      case_type="diarrhea",
+      save_fig=save_fig,
+      output_dir=output_dir
+    )
+    # Contour plots
+    contour_plot_diarrhea <- contour_plot(
+      data=combined_data$data,
+      param_term=param_term,
+      max_lag=max_lag,
+      nk=nk,
+      model=inla_result$model,
+      level=level,
+      filter_year=filter_year,
+      case_type="diarrhea",
+      save_fig=save_fig,
+      output_dir=output_dir
+    )
 
   # Relative risk map plots
   rr_map_plot <- plot_rr_map(
@@ -332,7 +348,7 @@ diarrhea_do_analysis <- function(health_data_path,
     save_csv=save_csv,
     save_fig=save_fig
   )
-  rr_plot <- rr_data[["plots"]]
+  rr_plot <- if (!api_mode) rr_data[["plots"]] else NULL
   rr_df <- rr_data[["RR"]]
 
   # attribution fraction and number
@@ -350,23 +366,29 @@ diarrhea_do_analysis <- function(health_data_path,
     save_csv=save_csv,
     output_dir=output_dir)
 
-  plot_AR_Num <-plot_attribution_metric(attr_data = attr_frac_num,
-                                        param_term=param_term,
-                                        level= level,
-                                        metrics = "AR_Number",
-                                        case_type="diarrhea",
-                                        filter_year = filter_year,
-                                        save_fig =save_fig,
-                                        output_dir = output_dir)
+  plot_AR_Num <- NULL
+  plot_AR_Fr <- NULL
+  plot_AR_per_100k <- NULL
+  plot_avg_AR_Num <- NULL
+  plot_avg_AR_per_100k <- NULL
+  if (!api_mode) {
+    plot_AR_Num <-plot_attribution_metric(attr_data = attr_frac_num,
+                                          param_term=param_term,
+                                          level= level,
+                                          metrics = "AR_Number",
+                                          case_type="diarrhea",
+                                          filter_year = filter_year,
+                                          save_fig =save_fig,
+                                          output_dir = output_dir)
 
-  plot_AR_Fr <-plot_attribution_metric(attr_data = attr_frac_num,
-                                       param_term=param_term,
-                                       level= level,
-                                       metrics = "AR_Fraction",
-                                       case_type="diarrhea",
-                                       filter_year = filter_year,
-                                       save_fig =save_fig,
-                                       output_dir = output_dir)
+    plot_AR_Fr <-plot_attribution_metric(attr_data = attr_frac_num,
+                                         param_term=param_term,
+                                         level= level,
+                                         metrics = "AR_Fraction",
+                                         case_type="diarrhea",
+                                         filter_year = filter_year,
+                                         save_fig =save_fig,
+                                         output_dir = output_dir)
 
   plot_AR_per_100k <-plot_attribution_metric(attr_data = attr_frac_num,
                                              param_term=param_term,
@@ -394,6 +416,17 @@ diarrhea_do_analysis <- function(health_data_path,
                                          case_type = "diarrhea",
                                          save_fig = save_fig,
                                          output_dir = output_dir )
+  }
+
+  if (api_mode) {
+    return(list(
+      rr_df = rr_df,
+      an_ar_results = attr_frac_num,
+      attr_frac_num = attr_frac_num,
+      vif_results = VIF,
+      dic_table = inla_result$dic_table
+    ))
+  }
 
   res <- list(plot_diarrhea = plot_diarrhea,
               plot_tmax = plot_tmax,

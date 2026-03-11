@@ -3020,7 +3020,6 @@ hc_save_results <- function(rr_results,
 #'   var_fun = "bs",
 #'   var_degree = 2,
 #'   var_per = c(10, 75, 90),
-#'   lag_fun = "strata",
 #'   lagn = 21,
 #'   lagnk = 3
 #'   dfseas = 8,

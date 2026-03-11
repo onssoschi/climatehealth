@@ -28,5 +28,6 @@ lib
 
 # Test Data Exclusions
 !inst/testdata/*
+!inst/extdata/config_templates/
+!inst/extdata/config_templates/*.yml
 _snaps
-
