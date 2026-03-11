@@ -190,7 +190,7 @@ load_and_process_data <- function(health_data_path,
   }
   if (!is.null(date_col)) {
     data <- data %>% rename(
-      date = date_col
+      date = all_of(date_col)
     ) %>%
       mutate(
         year = lubridate::year(date),
