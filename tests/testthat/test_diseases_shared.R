@@ -1,5 +1,13 @@
 # Tests for diseases_shared.R
 
+if (!exists("with_parameters_test_that")) {
+  source("tests/testthat/helper-libraries.R", local = FALSE)
+}
+
+if (!"package:climatehealth" %in% search()) {
+  pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
+}
+
 # Create temp_dir to be used by all MH tests
 temp_dir <- tempdir()
 temp_dir <- file.path(temp_dir, "diseases_shared_tests")
@@ -77,6 +85,7 @@ with_parameters_test_that(
             return(tmp_csv)
         },
         function() {
+            testthat::skip_if_not_installed("openxlsx")
             tmp_xlsx <- file.path(tempdir(), "LAPD_test_data.xlsx")
             openxlsx::write.xlsx(LAPD_test_data, tmp_xlsx)
             return(tmp_xlsx)
@@ -256,6 +265,7 @@ with_parameters_test_that(
             return(tmp_csv)
         },
         function() {
+            testthat::skip_if_not_installed("openxlsx")
             tmp_xlsx <- file.path(tempdir(), "LAPD_test_data.xlsx")
             openxlsx::write.xlsx(LAPCD_test_data, tmp_xlsx)
             return(tmp_xlsx)

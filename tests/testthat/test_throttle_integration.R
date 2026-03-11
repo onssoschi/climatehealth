@@ -6,6 +6,10 @@
 #' - Path normalization
 #' - Bypass scenarios
 
+if (!exists("load_throttle_modules")) {
+  source("tests/testthat/helper-throttle_modules.R", local = FALSE)
+}
+
 context("Throttle Integration")
 
 if (!exists("create_throttle_guard")) {

@@ -1,5 +1,13 @@
 # Tests for descriptive_stats.R
 
+if (!exists("with_parameters_test_that")) {
+  source("tests/testthat/helper-libraries.R", local = FALSE)
+}
+
+if (!"package:climatehealth" %in% search()) {
+  pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
+}
+
 # Tests for check_empty_dataframe
 test_that("Empty dataframe throws an error", {
   expect_error(

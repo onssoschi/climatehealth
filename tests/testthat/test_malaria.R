@@ -1,5 +1,9 @@
 # integration test for malaria_do_analysis function
 
+if (!"package:climatehealth" %in% search()) {
+  pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
+}
+
 # Create temp_dir to be used by all MH tests
 temp_dir <- tempdir()
 temp_dir <- file.path(temp_dir, "malaria_tests")
