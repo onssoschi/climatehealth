@@ -8,7 +8,7 @@
 
 ## Table of Contents
 - [Package Overview](#package-overview)
-- [SOSCHI Topics and Indicators](#soschi-topics-and-indicators)
+- [SOSCHI Topics and Indicators](#soschi-topics)
 - [Package Installation](#package-installation)
 - [Running analysis](#running-analysis)
 - [Contributing to the package](#contributing-to-the-package)
@@ -27,7 +27,7 @@
 
 This package provides functions for calculating climate–health indicators and supporting the production of climate–health statistics. The methods implemented in the package follow the statistical framework for climate–health indicators developed under the Standards for Official Statistics on Climate–Health Interactions (SOSCHI) project.
 
-### SOSCHI Topics and Indicators
+### SOSCHI Topics
 
 This package contains scientific functions dedicated to the following topics in the SOSCHI framework. Please note the final methods documents are still in development, so the versions linked below are earlier alpha versions.
 
@@ -144,7 +144,7 @@ The package authors reflect direct intellectual and technical contributions to t
 
 - Lead author: Charlie Browning
 - Lead maintainer and platform developer: Kenechi Omeke
-- Authors: Etse Yawo Dzakpa, Gladin Jose, Matt Pearce, Ellie Watkins, Claire Hunt, Beatrice Byukusenge, Cassien Habyarimana, Venuste Nyagahakwa, Felix Scarbrough, Treesa Shaji, Bonnie Lewis, and Vijendra Ingole
+- Authors: Etse Yawo Dzakpa, Gladin Jose, Matt Pearce, Ellie Watkins, Claire Hunt, Beatrice Byukusenge, Cassien Habyarimana, Venuste Nyagahakwa, Felix Scarbrough, Treesa Shaji, Bonnie Lewis, Maquines Odhiambo Sewe, and Vijendra Ingole
 
 ## Contributors
 The following contributors supported the package through bug fixes, minor features,
@@ -175,7 +175,7 @@ If you use `climatehealth` in publications, cite the package as:
 
 Browning, C., Omeke, K., Dzakpa, E. Y., Jose, G., Pearce, M., Watkins, E., Hunt,
 C., Byukusenge, B., Habyarimana, C., Nyagahakwa, V., Scarbrough, F., Shaji, T.,
-Lewis, B., and Ingole, V. (2026).
+Lewis, B., Sewe, M., and Ingole, V. (2026).
 `climatehealth R package: Standards for Official Statistics on Climate-Health Interactions (SOSCHI)`.
 R package.
 
