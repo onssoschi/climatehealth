@@ -22,14 +22,14 @@ indicators following the statistical framework developed under the
 [SOSCHI (Standards for Official Statistics on Climate–Health Interactions)](https://climate-health.officialstatistics.org)
 project. It covers indicators for six climate-health topic areas:
 
-| Topic 
-|---
-| Temperature-related health effects
-| Health effects of wildfires | ONS 
-| Mental health (suicides and heat) 
-| Water-borne diseases (diarrhoea)
-| Health effects of air pollution
-| Vector-borne diseases (malaria)
+| Topic | Lead |
+|---|---|
+| Temperature-related health effects | ONS |
+| Health effects of wildfires | ONS |
+| Mental health (suicides and heat) | ONS |
+| Water-borne diseases (diarrhoea) | AIMS |
+| Health effects of air pollution | AIMS |
+| Vector-borne diseases (malaria) | RIPS/AIMS |
 
 Each topic has a dedicated analysis function that takes a data file path and
 column mappings, fits the appropriate statistical models, and returns results
