@@ -165,7 +165,7 @@ into the model for enhanced analysis.
 
 Further details on the input data requirements, methodology, quality information
 and guidance on interpreting outputs can be found in the accompanying published
-\href{https://doi.org/10.5281/zenodo.14052184}{Zenodo documentation}.
+\doi{10.5281/zenodo.14052184}.
 }
 \examples{
 \dontrun{
@@ -238,15 +238,15 @@ Available from: \url{https://zenodo.org/records/14052184}
 concentration of fire related PM2.5 for 2003-2023, modelled by SILAM CTM
 when using the MODIS satellite data for the fire radiative power.
 Finnish Meteorological Institute; 2024. Available from:
-\url{https://doi.org/10.57707/FMI- B2SHARE.D1CAC971B3224D438D5304E945E9F16C}
+\doi{10.57707/fmi-b2share.d1cac971b3224d438d5304e945e9f16c}
 \item GADM. Database for Global Administrative Areas.Available from:
 \url{https://gadm.org/download_country.html}
 \item Tobias A, Kim Y, Madaniyazi L. Time-stratified case-crossover studies
 for aggregated data in environmental epidemiology: a tutorial.
 Int J Epidemiol. 2024;53(2). Available from:
-\url{https://doi.org/10.1093/ije/dyae020}
+\doi{10.1093/ije/dyae020}
 \item Wu Y, Li S, Guo Y. Space-Time-Stratified Case-Crossover Design in
 Environmental Epidemiology Study. Heal Data Sci. 2021;
-Available from: \url{https://doi.org/10.34133/2021/9870798}
+Available from: \doi{10.34133/2021/9870798}
 }
 }
