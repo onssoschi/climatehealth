@@ -14,12 +14,12 @@ between various climate factors (indicators) and health outcomes.
 
 \subsection{Included Indicators}{
 \itemize{
-\item Mortality attributable to high and low temperatures
+\item Mortality attributable to high and low outdoor temperatures
 \item Mortality attributable to wildfire-related PM2.5
 \item Suicides attributable to extreme heat
-\item Mortality attributable to short-term exposure to outdoor PM2.5
-\item Diarrheal disease incidence attributable to extreme temperatures and rainfall
-\item Malaria incidence attributable to extreme temperatures and  rainfall
+\item Mortality attributable to short-term exposure to outdoor PM2.5 exposure
+\item Diarrhea cases attributable to extreme temperatures and rainfall
+\item Malaria cases attributable to extreme temperatures and  rainfall
 }
 }
 
@@ -68,6 +68,7 @@ Other contributors:
   \item David Furley [contributor]
   \item Joe Panes [contributor]
   \item Charlotte Romaniuk [contributor]
+  \item Milly Powell [contributor]
   \item Wellcome [funder]
   \item Office for National Statistics (SOSCHI Project) [copyright holder]
 }
