@@ -1,7 +1,7 @@
 citHeader("To cite climatehealth in publications use:")
 
-citEntry(
-  entry = "Manual",
+bibentry(
+  bibtype = "Manual",
   title = "climatehealth: Standards for Official Statistics on Climate-Health Interactions (SOSCHI)",
   author =   c(
       person("Charlie", "Browning", email = "climate.health@ons.gov.uk", role = "aut"),
