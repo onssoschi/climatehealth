@@ -19,6 +19,7 @@ Authors@R:
       person("Bonnie", "Lewis", role = "aut"),
       person("Maquines Odhiambo", "Sewe", role = "aut"),
       person("Vijendra", "Ingole", role = "aut"),
+      person("Sean", "Lovell", role = "ctb"),
       person("Antony", "Brown", role = "ctb"),
       person("Euan", "Soutter", role = "ctb"),
       person("Gillian", "Flower", role = "ctb"),
