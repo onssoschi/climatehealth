@@ -44,7 +44,7 @@ MIT
 
 Authors:
 \itemize{
-  \item Charlie Browning \email{climate.health@ons.gov.uk}
+  \item Charlie Browning
   \item Etse Yawo Dzakpa
   \item Gladin Jose
   \item Matt Pearce
