@@ -97,7 +97,6 @@ Suggests:
     terra,
     testthat (>= 3.2.1.1),
     withr
-URL: https://github.com/onssoschi/climatehealth
-BugReports: https://github.com/onssoschi/climatehealth/issues
+URL: https://climate-health.officialstatistics.org
 Depends: R (>= 4.4.0)
 Config/rcmdcheck/ignore-inconsequential-notes: true
