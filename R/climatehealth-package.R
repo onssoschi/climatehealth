@@ -7,12 +7,12 @@
 #' between various climate factors (indicators) and health outcomes.
 #'
 #' ## Included Indicators
-#' - Mortality attributable to high and low temperatures
+#' - Mortality attributable to high and low outdoor temperatures
 #' - Mortality attributable to wildfire-related PM2.5
 #' - Suicides attributable to extreme heat
-#' - Mortality attributable to short-term exposure to outdoor PM2.5
-#' - Diarrheal disease incidence attributable to extreme temperatures and rainfall
-#' - Malaria incidence attributable to extreme temperatures and  rainfall
+#' - Mortality attributable to short-term exposure to outdoor PM2.5 exposure
+#' - Diarrhea cases attributable to extreme temperatures and rainfall
+#' - Malaria cases attributable to extreme temperatures and  rainfall
 #'
 #' ## License
 #' MIT
