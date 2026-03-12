@@ -20,16 +20,16 @@ knitr::opts_chunk$set(
 The **climatehealth** package provides R functions for calculating climate–health
 indicators following the statistical framework developed under the
 [SOSCHI (Standards for Official Statistics on Climate–Health Interactions)](https://climate-health.officialstatistics.org)
-project. It covers six climate-health topic areas:
+project. It covers indicators for six climate-health topic areas:
 
-| Topic | Lead |
-|---|---|
-| Temperature-related health effects | ONS |
-| Health effects of wildfires | ONS |
-| Mental health (suicides and heat) | ONS |
-| Water-borne diseases (diarrhoea) | AIMS |
-| Health effects of air pollution | AIMS |
-| Vector-borne diseases (malaria) | RIPS/AIMS |
+| Topic 
+|---
+| Temperature-related health effects
+| Health effects of wildfires | ONS 
+| Mental health (suicides and heat) 
+| Water-borne diseases (diarrhoea)
+| Health effects of air pollution
+| Vector-borne diseases (malaria)
 
 Each topic has a dedicated analysis function that takes a data file path and
 column mappings, fits the appropriate statistical models, and returns results
