@@ -23,7 +23,7 @@ bibentry(
   organization = "SOSCHI Project, Office for National Statistics",
   year = "2026",
   note = paste("R package version", meta$Version),
-  url = "https://github.com/onssoschi/climatehealth",
+  url = "https://climate-health.officialstatistics.org/r_package",
   textVersion = paste(
     "Browning, C., Omeke, K., Dzakpa, E. Y., Jose, G., Pearce, M.,",
     "Watkins, E., Hunt, C., Byukusenge, B., Habyarimana, C.,",
@@ -32,6 +32,6 @@ bibentry(
     "Statistics on Climate-Health Interactions (SOSCHI).",
     paste("R package version", meta$Version, "."),
     "SOSCHI Project, Office for National Statistics.",
-    "https://github.com/onssoschi/climatehealth"
+    "https://climate-health.officialstatistics.org"
   )
 )

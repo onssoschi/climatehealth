@@ -1961,7 +1961,7 @@ mh_save_results <- function(
 #' 	for meta-analysis. Stat Med. 2019 Dec 20;38(29):5429-44. Available from: \doi{10.1002/sim.8362}
 #' 	\item Gasparrini A, Leone M. Attributable risk from distributed lag models.
 #' 	BMC Med Res Methodol. 2014 Dec 23;14(1):55.
-#' 	Available from: \url{https://bmcmedresmethodol.biomedcentral.com/articles/10.1186/1471-2288-14-55}
+#' 	Available from: \url{https://link.springer.com/article/10.1186/1471-2288-14-55}
 #' 	}
 #'
 #' @returns

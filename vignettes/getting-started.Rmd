@@ -386,5 +386,6 @@ climatehealth::is_climate_error(e)
 - **Function reference**: see `?temp_mortality_do_analysis` and related help
   pages.
 - **Methodology documents** for each SOSCHI topic are linked from the
-  [package README](https://github.com/onssoschi/climatehealth#soschi-topics).
-- **Report issues** at <https://github.com/onssoschi/climatehealth/issues>.
+  [SOSCHI project website](https://climate-health.officialstatistics.org).
+- **Report issues** by emailing <climate.health@ons.gov.uk> or via the
+  [Contact Us page](https://climate-health.officialstatistics.org).
