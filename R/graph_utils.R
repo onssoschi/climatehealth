@@ -627,7 +627,7 @@ plot_rate_overall <- function(
     dplyr::group_by(.data$Year) %>%
     dplyr::summarise(
       Total_Dependent = sum(.data[[dependent_col]], na.rm = TRUE),
-      Total_Population = sum(.data[[population_col]], na.rm = TRUE),
+      Total_Population = mean(.data[[population_col]], na.rm = TRUE),
       .groups = "drop"
     ) %>%
     dplyr::mutate(

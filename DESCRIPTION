@@ -4,7 +4,7 @@ Version: 1.0.0
 Date: 2026-03-11
 Authors@R: 
     c(
-      person("Charlie", "Browning", email = "climate.health@ons.gov.uk", role = "aut"),
+      person("Charlie", "Browning", role = "aut"),
       person("Kenechi", "Omeke", email = "climate.health@ons.gov.uk", role = c("aut", "cre")),
       person("Etse Yawo", "Dzakpa", role = "aut"),
       person("Gladin", "Jose", role = "aut"),
@@ -25,6 +25,7 @@ Authors@R:
       person("David", "Furley", role = "ctb"),
       person("Joe", "Panes", role = "ctb"),
       person("Charlotte", "Romaniuk", role = "ctb"),
+      person("Milly", "Powell", role = "ctb"),
       person("Wellcome", role = "fnd"),
       person("Office for National Statistics", role = "cph",
              comment = "SOSCHI Project")
