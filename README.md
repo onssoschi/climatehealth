@@ -155,6 +155,7 @@ testing, documentation, and review work:
 - David Furley
 - Joe Panes
 - Charlotte Romaniuk
+- Milly Powell
 
 ## Project Lead
 - Myer Glickman, Bonnie Lewis and Vijendra Ingole
