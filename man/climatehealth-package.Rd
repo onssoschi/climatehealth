@@ -39,6 +39,14 @@ MIT
 }
 }
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/onssoschi/climatehealth}
+  \item Report bugs at \url{https://github.com/onssoschi/climatehealth/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Kenechi Omeke \email{climate.health@ons.gov.uk}
 
