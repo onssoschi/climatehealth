@@ -42,8 +42,7 @@ MIT
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/onssoschi/climatehealth}
-  \item Report bugs at \url{https://github.com/onssoschi/climatehealth/issues}
+  \item \url{https://climate-health.officialstatistics.org}
 }
 
 }

@@ -14,7 +14,7 @@ Invisibly returns \code{NULL}. The function is called for its side effect.
 }
 \description{
 This function installs the \code{INLA} package from its official repository
-at \url{https://inla.r-inla-download.org/R/stable}. On Windows, it checks
+at \url{https://inla.r-inla-download.org/R/stable/}. On Windows, it checks
 whether Rtools is available and forces a source install to avoid broken binaries.
 }
 \details{

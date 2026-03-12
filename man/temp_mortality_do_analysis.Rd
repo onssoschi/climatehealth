@@ -152,7 +152,7 @@ mortality using \code{attr_thr_high} or \code{attr_thr_low}.
 Further details on the input data requirements, methodology, quality
 information and guidance on interpreting outputs can be found in the
 accompanying published
-\href{https://doi.org/10.5281/zenodo.14865904}{Zenodo documentation}.
+\doi{10.5281/zenodo.14865904}.
 }
 \examples{
 \dontrun{
@@ -187,7 +187,7 @@ temp_mortality_do_analysis(
 \item Watkins E, Hunt C, Lewis B, Ingole V, Glickman M. Standards for
 Official Statistics on Climate-Health Interactions (SOSCHI): Mortality
 attributed to high and low temperatures: methodology. Zenodo; 2026.
-Available from: \url{https://doi.org/10.5281/zenodo.14865904}
+Available from: \doi{10.5281/zenodo.14865904}
 \item Gasparrini A, Guo Y, Hashizume M, Lavigne E, Zanobetti A, Schwartz J,
 et al. Mortality risk attributable to high and low ambient temperature: a
 multicountry observational study. Lancet. 2015 Jul;386(9991):369-75.
@@ -195,10 +195,10 @@ Available from:
 \url{https://linkinghub.elsevier.com/retrieve/pii/S0140673614621140}
 \item Gasparrini A, Armstrong B. Reducing and meta-analysing estimates from
 distributed lag non-linear models. BMC Medical Research Methodology. 2013
-Jan 9;13:1. Available from: \url{https://doi.org/10.1186/1471-2288-13-1}
+Jan 9;13:1. Available from: \doi{10.1186/1471-2288-13-1}
 \item Gasparrini A, Armstrong B, Kenward MG. Multivariate meta-analysis for
 non-linear and other multi-parameter associations. Statistics in Medicine.
 2012 Dec 20;31(29):3821-39. Available from:
-\url{https://doi.org/10.1002/sim.5471}
+\doi{10.1002/sim.5471}
 }
 }
