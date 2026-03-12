@@ -4,8 +4,8 @@ citEntry(
   entry = "Manual",
   title = "climatehealth: Standards for Official Statistics on Climate-Health Interactions (SOSCHI)",
   author =   c(
-      person("Charlie", "Browning", email = "charlie.browning@ons.gov.uk", role = "aut"),
-      person("Kenechi", "Omeke", email = "kenechi.omeke@ons.gov.uk", role = c("aut", "cre")),
+      person("Charlie", "Browning", email = "climate.health@ons.gov.uk", role = "aut"),
+      person("Kenechi", "Omeke", email = "climate.health@ons.gov.uk", role = c("aut", "cre")),
       person("Etse Yawo", "Dzakpa", role = "aut"),
       person("Gladin", "Jose", role = "aut"),
       person("Matt", "Pearce", role = "aut"),
