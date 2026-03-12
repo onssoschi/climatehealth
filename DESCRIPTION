@@ -1,7 +1,7 @@
 Package: climatehealth
 Title: Standards for Official Statistics on Climate-Health Interactions (SOSCHI) Package
 Version: 1.0.0
-Date: 2026-03-11
+Date: 2026-03-12
 Authors@R: 
     c(
       person("Charlie", "Browning", role = "aut"),
