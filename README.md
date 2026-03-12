@@ -149,6 +149,7 @@ The package authors reflect direct intellectual and technical contributions to t
 ## Contributors
 The following contributors supported the package through bug fixes, minor features,
 testing, documentation, and review work:
+- Sean Lovell
 - Antony Brown
 - Euan Soutter
 - Gillian Flower
