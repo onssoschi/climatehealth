@@ -80,9 +80,9 @@ continuous variables (e.g., "tmean")}
 
 \item{df_seasonal}{Integer. Degrees of freedom for seasonal spline. Default 6.}
 
-\item{family}{Character. GAM family (default: "quasipoisson")}
+\item{family}{Character. Character. Probability distribution for the outcome variable. Options include "quasipoisson" (default: "quasipoisson")}
 
-\item{reference_standards}{List of reference standards, each with 'value' and 'name'}
+\item{reference_standards}{List of reference standards, each with "PM2.5 value" and "name of of standard (e.g. WHO)"}
 
 \item{output_dir}{Directory to save outputs}
 
@@ -156,7 +156,7 @@ descriptive statistics
 }
 \examples{
 \dontrun{
-results <- do_air_pollution_analysis(
+results <- air_pollution_do_analysis(
  data_path = "data.csv",
   date_col = "date",
   region_col = "province",

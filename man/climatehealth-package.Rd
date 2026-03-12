@@ -14,12 +14,12 @@ between various climate factors (indicators) and health outcomes.
 
 \subsection{Included Indicators}{
 \itemize{
-\item Heat and Cold
-\item Wildfires
-\item Mental Health
-\item Air Pollution
-\item Waterborne Diseases
-\item Vectorborne Diseases
+\item Mortality attributable to high and low temperatures
+\item Mortality attributable to wildfire-related PM2.5
+\item Suicides attributable to extreme heat
+\item Mortality attributable to short-term exposure to outdoor PM2.5
+\item Diarrheal disease incidence attributable to extreme temperatures and rainfall
+\item Malaria incidence attributable to extreme temperatures and  rainfall
 }
 }
 
@@ -28,17 +28,23 @@ between various climate factors (indicators) and health outcomes.
 MIT
 }
 
-\subsection{See Also}{
-
-TBC
+\subsection{The full range of topics include}{
+\itemize{
+\item Temperature-related health effects
+\item Health effects of wildfires
+\item Mental Health
+\item Health effects of air pollution
+\item Water-borne diseases
+\item Vector-borne diseases
+}
 }
 }
 \author{
-\strong{Maintainer}: Kenechi Omeke \email{kenechi.omeke@ons.gov.uk}
+\strong{Maintainer}: Kenechi Omeke \email{climate.health@ons.gov.uk}
 
 Authors:
 \itemize{
-  \item Charlie Browning \email{charlie.browning@ons.gov.uk}
+  \item Charlie Browning \email{climate.health@ons.gov.uk}
   \item Etse Yawo Dzakpa
   \item Gladin Jose
   \item Matt Pearce
@@ -56,7 +62,12 @@ Authors:
 
 Other contributors:
 \itemize{
+  \item Antony Brown [contributor]
+  \item Euan Soutter [contributor]
+  \item Gillian Flower [contributor]
+  \item David Furley [contributor]
   \item Joe Panes [contributor]
+  \item Charlotte Romaniuk [contributor]
   \item Wellcome [funder]
   \item Office for National Statistics (SOSCHI Project) [copyright holder]
 }
