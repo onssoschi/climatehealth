@@ -2483,8 +2483,8 @@ plot_air_pollution_power <- function(
 #' @param Continuous_Others Deprecated alias for `continuous_others`.
 #' @param max_lag Integer. Maximum lag days. Defaults to 14.
 #' @param df_seasonal Integer. Degrees of freedom for seasonal spline. Default 6.
-#' @param family Character. GAM family (default: "quasipoisson")
-#' @param reference_standards List of reference standards, each with 'value' and 'name'
+#' @param family Character. Character. Probability distribution for the outcome variable. Options include "quasipoisson" (default: "quasipoisson")
+#' @param reference_standards List of reference standards, each with "PM2.5 value" and "name of of standard (e.g. WHO)"
 #' @param output_dir Directory to save outputs
 #' @param save_outputs Logical. Whether to save outputs
 #' @param run_descriptive Logical. Whether to run descriptive statistics
@@ -2516,7 +2516,7 @@ plot_air_pollution_power <- function(
 #'
 #' @examples
 #' \dontrun{
-#' results <- do_air_pollution_analysis(
+#' results <- air_pollution_do_analysis(
 #'  data_path = "data.csv",
 #'   date_col = "date",
 #'   region_col = "province",
