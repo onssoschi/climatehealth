@@ -25,6 +25,7 @@ Authors@R:
       person("David", "Furley", role = "ctb"),
       person("Joe", "Panes", role = "ctb"),
       person("Charlotte", "Romaniuk", role = "ctb"),
+      person("Milly", "Powell", role = "ctb"),
       person("Wellcome", role = "fnd"),
       person("Office for National Statistics", role = "cph",
              comment = "SOSCHI Project")
