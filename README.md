@@ -1,14 +1,11 @@
-![Static Badge](https://img.shields.io/badge/Status-In%20Development-darkgreen?logo=git&logoColor=white) ![Static Badge](https://img.shields.io/badge/Release%20Version-v1.0.0-pink?logo=github) ![Static Badge](https://img.shields.io/badge/R_Version-4.4.1-pink?logo=R) [![codecov](https://codecov.io/gh/onssoschi/climatehealth/graph/badge.svg?token=YKRAUQ3JAU)](https://codecov.io/gh/onssoschi/climatehealth)  
+![Static Badge](https://img.shields.io/badge/Status-In%20Development-darkgreen?logo=git&logoColor=white) ![Static Badge](https://img.shields.io/badge/Release%20Version-0.9.30-pink?logo=github) ![Static Badge](https://img.shields.io/badge/R_Version-4.4.1-pink?logo=R) [![codecov](https://codecov.io/gh/onssoschi/climatehealth/graph/badge.svg?token=YKRAUQ3JAU)](https://codecov.io/gh/onssoschi/climatehealth)  
 [![Build R Package on Release](https://github.com/onssoschi/climatehealth/actions/workflows/r_release.yml/badge.svg)](https://github.com/onssoschi/climatehealth/actions/workflows/r_release.yml) [![R CMD Check and Coverage](https://github.com/onssoschi/climatehealth/actions/workflows/r_check_and_coverage.yml/badge.svg)](https://github.com/onssoschi/climatehealth/actions/workflows/r_check_and_coverage.yml)
 
 # Climatehealth Package
 
-> [!NOTE]
-> Please note that there may be some inconsistencies between the indicators and methods included in the Github code/R package, and those described in the corresponding SOSCHI topic documents, and/or related analysis publications. This is because the final methods documents are still in development, so those linked below in the section 'SOSCHI Topics and Indicators' are an earlier alpha version. 
-
 ## Table of Contents
 - [Package Overview](#package-overview)
-- [SOSCHI Topics and Indicators](#soschi-topics)
+- [SOSCHI Topics and Indicators](#soschi-topics-and-indicators)
 - [Package Installation](#package-installation)
 - [Running analysis](#running-analysis)
 - [Contributing to the package](#contributing-to-the-package)
@@ -25,9 +22,9 @@
 
 ### Description
 
-This package provides functions for calculating climate–health indicators and supporting the production of climate–health statistics. The methods implemented in the package follow the statistical framework for climate–health indicators developed under the Standards for Official Statistics on Climate–Health Interactions (SOSCHI) project.
+This package provides functions for calculating climate–health indicators and supporting the production of climate–health statistics. The methods implemented in the package follow the statistical framework for climate–health indicators developed under the Standards for Official Statistics on Climate–Health Interactions (SOSCHI) project. You can find out more and stay up to date with the [SOSCHI project here](https://climate-health.officialstatistics.org/).
 
-### SOSCHI Topics
+### SOSCHI Topics and Indicators
 
 This package contains scientific functions dedicated to the following topics in the SOSCHI framework. Please note the final methods documents are still in development, so the versions linked below are earlier alpha versions.
 
@@ -39,6 +36,9 @@ This package contains scientific functions dedicated to the following topics in 
 | Water-borne diseases                                                       | AIMS            | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     |
 | Health effects of air pollution                                                      | AIMS            | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     |
 | Vector-borne diseases                                                            | RIPS/AIMS       | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     |
+
+> [!NOTE]
+> Please note that there may be some inconsistencies between the indicators and methods included in the Github code/R package, and those described in the corresponding SOSCHI topic documents, and/or related analysis publications. This is because the final methods documents are still in development, so those linked below in the section 'SOSCHI Topics and Indicators' are an earlier alpha version. 
 
 For information on how to use this R package, see our official website [here](https://climate-health.officialstatistics.org/r_package)
 
@@ -144,7 +144,7 @@ The package authors reflect direct intellectual and technical contributions to t
 
 - Lead author: Charlie Browning
 - Lead maintainer and platform developer: Kenechi Omeke
-- Authors: Etse Yawo Dzakpa, Gladin Jose, Matt Pearce, Ellie Watkins, Claire Hunt, Beatrice Byukusenge, Cassien Habyarimana, Venuste Nyagahakwa, Felix Scarbrough, Treesa Shaji, Bonnie Lewis, Maquines Odhiambo Sewe, and Vijendra Ingole
+- Authors: Etse Yawo Dzakpa, Gladin Jose, Matt Pearce, Ellie Watkins, Claire Hunt, Beatrice Byukusenge, Cassien Habyarimana, Venuste Nyagahakwa, Felix Scarbrough, Treesa Shaji, Bonnie Lewis, and Vijendra Ingole
 
 ## Contributors
 The following contributors supported the package through bug fixes, minor features,
@@ -176,7 +176,7 @@ If you use `climatehealth` in publications, cite the package as:
 
 Browning, C., Omeke, K., Dzakpa, E. Y., Jose, G., Pearce, M., Watkins, E., Hunt,
 C., Byukusenge, B., Habyarimana, C., Nyagahakwa, V., Scarbrough, F., Shaji, T.,
-Lewis, B., Sewe, M., and Ingole, V. (2026).
+Lewis, B., and Ingole, V. (2026).
 `climatehealth R package: Standards for Official Statistics on Climate-Health Interactions (SOSCHI)`.
 R package.
 

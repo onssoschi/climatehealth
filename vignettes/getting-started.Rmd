@@ -1,0 +1,390 @@
+---
+title: "Getting Started with climatehealth"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with climatehealth}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment  = "#>",
+  eval     = FALSE
+)
+```
+
+## What is climatehealth?
+
+The **climatehealth** package provides R functions for calculating climate–health
+indicators following the statistical framework developed under the
+[SOSCHI (Standards for Official Statistics on Climate–Health Interactions)](https://climate-health.officialstatistics.org)
+project. It covers six climate-health topic areas:
+
+| Topic | Lead |
+|---|---|
+| Temperature-related health effects | ONS |
+| Health effects of wildfires | ONS |
+| Mental health (suicides and heat) | ONS |
+| Water-borne diseases (diarrhoea) | AIMS |
+| Health effects of air pollution | AIMS |
+| Vector-borne diseases (malaria) | RIPS/AIMS |
+
+Each topic has a dedicated analysis function that takes a data file path and
+column mappings, fits the appropriate statistical models, and returns results
+and optional plots.
+
+---
+
+## Installation
+
+### From CRAN
+
+```{r install-cran}
+install.packages("climatehealth")
+```
+
+### From GitHub (latest development version)
+
+```{r install-github}
+install.packages("remotes")
+remotes::install_github("onssoschi/climatehealth")
+```
+
+### Optional dependencies
+
+Two indicators (malaria and diarrhoea) depend on **INLA** and **terra**
+respectively, which are not on CRAN and must be installed separately if needed:
+
+```{r install-optional}
+climatehealth::install_INLA()
+climatehealth::install_terra()
+```
+
+Once installed, load the package:
+
+```{r load}
+library(climatehealth)
+```
+
+---
+
+## Package workflow
+
+All six indicator functions follow the same pattern:
+
+1. **Provide a path** to your input CSV.
+2. **Map your column names** to the function's expected arguments (or use the
+   defaults if your data already matches them).
+3. **Choose optional extras**: covariates, meta-analysis, output saving.
+4. **Inspect the returned list** for model results, plots, and summary tables.
+
+```
+your_data.csv  -->  indicator_do_analysis()  -->  results list
+                                              -->  figures (optional)
+                                              -->  CSV outputs (optional)
+```
+
+---
+
+## Your first analysis: temperature and mortality
+
+`temp_mortality_do_analysis()` estimates the association between ambient
+temperature and mortality using a distributed lag non-linear model (DLNM).
+
+```{r temp-mortality-basic}
+res <- climatehealth::temp_mortality_do_analysis(
+  data_path        = "path/to/your/data.csv",
+  date_col         = "date",
+  region_col       = "region",
+  temperature_col  = "tmean",
+  health_outcome_col = "deaths",
+  population_col   = "population",
+  meta_analysis    = FALSE,
+  save_fig         = FALSE,
+  save_csv         = FALSE
+)
+```
+
+The returned object `res` is a named list. Common fields include:
+
+```{r temp-mortality-results}
+res$data_raw          # the input data as loaded
+res$analysis_results  # model coefficients and confidence intervals
+res$meta_results      # pooled estimates (when meta_analysis = TRUE)
+```
+
+### Adding covariates
+
+Pass extra column names via `independent_cols` (continuous exposures) and
+`control_cols` (factors such as day-of-week or public holidays):
+
+```{r temp-mortality-covariates}
+res <- climatehealth::temp_mortality_do_analysis(
+  data_path          = "path/to/your/data.csv",
+  date_col           = "date",
+  region_col         = "region",
+  temperature_col    = "tmean",
+  health_outcome_col = "deaths",
+  population_col     = "population",
+  independent_cols   = c("humidity", "ozone"),
+  control_cols       = c("dow", "holiday_flag"),
+  meta_analysis      = FALSE,
+  save_fig           = FALSE,
+  save_csv           = FALSE
+)
+```
+
+### Pooling across regions with meta-analysis
+
+Set `meta_analysis = TRUE` to pool region-level estimates into a single
+national estimate:
+
+```{r temp-mortality-meta}
+res <- climatehealth::temp_mortality_do_analysis(
+  data_path          = "path/to/your/data.csv",
+  date_col           = "date",
+  region_col         = "region",
+  temperature_col    = "tmean",
+  health_outcome_col = "deaths",
+  population_col     = "population",
+  country            = "National",
+  meta_analysis      = TRUE,
+  save_fig           = FALSE,
+  save_csv           = FALSE
+)
+```
+
+---
+
+## The six indicators
+
+### Air pollution
+
+`air_pollution_do_analysis()` estimates attributable mortality burden from
+PM2.5 exposure. By default it expects columns named `date`, `region`, `pm25`,
+`deaths`, `population`, `humidity`, `precipitation`, `tmax`, and `wind_speed`.
+
+```{r air-pollution}
+res <- climatehealth::air_pollution_do_analysis(
+  data_path       = "path/to/your/data.csv",
+  save_outputs    = FALSE,
+  run_descriptive = TRUE,
+  run_power       = TRUE
+)
+```
+
+Compare against multiple PM2.5 reference thresholds in a single run:
+
+```{r air-pollution-standards}
+res <- climatehealth::air_pollution_do_analysis(
+  data_path         = "path/to/your/data.csv",
+  reference_standards = list(
+    list(value = 15, name = "WHO"),
+    list(value = 25, name = "National")
+  ),
+  save_outputs = FALSE,
+  run_power    = TRUE
+)
+```
+
+### Wildfires
+
+`wildfire_do_analysis()` estimates the health impact of wildfire smoke exposure.
+
+```{r wildfire}
+res <- climatehealth::wildfire_do_analysis(
+  data_path          = "path/to/your/data.csv",
+  date_col           = "date",
+  region_col         = "region",
+  exposure_col       = "pm25_fire",
+  health_outcome_col = "respiratory_admissions",
+  population_col     = "population",
+  meta_analysis      = FALSE,
+  save_fig           = FALSE,
+  save_csv           = FALSE
+)
+```
+
+### Mental health (suicides and heat)
+
+`suicides_heat_do_analysis()` models the association between temperature and
+suicide counts.
+
+```{r suicides}
+res <- climatehealth::suicides_heat_do_analysis(
+  data_path          = "path/to/your/data.csv",
+  date_col           = "date",
+  region_col         = "region",
+  temperature_col    = "tmean",
+  health_outcome_col = "suicides",
+  population_col     = "population",
+  meta_analysis      = FALSE,
+  save_fig           = FALSE,
+  save_csv           = FALSE
+)
+```
+
+### Water-borne diseases (diarrhoea)
+
+`diarrhea_do_analysis()` estimates climate-driven diarrhoea burden.
+
+```{r diarrhea}
+res <- climatehealth::diarrhea_do_analysis(
+  data_path          = "path/to/your/data.csv",
+  date_col           = "date",
+  region_col         = "region",
+  temperature_col    = "tmean",
+  health_outcome_col = "diarrhea_cases",
+  population_col     = "population",
+  meta_analysis      = FALSE,
+  save_fig           = FALSE,
+  save_csv           = FALSE
+)
+```
+
+### Vector-borne diseases (malaria)
+
+`malaria_do_analysis()` requires the **INLA** package (see Installation above).
+
+```{r malaria}
+res <- climatehealth::malaria_do_analysis(
+  data_path          = "path/to/your/data.csv",
+  date_col           = "date",
+  region_col         = "region",
+  temperature_col    = "tmean",
+  health_outcome_col = "malaria_cases",
+  population_col     = "population",
+  meta_analysis      = FALSE,
+  save_fig           = FALSE,
+  save_csv           = FALSE
+)
+```
+
+---
+
+## Descriptive statistics
+
+Before running an indicator analysis, use `run_descriptive_stats()` to explore
+your data: distributions, correlations, missing values, outliers, and seasonal
+patterns.
+
+```{r descriptive-basic}
+df <- read.csv("path/to/your/data.csv")
+
+desc <- climatehealth::run_descriptive_stats(
+  data               = df,
+  output_path        = "path/to/output/folder",
+  aggregation_column = "region",
+  dependent_col      = "deaths",
+  independent_cols   = c("tmean", "humidity", "rainfall"),
+  plot_corr_matrix   = TRUE,
+  plot_dist          = TRUE,
+  plot_na_counts     = TRUE,
+  plot_scatter       = TRUE,
+  plot_box           = TRUE,
+  create_base_dir    = TRUE
+)
+```
+
+Add units for cleaner plot labels, and enable time-series and rate calculations:
+
+```{r descriptive-advanced}
+desc <- climatehealth::run_descriptive_stats(
+  data               = df,
+  output_path        = "path/to/output/folder",
+  aggregation_column = "region",
+  population_col     = "population",
+  dependent_col      = "deaths",
+  independent_cols   = c("tmean", "humidity", "rainfall"),
+  units = c(
+    deaths    = "count",
+    tmean     = "C",
+    humidity  = "%",
+    rainfall  = "mm"
+  ),
+  timeseries_col     = "date",
+  plot_corr_matrix   = TRUE,
+  plot_dist          = TRUE,
+  plot_ma            = TRUE,
+  ma_days            = 30,
+  plot_seasonal      = TRUE,
+  plot_regional      = TRUE,
+  plot_total         = TRUE,
+  detect_outliers    = TRUE,
+  calculate_rate     = TRUE,
+  create_base_dir    = TRUE
+)
+```
+
+The returned list includes paths to all generated plots:
+
+```{r descriptive-results}
+desc$run_output_path      # folder where all outputs were saved
+desc$region_output_paths  # per-region output sub-folders
+```
+
+---
+
+## Saving outputs
+
+Every indicator function accepts `save_fig` and `save_csv` arguments (or
+`save_outputs` for air pollution). Set these to `TRUE` and supply
+`output_folder_path` to write results to disk. The function creates a
+timestamped sub-folder automatically.
+
+```{r saving}
+res <- climatehealth::temp_mortality_do_analysis(
+  data_path          = "path/to/your/data.csv",
+  date_col           = "date",
+  region_col         = "region",
+  temperature_col    = "tmean",
+  health_outcome_col = "deaths",
+  population_col     = "population",
+  meta_analysis      = TRUE,
+  save_fig           = TRUE,
+  save_csv           = TRUE,
+  output_folder_path = "path/to/output/folder"
+)
+```
+
+---
+
+## Error handling
+
+The package uses structured conditions. You can catch them with `tryCatch`:
+
+```{r error-handling}
+result <- tryCatch(
+  climatehealth::temp_mortality_do_analysis(
+    data_path          = "path/to/your/data.csv",
+    date_col           = "wrong_column_name",
+    health_outcome_col = "deaths",
+    population_col     = "population"
+  ),
+  climate_error = function(e) {
+    message("climatehealth error: ", conditionMessage(e))
+    NULL
+  }
+)
+```
+
+Use `is_climate_error()` to test whether a caught condition came from this
+package:
+
+```{r is-climate-error}
+climatehealth::is_climate_error(e)
+```
+
+---
+
+## Next steps
+
+- **Full example scripts** for each indicator are in
+  `system.file("examples", package = "climatehealth")`.
+- **Function reference**: see `?temp_mortality_do_analysis` and related help
+  pages.
+- **Methodology documents** for each SOSCHI topic are linked from the
+  [package README](https://github.com/onssoschi/climatehealth#soschi-topics).
+- **Report issues** at <https://github.com/onssoschi/climatehealth/issues>.
