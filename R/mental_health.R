@@ -1951,7 +1951,7 @@ mh_save_results <- function(
 #'  Lancet. 2015 Jul;386(9991):369-75. Available from: \url{https://linkinghub.elsevier.com/retrieve/pii/S0140673614621140}
 #'  \item Kim Y, Kim H, Gasparrini A, Armstrong B, Honda Y, Chung Y, et al. Suicide and Ambient
 #'  Temperature: A Multi-Country Multi-City Study. Environ Health Perspect. 2019 Nov;127(11):1-10.
-#'  Available from: \url{https://ehp.niehs.nih.gov/doi/10.1289/EHP4898}
+#'  Available from: \doi{10.1289/EHP4898}
 #'  \item Gasparrini A, Armstrong B. Reducing and meta-analysing estimates from distributed lag
 #'  non-linear models. BMC Med Res Methodol. 2013 Jan 9;13:1. Available from: \doi{10.1186/1471-2288-13-1}
 #' 	\item Gasparrini A, Armstrong B, Kenward MG. Multivariate meta-analysis for non-linear and
