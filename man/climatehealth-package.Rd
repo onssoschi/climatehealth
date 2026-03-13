@@ -69,6 +69,7 @@ Authors:
 
 Other contributors:
 \itemize{
+  \item Sean Lovell [contributor]
   \item Antony Brown [contributor]
   \item Euan Soutter [contributor]
   \item Gillian Flower [contributor]
