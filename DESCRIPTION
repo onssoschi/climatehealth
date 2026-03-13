@@ -99,5 +99,6 @@ Suggests:
     testthat (>= 3.2.1.1),
     withr
 URL: https://climate-health.officialstatistics.org
+Additional_repositories: https://inla.r-inla-download.org/R/stable/
 Depends: R (>= 4.4.0)
 Config/rcmdcheck/ignore-inconsequential-notes: true
