@@ -1,3 +1,11 @@
+inla_binary_works <- function() {
+  if (!requireNamespace("INLA", quietly = TRUE)) return(FALSE)
+  tryCatch({
+    INLA::inla.version()
+    TRUE
+  }, error = function(e) FALSE)
+}
+
 suppress_plot <- function(expr) {
   tmp <- tempfile(fileext = ".pdf")
   grDevices::pdf(tmp, width = 16, height = 12)
