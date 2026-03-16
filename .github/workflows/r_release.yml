@@ -16,10 +16,12 @@ jobs:
         with:
           r-version: "4.4.1"
 
+      - uses: r-lib/actions/setup-pandoc@v2
+
       - name: Install dependencies
         run: |
           Rscript -e 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/latest"))'
-          Rscript -e 'install.packages(c("devtools", "roxygen2", "remotes", "pak"))'
+          Rscript -e 'install.packages(c("devtools", "roxygen2", "remotes", "pak", "knitr", "rmarkdown"))'
 
       - name: Install package
         run: |
