@@ -1,7 +1,5 @@
-<!-- badges: uncomment when repository is public
-![Static Badge](https://img.shields.io/badge/Status-In%20Development-darkgreen?logo=git&logoColor=white) ![Static Badge](https://img.shields.io/badge/Release%20Version-0.9.30-pink?logo=github) ![Static Badge](https://img.shields.io/badge/R_Version-4.4.1-pink?logo=R) [![codecov](https://codecov.io/gh/onssoschi/climatehealth/graph/badge.svg)](https://app.codecov.io/gh/onssoschi/climatehealth)
+![Static Badge](https://img.shields.io/badge/Status-In%20Development-darkgreen?logo=git&logoColor=white) ![Static Badge](https://img.shields.io/badge/Release%20Version-1.0.0-pink?logo=github) ![Static Badge](https://img.shields.io/badge/R_Version-4.4.1-pink?logo=R) [![codecov](https://codecov.io/gh/onssoschi/climatehealth/graph/badge.svg)](https://app.codecov.io/gh/onssoschi/climatehealth)
 [![Build R Package on Release](https://github.com/onssoschi/climatehealth/actions/workflows/r_release.yml/badge.svg)](https://github.com/onssoschi/climatehealth/actions/workflows/r_release.yml) [![R CMD Check and Coverage](https://github.com/onssoschi/climatehealth/actions/workflows/r_check_and_coverage.yml/badge.svg)](https://github.com/onssoschi/climatehealth/actions/workflows/r_check_and_coverage.yml)
--->
 
 # Climatehealth Package
 
@@ -42,7 +40,7 @@ This package contains scientific functions dedicated to the following topics in 
 > [!NOTE]
 > Please note that there may be some inconsistencies between the indicators and methods included in the Github code/R package, and those described in the corresponding SOSCHI topic documents, and/or related analysis publications. This is because the final methods documents are still in development, so those linked below in the section 'SOSCHI Topics and Indicators' are an earlier alpha version. 
 
-For information on how to use this R package, see our official website [here](https://climate-health.officialstatistics.org/r_package)
+For information on how to use this R package, check [here](https://github.com/onssoschi/climatehealth/blob/main/vignettes/getting-started.Rmd)
 
 ## Package Installation
 
@@ -83,7 +81,6 @@ remotes::install_github("onssoschi/climatehealth")
 This installs the package from the GitHub repository into your R library in the usual way. This option is useful if you want the latest development version of the package but do not need to edit the source code locally.
 
 
-<!-- github-release-installs: uncomment when repository is public
 #### 3. Install the latest Windows binary release (pre-compiled)
 If you would like to install the latest official release of the package, download the `.zip` file from the latest GitHub release [here](https://github.com/onssoschi/climatehealth/releases/latest). Then install it in R with:
 ```r
@@ -97,7 +94,6 @@ If you are using MacOS and would like to install from the source, download the `
 install.packages(path = "{path/to/climatehealth_<version>.tar.gz}", repos = NULL, type = "source")
 ```
 where `<version>` is the version number of the release you downloaded.
--->
 
 ## Running analysis
 Once the package is installed or loaded, you can run any of the main analysis entry points depending on your use case.
@@ -141,7 +137,7 @@ This is useful for checking data quality, exploring variables, and generating su
 
 ## Contributing to the package
 We welcome contributions from public users, collaborators, and developers who want to improve the package.
-If you want to contribute code, documentation, tests, or bug fixes, please start by reading the CONTRIBUTING guide <!-- uncomment link when repository is public: [CONTRIBUTING](https://github.com/onssoschi/climatehealth/blob/main/CONTRIBUTING.md) -->. This includes guidance on setting up a local development workflow, making changes safely, and submitting updates through GitHub.
+If you want to contribute code, documentation, tests, or bug fixes, please start by reading the CONTRIBUTING guide [CONTRIBUTING](https://github.com/onssoschi/climatehealth/blob/main/CONTRIBUTING.md). This includes guidance on setting up a local development workflow, making changes safely, and submitting updates through GitHub.
 
 ## Authors
 The package authors reflect direct intellectual and technical contributions to the package architecture, module methods, and reproducible analytical workflows.
