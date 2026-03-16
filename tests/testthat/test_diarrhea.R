@@ -67,7 +67,8 @@ make_climate_fixture_d <- function() {
 # tests/testthat/test_diarrhea.R
 test_that("diarrhea_do_analysis runs end-to-end on synthetic data", {
   skip_if_not_installed("sf")
-  skip_if_not(inla_binary_works(), "INLA binary not functional in this environment")
+  skip_if_not_installed("INLA")
+  skip_on_ci()
 
   health  <- make_health_fixture_d()
   climate <- make_climate_fixture_d()

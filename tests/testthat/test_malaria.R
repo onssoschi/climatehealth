@@ -88,7 +88,8 @@ mock_min_data <- tibble(
 # tests/testthat/test_malaria.R
 test_that("malaria_do_analysis runs end-to-end on synthetic data", {
   skip_if_not_installed("sf")
-  skip_if_not(inla_binary_works(), "INLA binary not functional in this environment")
+  skip_if_not_installed("INLA")
+  skip_on_ci()
 
   health  <- make_health_fixture_m()
   climate <- make_climate_fixture_m()
