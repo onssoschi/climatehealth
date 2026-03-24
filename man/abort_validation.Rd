@@ -24,13 +24,18 @@ doesn't meet requirements. For missing columns specifically, use
 \examples{
 \donttest{
 # Parameter validation
+nlag <- -1
 if (nlag < 0) {
-  abort_validation(
-    "nlag must be >= 0",
-    param = "nlag",
-    value = nlag,
-    expected = "non-negative integer"
+  err <- tryCatch(
+    abort_validation(
+      "nlag must be >= 0",
+      param = "nlag",
+      value = nlag,
+      expected = "non-negative integer"
+    ),
+    error = identity
   )
+  inherits(err, "validation_error")
 }
 }
 
