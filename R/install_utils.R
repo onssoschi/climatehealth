@@ -74,7 +74,7 @@ install_INLA <- function(os = .Platform$OS.type) {
     tarball <- "https://inla.r-inla-download.org/R/stable/bin/windows/contrib/4.4/INLA_24.12.11.zip"
     install.packages(
       tarball,
-      repos = NULL, type = "source"
+      repos = NULL, type = "win.binary"
     )
   } else {
     install.packages(
