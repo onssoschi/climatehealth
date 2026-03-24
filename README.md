@@ -179,7 +179,7 @@ If you use `climatehealth` in publications, cite the package as:
 Browning, C., Omeke, K., Dzakpa, E. Y., Jose, G., Pearce, M., Watkins, E., Hunt,
 C., Byukusenge, B., Habyarimana, C., Nyagahakwa, V., Scarbrough, F., Shaji, T.,
 Lewis, B., and Ingole, V. (2026).
-`climatehealth R package: Standards for Official Statistics on Climate-Health Interactions (SOSCHI)`.
+`climatehealth: Epidemiological Tools for Climate-Health Impact Assessment`.
 R package.
 
 An R package citation file is provided at `inst/CITATION`.

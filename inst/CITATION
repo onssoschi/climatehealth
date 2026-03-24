@@ -2,7 +2,7 @@ citHeader("To cite climatehealth in publications use:")
 
 bibentry(
   bibtype = "Manual",
-  title = "climatehealth: Standards for Official Statistics on Climate-Health Interactions (SOSCHI)",
+  title = "climatehealth: Epidemiological Tools for Climate-Health Impact Assessment",
   author =   c(
       person("Charlie", "Browning"),
       person("Kenechi", "Omeke", email = "climate.health@ons.gov.uk", role = c("aut", "cre")),
@@ -23,13 +23,12 @@ bibentry(
   organization = "SOSCHI Project, Office for National Statistics",
   year = "2026",
   note = paste("R package version", meta$Version),
-  url = "https://climate-health.officialstatistics.org/r_package",
+  url = "https://climate-health.officialstatistics.org",
   textVersion = paste(
     "Browning, C., Omeke, K., Dzakpa, E. Y., Jose, G., Pearce, M.,",
     "Watkins, E., Hunt, C., Byukusenge, B., Habyarimana, C.,",
     "Nyagahakwa, V., Scarbrough, F., Shaji, T., Lewis, B., and Ingole, V. (2026).",
-    "climatehealth: Standards for Official",
-    "Statistics on Climate-Health Interactions (SOSCHI).",
+    "climatehealth: Epidemiological Tools for Climate-Health Impact Assessment.",
     paste("R package version", meta$Version, "."),
     "SOSCHI Project, Office for National Statistics.",
     "https://climate-health.officialstatistics.org"
