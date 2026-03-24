@@ -45,7 +45,7 @@ install_pkg_mock <- function(...) {
         "https://inla.r-inla-download.org/R/stable/bin/windows/contrib/4.4/",
         "INLA_24.12.11.zip"
     )
-    if (name==INLA_tarball && is.null(repos) && type=="source") {
+    if (name==INLA_tarball && is.null(repos) && type=="win.binary") {
         message("windows install")
     }
     INLA_repo_source = "https://inla.r-inla-download.org/R/stable"
