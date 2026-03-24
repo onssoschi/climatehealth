@@ -1139,6 +1139,11 @@ hc_plot_rr <- function(df_list,
                        country = "National",
                        save_fig = FALSE,
                        output_folder_path = NULL) {
+  if (!save_fig) {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
+  }
+
   xlim <- c(
     min(sapply(pred_list, function(x) min(x$predvar, na.rm = TRUE))),
     max(sapply(pred_list, function(x) max(x$predvar, na.rm = TRUE)))
