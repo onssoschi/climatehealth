@@ -148,7 +148,7 @@ and guidance on interpreting outputs can be found in the accompanying published
 \doi{10.5281/zenodo.14050224}.
 }
 \examples{
-\dontrun{
+\donttest{
 suicides_heat_do_analysis(
   data_path = "data/inputs/daily_suicides_climate_E_2001_2023.csv",
   date_col = "date",

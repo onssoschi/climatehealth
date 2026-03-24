@@ -16,7 +16,7 @@ TRUE if the error inherits from "climate_error", FALSE otherwise.
 Utility function to check if a caught condition is a typed climate error.
 }
 \examples{
-\dontrun{
+\donttest{
 tryCatch({
   some_function()
 }, error = function(e) {

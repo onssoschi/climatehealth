@@ -168,7 +168,7 @@ and guidance on interpreting outputs can be found in the accompanying published
 \doi{10.5281/zenodo.14052184}.
 }
 \examples{
-\dontrun{
+\donttest{
 wildfire_do_analysis(
 health_path = "input/ data_with_wildfire_pm.csv",
 join_wildfire_data = FALSE,
@@ -198,7 +198,7 @@ print_vif = FALSE,
 print_model_summaries = FALSE)
 }
 
-\dontrun{
+\donttest{
 wildfire_do_analysis(
 health_path ="input/data_no_wildfire_pm.csv",
 join_wildfire_data = TRUE,

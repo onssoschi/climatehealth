@@ -2074,7 +2074,7 @@ plot_an_by_region <- function(data, output_dir = ".") {
 #' \doi{10.5281/zenodo.14052184}.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' wildfire_do_analysis(
 #' health_path = "input/ data_with_wildfire_pm.csv",
 #' join_wildfire_data = FALSE,
@@ -2104,7 +2104,7 @@ plot_an_by_region <- function(data, output_dir = ".") {
 #' print_model_summaries = FALSE)
 #' }
 #'
-#' \dontrun{
+#' \donttest{
 #' wildfire_do_analysis(
 #' health_path ="input/data_no_wildfire_pm.csv",
 #' join_wildfire_data = TRUE,

@@ -155,7 +155,7 @@ attribution calculations vs reference standards, power analysis and
 descriptive statistics
 }
 \examples{
-\dontrun{
+\donttest{
 results <- air_pollution_do_analysis(
  data_path = "data.csv",
   date_col = "date",

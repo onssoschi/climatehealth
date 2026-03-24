@@ -54,7 +54,7 @@ check_has_rtools <- function() {
 #' @return Invisibly returns \code{NULL}. The function is called for its side effect.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' install_INLA()
 #' }
 #'
@@ -100,7 +100,7 @@ install_INLA <- function(os = .Platform$OS.type) {
 #' @return Invisibly returns \code{NULL}. The function is called for its side effect.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' install_terra()
 #' }
 #'

@@ -1987,7 +1987,7 @@ mh_save_results <- function(
 #'   }
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' suicides_heat_do_analysis(
 #'   data_path = "data/inputs/daily_suicides_climate_E_2001_2023.csv",
 #'   date_col = "date",

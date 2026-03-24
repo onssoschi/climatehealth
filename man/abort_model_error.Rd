@@ -28,7 +28,7 @@ Use this when statistical models fail to converge, produce singular matrices,
 or encounter other computational issues that aren't due to obvious user error.
 }
 \examples{
-\dontrun{
+\donttest{
 tryCatch({
   fit_model(data)
 }, error = function(e) {

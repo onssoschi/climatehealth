@@ -3026,7 +3026,7 @@ hc_save_results <- function(rr_results,
 #' saved. Defaults to NULL.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' temp_mortality_do_analysis(
 #'   data_path = "data/inputs/daily_temperature_mortality_1995_2025.csv",
 #'   date_col = "date",

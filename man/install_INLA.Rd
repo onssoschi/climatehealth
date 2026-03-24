@@ -26,7 +26,7 @@ to bypass broken binary packages that may fail due to Unix-style commands.
 On non-Windows systems, the package is installed normally from the repository.
 }
 \examples{
-\dontrun{
+\donttest{
 install_INLA()
 }
 

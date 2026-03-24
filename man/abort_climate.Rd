@@ -30,7 +30,7 @@ This is the base helper - prefer using specific helpers like
 \code{abort_column_not_found()} or \code{abort_validation()} when applicable.
 }
 \examples{
-\dontrun{
+\donttest{
 # Basic usage
 abort_climate("Something went wrong", "generic_error")
 

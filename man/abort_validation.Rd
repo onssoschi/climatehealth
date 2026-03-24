@@ -22,7 +22,7 @@ doesn't meet requirements. For missing columns specifically, use
 \code{abort_column_not_found()}.
 }
 \examples{
-\dontrun{
+\donttest{
 # Parameter validation
 if (nlag < 0) {
   abort_validation(
