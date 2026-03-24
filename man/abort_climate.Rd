@@ -32,16 +32,24 @@ This is the base helper - prefer using specific helpers like
 \examples{
 \donttest{
 # Basic usage
-abort_climate("Something went wrong", "generic_error")
+err <- tryCatch(
+  abort_climate("Something went wrong", "generic_error"),
+  error = identity
+)
+inherits(err, "climate_error")
 
 # With metadata
-abort_climate(
-  "Invalid lag value",
-  "validation_error",
-  param = "nlag",
-  value = -1,
-  expected = "non-negative integer"
+err <- tryCatch(
+  abort_climate(
+    "Invalid lag value",
+    "validation_error",
+    param = "nlag",
+    value = -1,
+    expected = "non-negative integer"
+  ),
+  error = identity
 )
+err$type
 }
 
 }

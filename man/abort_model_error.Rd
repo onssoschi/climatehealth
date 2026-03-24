@@ -30,13 +30,17 @@ or encounter other computational issues that aren't due to obvious user error.
 \examples{
 \donttest{
 tryCatch({
-  fit_model(data)
+  stop("convergence failed")
 }, error = function(e) {
-  abort_model_error(
-    "Model failed to converge",
-    model_type = "dlnm",
-    original_error = conditionMessage(e)
+  err <- tryCatch(
+    abort_model_error(
+      "Model failed to converge",
+      model_type = "dlnm",
+      original_error = conditionMessage(e)
+    ),
+    error = identity
   )
+  inherits(err, "model_error")
 })
 }
 
