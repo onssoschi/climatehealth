@@ -1,5 +1,5 @@
 Package: climatehealth
-Title: Standards for Official Statistics on Climate-Health Interactions (SOSCHI) Package
+Title: Standards for Official Statistics on Climate-Health Interactions (SOSCHI)
 Version: 1.0.0
 Date: 2026-03-12
 Authors@R: 
@@ -31,7 +31,11 @@ Authors@R:
       person("Office for National Statistics", role = "cph",
              comment = "SOSCHI Project")
     )
-Description: R code allowing users to calculate climate-health indicators based on the SOSCHI methods.
+Description: A collection of functions and methods for calculating the health 
+            impacts of climate hazards based on the framework developed in
+            the Standards for Official Statistics on Climate-Health Interactions
+            (SOSCHI) project. These methods produce statistical indicators on
+            selected health outcomes given health and climate CSVs (or shapefiles).
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
