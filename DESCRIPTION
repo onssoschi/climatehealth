@@ -1,5 +1,5 @@
 Package: climatehealth
-Title: Standards for Official Statistics on Climate-Health Interactions (SOSCHI)
+Title: Epidemiological Tools for Climate-Health Impact Assessment
 Version: 1.0.0
 Date: 2026-03-12
 Authors@R: 
@@ -31,11 +31,27 @@ Authors@R:
       person("Office for National Statistics", role = "cph",
              comment = "SOSCHI Project")
     )
-Description: A collection of functions and methods for calculating the health 
-            impacts of climate hazards based on the framework developed in
-            the Standards for Official Statistics on Climate-Health Interactions
-            (SOSCHI) project. These methods produce statistical indicators on
-            selected health outcomes given health and climate CSVs (or shapefiles).
+Description: Tools for producing climate-health indicators and supporting
+              official statistics from health and climate data. Implements analytical 
+              workflows for temperature-related mortality, wildfire smoke exposure, 
+              air pollution, heat-related mental health (suicides), malaria, and 
+              diarrhoeal disease outcomes, with utilities for descriptive statistics, model 
+              validation, attributable fraction and attributable number estimation, 
+              relative risk estimation, minimum mortality temperature estimation, 
+              and publication-ready plots. Implemented methods include distributed 
+              lag non-linear models (DLNM), quasi-Poisson time-series regression, 
+              case-crossover analysis, Bayesian spatio-temporal models using the 
+              Integrated Nested Laplace Approximation ('INLA'), and multivariate 
+              meta-analysis for sub-national estimates. The package is based on 
+              methods developed in the Standards for Official Statistics on 
+              Climate-Health Interactions (SOSCHI) project 
+              <https://climate-health.officialstatistics.org>; for methodologies,
+              see Watkins et al. (2025) <doi:10.5281/zenodo.14865904>, 
+              Brown et al. (2024) <doi:10.5281/zenodo.14052183>, 
+              Pearce et al. (2024) <doi:10.5281/zenodo.14050224>, 
+              Byukusenge et al. (2025) <doi:10.5281/zenodo.15585042>, 
+              Dzakpa et al. (2025) <doi:10.5281/zenodo.14881886>,  and 
+              Dzakpa et al. (2025) <doi:10.5281/zenodo.14871506>.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
