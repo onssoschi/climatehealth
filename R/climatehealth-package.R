@@ -1,4 +1,4 @@
-#' @title climatehealth: Measuring the climate-health relationship
+#' @title climatehealth: statistical tools for modelling climate-health impacts
 #'
 #' @description
 #'

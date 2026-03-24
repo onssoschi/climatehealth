@@ -10,7 +10,8 @@ mh_model_validation(
   independent_cols = NULL,
   save_fig = FALSE,
   save_csv = FALSE,
-  output_folder_path = NULL
+  output_folder_path = NULL,
+  seed = NULL
 )
 }
 \arguments{

@@ -11,7 +11,8 @@ hc_model_validation(
   dfseas = 8,
   save_fig = FALSE,
   save_csv = FALSE,
-  output_folder_path = NULL
+  output_folder_path = NULL,
+  seed = NULL
 )
 }
 \arguments{
