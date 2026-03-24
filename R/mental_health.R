@@ -258,7 +258,8 @@ mh_model_validation <- function(
     independent_cols = NULL,
     save_fig = FALSE,
     save_csv = FALSE,
-    output_folder_path = NULL) {
+    output_folder_path = NULL,
+    seed = NULL) {
   model_combo <- mh_model_combo_res(
     df_list = df_list,
     cb_list = cb_list,
@@ -394,7 +395,9 @@ mh_model_validation <- function(
     if (sample_check == TRUE) {
       all_residuals <- do.call(rbind, formula_list)
 
-      set.seed(123) # for reproducibility
+      if (!is.null(seed)) {
+        set.seed(seed)
+      }
       sampled_residuals <- all_residuals %>%
         dplyr::group_by(.data$formula) %>%
         dplyr::sample_frac(0.2) %>%
@@ -1914,6 +1917,8 @@ mh_save_results <- function(
 #' FALSE.
 #' @param output_folder_path Path to folder where plots and/or CSV should be
 #' saved. Defaults to NULL.
+#' @param seed Optional integer random seed used when sampling residuals for
+#' model validation plots. Defaults to NULL.
 #'
 #' @details
 #' This analysis pipeline requires a daily time series of temperature and suicide
@@ -2035,7 +2040,8 @@ suicides_heat_do_analysis <- function(
     attr_thr = 97.5,
     save_fig = FALSE,
     save_csv = FALSE,
-    output_folder_path = NULL) {
+    output_folder_path = NULL,
+    seed = NULL) {
   # Setup additional output DIR
   if (!is.null(output_folder_path)) {
     # Check output dir exists
@@ -2083,7 +2089,8 @@ suicides_heat_do_analysis <- function(
     independent_cols = independent_cols,
     save_fig = save_fig,
     save_csv = save_csv,
-    output_folder_path = output_folder_path
+    output_folder_path = output_folder_path,
+    seed = seed
   )
   qaic_results <- model_val[[1]]
   qaic_summary <- model_val[[2]]

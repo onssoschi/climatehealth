@@ -8,11 +8,13 @@
 #'
 #' @param verbose Logical. If TRUE, print status messages.
 #'   Defaults to FALSE.
+#' @param seed Optional integer random seed for the smoke-test data
+#'   generation. Defaults to NULL.
 #'
 #' @return Invisibly returns TRUE on success.
 #' @noRd
 #' @keywords internal
-pkg_health_check <- function(verbose = FALSE) {
+pkg_health_check <- function(verbose = FALSE, seed = NULL) {
 
   # Helper for controlled messaging
   vmsg <- function(...) {
@@ -55,7 +57,9 @@ pkg_health_check <- function(verbose = FALSE) {
   # 2) Execute a minimal DLNM modelling path (single region, stable configuration)
   # --------------------------------------------------------------------------
 
-  set.seed(123)
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
 
   n_days <- 50
 

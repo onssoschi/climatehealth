@@ -26,7 +26,8 @@ temp_mortality_do_analysis(
   attr_thr_low = 2.5,
   save_fig = FALSE,
   save_csv = FALSE,
-  output_folder_path = NULL
+  output_folder_path = NULL,
+  seed = NULL
 )
 }
 \arguments{
@@ -92,6 +93,9 @@ FALSE.}
 
 \item{output_folder_path}{Path to folder where plots and/or CSV should be
 saved. Defaults to NULL.}
+
+\item{seed}{Optional integer random seed used when sampling residuals for
+model validation plots. Defaults to NULL.}
 }
 \value{
 \itemize{

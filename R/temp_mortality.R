@@ -343,7 +343,8 @@ hc_model_validation <- function(df_list,
                                 dfseas = 8,
                                 save_fig = FALSE,
                                 save_csv = FALSE,
-                                output_folder_path = NULL) {
+                                output_folder_path = NULL,
+                                seed = NULL) {
   # Create empty storage
   qaic_summary <- NULL
   vif_results <- NULL
@@ -503,7 +504,9 @@ hc_model_validation <- function(df_list,
     if (sample_check == TRUE) {
       all_residuals <- do.call(rbind, formula_list)
 
-      set.seed(123) # for reproducibility
+      if (!is.null(seed)) {
+        set.seed(seed)
+      }
       sampled_residuals <- all_residuals %>%
         group_by(.data$formula) %>%
         sample_frac(0.2) %>%
@@ -3024,6 +3027,8 @@ hc_save_results <- function(rr_results,
 #' FALSE.
 #' @param output_folder_path Path to folder where plots and/or CSV should be
 #' saved. Defaults to NULL.
+#' @param seed Optional integer random seed used when sampling residuals for
+#' model validation plots. Defaults to NULL.
 #'
 #' @examples
 #' \donttest{
@@ -3111,11 +3116,12 @@ temp_mortality_do_analysis <- function(data_path,
                                        lagnk = 3,
                                        dfseas = 8,
                                        meta_analysis = FALSE,
-                                       attr_thr_high = 97.5,
-                                       attr_thr_low = 2.5,
-                                       save_fig = FALSE,
-                                       save_csv = FALSE,
-                                       output_folder_path = NULL) {
+    attr_thr_high = 97.5,
+    attr_thr_low = 2.5,
+    save_fig = FALSE,
+    save_csv = FALSE,
+    output_folder_path = NULL,
+    seed = NULL) {
   # Setup additional output DIR
   if (!is.null(output_folder_path)) {
     # Check output dir exists
@@ -3181,7 +3187,8 @@ temp_mortality_do_analysis <- function(data_path,
     dfseas = dfseas,
     save_fig = save_fig,
     save_csv = save_csv,
-    output_folder_path = output_folder_path
+    output_folder_path = output_folder_path,
+    seed = seed
   )
   qaic_results <- model_validation[[1]]
   qaic_summary <- model_validation[[2]]
