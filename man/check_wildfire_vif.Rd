@@ -21,7 +21,7 @@ in the model. Must contain at least 2 variables.}
 
 \item{save_csv}{Bool. Whether or not to save the VIF results to a CSV.}
 
-\item{output_folder_path}{String. Where to save the CSV file to (if save_csv==T).}
+\item{output_folder_path}{String. Where to save the CSV file to (if save_csv == TRUE).}
 
 \item{print_vif}{Bool, whether or not to print VIF for each predictor.
 Defaults to FALSE.}

@@ -1180,7 +1180,7 @@ hc_plot_rr <- function(df_list,
     hist(x$temp, breaks = breaks, plot = FALSE)$counts
   })), na.rm = TRUE)
 
-  if (save_fig == T) {
+  if (save_fig == TRUE) {
     grid <- c(min(length(pred_list), 3), ceiling(length(pred_list) / 3))
 
     output_path <- file.path(output_folder_path, "temp_mortality_rr_plot.pdf")

@@ -32,7 +32,7 @@ check_has_rtools <- function() {
       "After installing Rtools, restart R and try again."
     ))
   }
-  return(T)
+  return(TRUE)
 }
 
 #' Install the INLA Package from Its Official Repository
@@ -82,7 +82,7 @@ install_INLA <- function(os = .Platform$OS.type) {
       repos = "https://inla.r-inla-download.org/R/stable"
     )
   }
-  if (requireNamespace("INLA", quietly = T)) message("INLA succesfully installed.")
+  if (requireNamespace("INLA", quietly = TRUE)) message("INLA succesfully installed.")
 }
 
 #' Install the terra Package from the CRAN Archive
@@ -119,5 +119,5 @@ install_terra <- function(os = .Platform$OS.type) {
     tarball,
     repos = NULL, type = "source"
   )
-  if (requireNamespace("terra", quietly = T)) message("terra==1.8-60 succesfully installed.")
+  if (requireNamespace("terra", quietly = TRUE)) message("terra==1.8-60 succesfully installed.")
 }

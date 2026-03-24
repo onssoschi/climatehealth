@@ -565,7 +565,7 @@ descriptive_stats <- function(
 #' @param predictors Character vector with each of the predictors to include
 #' in the model. Must contain at least 2 variables.
 #' @param save_csv Bool. Whether or not to save the VIF results to a CSV.
-#' @param output_folder_path String. Where to save the CSV file to (if save_csv==T).
+#' @param output_folder_path String. Where to save the CSV file to (if save_csv == TRUE).
 #' @param print_vif Bool, whether or not to print VIF for each predictor.
 #' Defaults to FALSE.
 #'
@@ -580,7 +580,7 @@ check_wildfire_vif <- function(
     print_vif = FALSE) {
   # input validation
   if (is.null(output_folder_path) && save_csv == TRUE) {
-    stop("No output path provided when save_csv==T.")
+    stop("No output path provided when save_csv == TRUE.")
   }
   if (!is.character(predictors) || !is.vector(predictors)) {
     stop("Please provide predictor variable names as a character vector")
@@ -693,7 +693,7 @@ casecrossover_quasipoisson <- function(
   lag_nums <- lag_cols$lag_nums
   # get results
   results <- list()
-  if (save_fig == T) {
+  if (save_fig == TRUE) {
     grid <- create_grid(length(lags))
     output_path <- file.path(
       output_folder_path,
@@ -737,7 +737,7 @@ casecrossover_quasipoisson <- function(
     }
     # get residuals and plot (if needed)
     devresid <- resid(model, type = "deviance")
-    if (save_fig == T) {
+    if (save_fig == TRUE) {
       plot(devresid ~ model$fitted.values, main = i, col = "#f25574")
     }
     coef_pm <- summary(model)$coefficients[i, "Estimate"]
@@ -772,7 +772,7 @@ casecrossover_quasipoisson <- function(
 #' @param data Dataframe containing a daily time series of climate and health
 #' data from which to fit models.
 #' @param save_csv Bool. Whether or not to save the VIF results to a CSV.
-#' @param output_folder_path String. Where to save the CSV file to (if save_csv==T).
+#' @param output_folder_path String. Where to save the CSV file to (if save_csv == TRUE).
 #' @param print_results Logical. Whether or not to print model summaries and
 #' pearson dispersion statistics. Defaults to FALSE.
 #'
@@ -786,7 +786,7 @@ calculate_qaic <- function(
     print_results = FALSE) {
   # input validation
   if (is.null(output_folder_path) && save_csv == TRUE) {
-    stop("No output path provided when save_csv==T.")
+    stop("No output path provided when save_csv == TRUE.")
   }
   qaic_results <- list()
   # get WF lag columns
@@ -880,7 +880,7 @@ plot_RR <- function(
     output_folder_path = NULL) {
   # input validation
   if (save_fig && is.null(output_folder_path)) {
-    stop("No output path provided when save_fig==T.")
+    stop("No output path provided when save_fig == TRUE.")
   }
   # create list to collect plots
   plots <- list()
@@ -959,7 +959,7 @@ plot_RR_core <- function(
     ylims = NULL) {
   # input validation
   if (save_fig && is.null(output_folder_path)) {
-    stop("No output path provided when save_fig==T.")
+    stop("No output path provided when save_fig == TRUE.")
   }
   # generate labels
   labels <- c("0 days")
@@ -1098,7 +1098,7 @@ calculate_wildfire_rr_by_region <- function(
     print_model_summaries = FALSE) {
   # input validation
   if (save_fig && is.null(output_folder_path)) {
-    stop("No output path provided when save_fig==T.")
+    stop("No output path provided when save_fig == TRUE.")
   }
   if (calc_relative_risk_by_region == TRUE && !("region" %in% names(data))) {
     stop("data must contain 'region' column for region level RR data.")
@@ -1211,7 +1211,7 @@ calculate_daily_AF_AN <- function(data, rr_data) {
 #' Defaults to TRUE.
 #'
 #' @returns Dataframe containing summarised AF and AN data, by year, region and
-#' optionall month (if monthly==T).
+#' optionall month (if monthly == TRUE).
 #'
 #' @keywords internal
 summarise_AF_AN <- function(data, monthly = TRUE) {

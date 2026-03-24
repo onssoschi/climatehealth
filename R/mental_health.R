@@ -115,7 +115,7 @@ mh_create_crossbasis <- function(
     region_data <- df_list[[reg]]
     argvar <- list(
       fun = var_fun,
-      knots = quantile(region_data$temp, var_per / 100, na.rm = T),
+      knots = quantile(region_data$temp, var_per / 100, na.rm = TRUE),
       degree = var_degree
     )
     arglag <- list(fun = lag_fun, breaks = lag_breaks)
@@ -924,7 +924,7 @@ mh_plot_rr <- function(
   })), na.rm = TRUE)
 
 
-  if (save_fig == T) {
+  if (save_fig == TRUE) {
     grid <- c(min(length(pred_list), 3), ceiling(length(pred_list) / 3))
 
     output_path <- file.path(output_folder_path, "suicides_rr_plot.pdf")
@@ -1009,7 +1009,7 @@ mh_plot_rr <- function(
     mtext("Frequency", side = 4, line = 3, adj = adj_val, cex = 0.7)
   }
 
-  if (save_fig == T) {
+  if (save_fig == TRUE) {
     year_range <- paste0(
       "(",
       min(sapply(df_list, function(x) min(lubridate::year(x$date), na.rm = TRUE))),

@@ -90,7 +90,7 @@ plot_distributions <- function(
     save_hists = FALSE,
     output_path = NULL) {
   # create a pdf if a save is selected
-  if (save_hists == T) {
+  if (save_hists == TRUE) {
     # normalise output path
     output_path <- enforce_file_extension(output_path, ".pdf")
     plot_height <- max(10, length(columns)*2)
@@ -141,7 +141,7 @@ plot_distributions <- function(
   }
   mtext(title, outer = TRUE, cex = 1.6, line = 1, font = 2, col = "black")
   # save pdf if requested
-  if (save_hists == T) {
+  if (save_hists == TRUE) {
     dev.off()
   }
 }

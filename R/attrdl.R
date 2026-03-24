@@ -284,7 +284,7 @@ attrdl <- function(x, basis, cases, model = NULL, coef = NULL, vcov = NULL, mode
   # EMPIRICAL CONFIDENCE INTERVALS
   if (!tot && sim) {
     sim <- FALSE
-    warning("simulation samples only returned for tot=T")
+    warning("simulation samples only returned for tot = TRUE")
   }
   if (sim) {
     # SAMPLE COEF
