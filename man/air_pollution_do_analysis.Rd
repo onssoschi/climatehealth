@@ -156,8 +156,22 @@ descriptive statistics
 }
 \examples{
 \donttest{
+example_data <- data.frame(
+  date = seq.Date(as.Date("2020-01-01"), by = "day", length.out = 180),
+  province = "Example Province",
+  pm25 = stats::runif(180, 8, 35),
+  deaths = stats::rpois(180, lambda = 5),
+  population = 500000,
+  humidity = stats::runif(180, 40, 90),
+  precipitation = stats::runif(180, 0, 20),
+  tmax = stats::runif(180, 18, 35),
+  wind_speed = stats::runif(180, 1, 8)
+)
+example_path <- tempfile(fileext = ".csv")
+utils::write.csv(example_data, example_path, row.names = FALSE)
+
 results <- air_pollution_do_analysis(
- data_path = "data.csv",
+ data_path = example_path,
   date_col = "date",
   region_col = "province",
   pm25_col = "pm25",
@@ -169,28 +183,28 @@ results <- air_pollution_do_analysis(
   wind_speed_col = "wind_speed",
   continuous_others = NULL,
   max_lag = 14L,
-  df_seasonal = 6,
+  df_seasonal = 4,
   family = "quasipoisson",
   reference_standards = list(list(value = 15, name = "WHO")),
   years_filter = NULL,
   regions_filter = NULL,
-  include_national = TRUE,
-  output_dir = "air_pollution_results2",
-  save_outputs = TRUE,
-  run_descriptive = TRUE,
-  run_power = TRUE,
-  moving_average_window = 7L,
+  include_national = FALSE,
+  output_dir = tempdir(),
+  save_outputs = FALSE,
+  run_descriptive = FALSE,
+  run_power = FALSE,
+  moving_average_window = 3L,
   attr_thr = 95,
-  plot_corr_matrix = TRUE,
+  plot_corr_matrix = FALSE,
   correlation_method = "pearson",
-  plot_dist = TRUE,
-  plot_na_counts = TRUE,
-  plot_scatter = TRUE,
-  plot_box = TRUE,
-  plot_seasonal = TRUE,
-  plot_regional = TRUE,
-  plot_total = TRUE,
-  detect_outliers = TRUE,
+  plot_dist = FALSE,
+  plot_na_counts = FALSE,
+  plot_scatter = FALSE,
+  plot_box = FALSE,
+  plot_seasonal = FALSE,
+  plot_regional = FALSE,
+  plot_total = FALSE,
+  detect_outliers = FALSE,
   calculate_rate = FALSE
 )
 }

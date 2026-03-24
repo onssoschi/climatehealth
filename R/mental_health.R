@@ -1998,28 +1998,38 @@ mh_save_results <- function(
 #'
 #' @examples
 #' \donttest{
+#' example_data <- data.frame(
+#'   date = seq.Date(as.Date("2020-01-01"), by = "day", length.out = 365),
+#'   region = "Example Region",
+#'   tmean = stats::runif(365, 5, 30),
+#'   suicides = stats::rpois(365, lambda = 2),
+#'   pop = 250000
+#' )
+#' example_path <- tempfile(fileext = ".csv")
+#' utils::write.csv(example_data, example_path, row.names = FALSE)
+#'
 #' suicides_heat_do_analysis(
-#'   data_path = "data/inputs/daily_suicides_climate_E_2001_2023.csv",
+#'   data_path = example_path,
 #'   date_col = "date",
 #'   region_col = "region",
 #'   temperature_col = "tmean",
 #'   health_outcome_col = "suicides",
 #'   population_col = "pop",
-#'   country = "England",
-#'   meta_analysis = TRUE,
+#'   country = "Example Region",
+#'   meta_analysis = FALSE,
 #'   var_fun = "bs",
 #'   var_degree = 2,
 #'   var_per = c(25, 50, 75),
 #'   lag_fun = "strata",
 #'   lag_breaks = 1,
 #'   lag_days = 2,
-#'   independent_cols = c("rainfall", "humidity"),
+#'   independent_cols = NULL,
 #'   control_cols = NULL,
 #'   cenper = 50,
 #'   attr_thr = 97.5,
-#'   save_fig = TRUE,
-#'   save_csv = TRUE,
-#'   output_folder_path = "data/outputs/england_analysis"
+#'   save_fig = FALSE,
+#'   save_csv = FALSE,
+#'   output_folder_path = tempdir()
 #' )
 #' }
 #'

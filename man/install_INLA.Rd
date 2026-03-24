@@ -15,18 +15,18 @@ Invisibly returns \code{NULL}. The function is called for its side effect.
 \description{
 This function installs the \code{INLA} package from its official repository
 at \url{https://inla.r-inla-download.org/R/stable/}. On Windows, it checks
-whether Rtools is available and forces a source install to avoid broken binaries.
+whether Rtools is available and installs the official binary package directly.
 }
 \details{
 On Windows systems, the function verifies that Rtools is installed using
 \code{pkgbuild::has_build_tools()}. If Rtools is missing, it displays a warning
-and aborts the installation. The function then forces installation from source
-to bypass broken binary packages that may fail due to Unix-style commands.
+and aborts the installation. The function then installs the matching Windows
+binary package from the official INLA repository.
 
 On non-Windows systems, the package is installed normally from the repository.
 }
 \examples{
-\donttest{
+\dontrun{
 install_INLA()
 }
 
