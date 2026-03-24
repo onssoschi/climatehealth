@@ -14,7 +14,7 @@ Defaults to TRUE.}
 }
 \value{
 Dataframe containing summarised AF and AN data, by year, region and
-optionall month (if monthly==T).
+optionall month (if monthly == TRUE).
 }
 \description{
 Takes daily data with attributable fraction and attributable

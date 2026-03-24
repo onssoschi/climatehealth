@@ -25,9 +25,4 @@ Generates one or more plots showing relative risk estimates across PM2.5
 levels. If multiple regions are present, plots are created per region and
 for all regions combined. Optionally saves the output as a PDF.
 }
-\examples{
-\dontrun{
-plot_rr_by_pm(data = rr_df, save_fig = TRUE, output_dir = "outputs")
-}
-}
 \keyword{internal}

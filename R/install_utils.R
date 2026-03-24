@@ -11,11 +11,6 @@
 #'
 #' @return Returns \code{TRUE} invisibly if Rtools is detected and functional. Otherwise, throws an error.
 #'
-#' @examples
-#' \dontrun{
-#' check_has_rtools()
-#' }
-#'
 #' @seealso \code{\link[pkgbuild]{check_build_tools}}, \url{https://cran.r-project.org/bin/windows/Rtools/}
 #'
 #' @keywords internal
@@ -37,7 +32,7 @@ check_has_rtools <- function() {
       "After installing Rtools, restart R and try again."
     ))
   }
-  return(T)
+  return(TRUE)
 }
 
 #' Install the INLA Package from Its Official Repository
@@ -59,7 +54,7 @@ check_has_rtools <- function() {
 #' @return Invisibly returns \code{NULL}. The function is called for its side effect.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' install_INLA()
 #' }
 #'
@@ -79,7 +74,7 @@ install_INLA <- function(os = .Platform$OS.type) {
     tarball <- "https://inla.r-inla-download.org/R/stable/bin/windows/contrib/4.4/INLA_24.12.11.zip"
     install.packages(
       tarball,
-      repos = NULL, type = "source"
+      repos = NULL, type = "win.binary"
     )
   } else {
     install.packages(
@@ -87,7 +82,7 @@ install_INLA <- function(os = .Platform$OS.type) {
       repos = "https://inla.r-inla-download.org/R/stable"
     )
   }
-  if (requireNamespace("INLA", quietly = T)) message("INLA succesfully installed.")
+  if (requireNamespace("INLA", quietly = TRUE)) message("INLA succesfully installed.")
 }
 
 #' Install the terra Package from the CRAN Archive
@@ -105,7 +100,7 @@ install_INLA <- function(os = .Platform$OS.type) {
 #' @return Invisibly returns \code{NULL}. The function is called for its side effect.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' install_terra()
 #' }
 #'
@@ -124,5 +119,5 @@ install_terra <- function(os = .Platform$OS.type) {
     tarball,
     repos = NULL, type = "source"
   )
-  if (requireNamespace("terra", quietly = T)) message("terra==1.8-60 succesfully installed.")
+  if (requireNamespace("terra", quietly = TRUE)) message("terra==1.8-60 succesfully installed.")
 }

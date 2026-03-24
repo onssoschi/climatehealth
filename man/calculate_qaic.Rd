@@ -17,7 +17,7 @@ data from which to fit models.}
 
 \item{save_csv}{Bool. Whether or not to save the VIF results to a CSV.}
 
-\item{output_folder_path}{String. Where to save the CSV file to (if save_csv==T).}
+\item{output_folder_path}{String. Where to save the CSV file to (if save_csv == TRUE).}
 
 \item{print_results}{Logical. Whether or not to print model summaries and
 pearson dispersion statistics. Defaults to FALSE.}

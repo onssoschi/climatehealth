@@ -25,7 +25,8 @@ suicides_heat_do_analysis(
   attr_thr = 97.5,
   save_fig = FALSE,
   save_csv = FALSE,
-  output_folder_path = NULL
+  output_folder_path = NULL,
+  seed = NULL
 )
 }
 \arguments{
@@ -90,6 +91,9 @@ FALSE.}
 
 \item{output_folder_path}{Path to folder where plots and/or CSV should be
 saved. Defaults to NULL.}
+
+\item{seed}{Optional integer random seed used when sampling residuals for
+model validation plots. Defaults to NULL.}
 }
 \value{
 \itemize{
@@ -148,7 +152,7 @@ and guidance on interpreting outputs can be found in the accompanying published
 \doi{10.5281/zenodo.14050224}.
 }
 \examples{
-\dontrun{
+\donttest{
 suicides_heat_do_analysis(
   data_path = "data/inputs/daily_suicides_climate_E_2001_2023.csv",
   date_col = "date",

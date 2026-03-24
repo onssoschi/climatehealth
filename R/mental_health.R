@@ -115,7 +115,7 @@ mh_create_crossbasis <- function(
     region_data <- df_list[[reg]]
     argvar <- list(
       fun = var_fun,
-      knots = quantile(region_data$temp, var_per / 100, na.rm = T),
+      knots = quantile(region_data$temp, var_per / 100, na.rm = TRUE),
       degree = var_degree
     )
     arglag <- list(fun = lag_fun, breaks = lag_breaks)
@@ -258,7 +258,8 @@ mh_model_validation <- function(
     independent_cols = NULL,
     save_fig = FALSE,
     save_csv = FALSE,
-    output_folder_path = NULL) {
+    output_folder_path = NULL,
+    seed = NULL) {
   model_combo <- mh_model_combo_res(
     df_list = df_list,
     cb_list = cb_list,
@@ -394,7 +395,9 @@ mh_model_validation <- function(
     if (sample_check == TRUE) {
       all_residuals <- do.call(rbind, formula_list)
 
-      set.seed(123) # for reproducibility
+      if (!is.null(seed)) {
+        set.seed(seed)
+      }
       sampled_residuals <- all_residuals %>%
         dplyr::group_by(.data$formula) %>%
         dplyr::sample_frac(0.2) %>%
@@ -899,6 +902,11 @@ mh_plot_rr <- function(
     country = "National",
     save_fig = FALSE,
     output_folder_path = NULL) {
+  if (!save_fig) {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
+  }
+
   xlim <- c(
     min(sapply(pred_list, function(x) min(x$predvar, na.rm = TRUE))),
     max(sapply(pred_list, function(x) max(x$predvar, na.rm = TRUE)))
@@ -916,7 +924,7 @@ mh_plot_rr <- function(
   })), na.rm = TRUE)
 
 
-  if (save_fig == T) {
+  if (save_fig == TRUE) {
     grid <- c(min(length(pred_list), 3), ceiling(length(pred_list) / 3))
 
     output_path <- file.path(output_folder_path, "suicides_rr_plot.pdf")
@@ -1001,7 +1009,7 @@ mh_plot_rr <- function(
     mtext("Frequency", side = 4, line = 3, adj = adj_val, cex = 0.7)
   }
 
-  if (save_fig == T) {
+  if (save_fig == TRUE) {
     year_range <- paste0(
       "(",
       min(sapply(df_list, function(x) min(lubridate::year(x$date), na.rm = TRUE))),
@@ -1914,6 +1922,8 @@ mh_save_results <- function(
 #' FALSE.
 #' @param output_folder_path Path to folder where plots and/or CSV should be
 #' saved. Defaults to NULL.
+#' @param seed Optional integer random seed used when sampling residuals for
+#' model validation plots. Defaults to NULL.
 #'
 #' @details
 #' This analysis pipeline requires a daily time series of temperature and suicide
@@ -1987,7 +1997,7 @@ mh_save_results <- function(
 #'   }
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' suicides_heat_do_analysis(
 #'   data_path = "data/inputs/daily_suicides_climate_E_2001_2023.csv",
 #'   date_col = "date",
@@ -2035,7 +2045,8 @@ suicides_heat_do_analysis <- function(
     attr_thr = 97.5,
     save_fig = FALSE,
     save_csv = FALSE,
-    output_folder_path = NULL) {
+    output_folder_path = NULL,
+    seed = NULL) {
   # Setup additional output DIR
   if (!is.null(output_folder_path)) {
     # Check output dir exists
@@ -2083,7 +2094,8 @@ suicides_heat_do_analysis <- function(
     independent_cols = independent_cols,
     save_fig = save_fig,
     save_csv = save_csv,
-    output_folder_path = output_folder_path
+    output_folder_path = output_folder_path,
+    seed = seed
   )
   qaic_results <- model_val[[1]]
   qaic_summary <- model_val[[2]]

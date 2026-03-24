@@ -979,7 +979,7 @@ validate_descriptive_columns <- function(
 #' @return A list with `base_output_path`, `run_id`, `run_output_path`, and `region_output_paths`.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' df <- data.frame(
 #'   date = as.Date("2024-01-01") + 0:29,
 #'   region = rep(c("A", "B"), each = 15),
@@ -1235,7 +1235,7 @@ run_descriptive_stats <- function(
 #' @return A list with `base_output_path`, `run_id`, `run_output_path`, and `region_output_paths`.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' run_descriptive_stats_api(
 #'   data = list(
 #'     date = as.character(as.Date("2024-01-01") + 0:29),

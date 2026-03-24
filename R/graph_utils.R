@@ -90,7 +90,7 @@ plot_distributions <- function(
     save_hists = FALSE,
     output_path = NULL) {
   # create a pdf if a save is selected
-  if (save_hists == T) {
+  if (save_hists == TRUE) {
     # normalise output path
     output_path <- enforce_file_extension(output_path, ".pdf")
     plot_height <- max(10, length(columns)*2)
@@ -101,6 +101,10 @@ plot_distributions <- function(
   df <- df %>% select(all_of(columns))
   # get grid size for plotting
   grid_size <- create_grid(length(columns))
+  if (!save_hists) {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
+  }
   # format page and plot
   par(
     mfrow = as.numeric(grid_size),
@@ -137,7 +141,7 @@ plot_distributions <- function(
   }
   mtext(title, outer = TRUE, cex = 1.6, line = 1, font = 2, col = "black")
   # save pdf if requested
-  if (save_hists == T) {
+  if (save_hists == TRUE) {
     dev.off()
   }
 }
@@ -301,6 +305,9 @@ plot_scatter_grid <- function(
     output_path <- enforce_file_extension(output_path, ".pdf")
     plot_height <- max(10, length(comparison_cols)*2)
     pdf(output_path, width = 14, height = plot_height)
+  } else {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
   }
   par(mfrow = grid_size, col = "white", oma = c(0, 1, 7, 0), xpd = NA,
       cex.axis = 1.35, cex.lab = 1.35, cex.main = 1.50)
@@ -405,6 +412,9 @@ plot_boxplots <- function(
     output_path <- enforce_file_extension(output_path, ".pdf")
     plot_height <- max(10, length(selected_cols)*2)
     pdf(output_path, width = 14, height = plot_height)
+  } else {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
   }
 
   grid_size <- create_grid(length(selected_cols))
@@ -469,6 +479,9 @@ plot_seasonal_trends <- function(
     output_path <- enforce_file_extension(output_path, ".pdf")
     plot_height <- max(10, length(outcome_cols)*4)
     pdf(output_path, width = 14, height = plot_height)
+  } else {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
   }
 
   # Layout: readable margins + outer title room
@@ -541,6 +554,9 @@ plot_regional_trends <- function(
     output_path <- enforce_file_extension(output_path, ".pdf")
     plot_height <- max(12, length(outcome_cols)*4)
     pdf(output_path, width = 14, height = plot_height)
+  } else {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
   }
 
   # Layout: readable margins + outer title room

@@ -87,7 +87,7 @@ A list with \code{base_output_path}, \code{run_id}, \code{run_output_path}, and 
 Create descriptive statistics via API-friendly inputs.
 }
 \examples{
-\dontrun{
+\donttest{
 run_descriptive_stats_api(
   data = list(
     date = as.character(as.Date("2024-01-01") + 0:29),

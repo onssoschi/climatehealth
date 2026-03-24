@@ -28,7 +28,7 @@ Use this when a required column is missing from a dataset. Includes
 fuzzy matching to suggest the closest available column name.
 }
 \examples{
-\dontrun{
+\donttest{
 if (!("tmean" \%in\% colnames(data))) {
   abort_column_not_found("tmean", colnames(data))
 }

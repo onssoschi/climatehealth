@@ -123,7 +123,7 @@ dlnm_reduce_cumulative <- function(
     cenper_ <- ifelse(
       is.null(cenper),
       mean(region_data$temp, na.rm = TRUE),
-      quantile(region_data$temp, cenper / 100, na.rm = T)
+      quantile(region_data$temp, cenper / 100, na.rm = TRUE)
     )
     red <- dlnm::crossreduce(cb, model_list[[reg]], cen = cenper_)
     coef_[reg, ] <- coef(red)
@@ -371,7 +371,7 @@ dlnm_predict_nat <- function(
 
   bvar <- do.call(dlnm::onebasis, argvar)
 
-  cen <- quantile(national_data$temp, minpercreg[country] / 100, na.rm = T)
+  cen <- quantile(national_data$temp, minpercreg[country] / 100, na.rm = TRUE)
 
   pred_nat <- dlnm::crosspred(bvar,
     coef = mmpredall$fit,

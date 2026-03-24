@@ -22,7 +22,7 @@ On Windows systems, the function verifies that Rtools is installed using
 and aborts the installation. The function then forces installation from source.
 }
 \examples{
-\dontrun{
+\donttest{
 install_terra()
 }
 

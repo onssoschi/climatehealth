@@ -28,7 +28,7 @@
 #' @return Never returns; always raises an error.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Basic usage
 #' abort_climate("Something went wrong", "generic_error")
 #'
@@ -77,7 +77,7 @@ abort_climate <- function(message, type = "generic_error", ..., call = rlang::ca
 #' @return Never returns; always raises an error.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Parameter validation
 #' if (nlag < 0) {
 #'   abort_validation(
@@ -108,7 +108,7 @@ abort_validation <- function(message, ..., call = rlang::caller_env()) {
 #' @return Never returns; always raises an error.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' if (!("tmean" %in% colnames(data))) {
 #'   abort_column_not_found("tmean", colnames(data))
 #' }
@@ -148,7 +148,7 @@ abort_column_not_found <- function(column, available, dataset_name = "dataset",
 #' @return Never returns; always raises an error.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' tryCatch({
 #'   fit_model(data)
 #' }, error = function(e) {
@@ -224,7 +224,7 @@ suggest_column_match <- function(input, available, threshold = 0.3) {
 #' @return TRUE if the error inherits from "climate_error", FALSE otherwise.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' tryCatch({
 #'   some_function()
 #' }, error = function(e) {

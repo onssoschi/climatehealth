@@ -2515,7 +2515,7 @@ plot_air_pollution_power <- function(
 #' descriptive stats (e.g., deaths per population). Default FALSE
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' results <- air_pollution_do_analysis(
 #'  data_path = "data.csv",
 #'   date_col = "date",

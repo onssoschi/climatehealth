@@ -17,12 +17,6 @@ The function uses \code{pkgbuild::check_build_tools(debug = TRUE)} to test for t
 of Rtools and its integration with R. If Rtools is missing or misconfigured, the function
 throws an error with installation instructions.
 }
-\examples{
-\dontrun{
-check_has_rtools()
-}
-
-}
 \seealso{
 \code{\link[pkgbuild]{check_build_tools}}, \url{https://cran.r-project.org/bin/windows/Rtools/}
 }
