@@ -472,6 +472,9 @@ hc_model_validation <- function(df_list,
                             named_label,
                             "_residuals_timeseries.pdf")
       pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
+      pdf_dev_id <- grDevices::dev.cur()
+      on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
+                         list(ID = pdf_dev_id)), add = TRUE)
 
       par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
     }
@@ -527,6 +530,9 @@ hc_model_validation <- function(df_list,
                             "/", named_label,
                             "_residuals_fitted.pdf")
       pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
+      pdf_dev_id <- grDevices::dev.cur()
+      on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
+                         list(ID = pdf_dev_id)), add = TRUE)
 
       par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
     }
@@ -562,6 +568,9 @@ hc_model_validation <- function(df_list,
       output_path <- paste0(output_folder_main, "/",
                             named_label, "_qq_plot.pdf")
       pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
+      pdf_dev_id <- grDevices::dev.cur()
+      on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
+                         list(ID = pdf_dev_id)), add = TRUE)
 
       par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
     }
@@ -593,6 +602,9 @@ hc_model_validation <- function(df_list,
       output_path <- file.path(output_folder_main,
                                paste0(named_label, "_pacf.pdf"))
       pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
+      pdf_dev_id <- grDevices::dev.cur()
+      on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
+                         list(ID = pdf_dev_id)), add = TRUE)
 
       par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
     }
@@ -970,6 +982,9 @@ hc_plot_power <- function(power_list_high,
                              "power_vs_high_temperature.pdf")
     pdf(output_path, width = max(10, grid[1] * 5.5),
         height = max(7, grid[2] * 4.5))
+    pdf_dev_id <- grDevices::dev.cur()
+    on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
+                       list(ID = pdf_dev_id)), add = TRUE)
     par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0), mar = c(8, 4, 5, 4))
   }
   for (geog in names(power_list_high)) {
@@ -1010,6 +1025,9 @@ hc_plot_power <- function(power_list_high,
                              "power_vs_low_temperature.pdf")
     pdf(output_path, width = max(10, grid[1] * 5.5),
         height = max(7, grid[2] * 4.5))
+    pdf_dev_id <- grDevices::dev.cur()
+    on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
+                       list(ID = pdf_dev_id)), add = TRUE)
     par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0), mar = c(8, 4, 5, 4))
   }
 
@@ -1168,6 +1186,9 @@ hc_plot_rr <- function(df_list,
     output_path <- file.path(output_folder_path, "temp_mortality_rr_plot.pdf")
     pdf(output_path,
         width = max(10, grid[1] * 5.5), height = max(7, grid[2] * 4))
+    pdf_dev_id <- grDevices::dev.cur()
+    on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
+                       list(ID = pdf_dev_id)), add = TRUE)
 
     layout_ids <- seq_len(grid[1] * grid[2])
     layout_matrix <- matrix(layout_ids,
@@ -1546,6 +1567,9 @@ hc_plot_attr_heat_totals <- function(df_list,
     output_path <- file.path(output_folder_path,
                              "mortality_total_heat_attr_plot.pdf")
     pdf(output_path, width = total_width, height = chart_height * 2)
+    pdf_dev_id <- grDevices::dev.cur()
+    on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
+                       list(ID = pdf_dev_id)), add = TRUE)
 
     # Set up layout: 1 row for barplot and 1 row for table
     layout(matrix(c(1, 2), nrow = 2), heights = c(chart_height, chart_height))
@@ -1686,6 +1710,9 @@ hc_plot_attr_cold_totals <- function(df_list,
     output_path <- file.path(output_folder_path,
                              "mortality_total_cold_attr_plot.pdf")
     pdf(output_path, width = total_width, height = chart_height * 2)
+    pdf_dev_id <- grDevices::dev.cur()
+    on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
+                       list(ID = pdf_dev_id)), add = TRUE)
 
     # Set up layout: 1 row for barplot and 1 row for table
     layout(matrix(c(1, 2), nrow = 2), heights = c(chart_height, chart_height))
@@ -1817,6 +1844,9 @@ hc_plot_af_heat_yearly <- function(attr_yr_list,
                              "mortality_af_heat_timeseries.pdf")
     pdf(output_path, width = max(10, grid[1] * 5.5),
                     height = max(7, grid[2] * 4.5))
+    pdf_dev_id <- grDevices::dev.cur()
+    on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
+                       list(ID = pdf_dev_id)), add = TRUE)
 
     par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0), mar = c(8, 4, 5, 4))
   }
@@ -1934,6 +1964,9 @@ hc_plot_af_cold_yearly <- function(attr_yr_list,
                              "mortality_af_cold_timeseries.pdf")
     pdf(output_path, width = max(10, grid[1] * 5.5),
                     height = max(7, grid[2] * 4.5))
+    pdf_dev_id <- grDevices::dev.cur()
+    on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
+                       list(ID = pdf_dev_id)), add = TRUE)
 
     par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0), mar = c(8, 4, 5, 4))
   }
@@ -2050,6 +2083,9 @@ hc_plot_ar_heat_yearly <- function(attr_yr_list,
                              "mortality_ar_heat_timeseries.pdf")
     pdf(output_path, width = max(10, grid[1] * 5.5),
                     height = max(7, grid[2] * 4.5))
+    pdf_dev_id <- grDevices::dev.cur()
+    on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
+                       list(ID = pdf_dev_id)), add = TRUE)
 
     par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0), mar = c(8, 4, 5, 4))
   }
@@ -2167,6 +2203,9 @@ hc_plot_ar_cold_yearly <- function(attr_yr_list,
                              "mortality_ar_cold_timeseries.pdf")
     pdf(output_path, width = max(10, grid[1] * 5.5),
                     height = max(7, grid[2] * 4.5))
+    pdf_dev_id <- grDevices::dev.cur()
+    on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
+                       list(ID = pdf_dev_id)), add = TRUE)
 
     par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0), mar = c(8, 4, 5, 4))
   }
@@ -2292,6 +2331,9 @@ hc_plot_af_heat_monthly <- function(attr_mth_list,
                              "mortality_af_heat_month_plot.pdf")
     pdf(output_path, width = max(10, grid[1] * 4.5),
                     height = max(8, grid[2] * 4.5))
+    pdf_dev_id <- grDevices::dev.cur()
+    on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
+                       list(ID = pdf_dev_id)), add = TRUE)
 
     par(mfrow = c(grid[2], grid[1]), mar = c(5, 5, 5, 5), oma = c(4, 0, 4, 0))
   }
@@ -2448,6 +2490,9 @@ hc_plot_af_cold_monthly <- function(attr_mth_list,
                              "mortality_af_cold_month_plot.pdf")
     pdf(output_path, width = max(10, grid[1] * 4.5),
                     height = max(8, grid[2] * 4.5))
+    pdf_dev_id <- grDevices::dev.cur()
+    on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
+                       list(ID = pdf_dev_id)), add = TRUE)
 
     par(mfrow = c(grid[2], grid[1]), mar = c(5, 5, 5, 5), oma = c(4, 0, 4, 0))
   } else {
@@ -2613,6 +2658,9 @@ hc_plot_ar_heat_monthly <- function(attr_mth_list,
                              "mortality_ar_heat_month_plot.pdf")
     pdf(output_path, width = max(10, grid[1] * 4.5),
                     height = max(8, grid[2] * 4.5))
+    pdf_dev_id <- grDevices::dev.cur()
+    on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
+                       list(ID = pdf_dev_id)), add = TRUE)
 
     par(mfrow = c(grid[2], grid[1]), mar = c(5, 5, 5, 5), oma = c(4, 0, 4, 0))
   }
@@ -2765,6 +2813,9 @@ hc_plot_ar_cold_monthly <- function(attr_mth_list,
                              "mortality_ar_cold_month_plot.pdf")
     pdf(output_path, width = max(10, grid[1] * 4.5),
                     height = max(8, grid[2] * 4.5))
+    pdf_dev_id <- grDevices::dev.cur()
+    on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
+                       list(ID = pdf_dev_id)), add = TRUE)
 
     par(mfrow = c(grid[2], grid[1]), mar = c(5, 5, 5, 5), oma = c(4, 0, 4, 0))
   }
