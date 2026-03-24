@@ -29,8 +29,13 @@ fuzzy matching to suggest the closest available column name.
 }
 \examples{
 \donttest{
+data <- data.frame(temp = 1)
 if (!("tmean" \%in\% colnames(data))) {
-  abort_column_not_found("tmean", colnames(data))
+  err <- tryCatch(
+    abort_column_not_found("tmean", colnames(data)),
+    error = identity
+  )
+  err$suggestion
 }
 }
 

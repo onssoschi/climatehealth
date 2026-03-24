@@ -18,7 +18,7 @@ Utility function to check if a caught condition is a typed climate error.
 \examples{
 \donttest{
 tryCatch({
-  some_function()
+  stop("example error")
 }, error = function(e) {
   if (is_climate_error(e)) {
     # Handle structured error

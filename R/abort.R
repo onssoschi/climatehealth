@@ -30,16 +30,24 @@
 #' @examples
 #' \donttest{
 #' # Basic usage
-#' abort_climate("Something went wrong", "generic_error")
+#' err <- tryCatch(
+#'   abort_climate("Something went wrong", "generic_error"),
+#'   error = identity
+#' )
+#' inherits(err, "climate_error")
 #'
 #' # With metadata
-#' abort_climate(
-#'   "Invalid lag value",
-#'   "validation_error",
-#'   param = "nlag",
-#'   value = -1,
-#'   expected = "non-negative integer"
+#' err <- tryCatch(
+#'   abort_climate(
+#'     "Invalid lag value",
+#'     "validation_error",
+#'     param = "nlag",
+#'     value = -1,
+#'     expected = "non-negative integer"
+#'   ),
+#'   error = identity
 #' )
+#' err$type
 #' }
 #'
 #' @export
@@ -79,13 +87,18 @@ abort_climate <- function(message, type = "generic_error", ..., call = rlang::ca
 #' @examples
 #' \donttest{
 #' # Parameter validation
+#' nlag <- -1
 #' if (nlag < 0) {
-#'   abort_validation(
-#'     "nlag must be >= 0",
-#'     param = "nlag",
-#'     value = nlag,
-#'     expected = "non-negative integer"
+#'   err <- tryCatch(
+#'     abort_validation(
+#'       "nlag must be >= 0",
+#'       param = "nlag",
+#'       value = nlag,
+#'       expected = "non-negative integer"
+#'     ),
+#'     error = identity
 #'   )
+#'   inherits(err, "validation_error")
 #' }
 #' }
 #'
@@ -109,8 +122,13 @@ abort_validation <- function(message, ..., call = rlang::caller_env()) {
 #'
 #' @examples
 #' \donttest{
+#' data <- data.frame(temp = 1)
 #' if (!("tmean" %in% colnames(data))) {
-#'   abort_column_not_found("tmean", colnames(data))
+#'   err <- tryCatch(
+#'     abort_column_not_found("tmean", colnames(data)),
+#'     error = identity
+#'   )
+#'   err$suggestion
 #' }
 #' }
 #'
@@ -150,13 +168,17 @@ abort_column_not_found <- function(column, available, dataset_name = "dataset",
 #' @examples
 #' \donttest{
 #' tryCatch({
-#'   fit_model(data)
+#'   stop("convergence failed")
 #' }, error = function(e) {
-#'   abort_model_error(
+#'   err <- tryCatch(
+#'     abort_model_error(
 #'     "Model failed to converge",
 #'     model_type = "dlnm",
 #'     original_error = conditionMessage(e)
+#'     ),
+#'     error = identity
 #'   )
+#'   inherits(err, "model_error")
 #' })
 #' }
 #'
@@ -226,7 +248,7 @@ suggest_column_match <- function(input, available, threshold = 0.3) {
 #' @examples
 #' \donttest{
 #' tryCatch({
-#'   some_function()
+#'   stop("example error")
 #' }, error = function(e) {
 #'   if (is_climate_error(e)) {
 #'     # Handle structured error
