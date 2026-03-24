@@ -770,11 +770,11 @@ test_that(
 # Tests for check_wildfire_vif
 
 test_that(
-    "check_wildfire_vif raises an error when save_csv==T and no output path is provided.",
+    "check_wildfire_vif raises an error when save_csv==TRUE and no output path is provided.",
     {
         expect_error(
             check_wildfire_vif(NULL, c(), TRUE, NULL, FALSE),
-            "No output path provided when save_csv==T."
+            "No output path provided when save_csv == TRUE."
         )
     }
 )
@@ -1018,11 +1018,11 @@ test_that(
 # Tests for calculate_qaic
 
 test_that(
-    "calculate_qaic raises an error when save_csv=T and no output path is provided",
+    "calculate_qaic raises an error when save_csv=TRUE and no output path is provided",
     {
         expect_error(
             calculate_qaic(NULL, TRUE, NULL, FALSE),
-            "No output path provided when save_csv==T."
+            "No output path provided when save_csv == TRUE."
         )
     }
 )
@@ -1119,11 +1119,11 @@ RR_EX_DATA <- data.frame(
 )
 
 test_that(
-    "plot_RR raises an error is save_fig=T and output path is NULL",
+    "plot_RR raises an error if save_fig=TRUE and output path is NULL",
     {
         expect_error(
             plot_RR(NULL, NULL, NULL, TRUE, NULL),
-            "No output path provided when save_fig==T."
+            "No output path provided when save_fig == TRUE."
         )
     }
 )
@@ -1162,11 +1162,11 @@ test_that(
 # Tests for plot_RR_core
 
 test_that(
-    "plot_RR_core raises an error is save_fig=T and output path is NULL",
+    "plot_RR_core raises an error if save_fig=TRUE and output path is NULL",
     {
         expect_error(
             plot_RR_core(NULL, TRUE, 3, NULL),
-            "No output path provided when save_fig==T."
+            "No output path provided when save_fig == TRUE."
         )
     }
 )
@@ -1271,7 +1271,7 @@ test_that(
             calculate_wildfire_rr_by_region(
                 NULL, NULL, NULL, TRUE
             ),
-            "No output path provided when save_fig==T."
+            "No output path provided when save_fig == TRUE."
         )
     }
 )
