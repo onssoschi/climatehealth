@@ -171,7 +171,7 @@ temp_mortality_do_analysis(
   var_degree = 2,
   var_per = c(10, 75, 90),
   lagn = 21,
-  lagnk = 3
+  lagnk = 3,
   dfseas = 8,
   attr_thr_high = 97.5,
   attr_thr_low = 2.5,
