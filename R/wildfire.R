@@ -2075,8 +2075,19 @@ plot_an_by_region <- function(data, output_dir = ".") {
 #'
 #' @examples
 #' \donttest{
+#' example_data <- data.frame(
+#'   date = seq.Date(as.Date("2020-01-01"), by = "day", length.out = 180),
+#'   region = "Example Region",
+#'   death = stats::rpois(180, lambda = 4),
+#'   population = 400000,
+#'   tmean = stats::runif(180, 10, 35),
+#'   mean_PM = stats::runif(180, 0, 25)
+#' )
+#' example_path <- tempfile(fileext = ".csv")
+#' utils::write.csv(example_data, example_path, row.names = FALSE)
+#'
 #' wildfire_do_analysis(
-#' health_path = "input/ data_with_wildfire_pm.csv",
+#' health_path = example_path,
 #' join_wildfire_data = FALSE,
 #' ncdf_path = NULL,
 #' shp_path = NULL,
@@ -2092,44 +2103,14 @@ plot_an_by_region <- function(data, output_dir = ".") {
 #' wildfire_lag = 3,
 #' temperature_lag = 1,
 #' spline_temperature_lag = 0,
-#' spline_temperature_degrees_freedom = 6,
-#' predictors_vif = c("mean_PM", "tmean"),
-#' calc_relative_risk_by_region = TRUE,
+#' spline_temperature_degrees_freedom = 4,
+#' predictors_vif = NULL,
+#' calc_relative_risk_by_region = FALSE,
 #' scale_factor_wildfire_pm = 10,
-#' save_fig = TRUE,
-#' save_csv = TRUE,
-#' output_folder_path = "output",
-#' create_run_subdir = TRUE,
-#' print_vif = FALSE,
-#' print_model_summaries = FALSE)
-#' }
-#'
-#' \donttest{
-#' wildfire_do_analysis(
-#' health_path ="input/data_no_wildfire_pm.csv",
-#' join_wildfire_data = TRUE,
-#' ncdf_path = "input/europePMfire01deg_2003to2024.nc4",
-#' shp_path = "input/RGN_DEC_2023_EN_BUC.shp",
-#' date_col = "date",
-#' region_col = "regnames",
-#' shape_region_col = "RGN23NM",
-#' mean_temperature_col = "tmean",
-#' health_outcome_col = "death",
-#' population_col = "population",
-#' rh_col = NULL,
-#' wind_speed_col = NULL,
-#' pm_2_5_col = "mean_PM ",
-#' wildfire_lag = 3,
-#' temperature_lag = 1,
-#' spline_temperature_lag = 0,
-#' spline_temperature_degrees_freedom = 6,
-#' predictors_vif = c("mean_PM", "tmean"),
-#' calc_relative_risk_by_region = TRUE,
-#' scale_factor_wildfire_pm = 10,
-#' save_fig = TRUE,
-#' save_csv = TRUE,
-#' output_folder_path = "output",
-#' create_run_subdir = TRUE,
+#' save_fig = FALSE,
+#' save_csv = FALSE,
+#' output_folder_path = tempdir(),
+#' create_run_subdir = FALSE,
 #' print_vif = FALSE,
 #' print_model_summaries = FALSE)
 #' }

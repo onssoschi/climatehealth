@@ -3088,28 +3088,38 @@ hc_save_results <- function(rr_results,
 #'
 #' @examples
 #' \donttest{
+#' example_data <- data.frame(
+#'   date = seq.Date(as.Date("2020-01-01"), by = "day", length.out = 365),
+#'   region = "Example Region",
+#'   tmean = stats::runif(365, -2, 32),
+#'   deaths = stats::rpois(365, lambda = 8),
+#'   pop = 500000
+#' )
+#' example_path <- tempfile(fileext = ".csv")
+#' utils::write.csv(example_data, example_path, row.names = FALSE)
+#'
 #' temp_mortality_do_analysis(
-#'   data_path = "data/inputs/daily_temperature_mortality_1995_2025.csv",
+#'   data_path = example_path,
 #'   date_col = "date",
 #'   temperature_col = "tmean",
 #'   dependent_col = "deaths",
 #'   population_col = "pop",
 #'   region_col = "region",
-#'   country = "England",
-#'   meta_analysis = TRUE,
-#'   independent_cols = c("wind_speed", "relative_humidity"),
+#'   country = "Example Region",
+#'   meta_analysis = FALSE,
+#'   independent_cols = NULL,
 #'   control_cols = NULL,
 #'   var_fun = "bs",
 #'   var_degree = 2,
 #'   var_per = c(10, 75, 90),
-#'   lagn = 21,
-#'   lagnk = 3,
-#'   dfseas = 8,
+#'   lagn = 7,
+#'   lagnk = 2,
+#'   dfseas = 4,
 #'   attr_thr_high = 97.5,
 #'   attr_thr_low = 2.5,
-#'   save_fig = TRUE,
-#'   save_csv = TRUE,
-#'   output_folder_path = "data/outputs/england_analysis"
+#'   save_fig = FALSE,
+#'   save_csv = FALSE,
+#'   output_folder_path = tempdir()
 #' )
 #' }
 #'
