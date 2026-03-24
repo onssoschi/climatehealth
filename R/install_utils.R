@@ -11,11 +11,6 @@
 #'
 #' @return Returns \code{TRUE} invisibly if Rtools is detected and functional. Otherwise, throws an error.
 #'
-#' @examples
-#' \dontrun{
-#' check_has_rtools()
-#' }
-#'
 #' @seealso \code{\link[pkgbuild]{check_build_tools}}, \url{https://cran.r-project.org/bin/windows/Rtools/}
 #'
 #' @keywords internal

@@ -27,9 +27,4 @@ fractions over time. If by_region is TRUE, the function creates separate
 plots for each region. All plots are saved to a single PDF
 file named "aggregated_AF_by_region.pdf" in the specified output_dir.
 }
-\examples{
-\dontrun{
-plot_aggregated_AF(data = my_df, by_region = TRUE, output_dir = "plots")
-}
-}
 \keyword{internal}

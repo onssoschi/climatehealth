@@ -23,9 +23,4 @@ A ggplot object showing relative risk and CI.
 Generates a ggplot showing relative risk estimates and confidence intervals
 across PM2.5 levels for a given region.
 }
-\examples{
-\dontrun{
-plot_rr_by_pm_core(data = rr_df, region_name = "Wales")
-}
-}
 \keyword{internal}

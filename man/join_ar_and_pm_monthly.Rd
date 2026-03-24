@@ -22,9 +22,4 @@ risk data.
 Aggregates PM2.5 data to monthly averages by region and joins it with
 attributable risk data using year, month, and region as keys.
 }
-\examples{
-\dontrun{
-join_ar_and_pm_monthly(pm_data = pm_df, an_ar_data = ar_df)
-}
-}
 \keyword{internal}

@@ -1286,10 +1286,6 @@ summarise_AF_AN <- function(data, monthly = TRUE) {
 #'
 #' @keywords internal
 #'
-#' @examples
-#' \dontrun{
-#' plot_aggregated_AF(data = my_df, by_region = TRUE, output_dir = "plots")
-#' }
 plot_aggregated_AF <- function(data, by_region = FALSE, output_dir = ".") {
   # input validation
   expected_cols <- c(
@@ -1374,10 +1370,6 @@ plot_aggregated_AF <- function(data, by_region = FALSE, output_dir = ".") {
 #'
 #' @keywords internal
 #'
-#' @examples
-#' \dontrun{
-#' plot_aggregated_AF_core(data = my_df, region_name = "Wales")
-#' }
 plot_aggregated_AF_core <- function(data, region_name = NULL) {
   # aggregate AN/AR data
   agg_data <- data %>%
@@ -1430,10 +1422,6 @@ plot_aggregated_AF_core <- function(data, region_name = NULL) {
 #'
 #' @keywords internal
 #'
-#' @examples
-#' \dontrun{
-#' join_ar_and_pm_monthly(pm_data = pm_df, an_ar_data = ar_df)
-#' }
 join_ar_and_pm_monthly <- function(
     pm_data,
     an_ar_data) {
@@ -1481,10 +1469,6 @@ join_ar_and_pm_monthly <- function(
 #'
 #' @keywords internal
 #'
-#' @examples
-#' \dontrun{
-#' plot_ar_pm_monthly(data = my_df, save_outputs = TRUE, output_dir = "outputs")
-#' }
 plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL) {
   # validate inputs
   if (save_outputs == TRUE && is.null(output_dir)) {
@@ -1738,10 +1722,6 @@ generate_rr_pm_by_region <- function(
 #'
 #' @keywords internal
 #'
-#' @examples
-#' \dontrun{
-#' plot_rr_by_pm(data = rr_df, save_fig = TRUE, output_dir = "outputs")
-#' }
 plot_rr_by_pm <- function(
     data,
     save_fig = FALSE,
@@ -1812,10 +1792,6 @@ plot_rr_by_pm <- function(
 #'
 #' @keywords internal
 #'
-#' @examples
-#' \dontrun{
-#' plot_rr_by_pm_core(data = rr_df, region_name = "Wales")
-#' }
 plot_rr_by_pm_core <- function(
     data,
     region_name = "All Regions",

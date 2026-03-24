@@ -10,6 +10,7 @@
 #'   Defaults to FALSE.
 #'
 #' @return Invisibly returns TRUE on success.
+#' @noRd
 #' @keywords internal
 pkg_health_check <- function(verbose = FALSE) {
 

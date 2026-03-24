@@ -23,9 +23,4 @@ No return value. Generates a plot and optionally saves files.
 Aggregates data by month and creates a dual-axis plot showing average
 deaths per 100,000 and mean PM2.5 concentrations.
 }
-\examples{
-\dontrun{
-plot_ar_pm_monthly(data = my_df, save_outputs = TRUE, output_dir = "outputs")
-}
-}
 \keyword{internal}

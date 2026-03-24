@@ -21,9 +21,4 @@ intervals.
 Aggregates annual average attributable fraction estimates and generates a
 ggplot showing the central estimate and CI.
 }
-\examples{
-\dontrun{
-plot_aggregated_AF_core(data = my_df, region_name = "Wales")
-}
-}
 \keyword{internal}
