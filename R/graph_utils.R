@@ -237,6 +237,16 @@ plot_moving_average <- function(
     stats::filter(x, rep(1 / n, n), sides = sides)
   }
 
+  n_obs <- sum(!is.na(df[[value_col]]) & is.finite(df[[value_col]]))
+  if (ma_days >= n_obs) {
+    warning(paste0(
+      "Skipping moving average overlay for '", value_col, "': ma_days (", ma_days,
+      ") must be less than the number of valid observations (", n_obs, ")."
+    ))
+    if (save_plot) grDevices::dev.off()
+    return(invisible(NULL))
+  }
+
   col_name <- paste0(
     "MA_",
     as.character(ma_days),
