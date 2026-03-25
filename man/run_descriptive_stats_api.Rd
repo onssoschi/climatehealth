@@ -22,7 +22,7 @@ run_descriptive_stats_api(
   plot_regional = TRUE,
   plot_total = TRUE,
   correlation_method = "pearson",
-  ma_days = NULL,
+  ma_days = 100,
   ma_sides = 1,
   timeseries_col = NULL,
   detect_outliers = TRUE,
