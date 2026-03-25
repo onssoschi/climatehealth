@@ -399,7 +399,7 @@ descriptive_stats_core <- function(
 
   # plot correlation matrix
   if (plot_corr_matrix == TRUE) {
-    full_corr <- create_correlation_matrix(df, independent_cols, correlation_method)
+    full_corr <- create_correlation_matrix(df, selected_cols, correlation_method)
     corr_path <- file.path(output_path, "correlation_matrix.png")
     plot_correlation_matrix(
       matrix_ = full_corr,

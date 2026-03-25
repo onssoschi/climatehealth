@@ -920,6 +920,7 @@ test_that("run_descriptive_stats_api example path works with default moving-aver
     independent_cols = c("temp"),
     timeseries_col = "date",
     plot_corr_matrix = TRUE,
+    plot_ma = TRUE,
     create_base_dir = TRUE
   )
 
