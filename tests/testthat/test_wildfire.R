@@ -394,7 +394,7 @@ test_that(
 
 # Tests for load_wildfire_data
 
-test_that("load_wildfire_data returns formatted health data and renames PM column when join_wildfire_data = FALSE", {
+test_that("load_wildfire_data trims padded PM column names when join_wildfire_data = FALSE", {
   # Arrange: create a deterministic health_df that read_and_format_data would return
   health_df_stub <- data.frame(
     date = as.Date(c("2020-01-01", "2020-01-02", "2020-01-03")),
@@ -435,7 +435,7 @@ test_that("load_wildfire_data returns formatted health data and renames PM colum
     health_outcome_col = "deaths",
     rh_col = "relative_humidity",
     wind_speed_col = "wind_speed",
-    pm_2_5_col = "pm_raw"
+    pm_2_5_col = " pm_raw "
   )
 
   # Assert: extractor not called
@@ -457,6 +457,46 @@ test_that("load_wildfire_data returns formatted health data and renames PM colum
 
   # Assert: date type preserved
   expect_s3_class(res$date, "Date")
+})
+
+test_that("load_wildfire_data errors clearly when pm_2_5_col is blank", {
+  health_df_stub <- data.frame(
+    date = as.Date(c("2020-01-01", "2020-01-02")),
+    tmean = c(10, 11),
+    health_outcome = c(1, 2),
+    region = c("A", "A"),
+    year = c(2020, 2020),
+    month = c(1, 1),
+    day = c(1, 2),
+    dow = c("Wed", "Thu")
+  )
+
+  local_mocked_bindings(
+    read_and_format_data = function(...) health_df_stub
+  )
+
+  err <- tryCatch(
+    load_wildfire_data(
+      health_path = "ignored_because_mocked",
+      ncdf_path = NULL,
+      shp_path = NULL,
+      join_wildfire_data = FALSE,
+      date_col = "date",
+      region_col = "region",
+      shape_region_col = "region",
+      mean_temperature_col = "tmean",
+      population_col = NULL,
+      health_outcome_col = "deaths",
+      rh_col = NULL,
+      wind_speed_col = NULL,
+      pm_2_5_col = "   "
+    ),
+    error = function(e) e
+  )
+
+  expect_s3_class(err, "validation_error")
+  expect_match(conditionMessage(err), "non-empty column name")
+  expect_equal(err$param, "pm_2_5_col")
 })
 
 test_that("load_wildfire_data calls extractor + joiner with correct arguments when join_wildfire_data = TRUE", {
