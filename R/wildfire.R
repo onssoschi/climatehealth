@@ -255,6 +255,69 @@ join_health_and_climate_data <- function(
   return(df_joined)
 }
 
+resolve_input_column_name <- function(
+    column,
+    available,
+    dataset_name = "dataset",
+    argument_name = "column",
+    call = rlang::caller_env()) {
+  if (!is.character(column) || length(column) != 1L || is.na(column)) {
+    abort_validation(
+      sprintf("`%s` must be a single column name.", argument_name),
+      param = argument_name,
+      value = column,
+      expected = "single column name",
+      call = call
+    )
+  }
+
+  if (column %in% available) {
+    return(column)
+  }
+
+  trimmed_column <- trimws(column)
+  if (!nzchar(trimmed_column)) {
+    abort_validation(
+      sprintf("`%s` must be a non-empty column name.", argument_name),
+      param = argument_name,
+      value = column,
+      expected = "non-empty column name",
+      call = call
+    )
+  }
+
+  if (trimmed_column %in% available) {
+    return(trimmed_column)
+  }
+
+  trimmed_available <- trimws(available)
+  matched_idx <- which(trimmed_available == trimmed_column)
+  if (length(matched_idx) == 1L) {
+    return(available[matched_idx])
+  }
+
+  if (length(matched_idx) > 1L) {
+    abort_validation(
+      sprintf(
+        "Multiple columns in %s match `%s` after trimming whitespace.",
+        dataset_name,
+        trimmed_column
+      ),
+      param = argument_name,
+      value = column,
+      expected = "a unique column name",
+      call = call
+    )
+  }
+
+  abort_column_not_found(
+    trimmed_column,
+    available,
+    dataset_name = dataset_name,
+    call = call
+  )
+}
+
 #' Load wildfire and health data
 #'
 #' @description Loads a dataframe containing a daily time series of health and
@@ -323,6 +386,13 @@ load_wildfire_data <- function(
   )
   # Skip wildfire data join if not required
   if (!join_wildfire_data) {
+    pm_2_5_col <- resolve_input_column_name(
+      column = pm_2_5_col,
+      available = names(health_df),
+      dataset_name = "health data",
+      argument_name = "pm_2_5_col",
+      call = rlang::caller_env()
+    )
     # Normalise column name
     health_df <- health_df %>%
       dplyr::rename(mean_PM = all_of(pm_2_5_col))
