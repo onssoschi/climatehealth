@@ -618,42 +618,41 @@ test_that("API runs with minimal required inputs and no aggregation", {
   expect_true(dir.exists(out[1]))
 })
 
-test_that("API errors if required MA parameters are missing", {
+test_that("API uses aligned moving-average defaults when plot_ma = TRUE", {
   tmp <- local_tempdir()
 
-  expect_error(
-    common_descriptive_stats_api(
-      data = cds_api_df,
-      dependent_col = "value",
-      independent_cols = c("population"),
-      output_path = tmp,
-      plot_ma = TRUE,
-      plot_correlation = FALSE,
-      plot_dist_hists = FALSE,
-      detect_outliers = FALSE,
-      calculate_rate = FALSE
-    ),
-    "ma_days"
+  out <- common_descriptive_stats_api(
+    data = cds_api_df,
+    dependent_col = "value",
+    independent_cols = c("population"),
+    output_path = tmp,
+    plot_ma = TRUE,
+    plot_correlation = FALSE,
+    plot_dist_hists = FALSE,
+    timeseries_col = "date",
+    detect_outliers = FALSE,
+    calculate_rate = FALSE
   )
+
+  expect_true(dir.exists(out[1]))
 })
 
-test_that("API errors if correlation_method is missing when plot_correlation = TRUE", {
+test_that("API uses aligned correlation defaults when plot_correlation = TRUE", {
   tmp <- local_tempdir()
 
-  expect_error(
-    common_descriptive_stats_api(
-      data = cds_api_df,
-      dependent_col = "value",
-      independent_cols = c("population"),
-      output_path = tmp,
-      plot_correlation = TRUE,
-      plot_dist_hists = FALSE,
-      plot_ma = FALSE,
-      detect_outliers = FALSE,
-      calculate_rate = FALSE
-    ),
-    "correlation_method"
+  out <- common_descriptive_stats_api(
+    data = cds_api_df,
+    dependent_col = "value",
+    independent_cols = c("population"),
+    output_path = tmp,
+    plot_correlation = TRUE,
+    plot_dist_hists = FALSE,
+    plot_ma = FALSE,
+    detect_outliers = FALSE,
+    calculate_rate = FALSE
   )
+
+  expect_true(dir.exists(out[1]))
 })
 
 test_that("API errors if dependent_col is not in dataset", {
@@ -903,6 +902,29 @@ test_that("run_descriptive_stats_api contract works with list payload input", {
   expect_s3_class(out, "descriptive_stats_run")
   expect_true(dir.exists(out$run_output_path))
   expect_true(all(c("All", "N", "S") %in% names(out$region_output_paths)))
+})
+
+test_that("run_descriptive_stats_api example path works with default moving-average settings", {
+  tmp <- local_tempdir()
+
+  out <- run_descriptive_stats_api(
+    data = list(
+      date = as.character(as.Date("2024-01-01") + 0:29),
+      region = rep(c("A", "B"), each = 15),
+      outcome = seq_len(30),
+      temp = seq(20, 34.5, by = 0.5)
+    ),
+    output_path = tmp,
+    aggregation_column = "region",
+    dependent_col = "outcome",
+    independent_cols = c("temp"),
+    timeseries_col = "date",
+    plot_corr_matrix = TRUE,
+    create_base_dir = TRUE
+  )
+
+  expect_s3_class(out, "descriptive_stats_run")
+  expect_true(file.exists(file.path(out$region_output_paths$All, "moving_average.pdf")))
 })
 
 test_that("run_descriptive_stats_api contract returns clear errors for bad payloads", {
