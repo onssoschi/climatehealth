@@ -321,10 +321,10 @@ add_plot_logo <- function(
 
 add_accessible_alt_text <- function(
     alt_text,
-    width = 245,
+    width = 150,
     line_start = 0.8,
     line_spacing = 1.07,
-    cex = 0.8,
+    cex = 1,
     col = "#1F1F1F"
     ) {
   wrapped_text <- base::strwrap(alt_text, width = width)

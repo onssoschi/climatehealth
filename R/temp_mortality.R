@@ -1161,6 +1161,7 @@ hc_plot_rr <- function(df_list,
     old_par <- graphics::par(no.readonly = TRUE)
     on.exit(graphics::par(old_par), add = TRUE)
   }
+  cols = get_accessible_palette()
 
   xlim <- c(
     min(sapply(pred_list, function(x) min(x$predvar, na.rm = TRUE))),
@@ -1181,22 +1182,15 @@ hc_plot_rr <- function(df_list,
   })), na.rm = TRUE)
 
   if (save_fig == TRUE) {
-    grid <- c(min(length(pred_list), 3), ceiling(length(pred_list) / 3))
-
-    output_path <- file.path(output_folder_path, "temp_mortality_rr_plot.pdf")
-    pdf(output_path,
-        width = max(10, grid[1] * 5.5), height = max(7, grid[2] * 4))
-    pdf_dev_id <- grDevices::dev.cur()
-    on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
-                       list(ID = pdf_dev_id)), add = TRUE)
-
-    layout_ids <- seq_len(grid[1] * grid[2])
-    layout_matrix <- matrix(layout_ids,
-                            nrow = grid[2], ncol = grid[1], byrow = TRUE)
-
-    layout(layout_matrix, heights = rep(1, grid[2]), widths = rep(1, grid[1]))
-
-    par(oma = c(0, 1, 4, 1))
+    open_accessible_pdf(
+      file = file.path(output_folder_path, "temp_mortality_rr_plot.pdf"),
+      n_plots = length(pred_list),
+      max_cols = 2,
+      panel_width = 7.8,
+      panel_height = 5.4,
+      mar = c(5.4, 5.4, 3.8, 4.4),
+      oma = c(7.5, 0.6, 9, 0.6)
+    )
   }
 
   for (geog in names(pred_list)) {
@@ -1208,38 +1202,39 @@ hc_plot_rr <- function(df_list,
     plot(geog_pred,
       "overall",
       xlab = expression(paste("Temperature (", degree, "C)")),
-      ylab = "RR",
+      ylab = "Relative risk",
       ylim = ylim,
       xlim = xlim,
       main = geog,
-      col = "#296991"
+      cex.main = 1.2,
+      col = cols$deep_water
     )
 
     # high temperature threshold line
     vline_pos_high_x <- quantile(geog_temp, attr_thr_high / 100, na.rm = TRUE)
     vline_pos_high_y <- max(geog_pred$allRRfit, na.rm = TRUE) + 0.3
     vline_lab_high <- paste0("High temp. threshold\n",
-                             round(vline_pos_high_x, 2), intToUtf8(176),
-                             "C (p", attr_thr_high, ")")
+                             round(vline_pos_high_x, 0), intToUtf8(176),
+                             "C")
 
     # add dashed line  and label to plot
-    abline(v = vline_pos_high_x, col = "#0A2E4D", lty = 2)
+    abline(v = vline_pos_high_x, col = cols$prussian_blue , lty = 5)
     text(x = vline_pos_high_x,
          y = vline_pos_high_y,
-         labels = vline_lab_high, pos = 4, col = "black", cex = 0.8)
+         labels = vline_lab_high, pos = 4, col = cols$text, cex = 0.95, font = 2)
 
     # low temperature threshold line
     vline_pos_low_x <- quantile(geog_temp, attr_thr_low / 100, na.rm = TRUE)
     vline_pos_low_y <- max(geog_pred$allRRfit, na.rm = TRUE) + 0.3
     vline_lab_low <- paste0("Low temp. threshold\n",
-                            round(vline_pos_low_x, 2),
-                            intToUtf8(176), "C (p", attr_thr_low, ")")
+                            round(vline_pos_low_x, 0),
+                            intToUtf8(176), "C")
 
     # add dashed line to plot
-    abline(v = vline_pos_low_x, col = "#0A2E4D", lty = 2)
+    abline(v = vline_pos_low_x, col = cols$prussian_blue, lty = 4)
     text(x = vline_pos_low_x,
          y = vline_pos_low_y,
-         labels = vline_lab_low, pos = 4, col = "black", cex = 0.8)
+         labels = vline_lab_low, pos = 4, col = cols$text, cex = 0.95, font = 2)
 
     # MMT (min RR) line
     vline_pos_min_x <- quantile(geog_temp,
@@ -1253,14 +1248,13 @@ hc_plot_rr <- function(df_list,
     }
 
     vline_lab_min <- paste0("MMT\n",
-                            round(vline_pos_min_x, 2),
-                            intToUtf8(176), "C (p",
-                            round(minpercgeog_[geog], 2), ")")
+                            round(vline_pos_min_x, 0),
+                            intToUtf8(176), "C")
 
-    abline(v = vline_pos_min_x, col = "#C75E70", lty = 5)
+    abline(v = vline_pos_min_x, col = cols$dusky_rose, lty = 5)
     text(x = vline_pos_min_x,
          y = vline_pos_min_y,
-         labels = vline_lab_min, pos = 2, col = "black", cex = 0.8)
+         labels = vline_lab_min, pos = 2, col = cols$text, cex = 0.95, font = 2)
 
     # create histogram on RR plot
     geog_temp_range <- range(geog_temp, na.rm = TRUE)
@@ -1295,7 +1289,7 @@ hc_plot_rr <- function(df_list,
     adj_val <- (hist_midpoint - ylim[1]) / (ylim[2] - ylim[1])
 
     # Add axis title with dynamic vertical alignment
-    mtext("Frequency (days)", side = 4, line = 3, adj = adj_val, cex = 0.7)
+    mtext("Number of days", side = 4, line = 3, adj = adj_val, cex = 0.7)
   }
 
   if (save_fig == TRUE) {
@@ -1308,12 +1302,48 @@ hc_plot_rr <- function(df_list,
                  function(x) max(lubridate::year(x$date), na.rm = TRUE))),
       ")"
     )
+    main_title <- paste0(
+      "Relative risk of mortality by mean temperature and region, ",
+      country, " ", year_range
+    )
 
-    title <- paste0("Relative risk of mortality by mean temperature and
-                    geography, ", country, " ", year_range)
+    sub_title <- paste(
+      "Panels show high and low temperature thresholds, minimum mortality temperature (MMT),",
+      "uncertanity, and the frequency distribution of observed temperature."
 
-    mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+    )
 
+    alt_text <- paste("Alt text:",
+                      "Multi-panel figure showing relative risk of mortality across temperatures",
+                      "for each region. Each panel contains a blue relative risk curve with",
+                      "a shaded 95% confidence interval, vertical lines marking the high and low",
+                      "temperature thresholds and the lowest-risk temperature, and a histogram",
+                      "showing the frequency distribution of observed temperatures. The right-hand",
+                      "axis indicates the number of days in the temperature time series."
+    )
+
+    run_accessible_pdf_plot(
+    title = main_title,
+    subtitle = sub_title,
+    line_title = 4.9,
+    line_subtitle = 3.2
+    )
+
+    add_figure_legend(legend = c("Relative risk curve","Histogram (temperature frequency)          ",
+                                 "Uncertainty (95% CI)"),
+                      col = c(cols$deep_water,cols$olive_green,cols$smoke_grey),
+                      lty = c(1,NA,NA),
+                      lwd = c(3,NA,NA),
+                      pch = c(NA, 15,15),
+                      pt.cex = c(1.5,1.8,1.8),
+                      cex = 1.11,
+                      seg.len = 2,
+                      inset = 0.01,
+                      text.col = cols$text,
+                      vpad = 0.026,
+                      bty = "o")
+
+    add_accessible_alt_text(alt_text)
     dev.off()
   }
 }
@@ -1559,29 +1589,24 @@ hc_plot_attr_heat_totals <- function(df_list,
   if (save_fig == TRUE) {
     num_geogs <- nrow(res_attr_tot)
 
-    # Dynamically adjust height based on number of geographies
-    chart_height <- 6
-    chart_width <- 0.3 * num_geogs # adjust as needed
-    total_width <- max(8, chart_width)
-
-    output_path <- file.path(output_folder_path,
-                             "mortality_total_heat_attr_plot.pdf")
-    pdf(output_path, width = total_width, height = chart_height * 2)
-    pdf_dev_id <- grDevices::dev.cur()
-    on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
-                       list(ID = pdf_dev_id)), add = TRUE)
-
-    # Set up layout: 1 row for barplot and 1 row for table
-    layout(matrix(c(1, 2), nrow = 2), heights = c(chart_height, chart_height))
-
-    # Set up plotting area for the bar chart
-    par(mar = c(10, 5, 4, 2), oma = c(1, 0, 0, 0))
+    open_accessible_pdf(
+      file = file.path(
+        output_folder_path,
+        "mortality_total_heat_attr_plot.pdf"
+      ),
+      n_plots = 2,
+      max_cols = 1,
+      panel_width = 13,
+      panel_height = max(7.5, 0.45 * num_geogs),
+      mar = c(7.5, 12, 2.5, 2),
+      oma = c(7.5, 1, 4.8, 1)
+    )
   }
 
   # Shorten the labels to a fixed length
   short_labels <- sapply(as.character(res_attr_tot$region), function(x) {
-    if (nchar(x) - 3 > 10) {
-      paste0(substr(x, 1, 10), "...")
+    if (nchar(x) - 3 > 25) {
+      paste0(substr(x, 1, 25), "...")
     } else {
       x
     }
@@ -1610,11 +1635,27 @@ hc_plot_attr_heat_totals <- function(df_list,
                         af_heat_ci_range[1], af_heat_ci_range[2])
   ar_warning <- sprintf("Warning: AR CI's range from %.2f to %.2f per 100,000",
                         ar_heat_ci_range[1], ar_heat_ci_range[2])
-  ovr_warning <- "(Please refer to the associated data table for more
-                  information on the uncertainty around each estimate)"
+  ovr_warning <- "(Please refer to the associated data table for more information on the uncertainty around each estimate)"
+  main_title <- paste0(
+    "Total heat-related mortality burden by region, ",
+    country, " ", year_range
+  )
+
+  sub_title <- paste(
+    "Top panel shows attributable fraction and bottom panel shows attributable rate.",
+    "The highlighted bar represents", country, "."
+  )
+
+  alt_text <- paste(
+    "Alt text: Two-panel horizontal bar chart of heat-related mortality burden by region.",
+    "The first panel shows attributable fraction in percent and the second panel shows attributable rate per 100,000 population.",
+    "Regions are shown on the y-axis.",
+    "The", country, "bar is highlighted in green.",
+    "Warning text below each panel summarises the overall confidence interval range."
+  )
 
   # Sort by AF descending
-  sorted_indices <- order(res_attr_tot$af_heat, decreasing = TRUE)
+  sorted_indices <- order(res_attr_tot$af_heat, decreasing = FALSE)
   res_af_heat_tot <- res_attr_tot[sorted_indices, ]
   short_labs_af_heat <- short_labels[sorted_indices]
 
@@ -1628,23 +1669,32 @@ hc_plot_attr_heat_totals <- function(df_list,
   barplot(
     names.arg = short_labs_af_heat,
     height = res_af_heat_tot$af_heat,
-    ylab = "High temperature AF (%)",
-    main = paste0("Attributable fraction of high temperature mortality by
-                  geography, ", country, " ", year_range),
+    xlab = "High temperature AF (%)",
+    main = paste0("Attributable fraction of high temperature mortality by region, ",
+                  country, " ", year_range),
     col = bar_col_af_heat,
-    las = 2,
-    horiz = FALSE
+    las = 1,
+    xlim = c(0, max(res_af_heat_tot$af_heat, na.rm = TRUE) * 1.15),
+    horiz = TRUE,
+    cex.main = 1.15
   )
 
-  mtext(af_warning, side = 1, line = 7, cex = 0.8, col = "red", font = 3)
-  mtext(ovr_warning, side = 1, line = 8, cex = 0.8, col = "red", font = 3)
+  run_accessible_pdf_plot(
+    title = main_title,
+    subtitle = sub_title,
+    line_title = 2.2,
+    line_subtitle = 1.15
+  )
+
+  mtext(af_warning, side = 1, line = 4.2, cex = 1, col = "red", font = 3)
+  mtext(ovr_warning, side = 1, line = 5.35, cex = 1, col = "red", font = 3)
 
   if (save_fig == TRUE) {
-    par(mar = c(10, 5, 4, 2))
+    par(mar = c(7.5, 12, 2.5, 2))
   }
 
   # Sort by AF descending
-  sorted_indices <- order(res_attr_tot$ar_heat, decreasing = TRUE)
+  sorted_indices <- order(res_attr_tot$ar_heat, decreasing = FALSE)
   res_ar_heat_tot <- res_attr_tot[sorted_indices, ]
   short_labs_ar_heat <- short_labels[sorted_indices]
 
@@ -1658,16 +1708,24 @@ hc_plot_attr_heat_totals <- function(df_list,
   barplot(
     names.arg = short_labs_ar_heat,
     height = res_ar_heat_tot$ar_heat,
-    ylab = "High temperature AR (per 100,000 population)",
-    main = paste0("Attributable rate of high temperature mortality by
-                  geography, ", country, " ", year_range),
+    xlab = "High temperature AR (per 100,000 population)",
+    main = paste0("Attributable rate of high temperature mortality by region, ",
+                  country, " ", year_range),
     col = bar_col_ar_heat,
-    las = 2,
-    horiz = FALSE
+    las = 1,
+    horiz = TRUE,
+    xlim = c(0, max(res_ar_heat_tot$ar_heat, na.rm = TRUE) * 1.15),
+    cex.main = 1.15
   )
 
-  mtext(ar_warning, side = 1, line = 7, cex = 0.8, col = "red", font = 3)
-  mtext(ovr_warning, side = 1, line = 8, cex = 0.8, col = "red", font = 3)
+  mtext(ar_warning, side = 1, line = 4.2, cex = 1, col = "red", font = 3)
+  mtext(ovr_warning, side = 1, line = 5.35, cex = 1, col = "red", font = 3)
+
+  if (save_fig == TRUE) {
+    add_accessible_alt_text(
+      alt_text = alt_text
+    )
+  }
 
   if (save_fig == TRUE) {
     dev.off()
