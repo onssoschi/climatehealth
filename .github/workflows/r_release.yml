@@ -18,6 +18,10 @@ jobs:
 
       - uses: r-lib/actions/setup-pandoc@v2
 
+      - name: Initialize Homebrew
+        run: |
+          eval "$(/opt/homebrew/bin/brew shellenv)"
+
       - name: Install geospatial system libraries for terra
         run: |
           brew install pkg-config gdal proj geos sqlite unixodbc || true
