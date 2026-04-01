@@ -57,8 +57,8 @@ jobs:
 
       - name: Install geospatial system libraries for Terra
         run: |
-          brew install pkg-config gdal proj geos sqlite || true
-          brew link --overwrite gdal proj geos sqlite || true
+          brew install pkg-config gdal proj geos sqlite unixodbc || true
+          brew link --overwrite gdal proj geos sqlite unixodbc || true
 
       - name: Install dependencies
         run: |
