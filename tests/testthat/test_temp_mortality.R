@@ -2583,6 +2583,10 @@ test_that("hc_save_results writes all expected CSV files and validates content",
 })
 
 test_that("integration: temp_mortality_do_analysis runs end-to-end (dynamic synthetic data)", {
+
+  if (!identical(Sys.getenv("NOT_CRAN"), "true")) skip("Skipping on CRAN")
+  if (Sys.getenv("RUN_INTEGRATION") != "true")    skip("Skipping CI integration")
+
   set.seed(42)
 
   # Generate 2-region daily data with continuity and variability
