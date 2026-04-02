@@ -75,12 +75,12 @@ get_pdf_size <- function(
 #'
 #' @return A matrix for layout().
 #' @keywords internal
+
 get_layout_matrix <- function(n_plots, n_col, n_row) {
-  mat <- matrix(0, nrow = n_row, ncol = n_col)
-  mat[seq_len(n_plots)] <- seq_len(n_plots)
+  mat <- matrix(seq_len(n_row * n_col), nrow = n_row, ncol = n_col, byrow = TRUE)
+  mat[mat > n_plots] <- 0
   mat
 }
-
 
 #' Set base plotting parameters for accessible plots
 #'
@@ -213,7 +213,8 @@ add_accessible_outer_title <- function(
       outer = TRUE,
       line = line_subtitle,
       cex = subtitle_cex,
-      col = col
+      col = col,
+      font = 1
     )
   }
 }
@@ -321,9 +322,9 @@ add_plot_logo <- function(
 
 add_accessible_alt_text <- function(
     alt_text,
-    width = 150,
+    width = 170,
     line_start = 0.8,
-    line_spacing = 1.07,
+    line_spacing = 1.4,
     cex = 1,
     col = "#1F1F1F"
     ) {
@@ -464,4 +465,28 @@ run_accessible_pdf_plot <- function(
 }
 
 
+# local helper for opening diagnostic PDFs
+open_diag_pdf <- function(file, n_panels) {
+  open_accessible_pdf(
+    file = file,
+    n_plots = n_panels,
+    max_cols = 1,
+    panel_width = 6.2,
+    panel_height = 5.0,
+    mar = c(5.2, 4.8, 3.2, 3.8),
+    oma = c(6.2, 0.6, 7.2, 0.6)
+  )
+}
 
+# helper for closing diagnostic PDFs
+close_diag_pdf <- function(title, subtitle, alt_text) {
+  run_accessible_pdf_plot(
+    title = title,
+    subtitle = subtitle,
+    line_title = 4.7,
+    line_subtitle = 3.0
+  )
+  add_accessible_alt_text(
+    alt_text = alt_text, width = 120)
+  dev.off()
+}
