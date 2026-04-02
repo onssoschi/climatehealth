@@ -1,6 +1,6 @@
 ![Static Badge](https://img.shields.io/badge/Status-In%20Development-darkgreen?logo=git&logoColor=white) ![Static Badge](https://img.shields.io/badge/Release%20Version-1.0.0-pink?logo=github) ![Static Badge](https://img.shields.io/badge/R_Version-4.4.1-pink?logo=R) [![codecov](https://codecov.io/gh/onssoschi/climatehealth/graph/badge.svg)](https://app.codecov.io/gh/onssoschi/climatehealth)
 [![Build R Package on Release](https://github.com/onssoschi/climatehealth/actions/workflows/r_release.yml/badge.svg)](https://github.com/onssoschi/climatehealth/actions/workflows/r_release.yml)
-[![R Package Test Coverage](https://github.com/onssoschi/climatehealth/actions/workflows/code_coverage.yml/badge.svg)](https://github.com/onssoschi/climatehealth/actions/workflows/code_coverage.yml)
+[![R CMD Check and Coverage](https://github.com/onssoschi/climatehealth/actions/workflows/r_check_and_coverage.yml/badge.svg)](https://github.com/onssoschi/climatehealth/actions/workflows/r_check_and_coverage.yml)
 
 # Climatehealth Package
 
@@ -54,7 +54,17 @@ This package has been developed primarily with **R 4.4.1**, and that version is 
 
 You can use the package in several ways, depending on whether you want a stable release or want to work with the source code.
 
-#### 1. Load from a local GitHub clone for development
+#### 1. Install the stable CRAN release
+
+If you want the latest stable public release, install the package directly from CRAN:
+
+```r
+install.packages("climatehealth")
+```
+
+You can also browse the CRAN package page [here](https://cran.r-project.org/package=climatehealth).
+
+#### 2. Load from a local GitHub clone for development
 Use this option if you want to inspect the source code, make changes locally, test updates, or contribute to the package.
 
 First clone the repository from GitHub to your machine. Then in R:
@@ -67,7 +77,7 @@ devtools::load_all(path = "{path/to/climatehealth}")
 This loads the package directly from the local source directory into your current R session. This is useful for development, but won't make the `climatehealth` package available as a standard installed package in your library. Once the source code changes, run `devtools::load_all()` again to reload the updated functions. If you are an end user, follow the standard installation procedure outlined below for your operating system.
 
 
-#### 2. Install directly from GitHub
+#### 3. Install directly from GitHub
 
 If you want to install the latest development version of the package directly from GitHub without cloning the repository, you can use `remotes::install_github()`.
 
@@ -82,14 +92,14 @@ remotes::install_github("onssoschi/climatehealth")
 This installs the package from the GitHub repository into your R library in the usual way. This option is useful if you want the latest development version of the package but do not need to edit the source code locally.
 
 
-#### 3. Install the latest Windows binary release (pre-compiled)
+#### 4. Install the latest Windows binary release (pre-compiled)
 If you would like to install the latest official release of the package, download the `.zip` file from the latest GitHub release [here](https://github.com/onssoschi/climatehealth/releases/latest). Then install it in R with:
 ```r
 install.packages(path = "{path/to/climatehealth_<version>.zip}", repos = NULL, type = "win.binary")
 ```
 where `<version>` is the version number of the release you downloaded.
 
-#### 4. Install the latest source release for MacOS or other platforms (needs compilation)
+#### 5. Install the latest source release for MacOS or other platforms (needs compilation)
 If you are using MacOS and would like to install from the source, download the `.tar.gz` file from the latest GitHub release [here](https://github.com/onssoschi/climatehealth/releases/latest). Then install it in R with:
 ```r
 install.packages(path = "{path/to/climatehealth_<version>.tar.gz}", repos = NULL, type = "source")
@@ -179,7 +189,7 @@ If you use `climatehealth` in publications, cite the package as:
 Browning, C., Omeke, K., Dzakpa, E. Y., Jose, G., Pearce, M., Watkins, E., Hunt,
 C., Byukusenge, B., Habyarimana, C., Nyagahakwa, V., Scarbrough, F., Shaji, T.,
 Lewis, B., and Ingole, V. (2026).
-`climatehealth: Epidemiological Tools for Climate-Health Impact Assessment`.
+`climatehealth: Statistical Tools for Modelling Climate-Health Impacts`.
 R package.
 
 An R package citation file is provided at `inst/CITATION`.
