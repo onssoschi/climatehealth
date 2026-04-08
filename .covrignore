@@ -1,0 +1,8 @@
+# Files excluded from code coverage reporting
+# These files contain code that cannot be meaningfully tested in CI
+
+# Installation utilities - require external system dependencies (Rtools, INLA repo, terra archive)
+R/install_utils.R
+
+# Package health check - internal CI-only smoke test (also marked with nocov in source)
+R/package_health_check.R

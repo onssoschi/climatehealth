@@ -562,6 +562,14 @@ cds_api_df <- data.frame(
   humidity = c(60, 65, 63, 62)
 )
 
+cds_api_df_long <- data.frame(
+  date = as.character(seq.Date(as.Date("2020-01-01"), by = "day", length.out = 120)),
+  value = seq_len(120),
+  region = rep("North", 120),
+  population = seq(100, 219),
+  humidity = seq(60, 71.9, by = 0.1)
+)
+
 test_that("API runs with all features enabled", {
   tmp <- local_tempdir()
 
@@ -622,7 +630,7 @@ test_that("API uses aligned moving-average defaults when plot_ma = TRUE", {
   tmp <- local_tempdir()
 
   out <- common_descriptive_stats_api(
-    data = cds_api_df,
+    data = cds_api_df_long,
     dependent_col = "value",
     independent_cols = c("population"),
     output_path = tmp,
@@ -909,10 +917,10 @@ test_that("run_descriptive_stats_api example path works with default moving-aver
 
   out <- run_descriptive_stats_api(
     data = list(
-      date = as.character(as.Date("2024-01-01") + 0:29),
-      region = rep(c("A", "B"), each = 15),
-      outcome = seq_len(30),
-      temp = seq(20, 34.5, by = 0.5)
+      date = as.character(as.Date("2024-01-01") + 0:239),
+      region = rep(c("A", "B"), each = 120),
+      outcome = seq_len(240),
+      temp = seq(20, 139.5, by = 0.5)
     ),
     output_path = tmp,
     aggregation_column = "region",

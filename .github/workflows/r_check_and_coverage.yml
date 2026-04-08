@@ -12,10 +12,20 @@ on:
       - main
       - dev
 
+  workflow_dispatch:
+    inputs:
+      run_integration:
+        description: Run opt-in integration tests
+        type: boolean
+        default: false
+
 jobs:
   run-macos:
     runs-on: macos-latest
     name: R CMD Check and Coverage
+    env:
+      NOT_CRAN: "true"
+      RUN_INTEGRATION: ${{ github.event_name == 'workflow_dispatch' && inputs.run_integration && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -38,6 +48,11 @@ jobs:
 
       - name: Set R options
         run: echo 'options(pkgType = "binary")' >> ~/.Rprofile
+
+      - name: Show test mode
+        run: |
+          echo "RUN_INTEGRATION=${RUN_INTEGRATION}"
+          echo "NOT_CRAN=${NOT_CRAN}"
 
       - name: Install dependencies
         run: |

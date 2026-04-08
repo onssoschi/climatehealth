@@ -1785,6 +1785,8 @@ test_that("mh_save_results writes all expected CSV files and validates content",
 
 # mental health integration test
 test_that("integration: suicides_heat_do_analysis runs end-to-end (dynamic synthetic data)", {
+  skip_if_integration_disabled()
+
   set.seed(42)
 
   # Generate 2-region daily data with continuity and variability

@@ -2583,6 +2583,8 @@ test_that("hc_save_results writes all expected CSV files and validates content",
 })
 
 test_that("integration: temp_mortality_do_analysis runs end-to-end (dynamic synthetic data)", {
+  skip_if_integration_disabled()
+
   set.seed(42)
 
   # Generate 2-region daily data with continuity and variability
