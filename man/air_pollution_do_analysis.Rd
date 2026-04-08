@@ -171,7 +171,7 @@ example_path <- tempfile(fileext = ".csv")
 utils::write.csv(example_data, example_path, row.names = FALSE)
 
 results <- air_pollution_do_analysis(
- data_path = example_path,
+  data_path = example_path,
   date_col = "date",
   region_col = "province",
   pm25_col = "pm25",
@@ -182,7 +182,7 @@ results <- air_pollution_do_analysis(
   tmax_col = "tmax",
   wind_speed_col = "wind_speed",
   continuous_others = NULL,
-  max_lag = 14L,
+  max_lag = 7L,
   df_seasonal = 4,
   family = "quasipoisson",
   reference_standards = list(list(value = 15, name = "WHO")),
