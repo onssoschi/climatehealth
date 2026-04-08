@@ -110,10 +110,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload coverage report to Codecov
-        run: |
-          Rscript -e 'covr::codecov()'
         env:
+          RUN_INTEGRATION: "true"
           CODECOV_TOKEN: ${{ secrets.CODECOV_API_TOKEN }}
+        run: Rscript -e 'covr::codecov()'
+
         timeout-minutes: 5
 
 #      - name: Print coverage for quick view

@@ -90,7 +90,7 @@ test_that("malaria_do_analysis runs end-to-end on synthetic data", {
   skip_if_not_installed("sf")
   skip_if_not_installed("INLA")
   skip_on_cran()
-  skip_on_ci()
+  skip_if(Sys.getenv("RUN_INTEGRATION") != "true")
 
   health  <- make_health_fixture_m()
   climate <- make_climate_fixture_m()
