@@ -6,3 +6,5 @@ R/install_utils.R
 
 # Package health check - internal CI-only smoke test (also marked with nocov in source)
 R/package_health_check.R
+inst/
+tools/
