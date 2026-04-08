@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Files excluded from code coverage reporting
 # These files contain code that cannot be meaningfully tested in CI
 
@@ -7,8 +6,7 @@ R/install_utils.R
 
 # Package health check - internal CI-only smoke test (also marked with nocov in source)
 R/package_health_check.R
-=======
+
 R/attrdl.R
->>>>>>> 92a77cd (added attrdl.R to .covrignore)
 inst/
 tools/
