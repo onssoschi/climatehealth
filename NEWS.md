@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## 1.0.1
+
+- CRAN resubmission focused on Fedora Linux check reliability and test stability.
+- Fixed INLA model execution under check-core constraints:
+  - limits INLA thread usage when `_R_CHECK_LIMIT_CORES_` is set
+  - keeps compatibility across INLA versions by conditionally passing
+    thread-related arguments only when supported
+- Hardened CRAN behavior for fragile INLA end-to-end disease tests:
+  - retained CRAN-safe skips for diarrhea and malaria integration paths
+  - avoids Fedora-specific parallel worker failures seen in prior checks
+- Improved integration-test governance in CI:
+  - heavy integration tests are opt-in via `RUN_INTEGRATION=true`
+  - standard PR/push CI remains fast and high-signal by default
+- Build hygiene improvement:
+  - excludes `.covrignore` from package build input via `.Rbuildignore`
+
 ## 1.0.0
 
 - Added new descriptive statistics public APIs:
