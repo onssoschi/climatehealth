@@ -815,6 +815,7 @@ test_that(
   {
     skip_if_not_installed("INLA")
     with_mocked_bindings(
+      inla = function(...) list(),
       `inla.rerun` = function(x) RIM_make_mock_model(100, 0.8),
       .package = "INLA",
       code = {
@@ -839,6 +840,7 @@ test_that(
     skip_if_not_installed("INLA")
     RIM_temp_dir <- tempdir()
     with_mocked_bindings(
+      inla = function(...) list(),
       `inla.rerun` = function(x) RIM_make_mock_model(200, 0.95),
       .package = "INLA",
       code = {
@@ -866,6 +868,7 @@ test_that(
   {
     skip_if_not_installed("INLA")
     with_mocked_bindings(
+      inla = function(...) list(),
       `inla.rerun` = function(x) RIM_make_mock_model(300, 0.85),
       .package = "INLA",
       code = {
