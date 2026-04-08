@@ -6,7 +6,7 @@ on:
     branches:
       - main
       - dev
-      
+
   push:
     branches:
       - main
@@ -47,7 +47,28 @@ jobs:
             ${{ runner.os }}-r-
 
       - name: Set R options
-        run: echo 'options(pkgType = "binary")' >> ~/.Rprofile
+        run: echo 'options(pkgType = "both")' >> ~/.Rprofile
+
+      - name: Cache Homebrew Formulae
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/local/Cellar/gdal
+            /usr/local/Cellar/proj
+            /usr/local/Cellar/geos
+            /usr/local/Cellar/sqlite
+            /opt/homebrew/Cellar/gdal
+            /opt/homebrew/Cellar/proj
+            /opt/homebrew/Cellar/geos
+            /opt/homebrew/Cellar/sqlite
+          key: homebrew-${{ runner.os }}-${{ hashFiles('DESCRIPTION') }}
+          restore-keys: |
+            homebrew-${{ runner.os }}-
+
+      - name: Install geospatial system libraries for Terra
+        run: |
+          brew install pkg-config gdal proj geos sqlite || true
+          brew link --overwrite gdal proj geos sqlite || true
 
       - name: Show test mode
         run: |
@@ -57,17 +78,22 @@ jobs:
       - name: Install dependencies
         run: |
           Rscript -e '
-          install.packages(c(
-            "devtools", "roxygen2", "remotes", "patrick", "pak", "covr", "DT",
-            "htmltools", "mockery", "openxlsx", "fmesher", "knitr", "rmarkdown"
-          ))
-          install.packages("sf", type = "binary")
-          install.packages("terra", repos="https://rspatial.r-universe.dev")
-          install.packages(
-            "INLA",
-            repos = "https://inla.r-inla-download.org/R/stable"
-          )
-          pak::local_install(".", dependencies = c("Depends", "Imports", "LinkingTo"))
+                install.packages(c(
+                  "devtools", "roxygen2", "remotes", "patrick", "pak", "covr",
+                  "DT", "htmltools", "mockery", "openxlsx", "fmesher",
+                  "knitr", "rmarkdown"
+                ))
+                install.packages("sf", type = "binary")
+                install.packages("terra", type = "source")
+                install.packages(
+                  "INLA",
+                  repos = "https://inla.r-inla-download.org/R/stable"
+                )
+                pak::local_install(
+                  ".",
+                  dependencies = c("Depends", "Imports", "LinkingTo"),
+                  upgrade = FALSE
+                )
           '
         timeout-minutes: 5
 
