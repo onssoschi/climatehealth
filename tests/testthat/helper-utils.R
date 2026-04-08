@@ -10,3 +10,13 @@ suppress_plot <- function(expr) {
   }, add = TRUE)
   force(expr)
 }
+
+skip_if_integration_disabled <- function() {
+  skip_on_cran()
+
+  run_integration <- tolower(Sys.getenv("RUN_INTEGRATION", "false")) %in% c("true", "t", "1")
+  skip_if_not(
+    run_integration,
+    "Integration tests are disabled by default. Set RUN_INTEGRATION=true to enable them."
+  )
+}
