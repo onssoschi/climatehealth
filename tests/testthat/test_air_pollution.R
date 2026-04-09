@@ -4919,13 +4919,9 @@ make_synth_df <- function(n_days = 365, regions = c("R1", "R2")) {
 }
 
 test_that("integration: air_pollution_do_analysis runs end-to-end (dynamic synthetic data)", {
-<<<<<<< HEAD
-  skip_if_integration_disabled()
-=======
 
   if (!identical(Sys.getenv("NOT_CRAN"), "true")) skip("Skipping on CRAN")
   if (Sys.getenv("RUN_INTEGRATION") != "true")    skip("Skipping CI integration")
->>>>>>> a7a950b (added updated skipping logic to all intergration tests)
 
   set.seed(123)
   # Create dynamic data
