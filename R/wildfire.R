@@ -948,146 +948,172 @@ plot_RR <- function(
     by_region = FALSE,
     save_fig = FALSE,
     output_folder_path = NULL) {
+
   # input validation
   if (save_fig && is.null(output_folder_path)) {
     stop("No output path provided when save_fig == TRUE.")
   }
-  # create list to collect plots
-  plots <- list()
-  # determine ylimits for plotting
+
+  if (!save_fig) {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
+  }
+
+  cols <- get_accessible_palette()
+
+  # determine y limits across all panels
   ylims <- c(
-    min(rr_data$ci_lower) - 0.1,
-    max(rr_data$ci_upper) + 0.1
+    min(rr_data$ci_lower, na.rm = TRUE) - 0.1,
+    max(rr_data$ci_upper, na.rm = TRUE) + 0.1
   )
-  # plot by region if needed
+
+  # region split
   if (by_region) {
     df_list <- split(rr_data, f = rr_data$region_name)
-    for (i in seq(df_list)) {
-      region_results <- df_list[[i]]
-      region_name <- region_results$region_name[1]
-      region_plot <- plot_RR_core(
-        rr_data = region_results,
-        output_folder_path = output_folder_path,
-        wildfire_lag = wildfire_lag,
-        save_fig = FALSE,
-        region_name = region_name,
-        ylims = ylims
-      )
-      plots[[i]] <- region_plot
-    }
   } else {
-    # Plot overall RR
-    plot <- plot_RR_core(
-      rr_data = rr_data,
-      output_folder_path = output_folder_path,
-      wildfire_lag = wildfire_lag,
-      save_fig = FALSE,
-      region_name = "All Regions"
-    )
-    plots[[length(plots) + 1]] <- plot
+    df_list <- list("All Regions" = rr_data)
   }
-  # combine and save
-  combined_plots <- patchwork::wrap_plots(plots)
-  if (save_fig) {
-    ggplot2::ggsave(
-      filename = file.path(output_folder_path, "RR_lag_estimates.pdf"),
-      plot = combined_plots,
-      width = if (length(combined_plots) == 1) 8 else 5 * length(combined_plots),
-      height = if (length(combined_plots) == 1) 8 else 4 * length(combined_plots),
-      limitsize = FALSE
-    )
-  }
-  return(combined_plots)
-}
 
-#' Core functionality for plotting results of relative risk analysis.
-#'
-#' @description Plots relative risk and confidence intervals for each lag value
-#' of wildfire-related PM2.5.
-#'
-#' @param rr_data Dataframe of relative risk and confidence intervals for
-#' each lag of wildfire-related PM2.5.
-#' @param save_fig Boolean. Whether to save the plot as an output.
-#' Defaults to FALSE.
-#' @param wildfire_lag Integer. The maximum number of days for which to plot the
-#' lags for wildfire PM2.5. Defaults to 3.
-#' @param output_folder_path Path to folder where plots should be saved.
-#' Defaults to NULL.
-#' @param region_name Character. The name of the region.
-#' Defaults to 'All regions'.
-#'
-#' @returns Plot of relative risk and confidence intervals for each lag of
-#' wildfire-related PM2.5.
-#'
-#' @keywords internal
-plot_RR_core <- function(
-    rr_data,
-    save_fig = FALSE,
-    wildfire_lag,
-    output_folder_path = NULL,
-    region_name = "All regions",
-    ylims = NULL) {
-  # input validation
-  if (save_fig && is.null(output_folder_path)) {
-    stop("No output path provided when save_fig == TRUE.")
-  }
-  # generate labels
-  labels <- c("0 days")
-  if (wildfire_lag > 0) {
-    additional_labels <- sapply(
-      1:wildfire_lag,
-      function(lag) paste("0-", lag, " days", sep = "")
-    )
-    labels <- c(labels, additional_labels)
-  }
-  # configure y limits
-  if (is.null(ylims)) {
-    ylims <- c(
-      min(rr_data$ci_lower) - 0.1,
-      max(rr_data$ci_upper) + 0.1
-    )
-  }
-  # plot RR data
-  plot <- ggplot2::ggplot(
-    data = rr_data,
-    ggplot2::aes(
-      x = lag,
-      y = .data$relative_risk,
-      ymin = .data$ci_lower,
-      ymax = .data$ci_upper
-    )
-  ) +
-    ggplot2::geom_point(size = 3) +
-    ggplot2::geom_errorbar(width = 0.5, linewidth = 1) +
-    ggplot2::geom_hline(yintercept = 1, lty = 2) +
-    ggplot2::xlab("Lag") +
-    ggplot2::ylab("Relative risk") +
-    ggplot2::ggtitle(paste("Wildfire PM2.5: ", region_name, sep = "")) +
-    ggplot2::scale_x_continuous(
-      breaks = seq(0, wildfire_lag, 1), labels = labels
-    ) +
-    ggplot2::scale_y_continuous(
-      limits = ylims
-    ) +
-    ggplot2::theme_bw() +
-    ggplot2::theme(
-      axis.text = ggplot2::element_text(size = 18),
-      axis.title = ggplot2::element_text(size = 18)
-    )
-  # save figure if necessary
+  # open accessible PDF if saving
   if (save_fig == TRUE) {
-    # Create output path and PDF
-    formatted_region_name <- gsub(" ", "_", tolower(region_name))
-    file_name <- paste(
-      "RR_lag_estimates_", formatted_region_name, ".pdf",
-      sep = ""
+    open_accessible_pdf(
+      file = file.path(output_folder_path, "RR_lag_estimates.pdf"),
+      n_plots = length(df_list),
+      max_cols = 2,
+      panel_width = 8,
+      panel_height = 5.8,
+      mar = c(6.2, 5, 3.5, 2.5),
+      oma = c(7.5, 0.6, 9, 0.6)
     )
-    pdf(file.path(output_folder_path, file_name), width = 8, height = 8)
-    # Add to figure
-    print(plot)
+  }
+
+  # x labels
+  lag_labels <- c("0 days")
+  if (wildfire_lag > 0) {
+    lag_labels <- c(
+      lag_labels,
+      sapply(1:wildfire_lag, function(lag) paste0("0-", lag, " days"))
+    )
+  }
+
+  # draw each panel
+  for (geog in names(df_list)) {
+    region_results <- df_list[[geog]]
+    region_results <- region_results[order(region_results$lag), ]
+
+    par(mar = c(6.2, 5, 3.5, 2.5))
+
+    plot(
+      x = region_results$lag,
+      y = region_results$relative_risk,
+      type = "b",
+      pch = 19,
+      lwd = 2,
+      col = cols$deep_water,
+      ylim = ylims,
+      xlim = c(min(region_results$lag) - 0.3, max(region_results$lag) + 0.3),
+      xaxt = "n",
+      xlab = "Lag",
+      ylab = "Relative risk",
+      main = geog,
+      cex.main = 1.2
+    )
+
+    axis(
+      side = 1,
+      at = region_results$lag,
+      labels = lag_labels
+    )
+
+    # confidence intervals
+    arrows(
+      x0 = region_results$lag,
+      y0 = region_results$ci_lower,
+      x1 = region_results$lag,
+      y1 = region_results$ci_upper,
+      angle = 90,
+      code = 3,
+      length = 0.30,
+      col = cols$deep_water,
+      lwd = 1.4
+    )
+
+    # reference line at RR = 1
+    abline(h = 1, col = "#4D4D4D", lty = 2, lwd = 1.5)
+  }
+
+  if (save_fig == TRUE) {
+    main_title <- if (by_region) {
+      "Relative risk by lag of wildfire-related PM2.5 exposure (by region)"
+    } else {
+      "Relative risk by lag of wildfire-related PM2.5 exposure"
+    }
+
+    sub_title <- if (by_region) {
+      paste(
+        "Each panel shows relative risk estimates by lag with 95% confidence intervals.",
+        "The dashed horizontal line marks the null reference value of 1."
+      )
+    } else {
+      paste(
+        "This plot shows relative risk estimates by lag with 95% confidence intervals.",
+        "The dashed horizontal line marks the null reference value of 1."
+      )
+    }
+
+    alt_text <- if (by_region) {
+      paste(
+        "Alt text: Multi-panel chart showing relative risk estimates by lag of wildfire-related PM2.5 exposure.",
+        "Each panel contains a blue line with point markers and vertical confidence intervals across lag periods.",
+        "A dashed horizontal line marks the null reference value of 1."
+      )
+    } else {
+      paste(
+        "Alt text: Chart showing relative risk estimates by lag of wildfire-related PM2.5 exposure for all regions combined.",
+        "The plot contains a blue line with point markers and vertical confidence intervals across lag periods.",
+        "A dashed horizontal line marks the null reference value of 1."
+      )
+    }
+
+
+    run_accessible_pdf_plot(
+      title = main_title,
+      subtitle = sub_title,
+      line_title = 4.9,
+      line_subtitle = 3.2
+    )
+
+    add_figure_legend(
+      legend = c(
+        "Relative risk estimate",
+        "95% confidence interval   ",
+        "Null reference line"
+      ),
+      col = c(
+        cols$deep_water,
+        cols$deep_water,
+        "#4D4D4D"
+      ),
+      lty = c(1, 1, 2),
+      lwd = c(2, 1.4, 1.5),
+      pch = c(19, NA, NA),
+      pt.cex = c(1.2, 1.2, 1.2),
+      cex = 1.05,
+      seg.len = 2,
+      inset = 0.03,
+      text.col = cols$text,
+      vpad = if (by_region) 0.032 else 0.15,
+      bty = "o"
+    )
+
+    add_accessible_alt_text(
+      alt_text = alt_text
+    )
+
     dev.off()
   }
-  return(plot)
+
+  invisible(df_list)
 }
 
 #' Save results of wildfire related analysis
@@ -1365,20 +1391,26 @@ plot_aggregated_AF <- function(data, by_region = FALSE, output_dir = ".") {
     "upper_ci_attributable_fraction"
   )
   if (by_region == TRUE) expected_cols <- c(expected_cols, "region")
+
   if (!all(expected_cols %in% colnames(data))) {
     stop(
       "'data' must contain the following columns: ",
       paste(expected_cols, collapse = ", ")
     )
   }
+
   if (is.null(output_dir)) stop("'output_dir' is NULL.")
   if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
 
-  #Convert AF to percent for plotting
+  cols <- get_accessible_palette()
+
+  # Convert AF to percent for plotting (same logic as original)
   data_pct <- data
-  af_cols <- c("average_attributable_fraction",
-               "lower_ci_attributable_fraction",
-               "upper_ci_attributable_fraction")
+  af_cols <- c(
+    "average_attributable_fraction",
+    "lower_ci_attributable_fraction",
+    "upper_ci_attributable_fraction"
+  )
   for (col in af_cols) {
     data_pct[[col]] <- data_pct[[col]] * 100
   }
@@ -1387,93 +1419,226 @@ plot_aggregated_AF <- function(data, by_region = FALSE, output_dir = ".") {
   pname <- "aggregated_AF"
   if (by_region) pname <- paste0(pname, "_by_region")
   fpath <- file.path(output_dir, paste0(pname, ".pdf"))
-  plots <- list()
-  # plot for full dataset
-  p_all <- plot_aggregated_AF_core(
-    data = data_pct,
-    region_name = "All Regions"
-  )
-  # ensure y-axis is labeled as percent
-  p_all <- p_all + ggplot2::labs(y = "Attributable Fraction (%)")
-  plots[[1]] <- p_all
 
+  # Build plot data list (same logical structure as original)
+  plot_list <- list()
 
-  # plot for regions (conditional)
+  # All Regions panel
+  agg_all <- data_pct %>%
+    dplyr::group_by(.data$year) %>%
+    dplyr::summarise(
+      af = mean(.data$average_attributable_fraction, na.rm = TRUE),
+      lower_ci = mean(.data$lower_ci_attributable_fraction, na.rm = TRUE),
+      upper_ci = mean(.data$upper_ci_attributable_fraction, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    dplyr::mutate(year = as.numeric(as.character(.data$year)))
+
+  plot_list[["All Regions"]] <- agg_all
+
+  # Region panels if requested
   if (by_region == TRUE) {
     for (region in unique(data_pct$region)) {
       region_data <- data_pct[data_pct$region == region, ]
-      p_reg <- plot_aggregated_AF_core(
-        data = region_data,
-        region_name = region
-      )
-      p_reg <- p_reg + ggplot2::labs(y = "Attributable Fraction (%)")
-      plots[[length(plots) + 1]] <- p_reg
+
+      agg_region <- region_data %>%
+        dplyr::group_by(.data$year) %>%
+        dplyr::summarise(
+          af = mean(.data$average_attributable_fraction, na.rm = TRUE),
+          lower_ci = mean(.data$lower_ci_attributable_fraction, na.rm = TRUE),
+          upper_ci = mean(.data$upper_ci_attributable_fraction, na.rm = TRUE),
+          .groups = "drop"
+        ) %>%
+        dplyr::mutate(year = as.numeric(as.character(.data$year)))
+
+      plot_list[[as.character(region)]] <- agg_region
     }
   }
-  # combine and save plots
-  combined_plots <- patchwork::wrap_plots(plots)
-  # add caption
-  combined_plots <- combined_plots +
-    patchwork::plot_annotation(
-      caption = "Note: Attributable fraction(s) are based on relative risk(s) at lag 0."
-    )
-  ggplot2::ggsave(
-    fpath,
-    combined_plots,
-    width = length(plots) * 5,
-    height = length(plots) * 4,
-    limitsize = FALSE
-  )
-}
 
-#' Create a plot of aggregated annual attributable fractions with CI
-#'
-#' @description Aggregates annual average attributable fraction estimates and generates a
-#' ggplot showing the central estimate and CI.
-#'
-#' @param data A data frame with columns: year, average_attributable_fraction,
-#' lower_ci_attributable_fraction, and upper_ci_attributable_fraction.
-#' @param region_name Optional character string used to label the plot title
-#' with a region name. Defaults to NULL.
-#' @return A ggplot object showing annual attributable rates with confidence
-#' intervals.
-#'
-#' @keywords internal
-#'
-plot_aggregated_AF_core <- function(data, region_name = NULL) {
-  # aggregate AN/AR data
-  agg_data <- data %>%
-    group_by(.data$year) %>%
-    summarise(
-      sum_total_deaths = mean(.data$average_attributable_fraction, na.rm = TRUE),
-      lower_ci = mean(.data$lower_ci_attributable_fraction, na.rm = TRUE),
-      upper_ci = mean(.data$upper_ci_attributable_fraction, na.rm = TRUE),
-    ) %>%
-    mutate(year = as.numeric(as.character(.data$year)))
-  # create output plot
-  title <- "Annual Attributable Fraction (%) due to Wildfire-related PM2.5 exposure"
-  if (!is.null(region_name)) title <- paste0(title, " (", region_name, ")")
-  title_wrapped <- stringr::str_wrap(title, width = 45)
-  plot_agg_an <- ggplot2::ggplot(
-    agg_data,
-    ggplot2::aes(x = .data$year, y = .data$sum_total_deaths)
-  ) +
-    ggplot2::geom_ribbon(
-      ggplot2::aes(ymin = .data$lower_ci, ymax = .data$upper_ci),
-      alpha = 0.2,
-      fill = "#4d7789"
-    ) +
-    ggplot2::geom_line(color = "#003c57", linewidth = 1) +
-    ggplot2::theme_minimal(base_size = 14) +
-    ggplot2::labs(
-      title = title_wrapped,
-      x = "Year",
-      y = "Attributable Fraction (%)"
-    ) +
-    ggplot2::theme(
-      axis.line = ggplot2::element_line(linewidth = 0.5, colour = "black")
+  n_plot <- length(plot_list)
+
+  # Common limits across panels
+  year_min <- min(sapply(plot_list, function(x) min(x$year, na.rm = TRUE)))
+  year_max <- max(sapply(plot_list, function(x) max(x$year, na.rm = TRUE)))
+
+  y_min <- min(sapply(plot_list, function(x) min(x$lower_ci, na.rm = TRUE)))
+  y_max <- max(sapply(plot_list, function(x) max(x$upper_ci, na.rm = TRUE)))
+  ylim <- c(min(c(0, y_min)), y_max) * 1.15
+
+  year_range <- paste0("(", year_min, "-", year_max, ")")
+
+  # Open accessible PDF
+  if (n_plot == 1) {
+    open_accessible_pdf(
+      file = fpath,
+      n_plots = 1,
+      max_cols = 1,
+      panel_width = 9,
+      panel_height = 7.2,
+      mar = c(6.2, 5.2, 3.6, 2.6),
+      oma = c(5.2, 0.6, 7.2, 0.6)
     )
-  return(plot_agg_an)
+  } else {
+    open_accessible_pdf(
+      file = fpath,
+      n_plots = n_plot,
+      max_cols = 2,
+      panel_width = 7.8,
+      panel_height = 6.2,
+      mar = c(6.2, 5.2, 3.6, 2.6),
+      oma = c(7.5, 0.6, 9, 0.6)
+    )
+  }
+
+  # Draw each panel
+  for (region_name in names(plot_list)) {
+    agg_data <- plot_list[[region_name]]
+    agg_data <- agg_data[order(agg_data$year), ]
+
+    par(mar = c(6.2, 5.2, 3.6, 2.6))
+
+    # Base line plot
+    plot(
+      x = agg_data$year,
+      y = agg_data$af,
+      type = "l",
+      lwd = 2,
+      col = cols$dusky_rose,
+      ylim = ylim,
+      xlim = c(year_min, year_max),
+      xlab = "Year",
+      ylab = "Attributable fraction (%)",
+      main = region_name,
+      cex.main = 1.2,
+      cex.lab = 1.1,
+      cex.axis = 1.0
+    )
+
+    # CI ribbon
+    polygon(
+      x = c(agg_data$year, rev(agg_data$year)),
+      y = c(agg_data$upper_ci, rev(agg_data$lower_ci)),
+      col = adjustcolor(cols$dusky_rose, alpha.f = 0.2),
+      border = NA
+    )
+
+    # redraw AF line so it sits on top
+    lines(
+      x = agg_data$year,
+      y = agg_data$af,
+      lwd = 2,
+      col = cols$dusky_rose
+    )
+
+    # zero line
+    abline(
+      h = 0,
+      col = "#4D4D4D",
+      lty = 2,
+      lwd = 1.5
+    )
+
+    # warning if CI spills outside the panel bounds
+    af_ci_range <- c(
+      min(agg_data$lower_ci, na.rm = TRUE),
+      max(agg_data$upper_ci, na.rm = TRUE)
+    )
+
+    if (af_ci_range[1] < ylim[1] || af_ci_range[2] > ylim[2]) {
+      ci_warning <- sprintf(
+        paste(
+          "Warning: CI's are outside the bounds of this chart.",
+          "CI's range from %.2f%% to %.2f%%"
+        ),
+        af_ci_range[1],
+        af_ci_range[2]
+      )
+
+      ovr_warning <- "(Please refer to the associated data table for more information on the uncertainty around each estimate)"
+
+      mtext(ci_warning, side = 1, line = 4.5, cex = 0.72, col = "red",
+            adj = 0, font = 3)
+      mtext(ovr_warning, side = 1, line = 5.8, cex = 0.72, col = "red",
+            adj = 0, font = 3)
+    }
+  }
+
+  # Page-level title, subtitle, legend, alt text
+  main_title <- if (by_region) {
+    paste0(
+      "Annual attributable fraction due to wildfire-related PM2.5 exposure",
+      "\n(by region) ", year_range
+    )
+  } else {
+    paste0(
+      "Annual attributable fraction due to wildfire-related PM2.5 exposure ",
+      year_range
+    )
+  }
+
+  sub_title <- if (by_region) {
+    paste(
+      "Each panel shows annual attributable fraction with a shaded 95% confidence interval.",
+      "Estimates are based on relative risk at lag 0."
+    )
+  } else {
+    paste(
+      "This plot shows annual attributable fraction with a shaded 95% confidence interval.",
+      "Estimates are based on relative risk at lag 0."
+    )
+  }
+
+  alt_text <- if (by_region) {
+    paste(
+      "Alt text: Multi-panel chart showing annual attributable fraction due to wildfire-related PM2.5 exposure by region.",
+      "Each panel contains a rose-coloured line for attributable fraction, a shaded rose band for the 95 percent confidence interval,",
+      "and a dashed horizontal line marking zero attributable fraction."
+    )
+  } else {
+    paste(
+      "Alt text: Chart showing annual attributable fraction due to wildfire-related PM2.5 exposure for all regions combined.",
+      "The plot contains a rose-coloured line for attributable fraction, a shaded rose band for the 95 percent confidence interval,",
+      "and a dashed horizontal line marking zero attributable fraction."
+    )
+  }
+
+  run_accessible_pdf_plot(
+    title = main_title,
+    subtitle = sub_title,
+    line_title = if (n_plot == 1) 4.2 else 4.9,
+    line_subtitle = if (n_plot == 1) 2.6 else 3.2
+  )
+
+  add_figure_legend(
+    legend = c(
+      "Attributable fraction",
+      "95% confidence interval   ",
+      "Zero reference line"
+    ),
+    col = c(
+      cols$dusky_rose,
+      adjustcolor(cols$dusky_rose, alpha.f = 0.2),
+      "#4D4D4D"
+    ),
+    lty = c(1, NA, 2),
+    lwd = c(2, NA, 1.5),
+    pch = c(NA, 15, NA),
+    pt.cex = c(1.2, 1.8, 1.2),
+    cex = 1.05,
+    seg.len = 2,
+    inset = 0.03,
+    text.col = cols$text,
+    vpad = if (n_plot == 1) 0.040 else 0.032,
+    bty = "o"
+  )
+
+  add_accessible_alt_text(
+    alt_text = alt_text
+  )
+
+  dev.off()
+
+  invisible(plot_list)
 }
 
 #' Join monthly PM2.5 estimates with attributable risk data by region and time

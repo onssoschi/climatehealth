@@ -138,20 +138,36 @@ open_accessible_pdf <- function(
 ) {
   grid <- get_plot_grid(n_plots, max_cols = max_cols)
 
-  size <- get_pdf_size(
-    n_col = grid$n_col,
-    n_row = grid$n_row,
-    panel_width = panel_width,
-    panel_height = panel_height
-  )
+  # Fixed size for single-plot pages
+  if (n_plots == 1) {
+    size <- get_pdf_size(
+      n_col = 1,
+      n_row = 1,
+      panel_width = panel_width * 1.5,
+      panel_height = panel_height * 1.5
+    )
+    pdf_width <- size$width
+    pdf_height <- size$height
+  } else {
+    size <- get_pdf_size(
+      n_col = grid$n_col,
+      n_row = grid$n_row,
+      panel_width = panel_width,
+      panel_height = panel_height
+    )
+    pdf_width <- size$width
+    pdf_height <- size$height
+  }
+
 
   grDevices::pdf(
     file = file,
-    width = size$width,
-    height = size$height,
+    width = pdf_width,
+    height = pdf_height,
     paper = "special",
     family = "sans"
   )
+
 
   dev_id <- grDevices::dev.cur()
 
@@ -373,7 +389,6 @@ add_figure_legend <- function(
     pt.cex = 2.1,
     cex = 1.0,
     seg.len = 2.2,
-    ncol = length(legend),
     inset = 0.018,
     text.col = "black",
     bty = "o",
@@ -401,7 +416,6 @@ add_figure_legend <- function(
     pt.cex = pt.cex,
     seg.len = seg.len,
     horiz = TRUE,
-    ncol = ncol,
     xjust = 0.5, yjust = 1,
     bty = bty,
     text.col = text.col,
