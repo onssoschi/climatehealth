@@ -34,9 +34,9 @@ tryCatch({
 }, error = function(e) {
   err <- tryCatch(
     abort_model_error(
-      "Model failed to converge",
-      model_type = "dlnm",
-      original_error = conditionMessage(e)
+    "Model failed to converge",
+    model_type = "dlnm",
+    original_error = conditionMessage(e)
     ),
     error = identity
   )

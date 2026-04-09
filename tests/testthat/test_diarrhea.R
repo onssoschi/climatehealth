@@ -79,7 +79,7 @@ test_that("diarrhea_do_analysis runs end-to-end on synthetic data", {
   map_path <- paste0(map_stub, ".shp")
   on.exit(unlink(Sys.glob(paste0(map_stub, ".*"))), add = TRUE)
   map_d <- make_synthetic_map_d() |> sf::st_transform(3857)
-  sf::st_write(map_d, map_path, quiet = TRUE, delete_dsn = TRUE)
+  sf::st_write(map_d, map_path, quiet = TRUE, append = FALSE)
 
   res <- suppress_plot(suppressWarnings(
     diarrhea_do_analysis(

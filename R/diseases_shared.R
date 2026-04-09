@@ -901,27 +901,29 @@ run_inla_models <- function(combined_data,
   }
 
   fit <- function(f) {
-    model <- if (is.null(thread_limit)) {
-      INLA::inla(
-        f,data = data,family = family,offset = log(data$E),
-        control.family = cfam, control.inla = list(strategy = "adaptive"),
-        control.compute = list(dic = TRUE, config = config,
-                               cpo = TRUE, return.marginals = FALSE),
-        control.fixed = list(correlation.matrix = TRUE, prec.intercept = 1, prec = 1),
-        control.predictor = list(link = 1, compute = TRUE),verbose = FALSE
-      )
-    } else {
-      INLA::inla(
-        f,data = data,family = family,offset = log(data$E),
-        control.family = cfam, control.inla = list(strategy = "adaptive"),
-        control.compute = list(dic = TRUE, config = config,
-                               cpo = TRUE, return.marginals = FALSE),
-        control.fixed = list(correlation.matrix = TRUE, prec.intercept = 1, prec = 1),
-        control.predictor = list(link = 1, compute = TRUE),verbose = FALSE,
-        num.threads = thread_limit,
-        blas.num.threads = thread_limit
-      )
+    inla_args <- list(
+      formula = f,
+      data = data,
+      family = family,
+      offset = log(data$E),
+      control.family = cfam,
+      control.inla = list(strategy = "adaptive"),
+      control.compute = list(dic = TRUE, config = config,
+                             cpo = TRUE, return.marginals = FALSE),
+      control.fixed = list(correlation.matrix = TRUE, prec.intercept = 1, prec = 1),
+      control.predictor = list(link = 1, compute = TRUE),
+      verbose = FALSE
+    )
+
+    if (!is.null(thread_limit)) {
+      inla_args$num.threads <- thread_limit
+      # Older INLA builds do not expose blas.num.threads, so set it only when available.
+      if ("blas.num.threads" %in% names(formals(INLA::inla))) {
+        inla_args$blas.num.threads <- thread_limit
+      }
     }
+
+    model <- do.call(INLA::inla, inla_args)
 
     INLA::inla.rerun(model)
   }

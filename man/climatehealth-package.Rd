@@ -4,7 +4,7 @@
 \name{climatehealth-package}
 \alias{climatehealth}
 \alias{climatehealth-package}
-\title{climatehealth: statistical tools for modelling climate-health impacts}
+\title{climatehealth: Statistical Tools for Modelling Climate-Health Impacts}
 \description{
 \subsection{Overview}{
 
