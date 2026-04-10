@@ -1,4 +1,7 @@
 # integration test for malaria_do_analysis function
+if (Sys.getenv("RUN_INTEGRATION") != "true") {
+  testthat::skip("Skipping malaria integration test")
+}
 
 if (!"package:climatehealth" %in% search()) {
   pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
@@ -87,10 +90,10 @@ mock_min_data <- tibble(
 
 # tests/testthat/test_malaria.R
 test_that("malaria_do_analysis runs end-to-end on synthetic data", {
+
   skip_if_not_installed("sf")
   skip_if_not_installed("INLA")
-  skip_on_cran()
-  skip_on_ci()
+  skip_if_integration_disabled()
 
   health  <- make_health_fixture_m()
   climate <- make_climate_fixture_m()
