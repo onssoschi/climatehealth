@@ -1940,8 +1940,7 @@ test_that(
 
 test_that("wildfire_do_analysis: end-to-end run (dataset-level RR only, no file outputs)", {
   # These are integration smoke tests.
-  if (!identical(Sys.getenv("NOT_CRAN"), "true")) skip("Skipping on CRAN")
-  if (Sys.getenv("RUN_INTEGRATION") != "true")    skip("Skipping CI integration")
+  skip_if_integration_disabled()
 
   # Dynamically generate a synthetic dataset
   set.seed(123)
@@ -2019,8 +2018,7 @@ test_that("wildfire_do_analysis: end-to-end run (dataset-level RR only, no file 
 
 test_that("wildfire_do_analysis: end-to-end run with region-level outputs (AF/AN), no file outputs", {
 
-  if (!identical(Sys.getenv("NOT_CRAN"), "true")) skip("Skipping on CRAN")
-  if (Sys.getenv("RUN_INTEGRATION") != "true")    skip("Skipping CI integration")
+  skip_if_integration_disabled()
 
   set.seed(456)
   n_days  <- 150
