@@ -4920,7 +4920,8 @@ make_synth_df <- function(n_days = 365, regions = c("R1", "R2")) {
 
 test_that("integration: air_pollution_do_analysis runs end-to-end (dynamic synthetic data)", {
 
-  skip_if_integration_disabled()
+  if (!identical(Sys.getenv("NOT_CRAN"), "true")) skip("Skipping on CRAN")
+  if (Sys.getenv("RUN_INTEGRATION") != "true")    skip("Skipping CI integration")
 
   set.seed(123)
   # Create dynamic data
@@ -5035,10 +5036,9 @@ test_that("integration: air_pollution_do_analysis runs end-to-end (dynamic synth
 
 test_that("integration: do_analysis handles multiple references and include_national = FALSE", {
 
-  skip_if_integration_disabled()
-
-  skip_if_not_installed("mgcv")
-  skip_if_not_installed("metafor")
+  if (!identical(Sys.getenv("NOT_CRAN"), "true")) skip("Skipping on CRAN")
+  if (Sys.getenv("RUN_INTEGRATION") != "true")    skip("Skipping CI integration")
+  skip_if_not_installed("mgcv"); skip_if_not_installed("metafor")
   set.seed(1)
 
   # Build a real CSV
@@ -5092,7 +5092,8 @@ test_that("integration: do_analysis handles multiple references and include_nati
 
 test_that("integration: do_analysis saves the expected number of images per reference", {
 
-  skip_if_integration_disabled()
+  if (!identical(Sys.getenv("NOT_CRAN"), "true")) skip("Skipping on CRAN")
+  if (Sys.getenv("RUN_INTEGRATION") != "true")    skip("Skipping CI integration")
 
   skip_if_not_installed("mgcv"); skip_if_not_installed("metafor")
   requireNamespace("ggplot2", quietly = TRUE)
