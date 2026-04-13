@@ -28,52 +28,51 @@ mh_read_and_format_data <- function(
     temperature_col,
     health_outcome_col,
     population_col) {
-  # make sure data_path is a csv if a path is passed
+
   if (is.character(data_path)) {
     check_file_extension(data_path, ".csv", "data_path")
   }
-  # read data
+
   df <- read_input_data(data_path)
-  # process region col
+
+  # Add synthetic region if no region column supplied
   if (is.null(region_col)) {
     df <- df %>%
-      dplyr::mutate(region = "aggregated")
+      dplyr::mutate(region = "Overall")
   }
-  # subset needed cols
-  needed_cols <- c(
-    date_col,
-    region_col,
-    temperature_col,
-    health_outcome_col,
-    population_col
-  )
-  standard_cols <- c(
-    "date", "region", "tmean", "health_outcome", "population"
-  )
-  for (i in seq_along(standard_cols)) {
-    std_col <- standard_cols[i]
-    need_col <- needed_cols[i]
-    if (!identical(std_col, need_col) && std_col %in% names(df)) {
-      df[[std_col]] <- NULL
-    }
+
+  # Rename
+  if (is.null(region_col)) {
+    df <- df %>%
+      dplyr::rename(
+        date = all_of(date_col),
+        temp = all_of(temperature_col),
+        suicides = all_of(health_outcome_col),
+        population = all_of(population_col)
+      )
+  } else {
+    df <- df %>%
+      dplyr::rename(
+        date = all_of(date_col),
+        region = all_of(region_col),
+        temp = all_of(temperature_col),
+        suicides = all_of(health_outcome_col),
+        population = all_of(population_col)
+      )
   }
+
   df <- df %>%
-    dplyr::rename(
-      date = all_of(date_col),
-      region = all_of(region_col),
-      temp = all_of(temperature_col),
-      suicides = all_of(health_outcome_col),
-      population = all_of(population_col)
-    ) %>%
     dplyr::mutate(
       date = as.Date(date, tryFormats = c("%d/%m/%Y", "%Y-%m-%d")),
       year = as.factor(lubridate::year(date)),
       month = as.factor(lubridate::month(date)),
       dow = as.factor(lubridate::wday(date, label = TRUE)),
       region = as.factor(.data$region),
-      stratum = as.factor(.data$region:.data$year:.data$month:.data$dow),
-      ind = tapply(.data$suicides, .data$stratum, sum)[.data$stratum]
-    )
+      stratum = as.factor(interaction(.data$region, .data$year, .data$month, .data$dow, drop = TRUE)),
+      ind = ave(.data$suicides, .data$stratum, FUN = sum)
+     ) %>%
+     dplyr::arrange(.data$date)
+
   df_list <- aggregate_by_column(df, "region")
 
   return(df_list)
@@ -1048,8 +1047,13 @@ mh_attr <- function(
     cb_list,
     pred_list,
     minpercreg,
-    attr_thr = 97.5) {
+    attr_thr = 97.5,
+    seed = NULL) {
   attr_list <- list()
+
+  if(!is.null(seed)) {
+    set.seed(seed)
+  }
 
   for (reg in names(df_list)) {
     region_data <- df_list[[reg]]
@@ -2081,6 +2085,15 @@ suicides_heat_do_analysis <- function(
     health_outcome_col = health_outcome_col,
     population_col = population_col
   )
+
+  if (isTRUE(meta_analysis) && length(df_list) < 2) {
+    warning(
+      "meta_analysis = TRUE requires multiple regions. ",
+      "The data contain only one aggregated region, so meta_analysis has been set to FALSE."
+    )
+    meta_analysis <- FALSE
+  }
+
   # create list of population totals
   pop_list <- dlnm_pop_totals(
     df_list = df_list,
@@ -2243,7 +2256,8 @@ suicides_heat_do_analysis <- function(
     cb_list = cb_list,
     pred_list = pred_list,
     minpercreg = minpercreg,
-    attr_thr = attr_thr
+    attr_thr = attr_thr,
+    seed = seed
   )
   # create a table containing attributable estimates
   attr <- mh_attr_tables(
@@ -2255,14 +2269,17 @@ suicides_heat_do_analysis <- function(
   attr_yr_list <- attr[[2]]
   attr_mth_list <- attr[[3]]
   if (save_fig == TRUE) {
-    # Plot attributable numbers
-    mh_plot_attr_totals(
-      df_list = df_list,
-      res_attr_tot = res_attr_tot,
-      save_fig = save_fig,
-      output_folder_path = output_folder_path,
-      country = country
-    )
+    # Only plot total attributable comparisons when there is more than one region
+    if (length(df_list) > 1) {
+      mh_plot_attr_totals(
+        df_list = df_list,
+        res_attr_tot = res_attr_tot,
+        save_fig = save_fig,
+        output_folder_path = output_folder_path,
+        country = country
+      )
+    }
+
     # Plot yearly attributable fraction values
     mh_plot_af_yearly(
       attr_yr_list = attr_yr_list,
