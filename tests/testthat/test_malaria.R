@@ -1,7 +1,4 @@
 # integration test for malaria_do_analysis function
-if (Sys.getenv("RUN_INTEGRATION") != "true") {
-  testthat::skip("Skipping malaria integration test")
-}
 
 if (!"package:climatehealth" %in% search()) {
   pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
