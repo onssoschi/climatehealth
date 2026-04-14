@@ -92,6 +92,33 @@ test_that(
 )
 
 test_that(
+    "read_and_format_data sorts unsorted rows by region and date.",
+    {
+        unsorted_health <- data.frame(
+            date = c("2020-01-03", "2020-01-02", "2020-01-01", "2020-01-02"),
+            tmean = c(7.1, 5.8, 4.9, 6.3),
+            deaths = c(13, 11, 9, 10),
+            regnames = c("North", "South", "North", "North"),
+            stringsAsFactors = FALSE
+        )
+
+        res <- read_and_format_data(
+            health_path = unsorted_health,
+            date_col = "date",
+            mean_temperature_col = "tmean",
+            health_outcome_col = "deaths",
+            region_col = "regnames"
+        )
+
+        expect_identical(order(res$region, res$date), seq_len(nrow(res)))
+        expect_equal(
+            as.character(res$date[res$region == "North"]),
+            c("2020-01-01", "2020-01-02", "2020-01-03")
+        )
+    }
+)
+
+test_that(
     "read_and_format_data works without population_col when no population data are supplied.",
     {
         no_pop_data <- dplyr::select(WF_TEST_HEALTH, -population)

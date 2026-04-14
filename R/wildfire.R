@@ -4,7 +4,8 @@
 #'
 #' @description Reads in a CSV file for a daily time series of health and climate data,
 #' renames columns to standard names. Creates columns for day of week, month,
-#' and year columns derived from the date.
+#' and year columns derived from the date, and sorts the result by region and
+#' date.
 #'
 #' @param health_path Path to a CSV file containing a daily time series of data
 #' for a particular health outcome and climate variables, which may be disaggregated by region.
@@ -111,7 +112,8 @@ read_and_format_data <- function(
       month = lubridate::month(date),
       day = lubridate::day(date),
       dow = as.character(lubridate::wday(date, label = TRUE))
-    )
+    ) %>%
+    dplyr::arrange(.data$region, .data$date)
   return(df)
 }
 
