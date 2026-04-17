@@ -76,6 +76,10 @@ jobs:
           Rscript -e "options(repos = c(rspatial = 'https://rspatial.r-universe.dev', CRAN = 'https://cloud.r-project.org'), pkgType = 'binary')"
           Rscript -e "install.packages('.', dependencies = c('Depends','Imports','LinkingTo'))"
 
+      - name: Install package
+        run: |
+          R CMD INSTALL .
+
       - name: Run package post-install health check
         run: |
           Rscript -e "get('pkg_health_check', envir = asNamespace('climatehealth'))(verbose = TRUE)"
