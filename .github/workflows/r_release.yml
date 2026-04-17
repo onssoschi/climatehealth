@@ -72,9 +72,13 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          Rscript -e "install.packages(c('devtools', 'remotes', 'pak'))"
-          Rscript -e "pak::repo_add('rspatial','https://rspatial.r-universe.dev')"
-          Rscript -e "pak::pkg_install('.', dependencies = c('Depends','Imports','LinkingTo'))"
+          Rscript -e "install.packages(c('devtools', 'remotes'))"
+          Rscript -e "options(repos = c(rspatial = 'https://rspatial.r-universe.dev', CRAN = 'https://cloud.r-project.org'), pkgType = 'binary')"
+          Rscript -e "install.packages('.', dependencies = c('Depends','Imports','LinkingTo'))"
+
+      - name: Install package
+        run: |
+          R CMD INSTALL .
 
       - name: Run package post-install health check
         run: |
