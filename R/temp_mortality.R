@@ -31,23 +31,20 @@ hc_read_data <- function(input_csv_path,
   # Load the input dataset
   df <- read_input_data(input_csv_path)
 
-  # Format the geography column. If geog is missing, then assume geographies
-  # are aggregated or only single input geography.
-  if (is.null(region_col)) {
-    df <- df %>%
-      dplyr::mutate(geog = "aggregated")
-  }
   # subset needed cols
   needed_cols <- c(
     dependent_col,
     date_col,
-    region_col,
     temperature_col,
     population_col
   )
-  standard_cols <- c(
-    "deaths", "date", "region", "temp", "population"
-  )
+
+  if (!is.null(region_col)) {
+    needed_cols <- c(needed_cols, region_col)
+  }
+
+  standard_cols <- c("deaths", "date", "temp", "population", "region")
+
   for (i in seq_along(standard_cols)) {
     std_col <- standard_cols[i]
     need_col <- needed_cols[i]
@@ -55,22 +52,37 @@ hc_read_data <- function(input_csv_path,
       df[[std_col]] <- NULL
     }
   }
-  # Rename the columns
+
+  # Rename mandatory columns
   df <- df %>%
     dplyr::rename(
       deaths = all_of(dependent_col),
       date = all_of(date_col),
-      region = all_of(region_col),
       temp = all_of(temperature_col),
       population = all_of(population_col)
-    ) %>%
+    )
+
+  # Rename region only if it was provided
+  if (!is.null(region_col)) {
+    df <- df %>%
+      dplyr::rename(
+        region = all_of(region_col)
+      )
+  } else {
+    df <- df %>%
+      dplyr::mutate(region = "Overall")
+  }
+
+  # Standard transformations
+  df <- df %>%
     dplyr::mutate(
       date = as.Date(date, tryFormats = c("%d/%m/%Y", "%Y-%m-%d")),
       year = as.factor(lubridate::year(date)),
       month = as.factor(lubridate::month(date)),
       dow = as.factor(lubridate::wday(date, label = TRUE)),
-      region = as.factor(.data$region)
-    )
+      region = as.factor(region)
+    ) %>%
+    dplyr::arrange(region, date)
 
   # Reformat data and fill NaNs
   df <- reformat_data(df,
@@ -3229,6 +3241,14 @@ temp_mortality_do_analysis <- function(data_path,
     dependent_col = dependent_col,
     population_col = population_col
   )
+
+  if (isTRUE(meta_analysis) && length(df_list) < 2) {
+    warning(
+      "meta_analysis = TRUE requires multiple regions. ",
+      "The data contain only one aggregated region, so meta_analysis has been set to FALSE."
+    )
+    meta_analysis <- FALSE
+  }
 
   pop_list <- dlnm_pop_totals(
     df_list = df_list,
