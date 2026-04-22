@@ -667,8 +667,6 @@ get_wildfire_lag_columns <- function(data) {
 #' estimates and relative risks (e.g. scale_factor = 10 corresponds to estimates
 #' and relative risks representing impacts of a 10 unit increase in wildfire
 #' PM2.5). Setting this parameter to 0 or 1 leaves the variable unscaled.
-#' @param wildfire_lag Integer. The number of days for which to calculate the
-#' lags for wildfire PM2.5. Default is 3.
 #' @param mean_temperature_col Character. Name of the column in the dataframe
 #' that contains the mean temperature column.
 #' @param temperature_lag Integer. The number of days for which to calculate
@@ -690,7 +688,6 @@ get_wildfire_lag_columns <- function(data) {
 casecrossover_quasipoisson <- function(
     data,
     scale_factor_wildfire_pm = 10,
-    wildfire_lag,
     mean_temperature_col,
     temperature_lag,
     spline_temperature_degrees_freedom,
