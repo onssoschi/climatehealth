@@ -667,8 +667,6 @@ get_wildfire_lag_columns <- function(data) {
 #' estimates and relative risks (e.g. scale_factor = 10 corresponds to estimates
 #' and relative risks representing impacts of a 10 unit increase in wildfire
 #' PM2.5). Setting this parameter to 0 or 1 leaves the variable unscaled.
-#' @param mean_temperature_col Character. Name of the column in the dataframe
-#' that contains the mean temperature column.
 #' @param temperature_lag Integer. The number of days for which to calculate
 #' the lags for temperature. Default is 1.
 #' @param spline_temperature_degrees_freedom Integer. Degrees of freedom for the
@@ -688,7 +686,6 @@ get_wildfire_lag_columns <- function(data) {
 casecrossover_quasipoisson <- function(
     data,
     scale_factor_wildfire_pm = 10,
-    mean_temperature_col,
     temperature_lag,
     spline_temperature_degrees_freedom,
     calculate_by_region,
@@ -1173,8 +1170,6 @@ save_wildfire_results <- function(
 #'
 #' @param data Dataframe containing a daily time series of climate and health
 #' data from which to fit models.
-#' @param mean_temperature_col Character. Name of the column in the dataframe
-#' that contains the mean temperature column.
 #' @param temperature_lag Integer. The number of days for which to calculate
 #' the lags for temperature. Default is 1.
 #' @param spline_temperature_degrees_freedom Integer. Degrees of freedom for the
@@ -1200,7 +1195,6 @@ save_wildfire_results <- function(
 #' @keywords internal
 calculate_wildfire_rr_by_region <- function(
     data,
-    mean_temperature_col,
     temperature_lag,
     spline_temperature_degrees_freedom,
     scale_factor_wildfire_pm,
@@ -1227,7 +1221,6 @@ calculate_wildfire_rr_by_region <- function(
     region_name <- names(df_list)[i]
     region_results <- casecrossover_quasipoisson(
       data = region_data,
-      mean_temperature_col = mean_temperature_col,
       temperature_lag = temperature_lag,
       spline_temperature_degrees_freedom = spline_temperature_degrees_freedom,
       calculate_by_region = calculate_by_region,
@@ -1257,6 +1250,12 @@ calculate_wildfire_rr_by_region <- function(
 #' data that was used to obtain rr_data.
 #' @param calculate_by_region Bool. Whether to calculate Relative Risk
 #' by region. Defaults to FALSE.
+#' @param scale_factor_wildfire_pm Numeric. The value to divide the wildfire
+#' PM2.5 concentration variables by for alternative interpretation of outputs.
+#' Corresponds to the unit increase in wildfire PM2.5 to give the model
+#' estimates and relative risks (e.g. scale_factor = 10 corresponds to estimates
+#' and relative risks representing impacts of a 10 unit increase in wildfire
+#' PM2.5). Setting this parameter to 0 or 1 leaves the variable unscaled.
 #' @param rr_data Dataframe containing relative risk and confidence intervals,
 #' calculated from input data.
 #'
@@ -1264,7 +1263,7 @@ calculate_wildfire_rr_by_region <- function(
 #' upper and lower confidence intervals.
 #'
 #' @keywords internal
-calculate_daily_AF_AN <- function(data,calculate_by_region, rr_data) {
+calculate_daily_AF_AN <- function(data,calculate_by_region, scale_factor_wildfire_pm, rr_data) {
   # dissagregate data into region level
   df_list <- if (calculate_by_region) {
     split(data, f = data$region)
@@ -1292,20 +1291,20 @@ calculate_daily_AF_AN <- function(data,calculate_by_region, rr_data) {
     # Calculate daily rescaled_RR, AF and AN
     region_data <- region_data %>%
       mutate(
-        rescaled_RR = exp((log(RR_value) / 10) * .data$mean_PM),
+        rescaled_RR = exp((log(RR_value) / scale_factor_wildfire_pm) * .data$mean_PM),
         attributable_fraction = (.data$rescaled_RR - 1) / .data$rescaled_RR,
         attributable_number = .data$attributable_fraction * .data$health_outcome
       )
     # Repeat for upper/lower CIs
     region_data <- region_data %>%
       mutate(
-        rescaled_CI_upper = exp((log(RR_CI_upper) / 10) * .data$mean_PM),
+        rescaled_CI_upper = exp((log(RR_CI_upper) / scale_factor_wildfire_pm) * .data$mean_PM),
         attributable_fraction_upper = (.data$rescaled_CI_upper - 1) / .data$rescaled_CI_upper,
         attributable_number_upper = .data$attributable_fraction_upper * .data$health_outcome
       )
     region_data <- region_data %>%
       mutate(
-        rescaled_CI_lower = exp((log(RR_CI_lower) / 10) * .data$mean_PM),
+        rescaled_CI_lower = exp((log(RR_CI_lower) / scale_factor_wildfire_pm) * .data$mean_PM),
         attributable_fraction_lower = (.data$rescaled_CI_lower - 1) / .data$rescaled_CI_lower,
         attributable_number_lower = .data$attributable_fraction_lower * .data$health_outcome
       )
@@ -2389,7 +2388,6 @@ wildfire_do_analysis <- function(
   # Obtain and plot RR values
   rr_results <- calculate_wildfire_rr_by_region(
     data = data,
-    mean_temperature_col = mean_temperature_col,
     temperature_lag = temperature_lag,
     spline_temperature_degrees_freedom = spline_temperature_degrees_freedom,
     scale_factor_wildfire_pm = scale_factor_wildfire_pm,
@@ -2424,7 +2422,8 @@ wildfire_do_analysis <- function(
   ar_pm_monthly <- NULL
 
   # get AN/AR
-  daily_AF_AN <- calculate_daily_AF_AN(data = data, calculate_by_region, rr_data = rr_results)
+  daily_AF_AN <- calculate_daily_AF_AN(data = data, calculate_by_region,
+                                       scale_factor_wildfire_pm = scale_factor_wildfire_pm, rr_data = rr_results)
   af_an_results <- summarise_AF_AN(data = daily_AF_AN)
   annual_af_an_results <- summarise_AF_AN(data = daily_AF_AN, monthly = FALSE)
   # Plot aggregated AN for all regions and individual regions
@@ -2433,11 +2432,11 @@ wildfire_do_analysis <- function(
   ar_pm_monthly <- plot_ar_pm_monthly(ar_pm_monthly,
                                       save_fig,
                                       output_folder_path,
-                                      include_all_regions = !calculate_by_region)
+                                      include_all_regions = FALSE)
   # Plot AR/AN by region
   if (save_fig == TRUE) {
     plot_aggregated_AF(
-      data = af_an_results,
+      data = annual_af_an_results,
       by_region = calculate_by_region,
       include_all_regions = !calculate_by_region,
       output_dir = output_folder_path)
