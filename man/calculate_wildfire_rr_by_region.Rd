@@ -6,8 +6,10 @@
 \usage{
 calculate_wildfire_rr_by_region(
   data,
+  temperature_lag,
+  spline_temperature_degrees_freedom,
   scale_factor_wildfire_pm,
-  calc_relative_risk_by_region = FALSE,
+  calculate_by_region = FALSE,
   save_fig = FALSE,
   output_folder_path = NULL,
   print_model_summaries = FALSE
@@ -17,6 +19,12 @@ calculate_wildfire_rr_by_region(
 \item{data}{Dataframe containing a daily time series of climate and health
 data from which to fit models.}
 
+\item{temperature_lag}{Integer. The number of days for which to calculate
+the lags for temperature. Default is 1.}
+
+\item{spline_temperature_degrees_freedom}{Integer. Degrees of freedom for the
+spline(s).}
+
 \item{scale_factor_wildfire_pm}{Numeric. The value to divide the wildfire
 PM2.5 concentration variables by for alternative interpretation of outputs.
 Corresponds to the unit increase in wildfire PM2.5 to give the model
@@ -24,7 +32,7 @@ estimates and relative risks (e.g. scale_factor = 10 corresponds to estimates
 and relative risks representing impacts of a 10 unit increase in wildfire
 PM2.5). Setting this parameter to 0 or 1 leaves the variable unscaled.}
 
-\item{calc_relative_risk_by_region}{Bool. Whether to calculate Relative Risk
+\item{calculate_by_region}{Bool. Whether to calculate Relative Risk
 by region. Defaults to FALSE.}
 
 \item{save_fig}{Bool. Whether or not to save a figure showing residuals vs
@@ -37,7 +45,7 @@ console. Defaults to FALSE.}
 }
 \value{
 Dataframe of relative risk and confidence intervals for
-each lag of wildfire-related PM2.5. Split by region if calc_relative_risk_by_region
+each lag of wildfire-related PM2.5. Split by region if calculate_by_region
 set to TRUE.
 }
 \description{
