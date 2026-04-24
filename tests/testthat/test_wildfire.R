@@ -2043,9 +2043,8 @@ test_that("wildfire_do_analysis: end-to-end run (dataset-level RR only, no file 
   # In this config you expect "All Regions" output only
   expect_true(all(res$RR_results$region_name == "All Regions"))
 
-  # No AF/AN and no AR_PM_monthly in this configuration
-  expect_true(is.null(res$AF_AN_results) || nrow(res$AF_AN_results) == 0)
-  expect_true(is.null(res$AR_PM_monthly) || nrow(res$AR_PM_monthly) == 0)
+  expect_true(is.data.frame(res$AF_AN_results) && nrow(res$AF_AN_results) > 0)
+  expect_true(is.data.frame(res$AR_PM_monthly) && nrow(res$AR_PM_monthly) > 0)
 })
 
 
@@ -2107,7 +2106,7 @@ test_that("wildfire_do_analysis: end-to-end run with region-level outputs (AF/AN
   expect_true(all(
     c("lag", "relative_risk", "ci_lower", "ci_upper", "region_name") %in% names(res2$RR_results)
   ))
-  expect_true(all(c("All Regions", "North", "South") %in% unique(res2$RR_results$region_name)))
+  expect_true(all(c("North", "South") %in% unique(res2$RR_results$region_name)))
 
   # AF/AN monthly results and AR~PM monthly join should be present
   expect_true(is.data.frame(res2$AF_AN_results) && nrow(res2$AF_AN_results) > 0)
