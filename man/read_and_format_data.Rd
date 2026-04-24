@@ -49,6 +49,7 @@ Dataframe with formatted and renamed columns
 \description{
 Reads in a CSV file for a daily time series of health and climate data,
 renames columns to standard names. Creates columns for day of week, month,
-and year columns derived from the date.
+and year columns derived from the date, and sorts the result by region and
+date.
 }
 \keyword{internal}

@@ -4,7 +4,12 @@
 \alias{plot_aggregated_AF}
 \title{Plots attributable fractions and CI across years by regions}
 \usage{
-plot_aggregated_AF(data, by_region = FALSE, output_dir = ".")
+plot_aggregated_AF(
+  data,
+  by_region = FALSE,
+  include_all_regions = TRUE,
+  output_dir = "."
+)
 }
 \arguments{
 \item{data}{A data frame containing annual attributable fraction estimates.
@@ -14,6 +19,8 @@ by_region is TRUE, must also include region.}
 
 \item{by_region}{Logical. If TRUE, plots are generated per region using
 region. Defaults to FALSE.}
+
+\item{include_all_regions}{Logical. If TRUE includes All regions plots in output dir}
 
 \item{output_dir}{Character. Directory path where the PDF file will be
 saved. Must exist. Defaults to ".".}

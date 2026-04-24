@@ -15,8 +15,11 @@ save_wildfire_results(
 \item{rr_results}{Dataframe of relative risk and confidence intervals for
 each lag of wildfire-related PM2.5.}
 
-\item{an_ar_results}{Dataframe containing attributable number/fraction
+\item{an_ar_results}{Dataframe containing attributable number and fraction
 results. Defaults to NULL.}
+
+\item{annual_af_an_results}{A dataframe containing annual attributable numbers
+and fractions for each region}
 
 \item{output_folder_path}{Path to folder where results should be saved.}
 }
