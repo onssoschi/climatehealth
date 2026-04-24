@@ -59,7 +59,8 @@ test_that("Test hc_read_data", {
       month = as.factor(lubridate::month(date)),
       dow   = as.factor(lubridate::wday(date, label = TRUE)),
       region = as.factor(.data$region)
-    )
+    ) %>%
+    dplyr::arrange(region, date)
 
   # Create control list (alphabetical by region)
   control_list <- split(control_df[order(control_df$region), , drop = FALSE], control_df$region)
@@ -2712,3 +2713,4 @@ test_that("integration: temp_mortality_do_analysis runs end-to-end (dynamic synt
     }
   }
 })
+
