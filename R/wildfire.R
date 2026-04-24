@@ -708,8 +708,8 @@ casecrossover_quasipoisson <- function(
   lags <- lag_cols$col_names
   lag_nums <- lag_cols$lag_nums
 
-  #choose lagged temperature variables
-  temp_var <- if(temperature_lag == 0){
+  # choose lagged temperature variables
+  temp_var <- if(temperature_lag == 0) {
     "tmean"
   } else{
     paste0("tmean_l", temperature_lag, "_mean")
@@ -884,9 +884,9 @@ calculate_qaic <- function(
       # define model
       number <- lag_nums[[i]]
       #choose lagged temperature variables
-      temp_var <- if(temperature_lag == 0){
+      temp_var <- if(temperature_lag == 0) {
         "tmean"
-      } else{
+      } else {
         paste0("tmean_l", temperature_lag, "_mean")
       }
 
@@ -1126,9 +1126,9 @@ plot_RR_core <- function(
 #'
 #' @param rr_results Dataframe of relative risk and confidence intervals for
 #' each lag of wildfire-related PM2.5.
-#' @param an_ar_results Dataframe containing attributable number/fraction
+#' @param an_ar_results Dataframe containing attributable number and fraction
 #' results. Defaults to NULL.
-#' @param annual_af_an_results`A dataframe containing annual attributable numbers
+#' @param annual_af_an_results A dataframe containing annual attributable numbers
 #' and fractions for each region
 #' @param output_folder_path Path to folder where results should be saved.
 #'
@@ -1329,7 +1329,7 @@ calculate_daily_AF_AN <- function(data,calculate_by_region, scale_factor_wildfir
 #' optionall month (if monthly == TRUE).
 #'
 #' @keywords internal
-summarise_AF_AN <- function(data = daily_AF_AN, monthly = TRUE) {
+summarise_AF_AN <- function(data, monthly = TRUE) {
   sum_unique_region_pop <- function(pop, region_original) {
     sum(pop[!duplicated(region_original)], na.rm = TRUE)
   }

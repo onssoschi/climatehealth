@@ -18,7 +18,7 @@ WF_TEST_HEALTH <- data.frame(
     region = c("North", "South", "East"),
     relative_humidity = c(70, 65, 80),
     wind_speed = c(3.2, 2.8, 4.0),
-    population = c(1000,4000,900),
+    population = c(1000, 4000, 900),
     stringsAsFactors = FALSE,
     regnames = c("North", "South", "East")
 )
@@ -154,7 +154,7 @@ test_that(
     "extract_means_for_geography raises when the terra package is not installed.",
     {
         with_mocked_bindings(
-            requireNamespace = function(pkg, quietly=T) FALSE,
+            requireNamespace = function(pkg, quietly = TRUE) FALSE,
             .package = "base",
             code = expect_error(
                 extract_means_for_geography("", ""),
@@ -981,8 +981,6 @@ test_that(
         res <- casecrossover_quasipoisson(
           data = test_data,
           scale_factor_wildfire_pm = 10,
-          wildfire_lag = 3,
-          mean_temperature_col = "tmean",
           temperature_lag = 1,
           spline_temperature_degrees_freedom = 6,
           calculate_by_region = FALSE,
@@ -1028,8 +1026,6 @@ test_that(
           casecrossover_quasipoisson(
             data = test_data,
             scale_factor_wildfire_pm = 10,
-            wildfire_lag = 3,
-            mean_temperature_col = "tmean",
             temperature_lag = 1,
             spline_temperature_degrees_freedom = 6,
             calculate_by_region = FALSE,
@@ -1324,7 +1320,6 @@ test_that(
     expect_error(
       calculate_wildfire_rr_by_region(
         data = NULL,
-        mean_temperature_col = "tmean",
         temperature_lag = 1,
         spline_temperature_degrees_freedom = 6,
         scale_factor_wildfire_pm = 10,
@@ -1346,7 +1341,6 @@ test_that(
         expect_error(
           calculate_wildfire_rr_by_region(
             data = data,
-            mean_temperature_col = "tmean",
             temperature_lag = 1,
             spline_temperature_degrees_freedom = 6,
             scale_factor_wildfire_pm = 10,
@@ -1362,7 +1356,7 @@ test_that(
 
 # NOTE: not testing save_fig functionality since this is done in casecrossover_quasipoisson
 test_that(
-    "calculate_wildfire_rr_by_region returns resuults as expected",
+    "calculate_wildfire_rr_by_region returns results as expected",
     {
         test_data <- generate_wildfire_test_data(
             n = 5000,
@@ -1373,25 +1367,27 @@ test_that(
         rr_by_reg <- calculate_wildfire_rr_by_region(
             data = test_data,
             scale_factor_wildfire_pm = 10,
-            calc_relative_risk_by_region = TRUE,
+            temperature_lag = 1,
+            spline_temperature_degrees_freedom = 6,
+            calculate_by_region = TRUE,
             save_fig = FALSE,
             output_folder_path = NULL,
             print_model_summaries = FALSE
         )
         expect_equal(
             unique(rr_by_reg$region_name),
-            c("Region_A", "Region_B", "All Regions")
+            c("Region_A", "Region_B")
         )
         lag2_df <- subset(rr_by_reg, rr_by_reg$lag==2)
         num_cols <- sapply(lag2_df, is.numeric)
         lag2_df[num_cols] <- lapply(lag2_df[num_cols], round, 6)
         rownames(lag2_df) <- NULL
         exp_lag2_df <- data.frame(
-            lag = c(2, 2, 2),
-            relative_risk = c(1.029838, 0.991563, 1.008722),
-            ci_lower = c(0.970565, 0.936339, 0.968225),
-            ci_upper = c(1.092731, 1.050044, 1.050913),
-            region_name = c("Region_A", "Region_B", "All Regions"),
+            lag = c(2, 2),
+            relative_risk = c(1.029838, 0.991563),
+            ci_lower = c(0.970565, 0.936339),
+            ci_upper = c(1.092731, 1.050044),
+            region_name = c("Region_A", "Region_B"),
             stringsAsFactors = FALSE
         )
         expect_equal(lag2_df, exp_lag2_df, tolerance = 0.005)
@@ -1408,7 +1404,9 @@ get_daily_af_an_testdata <- function() {
     rr_data <- calculate_wildfire_rr_by_region(
             data = test_data,
             scale_factor_wildfire_pm = 10,
-            calc_relative_risk_by_region = TRUE,
+            calculate_by_region = TRUE,
+            temperature_lag = 1,
+            spline_temperature_degrees_freedom = 6,
             save_fig = FALSE,
             output_folder_path = NULL,
             print_model_summaries = FALSE
@@ -1424,27 +1422,31 @@ test_that(
         data <- get_daily_af_an_testdata()
         af_an_res <- calculate_daily_AF_AN(
             data = data$test_data,
-            rr_data = data$rr_data
+            rr_data = data$rr_data,
+            scale_factor_wildfire_pm = 10,
+            calculate_by_region = TRUE
         )
         exp_shape <- c(5000, 36)
         exp_columns <- c(
-            "health_outcome", "mean_PM",
-            "tmean", "rh",
-            "wind_speed", "ind",
-            "stratum", "region",
-            "mean_PM_l0", "mean_PM_l1",
-            "mean_PM_l2", "mean_PM_l3",
-            "mean_PM_l0_mean", "mean_PM_l1_mean",
-            "mean_PM_l2_mean", "mean_PM_l3_mean",
-            "tmean_l0", "tmean_l1",
-            "tmean_l0_mean", "tmean_l1_mean",
-            "ns.tmean", "rescaled_RR",
-            "attributable_fraction", "attributable_number",
-            "rescaled_CI_upper", "attributable_fraction_upper",
-            "attributable_number_upper", "rescaled_CI_lower",
-            "attributable_fraction_lower", "attributable_number_lower",
-            "date", "year", "month", "day", "dow", "pop"
+          "health_outcome", "mean_PM",
+          "tmean", "rh",
+          "wind_speed", "ind",
+          "stratum", "region",
+          "region_original",
+          "mean_PM_l0", "mean_PM_l1",
+          "mean_PM_l2", "mean_PM_l3",
+          "mean_PM_l0_mean", "mean_PM_l1_mean",
+          "mean_PM_l2_mean", "mean_PM_l3_mean",
+          "tmean_l0", "tmean_l1",
+          "tmean_l0_mean", "tmean_l1_mean",
+          "rescaled_RR",
+          "attributable_fraction", "attributable_number",
+          "rescaled_CI_upper", "attributable_fraction_upper",
+          "attributable_number_upper", "rescaled_CI_lower",
+          "attributable_fraction_lower", "attributable_number_lower",
+          "date", "year", "month", "day", "dow", "pop"
         )
+
         exp_an <- round(c(
             0.01261, 0.01416, 0.01166, 0.00256, 0.01251, 0.01059
         ), 5)
@@ -1462,19 +1464,22 @@ test_that(
         data <- get_daily_af_an_testdata()
         af_an_res <- calculate_daily_AF_AN(
             data = data$test_data,
-            rr_data = data$rr_data
+            rr_data = data$rr_data,
+            scale_factor_wildfire_pm = 10,
+            calculate_by_region = TRUE
         )
         res <- summarise_AF_AN(data = af_an_res, monthly = TRUE)
+        res <- res %>%
+          dplyr::arrange(.data$region, .data$year, .data$month)
+
         # validate outputs
         expect_true(all(unique(res$month) == 1:12))
         expect_true(all(unique(res$year) == 2020:2033))
         expect_equal(
-            c(0.13, 0.10, 0.16, 0.14),
-            round(head(res, 4)$total_attributable_number, 2)
-        )
+          c(0.18, 0.14, 0.22, 0.20),
+          round(head(res, 4)$total_attributable_number, 2))
         expect_equal(dim(res), c(330, 17))
-        expect_equal(unique(res$region), c("Region_A", "Region_B"))
-    }
+        expect_equal(sort(unique(res$region)), c("Region_A", "Region_B"))    }
 )
 
 test_that(
@@ -1483,7 +1488,9 @@ test_that(
         data <- get_daily_af_an_testdata()
         af_an_res <- calculate_daily_AF_AN(
             data = data$test_data,
-            rr_data = data$rr_data
+            rr_data = data$rr_data,
+            scale_factor_wildfire_pm = 10,
+            calculate_by_region = TRUE
         )
         res <- summarise_AF_AN(data = af_an_res, monthly = FALSE)
         # validate outputs
@@ -2013,7 +2020,7 @@ test_that("wildfire_do_analysis: end-to-end run (dataset-level RR only, no file 
     spline_temperature_lag             = 0,
     spline_temperature_degrees_freedom = 3,
     predictors_vif                     = NULL,
-    calc_relative_risk_by_region       = FALSE,
+    calculate_by_region                = FALSE,
     scale_factor_wildfire_pm           = 10,
     save_fig                           = FALSE,
     save_csv                           = FALSE,
@@ -2088,7 +2095,7 @@ test_that("wildfire_do_analysis: end-to-end run with region-level outputs (AF/AN
     spline_temperature_lag             = 0,
     spline_temperature_degrees_freedom = 3,
     predictors_vif                     = NULL,
-    calc_relative_risk_by_region       = TRUE,
+    calculate_by_region                = TRUE,
     scale_factor_wildfire_pm           = 10,
     save_fig                           = FALSE,
     save_csv                           = FALSE,
@@ -2117,14 +2124,17 @@ test_that("wildfire_do_analysis: end-to-end run with region-level outputs (AF/AN
   ))
 })
 
-
 test_that("wildfire_do_analysis: save_fig creates model_validation directory", {
   # Unit style: mock heavy steps to focus on folder creation behaviour
 
-  tmp_out <- file.path(tempdir(), paste0("wf_out_", as.integer(stats::runif(1, 1, 1e9))))
+  tmp_out <- file.path(
+    tempdir(),
+    paste0("wf_out_", as.integer(stats::runif(1, 1, 1e9)))
+  )
   dir.create(tmp_out, recursive = TRUE, showWarnings = FALSE)
+  withr::defer(unlink(tmp_out, recursive = TRUE), envir = parent.frame())
 
-  # Minimal data returned by load_wildfire_data, must have month/year/region/mean_PM for pm_data slice
+  # Minimal data returned by load_wildfire_data
   minimal_data <- data.frame(
     month = 1,
     year = 2020,
@@ -2133,10 +2143,24 @@ test_that("wildfire_do_analysis: save_fig creates model_validation directory", {
     stringsAsFactors = FALSE
   )
 
+  # Minimal AF/AN outputs for downstream mocked steps
+  minimal_af_an <- data.frame(
+    region = "All Regions",
+    year = 2020,
+    month = 1,
+    total_attributable_number = 0.1,
+    average_attributable_fraction = 0.01,
+    lower_ci_attributable_fraction = 0.005,
+    upper_ci_attributable_fraction = 0.015,
+    deaths_per_100k = 1,
+    lower_ci_deaths_per_100k = 0.5,
+    upper_ci_deaths_per_100k = 1.5,
+    stringsAsFactors = FALSE
+  )
+
   local_mocked_bindings(
     load_wildfire_data = function(...) minimal_data,
     create_lagged_variables = function(data, ...) data,
-    create_temperature_splines = function(data, ...) data,
     time_stratify = function(data, ...) data,
     calculate_qaic = function(...) data.frame(ok = TRUE),
     calculate_wildfire_rr_by_region = function(...) data.frame(
@@ -2149,11 +2173,17 @@ test_that("wildfire_do_analysis: save_fig creates model_validation directory", {
     plot_RR = function(...) invisible(NULL),
     generate_rr_pm_by_region = function(...) data.frame(
       region_name = "All Regions",
-      lag = 0,
-      pm = 0,
-      rr = 1
+      pm_levels = 0,
+      relative_risk = 1,
+      ci_lower = 1,
+      ci_upper = 1
     ),
-    plot_rr_by_pm = function(...) invisible(NULL)
+    plot_rr_by_pm = function(...) invisible(NULL),
+    calculate_daily_AF_AN = function(...) data.frame(dummy = 1),
+    summarise_AF_AN = function(data, monthly = TRUE) minimal_af_an,
+    join_ar_and_pm_monthly = function(...) minimal_af_an,
+    plot_ar_pm_monthly = function(...) minimal_af_an,
+    plot_aggregated_AF = function(...) invisible(NULL)
   )
 
   res <- wildfire_do_analysis(
@@ -2177,6 +2207,7 @@ test_that("wildfire_do_analysis: save_fig creates model_validation directory", {
 test_that("wildfire_do_analysis: create_run_subdir writes outputs into a timestamped run folder", {
   tmp_out <- tempfile("wf_runs_")
   dir.create(tmp_out, recursive = TRUE, showWarnings = FALSE)
+  withr::defer(unlink(tmp_out, recursive = TRUE), envir = parent.frame())
 
   minimal_data <- data.frame(
     month = 1,
@@ -2186,12 +2217,25 @@ test_that("wildfire_do_analysis: create_run_subdir writes outputs into a timesta
     stringsAsFactors = FALSE
   )
 
+  minimal_af_an <- data.frame(
+    region = "All Regions",
+    year = 2020,
+    month = 1,
+    total_attributable_number = 0.1,
+    average_attributable_fraction = 0.01,
+    lower_ci_attributable_fraction = 0.005,
+    upper_ci_attributable_fraction = 0.015,
+    deaths_per_100k = 1,
+    lower_ci_deaths_per_100k = 0.5,
+    upper_ci_deaths_per_100k = 1.5,
+    stringsAsFactors = FALSE
+  )
+
   captured_output_dir <- NULL
 
   local_mocked_bindings(
     load_wildfire_data = function(...) minimal_data,
     create_lagged_variables = function(data, ...) data,
-    create_temperature_splines = function(data, ...) data,
     time_stratify = function(data, ...) data,
     calculate_qaic = function(...) data.frame(ok = TRUE),
     calculate_wildfire_rr_by_region = function(...) data.frame(
@@ -2202,8 +2246,19 @@ test_that("wildfire_do_analysis: create_run_subdir writes outputs into a timesta
       region_name = "All Regions"
     ),
     plot_RR = function(...) invisible(NULL),
-    generate_rr_pm_by_region = function(...) data.frame(region_name = "All Regions", lag = 0, pm = 0, rr = 1),
+    generate_rr_pm_by_region = function(...) data.frame(
+      region_name = "All Regions",
+      pm_levels = 0,
+      relative_risk = 1,
+      ci_lower = 1,
+      ci_upper = 1
+    ),
     plot_rr_by_pm = function(...) invisible(NULL),
+    calculate_daily_AF_AN = function(...) data.frame(dummy = 1),
+    summarise_AF_AN = function(data, monthly = TRUE) minimal_af_an,
+    join_ar_and_pm_monthly = function(...) minimal_af_an,
+    plot_ar_pm_monthly = function(...) minimal_af_an,
+    plot_aggregated_AF = function(...) invisible(NULL),
     save_wildfire_results = function(rr_results, an_ar_results, annual_af_an_results, output_folder_path, ...) {
       captured_output_dir <<- output_folder_path
       invisible(NULL)
@@ -2235,7 +2290,6 @@ test_that("wildfire_do_analysis: create_run_subdir writes outputs into a timesta
   expect_true(dir.exists(file.path(captured_output_dir, "model_validation")))
 })
 
-
 test_that("wildfire_do_analysis: predictors_vif triggers check_wildfire_vif", {
   minimal_data <- data.frame(
     month = 1,
@@ -2245,20 +2299,35 @@ test_that("wildfire_do_analysis: predictors_vif triggers check_wildfire_vif", {
     stringsAsFactors = FALSE
   )
 
+  minimal_af_an <- data.frame(
+    region = "All Regions",
+    year = 2020,
+    month = 1,
+    total_attributable_number = 0.1,
+    average_attributable_fraction = 0.01,
+    lower_ci_attributable_fraction = 0.005,
+    upper_ci_attributable_fraction = 0.015,
+    deaths_per_100k = 1,
+    lower_ci_deaths_per_100k = 0.5,
+    upper_ci_deaths_per_100k = 1.5,
+    stringsAsFactors = FALSE
+  )
+
   vif_called <- FALSE
   vif_predictors <- NULL
 
   local_mocked_bindings(
     load_wildfire_data = function(...) minimal_data,
     create_lagged_variables = function(data, ...) data,
-    create_temperature_splines = function(data, ...) data,
     time_stratify = function(data, ...) data,
     calculate_qaic = function(...) data.frame(ok = TRUE),
+
     check_wildfire_vif = function(data, predictors, ...) {
       vif_called <<- TRUE
       vif_predictors <<- predictors
       data.frame(ok = TRUE)
     },
+
     calculate_wildfire_rr_by_region = function(...) data.frame(
       lag = 0,
       relative_risk = 1.01,
@@ -2266,9 +2335,23 @@ test_that("wildfire_do_analysis: predictors_vif triggers check_wildfire_vif", {
       ci_upper = 1.03,
       region_name = "All Regions"
     ),
+
     plot_RR = function(...) invisible(NULL),
-    generate_rr_pm_by_region = function(...) data.frame(region_name = "All Regions", lag = 0, pm = 0, rr = 1),
-    plot_rr_by_pm = function(...) invisible(NULL)
+
+    generate_rr_pm_by_region = function(...) data.frame(
+      region_name = "All Regions",
+      pm_levels = 0,
+      relative_risk = 1,
+      ci_lower = 1,
+      ci_upper = 1
+    ),
+
+    plot_rr_by_pm = function(...) invisible(NULL),
+
+    calculate_daily_AF_AN = function(...) data.frame(dummy = 1),
+    summarise_AF_AN = function(data, monthly = TRUE) minimal_af_an,
+    join_ar_and_pm_monthly = function(...) minimal_af_an,
+    plot_ar_pm_monthly = function(...) minimal_af_an
   )
 
   wildfire_do_analysis(
@@ -2280,15 +2363,14 @@ test_that("wildfire_do_analysis: predictors_vif triggers check_wildfire_vif", {
     mean_temperature_col = "temp",
     health_outcome_col = "deaths",
     pm_2_5_col = "pm25",
-    predictors_vif = c("mean_PM_lag0", "tmean_lag0"),
+    predictors_vif = c("mean_PM_l0_mean", "tmean_l0_mean"),
     save_fig = FALSE,
     save_csv = FALSE
   )
 
   expect_true(vif_called)
-  expect_equal(vif_predictors, c("mean_PM_lag0", "tmean_lag0"))
+  expect_equal(vif_predictors, c("mean_PM_l0_mean", "tmean_l0_mean"))
 })
-
 
 test_that("wildfire_do_analysis: save_csv triggers save_wildfire_results", {
   minimal_data <- data.frame(
@@ -2299,12 +2381,25 @@ test_that("wildfire_do_analysis: save_csv triggers save_wildfire_results", {
     stringsAsFactors = FALSE
   )
 
+  minimal_af_an <- data.frame(
+    region = "All Regions",
+    year = 2020,
+    month = 1,
+    total_attributable_number = 0.1,
+    average_attributable_fraction = 0.01,
+    lower_ci_attributable_fraction = 0.005,
+    upper_ci_attributable_fraction = 0.015,
+    deaths_per_100k = 1,
+    lower_ci_deaths_per_100k = 0.5,
+    upper_ci_deaths_per_100k = 1.5,
+    stringsAsFactors = FALSE
+  )
+
   saved_called <- FALSE
 
   local_mocked_bindings(
     load_wildfire_data = function(...) minimal_data,
     create_lagged_variables = function(data, ...) data,
-    create_temperature_splines = function(data, ...) data,
     time_stratify = function(data, ...) data,
     calculate_qaic = function(...) data.frame(ok = TRUE),
     calculate_wildfire_rr_by_region = function(...) data.frame(
@@ -2315,15 +2410,29 @@ test_that("wildfire_do_analysis: save_csv triggers save_wildfire_results", {
       region_name = "All Regions"
     ),
     plot_RR = function(...) invisible(NULL),
-    generate_rr_pm_by_region = function(...) data.frame(region_name = "All Regions", lag = 0, pm = 0, rr = 1),
+    generate_rr_pm_by_region = function(...) data.frame(
+      region_name = "All Regions",
+      pm_levels = 0,
+      relative_risk = 1,
+      ci_lower = 1,
+      ci_upper = 1
+    ),
     plot_rr_by_pm = function(...) invisible(NULL),
+
+    calculate_daily_AF_AN = function(...) data.frame(dummy = 1),
+    summarise_AF_AN = function(data, monthly = TRUE) minimal_af_an,
+    join_ar_and_pm_monthly = function(...) minimal_af_an,
+    plot_ar_pm_monthly = function(...) minimal_af_an,
+
     save_wildfire_results = function(rr_results, an_ar_results, annual_af_an_results, output_folder_path, ...) {
       saved_called <<- TRUE
-      # Some basic sanity checks on what gets passed
+
+      # Basic sanity checks on what gets passed
       expect_s3_class(rr_results, "data.frame")
-      expect_true(is.null(an_ar_results))
-      expect_true(is.null(annual_af_an_results))
+      expect_s3_class(an_ar_results, "data.frame")
+      expect_s3_class(annual_af_an_results, "data.frame")
       expect_true(is.character(output_folder_path) || is.null(output_folder_path))
+
       invisible(NULL)
     }
   )
@@ -2368,9 +2477,9 @@ test_that("wildfire_do_analysis errors clearly when AF/AN outputs are requested 
       mean_temperature_col = "temp",
       health_outcome_col = "deaths",
       pm_2_5_col = "pm25",
-      calc_relative_risk_by_region = TRUE
+      calculate_by_region  = TRUE
     ),
-    "Population data are required when calc_relative_risk_by_region = TRUE"
+    "Population data are required when calculate_by_region = TRUE"
   )
 })
 
@@ -2402,3 +2511,4 @@ test_that("wildfire_do_analysis errors when create_run_subdir is requested witho
     "`output_folder_path` is required when `create_run_subdir = TRUE`"
   )
 })
+
