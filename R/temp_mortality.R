@@ -1346,6 +1346,8 @@ hc_plot_rr <- function(df_list,
 #' temperature threshold for calculating attributable risk. Defaults to 97.5.
 #' @param attr_thr_low Integer. Percentile at which to define the lower
 #' temperature threshold for calculating attributable risk. Defaults to 2.5.
+#' @param seed Optional integer random seed used when sampling residuals for
+#' model validation plots. Defaults to NULL.
 #'
 #' @returns 'attr_list'. A list containing attributable numbers per geography.
 #'
@@ -1355,8 +1357,13 @@ hc_attr <- function(df_list,
                     pred_list,
                     minpercgeog_,
                     attr_thr_high = 97.5,
-                    attr_thr_low = 2.5) {
+                    attr_thr_low = 2.5,
+                    seed = NULL) {
   attr_list <- list()
+
+  if(!is.null(seed)) {
+    set.seed(seed)
+  }
 
   for (geog in names(df_list)) {
     geog_data <- df_list[[geog]]
