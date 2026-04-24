@@ -1038,6 +1038,8 @@ mh_plot_rr <- function(
 #' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
 #' @param attr_thr Integer. Percentile at which to define the temperature threshold for
 #' calculating attributable risk. Defaults to 97.5.
+#' @param seed Optional integer random seed used when sampling residuals for
+#' model validation plots. Defaults to NULL.
 #'
 #' @returns A list containing attributable numbers per region
 #'
