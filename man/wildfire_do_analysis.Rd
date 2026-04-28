@@ -21,10 +21,9 @@ wildfire_do_analysis(
   pm_2_5_col = NULL,
   wildfire_lag = 3,
   temperature_lag = 1,
-  spline_temperature_lag = 0,
   spline_temperature_degrees_freedom = 6,
   predictors_vif = NULL,
-  calc_relative_risk_by_region = FALSE,
+  calculate_by_region = FALSE,
   scale_factor_wildfire_pm = 10,
   save_fig = FALSE,
   save_csv = FALSE,
@@ -86,17 +85,13 @@ lags for wildfire PM2.5. Default is 3.}
 \item{temperature_lag}{Integer. The number of days for which to calculate
 the lags for temperature. Default is 1.}
 
-\item{spline_temperature_lag}{Integer. The number of days of lag in the
-temperature variable from which to generate splines. Default is 0 (unlagged
-temperature variable).}
-
 \item{spline_temperature_degrees_freedom}{Integer. Degrees of freedom for the
 spline(s).}
 
 \item{predictors_vif}{Character vector with each of the predictors to
 include in the model. Must contain at least 2 variables. Defaults to NULL.}
 
-\item{calc_relative_risk_by_region}{Bool. Whether to calculate Relative Risk by region.
+\item{calculate_by_region}{Bool. Whether to calculate Relative Risk by region.
 Default: FALSE}
 
 \item{scale_factor_wildfire_pm}{Numeric. The value to divide the wildfire
@@ -193,18 +188,17 @@ health_outcome_col = "death",
 population_col = "population",
 rh_col = NULL,
 wind_speed_col = NULL,
-pm_2_5_col = " mean_PM ",
+pm_2_5_col = "mean_PM",
 wildfire_lag = 3,
 temperature_lag = 1,
-spline_temperature_lag = 0,
-spline_temperature_degrees_freedom = 4,
+spline_temperature_degrees_freedom = 6,
 predictors_vif = NULL,
-calc_relative_risk_by_region = FALSE,
+calculate_by_region = TRUE,
 scale_factor_wildfire_pm = 10,
-save_fig = FALSE,
-save_csv = FALSE,
+save_fig = TRUE,
+save_csv = TRUE,
 output_folder_path = tempdir(),
-create_run_subdir = FALSE,
+create_run_subdir = TRUE,
 print_vif = FALSE,
 print_model_summaries = FALSE)
 }
