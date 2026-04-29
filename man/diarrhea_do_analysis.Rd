@@ -3,7 +3,7 @@
 \name{diarrhea_do_analysis}
 \alias{diarrhea_do_analysis}
 \title{Code for calculating Diarrhea disease cases attributable to extreme
-precipitation and extreme temperature
+rainfall and extreme temperature
 Run Full diarrhea-Climate Analysis Pipeline}
 \usage{
 diarrhea_do_analysis(

@@ -1,5 +1,5 @@
 #' Code for calculating Diarrhea disease cases attributable to extreme
-#' precipitation and extreme temperature
+#' rainfall and extreme temperature
 
 #' Run Full diarrhea-Climate Analysis Pipeline
 #'
