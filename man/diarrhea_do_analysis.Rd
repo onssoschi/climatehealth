@@ -35,7 +35,6 @@ diarrhea_do_analysis(
   param_threshold = 1,
   filter_year = NULL,
   family = "nbinomial",
-  group_by_year = FALSE,
   config = TRUE,
   save_csv = FALSE,
   save_model = TRUE,
@@ -97,14 +96,14 @@ columns, \code{nk = 2} yields a more flexible spline with three columns,
 and higher values of \code{nk} further increase flexibility but may also
 raise collinearity among spline terms. Defaults to 2.}
 
-\item{basis_matrices_choices}{Character vector. Specifies which climate variables
-to include in the basis matrix (e.g., \code{c("tmax", "rainfall", "r_humidity")}).}
+\item{basis_matrices_choices}{Character. Specifies which climate variable
+to include in the basis matrix (e.g., \code{"tmax"}).}
 
 \item{inla_param}{Character vector. Specifies exposure variables included in
 the INLA model (e.g., \code{c("tmin", "rainfall", "r_humidity")}).}
 
-\item{param_term}{Character or vector. Exposure variable(s) of primary interest
-for relative risk and attribution (e.g., \code{"tmax"}, \code{"rainfall"}).}
+\item{param_term}{Character. Exposure variable of primary interest
+for relative risk and attribution (e.g., \code{"tmax"}).}
 
 \item{level}{Character. Spatial disaggregation level; must be one of
 \code{"country"}, \code{"region"}, or \code{"district"}.}
@@ -116,10 +115,7 @@ for relative risk and attribution (e.g., \code{"tmax"}, \code{"rainfall"}).}
 Defaults to \code{NULL}.}
 
 \item{family}{Character. Probability distribution for the outcome variable.
-Options include \code{"poisson"} (default) and \code{"nbinomial"} for a negative binomial model.}
-
-\item{group_by_year}{Logical. Whether to group attributable metrics by year.
-Defaults to \code{FALSE}.}
+Options include \code{"poisson"} and \code{"nbinomial"} for a negative binomial model.}
 
 \item{config}{Logical. Whether to enable additional INLA model configurations.
 Defaults to \code{TRUE}.}

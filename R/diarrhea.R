@@ -108,7 +108,6 @@ diarrhea_do_analysis <- function(health_data_path,
                                  param_threshold = 1,
                                  filter_year = NULL,
                                  family = "nbinomial",
-                                 group_by_year = FALSE,
                                  config = TRUE,
                                  save_csv = FALSE,
                                  save_model=TRUE,
@@ -117,6 +116,7 @@ diarrhea_do_analysis <- function(health_data_path,
                                  output_dir =NULL){
 
   api_mode <- isTRUE(getOption("climatehealth.api_mode", FALSE))
+  grop_by_year <- FALSE
   if (api_mode) {
     save_fig <- FALSE
     save_csv <- FALSE

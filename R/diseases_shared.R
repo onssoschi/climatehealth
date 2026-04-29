@@ -543,7 +543,7 @@ plot_health_climate_timeseries <- function(data,
     file.path(output_dir,
               paste0("timeseries_", paste(vars_to_plot, collapse="_"), "_",
                      level,".pdf")), p, width=12, height=7
-    )
+  )
   p
 }
 
@@ -801,7 +801,7 @@ check_and_write_vif <- function(data,
   return(vif_df)
 }
 
-                
+
 #' Run models of increasing complexity in INLA: Fit a baseline model including
 #' spatiotemporal random effects.
 #'
@@ -1828,21 +1828,17 @@ attribution_calculation <- function(data,
                                     output_dir = NULL,
                                     save_csv = FALSE) {
 
-  ## Input checks
   case_type <- validate_case_type(case_type)
   level <- tolower(level)
 
-  ## Optional year filtering
   if (!is.null(filter_year)) {
     stopifnot("year" %in% names(data),
               all(filter_year %in% unique(data$year)))
     data <- dplyr::filter(data, year %in% filter_year)
   }
 
-  ## Global centering (internal)
   cen_val_global <- median(data[[param_term]], na.rm = TRUE)
 
-  ## Model components
   coef_mean <- model$summary.fixed$mean
   vcov_full <- model$misc$lincomb.derived.covariance.matrix
 
@@ -1850,30 +1846,25 @@ attribution_calculation <- function(data,
   if (length(indt) == 0)
     stop("No basis terms found for ", param_term)
 
-  ## INLA indices & cross-basis
   data <- create_inla_indices(data, case_type)
   basis_matrices <- set_cross_basis(data, max_lag, nk)
 
-  ## Grouping logic
   grp_vars <- switch(level,
-                     "country"  = if (group_by_year) c("year") else c("year","month"),
-                     "region"   = if (group_by_year) c("region", "year") else c("region", "year", "month"),
-                     "district" = if (group_by_year) c("region", "district", "year")
-                     else c("region", "district", "year", "month"),
+                     "country" = c("year","month"),
+                     "region" = if (group_by_year) c("region","year") else c("region","year","month"),
+                     "district" = c("region","district","year","month"),
                      stop("Invalid level")
   )
 
-  ## Global RR curve
   pred_global <- dlnm::crosspred(
     basis_matrices[[param_term]],
-    coef  = coef_mean[indt],
+    coef = coef_mean[indt],
     vcov = vcov_full[indt, indt],
     model.link = "log",
     bylag = 0.25,
     cen = cen_val_global
   )
 
-  ## Metric computation (group-specific MER)
   compute_metrics <- function(df, pred) {
 
     df <- df[!is.na(df[[param_term]]) &
@@ -1882,73 +1873,73 @@ attribution_calculation <- function(data,
 
     if (nrow(df) == 0) return(NULL)
 
-    ## Interpolate RR at observed exposures
-    rr_fit  <- approx(pred$predvar, pred$allRRfit,  xout = df[[param_term]], rule = 2)$y
-    rr_low  <- approx(pred$predvar, pred$allRRlow,  xout = df[[param_term]], rule = 2)$y
-    rr_high <- approx(pred$predvar, pred$allRRhigh, xout = df[[param_term]], rule = 2)$y
+    ## Interpolate RR
+    interp <- function(x)
+      pmax(approx(pred$predvar, x,
+                  xout = df[[param_term]], rule = 2)$y, 1e-8)
 
-    ## MER definition
-    idx <- which(rr_fit > param_threshold)
-    if (length(idx) == 0) {
+    rr_fit <- interp(pred$allRRfit)
+    rr_low <- interp(pred$allRRlow)
+    rr_high <- interp(pred$allRRhigh)
+
+    ## MER range (based on fitted RR only)
+    idx_harm <- which(rr_fit > param_threshold)
+    if (length(idx_harm) == 0) {
       MER_L <- NA
       MER_U <- NA
     } else {
-      MER_L <- min(df[[param_term]][idx], na.rm = TRUE)
-      MER_U <- max(df[[param_term]][idx], na.rm = TRUE)
+      MER_L <- min(df[[param_term]][idx_harm], na.rm = TRUE)
+      MER_U <- max(df[[param_term]][idx_harm], na.rm = TRUE)
     }
 
+    ## Observation-level AF
+    af_fun <- function(rr)
+      ifelse(rr > param_threshold,
+             (rr - param_threshold) / rr, 0)
+
+    af_fit <- af_fun(rr_fit)
+    af_low <- af_fun(rr_low)
+    af_high <- af_fun(rr_high)
+
+    ## Enforce CI ordering
+    af_low2 <- pmin(af_low, af_high)
+    af_high2 <- pmax(af_low, af_high)
+
+    cases <- df[[case_type]]
     tot_pop <- sum(df$tot_pop, na.rm = TRUE)
-    cases   <- df[[case_type]]
 
-    get_vals <- function(rr, warn = FALSE) {
+    ## Attributable numbers (sum of individual AN)
+    AN_fit <- sum(af_fit * cases, na.rm = TRUE)
+    AN_low <- sum(af_low2 * cases, na.rm = TRUE)
+    AN_high <- sum(af_high2 * cases, na.rm = TRUE)
 
-      id <- which(df[[param_term]] >= MER_L &
-                    df[[param_term]] <= MER_U &
-                    rr > param_threshold)
+    ## Fractions
+    total_cases <- sum(cases, na.rm = TRUE)
 
-      if (length(id) == 0) return(c(0, 0, 0))
+    AF_fit <- ifelse(total_cases > 0, AN_fit / total_cases, NA)
+    AF_low <- ifelse(total_cases > 0, AN_low / total_cases, NA)
+    AF_high <- ifelse(total_cases > 0, AN_high / total_cases, NA)
 
-      af <- 1 - 1 / mean(rr[id])
-      an <- af * sum(cases[id], na.rm = TRUE)
-      if (is.na(tot_pop) || tot_pop == 0) {
-        if (warn) {
-          warning(
-            "Population denominator is zero or missing for group: ",
-            paste(df[1, grp_vars, drop = TRUE], collapse = ", "),
-            ". AR_per_100k set to NA."
-          )
-        }
-
-        ar <- NA_real_
-      } else {
-        ar <- (an / tot_pop) * 1e5
-      }
-
-      c(af, an, ar)
-    }
-
-    fit  <- get_vals(rr_fit, warn = TRUE)
-    low  <- get_vals(rr_low)
-    high <- get_vals(rr_high)
-
-    safe_ceiling <- function(x) ifelse(is.na(x), NA, ceiling(x))
+    ## Rates
+    AR_fit <- ifelse(tot_pop > 0, AN_fit / tot_pop * 1e5, NA)
+    AR_low <- ifelse(tot_pop > 0, AN_low / tot_pop * 1e5, NA)
+    AR_high <- ifelse(tot_pop > 0, AN_high / tot_pop * 1e5, NA)
 
     list(
       MER_Lower = MER_L,
       MER_Upper = MER_U,
-      AR_Number = safe_ceiling(fit[2]),
-      AR_Number_LCI = safe_ceiling(low[2]),
-      AR_Number_UCI = safe_ceiling(high[2]),
-      AR_Fraction = round(fit[1] * 100, 2),
-      AR_Fraction_LCI = round(low[1] * 100, 2),
-      AR_Fraction_UCI = round(high[1] * 100, 2),
-      AR_per_100k = round(fit[3], 2),
-      AR_per_100k_LCI = round(low[3], 2),
-      AR_per_100k_UCI = round(high[3], 2)
+      AR_Number = ceiling(AN_fit),
+      AR_Number_LCI = ceiling(AN_low),
+      AR_Number_UCI = ceiling(AN_high),
+      AR_Fraction = round(AF_fit * 100, 2),
+      AR_Fraction_LCI = round(AF_low * 100, 2),
+      AR_Fraction_UCI = round(AF_high * 100, 2),
+      AR_per_100k = round(AR_fit, 2),
+      AR_per_100k_LCI = round(AR_low, 2),
+      AR_per_100k_UCI = round(AR_high, 2)
     )
   }
 
-  ## Attribution by group
   res <- data %>%
     dplyr::group_by(dplyr::across(all_of(grp_vars))) %>%
     dplyr::group_split() %>%
@@ -1972,58 +1963,15 @@ attribution_calculation <- function(data,
       )
     })
 
-  ## Overall country-level attribution (all years combined)
-  overall_country <- NULL
-
-  if (level == "country" && is.null(filter_year) && !group_by_year) {
-
-    r_all <- compute_metrics(data, pred_global)
-
-    if (!is.null(r_all)) {
-      overall_country <- tibble::tibble(
-        level = "country",
-        period = "All_years",
-        MER_Lower = r_all$MER_Lower,
-        MER_Upper = r_all$MER_Upper,
-        AR_Number = r_all$AR_Number,
-        AR_Number_LCI = r_all$AR_Number_LCI,
-        AR_Number_UCI = r_all$AR_Number_UCI,
-        AR_Fraction = r_all$AR_Fraction,
-        AR_Fraction_LCI = r_all$AR_Fraction_LCI,
-        AR_Fraction_UCI = r_all$AR_Fraction_UCI,
-        AR_per_100k = r_all$AR_per_100k,
-        AR_per_100k_LCI = r_all$AR_per_100k_LCI,
-        AR_per_100k_UCI = r_all$AR_per_100k_UCI
-      )
-    }
-  }
-
-  ## Save output (optional)
   if (save_csv && !is.null(output_dir)) {
-
     if (!dir.exists(output_dir))
       dir.create(output_dir, recursive = TRUE)
 
     readr::write_csv(
       res,
-      file.path(
-        output_dir,
-        paste0(
-          "attribution_", level, "_", param_term,
-          if (group_by_year) "_yearly.csv" else "_monthly.csv"
-        )
-      )
+      file.path(output_dir,
+                paste0("attribution_", level, "_", param_term, ".csv"))
     )
-
-    if (!is.null(overall_country)) {
-      readr::write_csv(
-        overall_country,
-        file.path(
-          output_dir,
-          paste0("attribution_country_", param_term, "_overall.csv")
-        )
-      )
-    }
   }
 
   res
@@ -2079,249 +2027,267 @@ attribution_calculation <- function(data,
 #'
 #' @keywords internal
 plot_attribution_metric <- function(attr_data,
-                                    level = c("country", "region", "district"),
-                                    metrics = c("AR_Number", "AR_Fraction", "AR_per_100k"),
+                                    level = c("country","region","district"),
+                                    metrics = c("AR_Number","AR_Fraction","AR_per_100k"),
                                     filter_year = NULL,
                                     param_term,
                                     case_type,
                                     save_fig = FALSE,
                                     output_dir = NULL) {
-  # validation
-  if (is.null(param_term)) stop("'param_term' must be provided.")
+
+  ## VALIDATION
+  if (is.null(param_term))
+    stop("'param_term' must be provided.")
   case_type <- validate_case_type(case_type)
   level <- tolower(level)
-  if (level == "country" && !is.null(filter_year)) {
-    warning("If level == 'country', filter_year must be NULL.")
-    return(NULL)
-  }
   metrics <- match.arg(metrics, several.ok = TRUE)
 
+  if (level == "country" && !is.null(filter_year)) {
+    warning("Country level ignores 'filter_year'.")
+    filter_year <- NULL
+  }
+
+  ## LABELS
   param_label <- switch(tolower(param_term),
                         tmax = "Extreme Temperature",
                         rainfall = "Extreme Rainfall",
                         param_term)
 
-  if (!is.null(filter_year)) {
-    if (!"year" %in% names(attr_data)) stop("'year' column not found in data.")
-    attr_data <- dplyr::filter(attr_data, year %in% filter_year)
-  }
-
   y_title_lookup <- c(
-    AR_per_100k = "Attributable rate",
-    AR_Fraction = "Attributable Fraction (%)",
-    AR_Number = "Attributable Number"
+    AR_per_100k="Attributable rate",
+    AR_Fraction="Attributable Fraction (%)",
+    AR_Number="Attributable Number"
   )
 
   title_lookup <- c(
-    AR_per_100k = paste0(tools::toTitleCase(case_type), " cases per 100,000 attributable to ", param_label),
-    AR_Fraction = paste0(tools::toTitleCase(case_type), " Attributable Fraction (%) due to ", param_label),
-    AR_Number = paste0("Number of ", tools::toTitleCase(case_type), " cases attributable to ", param_label)
+    AR_per_100k=paste0(tools::toTitleCase(case_type),
+                       " cases per 100,000 attributable to ",param_label),
+    AR_Fraction=paste0(tools::toTitleCase(case_type),
+                       " Attributable Fraction (%) due to ",param_label),
+    AR_Number=paste0("Number of ",
+                     tools::toTitleCase(case_type),
+                     " cases attributable to ",param_label)
   )
 
   formatter_lookup <- list(
-    AR_per_100k = scales::label_comma(),
-    AR_Fraction = scales::label_comma(),
-    AR_Number = scales::label_comma()
+    AR_per_100k=scales::label_comma(),
+    AR_Fraction=scales::label_comma(),
+    AR_Number=scales::label_comma()
   )
+  detect_ci <- function(data, metric){
+    cols <- grep(paste0("^",metric,"(_LCI|_UCI)$"),
+                 names(data), value=TRUE)
 
-  aggregate_attr_data <- function(data, group_var) {
-    dplyr::group_by(data, .data[[group_var]]) %>%
-      dplyr::summarise(
-        dplyr::across(matches("^AR_Number(_LCI|_UCI)?$"), ~ sum(.x, na.rm = TRUE)),
-        dplyr::across(matches("^AR_(Fraction|per_100k)(_LCI|_UCI)?$"), ~ mean(.x, na.rm = TRUE)),
-        .groups = "drop"
-      )
+    if(length(cols)==2){
+      list(has_ci=TRUE,
+           lci=cols[grepl("LCI$",cols)],
+           uci=cols[grepl("UCI$",cols)])
+    } else list(has_ci=FALSE)
   }
+  compute_limits <- function(data, metric, ci){
+    if(nrow(data)==0) return(NULL)
 
-  if (is.null(filter_year)) {
-    if (level == "country") {
-      attr_data <- aggregate_attr_data(attr_data, "year")
-    } else if (level %in% c("region", "district")) {
-      if (!(level %in% names(attr_data))) stop(paste0("'", level, "' column not found in data."))
-      attr_data <- aggregate_attr_data(attr_data, level)
+    if(ci$has_ci){
+      ymin <- min(data[[ci$lci]], na.rm=TRUE)
+      ymax <- max(data[[ci$uci]], na.rm=TRUE)
+    } else {
+      ymin <- min(data[[metric]], na.rm=TRUE)
+      ymax <- max(data[[metric]], na.rm=TRUE)
     }
+    pad <- 0.08*(ymax-ymin)
+    c(max(0,ymin-pad), ymax+pad)
   }
-
-  plots <- purrr::map(metrics, function(metric) {
-    lci_col <- paste0(metric, "_LCI")
-    uci_col <- paste0(metric, "_UCI")
-    x_var <- if (level %in% c("region", "district") && is.null(filter_year)) level else "year"
+  aggregate_country <- function(df){
+    df %>%
+      dplyr::group_by(year) %>%
+      dplyr::summarise(
+        dplyr::across(matches("^AR_Number(_LCI|_UCI)?$"),
+                      ~sum(.x,na.rm=TRUE)),
+        dplyr::across(matches("^AR_(Fraction|per_100k)(_LCI|_UCI)?$"),
+                      ~mean(.x,na.rm=TRUE)),
+        .groups="drop")
+  }
+  aggregate_spatial <- function(df, level){
+    df %>%
+      dplyr::group_by(.data[[level]]) %>%
+      dplyr::summarise(
+        dplyr::across(matches("^AR_Number(_LCI|_UCI)?$"),
+                      ~sum(.x,na.rm=TRUE)),
+        dplyr::across(matches("^AR_(Fraction|per_100k)(_LCI|_UCI)?$"),
+                      ~mean(.x,na.rm=TRUE)),
+        .groups="drop")
+  }
+  aggregate_panel <- function(df, level){
+    df %>%
+      dplyr::group_by(.data[[level]], year) %>%
+      dplyr::summarise(
+        AR_Fraction = mean(AR_Fraction, na.rm=TRUE),
+        dplyr::across(matches("^AR_Number(_LCI|_UCI)?$"),
+                      ~sum(.x,na.rm=TRUE)),
+        dplyr::across(matches("^AR_(per_100k)(_LCI|_UCI)?$"),
+                      ~mean(.x,na.rm=TRUE)),
+        .groups="drop")
+  }
+  ## PLOT LOOP
+  plots <- purrr::map(metrics, function(metric){
 
     title <- title_lookup[[metric]]
     y_formatter <- formatter_lookup[[metric]]
     y_label <- y_title_lookup[[metric]]
 
-    attr_data_plot <- attr_data %>%
-      dplyr::filter(!is.na(.data[[metric]]),
-                    !is.na(.data[[lci_col]]),
-                    !is.na(.data[[uci_col]]))
+    ##  SELECT DATA
+    if(level=="country"){
 
-    # --- Country-level plot with CI ---
-    if (level == "country" && is.null(filter_year)) {
-      attr_data_plot$year <- factor(attr_data_plot$year)
+      plot_data <- aggregate_country(attr_data)
 
-      # adjust y limits based on metric
-      y_limits <- if (metric == "AR_Fraction") {
-        c(0, 1.8*max(attr_data_plot[[metric]], na.rm = TRUE))
-      } else if (metric == "AR_Number") {
-        c(0, 1.8*max(attr_data_plot[[metric]], na.rm = TRUE))
-      } else {
-        c(0, 1.8*max(attr_data_plot[[metric]], na.rm = TRUE))
-      }
+    } else if(is.null(filter_year)){
 
-      # Add AF value in parentheses for AN only
-      attr_data_plot <- attr_data_plot %>%
-        mutate(label_text = if (metric == "AR_Number") {
-          paste0(round(.data[[metric]], 1), " (", round(AR_Fraction, 2), "%)")
-        } else {
-          round(.data[[metric]], 2)
-        })
+      plot_data <- aggregate_spatial(attr_data, level)
 
-      p <- ggplot2::ggplot(attr_data_plot, ggplot2::aes(x = year, y = .data[[metric]], group = 1)) +
-        ggplot2::geom_line(color = "steelblue", linewidth = 1) +
-        ggplot2::geom_point(color = "steelblue", size = 2) +
-        ggplot2::geom_ribbon(ggplot2::aes(ymin = .data[[lci_col]], ymax = .data[[uci_col]]),
-                             alpha = 0.2, fill = "steelblue") +
-        ggplot2::geom_text(ggplot2::aes(label = label_text), vjust = -1.2, size = 2) +
-        ggplot2::labs(title = paste(title, " (95% CI)"), y = y_label, x = "Year") +
-        ggplot2::scale_y_continuous(labels = y_formatter, limits = y_limits) +
-        ggplot2::theme_minimal(base_size = 10) +
-        ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, size = 12, face = "bold"))
+    } else {
 
-      if (save_fig && !is.null(output_dir)) {
-        if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
-        ggplot2::ggsave(filename = file.path(output_dir, paste0("plot_", metric, "_", param_term, "_country.pdf")),
-                        plot = p, width = 8, height = 5)
-      }
-      return(p)
+      plot_data <- attr_data %>%
+        dplyr::filter(year %in% filter_year) %>%
+        aggregate_panel(level)
     }
 
-    # --- Region/District bar plots ---
-    if (level %in% c("region", "district") && is.null(filter_year)) {
-      attr_data_plot <- attr_data_plot %>%
-        dplyr::arrange(dplyr::desc(.data[[metric]])) %>%
-        dplyr::mutate(!!level := factor(.data[[level]], levels = unique(.data[[level]]))) %>%
-        dplyr::mutate(label_text = if (metric == "AR_Number") {
-          paste0(round(.data[[metric]], 1), " (", round(.data$AR_Fraction, 2), "%)")
-        } else {
-          paste0(round(.data[[metric]], 1))
-        })
+    if(nrow(plot_data)==0)
+      stop("No data available after filtering.")
 
-      # dynamic y-axis limits
-      max_y <- max(attr_data_plot[[metric]], na.rm = TRUE)
-      y_limits <- if (metric == "AR_Fraction") {
-        c(0, 1.8*max(attr_data_plot[[metric]], na.rm = TRUE))
-      } else if (metric == "AR_Number") {
-        c(0, 1.8*max(attr_data_plot[[metric]], na.rm = TRUE))
-      } else {
-        c(0, 1.8*max(attr_data_plot[[metric]], na.rm = TRUE))
+    ci <- detect_ci(plot_data, metric)
+    y_limits <- compute_limits(plot_data, metric, ci)
+
+    plot_data <- plot_data %>%
+      dplyr::mutate(
+        label_text = dplyr::case_when(
+
+          metric == "AR_Number" &
+            "AR_Fraction" %in% names(.) ~
+
+            paste0(
+              scales::comma(round(.data[[metric]],0)),
+              " (",
+              scales::number(AR_Fraction, accuracy = 0.01),
+              "%)"
+            ),
+
+          metric == "AR_Fraction" ~
+            paste0(
+              scales::number(.data[[metric]], accuracy = 0.01),
+              "%"
+            ),
+
+          metric == "AR_per_100k" ~
+            scales::number(.data[[metric]], accuracy = 0.01),
+
+          TRUE ~ as.character(.data[[metric]])
+        )
+      )
+
+    ## COUNTRY
+    if(level=="country"){
+
+      plot_data$year <- factor(plot_data$year)
+
+      p <- ggplot2::ggplot(plot_data,
+                           ggplot2::aes(year,.data[[metric]],group=1))+
+        ggplot2::geom_line(color="steelblue",linewidth=1)+
+        ggplot2::geom_point(color="steelblue",size=2)
+
+      if(ci$has_ci){
+        p <- p +
+          ggplot2::geom_ribbon(
+            ggplot2::aes(
+              ymin=.data[[ci$lci]],
+              ymax=.data[[ci$uci]]),
+            fill="steelblue",
+            alpha=.2)
       }
 
-      district_plots <- attr_data_plot %>%
-        split(ceiling(seq_along(attr_data_plot[[level]]) / 30)) %>%
-        purrr::map(~ {
-          ggplot2::ggplot(.x, ggplot2::aes(x = .data[[level]], y = .data[[metric]])) +
-            ggplot2::geom_col(fill = "steelblue", width = 0.6) +
-            ggplot2::geom_text(ggplot2::aes(label = label_text), hjust = -0.1, size = 2.8) +
-            ggplot2::coord_flip() +
-            ggplot2::labs(x = tools::toTitleCase(level), y = y_label) +
-            ggplot2::scale_y_continuous(labels = y_formatter, limits = y_limits) +
-            ggplot2::theme_minimal(base_size = 10) +
-            ggplot2::theme(axis.text.y = ggplot2::element_text(size = 7),
-                           plot.title = ggplot2::element_text(hjust = 0.5, size = 9))
-        })
+      return(
+        p+
+          ggplot2::geom_text(
+            ggplot2::aes(label=label_text),
+            vjust=-1.1,size=2.8)+
+          ggplot2::labs(
+            title=paste0(title,
+                         if(ci$has_ci)" (95% CI)" else ""),
+            x="Year",y=y_label)+
+          ggplot2::scale_y_continuous(
+            labels=y_formatter,
+            limits=y_limits)+
+          ggplot2::theme_minimal(base_size=10)+
+          ggplot2::theme(
+            plot.title=ggplot2::element_text(
+              hjust=.5,face="bold"))
+      )
+    }
+    ##  REGION/DISTRICT (NO YEAR)
+    if(is.null(filter_year)){
 
-      if (save_fig && !is.null(output_dir)) {
-        if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
-        pdf_file <- file.path(output_dir, paste0("plot_", metric, "_", param_term, "_", level, ".pdf"))
-        grDevices::pdf(pdf_file, width = 11, height = 8)
-        for (i in seq_along(district_plots)) {
-          merged_plot <- patchwork::wrap_plots(district_plots[i], ncol = 1) +
-            patchwork::plot_annotation(
-              title = paste(title, "by", tools::toTitleCase(level)),
-              theme = ggplot2::theme(plot.title = ggplot2::element_text(size = 10, face = "bold", hjust = 0.5))
-            )
-          print(merged_plot)
-        }
-        grDevices::dev.off()
-      }
-      return(district_plots)
+      plot_data[[level]] <-
+        factor(plot_data[[level]],
+               levels=plot_data[[level]][
+                 order(plot_data[[metric]],decreasing=TRUE)])
+
+      return(
+        ggplot2::ggplot(plot_data,
+                        ggplot2::aes(.data[[level]],
+                                     .data[[metric]]))+
+          ggplot2::geom_col(fill="steelblue")+
+          ggplot2::geom_text(
+            ggplot2::aes(label=label_text),
+            hjust=-.1,size=2.8)+
+          ggplot2::coord_flip()+
+          ggplot2::labs(title=title,
+                        x=tools::toTitleCase(level),
+                        y=y_label)+
+          ggplot2::scale_y_continuous(
+            labels=y_formatter,
+            limits=y_limits)+
+          ggplot2::theme_minimal(base_size=10)
+      )
     }
 
-    # --- Region/District grouped by year (no CI) ---
-    if (!is.null(filter_year) && length(filter_year) >= 1 && level %in% c("region", "district")) {
-      attr_data_plot <- attr_data_plot %>%
-        group_by(.data[[level]], year) %>%
-        summarise(
-          AR_Fraction = mean(AR_Fraction, na.rm = TRUE),
-          across(matches("^AR_Number(_LCI|_UCI)?$"), ~ sum(.x, na.rm = TRUE)),
-          across(matches("^AR_(per_100k)(_LCI|_UCI)?$"), ~ mean(.x, na.rm = TRUE)),
-          .groups = "drop"
-        ) %>%
-        mutate(label_text = if (metric == "AR_Number") {
-          paste0(round(.data[[metric]], 1), " (", round(.data$AR_Fraction, 2), "%)")
-        } else {
-          paste0(round(.data[[metric]], 2))
-        })
+    ## ORDER REGION/DISTRICT BY HIGHEST TO LOWEST
+    rank_fun <- if(metric=="AR_Number") sum else mean
+    ordering <- plot_data %>%
+      dplyr::group_by(.data[[level]]) %>%
+      dplyr::summarise(
+        ord = rank_fun(.data[[metric]], na.rm=TRUE),
+        .groups="drop"
+      ) %>%
+      dplyr::arrange(dplyr::desc(ord)) %>%
+      dplyr::pull(.data[[level]])
 
-      level_vals <- attr_data_plot %>%
-        group_by(.data[[level]]) %>%
-        summarise(avg = mean(.data[[metric]], na.rm = TRUE), .groups = "drop") %>%
-        arrange(desc(avg)) %>%
-        pull(.data[[level]])
+    plot_data[[level]] <- factor(plot_data[[level]], levels=ordering)
 
-      attr_data_plot[[level]] <- factor(attr_data_plot[[level]], levels = level_vals)
-      split_levels <- split(level_vals, ceiling(seq_along(level_vals) / 20))
-
-      group_plots <- purrr::map(split_levels, function(subset_levels) {
-        df <- dplyr::filter(attr_data_plot, .data[[level]] %in% subset_levels)
-
-        # dynamic limits again
-        max_y <- max(df[[metric]], na.rm = TRUE)
-        y_limits <- if (metric == "AR_Fraction") {
-          c(0, 1.5*max(attr_data_plot[[metric]], na.rm = TRUE))
-        } else if (metric == "AR_Number") {
-          c(0, 1.5*max(attr_data_plot[[metric]], na.rm = TRUE))
-        } else {
-          c(0, 1.5*max(attr_data_plot[[metric]], na.rm = TRUE))
-        }
-
-        ggplot2::ggplot(df, ggplot2::aes(x = .data[[level]], y = .data[[metric]], fill = factor(year))) +
-          ggplot2::geom_col(position = ggplot2::position_dodge(width = 0.8)) +
-          ggplot2::geom_text(ggplot2::aes(label = label_text),
-                    position = ggplot2::position_dodge(width = 0.8), vjust = -0.3, size = 3.5) +
-          ggplot2::scale_y_continuous(labels = y_formatter, limits = y_limits) +
-          ggplot2::labs(x = tools::toTitleCase(level), y = y_label, fill = "Year") +
-          {if (length(unique(df$year)) == 1) {
-            ggplot2::scale_fill_manual(values = c("steelblue"))
-          } else {ggplot2::scale_fill_brewer(palette = "Set2")}} +
-          ggplot2::theme_minimal(base_size = 12) +
-          ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 70, hjust = 1, size = 12),
-                axis.text.y = ggplot2::element_text(size = 12),
-                plot.margin = ggplot2::margin(t = 5, r = 5, b = 50, l = 5))
-      })
-
-      if (save_fig && !is.null(output_dir)) {
-        if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
-        pdf_file <- file.path(output_dir, paste0("plot_", metric, "_", param_term, "_Year_", level, ".pdf"))
-        pdf(pdf_file, width = 11, height = 8)
-        for (i in seq_along(group_plots)) {
-          merged <- patchwork::wrap_plots(group_plots[i], ncol = 1) +
-            patchwork::plot_annotation(
-              title = paste(title, "by Year and", tools::toTitleCase(level)),
-              theme = ggplot2::theme(plot.title = ggplot2::element_text(size = 10, face = "bold", hjust = 0.5))
-            )
-          print(merged)
-        }
-        grDevices::dev.off()
-      }
-      return(group_plots)
-    }
+    ## REGION/DISTRICT BY YEAR
+    ggplot2::ggplot(
+      plot_data,
+      ggplot2::aes(.data[[level]],
+                   .data[[metric]],
+                   fill=factor(year)))+
+      ggplot2::geom_col(position="dodge")+
+      ggplot2::geom_text(
+        ggplot2::aes(label=label_text),
+        position=ggplot2::position_dodge(.9),
+        vjust=-.3,size=2.5)+
+      ggplot2::scale_fill_brewer(palette="Set2")+
+      ggplot2::labs(title=title,
+                    x=tools::toTitleCase(level),
+                    y=y_label,
+                    fill="Year")+
+      ggplot2::scale_y_continuous(
+        labels=y_formatter,
+        limits=y_limits)+
+      ggplot2::theme_minimal(base_size=12)+
+      ggplot2::theme(
+        axis.text.x=ggplot2::element_text(
+          angle=70,hjust=1))
   })
-
   return(plots)
 }
-
 
 #' Plot Average Monthly Attributable Health Metrics with Climate Overlays
 #'
