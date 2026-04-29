@@ -40,12 +40,12 @@
 #' columns, \code{nk = 2} yields a more flexible spline with three columns,
 #' and higher values of \code{nk} further increase flexibility but may also
 #' raise collinearity among spline terms. Defaults to 2.
-#' @param basis_matrices_choices Character vector. Specifies which climate variables
-#' to include in the basis matrix (e.g., `c("tmax", "rainfall", "r_humidity")`).
+#' @param basis_matrices_choices Character. Specifies which climate variable
+#' to include in the basis matrix (e.g., `"tmax"`).
 #' @param inla_param Character vector. Specifies exposure variables included in
 #' the INLA model (e.g., `c("tmin", "rainfall", "r_humidity")`).
-#' @param param_term Character or vector. Exposure variable(s) of primary interest
-#' for relative risk and attribution (e.g., `"tmax"`, `"rainfall"`).
+#' @param param_term Character. Exposure variable of primary interest
+#' for relative risk and attribution (e.g., `"tmax"`).
 #' @param level Character. Spatial disaggregation level; must be one of
 #' `"country"`, `"region"`, or `"district"`.
 #' @param param_threshold Numeric. Threshold above which exposure is considered
@@ -53,9 +53,7 @@
 #' @param filter_year Integer or vector (optional). Year(s) to filter the data by.
 #' Defaults to `NULL`.
 #' @param family Character. Probability distribution for the outcome variable.
-#' Options include `"poisson"` (default) and `"nbinomial"` for a negative binomial model.
-#' @param group_by_year Logical. Whether to group attributable metrics by year.
-#' Defaults to `FALSE`.
+#' Options include `"poisson"` and `"nbinomial"` for a negative binomial model.
 #' @param cumulative Boolean. If TRUE, plot and save cumulative risk of all year
 #' for the specific exposure at region and district level. Defaults to FALSE.
 #' @param config Logical. Whether to enable additional INLA model configurations.
