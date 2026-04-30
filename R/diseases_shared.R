@@ -436,7 +436,7 @@ combine_health_climate_data <- function(health_data_path,
     dplyr::mutate(
       region_code = dplyr::cur_group_id(),
       district_number = dplyr::row_number(),
-      district_code = as.integer(paste0(.data$region_code, .data$district_number))
+      district_code = sprintf("%03d%03d", region_code, district_number)
     ) %>%
     dplyr::ungroup()
 
