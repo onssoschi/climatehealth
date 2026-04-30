@@ -259,7 +259,10 @@ mh_model_validation <- function(
     save_fig = FALSE,
     save_csv = FALSE,
     output_folder_path = NULL,
-    seed = NULL) {
+    seed = NULL
+) {
+  cols <- get_accessible_palette()
+
   model_combo <- mh_model_combo_res(
     df_list = df_list,
     cb_list = cb_list,
@@ -267,22 +270,33 @@ mh_model_validation <- function(
   )
   qaic_results <- model_combo[[1]]
   residuals_list <- model_combo[[2]]
+
+  # Output directory for validation artifacts
+  dir_path <- file.path(output_folder_path, "model_validation")
+
+  # Save QAIC results if applicable
   if (save_csv == TRUE) {
-    dir_path <- file.path(output_folder_path, "model_validation")
     dir.create(dir_path, recursive = TRUE, showWarnings = FALSE)
-    write.csv(
-      qaic_results,
-      file = file.path(dir_path, "qaic_results.csv"),
-      row.names = FALSE
-    )
+
+    if (!is.null(qaic_results)) {
+      write.csv(
+        qaic_results,
+        file = file.path(dir_path, "qaic_results.csv"),
+        row.names = FALSE
+      )
+    }
   }
-  # calculate VIF if independent_cols is not NULL
+
+  # Calculate VIF if independent_cols is not NULL
   if (!is.null(independent_cols)) {
     vif_list <- dlnm_vif(
       df_list = df_list,
       independent_cols = independent_cols
     )
-    vif_results <- do.call(rbind, vif_list)
+
+    # Preserve region id if possible
+    vif_results <- dplyr::bind_rows(vif_list, .id = "Region")
+
     if (save_csv == TRUE) {
       write.csv(
         vif_results,
@@ -294,11 +308,16 @@ mh_model_validation <- function(
     vif_results <- NULL
   }
 
-  if (length(df_list) > 1 && !is.null(independent_cols)) {
-    # calculate QAIC summary
+  # Summaries (only meaningful when there are multiple regions and QAIC exists)
+  if (length(df_list) > 1 && !is.null(independent_cols) && !is.null(qaic_results)) {
     qaic_summary <- qaic_results %>%
-      group_by(formula) %>%
-      summarise(mean_disp = mean(.data$disp), mean_qaic = mean(.data$qaic))
+      dplyr::group_by(.data$formula) %>%
+      dplyr::summarise(
+        mean_disp = mean(.data$disp, na.rm = TRUE),
+        mean_qaic = mean(.data$qaic, na.rm = TRUE),
+        .groups = "drop"
+      )
+
     if (save_csv == TRUE) {
       write.csv(
         qaic_summary,
@@ -306,11 +325,19 @@ mh_model_validation <- function(
         row.names = FALSE
       )
     }
-    # conditionall calculate VIF summary
+
     if (!is.null(vif_results)) {
-      vif_summary <- vif_results %>%
-        dplyr::group_by(.data$variable_combo, .data$variable) %>%
-        dplyr::summarise(mean_vif = mean(.data$vif, na.rm = TRUE))
+      # If dlnm_vif returns variable_combo use it; otherwise summarise by variable only
+      if ("variable_combo" %in% names(vif_results)) {
+        vif_summary <- vif_results %>%
+          dplyr::group_by(.data$variable_combo, .data$variable) %>%
+          dplyr::summarise(mean_vif = mean(.data$vif, na.rm = TRUE), .groups = "drop")
+      } else {
+        vif_summary <- vif_results %>%
+          dplyr::group_by(.data$variable) %>%
+          dplyr::summarise(mean_vif = mean(.data$vif, na.rm = TRUE), .groups = "drop")
+      }
+
       if (save_csv == TRUE) {
         write.csv(
           vif_summary,
@@ -318,53 +345,53 @@ mh_model_validation <- function(
           row.names = FALSE
         )
       }
+    } else {
+      vif_summary <- NULL
     }
   } else {
-    qaic_summary <- vif_summary <- NULL
+    qaic_summary <- NULL
+    vif_summary <- NULL
   }
 
+  # Prepare region labels for saved outputs
   if (save_fig == TRUE) {
-    # Shorten the labels to a fixed length
     short_labels <- sapply(as.character(names(df_list)), function(x) {
-      x_clean <- gsub(" ", "", x) # remove all spaces
-      if (nchar(x_clean) > 10) {
-        substr(x_clean, 1, 10) # truncate to first 10 characters
-      } else {
-        x_clean
-      }
+      x_clean <- gsub(" ", "", x)
+      if (nchar(x_clean) > 10) substr(x_clean, 1, 10) else x_clean
     })
-    # Assign names to the list
     named_label_list <- as.list(short_labels)
     names(named_label_list) <- names(df_list)
   }
-  if ((nrow(do.call(rbind, do.call(rbind, residuals_list))) > 100000) & (save_fig == TRUE)) {
+
+  # Determine whether to sample residuals for heavy plots
+  if ((save_fig == TRUE) &&
+      (nrow(do.call(rbind, do.call(rbind, residuals_list))) > 100000)) {
     sample_check <- TRUE
   } else {
     sample_check <- FALSE
   }
+
+  # Plotting loop by region
   for (reg in names(df_list)) {
     region_data <- df_list[[reg]]
     formula_list <- residuals_list[[reg]]
-    if (save_fig == TRUE) {
-      named_label <- named_label_list[[reg]]
-    } else {
-      old_par <- graphics::par(no.readonly = TRUE)
-      on.exit(graphics::par(old_par), add = TRUE)
-    }
 
     if (save_fig == TRUE) {
+      named_label <- named_label_list[[reg]]
       reg_folder <- gsub(pattern = " ", replacement = "_", x = reg)
 
       output_folder_main <- file.path(output_folder_path, "model_validation", reg_folder)
       dir.create(output_folder_main, recursive = TRUE, showWarnings = FALSE)
-
-      grid <- c(min(length(formula_list), 3), ceiling(length(formula_list) / 3))
-      output_path <- paste0(output_folder_main, "/", named_label, "_residuals_timeseries.pdf")
-      pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
-
-      par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
     } else {
+      old_par <- graphics::par(no.readonly = TRUE)
+      on.exit(graphics::par(old_par), add = TRUE)
       graphics::par(mfrow = c(1, 1), mar = c(5.1, 4.1, 4.1, 2.1), oma = c(0, 0, 0, 0))
+    }
+
+    # 1) Residuals vs Date
+    if (save_fig == TRUE) {
+      output_path <- file.path(output_folder_main, paste0(named_label, "_residuals_timeseries.pdf"))
+      open_diag_pdf(output_path, length(formula_list))
     }
 
     for (i in names(formula_list)) {
@@ -373,52 +400,51 @@ mh_model_validation <- function(
         y = formula_list[[i]]$residuals,
         ylim = c(-5, 10),
         pch = 19,
-        cex = 0.2,
-        col = "#0A2E4D",
+        cex = 0.25,
+        col = cols$deep_water,
         main = unique(formula_list[[i]]$formula),
         ylab = "Deviance residuals",
         xlab = "Date"
       )
-
-      abline(h = 0, lty = 2, lwd = 2)
-
-      if (save_fig == TRUE) {
-        title <- paste0("Deviance Residuals by Date: ", reg)
-        mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
-      }
+      abline(h = 0, lty = 2, lwd = 2, col = cols$text)
     }
 
     if (save_fig == TRUE) {
-      dev.off()
+      close_diag_pdf(
+        title = paste0("Deviance residuals by date, ", reg),
+        subtitle = "Each panel shows one model specification.",
+        alt_text = paste(
+          "Alt text: Multi-panel scatter plot of deviance residuals against date for", reg, ".",
+          "Each panel corresponds to a model specification.",
+          "A dashed horizontal line marks zero residual."
+        )
+      )
     }
 
+    # Sampling for fitted and QQ plots
     if (sample_check == TRUE) {
       all_residuals <- do.call(rbind, formula_list)
 
       if (!is.null(seed)) {
         set.seed(seed)
       }
+
       sampled_residuals <- all_residuals %>%
         dplyr::group_by(.data$formula) %>%
         dplyr::sample_frac(0.2) %>%
         dplyr::ungroup()
 
       new_res_list <- split(sampled_residuals, sampled_residuals$formula)
-
       sample_title <- " (20% sample)"
     } else {
       new_res_list <- formula_list
       sample_title <- ""
     }
 
+    # 2) Residuals vs Fitted
     if (save_fig == TRUE) {
-      grid <- c(min(length(formula_list), 3), ceiling(length(new_res_list) / 3))
-      output_path <- paste0(output_folder_main, "/", named_label, "_residuals_fitted.pdf")
-      pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
-
-      par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
-    } else {
-      graphics::par(mfrow = c(1, 1), mar = c(5.1, 4.1, 4.1, 2.1), oma = c(0, 0, 0, 0))
+      output_path <- file.path(output_folder_main, paste0(named_label, "_residuals_fitted.pdf"))
+      open_diag_pdf(output_path, length(new_res_list))
     }
 
     for (i in names(new_res_list)) {
@@ -426,78 +452,110 @@ mh_model_validation <- function(
         x = jitter(new_res_list[[i]]$fitted, amount = 0.5),
         y = jitter(new_res_list[[i]]$residuals, amount = 0.5),
         pch = 19,
-        cex = 0.2,
-        col = "#0A2E4D",
+        cex = 0.25,
+        col = cols$deep_water,
         main = unique(new_res_list[[i]]$formula),
         ylab = "Deviance residuals",
         xlab = "Fitted values"
       )
-
-      abline(h = 0, lty = 2, lwd = 2)
-
-      if (save_fig == TRUE) {
-        title <- paste0("Deviance Residuals by Fitted Values: ", reg, sample_title)
-        mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
-      }
+      abline(h = 0, lty = 2, lwd = 2, col = cols$text)
     }
 
     if (save_fig == TRUE) {
-      dev.off()
+      close_diag_pdf(
+        title = paste0("Deviance residuals by fitted values, ", reg, sample_title),
+        subtitle = "Each panel shows one model specification.",
+        alt_text = paste(
+          "Alt text: Multi-panel scatter plot of deviance residuals against fitted values for", reg, sample_title, ".",
+          "Each panel corresponds to a model specification.",
+          "A dashed horizontal line marks zero residual."
+        )
+      )
     }
 
+    # 3) QQ Plot
     if (save_fig == TRUE) {
-      grid <- c(min(length(formula_list), 3), ceiling(length(new_res_list) / 3))
-      output_path <- paste0(output_folder_main, "/", named_label, "_qq_plot.pdf")
-      pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
-
-      par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0))
-    } else {
-      graphics::par(mfrow = c(1, 1), mar = c(5.1, 4.1, 4.1, 2.1), oma = c(0, 0, 0, 0))
+      output_path <- file.path(output_folder_main, paste0(named_label, "_qq_plot.pdf"))
+      open_diag_pdf(output_path, length(new_res_list))
     }
 
     for (i in names(new_res_list)) {
-      qqnorm(new_res_list[[i]]$residuals,
-             pch = 19,
-             cex = 0.2,
-             col = "#0A2E4D",
-             main = unique(new_res_list[[i]]$formula)
+      qqnorm(
+        new_res_list[[i]]$residuals,
+        pch = 19,
+        cex = 0.25,
+        col = cols$deep_water,
+        main = unique(new_res_list[[i]]$formula)
       )
-
-      qqline(new_res_list[[i]]$residuals, lwd = 2)
-
-      if (save_fig == TRUE) {
-        title <- paste0("Normal Q-Q Plot of Residuals: ", reg, sample_title)
-        mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
-      }
+      qqline(new_res_list[[i]]$residuals, lwd = 2, col = cols$text)
     }
 
     if (save_fig == TRUE) {
-      dev.off()
+      close_diag_pdf(
+        title = paste0("Normal Q-Q plot of residuals, ", reg, sample_title),
+        subtitle = "Each panel shows one model specification.",
+        alt_text = paste(
+          "Alt text: Multi-panel Q-Q plot of residuals for", reg, sample_title, ".",
+          "Each panel compares residual quantiles to a normal reference line."
+        )
+      )
     }
 
+    # 4) ACF and PACF plots with ACF on the left and PACF on the right
     if (save_fig == TRUE) {
-      grid <- c(min(length(formula_list), 2), ceiling(length(formula_list) / 3) * 2)
       output_path <- file.path(output_folder_main, paste0(named_label, "_residuals_acf_pacf.pdf"))
-      pdf(output_path, width = grid[1] * 5.5, height = grid[2] * 4.5)
 
-      par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 5, 0))
-    } else {
-      graphics::par(mfrow = c(1, 1), mar = c(5.1, 4.1, 4.1, 2.1), oma = c(0, 0, 0, 0))
+      # Two columns so ACF and PACF sit side by side for each model
+      open_accessible_pdf(
+        file = output_path,
+        n_plots = length(formula_list) * 2,
+        max_cols = 2,
+        panel_width = 6.2,
+        panel_height = 5.0,
+        mar = c(5.2, 4.8, 3.2, 3.8),
+        oma = c(6.2, 0.6, 7.2, 0.6)
+      )
     }
 
     for (i in names(formula_list)) {
       residuals_clean <- stats::na.omit(formula_list[[i]]$residuals)
-      stats::acf(residuals_clean, main = paste0("ACF: ", unique(formula_list[[i]]$formula)), col = "#7A855C")
-      stats::pacf(residuals_clean, main = paste0("PACF: ", unique(formula_list[[i]]$formula)), col = "#7A855C")
+      spec_label <- unique(formula_list[[i]]$formula)
+
+      stats::acf(
+        residuals_clean,
+        main = paste0("ACF: ", spec_label),
+        col = cols$olive_green
+      )
+
+      stats::pacf(
+        residuals_clean,
+        main = paste0("PACF: ", spec_label),
+        col = cols$olive_green
+      )
     }
 
     if (save_fig == TRUE) {
-      title <- paste0("Autocorrelation and Partial Autocorrelation of Residuals:\n", reg)
-      mtext(title, outer = TRUE, cex = 1.5, line = 0.5, font = 2)
+      run_accessible_pdf_plot(
+        title = paste0("Residual autocorrelation diagnostics, ", reg),
+        subtitle = "Each row shows one model specification. Left panel is ACF and right panel is PACF.",
+        line_title = 4.7,
+        line_subtitle = 3.0
+      )
+
+      add_accessible_alt_text(
+        alt_text = paste(
+          "Alt text: Multi-panel figure showing residual autocorrelation diagnostics for", reg, ".",
+          "Each row corresponds to one model specification.",
+          "The left panel shows the autocorrelation function (ACF) of residuals across lags,",
+          "and the right panel shows the partial autocorrelation function (PACF)."
+        ),
+        width = 150
+      )
 
       dev.off()
     }
   }
+
   return(list(qaic_results, qaic_summary, vif_results, vif_summary))
 }
 
@@ -775,12 +833,29 @@ mh_plot_power <- function(
     power_list,
     save_fig = FALSE,
     output_folder_path = NULL,
-    country = "National") {
+    country = "National"
+) {
+  cols <- get_accessible_palette()
+
   if (save_fig == TRUE) {
-    grid <- c(min(length(power_list), 3), ceiling(length(power_list) / 3))
-    output_path <- file.path(output_folder_path, "model_validation", "power_vs_temperature.pdf")
-    pdf(output_path, width = max(10, grid[1] * 5.5), height = max(7, grid[2] * 4.5))
-    par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0), mar = c(8, 4, 5, 4))
+    dir.create(
+      file.path(output_folder_path, "model_validation"),
+      recursive = TRUE,
+      showWarnings = FALSE
+    )
+
+    open_accessible_pdf(
+      file = file.path(output_folder_path, "model_validation", "power_vs_temperature.pdf"),
+      n_plots = length(power_list),
+      max_cols = 2,
+      panel_width = 6.8,
+      panel_height = 6.2,
+      mar = c(6.8, 5, 3.2, 4.2),
+      oma = c(7.5, 0.6, 9, 0.6)
+    )
+  } else {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
   }
 
   for (reg in names(power_list)) {
@@ -794,21 +869,56 @@ mh_plot_power <- function(
       xlab = "Temperature",
       ylab = "Power (%)",
       main = reg,
-      col = "#296991",
+      col = cols$deep_water,
       ylim = c(0, 100),
       lwd = 2
     )
 
     abline(
       h = 80,
-      col = "black",
-      lty = 2
+      col = cols$text,
+      lty = 2,
+      lwd = 1.5
     )
   }
 
   if (save_fig == TRUE) {
-    title <- paste0("Power vs Temperature by Area, ", country)
-    mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+    main_title <- paste0("Power vs temperature by area, ", country)
+    sub_title <- paste(
+      "Each panel shows the power statistic across temperature values.",
+      "The dashed horizontal line marks the 80% power reference threshold."
+    )
+
+    run_accessible_pdf_plot(
+      title = main_title,
+      subtitle = sub_title,
+      line_title = 4.9,
+      line_subtitle = 3.2
+    )
+
+    add_figure_legend(
+      legend = c("Power curve", "80% reference threshold"),
+      col = c(cols$deep_water, cols$text),
+      lty = c(1, 2),
+      lwd = c(2, 1.5),
+      pch = c(NA, NA),
+      pt.cex = c(1.2, 1.2),
+      cex = 1.05,
+      seg.len = 2,
+      inset = 0.03,
+      text.col = cols$text,
+      vpad = 0.028,
+      bty = "o"
+    )
+
+    add_accessible_alt_text(
+      alt_text = paste(
+        "Alt text: Multi-panel line chart showing statistical power against temperature by area.",
+        "Each panel contains a line showing power percentage across temperatures.",
+        "A dashed horizontal line marks the 80 percent reference threshold."
+      )
+    )
+
     dev.off()
   }
 }
@@ -901,7 +1011,10 @@ mh_plot_rr <- function(
     minpercreg,
     country = "National",
     save_fig = FALSE,
-    output_folder_path = NULL) {
+    output_folder_path = NULL
+) {
+  cols <- get_accessible_palette()
+
   if (!save_fig) {
     old_par <- graphics::par(no.readonly = TRUE)
     on.exit(graphics::par(old_par), add = TRUE)
@@ -923,44 +1036,56 @@ mh_plot_rr <- function(
     hist(x$temp, breaks = breaks, plot = FALSE)$counts
   })), na.rm = TRUE)
 
-
   if (save_fig == TRUE) {
-    grid <- c(min(length(pred_list), 3), ceiling(length(pred_list) / 3))
-
-    output_path <- file.path(output_folder_path, "suicides_rr_plot.pdf")
-    pdf(output_path, width = max(10, grid[1] * 5.5), height = max(7, grid[2] * 4))
-
-    layout_ids <- seq_len(grid[1] * grid[2])
-    layout_matrix <- matrix(layout_ids, nrow = grid[2], ncol = grid[1], byrow = TRUE)
-
-    layout(layout_matrix, heights = rep(1, grid[2]), widths = rep(1, grid[1]))
-
-    par(oma = c(0, 1, 4, 1))
+    open_accessible_pdf(
+      file = file.path(output_folder_path, "suicides_rr_plot.pdf"),
+      n_plots = length(pred_list),
+      max_cols = 2,
+      panel_width = 7.8,
+      panel_height = 5.4,
+      mar = c(5.4, 5.4, 3.8, 4.4),
+      oma = c(7.5, 0.6, 9, 0.6)
+    )
   }
 
   for (reg in names(pred_list)) {
     region_pred <- pred_list[[reg]]
     region_temp <- df_list[[reg]]$temp
 
-    par(mar = c(5, 5, 4, 5) + 0.1)
+    graphics::par(mar = c(5, 5, 4, 5) + 0.1)
 
-    plot(region_pred,
-         "overall",
-         xlab = expression(paste("Temperature (", degree, "C)")),
-         ylab = "RR",
-         ylim = ylim,
-         xlim = xlim,
-         main = reg,
-         col = "#296991"
+    # Base RR curve with crosspred plot
+    plot(
+      region_pred,
+      "overall",
+      xlab = expression(paste("Temperature (", degree, "C)")),
+      ylab = "Relative risk",
+      ylim = ylim,
+      xlim = xlim,
+      main = reg,
+      col = cols$deep_water
     )
 
-    vline_pos_max_x <- quantile(region_temp, attr_thr / 100, na.rm = TRUE)
-    vline_pos_max_y <- max(region_pred$allRRfit, na.rm = TRUE) + 0.3
-    vline_lab_max <- paste0("Attr. Risk Threshold\n", round(vline_pos_max_x, 2), intToUtf8(176), "C (p", attr_thr, ")")
+    # Attributable risk threshold line
+    vline_pos_thr_x <- quantile(region_temp, attr_thr / 100, na.rm = TRUE)
+    vline_pos_thr_y <- max(region_pred$allRRfit, na.rm = TRUE) + 0.3
+    vline_lab_thr <- paste0(
+      "Attributable risk threshold\n",
+      round(vline_pos_thr_x, 1), intToUtf8(176), "C (p", attr_thr, ")"
+    )
 
-    abline(v = vline_pos_max_x, col = "black", lty = 2)
-    text(x = vline_pos_max_x, y = vline_pos_max_y, labels = vline_lab_max, pos = 2, col = "black", cex = 0.8)
+    graphics::abline(v = vline_pos_thr_x, col = cols$text, lty = 2, lwd = 1.5)
+    graphics::text(
+      x = vline_pos_thr_x,
+      y = vline_pos_thr_y,
+      labels = vline_lab_thr,
+      pos = 2,
+      col = cols$text,
+      cex = 0.8,
+      font = 2
+    )
 
+    # Minimum suicide temperature (centering percentile) line
     vline_pos_min_x <- quantile(region_temp, minpercreg[reg] / 100, na.rm = TRUE)
     min_rr <- min(region_pred$allRRfit, na.rm = TRUE)
 
@@ -970,43 +1095,59 @@ mh_plot_rr <- function(
       vline_pos_min_y <- min_rr - 0.1
     }
 
-    vline_lab_min <- paste0("Min ST\n", round(vline_pos_min_x, 2), intToUtf8(176), "C (p", round(minpercreg[reg], 2), ")")
-
-    abline(v = vline_pos_min_x, col = "black", lty = 2)
-    text(x = vline_pos_min_x, y = vline_pos_min_y, labels = vline_lab_min, pos = 4, col = "black", cex = 0.8)
-
-    reg_temp_range <- range(region_temp, na.rm = TRUE)
-
-    hist_data <- hist(region_temp,
-                      breaks = seq(floor(reg_temp_range[1]), ceiling(reg_temp_range[2]), by = 1),
-                      plot = FALSE
+    vline_lab_min <- paste0(
+      "Minimum ST\n",
+      round(vline_pos_min_x, 1), intToUtf8(176), "C (p", round(minpercreg[reg], 2), ")"
     )
 
-    hist_scale <- (0.3) / hist_max
+    graphics::abline(v = vline_pos_min_x, col = cols$text, lty = 3, lwd = 1.5)
+    graphics::text(
+      x = vline_pos_min_x,
+      y = vline_pos_min_y,
+      labels = vline_lab_min,
+      pos = 4,
+      col = cols$text,
+      cex = 0.8,
+      font = 2
+    )
+
+    # Histogram overlay (scaled to sit at bottom of RR plot)
+    reg_temp_range <- range(region_temp, na.rm = TRUE)
+
+    hist_data <- hist(
+      region_temp,
+      breaks = seq(floor(reg_temp_range[1]), ceiling(reg_temp_range[2]), by = 1),
+      plot = FALSE
+    )
+
+    hist_scale <- 0.4 / hist_max
     scaled_counts <- hist_data$counts * hist_scale
 
     for (i in seq_along(hist_data$counts)) {
-      rect(
+      graphics::rect(
         xleft = hist_data$breaks[i],
         xright = hist_data$breaks[i + 1],
         ybottom = ylim[1],
         ytop = ylim[1] + scaled_counts[i],
-        col = "#C75E70",
+        col = cols$dusky_rose,
         border = "white"
       )
     }
 
+    # Right axis for histogram frequency
     axis_labels <- pretty(c(0, hist_max), n = 2)
-    axis_scaled <- c(ylim[1], ylim[1] + (c(axis_labels[-1]) * hist_scale))
-    axis(side = 4, at = axis_scaled, labels = axis_labels, las = 1)
+    axis_scaled <- c(ylim[1], ylim[1] + (axis_labels[-1] * hist_scale))
 
-    hist_midpoint <- ylim[1] + (max(scaled_counts, na.rm = TRUE) / 2)
-
-    # Normalize midpoint to [0, 1] scale for adj
-    adj_val <- (hist_midpoint - ylim[1]) / (ylim[2] - ylim[1])
-
-    # Add axis title with dynamic vertical alignment
-    mtext("Frequency", side = 4, line = 3, adj = adj_val, cex = 0.7)
+    add_right_axis_label(
+      at = axis_scaled,
+      labels = axis_labels,
+      ylim = ylim,
+      side_label = "Frequency (days)",
+      axis_col = cols$text,
+      cex_axis = 0.85,
+      cex_label = 0.75,
+      line = 2.9
+    )
   }
 
   if (save_fig == TRUE) {
@@ -1018,11 +1159,54 @@ mh_plot_rr <- function(
       ")"
     )
 
-    title <- paste0("Relative Risk of Suicide by Mean Temperature and Area, ", country, " ", year_range)
+    main_title <- paste0(
+      "Relative risk of suicide by mean temperature and area, ",
+      country, " ", year_range
+    )
 
-    mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+    sub_title <- paste(
+      "Each panel shows a relative risk curve with vertical reference lines for",
+      "the attributable risk threshold and the minimum suicide temperature, plus a histogram of observed temperatures."
+    )
 
-    dev.off()
+    run_accessible_pdf_plot(
+      title = main_title,
+      subtitle = sub_title,
+      line_title = 4.9,
+      line_subtitle = 3.2
+    )
+
+    # Legend nudged down a bit using vpad
+    add_figure_legend(
+      legend = c(
+        "Relative risk curve",
+        "Attributable risk threshold",
+        "Minimum suicide temperature",
+        "Histogram (temperature frequency)"
+      ),
+      col = c(cols$deep_water, cols$text, cols$text, cols$dusky_rose),
+      lty = c(1, 2, 3, NA),
+      lwd = c(2.5, 1.5, 1.5, NA),
+      pch = c(NA, NA, NA, 15),
+      pt.cex = c(1.2, 1.2, 1.2, 1.7),
+      cex = 1.03,
+      seg.len = 2,
+      text.col = cols$text,
+      vpad = 0.033,
+      bty = "o"
+    )
+
+    add_accessible_alt_text(
+      alt_text = paste(
+        "Alt text: Multi-panel figure showing relative risk of suicide across temperature for each area.",
+        "Each panel contains a relative risk curve and two vertical reference lines marking the attributable risk threshold",
+        "and the minimum suicide temperature. A histogram at the bottom of each panel shows the frequency of observed temperatures.",
+        "A right-hand axis reports histogram frequency in days."
+      ),
+      width = 200
+    )
+
+    grDevices::dev.off()
   }
 }
 
@@ -1215,34 +1399,22 @@ mh_plot_attr_totals <- function(
     res_attr_tot,
     save_fig = FALSE,
     output_folder_path = NULL,
-    country = "National") {
-  if (save_fig == TRUE) {
-    num_regions <- nrow(res_attr_tot)
+    country = "National"
+) {
+  cols <- get_accessible_palette()
 
-    # Dynamically adjust height based on number of regions
-    chart_height <- 6
-    chart_width <- 0.3 * num_regions # adjust as needed
-    total_width <- max(8, chart_width)
-
-    output_path <- file.path(output_folder_path, "suicides_total_attr_plot.pdf")
-    pdf(output_path, width = total_width, height = chart_height * 2)
-
-    # Set up layout: 1 row for barplot and 1 row for table
-    layout(matrix(c(1, 2), nrow = 2), heights = c(chart_height, chart_height))
-
-    # Set up plotting area for the bar chart
-    par(mar = c(10, 5, 4, 2), oma = c(1, 0, 0, 0))
+  if (!save_fig) {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
+    graphics::par(mfrow = c(2, 1))
   }
 
-  # Shorten the labels to a fixed length
-  short_labels <- sapply(as.character(res_attr_tot$region), function(x) {
-    if (nchar(x) - 3 > 10) {
-      paste0(substr(x, 1, 10), "...")
-    } else {
-      x
-    }
-  })
+  num_regions <- nrow(res_attr_tot)
 
+  # Shorten labels to keep the y-axis readable
+  short_labels <- sapply(as.character(res_attr_tot$region), function(x) {
+    if (nchar(x) > 28) paste0(substr(x, 1, 28), "...") else x
+  })
   names(short_labels) <- NULL
 
   year_range <- paste0(
@@ -1253,74 +1425,131 @@ mh_plot_attr_totals <- function(
     ")"
   )
 
-  # Calculate CI ranges
-  af_ci_range <- c(min(res_attr_tot$af_lower_ci), max(res_attr_tot$af_upper_ci))
-  ar_ci_range <- c(min(res_attr_tot$ar_lower_ci), max(res_attr_tot$ar_upper_ci))
+  # CI range warnings (overall)
+  af_ci_range <- c(min(res_attr_tot$af_lower_ci, na.rm = TRUE),
+                   max(res_attr_tot$af_upper_ci, na.rm = TRUE))
+  ar_ci_range <- c(min(res_attr_tot$ar_lower_ci, na.rm = TRUE),
+                   max(res_attr_tot$ar_upper_ci, na.rm = TRUE))
 
-  # Format warning messages
-  af_warning <- sprintf("Warning: AF CI's range from %.2f%% to %.2f%%", af_ci_range[1], af_ci_range[2])
-  ar_warning <- sprintf("Warning: AR CI's range from %.2f to %.2f per 100,000", ar_ci_range[1], ar_ci_range[2])
+  af_warning <- sprintf("Warning: AF CI's range from %.2f%% to %.2f%%",
+                        af_ci_range[1], af_ci_range[2])
+  ar_warning <- sprintf("Warning: AR CI's range from %.2f to %.2f per 100,000",
+                        ar_ci_range[1], ar_ci_range[2])
   ovr_warning <- "(Please refer to the associated data table for more information on the uncertainty around each estimate)"
 
-  # Sort by AF descending
-  sorted_indices <- order(res_attr_tot$af, decreasing = TRUE)
-  res_af_tot <- res_attr_tot[sorted_indices, ]
-  short_labs_af <- short_labels[sorted_indices]
+  if (save_fig == TRUE) {
+    # Make the plot taller when there are many regions
+    panel_height <- max(7.5, 0.45 * num_regions)
 
-  # Define bar colors
-  bar_col_af <- rep("#296991", length(short_labs_af))
-  nat_ind_af <- which(res_af_tot$region == country)
-  if (length(nat_ind_af) > 0) {
-    bar_col_af[nat_ind_af] <- "#7a855c" # Highlight color
+    open_accessible_pdf(
+      file = file.path(output_folder_path, "suicides_total_attr_plot.pdf"),
+      n_plots = 2,
+      max_cols = 1,
+      panel_width = 13,
+      panel_height = panel_height,
+      mar = c(7.5, 12, 5, 2),
+      oma = c(7.5, 1, 4.8, 1)
+    )
+  } else {
+    graphics::par(mar = c(7.5, 12, 2.5, 2))
   }
 
-  barplot(
+  # Panel 1: AF (horizontal bar)
+  sorted_indices_af <- order(res_attr_tot$af, decreasing = FALSE)
+  res_af_tot <- res_attr_tot[sorted_indices_af, ]
+  short_labs_af <- short_labels[sorted_indices_af]
+
+  bar_col_af <- rep(cols$deep_water, length(short_labs_af))
+  nat_ind_af <- which(res_af_tot$region == country)
+  if (length(nat_ind_af) > 0) bar_col_af[nat_ind_af] <- cols$olive_green
+
+  graphics::barplot(
     names.arg = short_labs_af,
     height = res_af_tot$af,
-    ylab = "AF (%)",
-    main = paste0("Attributable Fraction of Suicides by Area, ", country, " ", year_range),
+    xlab = "Attributable fraction (AF, %)",
+    main = paste0("Attributable fraction of suicides by area, ", country, " ", year_range),
     col = bar_col_af,
-    las = 2,
-    horiz = FALSE
+    las = 1,
+    horiz = TRUE,
+    xlim = c(0, max(res_af_tot$af, na.rm = TRUE) * 1.15),
+    cex.main = 1.25
   )
 
-  mtext(af_warning, side = 1, line = 7, cex = 0.8, col = "red", font = 3)
-  mtext(ovr_warning, side = 1, line = 8, cex = 0.8, col = "red", font = 3)
+  graphics::mtext(af_warning, side = 1, line = 4.2, cex = 1, col = "red", font = 3)
+  graphics::mtext(ovr_warning, side = 1, line = 5.35, cex = 1, col = "red", font = 3)
 
+  # Panel 2: AR (horizontal bar)
   if (save_fig == TRUE) {
-    par(mar = c(10, 5, 4, 2))
+    graphics::par(mar = c(7.5, 12, 5, 2))
   }
 
-  # Sort by AF descending
-  sorted_indices <- order(res_attr_tot$ar, decreasing = TRUE)
-  res_ar_tot <- res_attr_tot[sorted_indices, ]
-  short_labs_ar <- short_labels[sorted_indices]
+  sorted_indices_ar <- order(res_attr_tot$ar, decreasing = FALSE)
+  res_ar_tot <- res_attr_tot[sorted_indices_ar, ]
+  short_labs_ar <- short_labels[sorted_indices_ar]
 
-  # Define bar colors
-  bar_col_ar <- rep("#c75e70", length(short_labs_ar))
+  bar_col_ar <- rep(cols$dusky_rose, length(short_labs_ar))
   nat_ind_ar <- which(res_ar_tot$region == country)
-  if (length(nat_ind_ar) > 0) {
-    bar_col_ar[nat_ind_ar] <- "#7a855c" # Highlight color
-  }
+  if (length(nat_ind_ar) > 0) bar_col_ar[nat_ind_ar] <- cols$olive_green
 
-  barplot(
+  graphics::barplot(
     names.arg = short_labs_ar,
     height = res_ar_tot$ar,
-    ylab = "AR (per 100,000 population)",
-    main = paste0("Attributable Rate of Suicides by Area, ", country, " ", year_range),
+    xlab = "Attributable rate (AR, per 100,000 population)",
+    main = paste0("Attributable rate of suicides by area, ", country, " ", year_range),
     col = bar_col_ar,
-    las = 2,
-    horiz = FALSE
+    las = 1,
+    horiz = TRUE,
+    xlim = c(0, max(res_ar_tot$ar, na.rm = TRUE) * 1.15),
+    cex.main = 1.25
   )
 
-  mtext(ar_warning, side = 1, line = 7, cex = 0.8, col = "red", font = 3)
-  mtext(ovr_warning, side = 1, line = 8, cex = 0.8, col = "red", font = 3)
+  graphics::mtext(ar_warning, side = 1, line = 4.2, cex = 1, col = "red", font = 3)
+  graphics::mtext(ovr_warning, side = 1, line = 5.35, cex = 1, col = "red", font = 3)
 
+  # Figure title, legend, alt text
   if (save_fig == TRUE) {
-    dev.off()
+    main_title <- paste0("Suicides attributable to extreme heat by area, ", country, " ", year_range)
+    sub_title <- paste(
+      "Top panel shows attributable fraction (AF) and bottom panel shows attributable rate (AR).",
+      "The highlighted bar represents", country, "."
+    )
+
+    run_accessible_pdf_plot(
+      title = main_title,
+      subtitle = sub_title,
+      line_title = 2.2,
+      line_subtitle = 1.15
+    )
+
+    # Legend moved down a bit using vpad
+    add_figure_legend(
+      legend = c("Area estimate", paste0("Highlighted: ", country)),
+      col = c(cols$deep_water, cols$olive_green),
+      lty = c(NA, NA),
+      lwd = c(NA, NA),
+      pch = c(15, 15),
+      pt.cex = 1.6,
+      cex = 1.02,
+      seg.len = 2,
+      text.col = cols$text,
+      vpad = 0.055,
+      bty = "o"
+    )
+
+    add_accessible_alt_text(
+      alt_text = paste(
+        "Alt text: Two-panel horizontal bar chart of suicides attributable to extreme heat by area.",
+        "The top panel shows attributable fraction in percent and the bottom panel shows attributable rate per 100,000 population.",
+        "Areas are listed on the y-axis.",
+        "The", country, "bar is highlighted in green.",
+        "Warning text below each panel summarises the overall confidence interval range."
+      ),
+      width = 170
+    )
+
+    grDevices::dev.off()
   }
 }
-
 
 #' Plot attributable fractions by year
 #'
@@ -1342,13 +1571,25 @@ mh_plot_af_yearly <- function(
     attr_yr_list,
     save_fig = FALSE,
     output_folder_path = NULL,
-    country = "National") {
-  if (save_fig == TRUE) {
-    grid <- c(min(length(attr_yr_list), 3), ceiling(length(attr_yr_list) / 3))
-    output_path <- file.path(output_folder_path, "suicides_af_timeseries.pdf")
-    pdf(output_path, width = max(10, grid[1] * 5.5), height = max(7, grid[2] * 4.5))
+    country = "National"
+) {
+  cols <- get_accessible_palette()
 
-    par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0), mar = c(8, 4, 5, 4))
+  if (!save_fig) {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
+  }
+
+  if (save_fig == TRUE) {
+    open_accessible_pdf(
+      file = file.path(output_folder_path, "suicides_af_timeseries.pdf"),
+      n_plots = length(attr_yr_list),
+      max_cols = 2,
+      panel_width = 6.8,
+      panel_height = 6.6,
+      mar = c(7.2, 5, 3.2, 4.2),
+      oma = c(7.5, 0.6, 9, 0.6)
+    )
   }
 
   year_min <- min(sapply(attr_yr_list, function(x) min(x$year, na.rm = TRUE)))
@@ -1361,6 +1602,9 @@ mh_plot_af_yearly <- function(
 
   for (reg in names(attr_yr_list)) {
     region_af <- as.data.frame(attr_yr_list[[reg]])
+    region_af <- region_af[order(region_af$year), ]
+
+    graphics::par(mar = c(7.2, 5, 3.4, 4.2))
 
     plot(
       x = region_af$year,
@@ -1369,64 +1613,94 @@ mh_plot_af_yearly <- function(
       xlim = c(year_min, year_max),
       ylim = ylim,
       xlab = "Year",
-      ylab = "AF (%)",
+      ylab = "Attributable fraction (AF, %)",
       main = reg,
-      col = "#296991"
+      cex.main = 1.2,
+      col = cols$deep_water,
+      lwd = 2
     )
 
-    # Ensure data is sorted by Year
-    region_af <- region_af[order(region_af$year), ]
-
-    # Create x and y coordinates for the polygon
-    x_poly <- c(region_af$year, rev(region_af$year))
-    y_poly <- c(region_af$af_upper_ci, rev(region_af$af_lower_ci))
-
-    # Draw shaded confidence interval
-    polygon(
-      x = x_poly,
-      y = y_poly,
-      col = adjustcolor("#296991", alpha.f = 0.2),
+    # Shaded confidence interval
+    graphics::polygon(
+      x = c(region_af$year, rev(region_af$year)),
+      y = c(region_af$af_upper_ci, rev(region_af$af_lower_ci)),
+      col = grDevices::adjustcolor(cols$deep_water, alpha.f = 0.2),
       border = NA
     )
 
-    abline(
-      h = 0,
-      col = "black",
-      lty = 2
-    )
+    # Zero reference line
+    graphics::abline(h = 0, col = cols$text, lty = 2, lwd = 1.2)
 
-    legend("topright",
-           inset = c(0, -0.1),
-           legend = "95% CI",
-           col = adjustcolor("#296991", alpha.f = 0.2),
-           pch = 15,
-           pt.cex = 2,
-           bty = "n",
-           xpd = TRUE,
-           horiz = TRUE,
-           cex = 0.9
-    )
-
+    # CI-out-of-bounds warning per panel (only when saving)
     if (save_fig == TRUE) {
-      af_ci_range <- c(min(region_af$af_lower_ci), max(region_af$af_upper_ci))
+      af_ci_range <- c(
+        min(region_af$af_lower_ci, na.rm = TRUE),
+        max(region_af$af_upper_ci, na.rm = TRUE)
+      )
 
       if (af_ci_range[1] < ylim[1] || af_ci_range[2] > ylim[2]) {
-        ci_warning <- sprintf("Warning: CI's are outside the bounds of this chart. CI's range from %.2f%% to %.2f%%", af_ci_range[1], af_ci_range[2])
+        ci_warning <- sprintf(
+          paste(
+            "Warning: CI's are outside the bounds of this chart.",
+            "CI's range from %.2f%% to %.2f%%"
+          ),
+          af_ci_range[1], af_ci_range[2]
+        )
         ovr_warning <- "(Please refer to the associated data table for more information on the uncertainty around each estimate)"
 
-        mtext(ci_warning, side = 1, line = 5, cex = 0.6, col = "red", font = 3)
-        mtext(ovr_warning, side = 1, line = 6, cex = 0.6, col = "red", font = 3)
+        graphics::mtext(ci_warning, side = 1, line = 4.6, cex = 0.72, col = "red",
+                        adj = 0, font = 3)
+        graphics::mtext(ovr_warning, side = 1, line = 5.9, cex = 0.72, col = "red",
+                        adj = 0, font = 3)
       }
     }
   }
 
   if (save_fig == TRUE) {
-    year_range <- paste0("(", year_min, " - ", year_max, ")")
-    title <- paste0("Yearly Attributable Fraction of Suicide by Area, ", country, " ", year_range)
+    year_range <- paste0("(", year_min, "-", year_max, ")")
 
-    mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+    main_title <- paste0(
+      "Yearly attributable fraction of suicide by area, ",
+      country, " ", year_range
+    )
 
-    dev.off()
+    sub_title <- paste(
+      "Each panel shows yearly attributable fraction with a shaded 95% confidence interval.",
+      "Dashed horizontal line marks zero attributable fraction."
+    )
+
+    run_accessible_pdf_plot(
+      title = main_title,
+      subtitle = sub_title,
+      line_title = 4.9,
+      line_subtitle = 3.2
+    )
+
+    # Figure level legend
+    add_figure_legend(
+      legend = c("Attributable fraction", "95% CI", "Zero reference line"),
+      col = c(cols$deep_water, grDevices::adjustcolor(cols$deep_water, alpha.f = 0.2), cols$text),
+      lty = c(1, NA, 2),
+      lwd = c(2, NA, 1.2),
+      pch = c(NA, 15, NA),
+      pt.cex = c(1.2, 1.8, 1.2),
+      cex = 1.05,
+      seg.len = 2,
+      text.col = cols$text,
+      vpad = 0.029,
+      bty = "o"
+    )
+
+    add_accessible_alt_text(
+      alt_text = paste(
+        "Alt text: Multi-panel line chart showing yearly attributable fraction of suicide by area.",
+        "Each panel contains a line for attributable fraction and a shaded band for the 95% confidence interval.",
+        "A dashed horizontal line marks zero attributable fraction."
+      ),
+      width = 170
+    )
+
+    grDevices::dev.off()
   }
 }
 
