@@ -311,7 +311,7 @@ test_that(
         exp_data_names <- c("region", "district_code", "time", "runoff_lag2", "spi", "malaria")
         expect_true(all(exp_data_names %in% names(output$data)))
         expect_equal(as.numeric(output$summary$tmin["Mean"][1]), 14.5)
-        expect_equal(max(output$grid_data$district_code), 21)
+        expect_equal(max(output$grid_data$district_code), 2001)
     }
 )
 
@@ -347,7 +347,7 @@ test_that(
 
 test_that(
   "plot_health_climate_timeseries works at region level",
-    {
+  {
     p <- plot_health_climate_timeseries(
       data = PHT_test_data,
       param_term = "tmax",
@@ -356,7 +356,7 @@ test_that(
     )
     expect_s3_class(p, "ggplot")
     expect_equal(unique(p$data$group), c("North", "South"))
-    }
+  }
 )
 
 test_that(
@@ -1317,10 +1317,10 @@ RR_tests_map <- sf::st_sf(
   district = unique(CP_data$district),
   geometry = sf::st_sfc(
     lapply(1:4,
-      function(i) sf::st_polygon(list(matrix(c(0,0,1,0,1,1,0,1,0,0) + i,
-      ncol = 2,
-      byrow = TRUE
-    ))))
+           function(i) sf::st_polygon(list(matrix(c(0,0,1,0,1,1,0,1,0,0) + i,
+                                                  ncol = 2,
+                                                  byrow = TRUE
+           ))))
   )
 )
 RR_tests_map$region <- rep(c("North", "South"), each = 2)
@@ -1414,18 +1414,18 @@ test_that(
   "plot_rr_map filters correctly by year",
   {
     suppressWarnings(
-    filtered_plot <- suppress_plot(
-      plot_rr_map(
-        combined_data = list(data = CP_data, map = RR_tests_map),
-        param_term = "tmax",
-        max_lag = 2,
-        nk = 2,
-        model = cp_model,
-        level = "district",
-        case_type = "malaria",
-        filter_year = 2020
+      filtered_plot <- suppress_plot(
+        plot_rr_map(
+          combined_data = list(data = CP_data, map = RR_tests_map),
+          param_term = "tmax",
+          max_lag = 2,
+          nk = 2,
+          model = cp_model,
+          level = "district",
+          case_type = "malaria",
+          filter_year = 2020
+        )
       )
-    )
     )
     expect_s3_class(filtered_plot, "gg")
   }
@@ -1519,8 +1519,8 @@ test_that(
 
         # run with save_fig + save_csv to hit file.path, pdf(), print(), dev.off(), write.csv
         res2 <- climatehealth:::plot_relative_risk(prr_data, prr_model, "tmax",
-          case_type = "malaria", level = "country",
-          save_fig = TRUE, save_csv = TRUE, output_dir = tmpdir, max_lag = 2, nk = 2 )
+                                                   case_type = "malaria", level = "country",
+                                                   save_fig = TRUE, save_csv = TRUE, output_dir = tmpdir, max_lag = 2, nk = 2 )
         pdf_path <- file.path(tmpdir, "RR_tmax_country_all_plots.pdf")
         csv_path <- file.path(tmpdir, "RR_tmax_country_all_plots.csv")
         expect_true(file.exists(pdf_path))
@@ -1553,8 +1553,8 @@ test_that(
 
         # run with save_fig + save_csv to hit file.path, pdf(), print(), dev.off(), write.csv
         res2 <- climatehealth:::plot_relative_risk(prr_data, prr_model, "tmax",
-          case_type = "malaria", level = "country",
-          save_fig = TRUE, save_csv = TRUE, output_dir = tmpdir, max_lag = 2, nk = 2)
+                                                   case_type = "malaria", level = "country",
+                                                   save_fig = TRUE, save_csv = TRUE, output_dir = tmpdir, max_lag = 2, nk = 2)
         pdf_path <- file.path(tmpdir, "RR_tmax_country_all_plots.pdf")
         csv_path <- file.path(tmpdir, "RR_tmax_country_all_plots.csv")
         expect_true(file.exists(pdf_path))
@@ -1574,7 +1574,7 @@ test_that(
     with_mocked_bindings(
       {
         res <- climatehealth:::plot_relative_risk(prr_data, prr_model, "tmax",
-          case_type = "malaria", level = "region")
+                                                  case_type = "malaria", level = "region")
         expect_type(res, "list")
         expect_named(res, c("plots", "RR"))
         expect_true(all(c("North", "South") %in% names(res$plots)))

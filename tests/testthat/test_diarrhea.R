@@ -114,7 +114,6 @@ test_that("diarrhea_do_analysis runs end-to-end on synthetic data", {
       param_threshold   = 1,
       filter_year       = NULL,
       family            = "nbinomial",
-      group_by_year     = FALSE,
       config            = FALSE,
       save_csv          = FALSE,
       save_model        = FALSE,
