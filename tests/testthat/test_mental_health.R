@@ -1785,7 +1785,9 @@ test_that("mh_save_results writes all expected CSV files and validates content",
 
 # mental health integration test
 test_that("integration: suicides_heat_do_analysis runs end-to-end (dynamic synthetic data)", {
-  skip_if_integration_disabled()
+
+  if (!identical(Sys.getenv("NOT_CRAN"), "true")) skip("Skipping on CRAN")
+  if (Sys.getenv("RUN_INTEGRATION") != "true")    skip("Skipping CI integration")
 
   set.seed(42)
 

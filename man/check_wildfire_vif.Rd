@@ -7,6 +7,8 @@
 check_wildfire_vif(
   data,
   predictors,
+  calculate_by_region,
+  join_wildfire_data,
   save_csv = FALSE,
   output_folder_path = NULL,
   print_vif = FALSE
@@ -18,6 +20,13 @@ data.}
 
 \item{predictors}{Character vector with each of the predictors to include
 in the model. Must contain at least 2 variables.}
+
+\item{calculate_by_region}{Bool. Whether to calculate Relative Risk
+by region. Defaults to FALSE.}
+
+\item{join_wildfire_data}{Boolean. If TRUE, a daily time series of
+wildfire-related PM2.5 concentration is joined to the health data. If FALSE,
+the data set is loaded without any additional joins.}
 
 \item{save_csv}{Bool. Whether or not to save the VIF results to a CSV.}
 
