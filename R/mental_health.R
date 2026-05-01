@@ -2056,7 +2056,21 @@ suicides_heat_do_analysis <- function(
     save_fig = FALSE,
     save_csv = FALSE,
     output_folder_path = NULL,
-    seed = NULL) {
+    seed = NULL,
+    # Descriptive statistics settings
+    run_descriptive = FALSE,
+    plot_corr_matrix = TRUE,
+    correlation_method = "pearson",
+    plot_dist = TRUE,
+    plot_na_counts = TRUE,
+    plot_scatter = TRUE,
+    plot_box = TRUE,
+    plot_seasonal = TRUE,
+    plot_regional = TRUE,
+    plot_total = TRUE,
+    detect_outliers = TRUE,
+    calculate_rate = FALSE
+    ) {
   # Setup additional output DIR
   if (!is.null(output_folder_path)) {
     # Check output dir exists
@@ -2081,6 +2095,56 @@ suicides_heat_do_analysis <- function(
     health_outcome_col = health_outcome_col,
     population_col = population_col
   )
+  # run descriptive stats if selected
+  if (run_descriptive) {
+    # Guard checks incase of missing output folder
+    if (is.null(output_folder_path)) {
+      stop("run_descriptive = TRUE requires output_folder_path to be set.")
+    }
+
+    # Setup descriptive stats subfolder (run-scoped)
+    descriptive_output_path <- file.path(output_folder_path, "descriptive_stats")
+    dir.create(descriptive_output_path, recursive = TRUE, showWarnings = FALSE)
+
+    # run descriptive stats
+      tryCatch(
+        {
+          run_descriptive_stats(
+            data = df_list,
+            output_path = output_folder_path,
+            aggregation_column = region_col,
+            population_col = population_col,
+            dependent_col = health_outcome_col,
+            independent_cols = c(temperature_col, independent_cols),
+            timeseries_col = date_col,
+            plot_corr_matrix = plot_corr_matrix,
+            plot_dist = plot_dist,
+            plot_ma = TRUE,
+            ma_days = 100,
+            ma_sides = 1,
+            plot_na_counts = plot_na_counts,
+            plot_scatter = plot_scatter,
+            plot_box = plot_box,
+            plot_seasonal = plot_seasonal,
+            plot_regional = plot_regional,
+            plot_total = plot_total,
+            detect_outliers = detect_outliers,
+            calculate_rate = calculate_rate,
+            create_base_dir = FALSE
+          )
+        },
+        error = function(e) {
+          stop(
+            paste0(
+              "\nDescriptive statistics failed and the pipeline has been halted.\n",
+              "Reason: ", e$message
+            ),
+            call. = FALSE
+          )
+        }
+      )
+  }
+
   # create list of population totals
   pop_list <- dlnm_pop_totals(
     df_list = df_list,
