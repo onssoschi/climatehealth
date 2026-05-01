@@ -26,7 +26,7 @@ get_accessible_palette <- function() {
 #' @param n_plots Integer. Number of plots.
 #' @param max_cols Integer. Maximum number of columns.
 #'
-#' @return A list with n_col and n_row.
+#' @return A list with `n_col` and `n_row`.
 #' @keywords internal
 get_plot_grid <- function(n_plots, max_cols = 2) {
   n_col <- min(max_cols, n_plots)
@@ -49,7 +49,7 @@ get_plot_grid <- function(n_plots, max_cols = 2) {
 #' @param min_width Numeric. Minimum PDF width in inches.
 #' @param min_height Numeric. Minimum PDF height in inches.
 #'
-#' @return A list with width and height.
+#' @return A list with `width` and `height`.
 #' @keywords internal
 get_pdf_size <- function(
     n_col,
@@ -67,15 +67,14 @@ get_pdf_size <- function(
 
 #' Get layout matrix for multi-panel plot
 #'
-#' Creates a layout matrix for use with layout().
+#' Creates a layout matrix for use with `layout()`.
 #'
 #' @param n_plots Integer. Number of plots.
 #' @param n_col Integer. Number of columns.
 #' @param n_row Integer. Number of rows.
 #'
-#' @return A matrix for layout().
+#' @return A matrix for `layout()`.
 #' @keywords internal
-
 get_layout_matrix <- function(n_plots, n_col, n_row) {
   mat <- matrix(seq_len(n_row * n_col), nrow = n_row, ncol = n_col, byrow = TRUE)
   mat[mat > n_plots] <- 0
@@ -117,15 +116,17 @@ setup_accessible_par <- function(
 #' Open accessible PDF device
 #'
 #' Opens a PDF graphics device with a multi-panel layout optimised for
-#' accessibility and readability.
+#' accessibility and readability. Also applies standard plotting parameters.
 #'
 #' @param file Character. Output PDF file path.
 #' @param n_plots Integer. Number of plots.
 #' @param max_cols Integer. Maximum number of columns.
 #' @param panel_width Numeric. Width per panel in inches.
 #' @param panel_height Numeric. Height per panel in inches.
+#' @param mar Numeric vector of length 4. Inner margins.
+#' @param oma Numeric vector of length 4. Outer margins.
 #'
-#' @return Invisibly returns the grid specification.
+#' @return Invisibly returns the grid specification with `n_col` and `n_row`.
 #' @keywords internal
 open_accessible_pdf <- function(
     file,
@@ -159,7 +160,6 @@ open_accessible_pdf <- function(
     pdf_height <- size$height
   }
 
-
   grDevices::pdf(
     file = file,
     width = pdf_width,
@@ -167,7 +167,6 @@ open_accessible_pdf <- function(
     paper = "special",
     family = "sans"
   )
-
 
   dev_id <- grDevices::dev.cur()
 
@@ -187,7 +186,6 @@ open_accessible_pdf <- function(
 
   invisible(grid)
 }
-
 
 #' Add outer title and subtitle to a multi-panel plot
 #'
@@ -237,7 +235,7 @@ add_accessible_outer_title <- function(
 
 #' Add right-side axis and optional label
 #'
-#' Adds a right-hand axis with optional axis title. Useful for dual-axis plots.
+#' Adds a right-hand axis with an optional axis title. Useful for dual-axis plots.
 #'
 #' @param at Numeric vector. Axis tick positions.
 #' @param labels Vector. Axis tick labels.
@@ -294,7 +292,6 @@ get_month_labels <- function() {
   c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")
 }
 
-
 #' Add SOSCHI logo to current plot
 #'
 #' Draws a logo image on the current graphics device using grid.
@@ -336,6 +333,21 @@ add_plot_logo <- function(
   invisible(NULL)
 }
 
+#' Add accessible alt text to the current figure
+#'
+#' Writes wrapped alt text into the outer bottom margin using `mtext()`. Intended
+#' for saved PDFs produced with `open_accessible_pdf()` where adequate outer
+#' margin space is reserved.
+#'
+#' @param alt_text Character. Alt text describing the figure.
+#' @param width Integer. Wrap width for `strwrap()`.
+#' @param line_start Numeric. Starting line in the outer bottom margin.
+#' @param line_spacing Numeric. Spacing between wrapped lines.
+#' @param cex Numeric. Text size.
+#' @param col Character. Text colour.
+#'
+#' @return Invisibly returns NULL.
+#' @keywords internal
 add_accessible_alt_text <- function(
     alt_text,
     width = 170,
@@ -343,7 +355,7 @@ add_accessible_alt_text <- function(
     line_spacing = 1.4,
     cex = 1,
     col = "#1F1F1F"
-    ) {
+) {
   wrapped_text <- base::strwrap(alt_text, width = width)
 
   for (i in seq_along(wrapped_text)) {
@@ -351,7 +363,7 @@ add_accessible_alt_text <- function(
       text = wrapped_text[[i]],
       side = 1,
       outer = TRUE,
-      line = line_start + (i -1) * line_spacing,
+      line = line_start + (i - 1) * line_spacing,
       adj = 0.03,
       cex = cex,
       col = col,
@@ -362,21 +374,26 @@ add_accessible_alt_text <- function(
   invisible(NULL)
 }
 
-#' Add a figure-level legend at the top-right of the page
+#' Add a figure-level legend using a device overlay
 #'
-#' Draws a single legend anchored to the device's top-right corner,
-#' independent of panel layout. Uses a 0..1 overlay coordinate system.
+#' Draws a single legend in an overlay that spans the full device (0..1
+#' coordinates), independent of the panel layout created by `layout()`. The
+#' legend position is controlled by `x` (horizontal) and `vpad` (vertical).
 #'
 #' @param legend Character vector of legend labels.
-#' @param col    Vector of colors for legend lines.
-#' @param lty    Vector of line types.
-#' @param lwd    Vector of line widths.
-#' @param cex    Numeric. Text size.
+#' @param col Vector. Colours for legend items.
+#' @param lty Vector. Line types for legend items.
+#' @param lwd Vector. Line widths for legend items.
+#' @param pch Vector. Point characters for legend items.
+#' @param pt.cex Numeric. Point size for legend items.
+#' @param cex Numeric. Text size.
 #' @param seg.len Numeric. Length of legend line segments.
-#' @param ncol   Integer. Number of columns in the legend.
-#' @param inset  Numeric in 0..1 device coords. Margin from top-right.
-#' @param text.col Color for legend text.
-#' @param bty    Box type, default "n" for none.
+#' @param inset Numeric. Reserved for future use. Currently not used by the implementation.
+#' @param text.col Character. Colour for legend text and border.
+#' @param bty Character. Box type passed to `legend()`.
+#' @param bg Character. Legend background colour.
+#' @param vpad Numeric. Vertical padding from the top of the device. Smaller values move the legend up.
+#' @param x Numeric. Horizontal position in 0..1 device coordinates.
 #'
 #' @return Invisibly returns NULL.
 #' @keywords internal
@@ -394,19 +411,19 @@ add_figure_legend <- function(
     bty = "o",
     bg = "white",
     vpad = 0.075,
-    x= 0.5
+    x = 0.5
 ) {
   op <- graphics::par(no.readonly = TRUE)
   on.exit(graphics::par(op), add = TRUE)
 
   # Open an overlay that spans the whole device in 0..1 coords
   graphics::par(new = TRUE, xpd = NA, mar = c(0, 0, 0, 0), oma = c(0, 0, 0, 0),
-                fig = c(0,1,0,1))
+                fig = c(0, 1, 0, 1))
   graphics::plot.new()
   graphics::plot.window(xlim = c(0, 1), ylim = c(0, 1), xaxs = "i", yaxs = "i")
 
   graphics::legend(
-    x = x, y = 1-vpad,
+    x = x, y = 1 - vpad,
     legend = legend,
     col = col,
     lty = lty,
@@ -427,22 +444,16 @@ add_figure_legend <- function(
   invisible(NULL)
 }
 
-#' Run an accessible multi-panel PDF plot
+#' Add figure-level title, subtitle, and optional logo
 #'
-#' Opens a PDF device, applies standard plotting parameters, runs a user-supplied
-#' plotting function, adds an optional figure title and subtitle, and adds the
-#' SOSCHI logo if available.
+#' Adds a figure-level title and subtitle using outer margins and attempts to
+#' add the SOSCHI logo if it is available in the package `extdata` directory.
+#' This function does not open or close graphics devices.
 #'
-#' @param file Character. Output PDF path.
-#' @param n_plots Integer. Number of panels.
-#' @param plot_fun Function. A function taking one argument, cols, containing the palette.
-#' @param title Character or NULL. Figure title.
-#' @param subtitle Character or NULL. Figure subtitle.
-#' @param max_cols Integer. Maximum number of columns.
-#' @param panel_width Numeric. Width per panel in inches.
-#' @param panel_height Numeric. Height per panel in inches.
-#' @param mar Numeric vector of length 4. Inner margins.
-#' @param oma Numeric vector of length 4. Outer margins.
+#' @param title Character or NULL. Figure title. If NULL, no title is added.
+#' @param subtitle Character or NULL. Figure subtitle. If NULL, no subtitle is added.
+#' @param line_title Numeric. Outer margin line position for the title.
+#' @param line_subtitle Numeric. Outer margin line position for the subtitle.
 #'
 #' @return Invisibly returns NULL.
 #' @keywords internal
@@ -474,12 +485,19 @@ run_accessible_pdf_plot <- function(
     add_plot_logo(logo_path)
   }
 
-
   invisible(NULL)
 }
 
-
-# local helper for opening diagnostic PDFs
+#' Open a diagnostic PDF device
+#'
+#' Convenience wrapper around `open_accessible_pdf()` with parameters tuned for
+#' diagnostic plots (single column, readable margins).
+#'
+#' @param file Character. Output PDF file path.
+#' @param n_panels Integer. Number of panels to plot.
+#'
+#' @return Invisibly returns the grid specification with `n_col` and `n_row`.
+#' @keywords internal
 open_diag_pdf <- function(file, n_panels) {
   open_accessible_pdf(
     file = file,
@@ -492,7 +510,17 @@ open_diag_pdf <- function(file, n_panels) {
   )
 }
 
-# helper for closing diagnostic PDFs
+#' Close a diagnostic PDF device with title and alt text
+#'
+#' Adds a figure-level title and subtitle, writes alt text into the outer bottom
+#' margin, and closes the current device.
+#'
+#' @param title Character. Figure-level title.
+#' @param subtitle Character. Figure-level subtitle.
+#' @param alt_text Character. Alt text describing the diagnostic figure.
+#'
+#' @return No return value. Called for side effects.
+#' @keywords internal
 close_diag_pdf <- function(title, subtitle, alt_text) {
   run_accessible_pdf_plot(
     title = title,
@@ -501,6 +529,7 @@ close_diag_pdf <- function(title, subtitle, alt_text) {
     line_subtitle = 3.0
   )
   add_accessible_alt_text(
-    alt_text = alt_text, width = 120)
+    alt_text = alt_text, width = 120
+  )
   dev.off()
 }
