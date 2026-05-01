@@ -2115,7 +2115,7 @@ suicides_heat_do_analysis <- function(
             aggregation_column = region_col,
             population_col = population_col,
             dependent_col = health_outcome_col,
-            independent_cols = c(temperature_col, independent_cols),
+            independent_cols = c("temp", independent_cols),
             timeseries_col = date_col,
             plot_corr_matrix = plot_corr_matrix,
             plot_dist = plot_dist,
