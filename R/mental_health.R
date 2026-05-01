@@ -1089,11 +1089,12 @@ mh_plot_rr <- function(
     vline_pos_min_x <- quantile(region_temp, minpercreg[reg] / 100, na.rm = TRUE)
     min_rr <- min(region_pred$allRRfit, na.rm = TRUE)
 
-    if (dplyr::between(min_rr, 0.90, 1.1)) {
-      vline_pos_min_y <- min_rr - 0.2
-    } else {
-      vline_pos_min_y <- min_rr - 0.1
-    }
+    # Place label above RR = 1 line, and keep it within plot bounds
+    y_pad <- 0.06 * diff(ylim)
+    vline_pos_min_y <- min(
+      ylim[2] - y_pad,
+      max(1 + y_pad, min_rr + y_pad)
+    )
 
     vline_lab_min <- paste0(
       "Minimum ST\n",
@@ -1101,11 +1102,15 @@ mh_plot_rr <- function(
     )
 
     graphics::abline(v = vline_pos_min_x, col = cols$text, lty = 3, lwd = 1.5)
+
+    # Put label on the left side of the Minimum ST line
+    pos_min <- if (vline_pos_min_x <= xlim[1] + 0.08 * diff(xlim)) 4 else 2
+
     graphics::text(
       x = vline_pos_min_x,
       y = vline_pos_min_y,
       labels = vline_lab_min,
-      pos = 4,
+      pos = pos_min,
       col = cols$text,
       cex = 0.8,
       font = 2
@@ -1725,13 +1730,25 @@ mh_plot_ar_yearly <- function(
     attr_yr_list,
     save_fig = FALSE,
     output_folder_path = NULL,
-    country = "National") {
-  if (save_fig == TRUE) {
-    grid <- c(min(length(attr_yr_list), 3), ceiling(length(attr_yr_list) / 3))
-    output_path <- file.path(output_folder_path, "suicides_ar_timeseries.pdf")
-    pdf(output_path, width = max(10, grid[1] * 5.5), height = max(7, grid[2] * 4.5))
+    country = "National"
+) {
+  cols <- get_accessible_palette()
 
-    par(mfrow = c(grid[2], grid[1]), oma = c(0, 0, 4, 0), mar = c(8, 4, 5, 4))
+  if (!save_fig) {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
+  }
+
+  if (save_fig == TRUE) {
+    open_accessible_pdf(
+      file = file.path(output_folder_path, "suicides_ar_timeseries.pdf"),
+      n_plots = length(attr_yr_list),
+      max_cols = 2,
+      panel_width = 6.8,
+      panel_height = 6.6,
+      mar = c(7.2, 5, 3.2, 4.2),
+      oma = c(7.5, 0.6, 9, 0.6)
+    )
   }
 
   year_min <- min(sapply(attr_yr_list, function(x) min(x$year, na.rm = TRUE)))
@@ -1744,6 +1761,9 @@ mh_plot_ar_yearly <- function(
 
   for (reg in names(attr_yr_list)) {
     region_ar <- as.data.frame(attr_yr_list[[reg]])
+    region_ar <- region_ar[order(region_ar$year), ]
+
+    graphics::par(mar = c(7.2, 5, 3.2, 4.2))
 
     plot(
       x = region_ar$year,
@@ -1752,64 +1772,94 @@ mh_plot_ar_yearly <- function(
       xlim = c(year_min, year_max),
       ylim = ylim,
       xlab = "Year",
-      ylab = "AR (per 100,000 population)",
+      ylab = "Attributable rate (AR, per 100,000 population)",
       main = reg,
-      col = "#C75E70"
+      cex.main = 1.2,
+      col = cols$dusky_rose,
+      lwd = 2
     )
 
-    # Ensure data is sorted by Year
-    region_ar <- region_ar[order(region_ar$year), ]
-
-    # Create x and y coordinates for the polygon
-    x_poly <- c(region_ar$year, rev(region_ar$year))
-    y_poly <- c(region_ar$ar_upper_ci, rev(region_ar$ar_lower_ci))
-
-    # Draw shaded confidence interval
-    polygon(
-      x = x_poly,
-      y = y_poly,
-      col = adjustcolor("#C75E70", alpha.f = 0.2),
+    # Shaded confidence interval
+    graphics::polygon(
+      x = c(region_ar$year, rev(region_ar$year)),
+      y = c(region_ar$ar_upper_ci, rev(region_ar$ar_lower_ci)),
+      col = grDevices::adjustcolor(cols$dusky_rose, alpha.f = 0.2),
       border = NA
     )
 
-    abline(
-      h = 0,
-      col = "black",
-      lty = 2
-    )
+    # Zero reference line
+    graphics::abline(h = 0, col = cols$text, lty = 2, lwd = 1.2)
 
-    legend("topright",
-           inset = c(0, -0.1),
-           legend = "95% CI",
-           col = adjustcolor("#C75E70", alpha.f = 0.2),
-           pch = 15,
-           pt.cex = 2,
-           bty = "n",
-           xpd = TRUE,
-           horiz = TRUE,
-           cex = 0.9
-    )
-
+    # CI-out-of-bounds warning per panel (only when saving)
     if (save_fig == TRUE) {
-      ar_ci_range <- c(min(region_ar$ar_lower_ci), max(region_ar$ar_upper_ci))
+      ar_ci_range <- c(
+        min(region_ar$ar_lower_ci, na.rm = TRUE),
+        max(region_ar$ar_upper_ci, na.rm = TRUE)
+      )
 
       if (ar_ci_range[1] < ylim[1] || ar_ci_range[2] > ylim[2]) {
-        ci_warning <- sprintf("Warning: CI's are outside the bounds of this chart. CI's range from %.2f to %.2f per 100,000", ar_ci_range[1], ar_ci_range[2])
+        ci_warning <- sprintf(
+          paste(
+            "Warning: CI's are outside the bounds of this chart.",
+            "CI's range from %.2f to %.2f per 100,000"
+          ),
+          ar_ci_range[1], ar_ci_range[2]
+        )
         ovr_warning <- "(Please refer to the associated data table for more information on the uncertainty around each estimate)"
 
-        mtext(ci_warning, side = 1, line = 5, cex = 0.6, col = "red", font = 3)
-        mtext(ovr_warning, side = 1, line = 6, cex = 0.6, col = "red", font = 3)
+        graphics::mtext(ci_warning, side = 1, line = 4.6, cex = 0.72, col = "red",
+                        adj = 0, font = 3)
+        graphics::mtext(ovr_warning, side = 1, line = 5.9, cex = 0.72, col = "red",
+                        adj = 0, font = 3)
       }
     }
   }
 
   if (save_fig == TRUE) {
-    year_range <- paste0("(", year_min, " - ", year_max, ")")
-    title <- paste0("Yearly Attributable Rate of Suicide by Area, ", country, " ", year_range)
+    year_range <- paste0("(", year_min, "-", year_max, ")")
 
-    mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
+    main_title <- paste0(
+      "Yearly attributable rate of suicide by area, ",
+      country, " ", year_range
+    )
 
-    dev.off()
+    sub_title <- paste(
+      "Each panel shows yearly attributable rate with a shaded 95% confidence interval.",
+      "Dashed horizontal line marks zero attributable rate."
+    )
+
+    run_accessible_pdf_plot(
+      title = main_title,
+      subtitle = sub_title,
+      line_title = 4.9,
+      line_subtitle = 3.2
+    )
+
+    # Figure-level legend. Smaller vpad moves it up.
+    add_figure_legend(
+      legend = c("Attributable rate", "95% CI", "Zero reference line"),
+      col = c(cols$dusky_rose, grDevices::adjustcolor(cols$dusky_rose, alpha.f = 0.2), cols$text),
+      lty = c(1, NA, 2),
+      lwd = c(2, NA, 1.2),
+      pch = c(NA, 15, NA),
+      pt.cex = c(1.2, 1.8, 1.2),
+      cex = 1.05,
+      seg.len = 2,
+      text.col = cols$text,
+      vpad = 0.029,
+      bty = "o"
+    )
+
+    add_accessible_alt_text(
+      alt_text = paste(
+        "Alt text: Multi-panel line chart showing yearly attributable rate of suicide by area.",
+        "Each panel contains a line for attributable rate and a shaded band for the 95% confidence interval.",
+        "A dashed horizontal line marks zero attributable rate."
+      ),
+      width = 170
+    )
+
+    grDevices::dev.off()
   }
 }
 
@@ -1842,110 +1892,169 @@ mh_plot_af_monthly <- function(
     country = "National",
     attr_thr = 97.5,
     save_fig = FALSE,
-    output_folder_path = NULL) {
-  if (save_fig == TRUE) {
-    grid <- c(min(length(attr_mth_list), 3), ceiling(length(attr_mth_list) / 3))
-    output_path <- file.path(output_folder_path, "suicides_af_month_plot.pdf")
-    pdf(output_path, width = max(10, grid[1] * 4.5), height = max(8, grid[2] * 4.5))
+    output_folder_path = NULL
+) {
+  cols <- get_accessible_palette()
+  month_labs <- get_month_labels()
 
-    par(mfrow = c(grid[2], grid[1]), mar = c(5, 5, 5, 5), oma = c(4, 0, 4, 0))
+  if (!save_fig) {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
   }
 
+  if (save_fig == TRUE) {
+    open_accessible_pdf(
+      file = file.path(output_folder_path, "suicides_af_month_plot.pdf"),
+      n_plots = length(attr_mth_list),
+      max_cols = 2,
+      panel_width = 7,
+      panel_height = 6.6,
+      mar = c(7.2, 5, 3.2, 6),
+      oma = c(7.5, 0.6, 9, 0.6)
+    )
+  }
+
+  # Scaling so temperature line fits on same plot with AF bars
   ylim_max <- max(sapply(attr_mth_list, function(x) max(x$af, na.rm = TRUE)))
 
   ylim2_min <- min(sapply(attr_mth_list, function(x) min(x$temp, na.rm = TRUE)))
   ylim2_max <- max(sapply(attr_mth_list, function(x) max(x$temp, na.rm = TRUE)))
 
   scale_factor <- (1 / ylim2_max) * ylim_max
-
   temp_ticks <- pretty(c(min(0, ylim2_min), ylim2_max))
 
-  ylim <- c(min(0, temp_ticks[1] * scale_factor), max(temp_ticks[length(temp_ticks)] * scale_factor, ylim_max))
+  ylim <- c(
+    min(0, temp_ticks[1] * scale_factor),
+    max(temp_ticks[length(temp_ticks)] * scale_factor, ylim_max)
+  )
+
+  # Titles and alt text like the temperature indicator style
+  year_range <- paste0(
+    "(",
+    min(sapply(df_list, function(x) min(lubridate::year(x$date), na.rm = TRUE))),
+    "-",
+    max(sapply(df_list, function(x) max(lubridate::year(x$date), na.rm = TRUE))),
+    ")"
+  )
+
+  main_title <- paste0(
+    "Attributable fraction of suicide by calendar month and area,\n",
+    country, " ", year_range
+  )
+
+  sub_title <- paste(
+    "Each panel shows attributable fraction by calendar month as bars,",
+    "with a line showing mean monthly temperature."
+  )
+
+  alt_text <- paste(
+    "Alt text: Multi-panel chart showing attributable fraction of suicide by month and area.",
+    "Each panel contains bars for attributable fraction and a line with points for mean monthly temperature.",
+    "A right-hand axis shows mean temperature in degrees Celsius.",
+    "Each panel includes a legend stating the attributable risk threshold temperature for that area."
+  )
 
   for (reg in names(attr_mth_list)) {
     region_af <- attr_mth_list[[reg]]
     region_temp <- df_list[[reg]]$temp
 
+    # Ensure month order and consistent labels
+    if ("month" %in% names(region_af) && is.character(region_af$month)) {
+      month_num <- match(region_af$month, month.name)
+      ord <- order(month_num)
+      region_af <- region_af[ord, , drop = FALSE]
+      month_num <- month_num[ord]
+      x_names <- month_labs[month_num]
+    } else {
+      # Fallback
+      x_names <- substr(region_af$month, 1, 1)
+    }
+
     temp_scaled <- region_af$temp * scale_factor
 
-    bar_pos <- barplot(
-      names.arg = substr(region_af$month, 1, 1),
+    graphics::par(mar = c(7.2, 5, 3.2, 6))
+
+    bar_pos <- graphics::barplot(
+      names.arg = x_names,
       height = region_af$af,
       ylim = ylim,
       xlab = "Month",
-      ylab = "AF (%)",
+      ylab = "Attributable fraction (AF, %)",
       main = reg,
-      col = "#296991"
+      cex.main = 1.35,
+      cex.names = 1.0,
+      cex.lab = 1.2,
+      cex.axis = 1.1,
+      col = cols$deep_water
     )
 
-    lines(
+    graphics::lines(
       x = bar_pos,
       y = temp_scaled,
       type = "o",
-      col = "#0a2e4d",
-      pch = 16
+      col = cols$prussian_blue,
+      pch = 16,
+      lwd = 1.4
     )
 
-    # Add secondary axis on the right
-
-    axis(
+    # Right axis: mean temperature
+    graphics::axis(
       side = 4,
       at = temp_ticks * scale_factor,
       labels = temp_ticks,
-      col.axis = "black",
-      col = "black"
+      col.axis = cols$text,
+      col = cols$text,
+      las = 1
+    )
+    graphics::mtext("Mean temperature (°C)", side = 4, line = 3, col = cols$text, cex = 0.8)
+
+    graphics::abline(h = 0, col = cols$text, lty = 1)
+
+    # Per-panel legend, temperature-style (no single global legend)
+    attr_thr_tmp <- round(stats::quantile(region_temp, attr_thr / 100, na.rm = TRUE), 2)
+    af_leg_lab <- paste0(
+      "AF (%) - from threshold, ",
+      attr_thr_tmp, "°C (", attr_thr, "p)"
     )
 
-    mtext("Mean Temp (\u00b0C)", side = 4, line = 3, col = "black", cex = 0.7)
-
-    abline(
-      h = 0,
-      col = "black",
-      lty = 1
-    )
-
-    attr_thr_tmp <- round(quantile(region_temp, attr_thr / 100, na.rm = TRUE), 2)
-    af_leg_lab <- paste0("AF (%) - from Attr. Risk Treshold, ", attr_thr_tmp, "\u00b0C (", attr_thr, "p)")
-
-    legend("topleft",
-           inset = c(0, -0.05),
-           legend = c(af_leg_lab, "Mean Temp (\u00b0C)"),
-           fill = c("#296991", NA),
-           border = NA,
-           lty = c(NA, 1),
-           pch = c(NA, 16),
-           col = c("#296991", "#0a2e4d"),
-           bty = "n",
-           cex = 0.9,
-           horiz = FALSE,
-           xpd = TRUE
+    graphics::legend(
+      "topleft",
+      inset = c(0, -0.02),
+      legend = c(af_leg_lab, "Mean Temp (°C)"),
+      fill = c(cols$deep_water, NA),
+      border = NA,
+      lty = c(NA, 1),
+      pch = c(NA, 16),
+      col = c(cols$deep_water, cols$prussian_blue),
+      bty = "n",
+      cex = 1.05,
+      horiz = FALSE,
+      xpd = TRUE
     )
   }
 
   if (save_fig == TRUE) {
-    year_range <- paste0(
-      "(",
-      min(sapply(df_list, function(x) min(lubridate::year(x$date), na.rm = TRUE))),
-      "-",
-      max(sapply(df_list, function(x) max(lubridate::year(x$date), na.rm = TRUE))),
-      ")"
-    )
-
-    title <- paste0("Attributable Fraction of Suicide by Calendar Month and Area, ", country, " ", year_range)
-
-    mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
-
+    # Overall CI range warning like temperature plots
     af_ci_min <- min(sapply(attr_mth_list, function(x) min(x$af_lower_ci, na.rm = TRUE)))
     af_ci_max <- max(sapply(attr_mth_list, function(x) max(x$af_upper_ci, na.rm = TRUE)))
     af_ci_range <- c(af_ci_min, af_ci_max)
 
-    ci_warning <- sprintf("Warning: CI's range from %.2f%% to %.2f%%", af_ci_range[1], af_ci_range[2])
+    ci_warning <- sprintf("Warning: CI's range from %.2f%% to %.2f%%",
+                          af_ci_range[1], af_ci_range[2])
     ovr_warning <- "(Please refer to the associated data table for more information on the uncertainty around each estimate)"
 
-    mtext(ci_warning, outer = TRUE, side = 1, line = 1, cex = 0.8, col = "red", font = 3)
-    mtext(ovr_warning, outer = TRUE, side = 1, line = 2, cex = 0.8, col = "red", font = 3)
+    graphics::mtext(ci_warning, side = 1, line = 4.6, cex = 0.72, col = "red", adj = 0, font = 3)
+    graphics::mtext(ovr_warning, side = 1, line = 5.9, cex = 0.72, col = "red", adj = 0, font = 3)
 
-    dev.off()
+    run_accessible_pdf_plot(
+      title = main_title,
+      subtitle = sub_title,
+      line_title = 4.5,
+      line_subtitle = 2.2
+    )
+
+    add_accessible_alt_text(alt_text = alt_text, width = 170)
+    grDevices::dev.off()
   }
 }
 
@@ -1977,109 +2086,170 @@ mh_plot_ar_monthly <- function(
     country = "National",
     attr_thr = 97.5,
     save_fig = FALSE,
-    output_folder_path = NULL) {
-  if (save_fig == TRUE) {
-    grid <- c(min(length(attr_mth_list), 3), ceiling(length(attr_mth_list) / 3))
-    output_path <- file.path(output_folder_path, "suicides_ar_month_plot.pdf")
-    pdf(output_path, width = max(10, grid[1] * 4.5), height = max(8, grid[2] * 4.5))
+    output_folder_path = NULL
+) {
+  cols <- get_accessible_palette()
+  month_labs <- get_month_labels()
 
-    par(mfrow = c(grid[2], grid[1]), mar = c(5, 5, 5, 5), oma = c(4, 0, 4, 0))
+  if (!save_fig) {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
   }
 
+  if (save_fig == TRUE) {
+    open_accessible_pdf(
+      file = file.path(output_folder_path, "suicides_ar_month_plot.pdf"),
+      n_plots = length(attr_mth_list),
+      max_cols = 2,
+      panel_width = 7,
+      panel_height = 6.6,
+      mar = c(7.2, 5, 3.2, 6),
+      oma = c(7.5, 0.6, 9, 0.6)
+    )
+  }
+
+  # Scaling so temperature line fits on same plot with AR bars
   ylim_max <- max(sapply(attr_mth_list, function(x) max(x$ar, na.rm = TRUE)))
 
   ylim2_min <- min(sapply(attr_mth_list, function(x) min(x$temp, na.rm = TRUE)))
   ylim2_max <- max(sapply(attr_mth_list, function(x) max(x$temp, na.rm = TRUE)))
 
   scale_factor <- (1 / ylim2_max) * ylim_max
-
   temp_ticks <- pretty(c(min(0, ylim2_min), ylim2_max))
 
-  ylim <- c(min(0, temp_ticks[1] * scale_factor), max(temp_ticks[length(temp_ticks)] * scale_factor, ylim_max))
+  ylim <- c(
+    min(0, temp_ticks[1] * scale_factor),
+    max(temp_ticks[length(temp_ticks)] * scale_factor, ylim_max)
+  )
+
+  year_range <- paste0(
+    "(",
+    min(sapply(df_list, function(x) min(lubridate::year(x$date), na.rm = TRUE))),
+    "-",
+    max(sapply(df_list, function(x) max(lubridate::year(x$date), na.rm = TRUE))),
+    ")"
+  )
+
+  main_title <- paste0(
+    "Attributable rate of suicide by calendar month and area,\n",
+    country, " ", year_range
+  )
+
+  sub_title <- paste(
+    "Each panel shows attributable rate by calendar month as bars,",
+    "with a line showing mean monthly temperature."
+  )
+
+  alt_text <- paste(
+    "Alt text: Multi-panel chart showing attributable rate of suicide by month and area.",
+    "Each panel contains bars for attributable rate per 100,000 population and a line with points for mean monthly temperature.",
+    "A right-hand axis shows mean temperature in degrees Celsius.",
+    "Each panel includes a legend stating the attributable risk threshold temperature for that area."
+  )
 
   for (reg in names(attr_mth_list)) {
     region_ar <- attr_mth_list[[reg]]
     region_temp <- df_list[[reg]]$temp
 
+    # Ensure month order and consistent labels
+    if ("month" %in% names(region_ar) && is.character(region_ar$month)) {
+      month_num <- match(region_ar$month, month.name)
+      ord <- order(month_num)
+      region_ar <- region_ar[ord, , drop = FALSE]
+      month_num <- month_num[ord]
+      x_names <- month_labs[month_num]
+    } else {
+      x_names <- substr(region_ar$month, 1, 1)
+    }
+
     temp_scaled <- region_ar$temp * scale_factor
 
-    bar_pos <- barplot(
-      names.arg = substr(region_ar$month, 1, 1),
+    graphics::par(mar = c(7.2, 5, 3.2, 6))
+
+    bar_pos <- graphics::barplot(
+      names.arg = x_names,
       height = region_ar$ar,
       ylim = ylim,
       xlab = "Month",
-      ylab = "AR (per 100,000 population)",
+      ylab = "Attributable rate (AR, per 100,000 population)",
       main = reg,
-      col = "#c75e70"
+      cex.main = 1.35,
+      cex.names = 1.0,
+      cex.lab = 1.2,
+      cex.axis = 1.1,
+      col = cols$dusky_rose
     )
 
-    lines(
+    graphics::lines(
       x = bar_pos,
       y = temp_scaled,
       type = "o",
-      col = "#0a2e4d",
-      pch = 16
+      col = cols$prussian_blue,
+      pch = 16,
+      lwd = 1.4
     )
 
-    axis(
+    # Right axis: mean temperature
+    graphics::axis(
       side = 4,
       at = temp_ticks * scale_factor,
       labels = temp_ticks,
-      col.axis = "black",
-      col = "black"
+      col.axis = cols$text,
+      col = cols$text,
+      las = 1
+    )
+    graphics::mtext("Mean temperature (°C)", side = 4, line = 3, col = cols$text, cex = 0.8)
+
+    graphics::abline(h = 0, col = cols$text, lty = 1)
+
+    # Per-panel legend, temperature-style (no single global legend)
+    attr_thr_tmp <- round(stats::quantile(region_temp, attr_thr / 100, na.rm = TRUE), 2)
+    ar_leg_lab <- paste0(
+      "AR - from threshold, ",
+      attr_thr_tmp, "°C (", attr_thr, "p)"
     )
 
-    mtext("Mean Temp (\u00b0C)", side = 4, line = 3, col = "black", cex = 0.7)
-
-    abline(
-      h = 0,
-      col = "black",
-      lty = 1
-    )
-
-    attr_thr_tmp <- round(quantile(region_temp, attr_thr / 100, na.rm = TRUE), 2)
-    ar_leg_lab <- paste0("AR - from Attr. Risk Threshold, ", attr_thr_tmp, "\u00b0C (", attr_thr, "p)")
-
-    legend("topleft",
-           inset = c(0, -0.05),
-           legend = c(ar_leg_lab, "Mean Temp (\u00b0C)"),
-           fill = c("#c75e70", NA),
-           border = NA,
-           lty = c(NA, 1),
-           pch = c(NA, 16),
-           col = c("#c75e70", "#0a2e4d"),
-           bty = "n",
-           cex = 0.9,
-           horiz = FALSE,
-           xpd = TRUE
+    graphics::legend(
+      "topleft",
+      inset = c(0, -0.02),
+      legend = c(ar_leg_lab, "Mean Temp (°C)"),
+      fill = c(cols$dusky_rose, NA),
+      border = NA,
+      lty = c(NA, 1),
+      pch = c(NA, 16),
+      col = c(cols$dusky_rose, cols$prussian_blue),
+      bty = "n",
+      cex = 1.05,
+      horiz = FALSE,
+      xpd = TRUE
     )
   }
 
   if (save_fig == TRUE) {
-    year_range <- paste0(
-      "(",
-      min(sapply(df_list, function(x) min(lubridate::year(x$date), na.rm = TRUE))),
-      "-",
-      max(sapply(df_list, function(x) max(lubridate::year(x$date), na.rm = TRUE))),
-      ")"
-    )
-
-    title <- paste0("Attributable Rate of Suicide by Calendar Month and Area, ", country, " ", year_range)
-
-    mtext(title, outer = TRUE, cex = 1.5, line = 1, font = 2)
-
+    # Overall CI range warning like temperature plots
     ar_ci_min <- min(sapply(attr_mth_list, function(x) min(x$ar_lower_ci, na.rm = TRUE)))
     ar_ci_max <- max(sapply(attr_mth_list, function(x) max(x$ar_upper_ci, na.rm = TRUE)))
     ar_ci_range <- c(ar_ci_min, ar_ci_max)
 
-    ci_warning <- sprintf("Warning: CI's range from %.2f to %.2f per 100,000 population", ar_ci_range[1], ar_ci_range[2])
+    ci_warning <- sprintf(
+      "Warning: CI's range from %.2f to %.2f per 100,000 population",
+      ar_ci_range[1], ar_ci_range[2]
+    )
     ovr_warning <- "(Please refer to the associated data table for more information on the uncertainty around each estimate)"
 
-    mtext(ci_warning, outer = TRUE, side = 1, line = 1, cex = 0.8, col = "red", font = 3)
-    mtext(ovr_warning, outer = TRUE, side = 1, line = 2, cex = 0.8, col = "red", font = 3)
-  }
+    graphics::mtext(ci_warning, side = 1, line = 4.6, cex = 0.72, col = "red", adj = 0, font = 3)
+    graphics::mtext(ovr_warning, side = 1, line = 5.9, cex = 0.72, col = "red", adj = 0, font = 3)
 
-  dev.off()
+    run_accessible_pdf_plot(
+      title = main_title,
+      subtitle = sub_title,
+      line_title = 4.5,
+      line_subtitle = 2.2
+    )
+
+    add_accessible_alt_text(alt_text = alt_text, width = 170)
+    grDevices::dev.off()
+  }
 }
 
 
