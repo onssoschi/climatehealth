@@ -78,6 +78,8 @@ check_file_extension <- function(
 read_input_data <- function(input_csv_path) {
   if (is.list(input_csv_path)) {
     df <- data.frame(input_csv_path)
+    # Convert columns to appropriate types (numeric columns become numeric)
+    df <- type.convert(df, as.is = TRUE)
   } else if (is.character(input_csv_path)) {
     check_file_extension(input_csv_path, ".csv", "input_csv_path")
     check_file_exists(input_csv_path, raise = TRUE)
