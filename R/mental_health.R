@@ -192,7 +192,6 @@ mh_model_combo_res <- function(
                         na.action = "na.exclude", subset = region_data$ind > 0
       )
       # Get model values
-      if (!is.null(independent_cols)) {
         disp <- summary(model)$dispersion
         loglik <- sum(dpois(model$y, model$fitted.values, log = TRUE))
         k <- length(coef(model))
@@ -203,7 +202,6 @@ mh_model_combo_res <- function(
           disp = disp,
           qaic = qaic
         )
-      }
       residuals_df <- data.frame(
         region = reg,
         formula = formula_str,
@@ -217,7 +215,7 @@ mh_model_combo_res <- function(
   if (!is.null(independent_cols)) {
     # Combine results into a single data frame
     qaic_results <- do.call(rbind, qaic_results)
-    # Sort by region and QAIC
+    # Sort by region and formula
     qaic_results <- qaic_results[order(qaic_results$region, qaic_results$formula), ]
   } else {
     qaic_results <- NULL
@@ -526,9 +524,6 @@ mh_casecrossover_dlnm <- function(
     # normalize type
     if (is.character(control_cols)) {
       control_cols <- c(control_cols)
-      transformed_vars <- unlist(lapply(control_cols, function(v) {
-        paste0(v, "_bs")
-      }))
     }
 
     # type check column names
@@ -583,7 +578,7 @@ mh_casecrossover_dlnm <- function(
 #' (see dlnm::crossbasis). Defaults to c(25,50,75).
 #' @param var_degree Integer. Degree of the piecewise polynomial for argvar
 #' (see dlnm::crossbasis). Defaults to 2 (quadratic).
-#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
+#' @param minpercreg Vector. Percentile of minimum suicide temperature for each region.
 #' @param blup A list. BLUP (best linear unbiased predictions) from the
 #' meta-analysis model for each region.
 #' @param coef_ A matrix of coefficients for the reduced model.
@@ -666,7 +661,7 @@ mh_predict_reg <- function(
 #' @param country Character. Name of country for national level estimates.
 #' @param cb_list A list of cross-basis matrices by region.
 #' @param mm A model object. A multivariate meta-analysis model.
-#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
+#' @param minpercreg Vector. Percentile of minimum suicide temperature for each region.
 #'
 #' @returns
 #' \itemize{
@@ -1035,7 +1030,7 @@ mh_plot_rr <- function(
 #' and climate variables which may be disaggregated by a particular region.
 #' @param cb_list A list of cross-basis matrices by region.
 #' @param pred_list A list containing predictions from the model by region.
-#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
+#' @param minpercreg Vector. Percentile of minimum suicide temperature for each region.
 #' @param attr_thr Integer. Percentile at which to define the temperature threshold for
 #' calculating attributable risk. Defaults to 97.5.
 #' @param seed Optional integer random seed used when sampling residuals for
@@ -1637,7 +1632,7 @@ mh_plot_af_monthly <- function(
     )
 
     attr_thr_tmp <- round(quantile(region_temp, attr_thr / 100, na.rm = TRUE), 2)
-    af_leg_lab <- paste0("AF (%) - from Attr. Risk Treshold, ", attr_thr_tmp, "\u00b0C (", attr_thr, "p)")
+    af_leg_lab <- paste0("AF (%) - from Attr. Risk Threshold, ", attr_thr_tmp, "\u00b0C (", attr_thr, "p)")
 
     legend("topleft",
            inset = c(0, -0.05),
@@ -1809,9 +1804,9 @@ mh_plot_ar_monthly <- function(
 
     mtext(ci_warning, outer = TRUE, side = 1, line = 1, cex = 0.8, col = "red", font = 3)
     mtext(ovr_warning, outer = TRUE, side = 1, line = 2, cex = 0.8, col = "red", font = 3)
-  }
 
   dev.off()
+  }
 }
 
 
