@@ -4,7 +4,12 @@
 \alias{plot_ar_pm_monthly}
 \title{Plot monthly deaths and PM2.5 concentrations with dual y-axes}
 \usage{
-plot_ar_pm_monthly(data, save_outputs = FALSE, output_dir = NULL)
+plot_ar_pm_monthly(
+  data,
+  save_outputs = FALSE,
+  output_dir = NULL,
+  include_all_regions = TRUE
+)
 }
 \arguments{
 \item{data}{A data frame with columns: month, deaths_per_100k, and
@@ -15,6 +20,8 @@ aggregated data as CSV. Defaults to FALSE.}
 
 \item{output_dir}{Character. Directory path where outputs are saved if
 save_outputs is TRUE. Must exist. Defaults to NULL.}
+
+\item{include_all_regions}{Logical. If TRUE includes All regions plots in output dir}
 }
 \value{
 No return value. Generates a plot and optionally saves files.
