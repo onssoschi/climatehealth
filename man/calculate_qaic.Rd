@@ -6,6 +6,9 @@
 \usage{
 calculate_qaic(
   data,
+  temperature_lag,
+  spline_temperature_degrees_freedom,
+  calculate_by_region,
   save_csv = FALSE,
   output_folder_path = NULL,
   print_results = FALSE
@@ -14,6 +17,15 @@ calculate_qaic(
 \arguments{
 \item{data}{Dataframe containing a daily time series of climate and health
 data from which to fit models.}
+
+\item{temperature_lag}{Integer. The number of days for which to calculate
+the lags for temperature. Default is 1.}
+
+\item{spline_temperature_degrees_freedom}{Integer. Degrees of freedom for the
+spline(s).}
+
+\item{calculate_by_region}{Bool. Whether to calculate Relative Risk
+by region. Defaults to FALSE.}
 
 \item{save_csv}{Bool. Whether or not to save the VIF results to a CSV.}
 

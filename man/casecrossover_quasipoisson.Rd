@@ -8,7 +8,9 @@ case-crossover approach.}
 casecrossover_quasipoisson(
   data,
   scale_factor_wildfire_pm = 10,
-  wildfire_lag,
+  temperature_lag,
+  spline_temperature_degrees_freedom,
+  calculate_by_region,
   save_fig = TRUE,
   output_folder_path = NULL,
   print_model_summaries = TRUE
@@ -24,6 +26,15 @@ Corresponds to the unit increase in wildfire PM2.5 to give the model
 estimates and relative risks (e.g. scale_factor = 10 corresponds to estimates
 and relative risks representing impacts of a 10 unit increase in wildfire
 PM2.5). Setting this parameter to 0 or 1 leaves the variable unscaled.}
+
+\item{temperature_lag}{Integer. The number of days for which to calculate
+the lags for temperature. Default is 1.}
+
+\item{spline_temperature_degrees_freedom}{Integer. Degrees of freedom for the
+spline(s).}
+
+\item{calculate_by_region}{Bool. Whether to calculate Relative Risk
+by region. Defaults to FALSE.}
 
 \item{save_fig}{Bool. Whether or not to save a figure showing residuals vs
 fitted values for each lag. Defaults to FALSE.}

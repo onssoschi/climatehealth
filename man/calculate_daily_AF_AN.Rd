@@ -4,11 +4,26 @@
 \alias{calculate_daily_AF_AN}
 \title{Calculate attributable numbers and fraction of a given health outcome.}
 \usage{
-calculate_daily_AF_AN(data, rr_data)
+calculate_daily_AF_AN(
+  data,
+  calculate_by_region,
+  scale_factor_wildfire_pm,
+  rr_data
+)
 }
 \arguments{
 \item{data}{Dataframe containing a daily time series of climate and health
 data that was used to obtain rr_data.}
+
+\item{calculate_by_region}{Bool. Whether to calculate Relative Risk
+by region. Defaults to FALSE.}
+
+\item{scale_factor_wildfire_pm}{Numeric. The value to divide the wildfire
+PM2.5 concentration variables by for alternative interpretation of outputs.
+Corresponds to the unit increase in wildfire PM2.5 to give the model
+estimates and relative risks (e.g. scale_factor = 10 corresponds to estimates
+and relative risks representing impacts of a 10 unit increase in wildfire
+PM2.5). Setting this parameter to 0 or 1 leaves the variable unscaled.}
 
 \item{rr_data}{Dataframe containing relative risk and confidence intervals,
 calculated from input data.}
