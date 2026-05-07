@@ -28,52 +28,73 @@ mh_read_and_format_data <- function(
     temperature_col,
     health_outcome_col,
     population_col) {
-  # make sure data_path is a csv if a path is passed
+
   if (is.character(data_path)) {
     check_file_extension(data_path, ".csv", "data_path")
   }
-  # read data
+
   df <- read_input_data(data_path)
-  # process region col
+
+  # Add synthetic region if no region column supplied
   if (is.null(region_col)) {
+    if ("region" %in% names(df)) {
+      df[["region"]] <- NULL
+    }
+
     df <- df %>%
-      dplyr::mutate(region = "aggregated")
+      dplyr::mutate(region = "Overall")
   }
-  # subset needed cols
+
   needed_cols <- c(
-    date_col,
-    region_col,
-    temperature_col,
-    health_outcome_col,
-    population_col
+    date = date_col,
+    temp = temperature_col,
+    suicides = health_outcome_col,
+    population = population_col
   )
-  standard_cols <- c(
-    "date", "region", "tmean", "health_outcome", "population"
-  )
-  for (i in seq_along(standard_cols)) {
-    std_col <- standard_cols[i]
-    need_col <- needed_cols[i]
+
+  if (!is.null(region_col)) {
+    needed_cols <- append(needed_cols, c(region = region_col), after = 1)
+  }
+
+  for (std_col in names(needed_cols)) {
+    need_col <- needed_cols[[std_col]]
     if (!identical(std_col, need_col) && std_col %in% names(df)) {
       df[[std_col]] <- NULL
     }
   }
+
+  # Rename
+  if (is.null(region_col)) {
+    df <- df %>%
+      dplyr::rename(
+        date = all_of(date_col),
+        temp = all_of(temperature_col),
+        suicides = all_of(health_outcome_col),
+        population = all_of(population_col)
+      )
+  } else {
+    df <- df %>%
+      dplyr::rename(
+        date = all_of(date_col),
+        region = all_of(region_col),
+        temp = all_of(temperature_col),
+        suicides = all_of(health_outcome_col),
+        population = all_of(population_col)
+      )
+  }
+
   df <- df %>%
-    dplyr::rename(
-      date = all_of(date_col),
-      region = all_of(region_col),
-      temp = all_of(temperature_col),
-      suicides = all_of(health_outcome_col),
-      population = all_of(population_col)
-    ) %>%
     dplyr::mutate(
       date = as.Date(date, tryFormats = c("%d/%m/%Y", "%Y-%m-%d")),
       year = as.factor(lubridate::year(date)),
       month = as.factor(lubridate::month(date)),
       dow = as.factor(lubridate::wday(date, label = TRUE)),
       region = as.factor(.data$region),
-      stratum = as.factor(.data$region:.data$year:.data$month:.data$dow),
-      ind = tapply(.data$suicides, .data$stratum, sum)[.data$stratum]
-    )
+      stratum = as.factor(interaction(.data$region, .data$year, .data$month, .data$dow, drop = TRUE)),
+      ind = stats::ave(.data$suicides, .data$stratum, FUN = sum)
+     ) %>%
+     dplyr::arrange(.data$date)
+
   df_list <- aggregate_by_column(df, "region")
 
   return(df_list)
@@ -193,7 +214,6 @@ mh_model_combo_res <- function(
                         na.action = "na.exclude", subset = region_data$ind > 0
       )
       # Get model values
-      if (!is.null(independent_cols)) {
         disp <- summary(model)$dispersion
         loglik <- sum(dpois(model$y, model$fitted.values, log = TRUE))
         k <- length(coef(model))
@@ -204,7 +224,6 @@ mh_model_combo_res <- function(
           disp = disp,
           qaic = qaic
         )
-      }
       residuals_df <- data.frame(
         region = reg,
         formula = formula_str,
@@ -218,7 +237,7 @@ mh_model_combo_res <- function(
   if (!is.null(independent_cols)) {
     # Combine results into a single data frame
     qaic_results <- do.call(rbind, qaic_results)
-    # Sort by region and QAIC
+    # Sort by region and formula
     qaic_results <- qaic_results[order(qaic_results$region, qaic_results$formula), ]
   } else {
     qaic_results <- NULL
@@ -585,9 +604,6 @@ mh_casecrossover_dlnm <- function(
     # normalize type
     if (is.character(control_cols)) {
       control_cols <- c(control_cols)
-      transformed_vars <- unlist(lapply(control_cols, function(v) {
-        paste0(v, "_bs")
-      }))
     }
 
     # type check column names
@@ -642,7 +658,7 @@ mh_casecrossover_dlnm <- function(
 #' (see dlnm::crossbasis). Defaults to c(25,50,75).
 #' @param var_degree Integer. Degree of the piecewise polynomial for argvar
 #' (see dlnm::crossbasis). Defaults to 2 (quadratic).
-#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
+#' @param minpercreg Vector. Percentile of minimum suicide temperature for each region.
 #' @param blup A list. BLUP (best linear unbiased predictions) from the
 #' meta-analysis model for each region.
 #' @param coef_ A matrix of coefficients for the reduced model.
@@ -725,7 +741,7 @@ mh_predict_reg <- function(
 #' @param country Character. Name of country for national level estimates.
 #' @param cb_list A list of cross-basis matrices by region.
 #' @param mm A model object. A multivariate meta-analysis model.
-#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
+#' @param minpercreg Vector. Percentile of minimum suicide temperature for each region.
 #'
 #' @returns
 #' \itemize{
@@ -1225,9 +1241,11 @@ mh_plot_rr <- function(
 #' and climate variables which may be disaggregated by a particular region.
 #' @param cb_list A list of cross-basis matrices by region.
 #' @param pred_list A list containing predictions from the model by region.
-#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
+#' @param minpercreg Vector. Percentile of minimum suicide temperature for each region.
 #' @param attr_thr Integer. Percentile at which to define the temperature threshold for
 #' calculating attributable risk. Defaults to 97.5.
+#' @param seed Optional integer random seed used when sampling residuals for
+#' model validation plots. Defaults to NULL.
 #'
 #' @returns A list containing attributable numbers per region
 #'
@@ -1237,8 +1255,13 @@ mh_attr <- function(
     cb_list,
     pred_list,
     minpercreg,
-    attr_thr = 97.5) {
+    attr_thr = 97.5,
+    seed = NULL) {
   attr_list <- list()
+
+  if(!is.null(seed)) {
+    set.seed(seed)
+  }
 
   for (reg in names(df_list)) {
     region_data <- df_list[[reg]]
@@ -2017,6 +2040,7 @@ mh_plot_af_monthly <- function(
       attr_thr_tmp, "°C (", attr_thr, "p)"
     )
 
+<<<<<<< HEAD
     graphics::legend(
       "topleft",
       inset = c(0, -0.02),
@@ -2030,6 +2054,31 @@ mh_plot_af_monthly <- function(
       cex = 1.05,
       horiz = FALSE,
       xpd = TRUE
+=======
+    mtext("Mean Temp (\u00b0C)", side = 4, line = 3, col = "black", cex = 0.7)
+
+    abline(
+      h = 0,
+      col = "black",
+      lty = 1
+    )
+
+    attr_thr_tmp <- round(quantile(region_temp, attr_thr / 100, na.rm = TRUE), 2)
+    af_leg_lab <- paste0("AF (%) - from Attr. Risk Threshold, ", attr_thr_tmp, "\u00b0C (", attr_thr, "p)")
+
+    legend("topleft",
+           inset = c(0, -0.05),
+           legend = c(af_leg_lab, "Mean Temp (\u00b0C)"),
+           fill = c("#296991", NA),
+           border = NA,
+           lty = c(NA, 1),
+           pch = c(NA, 16),
+           col = c("#296991", "#0a2e4d"),
+           bty = "n",
+           cex = 0.9,
+           horiz = FALSE,
+           xpd = TRUE
+>>>>>>> origin/main
     )
   }
 
@@ -2237,6 +2286,7 @@ mh_plot_ar_monthly <- function(
     )
     ovr_warning <- "(Please refer to the associated data table for more information on the uncertainty around each estimate)"
 
+<<<<<<< HEAD
     graphics::mtext(ci_warning, side = 1, line = 4.6, cex = 0.72, col = "red", adj = 0, font = 3)
     graphics::mtext(ovr_warning, side = 1, line = 5.9, cex = 0.72, col = "red", adj = 0, font = 3)
 
@@ -2249,6 +2299,12 @@ mh_plot_ar_monthly <- function(
 
     add_accessible_alt_text(alt_text = alt_text, width = 170)
     grDevices::dev.off()
+=======
+    mtext(ci_warning, outer = TRUE, side = 1, line = 1, cex = 0.8, col = "red", font = 3)
+    mtext(ovr_warning, outer = TRUE, side = 1, line = 2, cex = 0.8, col = "red", font = 3)
+
+  dev.off()
+>>>>>>> origin/main
   }
 }
 
@@ -2525,6 +2581,15 @@ suicides_heat_do_analysis <- function(
     health_outcome_col = health_outcome_col,
     population_col = population_col
   )
+
+  if (isTRUE(meta_analysis) && length(df_list) < 2) {
+    warning(
+      "meta_analysis = TRUE requires multiple regions. ",
+      "The data contain only one aggregated region, so meta_analysis has been set to FALSE."
+    )
+    meta_analysis <- FALSE
+  }
+
   # create list of population totals
   pop_list <- dlnm_pop_totals(
     df_list = df_list,
@@ -2687,7 +2752,8 @@ suicides_heat_do_analysis <- function(
     cb_list = cb_list,
     pred_list = pred_list,
     minpercreg = minpercreg,
-    attr_thr = attr_thr
+    attr_thr = attr_thr,
+    seed = seed
   )
   # create a table containing attributable estimates
   attr <- mh_attr_tables(
@@ -2699,14 +2765,17 @@ suicides_heat_do_analysis <- function(
   attr_yr_list <- attr[[2]]
   attr_mth_list <- attr[[3]]
   if (save_fig == TRUE) {
-    # Plot attributable numbers
-    mh_plot_attr_totals(
-      df_list = df_list,
-      res_attr_tot = res_attr_tot,
-      save_fig = save_fig,
-      output_folder_path = output_folder_path,
-      country = country
-    )
+    # Only plot total attributable comparisons when there is more than one region
+    if (length(df_list) > 1) {
+      mh_plot_attr_totals(
+        df_list = df_list,
+        res_attr_tot = res_attr_tot,
+        save_fig = save_fig,
+        output_folder_path = output_folder_path,
+        country = country
+      )
+    }
+
     # Plot yearly attributable fraction values
     mh_plot_af_yearly(
       attr_yr_list = attr_yr_list,
