@@ -26,9 +26,14 @@ test_that("mh_read_and_format_data formats data correctly when region column is 
   mock_read_input_data <- function(data_path) {
     data.frame(
       date_column = c("2023-01-01", "2023-01-02", "2023-01-03", "2023-01-04", "2023-01-05"),
+      date = as.Date("1999-01-01") + 0:4,
+      region = c("Ignore", "Ignore", "Ignore", "Ignore", "Ignore"),
       regnames = c("North", "South", "East", "West", "Central"),
-      temp = c(23.5, 25.1, 22.8, 24.3, 21.9),
+      temp = c(-99, -99, -99, -99, -99),
+      tmean = c(23.5, 25.1, 22.8, 24.3, 21.9),
+      suicides = c(-1, -1, -1, -1, -1),
       health_outcomes = c(10.2, 12.5, 9.8, 11.1, 8.7),
+      population = c(1L, 1L, 1L, 1L, 1L),
       pop = c(1000L, 1200L, 950L, 1100L, 1050L)
     )
   }
@@ -57,7 +62,7 @@ test_that("mh_read_and_format_data formats data correctly when region column is 
       dow = as.factor(lubridate::wday(date, label = TRUE)),
       region = as.factor(region),
       stratum = as.factor(interaction(region, year, month, dow, drop = TRUE)),
-      ind = ave(suicides, stratum, FUN = sum)
+      ind = stats::ave(suicides, stratum, FUN = sum)
     ) %>%
     dplyr::arrange(date)
 
@@ -65,7 +70,71 @@ test_that("mh_read_and_format_data formats data correctly when region column is 
     "mock_file.csv",
     "date_column",
     "regnames",
-    "temp",
+    "tmean",
+    "health_outcomes",
+    "pop"
+  )
+
+  expect_equal(result, expected)
+})
+
+
+test_that("mh_read_and_format_data formats data correctly when region column is omitted", {
+
+  mock_check_file_extension <- function(data_path, extension, param_nm) {
+    expect_equal(tools::file_ext(data_path), "csv")
+    expect_equal(extension, ".csv")
+    expect_equal(param_nm, "data_path")
+    invisible(TRUE)
+  }
+
+  mock_read_input_data <- function(data_path) {
+    data.frame(
+      date_column = c("2023-01-03", "2023-01-01", "2023-01-02"),
+      date = as.Date("1998-01-01") + 0:2,
+      region = c("Legacy", "Legacy", "Legacy"),
+      temp = c(-5, -5, -5),
+      tmean = c(22.8, 23.5, 25.1),
+      suicides = c(-1, -1, -1),
+      health_outcomes = c(9.8, 10.2, 12.5),
+      population = c(1L, 1L, 1L),
+      pop = c(950L, 1000L, 1200L)
+    )
+  }
+
+  mock_aggregate_by_column <- function(df, column) {
+    expect_equal(column, "region")
+    df
+  }
+
+  local_mocked_bindings(
+    check_file_extension = mock_check_file_extension,
+    read_input_data = mock_read_input_data,
+    aggregate_by_column = mock_aggregate_by_column
+  )
+
+  expected <- data.frame(
+    date = as.Date(c("2023-01-01", "2023-01-02", "2023-01-03")),
+    region = c("Overall", "Overall", "Overall"),
+    temp = c(23.5, 25.1, 22.8),
+    suicides = c(10.2, 12.5, 9.8),
+    population = c(1000L, 1200L, 950L)
+  ) %>%
+    dplyr::mutate(
+      year = as.factor(lubridate::year(date)),
+      month = as.factor(lubridate::month(date)),
+      dow = as.factor(lubridate::wday(date, label = TRUE)),
+      region = as.factor(region),
+      stratum = as.factor(interaction(region, year, month, dow, drop = TRUE)),
+      ind = stats::ave(suicides, stratum, FUN = sum)
+    ) %>%
+    dplyr::arrange(date)
+
+  result <- mh_read_and_format_data(
+    "mock_file.csv",
+    "date_column",
+    NULL,
+    "tmean",
     "health_outcomes",
     "pop"
   )
@@ -1843,4 +1912,3 @@ test_that("integration: suicides_heat_do_analysis runs end-to-end (dynamic synth
   expect_s3_class(result$qaic_results, "data.frame")
   expect_true(nrow(result$qaic_results) > 0, info = "QAIC results unexpectedly empty")
 })
-
