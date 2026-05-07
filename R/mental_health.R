@@ -2040,7 +2040,7 @@ mh_plot_af_monthly <- function(
       attr_thr_tmp, "°C (", attr_thr, "p)"
     )
 
-<<<<<<< HEAD
+
     graphics::legend(
       "topleft",
       inset = c(0, -0.02),
@@ -2053,8 +2053,7 @@ mh_plot_af_monthly <- function(
       bty = "n",
       cex = 1.05,
       horiz = FALSE,
-      xpd = TRUE
-=======
+      xpd = TRUE)
     mtext("Mean Temp (\u00b0C)", side = 4, line = 3, col = "black", cex = 0.7)
 
     abline(
@@ -2078,7 +2077,6 @@ mh_plot_af_monthly <- function(
            cex = 0.9,
            horiz = FALSE,
            xpd = TRUE
->>>>>>> origin/main
     )
   }
 
@@ -2286,7 +2284,6 @@ mh_plot_ar_monthly <- function(
     )
     ovr_warning <- "(Please refer to the associated data table for more information on the uncertainty around each estimate)"
 
-<<<<<<< HEAD
     graphics::mtext(ci_warning, side = 1, line = 4.6, cex = 0.72, col = "red", adj = 0, font = 3)
     graphics::mtext(ovr_warning, side = 1, line = 5.9, cex = 0.72, col = "red", adj = 0, font = 3)
 
@@ -2299,12 +2296,10 @@ mh_plot_ar_monthly <- function(
 
     add_accessible_alt_text(alt_text = alt_text, width = 170)
     grDevices::dev.off()
-=======
     mtext(ci_warning, outer = TRUE, side = 1, line = 1, cex = 0.8, col = "red", font = 3)
     mtext(ovr_warning, outer = TRUE, side = 1, line = 2, cex = 0.8, col = "red", font = 3)
 
   dev.off()
->>>>>>> origin/main
   }
 }
 
