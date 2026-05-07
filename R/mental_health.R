@@ -37,8 +37,30 @@ mh_read_and_format_data <- function(
 
   # Add synthetic region if no region column supplied
   if (is.null(region_col)) {
+    if ("region" %in% names(df)) {
+      df[["region"]] <- NULL
+    }
+
     df <- df %>%
       dplyr::mutate(region = "Overall")
+  }
+
+  needed_cols <- c(
+    date = date_col,
+    temp = temperature_col,
+    suicides = health_outcome_col,
+    population = population_col
+  )
+
+  if (!is.null(region_col)) {
+    needed_cols <- append(needed_cols, c(region = region_col), after = 1)
+  }
+
+  for (std_col in names(needed_cols)) {
+    need_col <- needed_cols[[std_col]]
+    if (!identical(std_col, need_col) && std_col %in% names(df)) {
+      df[[std_col]] <- NULL
+    }
   }
 
   # Rename
@@ -69,7 +91,7 @@ mh_read_and_format_data <- function(
       dow = as.factor(lubridate::wday(date, label = TRUE)),
       region = as.factor(.data$region),
       stratum = as.factor(interaction(.data$region, .data$year, .data$month, .data$dow, drop = TRUE)),
-      ind = ave(.data$suicides, .data$stratum, FUN = sum)
+      ind = stats::ave(.data$suicides, .data$stratum, FUN = sum)
      ) %>%
      dplyr::arrange(.data$date)
 
