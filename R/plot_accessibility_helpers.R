@@ -168,11 +168,6 @@ open_accessible_pdf <- function(
     family = "sans"
   )
 
-  dev_id <- grDevices::dev.cur()
-
-   on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
-                      list(ID = dev_id)), add = TRUE)
-
   graphics::layout(
     get_layout_matrix(n_plots, grid$n_col, grid$n_row),
     widths = rep(1, grid$n_col),
@@ -531,5 +526,5 @@ close_diag_pdf <- function(title, subtitle, alt_text) {
   add_accessible_alt_text(
     alt_text = alt_text, width = 120
   )
-  dev.off()
+  grDevices::dev.off()
 }

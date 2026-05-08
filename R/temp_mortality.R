@@ -981,6 +981,10 @@ hc_plot_power <- function(power_list_high,
                           save_fig = FALSE,
                           output_folder_path = NULL,
                           country = "National") {
+  if (!save_fig) {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
+  }
 
   cols <- get_accessible_palette()
 
@@ -1772,12 +1776,14 @@ hc_plot_attr_heat_totals <- function(df_list,
     cex.main = 1.3
   )
 
-  run_accessible_pdf_plot(
-    title = main_title,
-    subtitle = sub_title,
-    line_title = 2.2,
-    line_subtitle = 1.15
-  )
+  if (save_fig == TRUE) {
+    run_accessible_pdf_plot(
+      title = main_title,
+      subtitle = sub_title,
+      line_title = 2.2,
+      line_subtitle = 1.15
+    )
+  }
 
   mtext(af_warning, side = 1, line = 4.2, cex = 1, col = "red", font = 3)
   mtext(ovr_warning, side = 1, line = 5.35, cex = 1, col = "red", font = 3)
@@ -1942,12 +1948,16 @@ hc_plot_attr_cold_totals <- function(df_list,
     cex.main = 1.15
   )
 
-  run_accessible_pdf_plot(
-    title = main_title,
-    subtitle = sub_title,
-    line_title = 2.2,
-    line_subtitle = 1.15
-  )
+
+  if (save_fig == TRUE) {
+    run_accessible_pdf_plot(
+      title = main_title,
+      subtitle = sub_title,
+      line_title = 2.2,
+      line_subtitle = 1.15
+    )
+  }
+
 
   mtext(af_warning, side = 1, line = 4.2, cex = 1, col = "red", font = 3)
   mtext(ovr_warning, side = 1, line = 5.35, cex = 1, col = "red", font = 3)
@@ -2016,6 +2026,13 @@ hc_plot_af_heat_yearly <- function(attr_yr_list,
                                    save_fig = FALSE,
                                    output_folder_path = NULL,
                                    country = "National") {
+
+
+  if (!save_fig) {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
+  }
+
   if (save_fig == TRUE) {
     open_accessible_pdf(
       file = file.path(output_folder_path, "mortality_af_heat_timeseries.pdf"),
@@ -2159,6 +2176,11 @@ hc_plot_af_cold_yearly <- function(attr_yr_list,
                                    save_fig = FALSE,
                                    output_folder_path = NULL,
                                    country = "National") {
+  if (!save_fig) {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
+  }
+
   if (save_fig == TRUE) {
     open_accessible_pdf(
       file = file.path(output_folder_path, "mortality_af_cold_timeseries.pdf"),
@@ -2294,6 +2316,11 @@ hc_plot_ar_heat_yearly <- function(attr_yr_list,
                                    save_fig = FALSE,
                                    output_folder_path = NULL,
                                    country = "National") {
+  if (!save_fig) {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
+  }
+
   if (save_fig == TRUE) {
     open_accessible_pdf(
       file = file.path(output_folder_path, "mortality_ar_heat_timeseries.pdf"),
@@ -2430,6 +2457,11 @@ hc_plot_ar_cold_yearly <- function(attr_yr_list,
                                    save_fig = FALSE,
                                    output_folder_path = NULL,
                                    country = "National") {
+  if (!save_fig) {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
+  }
+
   if (save_fig == TRUE) {
     open_accessible_pdf(
       file = file.path(output_folder_path, "mortality_ar_cold_timeseries.pdf"),
@@ -2571,6 +2603,11 @@ hc_plot_af_heat_monthly <- function(attr_mth_list,
                                     attr_thr_high = 97.5,
                                     save_fig = FALSE,
                                     output_folder_path = NULL) {
+  if (!save_fig) {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
+  }
+
   if (save_fig == TRUE) {
     open_accessible_pdf(
       file = file.path(output_folder_path, "mortality_af_heat_month_plot.pdf"),
@@ -2753,6 +2790,10 @@ hc_plot_af_cold_monthly <- function(attr_mth_list,
                                     attr_thr_low = 2.5,
                                     save_fig = FALSE,
                                     output_folder_path = NULL) {
+  if (!save_fig) {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
+  }
   if (save_fig == TRUE) {
     open_accessible_pdf(
       file = file.path(output_folder_path, "mortality_af_cold_month_plot.pdf"),
@@ -2942,6 +2983,10 @@ hc_plot_ar_heat_monthly <- function(attr_mth_list,
                                     attr_thr_high = 97.5,
                                     save_fig = FALSE,
                                     output_folder_path = NULL) {
+  if (!save_fig) {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
+  }
   if (save_fig == TRUE) {
     open_accessible_pdf(
       file = file.path(output_folder_path, "mortality_ar_heat_month_plot.pdf"),
@@ -3117,6 +3162,10 @@ hc_plot_ar_cold_monthly <- function(attr_mth_list,
                                     attr_thr_low = 2.5,
                                     save_fig = FALSE,
                                     output_folder_path = NULL) {
+  if (!save_fig) {
+    old_par <- graphics::par(no.readonly = TRUE)
+    on.exit(graphics::par(old_par), add = TRUE)
+  }
   if (save_fig == TRUE) {
     open_accessible_pdf(
       file = file.path(output_folder_path, "mortality_ar_cold_month_plot.pdf"),
