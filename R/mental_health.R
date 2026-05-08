@@ -93,7 +93,11 @@ mh_read_and_format_data <- function(
       stratum = as.factor(interaction(.data$region, .data$year, .data$month, .data$dow, drop = TRUE)),
       ind = stats::ave(.data$suicides, .data$stratum, FUN = sum)
      ) %>%
-     dplyr::arrange(.data$date)
+    dplyr::relocate(
+      date, region, temp, suicides, population,
+      year, month, dow, stratum, ind
+    ) %>%
+    dplyr::arrange(.data$date)
 
   df_list <- aggregate_by_column(df, "region")
 
@@ -313,8 +317,7 @@ mh_model_validation <- function(
       independent_cols = independent_cols
     )
 
-    # Preserve region id if possible
-    vif_results <- dplyr::bind_rows(vif_list, .id = "Region")
+    vif_results <- do.call(rbind, vif_list)
 
     if (save_csv == TRUE) {
       write.csv(
@@ -2033,7 +2036,7 @@ mh_plot_af_monthly <- function(
 
     graphics::abline(h = 0, col = cols$text, lty = 1)
 
-    # Per-panel legend, temperature-style (no single global legend)
+    # Per-panel legend
     attr_thr_tmp <- round(stats::quantile(region_temp, attr_thr / 100, na.rm = TRUE), 2)
     af_leg_lab <- paste0(
       "AF (%) - from threshold, ",
@@ -2055,29 +2058,6 @@ mh_plot_af_monthly <- function(
       horiz = FALSE,
       xpd = TRUE)
     mtext("Mean Temp (\u00b0C)", side = 4, line = 3, col = "black", cex = 0.7)
-
-    abline(
-      h = 0,
-      col = "black",
-      lty = 1
-    )
-
-    attr_thr_tmp <- round(quantile(region_temp, attr_thr / 100, na.rm = TRUE), 2)
-    af_leg_lab <- paste0("AF (%) - from Attr. Risk Threshold, ", attr_thr_tmp, "\u00b0C (", attr_thr, "p)")
-
-    legend("topleft",
-           inset = c(0, -0.05),
-           legend = c(af_leg_lab, "Mean Temp (\u00b0C)"),
-           fill = c("#296991", NA),
-           border = NA,
-           lty = c(NA, 1),
-           pch = c(NA, 16),
-           col = c("#296991", "#0a2e4d"),
-           bty = "n",
-           cex = 0.9,
-           horiz = FALSE,
-           xpd = TRUE
-    )
   }
 
   if (save_fig == TRUE) {
@@ -2296,10 +2276,6 @@ mh_plot_ar_monthly <- function(
 
     add_accessible_alt_text(alt_text = alt_text, width = 170)
     grDevices::dev.off()
-    mtext(ci_warning, outer = TRUE, side = 1, line = 1, cex = 0.8, col = "red", font = 3)
-    mtext(ovr_warning, outer = TRUE, side = 1, line = 2, cex = 0.8, col = "red", font = 3)
-
-  dev.off()
   }
 }
 

@@ -170,8 +170,8 @@ open_accessible_pdf <- function(
 
   dev_id <- grDevices::dev.cur()
 
-  on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
-                     list(ID = dev_id)), add = TRUE)
+   on.exit(substitute(if (grDevices::dev.cur() == ID) grDevices::dev.off(),
+                      list(ID = dev_id)), add = TRUE)
 
   graphics::layout(
     get_layout_matrix(n_plots, grid$n_col, grid$n_row),
