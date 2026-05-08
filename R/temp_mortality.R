@@ -2673,7 +2673,7 @@ hc_plot_af_heat_monthly <- function(attr_mth_list,
 
     attr_thr_high_tmp <- round(quantile(geog_temp,
                                         attr_thr_high / 100, na.rm = TRUE), 2)
-    af_leg_lab <- paste0("High temperature AF (%) - from treshold, ",
+    af_leg_lab <- paste0("High temperature AF (%) - from threshold, ",
                          attr_thr_high_tmp, "\u00b0C (", attr_thr_high, "p)")
 
     legend("topleft",
@@ -2863,7 +2863,7 @@ hc_plot_af_cold_monthly <- function(attr_mth_list,
 
     attr_thr_low_tmp <- round(quantile(geog_temp, attr_thr_low / 100,
                                        na.rm = TRUE), 2)
-    af_leg_lab <- paste0("Low temperature AF (%) - from treshold, ",
+    af_leg_lab <- paste0("Low temperature AF (%) - from threshold, ",
                          attr_thr_low_tmp, "\u00b0C (", attr_thr_low, "p)")
 
     legend("topleft",
