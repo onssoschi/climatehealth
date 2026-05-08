@@ -82,6 +82,7 @@ Imports:
     ncdf4,
     patchwork,
     pkgbuild,
+    png,
     purrr,
     raster,
     RColorBrewer,
