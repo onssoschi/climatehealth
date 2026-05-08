@@ -86,18 +86,27 @@ mh_read_and_format_data <- function(
   df <- df %>%
     dplyr::mutate(
       date = as.Date(date, tryFormats = c("%d/%m/%Y", "%Y-%m-%d")),
-      year = as.factor(lubridate::year(date)),
-      month = as.factor(lubridate::month(date)),
-      dow = as.factor(lubridate::wday(date, label = TRUE)),
+      year = as.factor(lubridate::year(.data$date)),
+      month = as.factor(lubridate::month(.data$date)),
+      dow = as.factor(lubridate::wday(.data$date, label = TRUE)),
       region = as.factor(.data$region),
-      stratum = as.factor(interaction(.data$region, .data$year, .data$month, .data$dow, drop = TRUE)),
+      stratum = as.factor(interaction(
+        .data$region,
+        .data$year,
+        .data$month,
+        .data$dow,
+        drop = TRUE
+      )),
       ind = stats::ave(.data$suicides, .data$stratum, FUN = sum)
-     ) %>%
+    ) %>%
     dplyr::relocate(
-      date, region, temp, suicides, population,
-      year, month, dow, stratum, ind
+      dplyr::all_of(c(
+        "date", "region", "temp", "suicides", "population",
+        "year", "month", "dow", "stratum", "ind"
+      ))
     ) %>%
     dplyr::arrange(.data$date)
+
 
   df_list <- aggregate_by_column(df, "region")
 
@@ -2032,7 +2041,7 @@ mh_plot_af_monthly <- function(
       col = cols$text,
       las = 1
     )
-    graphics::mtext("Mean temperature (°C)", side = 4, line = 3, col = cols$text, cex = 0.8)
+    graphics::mtext("Mean temperature(\u00b0C)", side = 4, line = 3, col = cols$text, cex = 0.8)
 
     graphics::abline(h = 0, col = cols$text, lty = 1)
 
@@ -2040,14 +2049,13 @@ mh_plot_af_monthly <- function(
     attr_thr_tmp <- round(stats::quantile(region_temp, attr_thr / 100, na.rm = TRUE), 2)
     af_leg_lab <- paste0(
       "AF (%) - from threshold, ",
-      attr_thr_tmp, "°C (", attr_thr, "p)"
+      attr_thr_tmp, "\u00b0C (", attr_thr, "p)"
     )
-
 
     graphics::legend(
       "topleft",
       inset = c(0, -0.02),
-      legend = c(af_leg_lab, "Mean Temp (°C)"),
+      legend = c(af_leg_lab, "Mean Temp (\u00b0C)"),
       fill = c(cols$deep_water, NA),
       border = NA,
       lty = c(NA, 1),
@@ -2057,7 +2065,6 @@ mh_plot_af_monthly <- function(
       cex = 1.05,
       horiz = FALSE,
       xpd = TRUE)
-    mtext("Mean Temp (\u00b0C)", side = 4, line = 3, col = "black", cex = 0.7)
   }
 
   if (save_fig == TRUE) {
@@ -2225,7 +2232,7 @@ mh_plot_ar_monthly <- function(
       col = cols$text,
       las = 1
     )
-    graphics::mtext("Mean temperature (°C)", side = 4, line = 3, col = cols$text, cex = 0.8)
+    graphics::mtext("Mean temperature (\u00b0C)", side = 4, line = 3, col = cols$text, cex = 0.8)
 
     graphics::abline(h = 0, col = cols$text, lty = 1)
 
@@ -2233,13 +2240,13 @@ mh_plot_ar_monthly <- function(
     attr_thr_tmp <- round(stats::quantile(region_temp, attr_thr / 100, na.rm = TRUE), 2)
     ar_leg_lab <- paste0(
       "AR - from threshold, ",
-      attr_thr_tmp, "°C (", attr_thr, "p)"
+      attr_thr_tmp, "\u00b0C (", attr_thr, "p)"
     )
 
     graphics::legend(
       "topleft",
       inset = c(0, -0.02),
-      legend = c(ar_leg_lab, "Mean Temp (°C)"),
+      legend = c(ar_leg_lab, "Mean Temp (\u00b0C)"),
       fill = c(cols$dusky_rose, NA),
       border = NA,
       lty = c(NA, 1),
