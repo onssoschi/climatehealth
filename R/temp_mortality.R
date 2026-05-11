@@ -3612,7 +3612,21 @@ temp_mortality_do_analysis <- function(data_path,
                                        save_fig = FALSE,
                                        save_csv = FALSE,
                                        output_folder_path = NULL,
-                                       seed = NULL) {
+                                       seed = NULL,
+                                       # Descriptive statistics settings
+                                       run_descriptive = FALSE,
+                                       plot_corr_matrix = TRUE,
+                                       correlation_method = "pearson",
+                                       plot_dist = TRUE,
+                                       plot_na_counts = TRUE,
+                                       plot_scatter = TRUE,
+                                       plot_box = TRUE,
+                                       plot_seasonal = TRUE,
+                                       plot_regional = TRUE,
+                                       plot_total = TRUE,
+                                       detect_outliers = TRUE,
+                                       calculate_rate = FALSE) {
+
   # When invoked via the plumber API, headless R has no graphics device and
   # plots can't be returned over JSON — the client renders its own. Force
   # all side-effectful output parameters off so internal helpers never try
@@ -3672,6 +3686,56 @@ temp_mortality_do_analysis <- function(data_path,
       "The data contain only one aggregated region, so meta_analysis has been set to FALSE."
     )
     meta_analysis <- FALSE
+  }
+
+  # run descriptive stats if selected
+  if (run_descriptive) {
+    # Guard checks incase of missing output folder
+    if (is.null(output_folder_path)) {
+      stop("run_descriptive = TRUE requires output_folder_path to be set.")
+    }
+
+    # Setup descriptive stats subfolder (run-scoped)
+    descriptive_output_path <- file.path(output_folder_path, "descriptive_stats")
+    dir.create(descriptive_output_path, recursive = TRUE, showWarnings = FALSE)
+
+    # run descriptive stats
+      tryCatch(
+        {
+          run_descriptive_stats(
+            data = df_list,
+            output_path = output_folder_path,
+            aggregation_column = "region",
+            population_col = "population",
+            dependent_col = "deaths",
+            independent_cols = c("temp", independent_cols),
+            timeseries_col = "date",
+            plot_corr_matrix = plot_corr_matrix,
+            plot_dist = plot_dist,
+            plot_ma = TRUE,
+            ma_days = 100,
+            ma_sides = 1,
+            plot_na_counts = plot_na_counts,
+            plot_scatter = plot_scatter,
+            plot_box = plot_box,
+            plot_seasonal = plot_seasonal,
+            plot_regional = plot_regional,
+            plot_total = plot_total,
+            detect_outliers = detect_outliers,
+            calculate_rate = calculate_rate,
+            create_base_dir = FALSE
+          )
+        },
+        error = function(e) {
+          stop(
+            paste0(
+              "\nDescriptive statistics failed and the pipeline has been halted.\n",
+              "Reason: ", e$message
+            ),
+            call. = FALSE
+          )
+        }
+      )
   }
 
   pop_list <- dlnm_pop_totals(
