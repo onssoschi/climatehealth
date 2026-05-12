@@ -674,62 +674,50 @@ hc_quasipoisson_dlnm <- function(df_list,
   model_list <- list()
 
   # build the formula with base formula and control variables
-  if (!is.null(control_cols)) {
-    # normalise type
-    if (is.character(control_cols)) {
-      control_cols <- c(control_cols)
-    }
-
-    # type check column names
-    for (col in control_cols) {
-      if (!is.character(col)) {
-        stop(
-          paste0(
-            "'control_cols' expected a vector of strings or a string.",
-            typeof(col)
-          )
-        )
-      }
-    }
-  } else {
-    control_cols <- c()
-  }
-
-  # define the base independent cols
-  base_independent_cols <- c(
+  # define the base columns
+  base_cols <- c(
     "cb",
     "dow",
     paste0("splines::ns(date, df = ", dfseas, " * length(unique(year)))")
   )
 
-  # model formula
+  # base model formula
   base_formula <- paste(
     "deaths ~",
-    paste(base_independent_cols,
-      collapse = " + "
+    paste(base_cols,
+          collapse = " + "
     )
   )
 
-  if (is.null(control_cols)) {
-    formula <- as.formula(paste(base_formula))
+  # add control variables if specified and apply splines
+  if (!is.null(control_cols) && length(control_cols) > 0) {
+    control_ns <- paste0(control_cols, "_ns")
+    formula <- as.formula(
+      paste(base_formula, "+", paste(control_ns, collapse = " + "))
+    )
   } else {
-    formula <- as.formula(paste(
-      base_formula,
-      paste("+", paste(control_cols,
-        collapse = " + "
-      ))
-    ))
+    formula <- as.formula(base_formula)
   }
 
-  # Run model
+
+  # run models per geography
   for (geog in names(df_list)) {
+
     geog_data <- df_list[[geog]]
     cb <- cb_list[[geog]]
 
+    # create spline matrices for control variables
+    if (!is.null(control_cols) && length(control_cols) > 0) {
+      for (v in control_cols) {
+        ns_matrix <- splines::ns(geog_data[[v]], df = df_control)
+        assign(paste0(v, "_ns"), ns_matrix)
+      }
+    }
+
     model <- glm(formula,
-      geog_data,
-      family = quasipoisson,
-      na.action = "na.exclude"
+                 geog_data,
+                 family = quasipoisson,
+                 na.action = "na.exclude"
     )
 
     model_list[[geog]] <- model
@@ -3903,10 +3891,17 @@ temp_mortality_do_analysis <- function(data_path,
 
   return(
     list(
+      qaic_results = qaic_results,
+      qaic_summary = qaic_summary,
+      vif_results = vif_results,
+      vif_summary = vif_summary,
+      meta_test_res = meta_test_res,
+      power_list_high = power_list_high,
+      power_list_low = power_list_low,
       rr_results = rr_results,
-      an_ar_results = res_attr_tot,
-      annual_an_ar_results = attr_yr_list,
-      monthly_an_ar_results = attr_mth_list
+      res_attr_tot = res_attr_tot,
+      attr_yr_list = attr_yr_list,
+      attr_mth_list = attr_mth_list
     )
   )
 }
