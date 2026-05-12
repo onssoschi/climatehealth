@@ -268,7 +268,7 @@ hc_model_combo_res <- function(df_list,
 
   # Combine results into a single data frame
   qaic_results <- do.call(rbind, qaic_results)
-  # Sort by geog and QAIC
+  # Sort by geog and formula
   qaic_results <- qaic_results[order(qaic_results$geography,
                                      qaic_results$formula), ]
 
@@ -652,8 +652,8 @@ hc_model_validation <- function(df_list,
 }
 #' Define and run quasi-Poisson regression with DLNM
 #'
-#' @description Fits a quasi-Poisson case-crossover with a distributed lag
-#' non-linear model.
+#' @description Fits a quasi-Poisson time series regression with a
+#' distributed lag non-linear model.
 #'
 #' @param df_list A list of dataframes containing daily timeseries data for a
 #' health outcome and climate variables which may be disaggregated by a
