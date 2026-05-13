@@ -25,6 +25,8 @@
 
 This package provides functions for calculating climate–health indicators and supporting the production of climate–health statistics. The methods implemented in the package follow the statistical framework for climate–health indicators developed under the Standards for Official Statistics on Climate–Health Interactions (SOSCHI) project. You can find out more and stay up to date with the [SOSCHI project here](https://climate-health.officialstatistics.org/).
 
+The methods for measuring headline outcome indicators for the SOSCHI topics were endorsed by the 57th United Nations Statistical Commission for inclusion in the Global Set of Climate Change Statistics and Indicators (see decision 57/109 (b) in the [Final Report](https://unstats.un.org/UNSDWebsite/statcom/session_57/documents/2026-35-FinalReport-EE.pdf)).
+
 The package is also [now available on CRAN](https://cran.r-project.org/web/packages/climatehealth/index.html).
 
 ### SOSCHI Topics and Indicators
