@@ -77,12 +77,12 @@ hc_read_data <- function(input_csv_path,
   df <- df %>%
     dplyr::mutate(
       date = as.Date(date, tryFormats = c("%d/%m/%Y", "%Y-%m-%d")),
-      year = as.factor(lubridate::year(date)),
-      month = as.factor(lubridate::month(date)),
-      dow = as.factor(lubridate::wday(date, label = TRUE)),
-      region = as.factor(region)
+      year = as.factor(lubridate::year(.data$date)),
+      month = as.factor(lubridate::month(.data$date)),
+      dow = as.factor(lubridate::wday(.data$date, label = TRUE)),
+      region = as.factor(.data$region)
     ) %>%
-    dplyr::arrange(region, date)
+    dplyr::arrange(.data$region, .data$date)
 
   # Reformat data and fill NaNs
   df <- reformat_data(df,
@@ -670,7 +670,8 @@ hc_model_validation <- function(df_list,
 hc_quasipoisson_dlnm <- function(df_list,
                                  control_cols = NULL,
                                  cb_list,
-                                 dfseas = 8) {
+                                 dfseas = 8,
+                                 df_control = 3) {
   model_list <- list()
 
   # build the formula with base formula and control variables
@@ -689,7 +690,7 @@ hc_quasipoisson_dlnm <- function(df_list,
     )
   )
 
-  # add control variables if specified and apply splines
+  # define the formula with spline-applied control variables, if specified
   if (!is.null(control_cols) && length(control_cols) > 0) {
     control_ns <- paste0(control_cols, "_ns")
     formula <- as.formula(
@@ -3561,6 +3562,7 @@ temp_mortality_do_analysis <- function(data_path,
                                        country = "National",
                                        independent_cols = NULL,
                                        control_cols = NULL,
+                                       df_control = 3,
                                        var_fun = "bs",
                                        var_degree = 2,
                                        var_per = c(10, 75, 90),
@@ -3568,12 +3570,12 @@ temp_mortality_do_analysis <- function(data_path,
                                        lagnk = 3,
                                        dfseas = 8,
                                        meta_analysis = FALSE,
-    attr_thr_high = 97.5,
-    attr_thr_low = 2.5,
-    save_fig = FALSE,
-    save_csv = FALSE,
-    output_folder_path = NULL,
-    seed = NULL) {
+                                       attr_thr_high = 97.5,
+                                       attr_thr_low = 2.5,
+                                       save_fig = FALSE,
+                                       save_csv = FALSE,
+                                       output_folder_path = NULL,
+                                       seed = NULL) {
   # Setup additional output DIR
   if (!is.null(output_folder_path)) {
     # Check output dir exists
