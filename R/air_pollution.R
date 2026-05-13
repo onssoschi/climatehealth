@@ -898,13 +898,15 @@ calculate_air_pollution_grid_dims <- function(n_plots){
 #'
 #' @keywords internal
 plot_air_pollution_forest_by_region <- function(analysis_results,
-                                                max_lag = 14L,
+                                                max_lag = 14,
                                                 include_national = TRUE,
                                                 output_dir = NULL,
                                                 save_plot = FALSE) {
   if (is.null(output_dir) && save_plot) {
     stop("output_dir must be specified when save_plot == TRUE.")
   }
+
+  cols <- get_accessible_plot_colours()
 
   # Filter data based on include_national
   if (!include_national) {
@@ -952,21 +954,36 @@ plot_air_pollution_forest_by_region <- function(analysis_results,
   max_ylim <- global_max_rr * 1.01
   min_ylim <- min(global_min_rr, 1) * 0.99
 
+
+  alt_text <- paste(
+    "Forest plot showing cumulative PM2.5 relative risk by region.",
+    "Each point shows the mean relative risk and each vertical error bar shows the 95 percent confidence interval.",
+    "The dashed horizontal line marks relative risk equal to one.",
+    if (include_national) {
+      "The national estimate, when present, is highlighted in green."
+    } else {
+      "National estimates are excluded from this plot."
+    }
+  )
+
   forest_plot <- ggplot2::ggplot(specific_results, ggplot2::aes(x = .data$region, y = .data$rr)) +
     ggplot2::geom_errorbar(
       ggplot2::aes(ymin = .data$rr.lb, ymax = .data$rr.ub, color = .data$is_national),
       width = 0.1, linewidth = 0.6
     ) +
-    ggplot2::geom_point(ggplot2::aes(color = .data$is_national), size = 2) +
-    ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
-    ggplot2::scale_color_manual(values = c("FALSE" = "blue", "TRUE" = "red")) +
+    ggplot2::geom_point(ggplot2::aes(color = .data$is_national), size = 2.6) +
+    ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = cols$reference) +
+    ggplot2::scale_color_manual(values = c("FALSE" = cols$regional, "TRUE" = cols$national)) +
     ggplot2::coord_cartesian(ylim = c(min_ylim, max_ylim)) +
     ggplot2::labs(
       x = "Region",
       y = "Relative Risk",
-      title = sprintf('PM2.5 effects by region - Ref: "%s" = %s', ref_name, ref_pm25)
+      title = sprintf('PM2.5 effects by region - Ref: "%s" = %s', ref_name, ref_pm25),
+      subtitle = "Points show mean relative risk. Error bars show 95% confidence intervals.",
+      caption = paste(strwrap(paste0("Alt text: ", alt_text), width = 200),
+        collapse = "\n")
     ) +
-    ggplot2::theme_minimal() +
+    theme_accessible_ggplot() +
     ggplot2::theme(
       legend.position = "none",
       plot.title = ggplot2::element_text(hjust = 0.5),
@@ -975,15 +992,19 @@ plot_air_pollution_forest_by_region <- function(analysis_results,
 
   if (save_plot) {
     filename <- sprintf("forest_plot_by_region_%s_%s_%s", var_name, ref_name, ref_pm25)
-    save_air_pollution_plot(
+    save_accessible_ggplot(
       plot_object = forest_plot,
       output_dir = output_dir,
-      filename = filename
+      filename = filename,
+      width = 14,
+      height = 8,
+      alt_text = alt_text
     )
   }
 
   return(forest_plot)
 }
+
 
 #' Plot Relative Risk (RR) by lag
 #'
@@ -996,12 +1017,13 @@ plot_air_pollution_forest_by_region <- function(analysis_results,
 #'
 #' @keywords internal
 plot_air_pollution_forest_by_lag <- function(analysis_results,
-                                             max_lag = 14L,
+                                             max_lag = 14,
                                              output_dir = NULL,
                                              save_plot = FALSE) {
   if (is.null(output_dir) && save_plot) {
     stop("output_dir must be specified when save_plot == TRUE.")
   }
+  cols <- get_accessible_plot_colours()
 
   # select and summarise by region
   specific_results <- analysis_results %>%
@@ -1037,39 +1059,53 @@ plot_air_pollution_forest_by_lag <- function(analysis_results,
   max_ylim <- global_max_rr * 1.01
   min_ylim <- min(global_min_rr, 1) * 0.99
 
+  alt_text <- paste(
+    "Forest plot showing PM2.5 relative risk by lag.",
+    "Each point shows the mean relative risk and each vertical error bar shows the 95 percent confidence interval.",
+    "The dashed horizontal line marks relative risk equal to one.",
+    "The cumulative lag estimate is highlighted in green."
+  )
+
   forest_plot <- ggplot2::ggplot(specific_results, ggplot2::aes(x = .data$var_name, y = .data$rr)) +
     ggplot2::geom_errorbar(
       ggplot2::aes(ymin = .data$rr.lb, ymax = .data$rr.ub, color = .data$is_cumulative),
       width = 0.1, linewidth = 0.6
     ) +
-    ggplot2::geom_point(ggplot2::aes(color = .data$is_cumulative), size = 2) +
-    ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
-    ggplot2::scale_color_manual(values = c("FALSE" = "blue", "TRUE" = "red")) +
+    ggplot2::geom_point(ggplot2::aes(color = .data$is_cumulative), size = 2.6) +
+    ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = cols$reference) +
+    ggplot2::scale_color_manual(values = c("FALSE" = cols$regional, "TRUE" = cols$national)) +
     ggplot2::coord_cartesian(ylim = c(min_ylim, max_ylim)) +
     ggplot2::labs(
       x = "Region",
       y = "Relative Risk",
-      title = sprintf('PM2.5 effects by region - Ref: "%s" = %s', ref_name, ref_pm25)
+      title = sprintf('PM2.5 effects by lag - Ref: "%s" = %s', ref_name, ref_pm25),
+      subtitle = "Points show mean relative risk. Error bars show 95% confidence intervals.",
+      caption = paste(strwrap(paste0("Alt text: ", alt_text), width = 200),
+                      collapse = "\n")
     ) +
-    ggplot2::theme_minimal() +
+    theme_accessible_ggplot() +
     ggplot2::theme(
       legend.position = "none",
       plot.title = ggplot2::element_text(hjust = 0.5),
       axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
     )
-  var_name_n <- na.omit(unique(specific_results$var_name))
 
   if (save_plot) {
     filename <- sprintf("forest_plot_by_lag_%s_%s", ref_name, ref_pm25)
-    save_air_pollution_plot(
+
+    save_accessible_ggplot(
       plot_object = forest_plot,
       output_dir = output_dir,
-      filename = filename
+      filename = filename,
+      width = 14,
+      height = 8,
+      alt_text = alt_text
     )
   }
 
   return(forest_plot)
 }
+
 
 #' Aggregate air pollution results by region
 #'
@@ -1255,7 +1291,7 @@ aggregate_air_pollution_by_month <- function(analysis_results,
 #'
 #' @keywords internal
 plot_air_pollution_an_ar_monthly <- function(analysis_results,
-                                             max_lag = 14L,
+                                             max_lag = 14,
                                              include_national = TRUE,
                                              output_dir = NULL,
                                              save_plot = FALSE) {
@@ -1263,6 +1299,8 @@ plot_air_pollution_an_ar_monthly <- function(analysis_results,
   if (save_plot && is.null(output_dir)) {
     stop("output_dir must be specified when save_plot == TRUE")
   }
+
+  cols <- get_accessible_plot_colours()
 
   # Filter based on include_national
   if (!include_national) {
@@ -1318,8 +1356,8 @@ plot_air_pollution_an_ar_monthly <- function(analysis_results,
 
   # Determine number of columns for facet_wrap
   n_regions <- length(unique(monthly_data$region))
-  grid_dims <- calculate_air_pollution_grid_dims(n_regions)
-  n_cols <- grid_dims$ncol
+  grid_dims <- get_accessible_ggplot_grid(n_regions)
+  n_cols <- grid_dims$n_col
 
   # Calculate global y-axis limits for consistent scaling
   # For AN plot: use maximum of an_upper across all regions
@@ -1332,17 +1370,29 @@ plot_air_pollution_an_ar_monthly <- function(analysis_results,
   ar_global_min <- min(monthly_data$ar_lower, na.rm = TRUE) * 0.95
   if (ar_global_min > 0) ar_global_min <- 0
 
+  an_alt_text <- paste(
+    "Multi-panel monthly time series plot showing attributable number of deaths by region.",
+    "Each panel represents one region.",
+    "The line shows monthly attributable number and the shaded band shows the 95 percent confidence interval.",
+    "The PM2.5 reference standard is", ref_name, "with reference concentration", ref_pm25, "micrograms per cubic metre."
+  )
+
+  ar_alt_text <- paste(
+    "Multi-panel monthly time series plot showing attributable rate by region.",
+    "Each panel represents one region.",
+    "The line shows monthly attributable rate per 100,000 population and the shaded band shows the 95 percent confidence interval.",
+    "The PM2.5 reference standard is", ref_name, "with reference concentration", ref_pm25, "micrograms per cubic metre."
+  )
+
   # Create AN facetted plot with consistent y-axis
   an_plot <- ggplot2::ggplot(
     monthly_data,
     ggplot2::aes(x = year_month, y = an_monthly)
   ) +
     ggplot2::geom_ribbon(
-      ggplot2::aes(ymin = an_lower, ymax = an_upper),
-      alpha = 0.2,
-      fill = "#F00001"
+      ggplot2::aes(ymin = an_lower, ymax = an_upper), alpha = 0.22, fill = cols$primary
     ) +
-    ggplot2::geom_line(color = "darkblue", linewidth = 1) +
+    ggplot2::geom_line(color = cols$primary, linewidth = 1) +
     ggplot2::facet_wrap(~ region, ncol = n_cols) +
     ggplot2::scale_x_date(
       date_breaks = "6 months",
@@ -1357,21 +1407,14 @@ plot_air_pollution_an_ar_monthly <- function(analysis_results,
         "Monthly Attributable Number (AN) by Region\n(%s Standard: %s \u00B5g/m\u00B3)",
         ref_name, ref_pm25
       ),
-      subtitle = "Shaded area shows 95% confidence interval",
+      subtitle = "Line shows monthly estimate. Shaded area shows 95% confidence interval.",
       x = "Month",
-      y = "Attributable Number of Deaths"
+      y = "Attributable Number of Deaths",
+      caption = paste(strwrap(paste0("Alt text: ", an_alt_text), width = 180),
+                      collapse = "\n")
     ) +
-    ggplot2::theme_minimal(base_size = 12) +
-    ggplot2::theme(
-      plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 16),
-      plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 12, color = "gray40"),
-      axis.title = ggplot2::element_text(face = "bold"),
-      axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, size = 9),
-      plot.caption = ggplot2::element_text(hjust = 0.5, size = 10, color = "gray40"),
-      panel.grid.minor = ggplot2::element_blank(),
-      strip.text = ggplot2::element_text(face = "bold", size = 11),
-      strip.background = ggplot2::element_rect(fill = "gray90", color = "gray80")
-    )
+    theme_accessible_ggplot() +
+    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
 
   # Create AR facetted plot with consistent y-axis
   ar_plot <- ggplot2::ggplot(
@@ -1380,10 +1423,10 @@ plot_air_pollution_an_ar_monthly <- function(analysis_results,
   ) +
     ggplot2::geom_ribbon(
       ggplot2::aes(ymin = ar_lower, ymax = ar_upper),
-      alpha = 0.2,
-      fill = "#F00001"
+      alpha = 0.22,
+      fill = cols$primary
     ) +
-    ggplot2::geom_line(color = "darkblue", linewidth = 1) +
+    ggplot2::geom_line(color = cols$primary, linewidth = 1) +
     ggplot2::facet_wrap(~ region, ncol = n_cols) +
     ggplot2::scale_x_date(
       date_breaks = "6 months",
@@ -1397,21 +1440,15 @@ plot_air_pollution_an_ar_monthly <- function(analysis_results,
         "Monthly Attributable Rate (AR) by Region\n(%s Standard: %s \u00B5g/m\u00B3)",
         ref_name, ref_pm25
       ),
-      subtitle = "Shaded area shows 95% confidence interval",
+      subtitle = "Line shows monthly estimate. Shaded area shows 95% confidence interval.",
       x = "Month",
-      y = "Attributable Rate (per 100K population)"
+      y = "Attributable Rate (per 100K population)",
+      caption = paste(strwrap(paste0("Alt text: ", ar_alt_text), width = 180),
+                      collapse = "\n")
     ) +
-    ggplot2::theme_minimal(base_size = 12) +
+    theme_accessible_ggplot() +
     ggplot2::theme(
-      plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 16),
-      plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 12, color = "gray40"),
-      axis.title = ggplot2::element_text(face = "bold"),
-      axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, size = 9),
-      plot.caption = ggplot2::element_text(hjust = 0.5, size = 10, color = "gray40"),
-      panel.grid.minor = ggplot2::element_blank(),
-      strip.text = ggplot2::element_text(face = "bold", size = 11),
-      strip.background = ggplot2::element_rect(fill = "gray90", color = "gray80")
-    )
+      plot.title = ggplot2::element_text(hjust = 0.5))
 
   # Save plots if requested
   if (save_plot) {
@@ -1422,38 +1459,33 @@ plot_air_pollution_an_ar_monthly <- function(analysis_results,
     safe_refname <- tolower(gsub("\\s+", "_", ref_name))
 
     # Calculate appropriate dimensions
-    n_rows <- grid_dims$nrow
-    plot_height <- max(6, 4 * n_rows)
+    n_rows <- grid_dims$n_row
+    plot_height <- max(14, 7.8 * n_rows)
     plot_width <- 14
 
-    # Save AN plot
-    an_filename <- paste0("air_pollution_an_monthly_by_region_", safe_refname, "_ref", ref_pm25, ".png")
 
-    ggplot2::ggsave(
-      file.path(output_dir, an_filename),
-      plot = an_plot,
+    save_accessible_ggplot(
+      plot_object = an_plot,
+      output_dir = output_dir,
+      filename = paste0("air_pollution_an_monthly_by_region_", safe_refname, "_ref", ref_pm25),
       width = plot_width,
       height = plot_height,
-      dpi = 300,
-      bg = "white"
+      alt_text = an_alt_text
     )
 
-    # Save AR plot
-    ar_filename <- paste0("air_pollution_ar_monthly_by_region_", safe_refname, "_ref", ref_pm25, ".png")
-
-    ggplot2::ggsave(
-      file.path(output_dir, ar_filename),
-      plot = ar_plot,
+    save_accessible_ggplot(
+      plot_object = ar_plot,
+      output_dir = output_dir,
+      filename = paste0("air_pollution_ar_monthly_by_region_", safe_refname, "_ref", ref_pm25),
       width = plot_width,
       height = plot_height,
-      dpi = 300,
-      bg = "white"
+      alt_text = ar_alt_text
     )
   }
 
-  # Return list of plots
   return(list(an_plot = an_plot, ar_plot = ar_plot))
 }
+
 
 #' Plot the AN and AR by year
 #'
@@ -1470,7 +1502,7 @@ plot_air_pollution_an_ar_monthly <- function(analysis_results,
 #'
 #' @keywords internal
 plot_air_pollution_an_ar_by_year <- function(analysis_results,
-                                             max_lag = 14L,
+                                             max_lag = 14,
                                              include_national = TRUE,
                                              output_dir = NULL,
                                              save_plot = FALSE) {
@@ -1478,6 +1510,7 @@ plot_air_pollution_an_ar_by_year <- function(analysis_results,
   if (save_plot && is.null(output_dir)) {
     stop("output_dir must be specified when save_plot == TRUE")
   }
+  cols <- get_accessible_plot_colours()
 
   # Filter based on include_national
   if (!include_national) {
@@ -1515,6 +1548,20 @@ plot_air_pollution_an_ar_by_year <- function(analysis_results,
   an_global_min <- min(annual_data$an_lower, na.rm = TRUE) * 0.95
   if (an_global_min > 0) an_global_min <- 0
 
+  ar_alt_text <- paste(
+    "Multi-panel annual time series plot showing attributable rate by region.",
+    "Each panel represents one region.",
+    "The line shows annual attributable rate per 100,000 population and the shaded band shows the 95 percent confidence interval.",
+    "The PM2.5 reference standard is", ref_name, "with reference concentration", ref_pm25, "micrograms per cubic metre."
+  )
+
+  an_alt_text <- paste(
+    "Multi-panel annual time series plot showing attributable number of deaths by region.",
+    "Each panel represents one region.",
+    "The line shows annual attributable number and the shaded band shows the 95 percent confidence interval.",
+    "The PM2.5 reference standard is", ref_name, "with reference concentration", ref_pm25, "micrograms per cubic metre."
+  )
+
   # Create AR facetted plot with consistent y-axis
   ar_plot <- ggplot2::ggplot(
     annual_data,
@@ -1522,10 +1569,10 @@ plot_air_pollution_an_ar_by_year <- function(analysis_results,
   ) +
     ggplot2::geom_ribbon(
       ggplot2::aes(ymin = ar_lower, ymax = ar_upper),
-      alpha = 0.2,
-      fill = "#F00001"
+      alpha = 0.22,
+      fill = cols$primary
     ) +
-    ggplot2::geom_line(color = "darkblue", linewidth = 1) +
+    ggplot2::geom_line(color = cols$primary, linewidth = 1) +
     ggplot2::facet_wrap(~ region, ncol = n_cols) +
     ggplot2::scale_x_continuous(
       breaks = year_breaks,
@@ -1541,19 +1588,12 @@ plot_air_pollution_an_ar_by_year <- function(analysis_results,
       ),
       subtitle = "Shaded area shows 95% confidence interval",
       x = "Year",
-      y = "Attributable Rate (per 100K population)"
+      y = "Attributable Rate (per 100K population)",
+      caption = paste(
+        strwrap(paste0("Alt text: ", ar_alt_text), width = 180), collapse = "\n")
     ) +
-    ggplot2::theme_minimal(base_size = 12) +
-    ggplot2::theme(
-      plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 16),
-      plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 12, color = "gray40"),
-      axis.title = ggplot2::element_text(face = "bold"),
-      axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, size = 9),
-      plot.caption = ggplot2::element_text(hjust = 0.5, size = 10, color = "gray40"),
-      panel.grid.minor = ggplot2::element_blank(),
-      strip.text = ggplot2::element_text(face = "bold", size = 11),
-      strip.background = ggplot2::element_rect(fill = "gray90", color = "gray80")
-    )
+    theme_accessible_ggplot() +
+    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
 
   # Create AN facetted plot with consistent y-axis
   an_plot <- ggplot2::ggplot(
@@ -1562,10 +1602,10 @@ plot_air_pollution_an_ar_by_year <- function(analysis_results,
   ) +
     ggplot2::geom_ribbon(
       ggplot2::aes(ymin = an_lower, ymax = an_upper),
-      alpha = 0.2,
-      fill = "#F00001"
+      alpha = 0.22,
+      fill = cols$primary
     ) +
-    ggplot2::geom_line(color = "darkblue", linewidth = 1) +
+    ggplot2::geom_line(color = cols$primary, linewidth = 1) +
     ggplot2::facet_wrap(~ region, ncol = n_cols) +
     ggplot2::scale_x_continuous(
       breaks = year_breaks,
@@ -1580,21 +1620,15 @@ plot_air_pollution_an_ar_by_year <- function(analysis_results,
         "Annual Attributable Number (AN) by Region\n(%s Standard: %s \u00B5g/m\u00B3)",
         ref_name, ref_pm25
       ),
-      subtitle = "Shaded area shows 95% confidence interval",
+      subtitle = "Line shows annual estimate. Shaded area shows 95% confidence interval.",
       x = "Year",
-      y = "Attributable Number of Deaths"
+      y = "Attributable Number of Deaths",
+      caption = paste(
+        strwrap(paste0("Alt text: ", an_alt_text), width = 180),
+        collapse = "\n")
     ) +
-    ggplot2::theme_minimal(base_size = 12) +
-    ggplot2::theme(
-      plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 16),
-      plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 12, color = "gray40"),
-      axis.title = ggplot2::element_text(face = "bold"),
-      axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, size = 9),
-      plot.caption = ggplot2::element_text(hjust = 0.5, size = 10, color = "gray40"),
-      panel.grid.minor = ggplot2::element_blank(),
-      strip.text = ggplot2::element_text(face = "bold", size = 11),
-      strip.background = ggplot2::element_rect(fill = "gray90", color = "gray80")
-    )
+    theme_accessible_ggplot() +
+    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
 
   if (save_plot) {
     if (!dir.exists(output_dir)) {
@@ -1605,28 +1639,27 @@ plot_air_pollution_an_ar_by_year <- function(analysis_results,
 
     # Calculate appropriate dimensions
     n_rows <- grid_dims$nrow
-    plot_height <- max(6, 4 * n_rows)
+    plot_height <- max(14, 7.8 * n_rows)
     plot_width <- 14
 
-    ggplot2::ggsave(
-      file.path(output_dir, paste0("air_pollution_ar_by_year_by_region_", safe_refname, "_ref", ref_pm25, ".png")),
-      plot = ar_plot,
+    save_accessible_ggplot(
+      plot_object = ar_plot,
+      output_dir = output_dir,
+      filename = paste0("air_pollution_ar_by_year_by_region_", safe_refname, "_ref", ref_pm25),
       width = plot_width,
       height = plot_height,
-      dpi = 300,
-      bg = "white"
+      alt_text = ar_alt_text
     )
 
-    ggplot2::ggsave(
-      file.path(output_dir, paste0("air_pollution_an_by_year_by_region_", safe_refname, "_ref", ref_pm25, ".png")),
-      plot = an_plot,
+    save_accessible_ggplot(
+      plot_object = an_plot,
+      output_dir = output_dir,
+      filename = paste0("air_pollution_an_by_year_by_region_", safe_refname, "_ref", ref_pm25),
       width = plot_width,
       height = plot_height,
-      dpi = 300,
-      bg = "white"
+      alt_text = an_alt_text
     )
   }
-
   return(list(ar_plot = ar_plot, an_plot = an_plot))
 }
 
