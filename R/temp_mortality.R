@@ -3656,12 +3656,14 @@ temp_mortality_do_analysis <- function(data_path,
   qaic_summary <- model_validation[[2]]
   vif_results <- model_validation[[3]]
   vif_summary <- model_validation[[4]]
+  adf_results <- model_validation[[5]]
 
   model_list <- hc_quasipoisson_dlnm(
     df_list = df_list,
     control_cols = control_cols,
     cb_list = cb_list,
-    dfseas = dfseas
+    dfseas = dfseas,
+    df_control = df_control
   )
 
   reduced <- dlnm_reduce_cumulative(
@@ -3674,6 +3676,10 @@ temp_mortality_do_analysis <- function(data_path,
   coef_ <- reduced[[1]]
   vcov_ <- reduced[[2]]
 
+  mm <- NULL
+  blup <- NULL
+  meta_test_res <- NULL
+
   if (meta_analysis == TRUE) {
     meta <- dlnm_meta_analysis(
       df_list = df_list,
@@ -3682,11 +3688,10 @@ temp_mortality_do_analysis <- function(data_path,
       save_csv = save_csv,
       output_folder_path = output_folder_path
     )
+
     mm <- meta[[1]]
     blup <- meta[[2]]
     meta_test_res <- meta[[3]]
-  } else {
-    blup <- NULL
   }
 
   min_mort_temp <- dlnm_min_mortality_temp(
@@ -3787,7 +3792,8 @@ temp_mortality_do_analysis <- function(data_path,
     pred_list = pred_list,
     minpercgeog_ = minpercgeog_,
     attr_thr_high = attr_thr_high,
-    attr_thr_low = attr_thr_low
+    attr_thr_low = attr_thr_low,
+    seed = seed
   )
 
   attr_tables <- hc_attr_tables(
