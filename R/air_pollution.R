@@ -46,7 +46,7 @@ load_air_pollution_data <- function(data_path,
                                     continuous_others= NULL
 ) {
 
-  if (!file.exists(data_path)) {
+  if (is.character(data_path) && !file.exists(data_path)) {
     stop("Data file not found at: ", data_path)
   }
 
@@ -54,7 +54,15 @@ load_air_pollution_data <- function(data_path,
   categorical_others <- if(is.null(categorical_others)) NULL else gsub(" ", "_", categorical_others)
   continuous_others <- if(is.null(continuous_others)) NULL else gsub(" ", "_", continuous_others)
   others <- c(categorical_others, continuous_others) # all additional variables
-  data0 <- if(is.character(data_path)) read.csv(data_path) else data_path
+  data0 <- if (is.character(data_path)) {
+    read.csv(data_path)
+  } else if (is.data.frame(data_path)) {
+    data_path
+  } else if (is.list(data_path)) {
+    do.call(rbind.data.frame, c(data_path, stringsAsFactors = FALSE))
+  } else {
+    stop("`data_path` must be a CSV path, data.frame, or list of records.")
+  }
 
   # Define REQUIRED columns
   required_cols <- c(date_col, region_col, pm25_col, deaths_col, population_col,

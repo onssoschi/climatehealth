@@ -157,3 +157,6 @@ diarrhea_func <- climatehealth::diarrhea_do_analysis
 
 #* @post /malaria
 malaria_func <- climatehealth::malaria_do_analysis
+
+#* @post /airpollution
+air_pollution_func <- climatehealth::air_pollution_do_analysis
