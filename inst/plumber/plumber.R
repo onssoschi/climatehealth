@@ -152,11 +152,50 @@ mental_health_func <- climatehealth::suicides_heat_do_analysis
 #* @post /descriptive_stats
 descriptive_stats_func <- climatehealth::run_descriptive_stats_api
 
+# --- Disease-indicator helpers -----------------------------------------------
+# The /diarrhea and /malaria endpoints take a shapefile, which can't be sent
+# as JSON.  We accept the shapefile as a base64-encoded zip inside the JSON
+# payload, decode + extract it here, and replace the field with the path that
+# `*_do_analysis` ultimately wants in `map_path`.
+
+.decode_map_zip_to_path <- function(b64) {
+  if (is.null(b64) || !nzchar(b64)) return(NULL)
+  zip_raw <- jsonlite::base64_dec(b64)
+  zip_path <- tempfile(fileext = ".zip")
+  writeBin(zip_raw, zip_path)
+  extract_dir <- tempfile()
+  dir.create(extract_dir)
+  utils::unzip(zip_path, exdir = extract_dir)
+  shp_files <- list.files(
+    extract_dir,
+    pattern = "\\.shp$",
+    recursive = TRUE,
+    full.names = TRUE
+  )
+  if (length(shp_files) == 0) {
+    stop("No .shp file found in uploaded map zip.")
+  }
+  shp_files[[1]]
+}
+
+.with_map_zip <- function(do_analysis_fn) {
+  fn_args <- names(formals(do_analysis_fn))
+  function(req) {
+    body <- jsonlite::fromJSON(req$postBody, simplifyVector = FALSE)
+    if (!is.null(body$map_zip_b64)) {
+      body$map_path <- .decode_map_zip_to_path(body$map_zip_b64)
+      body$map_zip_b64 <- NULL
+    }
+    body <- body[intersect(names(body), fn_args)]
+    do.call(do_analysis_fn, body)
+  }
+}
+
 #* @post /diarrhea
-diarrhea_func <- climatehealth::diarrhea_do_analysis
+diarrhea_func <- .with_map_zip(climatehealth::diarrhea_do_analysis)
 
 #* @post /malaria
-malaria_func <- climatehealth::malaria_do_analysis
+malaria_func <- .with_map_zip(climatehealth::malaria_do_analysis)
 
 #* @post /airpollution
 air_pollution_func <- climatehealth::air_pollution_do_analysis
