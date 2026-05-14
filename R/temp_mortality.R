@@ -663,6 +663,8 @@ hc_model_validation <- function(df_list,
 #' @param cb_list List of cross-basis matrices from hc_create_crossbasis
 #' function.
 #' @param dfseas Integer. Degrees of freedom for seasonality. Defaults to 8.
+#' @param df_control Integer. Degrees of freedom for natural splines applied to
+#' control variables. Defaults to 3.
 #'
 #' @returns 'model_list'. List containing models by geography.
 #'
@@ -675,6 +677,26 @@ hc_quasipoisson_dlnm <- function(df_list,
   model_list <- list()
 
   # build the formula with base formula and control variables
+  if (!is.null(control_cols)) {
+    # normalise type
+    if (is.character(control_cols)) {
+      control_cols <- c(control_cols)
+    }
+
+    # type check column names
+    for (col in control_cols) {
+      if (!is.character(col)) {
+        stop(
+          paste0(
+            "'control_cols' expected a vector of strings or a string.",
+            typeof(col)
+          )
+        )
+      }
+    }
+  } else {
+    control_cols <- c()
+  }
   # define the base columns
   base_cols <- c(
     "cb",
@@ -3449,6 +3471,8 @@ hc_save_results <- function(rr_results,
 #' model validation as confounders. Defaults to NULL.
 #' @param control_cols List. Confounders to include in the final model
 #' adjustment. Defaults to NULL.
+#' @param df_control Integer. Degrees of freedom for natural splines applied to
+#' control variables. Defaults to 3.
 #' @param var_fun Character. Exposure function for argvar
 #' (see dlnm::crossbasis). Defaults to 'bs'.
 #' @param var_degree Integer. Degree of the piecewise polynomial for argvar
@@ -3903,6 +3927,7 @@ temp_mortality_do_analysis <- function(data_path,
       qaic_summary = qaic_summary,
       vif_results = vif_results,
       vif_summary = vif_summary,
+      adf_results = adf_results,
       meta_test_res = meta_test_res,
       power_list_high = power_list_high,
       power_list_low = power_list_low,

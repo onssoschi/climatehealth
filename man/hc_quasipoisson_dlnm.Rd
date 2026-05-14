@@ -4,7 +4,13 @@
 \alias{hc_quasipoisson_dlnm}
 \title{Define and run quasi-Poisson regression with DLNM}
 \usage{
-hc_quasipoisson_dlnm(df_list, control_cols = NULL, cb_list, dfseas = 8)
+hc_quasipoisson_dlnm(
+  df_list,
+  control_cols = NULL,
+  cb_list,
+  dfseas = 8,
+  df_control = 3
+)
 }
 \arguments{
 \item{df_list}{A list of dataframes containing daily timeseries data for a
@@ -18,12 +24,15 @@ adjustment. Defaults to NULL.}
 function.}
 
 \item{dfseas}{Integer. Degrees of freedom for seasonality. Defaults to 8.}
+
+\item{df_control}{Integer. Degrees of freedom for natural splines applied to
+control variables. Defaults to 3.}
 }
 \value{
 'model_list'. List containing models by geography.
 }
 \description{
-Fits a quasi-Poisson case-crossover with a distributed lag
-non-linear model.
+Fits a quasi-Poisson time series regression with a
+distributed lag non-linear model.
 }
 \keyword{internal}
