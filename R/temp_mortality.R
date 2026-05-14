@@ -454,20 +454,33 @@ hc_model_validation <- function(df_list,
     vif_summary <- NULL
   }
 
-  # Label list for saved file names
-  if (save_fig == TRUE) {
-    short_labels <- sapply(as.character(names(df_list)), function(x) {
-      x_clean <- gsub(" ", "", x)
-      if (nchar(x_clean) > 10) {
-        substr(x_clean, 1, 10)
-      } else {
-        x_clean
-      }
-    })
-
-    named_label_list <- as.list(short_labels)
-    names(named_label_list) <- names(df_list)
+  # The remaining work in this function is diagnostic plotting only.  The
+  # caller (temp_mortality_do_analysis) consumes the qaic / vif / adf
+  # outputs computed above, so when save_fig is FALSE we short-circuit to
+  # avoid "figure margins too large" errors in headless / API contexts and
+  # to avoid wasted work.
+  if (!isTRUE(save_fig)) {
+    return(list(
+      qaic_results,
+      qaic_summary,
+      vif_results,
+      vif_summary,
+      adf_results
+    ))
   }
+
+  # Label list for saved file names
+  short_labels <- sapply(as.character(names(df_list)), function(x) {
+    x_clean <- gsub(" ", "", x)
+    if (nchar(x_clean) > 10) {
+      substr(x_clean, 1, 10)
+    } else {
+      x_clean
+    }
+  })
+
+  named_label_list <- as.list(short_labels)
+  names(named_label_list) <- names(df_list)
 
   # Determine whether to sample residuals for scatter/qq
   if (nrow(do.call(rbind, do.call(rbind, residuals_list))) > 100000) {
@@ -3600,6 +3613,17 @@ temp_mortality_do_analysis <- function(data_path,
                                        save_csv = FALSE,
                                        output_folder_path = NULL,
                                        seed = NULL) {
+  # When invoked via the plumber API, headless R has no graphics device and
+  # plots can't be returned over JSON — the client renders its own. Force
+  # all side-effectful output parameters off so internal helpers never try
+  # to draw or write files.
+  api_mode <- isTRUE(getOption("climatehealth.api_mode", FALSE))
+  if (api_mode) {
+    save_fig <- FALSE
+    save_csv <- FALSE
+    output_folder_path <- NULL
+  }
+
   # Setup additional output DIR
   if (!is.null(output_folder_path)) {
     # Check output dir exists
@@ -3783,31 +3807,14 @@ temp_mortality_do_analysis <- function(data_path,
   power_list_high <- power_list$high
   power_list_low <- power_list$low
 
-  hc_plot_power(
-    power_list_high = power_list_high,
-    power_list_low = power_list_low,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path,
-    country = country
-  )
-
+  # Compute attributable results unconditionally — the caller (and the
+  # API client) needs the underlying data regardless of plotting.
   rr_results <- hc_rr_results(
     pred_list = pred_list,
     df_list = df_list,
     minpercgeog_ = minpercgeog_,
     attr_thr_high = attr_thr_high,
     attr_thr_low = attr_thr_low
-  )
-
-  hc_plot_rr(
-    df_list = df_list,
-    pred_list = pred_list,
-    attr_thr_high = attr_thr_high,
-    attr_thr_low = attr_thr_low,
-    minpercgeog_ = minpercgeog_,
-    country = country,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path
   )
 
   attr_list <- hc_attr(
@@ -3829,85 +3836,109 @@ temp_mortality_do_analysis <- function(data_path,
   attr_yr_list <- attr_tables[[2]]
   attr_mth_list <- attr_tables[[3]]
 
-  hc_plot_attr_heat_totals(
-    df_list = df_list,
-    res_attr_tot = res_attr_tot,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path,
-    country = country
-  )
+  # Plot helpers each have a "plot to default device" branch that doesn't
+  # work in headless / API mode. Skip the whole battery when save_fig is
+  # FALSE — the API client renders its own charts off the returned data.
+  if (isTRUE(save_fig)) {
+    hc_plot_power(
+      power_list_high = power_list_high,
+      power_list_low = power_list_low,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path,
+      country = country
+    )
 
-  hc_plot_attr_cold_totals(
-    df_list = df_list,
-    res_attr_tot = res_attr_tot,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path,
-    country = country
-  )
+    hc_plot_rr(
+      df_list = df_list,
+      pred_list = pred_list,
+      attr_thr_high = attr_thr_high,
+      attr_thr_low = attr_thr_low,
+      minpercgeog_ = minpercgeog_,
+      country = country,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path
+    )
 
-  hc_plot_af_heat_yearly(
-    attr_yr_list = attr_yr_list,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path,
-    country = country
-  )
+    hc_plot_attr_heat_totals(
+      df_list = df_list,
+      res_attr_tot = res_attr_tot,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path,
+      country = country
+    )
 
-  hc_plot_af_cold_yearly(
-    attr_yr_list = attr_yr_list,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path,
-    country = country
-  )
+    hc_plot_attr_cold_totals(
+      df_list = df_list,
+      res_attr_tot = res_attr_tot,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path,
+      country = country
+    )
 
-  hc_plot_ar_heat_yearly(
-    attr_yr_list = attr_yr_list,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path,
-    country = country
-  )
+    hc_plot_af_heat_yearly(
+      attr_yr_list = attr_yr_list,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path,
+      country = country
+    )
 
-  hc_plot_ar_cold_yearly(
-    attr_yr_list = attr_yr_list,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path,
-    country = country
-  )
+    hc_plot_af_cold_yearly(
+      attr_yr_list = attr_yr_list,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path,
+      country = country
+    )
 
-  hc_plot_af_heat_monthly(
-    attr_mth_list = attr_mth_list,
-    df_list = df_list,
-    country = country,
-    attr_thr_high = attr_thr_high,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path
-  )
+    hc_plot_ar_heat_yearly(
+      attr_yr_list = attr_yr_list,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path,
+      country = country
+    )
 
-  hc_plot_af_cold_monthly(
-    attr_mth_list = attr_mth_list,
-    df_list = df_list,
-    country = country,
-    attr_thr_low = attr_thr_low,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path
-  )
+    hc_plot_ar_cold_yearly(
+      attr_yr_list = attr_yr_list,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path,
+      country = country
+    )
 
-  hc_plot_ar_heat_monthly(
-    attr_mth_list = attr_mth_list,
-    df_list = df_list,
-    country = country,
-    attr_thr_high = attr_thr_high,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path
-  )
+    hc_plot_af_heat_monthly(
+      attr_mth_list = attr_mth_list,
+      df_list = df_list,
+      country = country,
+      attr_thr_high = attr_thr_high,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path
+    )
 
-  hc_plot_ar_cold_monthly(
-    attr_mth_list = attr_mth_list,
-    df_list = df_list,
-    country = country,
-    attr_thr_low = attr_thr_low,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path
-  )
+    hc_plot_af_cold_monthly(
+      attr_mth_list = attr_mth_list,
+      df_list = df_list,
+      country = country,
+      attr_thr_low = attr_thr_low,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path
+    )
+
+    hc_plot_ar_heat_monthly(
+      attr_mth_list = attr_mth_list,
+      df_list = df_list,
+      country = country,
+      attr_thr_high = attr_thr_high,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path
+    )
+
+    hc_plot_ar_cold_monthly(
+      attr_mth_list = attr_mth_list,
+      df_list = df_list,
+      country = country,
+      attr_thr_low = attr_thr_low,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path
+    )
+  }
 
   if (save_csv == TRUE) {
     hc_save_results(
