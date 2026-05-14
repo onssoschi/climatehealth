@@ -46,7 +46,7 @@ load_air_pollution_data <- function(data_path,
                                     continuous_others= NULL
 ) {
 
-  if (!file.exists(data_path)) {
+  if (is.character(data_path) && !file.exists(data_path)) {
     stop("Data file not found at: ", data_path)
   }
 
@@ -54,7 +54,15 @@ load_air_pollution_data <- function(data_path,
   categorical_others <- if(is.null(categorical_others)) NULL else gsub(" ", "_", categorical_others)
   continuous_others <- if(is.null(continuous_others)) NULL else gsub(" ", "_", continuous_others)
   others <- c(categorical_others, continuous_others) # all additional variables
-  data0 <- if(is.character(data_path)) read.csv(data_path) else data_path
+  data0 <- if (is.character(data_path)) {
+    read.csv(data_path)
+  } else if (is.data.frame(data_path)) {
+    data_path
+  } else if (is.list(data_path)) {
+    do.call(rbind.data.frame, c(data_path, stringsAsFactors = FALSE))
+  } else {
+    stop("`data_path` must be a CSV path, data.frame, or list of records.")
+  }
 
   # Define REQUIRED columns
   required_cols <- c(date_col, region_col, pm25_col, deaths_col, population_col,
@@ -2886,6 +2894,24 @@ air_pollution_do_analysis <- function(
     continuous_others <- Continuous_Others
   }
 
+  # When invoked via the plumber API the client renders its own plots from
+  # the returned data. Force output / plot toggles off so we don't build
+  # ggplot objects that nothing consumes and that plumber can't reliably
+  # serialise.
+  api_mode <- isTRUE(getOption("climatehealth.api_mode", FALSE))
+  if (api_mode) {
+    save_outputs <- FALSE
+    output_dir <- NULL
+    plot_corr_matrix <- FALSE
+    plot_dist <- FALSE
+    plot_na_counts <- FALSE
+    plot_scatter <- FALSE
+    plot_box <- FALSE
+    plot_seasonal <- FALSE
+    plot_regional <- FALSE
+    plot_total <- FALSE
+  }
+
   # AUTO-SET ENGLISH LOCALE FOR ENTIRE ANALYSIS
   original_locale <- Sys.getlocale("LC_TIME")
   english_locales <- c("English", "en_US.UTF-8", "en_GB.UTF-8", "C")
@@ -3014,66 +3040,76 @@ air_pollution_do_analysis <- function(
 
     results$analysis_results[[ref_name]] <- analysis_daily
 
-    results$plots <- list()
+    # results$plots holds both ggplot objects and the aggregate_* data
+    # frames. Initialise it even in API mode so the aggregations below
+    # land at the same path non-API callers expect.
+    if (is.null(results$plots)) {
+      results$plots <- list()
+    }
     analysis_res <- results$analysis_results[[ref_name]]
 
-    # PLOTS
-    results$plots[[ref_name]]$an_ar_monthly <- plot_air_pollution_an_ar_monthly(
-      analysis_results = analysis_res,
-      max_lag = max_lag,
-      include_national = include_national,
-      output_dir = output_dir,
-      save_plot = save_outputs
-    )
+    # PLOTS — skipped entirely in API mode. The client renders its own
+    # visualisations from analysis_results / power_results / aggregations.
+    if (!api_mode) {
+      results$plots[[ref_name]]$an_ar_monthly <- plot_air_pollution_an_ar_monthly(
+        analysis_results = analysis_res,
+        max_lag = max_lag,
+        include_national = include_national,
+        output_dir = output_dir,
+        save_plot = save_outputs
+      )
 
-    results$plots[[ref_name]]$an_ar_by_year <- plot_air_pollution_an_ar_by_year(
-      analysis_results = analysis_res,
-      max_lag = max_lag,
-      include_national = include_national,
-      output_dir = output_dir,
-      save_plot = save_outputs
-    )
+      results$plots[[ref_name]]$an_ar_by_year <- plot_air_pollution_an_ar_by_year(
+        analysis_results = analysis_res,
+        max_lag = max_lag,
+        include_national = include_national,
+        output_dir = output_dir,
+        save_plot = save_outputs
+      )
 
-    results$plots[[ref_name]]$forest_by_region <- plot_air_pollution_forest_by_region(
-      analysis_results = analysis_res,
-      max_lag = max_lag,
-      include_national = include_national,
-      output_dir = output_dir,
-      save_plot = save_outputs
-    )
+      results$plots[[ref_name]]$forest_by_region <- plot_air_pollution_forest_by_region(
+        analysis_results = analysis_res,
+        max_lag = max_lag,
+        include_national = include_national,
+        output_dir = output_dir,
+        save_plot = save_outputs
+      )
 
-    results$plots[[ref_name]]$forest_by_lag <- plot_air_pollution_forest_by_lag(
-      analysis_results = analysis_res,
-      max_lag = max_lag,
-      output_dir = output_dir,
-      save_plot = save_outputs
-    )
+      results$plots[[ref_name]]$forest_by_lag <- plot_air_pollution_forest_by_lag(
+        analysis_results = analysis_res,
+        max_lag = max_lag,
+        output_dir = output_dir,
+        save_plot = save_outputs
+      )
 
-    results$plots[[ref_name]]$monthly_histograms <- plot_air_pollution_monthly_histograms(
-      analysis_results = analysis_res,
-      max_lag = max_lag,
-      include_national = include_national,
-      output_dir = output_dir,
-      save_plot = save_outputs
-    )
+      results$plots[[ref_name]]$monthly_histograms <- plot_air_pollution_monthly_histograms(
+        analysis_results = analysis_res,
+        max_lag = max_lag,
+        include_national = include_national,
+        output_dir = output_dir,
+        save_plot = save_outputs
+      )
 
-    results$plots[[ref_name]]$exposure_response <- plot_air_pollution_exposure_response(
-      analysis_results = analysis_res,
-      max_lag = max_lag,
-      include_national = include_national,
-      ref_pm25 = ref_pm25,
-      output_dir = output_dir,
-      save_plot = save_outputs
-    )
+      results$plots[[ref_name]]$exposure_response <- plot_air_pollution_exposure_response(
+        analysis_results = analysis_res,
+        max_lag = max_lag,
+        include_national = include_national,
+        ref_pm25 = ref_pm25,
+        output_dir = output_dir,
+        save_plot = save_outputs
+      )
 
-    results$plots[[ref_name]]$an_ar_by_region <- plot_air_pollution_an_ar_by_region(
-      analysis_results = analysis_res,
-      max_lag = max_lag,
-      include_national = include_national,
-      output_dir = output_dir,
-      save_plot = save_outputs
-    )
+      results$plots[[ref_name]]$an_ar_by_region <- plot_air_pollution_an_ar_by_region(
+        analysis_results = analysis_res,
+        max_lag = max_lag,
+        include_national = include_national,
+        output_dir = output_dir,
+        save_plot = save_outputs
+      )
+    }
 
+    # AGGREGATIONS — these return plain data frames the client consumes
+    # directly. Always compute them, including in API mode.
     results$plots[[ref_name]]$aggregate_by_region <- aggregate_air_pollution_by_region(
       analysis_results = analysis_res,
       max_lag = max_lag)
@@ -3090,7 +3126,9 @@ air_pollution_do_analysis <- function(
 
     # POWER ANALYSIS
     if (run_power) {
-      results$power_results <- list()
+      if (is.null(results$power_results)) {
+        results$power_results <- list()
+      }
       power_list <- air_pollution_power_list(
         meta_results = meta_results,
         data_with_lags = data_with_lags,
@@ -3101,15 +3139,16 @@ air_pollution_do_analysis <- function(
 
       results$power_results[[ref_name]] <- power_list
 
-      power_plot <- plot_air_pollution_power(
-        power_list = power_list,
-        output_dir = output_dir,
-        save_plot = save_outputs,
-        ref_name = ref_name,
-        include_national = include_national
-      )
-
-      results$plots[[ref_name]]$power_plot <- power_plot
+      if (!api_mode) {
+        power_plot <- plot_air_pollution_power(
+          power_list = power_list,
+          output_dir = output_dir,
+          save_plot = save_outputs,
+          ref_name = ref_name,
+          include_national = include_national
+        )
+        results$plots[[ref_name]]$power_plot <- power_plot
+      }
     }
   }
 
