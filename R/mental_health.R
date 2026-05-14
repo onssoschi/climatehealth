@@ -394,9 +394,17 @@ mh_model_validation <- function(
     names(named_label_list) <- names(df_list)
   }
 
+  # All remaining work in this function is diagnostic plotting. The caller
+  # only ever consumes the qaic/vif return values computed above, so when
+  # save_fig is FALSE we skip the entire plotting pipeline — both to avoid
+  # "figure margins too large" errors in headless / API contexts and to
+  # avoid wasted work building plots nothing will display.
+  if (!isTRUE(save_fig)) {
+    return(list(qaic_results, qaic_summary, vif_results, vif_summary))
+  }
+
   # Determine whether to sample residuals for heavy plots
-  if ((save_fig == TRUE) &&
-      (nrow(do.call(rbind, do.call(rbind, residuals_list))) > 100000)) {
+  if (nrow(do.call(rbind, do.call(rbind, residuals_list))) > 100000) {
     sample_check <- TRUE
   } else {
     sample_check <- FALSE
@@ -407,23 +415,15 @@ mh_model_validation <- function(
     region_data <- df_list[[reg]]
     formula_list <- residuals_list[[reg]]
 
-    if (save_fig == TRUE) {
-      named_label <- named_label_list[[reg]]
-      reg_folder <- gsub(pattern = " ", replacement = "_", x = reg)
+    named_label <- named_label_list[[reg]]
+    reg_folder <- gsub(pattern = " ", replacement = "_", x = reg)
 
-      output_folder_main <- file.path(output_folder_path, "model_validation", reg_folder)
-      dir.create(output_folder_main, recursive = TRUE, showWarnings = FALSE)
-    } else {
-      old_par <- graphics::par(no.readonly = TRUE)
-      on.exit(graphics::par(old_par), add = TRUE)
-      graphics::par(mfrow = c(1, 1), mar = c(5.1, 4.1, 4.1, 2.1), oma = c(0, 0, 0, 0))
-    }
+    output_folder_main <- file.path(output_folder_path, "model_validation", reg_folder)
+    dir.create(output_folder_main, recursive = TRUE, showWarnings = FALSE)
 
     # 1) Residuals vs Date
-    if (save_fig == TRUE) {
-      output_path <- file.path(output_folder_main, paste0(named_label, "_residuals_timeseries.pdf"))
-      open_diag_pdf(output_path, length(formula_list))
-    }
+    output_path <- file.path(output_folder_main, paste0(named_label, "_residuals_timeseries.pdf"))
+    open_diag_pdf(output_path, length(formula_list))
 
     for (i in names(formula_list)) {
       plot(
@@ -2535,6 +2535,16 @@ suicides_heat_do_analysis <- function(
     save_csv = FALSE,
     output_folder_path = NULL,
     seed = NULL) {
+  # When invoked via the plumber API (e.g. from the Flask app) there is no
+  # graphics device available, plots can't be returned over JSON, and the
+  # client renders its own visualisations. Force all side-effectful output
+  # parameters off so internal helpers never try to draw or write files.
+  api_mode <- isTRUE(getOption("climatehealth.api_mode", FALSE))
+  if (api_mode) {
+    save_fig <- FALSE
+    save_csv <- FALSE
+    output_folder_path <- NULL
+  }
   # Setup additional output DIR
   if (!is.null(output_folder_path)) {
     # Check output dir exists
