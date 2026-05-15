@@ -2,7 +2,7 @@
 % Please edit documentation in R/graph_utils.R
 \name{plot_correlation_matrix}
 \alias{plot_correlation_matrix}
-\title{Plot a correlation matrix include a heatmap.}
+\title{Plot a correlation matrix as an accessible heatmap.}
 \usage{
 plot_correlation_matrix(matrix_, title, output_path)
 }
@@ -13,7 +13,10 @@ plot_correlation_matrix(matrix_, title, output_path)
 
 \item{output_path}{The path to output the plot to.}
 }
+\value{
+Invisibly returns the ggplot object.
+}
 \description{
-Plot a correlation matrix include a heatmap.
+Plot a correlation matrix as an accessible heatmap.
 }
 \keyword{internal}
