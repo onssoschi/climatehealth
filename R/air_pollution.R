@@ -356,6 +356,7 @@ air_pollution_descriptive_stats <- function(data,
       timeseries_col = "date",
       detect_outliers = detect_outliers,
       calculate_rate = calculate_rate,
+      run_id = "",
       create_base_dir = TRUE
     )
 
@@ -870,30 +871,6 @@ analyze_air_pollution_daily <- function(data_with_lags,
   return(final)
 }
 
-#' Generate a grid size for a certain number of plots.
-#'
-#' @param n_plots The number of plots required for the grid.
-#'
-#' @return A list containing ncol and nrow values for the grid.
-#'
-#' @keywords internal
-calculate_air_pollution_grid_dims <- function(n_plots){
-  est <- sqrt(n_plots)
-  if (est == floor(est)){
-    x <- y <- est
-  } else {
-    base <- est - floor(est)
-    if (base < 0.5){
-      y <- floor(est)
-    }
-    else {
-      y <- floor(est) + 1
-    }
-    x <- floor(est) + 1
-  }
-  return(list(ncol = x, nrow = y))
-}
-
 #' Plot forest plot for PM2.5 effects by region
 #'
 #' @param analysis_results Processed results with RR/AF/AN/AR with lag variables
@@ -1084,7 +1061,7 @@ plot_air_pollution_forest_by_lag <- function(analysis_results,
     ggplot2::scale_color_manual(values = c("FALSE" = cols$regional, "TRUE" = cols$national)) +
     ggplot2::coord_cartesian(ylim = c(min_ylim, max_ylim)) +
     ggplot2::labs(
-      x = "Region",
+      x = "Lag",
       y = "Relative Risk",
       title = sprintf('PM2.5 effects by lag - Ref: "%s" = %s', ref_name, ref_pm25),
       subtitle = "Points show mean relative risk. Error bars show 95% confidence intervals.",
@@ -1495,7 +1472,7 @@ plot_air_pollution_an_ar_monthly <- function(analysis_results,
     save_accessible_ggplot(
       plot_object = an_plot,
       output_dir = output_dir,
-      filename = paste0("air_pollution_an_monthly_by_region_", safe_refname,
+      filename = paste0("an_monthly_by_region_", safe_refname,
         "_ref", ref_pm25),
       width = plot_width,
       height = plot_height,
@@ -1505,7 +1482,7 @@ plot_air_pollution_an_ar_monthly <- function(analysis_results,
     save_accessible_ggplot(
       plot_object = ar_plot,
       output_dir = output_dir,
-      filename = paste0("air_pollution_ar_monthly_by_region_", safe_refname,
+      filename = paste0("ar_monthly_by_region_", safe_refname,
         "_ref", ref_pm25),
       width = plot_width,
       height = plot_height,
@@ -1703,7 +1680,7 @@ plot_air_pollution_an_ar_by_year <- function(analysis_results,
       plot_object = ar_plot,
       output_dir = output_dir,
       filename = paste0(
-        "air_pollution_ar_by_year_by_region_",
+        "ar_by_year_by_region_",
         safe_refname,
         "_ref",
         ref_pm25
@@ -1717,7 +1694,7 @@ plot_air_pollution_an_ar_by_year <- function(analysis_results,
       plot_object = an_plot,
       output_dir = output_dir,
       filename = paste0(
-        "air_pollution_an_by_year_by_region_",
+        "an_by_year_by_region_",
         safe_refname,
         "_ref",
         ref_pm25
@@ -2179,7 +2156,7 @@ plot_air_pollution_an_ar_by_region <- function(analysis_results,
       plot_object = ar_plot,
       output_dir = output_dir,
       filename = paste0(
-        "air_pollution_ar_by_region_",
+        "ar_by_region_",
         safe_refname,
         "_ref",
         ref_pm25
@@ -2193,7 +2170,7 @@ plot_air_pollution_an_ar_by_region <- function(analysis_results,
       plot_object = an_plot,
       output_dir = output_dir,
       filename = paste0(
-        "air_pollution_an_by_region_",
+        "an_by_region_",
         safe_refname,
         "_ref",
         ref_pm25
@@ -2852,7 +2829,7 @@ air_pollution_do_analysis <- function(
   ),
 
   # Output settings
-  output_dir = "air_pollution_results",
+  output_dir = NULL,
   save_outputs = TRUE,
 
   # Optional analyses
@@ -2879,6 +2856,22 @@ air_pollution_do_analysis <- function(
   detect_outliers = TRUE,
   calculate_rate = FALSE
 ) {
+
+  # Setup additional output DIR
+  if (!is.null(output_dir)) {
+    # Check output dir exists
+    check_file_exists(output_dir, TRUE)
+    new_fpath <- file.path(
+      output_dir,
+      paste0("air_pollution_analysis_", format(Sys.time(), "%d_%m_%Y_%H_%M"))
+    )
+    if (!is.null(new_fpath)) {
+      (
+        dir.create(new_fpath)
+      )
+    }
+    output_dir <- new_fpath
+  }
 
   if (!is.null(Categorical_Others)) {
     if (!is.null(categorical_others)) {
