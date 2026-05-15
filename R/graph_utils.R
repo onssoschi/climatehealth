@@ -28,46 +28,121 @@ create_grid <- function(plot_count) {
 }
 
 
-#' Plot a correlation matrix include a heatmap.
+#' Plot a correlation matrix as an accessible heatmap.
 #'
 #' @param matrix_ The matrix to plot.
 #' @param title The title for the correlation matrix.
 #' @param output_path The path to output the plot to.
 #'
+#' @return Invisibly returns the ggplot object.
+#'
 #' @keywords internal
 plot_correlation_matrix <- function(matrix_, title, output_path) {
-  # validate output path
-  output_path <- enforce_file_extension(output_path, ".png")
-  # round correlation metrics
+  if (is.null(output_path) || !nzchar(output_path)) {
+    stop("`output_path` must be provided.")
+  }
+
+  cols <- get_accessible_plot_colours()
+
+  # Round correlation metrics for display
   matrix_ <- round(matrix_, 3)
 
-  # design palette (Prussian Blue/Deep water -> Smoke grey -> Dusky Rose)
-  n <- 256; half <- n / 2
-  cols_neg <- grDevices::colorRampPalette(c("#0A2E4D", "#296991", "#F2F2F2"))(half)  # strong blue at -1 to white at 0
-  cols_pos <- grDevices::colorRampPalette(c("#F2F2F2", "#C75E70"))(half)             # white at 0 to strong red at +1
-  col_scheme <- c(cols_neg, cols_pos)
+  # Convert matrix to long format for ggplot
+  corr_df <- as.data.frame(as.table(matrix_), stringsAsFactors = FALSE)
+  names(corr_df) <- c("row_var", "col_var", "correlation")
 
-  # symmetric breaks centered on 0 so white is exactly neutral
-  breaks <- c(
-    seq(-1, 0, length.out = half + 1),
-    seq(0, 1, length.out = half + 1)[-1]
+  # Preserve matrix ordering
+  corr_df$row_var <- factor(corr_df$row_var, levels = rev(rownames(matrix_)))
+  corr_df$col_var <- factor(corr_df$col_var, levels = colnames(matrix_))
+
+  # Format labels: show 1 and -1 instead of 1.00 and -1.00
+  corr_df$label <- ifelse(
+    is.na(corr_df$correlation),
+    "",
+    ifelse(
+      abs(corr_df$correlation - 1) < 1e-10,
+      "1",
+      ifelse(
+        abs(corr_df$correlation + 1) < 1e-10,
+        "-1",
+        sprintf("%.2f", corr_df$correlation)
+      )
+    )
   )
 
-  # draw and save correlation matrix
-  png(filename = output_path, units = "in", width = 11.69, height = 8.27, res = 300)
+  n_vars <- ncol(matrix_)
 
-  gplots::heatmap.2(
-    x = as.matrix(matrix_),
-    Rowv = FALSE, Colv = FALSE, dendrogram = "none",
-    cellnote = matrix_,
-    notecol = "#000000", notecex = 2,
-    cexRow = 1.6, cexCol = 1.6,
-    trace = "none", key = FALSE,
-    margins = c(11, 11),
-    main = title,
-    col = col_scheme, breaks = breaks
+  alt_text <- paste(
+    "Correlation matrix heatmap showing pairwise correlations between selected numeric variables.",
+    "Cell colour represents correlation strength and direction, with blue indicating negative correlations, grey indicating values near zero, and rose indicating positive correlations.",
+    "Each cell contains the rounded correlation coefficient."
   )
-  grDevices::dev.off()
+
+  corr_plot <- ggplot2::ggplot(
+    corr_df,
+    ggplot2::aes(
+      x = .data$col_var,
+      y = .data$row_var,
+      fill = .data$correlation
+    )
+  ) +
+    ggplot2::geom_tile(
+      colour = "white",
+      linewidth = 0.5
+    ) +
+    ggplot2::geom_text(
+      ggplot2::aes(label = .data$label),
+      colour = cols$text,
+      size = 4
+    ) +
+    ggplot2::scale_fill_gradient2(
+      low = cols$primary_dark,
+      mid = "white",
+      high = cols$secondary,
+      midpoint = 0,
+      limits = c(-1, 1),
+      na.value = cols$uncertainty,
+      name = "Correlation"
+    ) +
+    ggplot2::coord_fixed() +
+    ggplot2::labs(
+      title = title,
+      x = NULL,
+      y = NULL,
+      caption = paste(
+        strwrap(paste0("Alt text: ", alt_text), width = 120),
+        collapse = "\n"
+      )
+    ) +
+    theme_accessible_ggplot() +
+    ggplot2::theme(
+      axis.text.x = ggplot2::element_text(
+        angle = 45,
+        hjust = 1,
+        vjust = 1
+      ),
+      axis.text.y = ggplot2::element_text(
+        angle = 0
+      ),
+      panel.grid = ggplot2::element_blank(),
+      plot.title = ggplot2::element_text(hjust = 0.5),
+      legend.position = "right",
+      plot.margin = ggplot2::margin(16, 16, 16, 16)
+    )
+
+  plot_width <- max(14, 0.95 * n_vars + 6)
+  plot_height <- max(8, 0.95 * n_vars + 4)
+
+  save_accessible_ggplot(
+    plot_object = corr_plot,
+    output_dir = dirname(output_path),
+    filename = tools::file_path_sans_ext(basename(output_path)),
+    width = plot_width,
+    height = plot_height,
+    alt_text = alt_text
+  )
+
+  invisible(corr_plot)
 }
 
 
@@ -89,30 +164,49 @@ plot_distributions <- function(
     xlabs = NULL,
     save_hists = FALSE,
     output_path = NULL) {
+
+  cols <- get_accessible_palette()
+
   # create a pdf if a save is selected
   if (save_hists == TRUE) {
     # normalise output path
     output_path <- enforce_file_extension(output_path, ".pdf")
-    plot_height <- max(10, length(columns)*2)
-    pdf(output_path, width = 14, height = plot_height)
-  }
-  # normalise columns
-  columns <- c(columns)
-  df <- df %>% select(all_of(columns))
-  # get grid size for plotting
-  grid_size <- create_grid(length(columns))
-  if (!save_hists) {
+    open_accessible_pdf(
+      file = output_path,
+      n_plots = length(columns),
+      max_cols = 2,
+      panel_width = 7,
+      panel_height = 5.2,
+      mar = c(5.2, 5.2, 3.6, 2.2),
+      oma = c(6.5, 0.5, 5.2, 0.5)
+    )
+    on.exit(grDevices::dev.off(), add = TRUE)
+  } else {
     old_par <- graphics::par(no.readonly = TRUE)
     on.exit(graphics::par(old_par), add = TRUE)
+
+    grid_size <- get_plot_grid(length(columns), max_cols = 2)
+
+    graphics::par(
+      mfrow = c(grid_size$n_row, grid_size$n_col),
+      col = "white",
+      oma = c(0, 1, 6, 0),
+      mar = c(5.2, 5.2, 3.6, 2.2),
+      cex.axis = 1.0,
+      cex.lab = 1.1,
+      cex.main = 1.15,
+      family = "sans"
+    )
   }
-  # format page and plot
-  par(
-    mfrow = as.numeric(grid_size),
-    col = "white",
-    oma = c(0, 1, 6, 0),
-    cex.axis = 1.35,
-    cex.lab  = 1.35,
-    cex.main = 1.50
+
+  # normalise columns
+  columns <- c(columns)
+  df <- df %>% dplyr::select(dplyr::all_of(columns))
+
+  alt_text <- paste(
+    "Alt text: Multi-panel histogram figure showing distributions for selected variables.",
+    "Each panel shows the frequency distribution for one variable.",
+    "Bars show counts within value ranges for the selected variable."
   )
 
   for (i in seq_along(columns)) {
@@ -131,37 +225,48 @@ plot_distributions <- function(
       br <- seq(rng[1], rng[2], length.out = 15)
     }
 
-    hist(
-      df[[col_name]],
-      col = "#296991",
+    graphics::hist(
+      x,
+      col = cols$deep_water,
+      border = cols$prussian_blue,
       xlab = xlab,
+      ylab = "Frequency",
       main = paste0("Distribution of '", col_name, "'"),
-      breaks = br
+      breaks = br,
+      col.axis = cols$axis,
+      col.lab = cols$text,
+      col.main = cols$text
     )
   }
-  mtext(title, outer = TRUE, cex = 1.6, line = 1, font = 2, col = "black")
-  # save pdf if requested
+
   if (save_hists == TRUE) {
-    dev.off()
+    run_accessible_pdf_plot(
+      title = title,
+      subtitle = "Histograms show the distribution of selected variables.",
+      line_title = 3.1,
+      line_subtitle = 1.7
+    )
+
+    add_accessible_alt_text(alt_text = alt_text, width = 170, line_start = 1.0)
+  } else {
+    graphics::mtext(title, outer = TRUE, cex = 1.6, line = 1, font = 2, col = cols$text)
   }
+  invisible(NULL)
 }
 
-
-#' Generate and RGB colour value with alpha from a hex value.
+#' Plot the moving average of a column.
 #'
-#' @param hex The hex code of the colour to convert.
-#' @param alpha The alpha of the converted colour (ranging from 0-1).
+#' @param df The dataframe containing the raw data.
+#' @param time_col The column name of the column containing the timeseries.
+#' @param value_col The column name of the column containing the value.
+#' @param ma_days The number of days to use for MA calculations.
+#' @param ma_sides The number of sides to use for MA calculations (1 or 2).
+#' @param title The title for your plot.
+#' @param save_plot Whether or not to save the plot.
+#' @param output_path The path to output the plot to.
+#' @param units A named character vector of units for each variable.
 #'
-#' @return The converted RGB colour.
 #' @keywords internal
-get_alpha_colour <- function(hex, alpha) {
-  rgb_vals <- col2rgb(hex)
-  alpha_colour <- rgb(rgb_vals[1, ] / 255, rgb_vals[2, ] / 255, rgb_vals[3, ] /
-                        255, alpha = alpha)
-  return(alpha_colour)
-}
-
-
 #' Plot the moving average of a column.
 #'
 #' @param df The dataframe containing the raw data.
@@ -185,54 +290,73 @@ plot_moving_average <- function(
     save_plot = FALSE,
     output_path = "",
     units = NULL) {
+
+  cols <- get_accessible_palette()
+
   # Create a PDF if saving is requested
   if (save_plot == TRUE) {
     output_path <- enforce_file_extension(output_path, ".pdf")
     dir.create(dirname(output_path), recursive = TRUE, showWarnings = FALSE)
-    pdf(output_path, width = 14, height = 8)
-    par(oma = c(0, 0, 4, 0), mar = c(5, 4, 3.5, 2) + 0.1)
+
+    open_accessible_pdf(
+      file = output_path,
+      n_plots = 1,
+      max_cols = 1,
+      panel_width = 7,
+      panel_height = 5.2,
+      mar = c(5.2, 5.2, 3.6, 2.2),
+      oma = c(6.5, 0.5, 5.2, 0.5)
+    )
+
+    on.exit(grDevices::dev.off(), add = TRUE)
   }
 
   # Select relevant columns
-  df <- df %>% dplyr::select(all_of(c(time_col, value_col)))
+  df <- df %>%
+    dplyr::select(dplyr::all_of(c(time_col, value_col)))
 
   # Check for valid values
   valid_values <- df[[value_col]][!is.na(df[[value_col]]) & is.finite(df[[value_col]])]
   if (length(valid_values) == 0) {
     warning(paste("No valid data to plot for", value_col))
-    if (save_plot) dev.off()
-    return(NULL)
+    return(invisible(NULL))
   }
 
-  # Compute y-limits that always include 0, with headroom
-  vr    <- range(valid_values, na.rm = TRUE)
+  # Compute y-limits that include 0, with headroom
+  vr <- range(valid_values, na.rm = TRUE)
   y_lo0 <- min(0, vr[1])
   y_hi0 <- max(0, vr[2])
-  span  <- y_hi0 - y_lo0
-  if (!is.finite(span) || span == 0) span <- max(1, abs(y_hi0) + abs(y_lo0))
+  span <- y_hi0 - y_lo0
+  if (!is.finite(span) || span == 0) {
+    span <- max(1, abs(y_hi0) + abs(y_lo0))
+  }
   y_lim <- c(y_lo0 - 0.05 * span, y_hi0 + 0.10 * span)
 
-  line_colour <- get_alpha_colour("#296991", 0.25)
+  line_colour <- grDevices::adjustcolor(cols$deep_water, alpha.f = 0.5)
 
   # Plot raw data
-  plot(
+  graphics::plot(
     x = df[[time_col]],
     y = df[[value_col]],
     type = "l",
     xlab = time_col,
     ylab = label_with_unit(value_col, units),
-    ylim = range(valid_values, na.rm = TRUE),
-    col = line_colour
+    ylim = y_lim,
+    col = line_colour,
+    lwd = 1.2,
+    col.axis = cols$axis,
+    col.lab = cols$text,
+    col.main = cols$text
   )
 
   graphics::title(
     main = paste0("Moving average for `", value_col, "`"),
     cex.main = 1.2,
     font.main = 2,
-    col.main  = "black"
+    col.main = cols$text
   )
 
-  # create moving average column
+  # Create moving average column
   ma <- function(x, n, sides = 1) {
     stats::filter(x, rep(1 / n, n), sides = sides)
   }
@@ -243,7 +367,26 @@ plot_moving_average <- function(
       "Skipping moving average overlay for '", value_col, "': ma_days (", ma_days,
       ") must be less than the number of valid observations (", n_obs, ")."
     ))
-    if (save_plot) grDevices::dev.off()
+
+    if (save_plot == TRUE) {
+      run_accessible_pdf_plot(
+        title = title,
+        subtitle = paste0("Moving average unavailable for `", value_col, "` because the window is too large."),
+        line_title = 3.1,
+        line_subtitle = 1.7
+      )
+
+      add_accessible_alt_text(
+        alt_text = paste(
+          "Alt text: Line plot showing raw values for", value_col,
+          "over time. The moving average overlay was not shown because the moving average window",
+          "was greater than or equal to the number of valid observations."
+        ),
+        width = 160,
+        line_start = 1.0
+      )
+    }
+
     return(invisible(NULL))
   }
 
@@ -254,33 +397,52 @@ plot_moving_average <- function(
     as.character(ma_sides),
     "sides"
   )
+
   df[[col_name]] <- ma(df[[value_col]], ma_days, ma_sides)
 
-  # plot moving average
-  lines(
+  # Plot moving average
+  graphics::lines(
     x = df[[time_col]],
     y = df[[col_name]],
     type = "l",
-    col = "#0A2E4D",
-    lwd = 1.6
+    col = cols$prussian_blue,
+    lwd = 1.8
   )
 
   # Legend
-  legend(
+  graphics::legend(
     "topleft",
     legend = c("Actual values", paste0(ma_days, "-day moving average")),
-    col    = c("#296991", "#0A2E4D"),
-    lwd    = c(1.3, 1.6),
-    lty    = c(1, 1),
-    bg     = "white",
+    col = c(cols$deep_water, cols$prussian_blue),
+    lwd = c(1.3, 1.8),
+    lty = c(1, 1),
+    bg = "white",
     box.lwd = 0.8,
-    cex    = 0.9
+    text.col = cols$text,
+    cex = 0.9
   )
 
-  # close pdf if saving
   if (save_plot == TRUE) {
-    dev.off()
+    run_accessible_pdf_plot(
+      title = title,
+      subtitle = paste0("Moving average for `", value_col, "`"),
+      line_title = 3.1,
+      line_subtitle = 1.7
+    )
+
+    add_accessible_alt_text(
+      alt_text = paste(
+        "Alt text: Line plot showing actual values and a moving average for",
+        value_col,
+        "over time. The pale blue line shows actual values and the dark blue line shows the",
+        paste0(ma_days, "-day moving average.")
+      ),
+      width = 120,
+      line_start = 1.0
+    )
   }
+
+  invisible(NULL)
 }
 
 
@@ -303,27 +465,34 @@ plot_scatter_grid <- function(
     save_scatters = FALSE,
     output_path = "",
     units = NULL) {
+
+  cols <- get_accessible_palette()
+
   all_columns <- c(main_col, comparison_cols)
   if (length(all_columns) < 2) {
     return()
   }
 
   df <- df %>% dplyr::select(all_of(all_columns))
-  grid_size <- create_grid(length(comparison_cols))
+  grid_size <- get_plot_grid(length(comparison_cols), max_cols = 2)
 
   if (save_scatters) {
     output_path <- enforce_file_extension(output_path, ".pdf")
-    plot_height <- max(10, length(comparison_cols)*2)
-    pdf(output_path, width = 14, height = plot_height)
+    dir.create(dirname(output_path), recursive = TRUE, showWarnings = FALSE)
+    plot_height <- max(10, grid_size$n_row * 5.2)
+    grDevices::pdf(output_path,
+      width = 14, height = plot_height, paper = "special", family = "sans")
+    on.exit(grDevices::dev.off(), add = TRUE)
   } else {
     old_par <- graphics::par(no.readonly = TRUE)
     on.exit(graphics::par(old_par), add = TRUE)
   }
-  par(mfrow = grid_size, col = "white", oma = c(0, 1, 7, 0), xpd = NA,
-      cex.axis = 1.35, cex.lab = 1.35, cex.main = 1.50)
+  par(mfrow = c(grid_size$n_row, grid_size$n_col), col = "white",
+      oma = c(6.5, 0.6, 7.2, 0.6), mar = c(5.2, 5.2, 3.6, 2.2),
+      xpd = NA, cex.axis = 1.0, cex.lab = 1.1, cex.main = 1.15, family = "sans")
 
-  point_colour <- get_alpha_colour("#296991", 0.5)
-  line_colour  <- "#C75E70"                          # Dusky Rose
+  point_colour <- grDevices::adjustcolor(cols$deep_water, alpha.f = 0.5)
+  line_colour <- cols$dusky_rose
 
   # sample 20% to reduce file size; keep all rows if tiny dataset
   n <- nrow(df)
@@ -344,9 +513,9 @@ plot_scatter_grid <- function(
     plot(
       x = x, y = y,
       col = point_colour,
-      xlab = xlab,
-      ylab = ylab,
-      main = paste0(main_col, " vs ", x_col)
+      xlab = xlab, ylab = ylab,
+      main = paste0(main_col, " vs ", x_col),
+      col.axis = cols$axis, col.lab = cols$text, col.main = cols$text
     )
 
     # LOESS line of best fit (span tuned for stability)
@@ -360,30 +529,37 @@ plot_scatter_grid <- function(
     }
   }
 
-  ## Title (outer margin, top)
-  mtext(title, outer = TRUE, side = 3, line = 3, cex = 1.6, font = 2, col = "black")
-
   is_full   <- grepl("\\bfull dataset\\b", tolower(title))
-  note_text <- if (is_full) "* 20% random sample shown to reduce file size" else " "
-
-  # points: blue symbol, black text
-  mtext("\u2022", outer = TRUE, side = 3, line = 0.9,
-        adj = 0.295, col = point_colour, cex = 1.7)
-  mtext("Observed data points",outer = TRUE, side = 3, line = 1.2,
-        adj = 0.34, col = "black", cex = 0.90)
-
-  # LOESS: red short line, black text
-  mtext("\u2014", outer = TRUE, side = 3, line = 1.2, adj = 0.53,
-        col = line_colour, cex = 1.5)
-  mtext("LOESS smooth", outer = TRUE, side = 3, line = 1.2, adj = 0.59,
-        col = "black", cex = 0.90)
-
-  # Right item: note text (black), right aligned
-  mtext(note_text, outer = TRUE, side = 3, line = 1.2, adj = 0.9, col = "black", cex = 0.90)
+  sample_note <- if (is_full) "* 20% random sample shown to reduce file size" else " "
+  subtitle <- paste(
+    "Points show observed data. Rose line shows LOESS smooth.",
+    if (!is.null(sample_note)) sample_note else ""
+  )
 
   if (save_scatters) {
-    dev.off()
+    run_accessible_pdf_plot(title = title, subtitle = subtitle,
+      line_title = 4.7, line_subtitle = 3.0)
+
+    add_accessible_alt_text(
+      alt_text = paste(
+        "Alt text: Multi-panel scatter plot comparing",
+        main_col,
+        "against selected independent variables.",
+        "Each panel shows observed data points for one comparison variable.",
+        "A rose LOESS smooth line is shown where sufficient data are available.",
+        if (!is.null(sample_note)) sample_note else ""
+      ),
+      width = 165,
+      line_start = 1.0
+    )
+  } else {
+    graphics::mtext(title, outer = TRUE, side = 3, line = 4.7, cex = 1.4,
+      font = 2, col = cols$text)
+
+    graphics::mtext(subtitle, outer = TRUE, side = 3, line = 3.0,
+      cex = 0.94, col = cols$text)
   }
+  invisible(NULL)
 }
 
 
@@ -406,6 +582,9 @@ plot_boxplots <- function(
     ylabs = NULL,
     save_plot = FALSE,
     output_path = NULL) {
+
+  cols <- get_accessible_palette()
+
   # Select columns based on user input
   if (!is.null(columns)) {
     selected_cols <- columns
@@ -420,18 +599,36 @@ plot_boxplots <- function(
   # Save to PDF if requested
   if (save_plot) {
     output_path <- enforce_file_extension(output_path, ".pdf")
-    plot_height <- max(10, length(selected_cols)*2)
-    pdf(output_path, width = 14, height = plot_height)
+    open_accessible_pdf(
+      file = output_path,
+      n_plots = length(selected_cols),
+      max_cols = 2,
+      panel_width = 7,
+      panel_height = 5.2,
+      mar = c(5.2, 5.2, 3.6, 2.2),
+      oma = c(6.5, 0.6, 5.2, 0.6)
+    )
+    on.exit(grDevices::dev.off(), add = TRUE)
   } else {
     old_par <- graphics::par(no.readonly = TRUE)
     on.exit(graphics::par(old_par), add = TRUE)
+    grid_size <- get_plot_grid(length(selected_cols), max_cols = 2)
+    graphics::par(
+      mfrow = c(grid_size$n_row, grid_size$n_col),
+      oma = c(0, 1, 4, 0),
+      mar = c(5.2, 5.2, 3.6, 2.2),
+      cex.axis = 1.0,
+      cex.lab = 1.1,
+      cex.main = 1.15,
+      family = "sans"
+    )
   }
 
-  grid_size <- create_grid(length(selected_cols))
-  par(mfrow = grid_size, oma = c(0, 1, 4, 0),
-      cex.axis = 1.35,
-      cex.lab  = 1.35,
-      cex.main = 1.50)
+  alt_text <- paste(
+    "Alt text: Multi-panel boxplot figure showing distributions for selected variables.",
+    "Each panel shows one variable.",
+    "Each box shows the interquartile range, the horizontal line shows the median, whiskers show the spread of non-outlier values, and points show outliers where present."
+  )
 
   # Plot each variable
   for (i in seq_along(selected_cols)) {
@@ -439,20 +636,31 @@ plot_boxplots <- function(
     ylab <- if (!is.null(ylabs) && length(ylabs) >= i) ylabs[i] else col_name
 
     boxplot(df[[col_name]],
-            main = paste0(col_name),
-            col = "#296991",
-            border = "#003c57",
+            main = col_name,
+            col = cols$deep_water,
+            border = cols$prussian_blue,
             outline = TRUE,
             horizontal = FALSE,
-            ylab = ylab
+            ylab = ylab,
+            col.axis = cols$axis,
+            col.lab = cols$text,
+            col.main = cols$text
     )
   }
-  # Add overall title
-  mtext(title, outer = TRUE, cex = 1.6, line = 1, font = 2, col = "black")
 
   if (save_plot) {
-    dev.off()
+    run_accessible_pdf_plot(
+      title = title,
+      subtitle = "Boxplots show distribution, median, interquartile range, whiskers, and outliers.",
+      line_title = 3.1,
+      line_subtitle = 1.7
+    )
+    add_accessible_alt_text(alt_text = alt_text, width = 165, line_start = 1.0)
+  } else {
+    graphics::mtext(title, outer = TRUE, cex = 1.6, line = 1, font = 2, col = cols$text)
   }
+
+  invisible(NULL)
 }
 
 
@@ -475,30 +683,48 @@ plot_seasonal_trends <- function(
     ylabs = NULL,
     save_plot = FALSE,
     output_path = "") {
+
+  cols <- get_accessible_palette()
+
   # Ensure date column is Date type
   df[[date_col]] <- as.Date(df[[date_col]])
 
   # Extract month
   df$month <- lubridate::month(df[[date_col]], label = TRUE)
 
-  # Layout
-  grid_size <- create_grid(length(outcome_cols))
-
   # Set up PDF output if needed
   if (save_plot) {
     output_path <- enforce_file_extension(output_path, ".pdf")
-    plot_height <- max(10, length(outcome_cols)*4)
-    pdf(output_path, width = 14, height = plot_height)
+    open_accessible_pdf(
+      file = output_path,
+      n_plots = length(outcome_cols),
+      max_cols = 2,
+      panel_width = 7,
+      panel_height = 5.2,
+      mar = c(5.2, 5.2, 3.6, 2.2),
+      oma = c(6.5, 0.6, 5.2, 0.6)
+    )
+    on.exit(grDevices::dev.off(), add = TRUE)
   } else {
     old_par <- graphics::par(no.readonly = TRUE)
-    on.exit(graphics::par(old_par), add = TRUE)
+    grid_size <- get_plot_grid(length(outcome_cols), max_cols = 2)
+    graphics::par(
+      mfrow = c(grid_size$n_row, grid_size$n_col),
+      oma = c(0, 1, 5, 0),
+      mar = c(5.2, 5.2, 3.6, 2.2),
+      cex.axis = 1.1,
+      cex.lab = 1.2,
+      cex.main = 1.3,
+      family = "sans"
+    )
   }
 
-  # Layout: readable margins + outer title room
-  par(mfrow = grid_size, oma = c(0, 1, 5, 0),
-      cex.axis = 1.35,
-      cex.lab  = 1.35,
-      cex.main = 1.50)
+  alt_text <- paste(
+    "Alt text: Multi-panel bar chart showing monthly average values for selected variables.",
+    "Each panel represents one variable.",
+    "Bars show the mean value for each calendar month.",
+    "A note on the figure states that mean values are used for calculations."
+  )
 
   # Loop through each outcome column
   for (i in seq_along(outcome_cols)) {
@@ -510,20 +736,40 @@ plot_seasonal_trends <- function(
     barplot(
       height = monthly_avg$x,
       names.arg = monthly_avg$Month,
-      col = "#296991",
-      main = paste(col),
+      col = cols$deep_water,
+      border = cols$prussian_blue,
+      main = col,
       ylab = ylab,
-      las = 2
+      las = 2,
+      yaxs = "i",
+      col.axis = cols$axis,
+      col.lab = cols$text,
+      col.main = cols$text
     )
   }
 
-  # Overall title
-  mtext(title, outer = TRUE, side = 3, line = 3, cex = 1.6, font = 2, col = "black")
-  mtext("(Note: mean used for calculations)",outer=TRUE, side=3, line=1.4, adj=0.5, col="black", cex=0.90)
-
   if (save_plot) {
-    dev.off()
+    run_accessible_pdf_plot(
+      title = title,
+      subtitle = "Monthly averages are calculated using mean values.",
+      line_title = 3.1,
+      line_subtitle = 1.7
+    )
+
+    add_accessible_alt_text(alt_text = alt_text, width = 165, line_start = 1.0)
+  } else {
+    graphics::mtext(title, outer = TRUE, side = 3, line = 3, cex = 1.6, font = 2, col = cols$text)
+    graphics::mtext(
+      "(Note: mean used for calculations)",
+      outer = TRUE,
+      side = 3,
+      line = 1.4,
+      adj = 0.5,
+      col = cols$text,
+      cex = 0.90
+    )
   }
+  invisible(NULL)
 }
 
 
@@ -547,6 +793,8 @@ plot_regional_trends <- function(
     save_plot = FALSE,
     output_path = "") {
 
+  cols <- get_accessible_palette()
+
   # Helper to truncate labels with ellipsis
   truncate_labels <- function(x, n = 12) {
     vapply(x, function(s) {
@@ -556,24 +804,40 @@ plot_regional_trends <- function(
     }, character(1))
   }
 
-  # Grid and dynamic device sizing
-  grid_size <- create_grid(length(outcome_cols))
-
   # Set up PDF output if needed
   if (save_plot) {
     output_path <- enforce_file_extension(output_path, ".pdf")
-    plot_height <- max(12, length(outcome_cols)*4)
-    pdf(output_path, width = 14, height = plot_height)
+    open_accessible_pdf(
+      file = output_path,
+      n_plots = length(outcome_cols),
+      max_cols = 2,
+      panel_width = 7,
+      panel_height = 5.2,
+      mar = c(9.5, 5.2, 3.6, 2.2),
+      oma = c(6.5, 0.6, 5.2, 0.6)
+    )
+    on.exit(grDevices::dev.off(), add = TRUE)
   } else {
     old_par <- graphics::par(no.readonly = TRUE)
     on.exit(graphics::par(old_par), add = TRUE)
+    grid_size <- get_plot_grid(length(outcome_cols), max_cols = 2)
+    graphics::par(
+      mfrow = c(grid_size$n_row, grid_size$n_col),
+      oma = c(0, 1, 5, 0),
+      mar = c(9.5, 5.2, 3.6, 2.2),
+      cex.axis = 1.1,
+      cex.lab = 1.2,
+      cex.main = 1.6,
+      family = "sans"
+    )
   }
 
-  # Layout: readable margins + outer title room
-  par(mfrow = grid_size, oma = c(0, 1, 5, 0), mar = c(10, 4.5, 6, 1),
-      cex.axis = 1.35,
-      cex.lab  = 1.35,
-      cex.main = 1.50)
+  alt_text <- paste(
+    "Alt text: Multi-panel bar chart showing regional average values for selected variables.",
+    "Each panel represents one variable.",
+    "Bars show mean values by region.",
+    "Region labels may be shortened with ellipses where names are long."
+  )
 
   # Loop through each outcome column
   for (i in seq_along(outcome_cols)) {
@@ -592,7 +856,6 @@ plot_regional_trends <- function(
       FUN = function(x) mean(x, na.rm = TRUE)
     )
 
-
     # Truncate long labels
     lab_trunc <- truncate_labels(regional_avg$Region, n = 15)
     # Headroom for readability
@@ -602,25 +865,40 @@ plot_regional_trends <- function(
     barplot(
       height = regional_avg$x,
       names.arg = lab_trunc,
-      col = "#296991",
-      main = paste(col),
+      col = cols$deep_water,
+      border = cols$prussian_blue,
+      main = col,
       ylab = ylab,
       las = 2,
-      ylim = c(0, y_top),
-      yaxs = "i"
+      yaxs = "i",
+      col.axis = cols$axis,
+      col.lab = cols$text,
+      col.main = cols$text
     )
   }
-  # Overall title
-  mtext(title, outer = TRUE, cex = 1.5, line = 2.2, font = 2, col = "black")
-  # Note about the statistic used
-  mtext("Note: bars show mean values per region",
-        outer = TRUE, cex = 0.55, line = 0.95, col = "black")
 
   if (save_plot) {
-    dev.off()
+    run_accessible_pdf_plot(
+      title = title,
+      subtitle = "Bars show mean values per region.",
+      line_title = 3.1,
+      line_subtitle = 1.7
+    )
+    add_accessible_alt_text(alt_text = alt_text, width = 165, line_start = 1.0)
+  } else {
+    graphics::mtext(title, outer = TRUE, side = 3, line = 3, cex = 1.6, font = 2, col = cols$text)
+    graphics::mtext(
+      "(Note: mean used for calculations)",
+      outer = TRUE,
+      side = 3,
+      line = 1.4,
+      adj = 0.5,
+      col = cols$text,
+      cex = 0.90
+    )
   }
+  invisible(NULL)
 }
-
 
 #' Plot the rate of a dependent variable per 100,000 population per year.
 #'
@@ -641,6 +919,9 @@ plot_rate_overall <- function(
     title,
     save_rate = FALSE,
     output_path = NULL) {
+
+  cols <- get_accessible_plot_colours()
+
   # Clean numeric columns
   df[[population_col]] <- as.numeric(gsub(",", "", df[[population_col]]))
   df[[dependent_col]] <- as.numeric(df[[dependent_col]])
@@ -663,28 +944,51 @@ plot_rate_overall <- function(
   y_max <- max(yearly_data$Rate_per_100k, na.rm = TRUE)
   y_top <- if (is.finite(y_max)) y_max * 1.10 else NA
 
+
+  alt_text <- paste(
+    "Line chart showing annual rate per 100,000 population for",
+    dependent_col,
+    "in",
+    title,
+    ". Points show yearly rates and the line connects annual rates over time."
+  )
+
   # Create plot
   plot_overall_rate <- ggplot2::ggplot(yearly_data, ggplot2::aes(x = .data$Year, y = .data$Rate_per_100k)) +
-    ggplot2::geom_line(group = 1, color = "#296991", linewidth = 1.2) +
-    ggplot2::geom_point(color = "#296991", size = 2) +
+    ggplot2::geom_line(group = 1, color = cols$primary, linewidth = 1.2) +
+    ggplot2::geom_point(color = cols$primary_dark, size = 2) +
     ggplot2::labs(
       title = paste0("Annual " , dependent_col, " rate per 100,000 population - ", title),
       y = "Rate per 100,000 population",
-      x = "Year"
+      x = "Year",
+      caption = paste(
+        strwrap(paste0("Alt text: ", alt_text), width = 165),
+        collapse = "\n"
+      )
     ) +
     ggplot2::scale_y_continuous(limits = c(0, y_top),
                                 expand = ggplot2::expansion(mult = c(0, 0.02))) +
-    ggplot2::theme_minimal()
+    theme_accessible_ggplot() +
+    ggplot2::theme(
+      axis.text.x = ggplot2::element_text(angle = 0, hjust = 0.5),
+      plot.title = ggplot2::element_text(hjust = 0.5)
+    )
 
   # Save or return
   if (save_rate && !is.null(output_path)) {
     output_path <- enforce_file_extension(output_path, ".pdf")
-    grDevices::pdf(output_path, height = 8, width = 14)
-    print(plot_overall_rate)
-    grDevices::dev.off()
+    save_accessible_ggplot(
+      plot_object = plot_overall_rate,
+      output_dir = dirname(output_path),
+      filename = tools::file_path_sans_ext(basename(output_path)),
+      width = 14,
+      height = 8,
+      alt_text = alt_text
+    )
   } else {
     return(plot_overall_rate)
   }
+  invisible(plot_overall_rate)
 }
 
 
@@ -707,72 +1011,143 @@ plot_total_variables_by_year <- function(
     title,
     save_total = FALSE,
     output_path = "") {
+
+  cols <- get_accessible_plot_colours()
+
+  variables <- unique(as.character(variables))
+
+  if (length(variables) == 0) {
+    stop("`variables` must contain at least one column.")
+  }
+
+  required_cols <- unique(c(date_col, variables))
+  missing_cols <- setdiff(required_cols, names(df))
+  if (length(missing_cols) > 0) {
+    stop(
+      paste0(
+        "Column(s) not in dataset: ",
+        paste(missing_cols, collapse = ", ")
+      )
+    )
+  }
+
   # Convert date column to Date and extract year
   df[[date_col]] <- as.Date(df[[date_col]])
   df$Year <- lubridate::year(df[[date_col]])
 
   # Aggregate totals by year
-  yearly_totals <- aggregate(df[variables], by = list(Year = df$Year), FUN = sum, na.rm = TRUE)
+  yearly_totals <- stats::aggregate(
+    df[variables],
+    by = list(Year = df$Year),
+    FUN = sum,
+    na.rm = TRUE
+  )
 
-  # Set up PDF output if needed
-  if (save_total) {
-    output_path <- enforce_file_extension(output_path, ".pdf")
-    pdf(output_path, height = 8, width = 14)
-  }
-
-  # Plot each variable
-  for (var in variables) {
+  plots <- lapply(variables, function(var) {
     y_max <- max(yearly_totals[[var]], na.rm = TRUE)
-    y_top <- if (is.finite(y_max) && y_max > 0) y_max * 1.1 else 1
+    y_top <- if (is.finite(y_max) && y_max > 0) {
+      y_max * 1.10
+    } else {
+      1
+    }
 
-    p <- ggplot2::ggplot(yearly_totals, ggplot2::aes(x = .data$Year, y = .data[[var]])) +
-      ggplot2::geom_line(color = "#296991", linewidth = 1.2) +
-      ggplot2::geom_point(color = "#296991", size = 2) +
+    alt_text <- paste(
+      "Line chart showing annual total counts for",
+      var,
+      "in",
+      title,
+      ". Points show yearly totals and the line connects annual values over time."
+    )
+
+    p <- ggplot2::ggplot(
+      yearly_totals,
+      ggplot2::aes(x = .data$Year, y = .data[[var]])
+    ) +
+      ggplot2::geom_line(
+        color = cols$primary,
+        linewidth = 1.2
+      ) +
+      ggplot2::geom_point(
+        color = cols$primary_dark,
+        size = 2
+      ) +
       ggplot2::labs(
         title = paste("Annual", var, "counts -", title),
         x = "Year",
-        y = paste("Total ", var)
+        y = paste("Total", var)
       ) +
-      ggplot2::scale_y_continuous(limits = c(0, y_top),
-                                  expand = ggplot2::expansion(mult = c(0, 0.02))) +
-      ggplot2::theme_minimal()
-    print(p)
+      ggplot2::scale_y_continuous(
+        labels = scales::comma,
+        limits = c(0, y_top),
+        expand = ggplot2::expansion(mult = c(0, 0.02))
+      ) +
+      theme_accessible_ggplot() +
+      ggplot2::theme(
+        axis.text.x = ggplot2::element_text(angle = 0, hjust = 0.5),
+        plot.title = ggplot2::element_text(hjust = 0.5)
+      )
+
+    add_ggplot_alt_caption(
+      plot_object = p,
+      alt_text = alt_text
+    )
+  })
+
+  if (length(plots) == 1) {
+    final_plot <- plots[[1]]
+
+    final_alt_text <- paste(
+      "Line chart showing annual total counts for",
+      variables[[1]],
+      "in",
+      title,
+      ". Points show yearly totals and the line connects annual values over time."
+    )
+
+    plot_width <- 14
+    plot_height <- 8
+  } else {
+    grid_dims <- get_accessible_ggplot_grid(length(plots))
+
+    final_alt_text <- paste(
+      "Multi-panel line chart showing annual total counts by year.",
+      "Each panel represents one variable.",
+      "Points show yearly totals and lines connect annual values over time."
+    )
+
+    final_plot <- patchwork::wrap_plots(
+      plots,
+      ncol = grid_dims$n_col
+    ) +
+      accessible_plot_annotation(
+        title = paste("Annual total counts -", title),
+        subtitle = "Points show yearly totals. Lines connect annual values over time.",
+        alt_text = final_alt_text
+      )
+
+    plot_width <- 14
+    plot_height <- max(10, 5.2 * grid_dims$n_row)
   }
 
   if (save_total) {
-    dev.off()
-  }
-}
+    if (is.null(output_path) || !nzchar(output_path)) {
+      stop("`output_path` must be provided when `save_total = TRUE`.")
+    }
 
-#' Save air pollution plot with standardized dimensions
-#'
-#' @param plot_object ggplot or grob object to save
-#' @param output_dir Character. Directory to save plot.
-#' @param filename Character. Name of the file (without or with .png extension).
-#'
-#' @return Invisibly returns the output path
-#'
-#' @keywords internal
-save_air_pollution_plot <- function(plot_object,
-                                    output_dir,
-                                    filename) {
+    output_path <- enforce_file_extension(output_path, ".pdf")
 
-  # Simple Validation
-  if (is.null(output_dir)) stop("'output_dir' must be provided")
-
-  # Create output directory
-  dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-
-  # Save plot
-  if (!endsWith(filename, ".png")) {
-    output_path <- file.path(output_dir, paste0(filename, ".png"))
+    save_accessible_ggplot(
+      plot_object = final_plot,
+      output_dir = dirname(output_path),
+      filename = tools::file_path_sans_ext(basename(output_path)),
+      width = plot_width,
+      height = plot_height,
+      alt_text = final_alt_text
+    )
   } else {
-    output_path <- file.path(output_dir, filename)
+    return(final_plot)
   }
 
-  ggplot2::ggsave(output_path, plot_object,
-                  width = 10, height = 8, dpi = 150
-  )
-
-  invisible(output_path)
+  invisible(final_plot)
 }
+

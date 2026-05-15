@@ -560,7 +560,7 @@ get_accessible_plot_colours <- function() {
 
 
 
-' Get accessible ggplot grid dimensions
+#' Get accessible ggplot grid dimensions
 #'
 #' Calculates grid dimensions for ggplot facets or patchwork plots. Defaults to
 #' a maximum of two columns to avoid squished panels.
@@ -902,7 +902,7 @@ add_ggplot_logo <- function(plot_object) {
       logo_grob,
       left = 0.012,
       bottom = 0.94,
-      right = 0.13,
+      right = 0.18,
       top = 0.995,
       align_to = "full",
       clip = TRUE

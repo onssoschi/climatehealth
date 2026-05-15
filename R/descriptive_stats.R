@@ -400,7 +400,7 @@ descriptive_stats_core <- function(
   # plot correlation matrix
   if (plot_corr_matrix == TRUE) {
     full_corr <- create_correlation_matrix(df, selected_cols, correlation_method)
-    corr_path <- file.path(output_path, "correlation_matrix.png")
+    corr_path <- file.path(output_path, "correlation_matrix.pdf")
     plot_correlation_matrix(
       matrix_ = full_corr,
       title = paste0(
@@ -432,15 +432,22 @@ descriptive_stats_core <- function(
   }
   # Count NAs and visualise
   na_counts_path <- file.path(output_path, "na_counts.pdf")
+
   if (plot_na_counts == TRUE) {
     na_summary <- create_na_summary(df)
+    cols <- get_accessible_palette()
+
     with_pdf_device(
       output_path = na_counts_path,
       width = 14,
       height = 8,
       context = paste0("NA counts plot for ", title),
       plot_fn = function() {
-        par(mar = c(8, 4, 4, 4) + 0.1)
+        graphics::par(
+          mar = c(8, 4, 4, 4) + 0.1,
+          oma = c(6.5, 0.6, 6.2, 0.6),
+          family = "sans"
+        )
 
         # left axis: counts - force a sensible upper bound even if all zeros
         y_max <- max(na_summary$na_count, na.rm = TRUE)
@@ -449,49 +456,96 @@ descriptive_stats_core <- function(
         y_ticks <- pretty(ylim, n = 11)
         ylim <- c(0, max(y_ticks))
 
-        bar_midpoints <- barplot(
+        bar_midpoints <- graphics::barplot(
           height = na_summary$na_count,
           names.arg = na_summary$column,
           las = 2,
-          col = "#296991",
+          col = cols$deep_water,
+          border = cols$prussian_blue,
           ylab = "NA Count",
           main = paste0("NA counts - ", title),
           ylim = ylim,
           yaxs = "i",
-          yaxt = "n"
+          yaxt = "n",
+          col.axis = cols$axis,
+          col.lab = cols$text,
+          col.main = cols$text
         )
-        axis(side = 2,
-             at = y_ticks)
+
+        graphics::axis(
+          side = 2,
+          at = y_ticks,
+          col.axis = cols$axis
+        )
 
         pmax <- max(na_summary$na_percent, na.rm = TRUE)
         lim_hi <- if (is.finite(pmax) && pmax <= 2) 2 else 100
         epsilon <- lim_hi * 0.02
-        ticks <- if (lim_hi == 100) seq(0, 100, by = 10) else seq(0, lim_hi, length.out = 11)
-        par(new = TRUE)
-        plot(
+        ticks <- if (lim_hi == 100) {
+          seq(0, 100, by = 10)
+        } else {
+          seq(0, lim_hi, length.out = 11)
+        }
+
+        graphics::par(new = TRUE)
+
+        graphics::plot(
           x = bar_midpoints,
           y = na_summary$na_percent + epsilon,
           type = "b",
           axes = FALSE,
           xlab = "",
           ylab = "",
-          col = "#C75E70",
+          col = cols$dusky_rose,
           pch = 16,
           ylim = c(0, lim_hi),
           yaxs = "i"
         )
-        axis(side = 4,
-             at = ticks,
-             labels = ticks)
-        mtext("NA Percent", side = 4, line = 3, col = "black")
 
-        legend("topright",
-               inset = 0.02,
-               legend = c("NA count", "NA percent"),
-               col = c("#296991", "#C75E70"),
-               pch = c(15, 16),
-               lty = c(NA, 1),
-               pt.cex = 1)
+        graphics::axis(
+          side = 4,
+          at = ticks,
+          labels = ticks,
+          col.axis = cols$axis
+        )
+
+        graphics::mtext(
+          "NA Percent",
+          side = 4,
+          line = 3,
+          col = cols$text
+        )
+
+        graphics::legend(
+          "topright",
+          inset = 0.02,
+          legend = c("NA count", "NA percent"),
+          col = c(cols$deep_water, cols$dusky_rose),
+          pch = c(15, 16),
+          lty = c(NA, 1),
+          pt.cex = 1,
+          text.col = cols$text,
+          bg = "white",
+          box.col = cols$axis
+        )
+
+        run_accessible_pdf_plot(
+          title = paste0("NA counts - ", title),
+          subtitle = "Bars show missing value counts. The line shows missing value percentage.",
+          line_title = 4.2,
+          line_subtitle = 2.7
+        )
+
+        add_accessible_alt_text(
+          alt_text = paste(
+            "Alt text: Bar and line plot showing missing values by column for",
+            title,
+            ". Bars show the number of missing values for each column.",
+            "The line with points shows the percentage of missing values for each column using the right-hand axis."
+          ),
+          width = 165,
+          line_start = 1.0
+        )
       }
     )
   }
@@ -1074,12 +1128,12 @@ run_descriptive_stats <- function(
       plot_total = plot_total,
       write_outlier_table = detect_outliers,
       calculate_rate = calculate_rate,
-      is_full_dataset = identical(nm, "All")
+      is_full_dataset = identical(nm, "Full Dataset")
     )
   }
 
   # Always produce full dataset outputs under All
-  all_output_path <- file.path(run_output_path, "All")
+  all_output_path <- file.path(run_output_path, "Full Dataset")
   dir.create(all_output_path, recursive = TRUE, showWarnings = FALSE)
   descriptive_stats_core(
     df = combined_df,
@@ -1138,11 +1192,12 @@ run_descriptive_stats <- function(
     region_output_paths[[region_name]] <- region_output_path
   }
 
-  # Moving Average (wrapper concern)
+  # Moving Average
   if (plot_ma == TRUE) {
     raise_if_null("ma_days", ma_days)
     raise_if_null("ma_sides", ma_sides)
     raise_if_null("timeseries_col", timeseries_col)
+
     ma_days <- as.numeric(ma_days)
     ma_sides <- as.numeric(ma_sides)
 
@@ -1150,45 +1205,66 @@ run_descriptive_stats <- function(
     ma_df_list <- c(list(All = combined_df), region_df_list)
 
     for (region_name in names(ma_df_list)) {
+      display_region_name <- if (identical(region_name, "All")) {
+        "Full Dataset"
+      } else {
+        region_name
+      }
       region_folder <- region_output_paths[[region_name]]
       file_path <- file.path(region_folder, "moving_average.pdf")
+
+
       with_pdf_device(
         output_path = file_path,
         width = 14,
         height = 8,
-        context = paste0("moving average plot for region '", region_name, "'"),
+        context = paste0("moving average plot for region '", display_region_name, "'"),
         plot_fn = function() {
-          par(oma = c(0, 0, 4, 0), mar = c(5, 4, 3.5, 2) + 0.1)
-
           for (col_i in seq_along(ma_vars)) {
+            value_col <- ma_vars[[col_i]]
+
+            graphics::par(
+              oma = c(6.5, 0.6, 6.2, 0.6),
+              mar = c(5, 4, 3.5, 2) + 0.1
+            )
+
             plot_moving_average(
               df = ma_df_list[[region_name]],
               time_col = timeseries_col,
-              value_col = ma_vars[[col_i]],
+              value_col = value_col,
               ma_days = ma_days,
               ma_sides = ma_sides,
-              title = paste0("Moving average - ", region_name),
+              title = paste0("Moving average - ", display_region_name),
               save_plot = FALSE,
               output_path = "",
               units = units
             )
-            if (col_i == 1) {
-              mtext(
-                paste0("Moving average - ", region_name),
-                outer = TRUE,
-                cex = 1.5,
-                line = 1.2,
-                font = 2,
-                col = "black"
-              )
-              mtext(
-                paste0("(n=", ma_days, ", sides=", ma_sides, ")"),
-                outer = TRUE,
-                cex = 1.1,
-                line = 0.1,
-                col = "black"
-              )
-            }
+
+            # Add logo/title/subtitle to this page, not after the loop
+            run_accessible_pdf_plot(
+              title = paste0("Moving average - ", display_region_name),
+              subtitle = paste0(
+                "Variable: ", value_col,
+                " | n=", ma_days,
+                ", sides=", ma_sides
+              ),
+              line_title = 4.2,
+              line_subtitle = 2.7
+            )
+
+            # Add alt text to this page, not after the loop
+            add_accessible_alt_text(
+              alt_text = paste(
+                "Alt text: Moving average plot for",
+                display_region_name,
+                "showing",
+                value_col,
+                "over time.",
+                "The pale blue line shows actual values and the dark blue line shows the moving average."
+              ),
+              width = 160,
+              line_start = 1.0
+            )
           }
         }
       )
