@@ -10,7 +10,8 @@ hc_attr(
   pred_list,
   minpercgeog_,
   attr_thr_high = 97.5,
-  attr_thr_low = 2.5
+  attr_thr_low = 2.5,
+  seed = NULL
 )
 }
 \arguments{
@@ -30,6 +31,9 @@ temperature threshold for calculating attributable risk. Defaults to 97.5.}
 
 \item{attr_thr_low}{Integer. Percentile at which to define the lower
 temperature threshold for calculating attributable risk. Defaults to 2.5.}
+
+\item{seed}{Optional integer random seed used when sampling residuals for
+model validation plots. Defaults to NULL.}
 }
 \value{
 'attr_list'. A list containing attributable numbers per geography.

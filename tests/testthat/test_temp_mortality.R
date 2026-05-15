@@ -59,7 +59,8 @@ test_that("Test hc_read_data", {
       month = as.factor(lubridate::month(date)),
       dow   = as.factor(lubridate::wday(date, label = TRUE)),
       region = as.factor(.data$region)
-    )
+    ) %>%
+    dplyr::arrange(region, date)
 
   # Create control list (alphabetical by region)
   control_list <- split(control_df[order(control_df$region), , drop = FALSE], control_df$region)
@@ -583,19 +584,25 @@ test_that("hc_quasipoisson_dlnm fits DLNM GLMs correctly with controls", {
     expect_true(grepl(" dow", f_str, fixed = TRUE))
     expect_true(grepl("splines::ns\\(date, df = 8 \\* length\\(unique\\(year\\)\\)\\)", f_str))
 
-    # Control variables are included as raw terms (not splines) in this function
-    terms_rhs <- attr(terms(m), "term.labels")
-    expect_true("humidity" %in% terms_rhs)
-    expect_true("pollution" %in% terms_rhs)
-
+    # Control variables are included as spline-created terms
+    trm <- attr(terms(m), "term.labels")
+    expect_true("humidity_ns" %in% trm)
+    expect_true("pollution_ns" %in% trm)
 
     # Terms contain expected labels
-    trm <- attr(terms(m), "term.labels")
+
     expect_true(any(grepl("^cb", trm)))
     expect_true(any(grepl("^dow", trm)))
     expect_true(any(grepl("^splines::ns\\(date", trm)))
-    expect_true("humidity" %in% trm)
-    expect_true("pollution" %in% trm)
+    expect_true("humidity_ns" %in% trm)
+    expect_true("pollution_ns" %in% trm)
+
+    # Coefficients should include expanded spline basis terms
+    coef_names <- names(coef(m))
+
+    expect_true(any(grepl("^humidity_ns", coef_names)))
+    expect_true(any(grepl("^pollution_ns", coef_names)))
+
   }
 })
 
@@ -633,7 +640,7 @@ test_that("hc_quasipoisson_dlnm respects custom dfseas in the date spline", {
   f_str <- paste(deparse(formula(m)), collapse = " ")
 
   terms_rhs <- attr(terms(m), "term.labels")
-  expect_true("humidity" %in% terms_rhs)
+  expect_true("humidity_ns" %in% terms_rhs)
   expect_true(grepl("splines::ns\\(date, df = 6 \\* length\\(unique\\(year\\)\\)\\)", f_str))
   expect_equal(m$family$family, "quasipoisson")
 })
@@ -2653,6 +2660,7 @@ test_that("integration: temp_mortality_do_analysis runs end-to-end (dynamic synt
     dependent_col = "deaths",
     population_col = "population",
     independent_cols = c("hum", "sun", "rainfall"),
+    df_control = 3,
     control_cols = NULL,
     var_fun = "bs",
     var_degree = 2,
@@ -2671,7 +2679,20 @@ test_that("integration: temp_mortality_do_analysis runs end-to-end (dynamic synt
 
   # Structure checks: ensure contract is met
   expect_type(result, "list")
-  expected_names <- c("rr_results", "an_ar_results", "annual_an_ar_results", "monthly_an_ar_results")
+
+  expected_names <- c(
+    "qaic_results",
+    "qaic_summary",
+    "vif_results",
+    "vif_summary",
+    "meta_test_res",
+    "power_list_high",
+    "power_list_low",
+    "rr_results",
+    "res_attr_tot",
+    "attr_yr_list",
+    "attr_mth_list"
+  )
   expect_true(all(expected_names %in% names(result)))
 
   # rr_results: basic schema & content (non-brittle subset)
@@ -2680,16 +2701,16 @@ test_that("integration: temp_mortality_do_analysis runs end-to-end (dynamic synt
   expect_true(nrow(rr) > 0, info = "rr_results unexpectedly empty")
   expect_true(all(c("Area", "RR", "RR_lower_CI", "RR_upper_CI") %in% names(rr)))
 
-  # an_ar_results (overall totals)
-  tot <- result$an_ar_results
+  # res_attr_tot (overall totals)
+  tot <- result$res_attr_tot
   expect_s3_class(tot, "data.frame")
   expect_true(nrow(tot) >= length(regions), info = "overall results should include per-region rows")
   expect_true(all(c("region", "population", "deaths") %in% names(tot)))
   expect_true(any(c("af_heat", "ar_heat", "an_heat") %in% names(tot)))  # heat metrics present
   expect_true(any(c("af_cold", "ar_cold", "an_cold") %in% names(tot)))  # cold metrics present
 
-  # annual_an_ar_results: list of data frames keyed by region
-  yr_list <- result$annual_an_ar_results
+  # attr_yr_list: list of data frames keyed by region
+  yr_list <- result$attr_yr_list
   expect_type(yr_list, "list")
   expect_true(all(vapply(yr_list, is.data.frame, logical(1))))
   # At least one data frame should include 'year' and some metric columns
@@ -2699,8 +2720,8 @@ test_that("integration: temp_mortality_do_analysis runs end-to-end (dynamic synt
     expect_true(any(c("af_heat", "ar_heat", "an_heat", "af_cold", "ar_cold", "an_cold") %in% names(sample_df)))
   }
 
-  # monthly_an_ar_results: list of data frames keyed by region, with 'month' names
-  mth_list <- result$monthly_an_ar_results
+  # attr_mth_list: list of data frames keyed by region, with 'month' names
+  mth_list <- result$attr_mth_list
   expect_type(mth_list, "list")
   expect_true(all(vapply(mth_list, is.data.frame, logical(1))))
   if (length(mth_list) > 0) {
@@ -2711,4 +2732,10 @@ test_that("integration: temp_mortality_do_analysis runs end-to-end (dynamic synt
       expect_true(all(sample_df$month %in% month.name))
     }
   }
+
+  # Power outputs
+  expect_type(result$power_list_high, "list")
+  expect_type(result$power_list_low, "list")
+
 })
+

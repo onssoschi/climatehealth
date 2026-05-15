@@ -28,7 +28,8 @@ and climate variables which may be disaggregated by a particular region.}
 \item{var_degree}{Integer. Degree of the piecewise polynomial for argvar
 (see dlnm::crossbasis). Defaults to 2 (quadratic).}
 
-\item{minpercreg}{Vector. Percentile of maximum suicide temperature for each region.}
+\item{minpercreg}{Vector. Percentile of maximum suicide temperature or minimum mortality
+temperature for each region, depending on indicator or interest.}
 
 \item{mmpredall}{List of national coefficients and covariance matrices for the crosspred.}
 
