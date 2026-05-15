@@ -31,23 +31,20 @@ hc_read_data <- function(input_csv_path,
   # Load the input dataset
   df <- read_input_data(input_csv_path)
 
-  # Format the geography column. If geog is missing, then assume geographies
-  # are aggregated or only single input geography.
-  if (is.null(region_col)) {
-    df <- df %>%
-      dplyr::mutate(geog = "aggregated")
-  }
   # subset needed cols
   needed_cols <- c(
     dependent_col,
     date_col,
-    region_col,
     temperature_col,
     population_col
   )
-  standard_cols <- c(
-    "deaths", "date", "region", "temp", "population"
-  )
+
+  if (!is.null(region_col)) {
+    needed_cols <- c(needed_cols, region_col)
+  }
+
+  standard_cols <- c("deaths", "date", "temp", "population", "region")
+
   for (i in seq_along(standard_cols)) {
     std_col <- standard_cols[i]
     need_col <- needed_cols[i]
@@ -55,22 +52,37 @@ hc_read_data <- function(input_csv_path,
       df[[std_col]] <- NULL
     }
   }
-  # Rename the columns
+
+  # Rename mandatory columns
   df <- df %>%
     dplyr::rename(
       deaths = all_of(dependent_col),
       date = all_of(date_col),
-      region = all_of(region_col),
       temp = all_of(temperature_col),
       population = all_of(population_col)
-    ) %>%
+    )
+
+  # Rename region only if it was provided
+  if (!is.null(region_col)) {
+    df <- df %>%
+      dplyr::rename(
+        region = all_of(region_col)
+      )
+  } else {
+    df <- df %>%
+      dplyr::mutate(region = "Overall")
+  }
+
+  # Standard transformations
+  df <- df %>%
     dplyr::mutate(
       date = as.Date(date, tryFormats = c("%d/%m/%Y", "%Y-%m-%d")),
-      year = as.factor(lubridate::year(date)),
-      month = as.factor(lubridate::month(date)),
-      dow = as.factor(lubridate::wday(date, label = TRUE)),
+      year = as.factor(lubridate::year(.data$date)),
+      month = as.factor(lubridate::month(.data$date)),
+      dow = as.factor(lubridate::wday(.data$date, label = TRUE)),
       region = as.factor(.data$region)
-    )
+    ) %>%
+    dplyr::arrange(.data$region, .data$date)
 
   # Reformat data and fill NaNs
   df <- reformat_data(df,
@@ -256,7 +268,7 @@ hc_model_combo_res <- function(df_list,
 
   # Combine results into a single data frame
   qaic_results <- do.call(rbind, qaic_results)
-  # Sort by geog and QAIC
+  # Sort by geog and formula
   qaic_results <- qaic_results[order(qaic_results$geography,
                                      qaic_results$formula), ]
 
@@ -653,8 +665,8 @@ hc_model_validation <- function(df_list,
 }
 #' Define and run quasi-Poisson regression with DLNM
 #'
-#' @description Fits a quasi-Poisson case-crossover with a distributed lag
-#' non-linear model.
+#' @description Fits a quasi-Poisson time series regression with a
+#' distributed lag non-linear model.
 #'
 #' @param df_list A list of dataframes containing daily timeseries data for a
 #' health outcome and climate variables which may be disaggregated by a
@@ -664,6 +676,8 @@ hc_model_validation <- function(df_list,
 #' @param cb_list List of cross-basis matrices from hc_create_crossbasis
 #' function.
 #' @param dfseas Integer. Degrees of freedom for seasonality. Defaults to 8.
+#' @param df_control Integer. Degrees of freedom for natural splines applied to
+#' control variables. Defaults to 3.
 #'
 #' @returns 'model_list'. List containing models by geography.
 #'
@@ -671,7 +685,8 @@ hc_model_validation <- function(df_list,
 hc_quasipoisson_dlnm <- function(df_list,
                                  control_cols = NULL,
                                  cb_list,
-                                 dfseas = 8) {
+                                 dfseas = 8,
+                                 df_control = 3) {
   model_list <- list()
 
   # build the formula with base formula and control variables
@@ -695,42 +710,50 @@ hc_quasipoisson_dlnm <- function(df_list,
   } else {
     control_cols <- c()
   }
-
-  # define the base independent cols
-  base_independent_cols <- c(
+  # define the base columns
+  base_cols <- c(
     "cb",
     "dow",
     paste0("splines::ns(date, df = ", dfseas, " * length(unique(year)))")
   )
 
-  # model formula
+  # base model formula
   base_formula <- paste(
     "deaths ~",
-    paste(base_independent_cols,
-      collapse = " + "
+    paste(base_cols,
+          collapse = " + "
     )
   )
 
-  if (is.null(control_cols)) {
-    formula <- as.formula(paste(base_formula))
+  # define the formula with spline-applied control variables, if specified
+  if (!is.null(control_cols) && length(control_cols) > 0) {
+    control_ns <- paste0(control_cols, "_ns")
+    formula <- as.formula(
+      paste(base_formula, "+", paste(control_ns, collapse = " + "))
+    )
   } else {
-    formula <- as.formula(paste(
-      base_formula,
-      paste("+", paste(control_cols,
-        collapse = " + "
-      ))
-    ))
+    formula <- as.formula(base_formula)
   }
 
-  # Run model
+
+  # run models per geography
   for (geog in names(df_list)) {
+
     geog_data <- df_list[[geog]]
     cb <- cb_list[[geog]]
 
+    # create spline matrices for control variables
+    if (!is.null(control_cols) && length(control_cols) > 0) {
+      for (v in control_cols) {
+        ns_matrix <- splines::ns(geog_data[[v]], df = df_control)
+        assign(paste0(v, "_ns"), ns_matrix)
+      }
+    }
+
     model <- glm(formula,
-      geog_data,
-      family = quasipoisson,
-      na.action = "na.exclude"
+                 geog_data,
+                 family = quasipoisson,
+                 na.action = "na.exclude"
     )
 
     model_list[[geog]] <- model
@@ -1473,6 +1496,8 @@ hc_plot_rr <- function(df_list,
 #' temperature threshold for calculating attributable risk. Defaults to 97.5.
 #' @param attr_thr_low Integer. Percentile at which to define the lower
 #' temperature threshold for calculating attributable risk. Defaults to 2.5.
+#' @param seed Optional integer random seed used when sampling residuals for
+#' model validation plots. Defaults to NULL.
 #'
 #' @returns 'attr_list'. A list containing attributable numbers per geography.
 #'
@@ -1482,8 +1507,13 @@ hc_attr <- function(df_list,
                     pred_list,
                     minpercgeog_,
                     attr_thr_high = 97.5,
-                    attr_thr_low = 2.5) {
+                    attr_thr_low = 2.5,
+                    seed = NULL) {
   attr_list <- list()
+
+  if(!is.null(seed)) {
+    set.seed(seed)
+  }
 
   for (geog in names(df_list)) {
     geog_data <- df_list[[geog]]
@@ -3454,6 +3484,8 @@ hc_save_results <- function(rr_results,
 #' model validation as confounders. Defaults to NULL.
 #' @param control_cols List. Confounders to include in the final model
 #' adjustment. Defaults to NULL.
+#' @param df_control Integer. Degrees of freedom for natural splines applied to
+#' control variables. Defaults to 3.
 #' @param var_fun Character. Exposure function for argvar
 #' (see dlnm::crossbasis). Defaults to 'bs'.
 #' @param var_degree Integer. Degree of the piecewise polynomial for argvar
@@ -3567,6 +3599,7 @@ temp_mortality_do_analysis <- function(data_path,
                                        country = "National",
                                        independent_cols = NULL,
                                        control_cols = NULL,
+                                       df_control = 3,
                                        var_fun = "bs",
                                        var_degree = 2,
                                        var_per = c(10, 75, 90),
@@ -3574,12 +3607,12 @@ temp_mortality_do_analysis <- function(data_path,
                                        lagnk = 3,
                                        dfseas = 8,
                                        meta_analysis = FALSE,
-    attr_thr_high = 97.5,
-    attr_thr_low = 2.5,
-    save_fig = FALSE,
-    save_csv = FALSE,
-    output_folder_path = NULL,
-    seed = NULL) {
+                                       attr_thr_high = 97.5,
+                                       attr_thr_low = 2.5,
+                                       save_fig = FALSE,
+                                       save_csv = FALSE,
+                                       output_folder_path = NULL,
+                                       seed = NULL) {
   # When invoked via the plumber API, headless R has no graphics device and
   # plots can't be returned over JSON — the client renders its own. Force
   # all side-effectful output parameters off so internal helpers never try
@@ -3590,6 +3623,7 @@ temp_mortality_do_analysis <- function(data_path,
     save_csv <- FALSE
     output_folder_path <- NULL
   }
+
   # Setup additional output DIR
   if (!is.null(output_folder_path)) {
     # Check output dir exists
@@ -3632,6 +3666,14 @@ temp_mortality_do_analysis <- function(data_path,
     population_col = population_col
   )
 
+  if (isTRUE(meta_analysis) && length(df_list) < 2) {
+    warning(
+      "meta_analysis = TRUE requires multiple regions. ",
+      "The data contain only one aggregated region, so meta_analysis has been set to FALSE."
+    )
+    meta_analysis <- FALSE
+  }
+
   pop_list <- dlnm_pop_totals(
     df_list = df_list,
     country = country,
@@ -3662,12 +3704,14 @@ temp_mortality_do_analysis <- function(data_path,
   qaic_summary <- model_validation[[2]]
   vif_results <- model_validation[[3]]
   vif_summary <- model_validation[[4]]
+  adf_results <- model_validation[[5]]
 
   model_list <- hc_quasipoisson_dlnm(
     df_list = df_list,
     control_cols = control_cols,
     cb_list = cb_list,
-    dfseas = dfseas
+    dfseas = dfseas,
+    df_control = df_control
   )
 
   reduced <- dlnm_reduce_cumulative(
@@ -3680,6 +3724,10 @@ temp_mortality_do_analysis <- function(data_path,
   coef_ <- reduced[[1]]
   vcov_ <- reduced[[2]]
 
+  mm <- NULL
+  blup <- NULL
+  meta_test_res <- NULL
+
   if (meta_analysis == TRUE) {
     meta <- dlnm_meta_analysis(
       df_list = df_list,
@@ -3688,11 +3736,10 @@ temp_mortality_do_analysis <- function(data_path,
       save_csv = save_csv,
       output_folder_path = output_folder_path
     )
+
     mm <- meta[[1]]
     blup <- meta[[2]]
     meta_test_res <- meta[[3]]
-  } else {
-    blup <- NULL
   }
 
   min_mort_temp <- dlnm_min_mortality_temp(
@@ -3776,7 +3823,8 @@ temp_mortality_do_analysis <- function(data_path,
     pred_list = pred_list,
     minpercgeog_ = minpercgeog_,
     attr_thr_high = attr_thr_high,
-    attr_thr_low = attr_thr_low
+    attr_thr_low = attr_thr_low,
+    seed = seed
   )
 
   attr_tables <- hc_attr_tables(
@@ -3906,10 +3954,18 @@ temp_mortality_do_analysis <- function(data_path,
 
   return(
     list(
+      qaic_results = qaic_results,
+      qaic_summary = qaic_summary,
+      vif_results = vif_results,
+      vif_summary = vif_summary,
+      adf_results = adf_results,
+      meta_test_res = meta_test_res,
+      power_list_high = power_list_high,
+      power_list_low = power_list_low,
       rr_results = rr_results,
-      an_ar_results = res_attr_tot,
-      annual_an_ar_results = attr_yr_list,
-      monthly_an_ar_results = attr_mth_list
+      res_attr_tot = res_attr_tot,
+      attr_yr_list = attr_yr_list,
+      attr_mth_list = attr_mth_list
     )
   )
 }

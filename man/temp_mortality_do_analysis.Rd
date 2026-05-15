@@ -15,6 +15,7 @@ temp_mortality_do_analysis(
   country = "National",
   independent_cols = NULL,
   control_cols = NULL,
+  df_control = 3,
   var_fun = "bs",
   var_degree = 2,
   var_per = c(10, 75, 90),
@@ -58,6 +59,9 @@ model validation as confounders. Defaults to NULL.}
 
 \item{control_cols}{List. Confounders to include in the final model
 adjustment. Defaults to NULL.}
+
+\item{df_control}{Integer. Degrees of freedom for natural splines applied to
+control variables. Defaults to 3.}
 
 \item{var_fun}{Character. Exposure function for argvar
 (see dlnm::crossbasis). Defaults to 'bs'.}

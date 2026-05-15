@@ -342,7 +342,8 @@ dlnm_min_mortality_temp <- function(
 #' (see dlnm::crossbasis). Defaults to c(25, 50, 75).
 #' @param var_degree Integer. Degree of the piecewise polynomial for argvar
 #' (see dlnm::crossbasis). Defaults to 2 (quadratic).
-#' @param minpercreg Vector. Percentile of maximum suicide temperature for each region.
+#' @param minpercreg Vector. Percentile of maximum suicide temperature or minimum mortality
+#' temperature for each region, depending on indicator or interest.
 #' @param mmpredall List of national coefficients and covariance matrices for the crosspred.
 #' @param pred_list A list containing predictions from the model by region.
 #' @param country Character. Name of country for national level estimates. Defaults
