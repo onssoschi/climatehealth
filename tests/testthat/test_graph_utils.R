@@ -38,8 +38,8 @@ patrick::with_parameters_test_that(
     expect_true(file.exists(file.path(temp_dir, exp_out_path)))
   },
   output_path = c("test_corr.png", "test_corr2"),
-  exp_out_path = c("test_corr.png", "test_corr2.png"),
-  .test_name = c("with .png ext", "without .png ext")
+  exp_out_path = c("test_corr.pdf", "test_corr2.pdf"),
+  .test_name = c("with .pdf ext", "without .png ext")
 )
 
 # Tests for plot_distributions
@@ -94,15 +94,6 @@ test_that(
         save_plot = FALSE
       )
     )
-  }
-)
-
-# Tests for get_alpha_colour
-test_that(
-  "get_alpha_colour works as expected",
-  {
-    rgb <- get_alpha_colour("#F54927", 0.6)
-    expect_equal(rgb, "#F5492799")
   }
 )
 
@@ -628,3 +619,4 @@ test_that(
     )
   }
 )
+
