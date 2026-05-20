@@ -966,6 +966,11 @@ plot_rate_overall <- function(
         collapse = "\n"
       )
     ) +
+    ggplot2::scale_x_continuous(
+      breaks = seq(min(yearly_data$Year, na.rm = TRUE),
+                   max(yearly_data$Year, na.rm = TRUE),
+                   by = 1),
+      labels = function(x) as.integer(x)) +
     ggplot2::scale_y_continuous(limits = c(0, y_top),
                                 expand = ggplot2::expansion(mult = c(0, 0.02))) +
     theme_accessible_ggplot() +
