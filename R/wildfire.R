@@ -708,6 +708,20 @@ casecrossover_quasipoisson <- function(
   lags <- lag_cols$col_names
   lag_nums <- lag_cols$lag_nums
 
+  # format panel labels for residual diagnostic plots
+  format_wildfire_lag_panel_label <- function(x) {
+    if (identical(x, "mean_PM")) {
+      return("mean_pm")
+    }
+
+    if (grepl("^mean_PM_l\\d+_mean$", x)) {
+      lag_num <- sub("^mean_PM_l(\\d+)_mean$", "\\1", x)
+      return(paste0("mean_pm_l0_", lag_num))
+    }
+
+    tolower(x)
+  }
+
   # choose lagged temperature variables
   temp_var <- if(temperature_lag == 0) {
     "tmean"
@@ -721,8 +735,10 @@ casecrossover_quasipoisson <- function(
 
   # get results
   results <- list()
+
   if (save_fig == TRUE) {
-    grid <- create_grid(length(lags))
+    cols <- get_accessible_palette()
+
     file_name <- if (calculate_by_region && "region" %in% names(data)) {
       paste0(
         "wildfires_residuals_vs_fit_plot_",
@@ -731,15 +747,24 @@ casecrossover_quasipoisson <- function(
     } else {
       "wildfires_residuals_vs_fit_plot.pdf"
     }
+
     output_path <- file.path(
       output_folder_path,
       "model_validation",
       file_name
     )
-    pdf(output_path, width = grid[1] * 4, height = grid[2] * 4)
-    par(mfrow = c(grid[1], grid[2]))
 
+    open_accessible_pdf(
+      file = output_path,
+      n_plots = length(lags),
+      max_cols = 2,
+      panel_width = 5.8,
+      panel_height = 4.8,
+      mar = c(5.0, 5.0, 3.2, 2.0),
+      oma = c(6.2, 0.6, 6.8, 0.6)
+    )
   }
+
   for (i in lags) {
     # create model
     formula_parts <- c(
@@ -762,6 +787,7 @@ casecrossover_quasipoisson <- function(
       subset = data$ind > 0,
       eliminate = data$stratum
     )
+
     # print summaries if required
     if (print_model_summaries) {
       print(Epi::ci.exp(model, subset = i))
@@ -773,11 +799,13 @@ casecrossover_quasipoisson <- function(
         model$deviance / model$df.residual
       ))
     }
+
     # get residuals and plot (if needed)
     devresid <- resid(model, type = "deviance")
     used_rows <- data$ind > 0 & stats::complete.cases(data[, all.vars(formula), drop = FALSE])
     fit_data <- data[used_rows, , drop = FALSE]
     fitted_vals <- model$fitted.values
+
     if (save_fig == TRUE) {
       if (calculate_by_region) {
         for (reg in unique(fit_data$region)) {
@@ -790,19 +818,31 @@ casecrossover_quasipoisson <- function(
             x, y,
             xlab = "Fitted values",
             ylab = "Deviance residuals",
-            main = paste(reg, "-", i),
-            col = "#f25574"
+            main = format_wildfire_lag_panel_label(i),
+            col = cols$deep_water,
+            pch = 16,
+            cex = 0.85,
+            col.axis = cols$axis,
+            col.lab = cols$text,
+            col.main = cols$text
           )
         }
       } else {
         x <- fitted_vals
         y <- devresid
         if (length(x) > 0 && length(y) > 0 && !all(is.na(x)) && !all(is.na(y))) {
-          plot(x, y,
-               xlab = "Fitted values",
-               ylab = "Deviance residuals",
-               main = paste("All Regions -", i),
-               col = "#f25574")
+          plot(
+            x, y,
+            xlab = "Fitted values",
+            ylab = "Deviance residuals",
+            main = format_wildfire_lag_panel_label(i),
+            col = cols$deep_water,
+            pch = 16,
+            cex = 0.85,
+            col.axis = cols$axis,
+            col.lab = cols$text,
+            col.main = cols$text
+          )
         }
       }
     }
@@ -821,9 +861,38 @@ casecrossover_quasipoisson <- function(
       ci_upper = ci_upper
     )
   }
+
   # save figure
   if (save_fig == TRUE) {
-    dev.off()
+    diagnostic_region <- if (calculate_by_region && "region" %in% names(data)) {
+      unique(as.character(data$region))[1]
+    } else {
+      "All Regions"
+    }
+
+    alt_text <- paste(
+      "Diagnostic residuals versus fitted values plots for wildfire-related PM2.5 models.",
+      "Each panel corresponds to one wildfire PM2.5 lag term.",
+      "The x-axis shows fitted values from the quasi-Poisson case-crossover model.",
+      "The y-axis shows deviance residuals.",
+      "The plots are used to assess model fit and identify unusual residual patterns.",
+      "The figure is shown for", diagnostic_region, "."
+    )
+
+    run_accessible_pdf_plot(
+      title = "Wildfire model diagnostics: residuals versus fitted values",
+      subtitle = paste("Region:", diagnostic_region),
+      line_title = 4.6,
+      line_subtitle = 3.0
+    )
+
+    add_accessible_alt_text(
+      alt_text = alt_text,
+      width = 170,
+      line_start = 0.8
+    )
+
+    grDevices::dev.off()
   }
 
   # create results df and return
@@ -831,6 +900,7 @@ casecrossover_quasipoisson <- function(
   rownames(results) <- NULL
   return(results)
 }
+
 
 #' QAIC calculation
 #'
@@ -980,6 +1050,9 @@ plot_RR <- function(
   if (save_fig && is.null(output_folder_path)) {
     stop("No output path provided when save_fig == TRUE.")
   }
+
+  cols <- get_accessible_plot_colours()
+
   # create list to collect plots
   plots <- list()
   # determine ylimits for plotting
@@ -1014,15 +1087,40 @@ plot_RR <- function(
     )
     plots[[length(plots) + 1]] <- plot
   }
+
+  alt_text <- paste(
+    "Relative risk plot for wildfire-related PM2.5 by lag.",
+    "Each point shows the estimated relative risk and each vertical error bar shows the 95 percent confidence interval.",
+    "The dashed horizontal line marks relative risk equal to one.",
+    if (by_region) {
+      "Panels show estimates separately by region."
+    } else {
+      "The plot shows the estimate for all regions combined."
+    }
+  )
+
   # combine and save
-  combined_plots <- patchwork::wrap_plots(plots)
+  n_panels <- length(plots)
+  n_cols <- min(2, n_panels)
+  n_rows <- ceiling(n_panels / n_cols)
+  combined_plots <- patchwork::wrap_plots(plots, ncol = n_cols)
+
+  combined_plots <- combined_plots +
+    accessible_plot_annotation(
+      title = "Wildfire PM2.5 Relative Risk by Lag",
+      subtitle = "Points show relative risk estimates. Error bars show 95% confidence intervals.",
+      alt_text = alt_text,
+      width = if (n_panels == 1) 115 else 170
+    )
+
   if (save_fig) {
-    ggplot2::ggsave(
-      filename = file.path(output_folder_path, "RR_lag_estimates.pdf"),
-      plot = combined_plots,
-      width = if (length(combined_plots) == 1) 8 else 5 * length(combined_plots),
-      height = if (length(combined_plots) == 1) 8 else 4 * length(combined_plots),
-      limitsize = FALSE
+    save_accessible_ggplot(
+      plot_object = combined_plots,
+      output_dir = output_folder_path,
+      filename = "RR_lag_estimates",
+      width = if (n_panels == 1) 8.4 else max(9, n_cols * 5.8),
+      height = if (n_panels == 1) 9.2 else max(6, n_rows * 5.2),
+      alt_text = alt_text
     )
   }
   return(combined_plots)
@@ -1059,6 +1157,7 @@ plot_RR_core <- function(
   if (save_fig && is.null(output_folder_path)) {
     stop("No output path provided when save_fig == TRUE.")
   }
+  cols <- get_accessible_plot_colours()
   # generate labels
   labels <- c("0 days")
   if (wildfire_lag > 0) {
@@ -1075,6 +1174,15 @@ plot_RR_core <- function(
       max(rr_data$ci_upper) + 0.1
     )
   }
+
+  alt_text <- paste(
+    "Relative risk plot for wildfire-related PM2.5 in",
+    region_name,
+    ". Points show relative risk estimates by lag.",
+    "Vertical error bars show 95 percent confidence intervals.",
+    "The dashed horizontal line marks relative risk equal to one."
+  )
+
   # plot RR data
   plot <- ggplot2::ggplot(
     data = rr_data,
@@ -1085,35 +1193,37 @@ plot_RR_core <- function(
       ymax = .data$ci_upper
     )
   ) +
-    ggplot2::geom_point(size = 3) +
-    ggplot2::geom_errorbar(width = 0.5, linewidth = 1) +
-    ggplot2::geom_hline(yintercept = 1, lty = 2) +
+    ggplot2::geom_point(size = 3, colour = cols$primary) +
+    ggplot2::geom_errorbar(width = 0.5, linewidth = 1, colour = cols$primary) +
+    ggplot2::geom_hline(yintercept = 1, lty = 2, colour = cols$reference, linewidth = 0.7) +
     ggplot2::xlab("Lag") +
     ggplot2::ylab("Relative risk") +
-    ggplot2::ggtitle(paste("Wildfire PM2.5: ", region_name, sep = "")) +
-    ggplot2::scale_x_continuous(
-      breaks = seq(0, wildfire_lag, 1), labels = labels
-    ) +
-    ggplot2::scale_y_continuous(
-      limits = ylims
-    ) +
-    ggplot2::theme_bw() +
-    ggplot2::theme(
-      axis.text = ggplot2::element_text(size = 18),
-      axis.title = ggplot2::element_text(size = 18)
+    ggplot2::ggtitle(paste(region_name)) +
+    ggplot2::scale_x_continuous(breaks = seq(0, wildfire_lag, 1), labels = labels) +
+    ggplot2::scale_y_continuous(limits = ylims) +
+    theme_accessible_ggplot() +
+    theme_accessible_ggplot_panel() +
+    ggplot2::theme(legend.position = "none",plot.title = ggplot2::element_text(hjust = 0.5)
     )
+
+  plot <- add_ggplot_alt_caption(
+    plot_object = plot,
+    alt_text = alt_text
+  )
+
   # save figure if necessary
   if (save_fig == TRUE) {
     # Create output path and PDF
     formatted_region_name <- gsub(" ", "_", tolower(region_name))
-    file_name <- paste(
-      "RR_lag_estimates_", formatted_region_name, ".pdf",
-      sep = ""
+    file_name <- paste("RR_lag_estimates_", formatted_region_name, sep = "")
+    save_accessible_ggplot(
+      plot_object = plot,
+      output_dir = output_folder_path,
+      filename = file_name,
+      width = 8,
+      height = 8,
+      alt_text = alt_text
     )
-    pdf(file.path(output_folder_path, file_name), width = 8, height = 8)
-    # Add to figure
-    print(plot)
-    dev.off()
   }
   return(plot)
 }
@@ -1435,7 +1545,6 @@ plot_aggregated_AF <- function(data, by_region = FALSE, include_all_regions = TR
   # set up plot
   pname <- "aggregated_AF"
   if (by_region) pname <- paste0(pname, "_by_region")
-  fpath <- file.path(output_dir, paste0(pname, ".pdf"))
   plots <- list()
   # plot for full dataset
   if (include_all_regions) {
@@ -1461,19 +1570,40 @@ plot_aggregated_AF <- function(data, by_region = FALSE, include_all_regions = TR
       plots[[length(plots) + 1]] <- p_reg
     }
   }
+
+  alt_text <- paste(
+    "Annual attributable fraction plot for wildfire-related PM2.5 exposure.",
+    "Each panel shows the average attributable fraction over time.",
+    "The line shows the annual estimate and the shaded band shows the 95 percent confidence interval.",
+    if (by_region) {
+      "Panels show estimates separately by region."
+    } else {
+      "The plot shows the estimate for all regions combined."
+    },
+    "Note: Attributable fractions are based on relative risks at lag 0."
+  )
+
   # combine and save plots
-  combined_plots <- patchwork::wrap_plots(plots)
+  n_panels <- length(plots)
+  n_cols <- min(2, n_panels)
+  n_rows <- ceiling(n_panels / n_cols)
+
+  combined_plots <- patchwork::wrap_plots(plots, ncol = n_cols)
   # add caption
   combined_plots <- combined_plots +
-    patchwork::plot_annotation(
-      caption = "Note: Attributable fraction(s) are based on relative risk(s) at lag 0."
+    accessible_plot_annotation(
+      title = "Annual Attributable Fraction due to Wildfire-related PM2.5 exposure",
+      subtitle = "Line shows annual estimate. Shaded area shows 95% confidence interval.",
+      alt_text = alt_text,
+      width = if (n_panels == 1) 115 else 170
     )
-  ggplot2::ggsave(
-    fpath,
-    combined_plots,
-    width = length(plots) * 5,
-    height = length(plots) * 4,
-    limitsize = FALSE
+  save_accessible_ggplot(
+    plot_object = combined_plots,
+    output_dir = output_dir,
+    filename = pname,
+    width = if (n_panels == 1) 8.4 else max(9, n_cols * 5.8),
+    height = if (n_panels == 1) 9.2 else max(6, n_rows * 5.2),
+    alt_text = alt_text
   )
 }
 
@@ -1492,6 +1622,7 @@ plot_aggregated_AF <- function(data, by_region = FALSE, include_all_regions = TR
 #' @keywords internal
 #'
 plot_aggregated_AF_core <- function(data, region_name = NULL) {
+  cols <- get_accessible_plot_colours()
   # aggregate AN/AR data
   agg_data <- data %>%
     group_by(.data$year) %>%
@@ -1502,9 +1633,9 @@ plot_aggregated_AF_core <- function(data, region_name = NULL) {
     ) %>%
     mutate(year = as.numeric(as.character(.data$year)))
   # create output plot
-  title <- "Annual Attributable Fraction (%) due to Wildfire-related PM2.5 exposure"
-  if (!is.null(region_name)) title <- paste0(title, " (", region_name, ")")
-  title_wrapped <- stringr::str_wrap(title, width = 40)
+  #title <- "Annual Attributable Fraction (%) due to Wildfire-related PM2.5 exposure"
+  #if (!is.null(region_name)) title <- region_name
+  #title_wrapped <- stringr::str_wrap(title, width = 40)
   plot_agg_an <- ggplot2::ggplot(
     agg_data,
     ggplot2::aes(x = .data$year, y = .data$sum_total_deaths)
@@ -1517,13 +1648,15 @@ plot_aggregated_AF_core <- function(data, region_name = NULL) {
     ggplot2::geom_line(color = "#003c57", linewidth = 1) +
     ggplot2::theme_minimal(base_size = 14) +
     ggplot2::labs(
-      title = title_wrapped,
+      title = region_name,
       x = "Year",
       y = "Attributable Fraction (%)"
     ) +
+    theme_accessible_ggplot() +
+    theme_accessible_ggplot_panel() +
     ggplot2::theme(
-      axis.line = ggplot2::element_line(linewidth = 0.5, colour = "black")
-    )
+      plot.title = ggplot2::element_text(hjust = 0.5), legend.position = "none")
+
   return(plot_agg_an)
 }
 
@@ -1605,6 +1738,9 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL, in
   if (save_outputs == TRUE && !file.exists(output_dir)) {
     stop("'output_dir' must exist on disk to save outputs.")
   }
+
+  cols <- get_accessible_plot_colours()
+
   data$month_name <- month.abb[data$month]
   # Aggregate data across all regions by year
   aggregated_data <- data %>%
@@ -1629,36 +1765,40 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL, in
 
   # Calculate scaling factor
   scale_factor <- max(aggregated_data$mean_deaths_per_100k) / max(aggregated_data$mean_pm)
+
+  alt_text <- paste(
+    "Monthly dual-axis plot showing deaths per 100,000 population and mean wildfire-related PM2.5 concentration.",
+    "Bars show average deaths per 100,000 population by month.",
+    "The line and points show mean PM2.5 concentration, scaled to the primary axis and labelled on the secondary axis.",
+    if (include_all_regions) {
+      "Each panel represents one region."
+    } else {
+      ""
+    }
+  )
+
   # Plot results
-  all_plots <- c()
+  all_plots <- list()
+
   for (reg in unique(aggregated_data$region)) {
-    region_data <- subset(
-      aggregated_data,
-      aggregated_data$region == reg
-    )
-    title <- paste0(
-      "Monthly Deaths and Mean PM2.5 Concentration - ",
-      reg, " (", min(data$year), " - ", max(data$year), ")"
-    )
-    title_wrapped <- stringr::str_wrap(title, width = 45)
-    plot_ar_pm <- ggplot2::ggplot(
-      region_data,
-      ggplot2::aes(x = .data$month_name)
-    ) +
+    region_data <- subset(aggregated_data, aggregated_data$region == reg)
+
+    plot_ar_pm <- ggplot2::ggplot(region_data, ggplot2::aes(x = .data$month_name)) +
       ggplot2::geom_bar(
         ggplot2::aes(y = .data$mean_deaths_per_100k),
         stat = "identity",
-        fill = "#003c57",
-        alpha = 0.7
+        fill = cols$regional,
+        alpha = 0.85
       ) +
       ggplot2::geom_line(
         ggplot2::aes(y = .data$mean_pm * scale_factor, group = 1),
-        color = "red",
+        color = cols$secondary_dark,
         linewidth = 1
       ) +
       ggplot2::geom_point(
         ggplot2::aes(y = .data$mean_pm * scale_factor),
-        color = "red", size = 1
+        color = cols$secondary_dark,
+        size = 2
       ) +
       ggplot2::scale_y_continuous(
         name = "Deaths per 100,000 population",
@@ -1667,17 +1807,41 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL, in
           name = "Mean PM2.5 (ug/m^3)"
         )
       ) +
-      ggplot2::labs(
-        title = title_wrapped,
-        x = "Month"
-      ) +
-      ggplot2::theme_light() +
+      ggplot2::labs(title = reg, x = "Month") +
+      theme_accessible_ggplot() +
+      theme_accessible_ggplot_panel() +
       ggplot2::theme(
-        axis.line = ggplot2::element_line(linewidth = 0.5, colour = "black")
+        legend.position = "none",
+        plot.title = ggplot2::element_text(hjust = 0.5),
+        panel.grid.major.x = ggplot2::element_blank(),
+        axis.title.y = ggplot2::element_text(colour = cols$regional),
+        axis.title.y.right = ggplot2::element_text(colour = cols$secondary_dark)
       )
+
     all_plots[[length(all_plots) + 1]] <- plot_ar_pm
   }
-  combined_plots <- patchwork::wrap_plots(all_plots)
+
+  # combine plots using a maximum of two panels per row
+  n_panels <- length(all_plots)
+  n_cols <- min(2, n_panels)
+  n_rows <- ceiling(n_panels / n_cols)
+
+  combined_plots <- patchwork::wrap_plots(
+    all_plots,
+    ncol = n_cols
+  )
+
+  combined_plots <- combined_plots +
+    accessible_plot_annotation(
+      title = paste0(
+        "Monthly Deaths and Mean Wildfire-related PM2.5 Concentration\n",
+        " (", min(data$year), " - ", max(data$year), ")"
+      ),
+      subtitle = "Bars show deaths per 100,000 population. Line and points show mean PM2.5 concentration.",
+      alt_text = alt_text,
+      width = if (n_panels == 1) 115 else 170
+    )
+
   # sort data
   sorted_data <- aggregated_data[
     order(
@@ -1685,19 +1849,26 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL, in
       match(aggregated_data$month_name, month.abb)
     ),
   ]
-  sorted_data <- sorted_data %>% select(all_of(c("region", "month_name", "mean_deaths_per_100k", "mean_pm")))
-  # save csv
+
+  sorted_data <- sorted_data %>%
+    select(all_of(c("region", "month_name", "mean_deaths_per_100k", "mean_pm")))
+
+  # save csv and plot
   if (save_outputs) {
     fpath <- file.path(output_dir, "Monthly_deaths_pm_trends")
-    ggplot2::ggsave(
-      paste0(fpath, ".pdf"),
-      combined_plots,
-      width = length(all_plots) * 5,
-      height = length(all_plots) * 4,
-      limitsize = FALSE
+
+    save_accessible_ggplot(
+      plot_object = combined_plots,
+      output_dir = output_dir,
+      filename = "Monthly_deaths_pm_trends",
+      width = if (n_panels == 1) 8.4 else max(9, n_cols * 5.8),
+      height = if (n_panels == 1) 9.2 else max(6, n_rows * 5.2),
+      alt_text = alt_text
     )
+
     write.csv(sorted_data, paste0(fpath, ".csv"), row.names = FALSE)
   }
+
   return(sorted_data)
 }
 
@@ -1865,6 +2036,7 @@ plot_rr_by_pm <- function(
   if (save_fig == TRUE && !file.exists(output_dir)) {
     stop("'output_dir' must exist on disk to save outputs.")
   }
+  cols <- get_accessible_plot_colours()
   exp_cols <- c(
     "pm_levels",
     "relative_risk",
@@ -1888,21 +2060,37 @@ plot_rr_by_pm <- function(
     )
     all_plots[[length(all_plots) + 1]] <- p
   }
+
+  alt_text <- paste(
+    "Exposure-response curve for wildfire-related PM2.5 and relative risk.",
+    "Each panel represents one region.",
+    "The line shows estimated relative risk across PM2.5 concentration levels.",
+    "The shaded band shows the 95 percent confidence interval.",
+    "Curves are based on relative risks at lag 0."
+  )
+
   # combine and save
-  combined_plots <- patchwork::wrap_plots(all_plots)
+  n_panels <- length(all_plots)
+  n_cols <- min(2, n_panels)
+  n_rows <- ceiling(n_panels / n_cols)
+  combined_plots <- patchwork::wrap_plots(all_plots, ncol = n_cols)
   # add caption
   combined_plots <- combined_plots +
-    patchwork::plot_annotation(
-      caption = "Note: Exposure-response curve(s) are based on relative risk(s) at lag 0."
+    accessible_plot_annotation(
+      title = "Exposure-response Curve for Wildfire-related PM2.5",
+      subtitle = "Line shows relative risk. Shaded area shows 95% confidence interval.",
+      alt_text = alt_text,
+      width = if (n_panels == 1) 115 else 170
     )
+
   if (save_fig) {
-    fpath <- file.path(output_dir, "ER_curve.pdf")
-    ggplot2::ggsave(
-      fpath,
-      combined_plots,
-      width = if (length(combined_plots) == 1) 8 else 5 * length(combined_plots),
-      height = if (length(combined_plots) == 1) 8 else 4 * length(combined_plots),
-      limitsize = FALSE
+    save_accessible_ggplot(
+      plot_object = combined_plots,
+      output_dir = output_dir,
+      filename = "ER_curve",
+      width = if (n_panels == 1) 8.4 else max(9, n_cols * 5.8),
+      height = if (n_panels == 1) 9.2 else max(6, n_rows * 5.2),
+      alt_text = alt_text
     )
   }
   return(combined_plots)
@@ -1928,30 +2116,45 @@ plot_rr_by_pm_core <- function(
     data,
     region_name = "All Regions",
     ylims = c(-2, 2)) {
+
+  cols <- get_accessible_plot_colours()
+
+  alt_text <- paste(
+    "Exposure-response curve for wildfire-related PM2.5 in",
+    region_name,
+    ". The line shows estimated relative risk across PM2.5 concentration levels.",
+    "The shaded band shows the 95 percent confidence interval."
+  )
+
   # create plot object
-  title <- paste0("All-cause mortality", " (", region_name, ")")
-  p <- ggplot2::ggplot(data, ggplot2::aes(x = .data$pm_levels, y = .data$relative_risk)) +
+  p <- ggplot2::ggplot(
+    data,
+    ggplot2::aes(x = .data$pm_levels, y = .data$relative_risk)
+  ) +
     ggplot2::geom_ribbon(
       ggplot2::aes(ymin = .data$ci_lower, ymax = .data$ci_upper),
       alpha = 0.2,
-      fill = "#4d7789"
+      fill = cols$primary
     ) +
-    ggplot2::geom_line(color = "#003c57", linewidth = 1) +
-    ggplot2::scale_y_continuous(
-      limits = ylims,
-      labels = scales::number_format(accuracy = 0.01)
+    ggplot2::geom_line(color = cols$primary, linewidth = 1) +
+    ggplot2::scale_y_continuous(limits = ylims, labels = scales::number_format(accuracy = 0.01)) +
+    ggplot2::labs(
+      title = region_name,
+      x = "PM2.5 (ug/m3)",
+      y = "Relative Risk"
     ) +
-    ggplot2::labs(title = title, x = "PM2.5 (ug/m3)", y = "Relative Risk") +
-    ggplot2::theme_minimal(base_size = 14) +
+    theme_accessible_ggplot() +
+    theme_accessible_ggplot_panel() +
     ggplot2::theme(
-      axis.line = ggplot2::element_line(linewidth = 0.5, colour = "black"),
-      plot.background = ggplot2::element_rect(color = "#222222", linewidth = 1),
-      panel.border = ggplot2::element_rect(
-        color = "#222222",
-        fill = NA,
-        linewidth = 0.5
-      )
+      legend.position = "none",
+      plot.title = ggplot2::element_text(hjust = 0.5)
     )
+
+  p <- add_ggplot_alt_caption(
+    plot_object = p,
+    alt_text = alt_text
+  )
+
   return(p)
 }
 
@@ -1977,18 +2180,23 @@ plot_ar_by_region <- function(data, output_dir = ".") {
   # validation
   if (is.null(output_dir)) stop("'output_dir' required.")
   if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
+
+  cols <- get_accessible_plot_colours()
+
   exp_cols <- c(
     "region",
     "deaths_per_100k",
     "lower_ci_deaths_per_100k",
     "upper_ci_deaths_per_100k"
   )
+
   if (!(all(exp_cols %in% colnames(data)))) {
     stop(
       "'data' must contain the following columns: ",
       paste(exp_cols, collapse = ", ")
     )
   }
+
   # aggregate dataset
   aggregated_data <- data %>%
     group_by(.data$region) %>%
@@ -2003,41 +2211,84 @@ plot_ar_by_region <- function(data, output_dir = ".") {
         na.rm = TRUE
       )
     )
+
+  alt_text <- paste(
+    "Bar chart showing average deaths per 100,000 population attributable to wildfire-related PM2.5 exposure by region.",
+    "Each bar represents one region.",
+    "Regions are ordered by average attributable deaths per 100,000 population in descending order."
+  )
+
+  title_text <- stringr::str_wrap(
+    "Average deaths per 100k attributable to Wildfire-related PM2.5 exposure",
+    width = 78
+  )
+
+  caption_text <- paste(
+    strwrap(paste0("Alt text: ", alt_text), width = 170),
+    collapse = "\n"
+  )
+
   # draw plot and save
   p <- ggplot2::ggplot(
     aggregated_data,
     ggplot2::aes(
-      x = forcats::fct_reorder(
+      y = forcats::fct_reorder(
         .data$region,
         .data$mean_deaths_per_100k,
         .desc = TRUE
       ),
-      y = .data$mean_deaths_per_100k
+      x = .data$mean_deaths_per_100k
     )
   ) +
-    ggplot2::geom_col(fill = "#003c57") +
-    ggplot2::labs(
-      title = "Average deaths per 100k attributable to Wildfire-related PM2.5 exposure",
-      x = "Regions",
-      y = "Deaths per 100k population"
+    ggplot2::geom_col(
+      fill = cols$regional,
+      alpha = 0.85
     ) +
-    ggplot2::theme_minimal(base_family = "sans") +
+    ggplot2::labs(
+      title = title_text,
+      subtitle = "Horizontal bars show average attributable deaths per 100,000 population by region.",
+      y = "Regions",
+      x = "Deaths per 100k population",
+      caption = caption_text
+    ) +
+    theme_accessible_ggplot() +
     ggplot2::theme(
-      plot.background = ggplot2::element_rect(fill = "white", color = NA),
-      panel.background = ggplot2::element_rect(fill = "white", color = NA),
-      axis.text = ggplot2::element_text(color = "black"),
-      axis.title = ggplot2::element_text(color = "black"),
-      plot.title = ggplot2::element_text(color = "black"),
-      axis.line = ggplot2::element_line(linewidth = 0.5, colour = "black"),
-      axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+      legend.position = "none",
+      plot.title = ggplot2::element_text(
+        hjust = 0.5,
+        margin = ggplot2::margin(t = 14, b = 8)
+      ),
+      plot.subtitle = ggplot2::element_text(
+        hjust = 0.5,
+        margin = ggplot2::margin(b = 18)
+      ),
+
+      # Makes alt text start as far left as ggplot allows
+      plot.caption.position = "plot",
+      plot.caption = ggplot2::element_text(
+        hjust = 0,
+        size = 10.5,
+        face = "italic",
+        lineheight = 1.12,
+        margin = ggplot2::margin(t = 18, r = 0, b = 8, l = 0)
+      ),
+
+      # Internal spacing only
+      plot.margin = ggplot2::margin(t = 34, r = 34, b = 44, l = 8),
+      axis.text.y = ggplot2::element_text(size = 10),
+      axis.text.x = ggplot2::element_text(angle = 0, hjust = 0.5)
     )
+
   # save plot
-  ggplot2::ggsave(
-    file.path(output_dir, "AR_by_region.pdf"),
-    p,
-    width = 8,
-    height = 6
+  save_accessible_ggplot(
+    plot_object = p,
+    output_dir = output_dir,
+    filename = "AR_by_region",
+    width = 13,
+    height = 9.5,
+    alt_text = alt_text
   )
+
   return(p)
 }
 
@@ -2061,57 +2312,103 @@ plot_an_by_region <- function(data, output_dir = ".") {
   # validation
   if (is.null(output_dir)) stop("'output_dir' required.")
   if (!file.exists(output_dir)) stop("'output_dir' does not exist.")
+
+  cols <- get_accessible_plot_colours()
+
   exp_cols <- c(
     "region",
     "total_attributable_number"
   )
+
   if (!(all(exp_cols %in% colnames(data)))) {
     stop(
       "'data' must contain the following columns: ",
       paste(exp_cols, collapse = ", ")
     )
   }
+
   # aggregate dataset
   aggregated_data <- data %>%
     group_by(.data$region) %>%
     summarise(
       sum_total_an = sum(.data$total_attributable_number, na.rm = TRUE),
     )
+
+  alt_text <- paste(
+    "Bar chart showing total attributable number of deaths due to wildfire-related PM2.5 exposure by region.",
+    "Each bar represents one region.",
+    "Regions are ordered by total attributable number of deaths in descending order."
+  )
+
+  title_text <- stringr::str_wrap(
+    "Total attributable number of deaths due to Wildfire-related PM2.5 exposure",
+    width = 78
+  )
+
+  caption_text <- paste(
+    strwrap(paste0("Alt text: ", alt_text), width = 170), collapse = "\n")
+
   # draw plot and save
   p <- ggplot2::ggplot(
     aggregated_data,
     ggplot2::aes(
-      x = forcats::fct_reorder(.data$region, .data$sum_total_an, .desc = TRUE),
-      y = .data$sum_total_an
+      y = forcats::fct_reorder(
+        .data$region,
+        .data$sum_total_an,
+        .desc = TRUE
+      ),
+      x = .data$sum_total_an
     )
   ) +
-    ggplot2::geom_col(fill = "#003c57") +
+    ggplot2::geom_col(fill = cols$regional, alpha = 0.85) +
+    ggplot2::scale_x_continuous(labels = scales::comma) +
     ggplot2::labs(
-      title = "Total attributable number of deaths due to Wildfire-related PM2.5 exposure",
-      x = "Regions",
-      y = "Attributable Number of Deaths"
+      title = title_text,
+      subtitle = "Horizontal bars show total attributable deaths by region.",
+      y = "Regions",
+      x = "Attributable Number of Deaths",
+      caption = caption_text
     ) +
-    ggplot2::theme_minimal(base_family = "sans") +
+    theme_accessible_ggplot() +
     ggplot2::theme(
-      plot.background = ggplot2::element_rect(fill = "white", color = NA),
-      panel.background = ggplot2::element_rect(fill = "white", color = NA),
-      axis.text = ggplot2::element_text(color = "black"),
-      axis.title = ggplot2::element_text(color = "black"),
-      plot.title = ggplot2::element_text(color = "black"),
-      axis.line = ggplot2::element_line(linewidth = 0.5, colour = "black"),
-      axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+      legend.position = "none",
+      plot.title = ggplot2::element_text(
+        hjust = 0.5,
+        margin = ggplot2::margin(t = 14, b = 8)
+      ),
+      plot.subtitle = ggplot2::element_text(
+        hjust = 0.5,
+        margin = ggplot2::margin(b = 18)
+      ),
+
+      # Makes alt text start as far left as ggplot allows
+      plot.caption.position = "plot",
+      plot.caption = ggplot2::element_text(
+        hjust = 0,
+        size = 10.5,
+        face = "italic",
+        lineheight = 1.12,
+        margin = ggplot2::margin(t = 18, r = 0, b = 8, l = 0)
+      ),
+
+      # Internal spacing only
+      plot.margin = ggplot2::margin(t = 34, r = 34, b = 44, l = 8),
+      axis.text.y = ggplot2::element_text(size = 10),
+      axis.text.x = ggplot2::element_text(angle = 0, hjust = 0.5)
     )
 
   # save plot
-  ggplot2::ggsave(
-    file.path(output_dir, "AN_by_region.pdf"),
-    p,
-    width = 8,
-    height = 6
+  save_accessible_ggplot(
+    plot_object = p,
+    output_dir = output_dir,
+    filename = "AN_by_region",
+    width = 13,
+    height = 9.5,
+    alt_text = alt_text
   )
+
   return(p)
 }
-
 
 #' This is full analysis pipeline to analyse the impact of wildfire-related PM2.5 on a health
 #' outcome.
