@@ -742,17 +742,18 @@ theme_accessible_ggplot_panel <- function() {
 #' @param title Character. Figure title.
 #' @param subtitle Character. Figure subtitle.
 #' @param alt_text Character. Alt text to include in the caption.
+#' @param width Integer. Wrap width for alt text caption. Defaults to 180
 #'
 #' @return A patchwork plot annotation.
 #' @keywords internal
-accessible_plot_annotation <- function(title, subtitle, alt_text) {
+accessible_plot_annotation <- function(title, subtitle, alt_text, width = 180) {
   cols <- get_accessible_plot_colours()
 
   patchwork::plot_annotation(
     title = title,
     subtitle = subtitle,
     caption = paste(
-      strwrap(paste0("Alt text: ", alt_text), width = 180),
+      strwrap(paste0("Alt text: ", alt_text), width = width),
       collapse = "\n"
     ),
     theme = ggplot2::theme(
