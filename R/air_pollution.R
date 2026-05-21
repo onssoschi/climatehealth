@@ -3041,7 +3041,7 @@ air_pollution_do_analysis <- function(
     }
     analysis_res <- results$analysis_results[[ref_name]]
 
-    # PLOTS — skipped entirely in API mode. The client renders its own
+    # PLOTS - skipped entirely in API mode. The client renders its own
     # visualisations from analysis_results / power_results / aggregations.
     if (!api_mode) {
       results$plots[[ref_name]]$an_ar_monthly <- plot_air_pollution_an_ar_monthly(
@@ -3101,7 +3101,7 @@ air_pollution_do_analysis <- function(
       )
     }
 
-    # AGGREGATIONS — these return plain data frames the client consumes
+    # AGGREGATIONS - these return plain data frames the client consumes
     # directly. Always compute them, including in API mode.
     results$plots[[ref_name]]$aggregate_by_region <- aggregate_air_pollution_by_region(
       analysis_results = analysis_res,

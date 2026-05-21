@@ -2606,7 +2606,7 @@ wildfire_do_analysis <- function(
     print_model_summaries = FALSE) {
 
   # When invoked via the plumber API headless R has no graphics device and
-  # plots can't be returned over JSON — the client renders its own. Force
+  # plots can't be returned over JSON - the client renders its own. Force
   # all side-effectful output parameters off so internal helpers never try
   # to draw or write files.
   api_mode <- isTRUE(getOption("climatehealth.api_mode", FALSE))
