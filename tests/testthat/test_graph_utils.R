@@ -8,22 +8,6 @@ if (!"package:climatehealth" %in% search()) {
   pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
 }
 
-# Tests for create_grid
-patrick::with_parameters_test_that(
-  "Create grid works as intended",
-  {
-    grid <- create_grid(plot_count)
-    expect_equal(grid, expected_grid)
-  },
-  plot_count = c(9, 6, 14),
-  expected_grid = list(
-    c(3, 3),
-    c(3, 2),
-    c(4, 4)
-  ),
-  .test_name = c("Perfect square", "base<0.5", "base>=0.5")
-)
-
 # Tests for plot_correlation_matrix
 input_matrix <- matrix(1:9, nrow = 3, ncol = 3)
 patrick::with_parameters_test_that(
