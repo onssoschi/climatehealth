@@ -4,7 +4,7 @@
 \alias{accessible_plot_annotation}
 \title{Accessible patchwork plot annotation}
 \usage{
-accessible_plot_annotation(title, subtitle, alt_text)
+accessible_plot_annotation(title, subtitle, alt_text, width = 180)
 }
 \arguments{
 \item{title}{Character. Figure title.}
@@ -12,6 +12,8 @@ accessible_plot_annotation(title, subtitle, alt_text)
 \item{subtitle}{Character. Figure subtitle.}
 
 \item{alt_text}{Character. Alt text to include in the caption.}
+
+\item{width}{Integer. Wrap width for alt text caption. Defaults to 180}
 }
 \value{
 A patchwork plot annotation.
