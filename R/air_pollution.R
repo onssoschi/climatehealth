@@ -124,16 +124,15 @@ load_air_pollution_data <- function(data_path,
   data <- .with_english_locale({
     data %>%
       group_by(region) %>%
+      dplyr::mutate(date = universal_date(date)) %>%
+      dplyr::arrange(region, date, .by_group = TRUE) %>%
       dplyr::mutate(
-        date = universal_date(date),
         year = lubridate::year(date),
         month = lubridate::month(date),
         day = lubridate::day(date),
-        # Use English day names regardless of system locale
         dow = .english_dow_names(lubridate::wday(date), short = TRUE),
         time = dplyr::row_number()
-      ) %>%
-      dplyr::arrange(region, date)
+      )
   })
 
   # Convert to data.table for efficient aggregation
