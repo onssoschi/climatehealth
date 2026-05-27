@@ -888,7 +888,7 @@ casecrossover_quasipoisson <- function(
 
     add_accessible_alt_text(
       alt_text = alt_text,
-      width = 170,
+      width = 155,
       line_start = 0.8
     )
 
@@ -1261,12 +1261,12 @@ save_wildfire_results <- function(
   if (!is.null(an_ar_results)) {
     write.csv(
       an_ar_results,
-      file = file.path(output_folder_path, "wildfire_health_monthly_estimates.csv"),
+      file = file.path(output_folder_path, "wildfire_mortality_monthly_estimates.csv"),
       row.names = FALSE
     )
     write.csv(
       annual_af_an_results,
-      file = file.path(output_folder_path, "wildfire_health_yearly_estimates.csv"),
+      file = file.path(output_folder_path, "wildfire_mortality_yearly_estimates.csv"),
       row.names = FALSE
     )
   }
@@ -1593,7 +1593,10 @@ plot_aggregated_AF <- function(data, by_region = FALSE, include_all_regions = TR
   combined_plots <- combined_plots +
     accessible_plot_annotation(
       title = "Annual Attributable Fraction due to Wildfire-related PM2.5 exposure",
-      subtitle = "Line shows annual estimate. Shaded area shows 95% confidence interval.",
+      subtitle = paste("Line shows annual estimate. Shaded area shows 95% confidence interval.",
+                       "(Please refer to section 4 of wildfire methods documentation for interpretation guidelines.)",
+                       sep = "\n"
+      ),
       alt_text = alt_text,
       width = if (n_panels == 1) 115 else 170
     )
@@ -1633,9 +1636,6 @@ plot_aggregated_AF_core <- function(data, region_name = NULL) {
     ) %>%
     mutate(year = as.numeric(as.character(.data$year)))
   # create output plot
-  #title <- "Annual Attributable Fraction (%) due to Wildfire-related PM2.5 exposure"
-  #if (!is.null(region_name)) title <- region_name
-  #title_wrapped <- stringr::str_wrap(title, width = 40)
   plot_agg_an <- ggplot2::ggplot(
     agg_data,
     ggplot2::aes(x = .data$year, y = .data$sum_total_deaths)
@@ -1839,7 +1839,7 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL, in
       ),
       subtitle = "Bars show deaths per 100,000 population. Line and points show mean PM2.5 concentration.",
       alt_text = alt_text,
-      width = if (n_panels == 1) 115 else 170
+      width = if (n_panels == 1) 115 else 160
     )
 
   # sort data
@@ -2147,7 +2147,8 @@ plot_rr_by_pm_core <- function(
     theme_accessible_ggplot_panel() +
     ggplot2::theme(
       legend.position = "none",
-      plot.title = ggplot2::element_text(hjust = 0.5)
+      plot.title = ggplot2::element_text(hjust = 0.5),
+      axis.text.x = ggplot2::element_text(angle = 0, hjust = 0.5, vjust = 0.5)
     )
 
   p <- add_ggplot_alt_caption(
@@ -2246,7 +2247,11 @@ plot_ar_by_region <- function(data, output_dir = ".") {
     ) +
     ggplot2::labs(
       title = title_text,
-      subtitle = "Horizontal bars show average attributable deaths per 100,000 population by region.",
+      subtitle = paste(
+        "Horizontal bars show average attributable deaths per 100,000 population by region.",
+        "(Please refer to section 4 of wildfire methods documentation for interpretation guidelines.)",
+        sep = "\n"
+      ),
       y = "Regions",
       x = "Deaths per 100k population",
       caption = caption_text
@@ -2364,7 +2369,10 @@ plot_an_by_region <- function(data, output_dir = ".") {
     ggplot2::scale_x_continuous(labels = scales::comma) +
     ggplot2::labs(
       title = title_text,
-      subtitle = "Horizontal bars show total attributable deaths by region.",
+      subtitle = paste("Horizontal bars show total attributable deaths by region.",
+      "(Please refer to section 4 of wildfire methods documentation for interpretation guidelines.)",
+      sep = "\n"
+    ),
       y = "Regions",
       x = "Attributable Number of Deaths",
       caption = caption_text
