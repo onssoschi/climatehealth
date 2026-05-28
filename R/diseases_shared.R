@@ -496,6 +496,7 @@ plot_health_climate_timeseries <- function(data,
                                            output_dir = NULL) {
 
   case_type <- validate_case_type(case_type)
+  cols <- get_accessible_plot_colours()
   vars_all <- c(case_type, "tmin","tmean","tmax","rainfall","r_humidity","runoff")
   vars_to_plot <- if (length(param_term) == 1 && param_term == "all") vars_all else param_term
 
@@ -522,27 +523,47 @@ plot_health_climate_timeseries <- function(data,
     rainfall="Rainfall (mm)", r_humidity="Relative humidity (%)", runoff="Runoff (mm)",
     setNames(paste("Average Monthly", gsub("_"," ", case_type), "cases"), case_type)
   )
+  title_labels <- c(
+    tmin="Minimum temperature", tmean="Mean temperature", tmax="Maximum temperature",
+    rainfall="Rainfall", r_humidity="Relative humidity", runoff="Runoff",
+    setNames(paste(gsub("_"," ", case_type), "cases"), case_type)
+  )
 
   y_label <- if (length(vars_to_plot)==1) var_labels[vars_to_plot] else "Value (see panel units)"
-  title_text <- if (length(vars_to_plot)==1) paste("Time Series of", vars_to_plot) else
+  title_text <- if (length(vars_to_plot)==1) paste("Time Series of", title_labels[vars_to_plot]) else
     if (length(vars_to_plot)==length(vars_all)) "Time Series of All Health & Climate Variables" else
-      paste("Time Series of", paste(vars_to_plot, collapse=", "))
+      paste("Time Series of", paste(title_labels[vars_to_plot], collapse=", "))
+
+  alt_text <- paste(
+    "Time series plot showing monthly values for", title_labels[vars_to_plot], ".",
+    "The x-axis shows date and the y-axis shows the variable value.",
+    if (!is.null(group_var)) {
+      paste(
+        "Lines are grouped by",
+        level, "to compare temporal patterns across geographical areas.")
+    } else { "A single country-level time series is shown."},
+    if (!is.null(filter_year)) {
+      paste("The plot is filtered to year or years:", paste(filter_year, collapse = ", "), ".")
+    } else { "All available years are included." }
+  )
 
   p <- ggplot2::ggplot(agg, ggplot2::aes(date, value)) +
     ggplot2::geom_line(ggplot2::aes(color = if (!is.null(group_var)) group), linewidth=1) +
-    ggplot2::facet_wrap(~variable, scales="free_y",
-                        ncol=1, labeller=ggplot2::labeller(variable=var_labels)) +
     ggplot2::scale_x_date(date_breaks="4 month", date_labels="%Y-%m") +
-    ggplot2::labs(title=title_text, x="Date", y=y_label) +
-    ggplot2::theme_minimal() +
+    ggplot2::labs(title=title_text, x="Date", y=y_label,
+                  subtitle = paste("Monthly time series | Aggregation level:", tools::toTitleCase(level)))+
+    theme_accessible_ggplot() +
     ggplot2::theme(
-      legend.title=ggplot2::element_blank(),
-      axis.text.x=ggplot2::element_text(angle=45,hjust=1,size=12))
+      legend.title = ggplot2::element_blank(),
+      legend.position = if (!is.null(group_var)) "bottom" else "none")
 
-  if (save_fig) ggplot2::ggsave(
-    file.path(output_dir,
-              paste0("timeseries_", paste(vars_to_plot, collapse="_"), "_",
-                     level,".pdf")), p, width=12, height=7
+  p <- add_ggplot_alt_caption(plot_object = p, alt_text = alt_text)
+
+  if (save_fig)
+    save_accessible_ggplot(
+      plot_object = p, output_dir = output_dir,
+      filename = paste0("timeseries_", paste(vars_to_plot, collapse = "_"), "_", level),
+      width = 14, height = 9, alt_text = alt_text
     )
   p
 }
@@ -801,7 +822,7 @@ check_and_write_vif <- function(data,
   return(vif_df)
 }
 
-                
+
 #' Run models of increasing complexity in INLA: Fit a baseline model including
 #' spatiotemporal random effects.
 #'
@@ -961,7 +982,7 @@ run_inla_models <- function(combined_data,
 #' FALSE.
 #' @param output_dir Character. The path to save the visualisation to. Defaults to NULL.
 #'
-#' @return THe monthly random effects plot.
+#' @return The monthly random effects plot.
 #'
 #' @keywords internal
 plot_monthly_random_effects <- function(combined_data,
@@ -976,6 +997,8 @@ plot_monthly_random_effects <- function(combined_data,
   data <- combined_data$data
   grid_data <- combined_data$grid_data
   map <- combined_data$map
+
+  cols <- get_accessible_plot_colours()
 
   # Create data frame for monthly random effects per region
   month_effects <- data.frame(
@@ -996,36 +1019,53 @@ plot_monthly_random_effects <- function(combined_data,
     dplyr::distinct() %>%
     dplyr::left_join(month_effects, by = c("region" = "name"))
 
-  p <- month_effects %>%
-    ggplot2::ggplot() +
+  alt_text <- paste(
+    "Monthly random effects plot showing the contribution of each month to the log disease incidence rate.",
+    "Each panel represents one region.",
+    "The line shows the estimated monthly random effect.",
+    "The shaded band shows the 95 percent confidence interval.",
+    "The dashed horizontal line marks zero, indicating no monthly contribution to the log disease incidence rate."
+  )
+
+  regions <- unique(month_effects$region)
+  monthly_plots <- lapply(regions, function(region_name) {
+    region_data <- month_effects %>%
+      dplyr::filter(.data$region == region_name)
+
+    ggplot2::ggplot(region_data) +
     ggplot2::geom_ribbon(
       ggplot2::aes(
-        x = .data$month.ID,
-        ymin = .data$`month.0.025quant`,
-        ymax = .data$`month.0.975quant`
-      ),
-      fill = "cadetblue4", alpha = 0.5
-    ) +
+        x = .data$month.ID, ymin = .data$`month.0.025quant`, ymax = .data$`month.0.975quant`),
+      fill = cols$primary, alpha = 0.28) +
     ggplot2::geom_line(
-      ggplot2::aes(x = .data$month.ID, y = .data$month.mean),
-      col = "cadetblue4"
+      ggplot2::aes(x = .data$month.ID, y = .data$month.mean), col = cols$primary
     ) +
-    ggplot2::geom_hline(yintercept = 0, linetype = "dashed", color = "grey70") +
-    ggplot2::xlab("Month") +
-    ggplot2::ylab("Contribution to log(DIR)") +
+    ggplot2::geom_hline(yintercept = 0, linetype = "dashed", color = cols$reference) +
+    ggplot2::labs(title = region_name, x = "Month", y = "Contribution to log(DIR)") +
     ggplot2::scale_y_continuous() +
     ggplot2::scale_x_continuous(
-      breaks = c(1, 4, 7, 10),
-      labels = c("Jan", "Apr", "Jul", "Oct")
-    ) +
-    ggplot2::theme_bw() +
-    ggplot2::facet_wrap(~.data$region)
+      breaks = c(1, 4, 7, 10), labels = c("Jan", "Apr", "Jul", "Oct")) +
+    theme_accessible_ggplot() +
+    theme_accessible_ggplot_panel() +
+    ggplot2::theme(
+        legend.position = "none",
+        axis.text.x = ggplot2::element_text(angle = 0, hjust = 0.5),
+        plot.title = ggplot2::element_text(hjust = 0.5)
+      )
+  })
+
+  p <- patchwork::wrap_plots(monthly_plots, ncol = 2) +
+    accessible_plot_annotation(
+      title = "Monthly Random Effects by Region",
+      subtitle = "Line shows monthly random effect. Shaded area shows 95% credible interval.",
+      alt_text = alt_text, width = 160)
 
   if (save_fig) {
-    ggplot2::ggsave(
-      filename = file.path(output_dir, "monthly_random_effects.pdf"),
-      plot = p, height = 30, width = 25, units = "cm"
-    )
+    n_cols <- 2
+    n_rows <- ceiling(length(monthly_plots) / n_cols)
+    save_accessible_ggplot(
+      plot_object = p, output_dir = output_dir, filename = "monthly_random_effects",
+      width = max(11, n_cols * 5.8), height = max(7.5, n_rows * 3.6 + 2.0), alt_text = alt_text)
   }
   return(p)
 }
