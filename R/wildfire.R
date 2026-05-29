@@ -260,6 +260,19 @@ join_health_and_climate_data <- function(
   return(df_joined)
 }
 
+#' Resolve input column name
+#'
+#' @description resolves and validates column reference supplied by the user against
+#' available columns in the input dataset
+#'
+#' @param column Character. Imput column name
+#' @param available Character. vector of available column names
+#' @param dataset_name Character. Name of data frame containing columns
+#' @param argument_name Character. Name of the input argument.
+#'
+#' @returns Character. Resolved column name
+#'
+#' @keywords internal
 resolve_input_column_name <- function(
     column,
     available,
@@ -637,6 +650,16 @@ check_wildfire_vif <- function(
   }
 }
 
+#' Get wildfire lag columns
+#'
+#' @description Finds wildfire PM2.5 lag columns in a dataframe
+#'
+#' @param data Dataframe containing a daily time series of climate and health
+#' data with wildfire PM2.5 data
+#'
+#' @returns List containing wildfire lag column names and lag numbers
+#'
+#' @keywords internal
 get_wildfire_lag_columns <- function(data) {
   lags <- c("mean_PM")
   lag_nums <- c("mean_PM" = 0)
@@ -1590,15 +1613,31 @@ plot_aggregated_AF <- function(data, by_region = FALSE, include_all_regions = TR
 
   combined_plots <- patchwork::wrap_plots(plots, ncol = n_cols)
   # add caption
+  cols <- get_accessible_plot_colours()
+  note_text <- "Note: Please refer to section 4 of wildfire methods documentation for interpretation guidelines."
+
   combined_plots <- combined_plots +
-    accessible_plot_annotation(
+    patchwork::plot_annotation(
       title = "Annual Attributable Fraction due to Wildfire-related PM2.5 exposure",
-      subtitle = paste("Line shows annual estimate. Shaded area shows 95% confidence interval.",
-                       "(Please refer to section 4 of wildfire methods documentation for interpretation guidelines.)",
-                       sep = "\n"
+      subtitle = "Line shows annual estimate. Shaded area shows 95% confidence interval.",
+      caption = paste(
+        c(
+          strwrap(note_text, width = if (n_panels == 1) 115 else 170),"","",
+          strwrap(paste0("Alt text: ", alt_text), width = if (n_panels == 1) 115 else 170)
+        ),
+        collapse = "\n"
       ),
-      alt_text = alt_text,
-      width = if (n_panels == 1) 115 else 170
+      theme = ggplot2::theme(
+        plot.title = ggplot2::element_text(
+          hjust = 0.5, face = "bold", size = 17, colour = cols$text, lineheight = 1.08,
+          margin = ggplot2::margin(t = 0, r = 0, b = 4, l = 0)),
+        plot.subtitle = ggplot2::element_text(
+          hjust = 0.5, size = 13, colour = cols$axis, lineheight = 1.15,
+          margin = ggplot2::margin(t = 0, r = 0, b = 10, l = 0)),
+        plot.caption = ggplot2::element_text(
+          hjust = 0, size = 11, colour = cols$text, face = "italic", lineheight = 1.12,
+          margin = ggplot2::margin(t = 2, r = 0, b = 0, l = 0))
+      )
     )
   save_accessible_ggplot(
     plot_object = combined_plots,
@@ -2224,10 +2263,12 @@ plot_ar_by_region <- function(data, output_dir = ".") {
     width = 78
   )
 
+  note_text <- "Note: Please refer to section 4 of wildfire methods documentation for interpretation guidelines."
+
   caption_text <- paste(
-    strwrap(paste0("Alt text: ", alt_text), width = 170),
-    collapse = "\n"
-  )
+    c(strwrap(note_text, width = 170),"","",
+      strwrap(paste0("Alt text: ", alt_text), width = 170)),
+    collapse = "\n")
 
   # draw plot and save
   p <- ggplot2::ggplot(
@@ -2247,11 +2288,7 @@ plot_ar_by_region <- function(data, output_dir = ".") {
     ) +
     ggplot2::labs(
       title = title_text,
-      subtitle = paste(
-        "Horizontal bars show average attributable deaths per 100,000 population by region.",
-        "(Please refer to section 4 of wildfire methods documentation for interpretation guidelines.)",
-        sep = "\n"
-      ),
+      subtitle = "Horizontal bars show average attributable deaths per 100,000 population by region.",
       y = "Regions",
       x = "Deaths per 100k population",
       caption = caption_text
@@ -2260,23 +2297,15 @@ plot_ar_by_region <- function(data, output_dir = ".") {
     ggplot2::theme(
       legend.position = "none",
       plot.title = ggplot2::element_text(
-        hjust = 0.5,
-        margin = ggplot2::margin(t = 14, b = 8)
-      ),
+        hjust = 0.5, margin = ggplot2::margin(t = 14, b = 8)),
       plot.subtitle = ggplot2::element_text(
-        hjust = 0.5,
-        margin = ggplot2::margin(b = 18)
-      ),
+        hjust = 0.5, margin = ggplot2::margin(b = 18)),
 
       # Makes alt text start as far left as ggplot allows
       plot.caption.position = "plot",
       plot.caption = ggplot2::element_text(
-        hjust = 0,
-        size = 10.5,
-        face = "italic",
-        lineheight = 1.12,
-        margin = ggplot2::margin(t = 18, r = 0, b = 8, l = 0)
-      ),
+        hjust = 0, size = 10.5, face = "italic", lineheight = 1.12,
+        margin = ggplot2::margin(t = 18, r = 0, b = 8, l = 0)),
 
       # Internal spacing only
       plot.margin = ggplot2::margin(t = 34, r = 34, b = 44, l = 8),
@@ -2286,13 +2315,8 @@ plot_ar_by_region <- function(data, output_dir = ".") {
 
   # save plot
   save_accessible_ggplot(
-    plot_object = p,
-    output_dir = output_dir,
-    filename = "AR_by_region",
-    width = 13,
-    height = 9.5,
-    alt_text = alt_text
-  )
+    plot_object = p, output_dir = output_dir,
+    filename = "AR_by_region", width = 13, height = 9.5, alt_text = alt_text)
 
   return(p)
 }
@@ -2350,8 +2374,11 @@ plot_an_by_region <- function(data, output_dir = ".") {
     width = 78
   )
 
+  note_text <- "Note: Please refer to section 4 of wildfire methods documentation for interpretation guidelines."
+
   caption_text <- paste(
-    strwrap(paste0("Alt text: ", alt_text), width = 170), collapse = "\n")
+    c(strwrap(note_text, width = 170),"","",
+      strwrap(paste0("Alt text: ", alt_text), width = 170)), collapse = "\n")
 
   # draw plot and save
   p <- ggplot2::ggplot(
@@ -2369,10 +2396,7 @@ plot_an_by_region <- function(data, output_dir = ".") {
     ggplot2::scale_x_continuous(labels = scales::comma) +
     ggplot2::labs(
       title = title_text,
-      subtitle = paste("Horizontal bars show total attributable deaths by region.",
-      "(Please refer to section 4 of wildfire methods documentation for interpretation guidelines.)",
-      sep = "\n"
-    ),
+      subtitle = "Horizontal bars show total attributable deaths by region.",
       y = "Regions",
       x = "Attributable Number of Deaths",
       caption = caption_text
@@ -2381,21 +2405,14 @@ plot_an_by_region <- function(data, output_dir = ".") {
     ggplot2::theme(
       legend.position = "none",
       plot.title = ggplot2::element_text(
-        hjust = 0.5,
-        margin = ggplot2::margin(t = 14, b = 8)
-      ),
+        hjust = 0.5, margin = ggplot2::margin(t = 14, b = 8)),
       plot.subtitle = ggplot2::element_text(
-        hjust = 0.5,
-        margin = ggplot2::margin(b = 18)
-      ),
+        hjust = 0.5, margin = ggplot2::margin(b = 18)),
 
       # Makes alt text start as far left as ggplot allows
       plot.caption.position = "plot",
       plot.caption = ggplot2::element_text(
-        hjust = 0,
-        size = 10.5,
-        face = "italic",
-        lineheight = 1.12,
+        hjust = 0, size = 10.5, face = "italic", lineheight = 1.12,
         margin = ggplot2::margin(t = 18, r = 0, b = 8, l = 0)
       ),
 
@@ -2407,13 +2424,8 @@ plot_an_by_region <- function(data, output_dir = ".") {
 
   # save plot
   save_accessible_ggplot(
-    plot_object = p,
-    output_dir = output_dir,
-    filename = "AN_by_region",
-    width = 13,
-    height = 9.5,
-    alt_text = alt_text
-  )
+    plot_object = p, output_dir = output_dir,
+    filename = "AN_by_region", width = 13, height = 9.5, alt_text = alt_text)
 
   return(p)
 }
