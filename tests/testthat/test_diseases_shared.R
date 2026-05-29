@@ -575,6 +575,7 @@ test_that("create_inla_indices handles NA values in case column", {
 set.seed(101)
 
 n <- 160   # slightly larger reduces spline/aliasing instability
+
 tmax_base <- rnorm(n, 32, 2)
 tmin_base <- 0.985 * tmax_base + rnorm(n, 0, 0.18)
 ndvi_base <- runif(n, 0.4, 0.8)
@@ -2711,3 +2712,4 @@ test_that("saving PDF produces a file", {
   expect_true(file.exists(out_path))
   file.remove(out_path)
 })
+

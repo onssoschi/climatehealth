@@ -22,7 +22,7 @@ FALSE.}
 \item{output_dir}{Character. The path to save the visualisation to. Defaults to NULL.}
 }
 \value{
-THe monthly random effects plot.
+The monthly random effects plot.
 }
 \description{
 Generates and saves a plot of monthly random effects for different

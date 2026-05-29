@@ -4,12 +4,14 @@
 \alias{add_ggplot_alt_caption}
 \title{Add alt text as ggplot caption}
 \usage{
-add_ggplot_alt_caption(plot_object, alt_text)
+add_ggplot_alt_caption(plot_object, alt_text, width = 180)
 }
 \arguments{
 \item{plot_object}{ggplot object.}
 
 \item{alt_text}{Character. Alt text.}
+
+\item{width}{Integer. Wrap width for alt text caption. Defaults to 180}
 }
 \value{
 ggplot object.

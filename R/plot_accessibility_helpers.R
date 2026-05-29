@@ -789,14 +789,15 @@ accessible_plot_annotation <- function(title, subtitle, alt_text, width = 180) {
 #'
 #' @param plot_object ggplot object.
 #' @param alt_text Character. Alt text.
+#' @param width Integer. Wrap width for alt text caption. Defaults to 180
 #'
 #' @return ggplot object.
 #' @keywords internal
-add_ggplot_alt_caption <- function(plot_object, alt_text) {
+add_ggplot_alt_caption <- function(plot_object, alt_text, width = 180) {
   plot_object +
     ggplot2::labs(
       caption = paste(
-        strwrap(paste0("Alt text: ", alt_text), width = 180),
+        strwrap(paste0("Alt text: ", alt_text), width = width),
         collapse = "\n"
       )
     )
