@@ -3,7 +3,7 @@
 \name{air_pollution_do_analysis}
 \alias{air_pollution_do_analysis}
 \title{Full analysis for the 'Mortality attributable to short-term exposure to
-outdoor PM2.5' indicator}
+ambient air pollution (PM 2.5)' indicator}
 \usage{
 air_pollution_do_analysis(
   data_path,

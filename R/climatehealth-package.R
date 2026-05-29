@@ -10,7 +10,7 @@
 #' - Mortality attributable to high and low temperatures
 #' - Mortality attributable to wildfire-related PM2.5
 #' - Suicides attributable to extreme heat
-#' - Mortality attributable to short-term exposure to outdoor PM2.5
+#' - Mortality attributable to short-term exposure to ambient air pollution (PM 2.5)
 #' - Diarrheal disease incidence attributable to extreme temperature and extreme rainfall
 #' - Malaria incidence attributable to extreme temperature and extreme rainfall
 #'
@@ -21,7 +21,7 @@
 #' - Temperature-related health effects
 #' - Health effects of wildfires
 #' - Mental Health
-#' - Health effects of air pollution
+#' - Health effects of ambient air pollution
 #' - Waterborne diseases
 #' - Vector-borne diseases
 #'
