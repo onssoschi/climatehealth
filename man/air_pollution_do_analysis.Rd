@@ -2,7 +2,8 @@
 % Please edit documentation in R/air_pollution.R
 \name{air_pollution_do_analysis}
 \alias{air_pollution_do_analysis}
-\title{Comprehensive Air Pollution Analysis Pipeline}
+\title{Full analysis for the 'Mortality attributable to short-term exposure to
+outdoor PM2.5' indicator}
 \usage{
 air_pollution_do_analysis(
   data_path,
@@ -101,8 +102,8 @@ It is recommended to filter for at least 3 consecutive years for a minimum consi
 
 \item{regions_filter}{Optional character vector of regions to include}
 
-\item{attr_thr}{Numeric (0-100). Percentile threshold used in power
-analysis to evaluate attribution detectability. Default 95.}
+\item{attr_thr}{Integer. Percentile threshold used in power
+analysis to evaluate attribution detectability. Defaults to 95.}
 
 \item{plot_corr_matrix}{Logical. Plot correlation matrix. Default TRUE.}
 
@@ -150,9 +151,9 @@ reference standard (if requested)}
 }
 \description{
 Master function that runs the complete air pollution analysis
-including data loading, preprocessing (including lags), modeling, plotting,
-attribution calculations vs reference standards, power analysis and
-descriptive statistics
+including data loading, preprocessing, modeling, plotting,
+attribution calculations with reference to national and WHO standards,
+power analysis and descriptive statistics
 }
 \examples{
 \donttest{
