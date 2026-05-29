@@ -1002,7 +1002,8 @@ validate_descriptive_columns <- function(
 
 }
 
-#' Run generic descriptive statistics and EDA outputs for indicator datasets.
+#' Run generic descriptive statistics and Exploratory Data Analysis outputs
+#' for indicator datasets.
 #'
 #' @param data Dataframe or named list of dataframes. If a dataframe is provided and `aggregation_column`
 #'   is passed, data are split by that column.

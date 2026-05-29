@@ -2673,12 +2673,13 @@ plot_air_pollution_power <- function(
   )))
 }
 
-#' Comprehensive Air Pollution Analysis Pipeline
+#' Full analysis for the 'Mortality attributable to short-term exposure to
+#' outdoor PM2.5' indicator
 #'
 #' @description Master function that runs the complete air pollution analysis
-#' including data loading, preprocessing (including lags), modeling, plotting,
-#' attribution calculations vs reference standards, power analysis and
-#' descriptive statistics
+#' including data loading, preprocessing, modeling, plotting,
+#' attribution calculations with reference to national and WHO standards,
+#' power analysis and descriptive statistics
 #'
 #' @param data_path Character. Path to CSV data file
 #' @param date_col Character. Name of date column
@@ -2709,8 +2710,8 @@ plot_air_pollution_power <- function(
 #' @param years_filter Optional numeric vector of years to include (e.g., c(2020, 2021, 2022)).
 #'  It is recommended to filter for at least 3 consecutive years for a minimum considerable time series
 #' @param regions_filter Optional character vector of regions to include
-#' @param attr_thr Numeric (0-100). Percentile threshold used in power
-#' analysis to evaluate attribution detectability. Default 95.
+#' @param attr_thr Integer. Percentile threshold used in power
+#' analysis to evaluate attribution detectability. Defaults to 95.
 #'
 #' @param plot_corr_matrix Logical. Plot correlation matrix. Default TRUE.
 #' @param correlation_method Character. Correlation method for corr matrix

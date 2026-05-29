@@ -1,10 +1,7 @@
-#' Code for calculating Diarrhea disease cases attributable to extreme
-#' precipitation and extreme temperature
-
-#' Run Full diarrhea-Climate Analysis Pipeline
+#' Full analysis for the 'diarrheal disease incidence attributable to
+#' extreme temperature and extreme rainfall' indicator
 #'
-#' @description
-#' The `diarrhea_do_analysis` function runs the complete analysis workflow
+#' @description The `diarrhea_do_analysis` function runs the complete analysis workflow
 #' by combining multiple functions to analyze the association between diarrhea
 #' cases and climate variables. It processes health, climate, and spatial data,
 #' fits models, generates plots, and calculates attributable risk.

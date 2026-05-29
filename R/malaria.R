@@ -1,10 +1,7 @@
-#' Code for calculating Malaria disease cases attributable to extreme rainfall
-#' and extreme temperature
-
-#' Run Full Malaria-Climate Analysis Pipeline
+#' Full analysis for the 'malaria incidence attributable to extreme temperature
+#' and extreme rainfall' indicator
 #'
-#' @description
-#' The `Malaria_do_analysis()` function executes the complete workflow for analyzing
+#' @description The `malaria_do_analysis()` function executes the complete workflow for analyzing
 #' the association between malaria cases and climate variables. It integrates
 #' health, climate, and spatial data; fits spatio-temporal models using INLA;
 #' and generates a suite of diagnostic and inferential outputs, including plots
