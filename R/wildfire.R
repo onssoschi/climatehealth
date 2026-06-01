@@ -2498,6 +2498,23 @@ plot_an_by_region <- function(data, output_dir = ".") {
 #' for each predictor. Defaults to FALSE.
 #' @param print_model_summaries Bool. Whether to print the model summaries to
 #' console. Defaults to FALSE.
+#' @param run_descriptive Logical. Whether to run descriptive statistics. Default FALSE.
+#' @param plot_corr_matrix Logical. Plot correlation matrix. Default TRUE.
+#' @param correlation_method Character. Correlation method for corr matrix
+#' (e.g.,"pearson", "spearman"). Default "pearson".
+#' @param plot_dist Logical. Plot distributions (hist/density) for key variables.
+#' Default TRUE.
+#' @param plot_na_counts Logical. Plot missingness/NA counts. Default TRUE.
+#' @param plot_scatter Logical. Plot scatter plots for key pairs. Default TRUE.
+#' @param plot_box Logical. Plot boxplots by region/season where applicable.
+#' Default TRUE.
+#' @param plot_seasonal Logical. Plot seasonal summaries. Default TRUE.
+#' @param plot_regional Logical. Plot regional summaries. Default TRUE.
+#' @param plot_total Logical. Plot overall totals where relevant. Default TRUE.
+#' @param detect_outliers Logical. Flag potential outliers in descriptive workflow.
+#' Default TRUE.
+#' @param calculate_rate Logical. Whether to calculate rate variables during
+#' descriptive stats (e.g., deaths per population). Default FALSE
 #'
 #' @details This analysis pipeline requires a daily time series with mean wildfire PM2.5,
 #' mean temperature and health outcome (all-cause mortality, respiratory, cardiovascular,
