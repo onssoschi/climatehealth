@@ -8,7 +8,8 @@ fit_air_pollution_gam(
   data_with_lags,
   max_lag = 14L,
   df_seasonal = 6L,
-  family = "quasipoisson"
+  family = "quasipoisson",
+  continuous_others = NULL
 )
 }
 \arguments{
@@ -20,6 +21,9 @@ and pm25 lag variables.}
 \item{df_seasonal}{integer. Degrees of freedom for seasonal spline. Default 6.}
 
 \item{family}{character or family object passed to mgcv::gam. Default "quasipoisson".}
+
+\item{continuous_others}{Optional. Character vector of additional continuous
+variables (e.g., "tmean"). Defaults to NULL.}
 }
 \value{
 A list with components:
