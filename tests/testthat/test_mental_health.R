@@ -1912,3 +1912,90 @@ test_that("integration: suicides_heat_do_analysis runs end-to-end (dynamic synth
   expect_s3_class(result$qaic_results, "data.frame")
   expect_true(nrow(result$qaic_results) > 0, info = "QAIC results unexpectedly empty")
 })
+
+test_that("integration: descriptive stats runs and outputs files", {
+
+  if (!identical(Sys.getenv("NOT_CRAN"), "true")) skip("Skipping on CRAN")
+  if (Sys.getenv("RUN_INTEGRATION") != "true")    skip("Skipping CI integration")
+
+  set.seed(42)
+
+  # synthetic data generation
+  n_days_per_region <- 500
+  regions <- c("Region 1", "Region 2")
+  start_date <- as.Date("2000-01-01")
+
+  make_region <- function(region_name) {
+    set.seed(126)
+    dates <- seq(start_date, by = "day", length.out = n_days_per_region)
+    day_ix <- seq_len(n_days_per_region)
+
+    tmean <- 10 + 8*sin(2*pi*day_ix/365) + rnorm(n_days_per_region, sd = 4)
+    tmean <- pmax(pmin(tmean, 25), -5)
+
+    hum <- pmax(pmin(80 + rnorm(n_days_per_region, sd = 6), 95), 70)
+    rainfall <- pmax(rnorm(n_days_per_region, 3.5, 2.0), 0)
+    sun <- pmax(rnorm(n_days_per_region, 2.5, 1.2), 0)
+
+    pop <- if (region_name == "Region 1") 2600000L else 6800000L
+
+    lambda <- exp(-0.1 + 0.03 * tmean)
+    suicides <- rpois(n_days_per_region, lambda)
+
+    data.frame(
+      date = dates,
+      region = region_name,
+      tmean = round(tmean, 2),
+      hum = round(hum, 2),
+      sun = round(sun, 2),
+      rainfall = round(rainfall, 2),
+      population = pop,
+      suicides = suicides
+    )
+  }
+
+  df <- do.call(rbind, lapply(regions, make_region))
+
+  tmp_file <- tempfile(fileext = ".csv")
+  write.csv(df, tmp_file, row.names = FALSE)
+  on.exit(unlink(tmp_file), add = TRUE)
+
+  # create temp output directory
+  out_dir <- tempdir()
+
+  result <- suppressWarnings(
+    suicides_heat_do_analysis(
+      data_path = tmp_file,
+      date_col = "date",
+      region_col = "region",
+      temperature_col = "tmean",
+      health_outcome_col = "suicides",
+      population_col = "population",
+      independent_cols = c("hum", "sun", "rainfall"),
+      save_fig = FALSE,
+      save_csv = FALSE,
+      run_descriptive = TRUE,
+      output_folder_path = out_dir,
+      var_per = c(50),
+      lag_days = 1
+    )
+  )
+
+  # find newly created analysis folder
+  created_dirs <- list.dirs(out_dir, recursive = FALSE)
+  expect_true(length(created_dirs) > 0, info = "No analysis directory created")
+
+  latest_dir <- created_dirs[which.max(file.info(created_dirs)$mtime)]
+
+  # check descriptive_stats subfolder exists
+  desc_dir <- file.path(latest_dir, "descriptive_stats")
+  expect_true(dir.exists(desc_dir), info = "descriptive_stats folder not created")
+
+  # check that at least one file was written
+  files <- list.files(desc_dir, recursive = TRUE)
+  expect_true(length(files) > 0, info = "No descriptive output files created")
+
+  # pipeline still returns expected structure
+  expect_type(result, "list")
+  expect_true("qaic_results" %in% names(result))
+})

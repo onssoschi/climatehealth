@@ -242,6 +242,88 @@ test_that("malaria_do_analysis runs end-to-end on synthetic data", {
   expect_true(nrow(rr_tables) > 10)
 })
 
+test_that("malaria_do_analysis runs descriptive stats and creates outputs", {
+
+  skip_if_not_installed("sf")
+  skip_if_not_installed("INLA")
+  skip_if_integration_disabled()
+
+  health  <- make_health_fixture_m()
+  climate <- make_climate_fixture_m()
+
+  # Create shapefile
+  map_stub <- tempfile("synthetic_map_malaria_desc_")
+  map_path <- paste0(map_stub, ".shp")
+  on.exit(unlink(Sys.glob(paste0(map_stub, ".*"))), add = TRUE)
+
+  map_m <- make_synthetic_map_m() |> sf::st_transform(3857)
+  sf::st_write(map_m, map_path, quiet = TRUE, append = FALSE)
+
+  # temp base output directory
+  base_out <- tempfile("malaria_out_")
+  dir.create(base_out)
+
+  # Run pipeline
+  res <- suppress_plot(suppressWarnings(
+    malaria_do_analysis(
+      health_data_path  = health,
+      climate_data_path = climate,
+      map_path          = map_path,
+      region_col        = "region",
+      district_col      = "district",
+      year_col          = "year",
+      month_col         = "month",
+      case_col          = "malaria",
+      tot_pop_col       = "tot_pop",
+      tmin_col          = "tmin",
+      tmean_col         = "tmean",
+      tmax_col          = "tmax",
+      rainfall_col      = "rainfall",
+      r_humidity_col    = "r_humidity",
+      runoff_col        = "runoff",
+      geometry_col      = "geometry",
+      max_lag           = 2,
+      nk                = 1,
+      basis_matrices_choices = "tmax",
+      inla_param        = "tmax",
+      param_term        = "tmax",
+      level             = "district",
+
+      # Trigger descriptive branch
+      run_descriptive   = TRUE,
+      output_dir        = base_out,
+      save_fig          = FALSE,
+      save_csv          = FALSE,
+      save_model        = FALSE
+    )
+  ))
+
+  # Validate output structure
+
+  # Find created malaria_analysis_* directory
+  created_dirs <- list.dirs(base_out, recursive = FALSE)
+  expect_true(length(created_dirs) > 0,
+              info = "No malaria analysis directory created")
+
+  latest_dir <- created_dirs[which.max(file.info(created_dirs)$mtime)]
+
+  # Check descriptive_stats exists
+  desc_dir <- file.path(latest_dir, "descriptive_stats")
+  expect_true(dir.exists(desc_dir),
+              info = "descriptive_stats folder not created")
+
+  # Check files exist
+  files <- list.files(desc_dir, recursive = TRUE)
+  expect_true(length(files) > 0,
+              info = "No descriptive stats outputs created")
+
+  # main pipeline still works
+  expect_true("rr_df" %in% names(res))
+  expect_true(is.list(res$rr_df))
+  expect_equal(length(res$rr_df), 1)
+
+})
+
 test_that("malaria_do_analysis errors when save_fig=TRUE and output_dir=NULL", {
   skip_if_not_installed("INLA")
 

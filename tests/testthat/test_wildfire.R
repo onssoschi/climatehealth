@@ -2452,6 +2452,91 @@ test_that("wildfire_do_analysis: save_csv triggers save_wildfire_results", {
   expect_true(saved_called)
 })
 
+test_that("wildfire_do_analysis runs descriptive stats and creates outputs", {
+
+  if (!identical(Sys.getenv("NOT_CRAN"), "true")) skip("Skipping on CRAN")
+  if (Sys.getenv("RUN_INTEGRATION") != "true")    skip("Skipping CI integration")
+
+  # synthetic dataset
+  set.seed(123)
+
+  n_days  <- 120
+  dates   <- seq.Date(as.Date("2020-01-01"), by = "day", length.out = n_days)
+  regions <- c("North", "South")
+
+  df <- expand.grid(date = dates, region = regions, KEEP.OUT.ATTRS = FALSE)
+
+  df$temp_mean <- 12 + 6 * sin(2 * pi * as.numeric(df$date)/365) +
+    rnorm(nrow(df), sd = 2)
+
+  df$pm25 <- pmax(0.1,
+                  ifelse(df$region == "North", 6, 10) +
+                    rnorm(nrow(df), sd = 2))
+
+  df$population <- ifelse(df$region == "North", 1000000, 700000)
+
+  eta <- -1 + 0.02 * df$pm25 + 0.01 * df$temp_mean
+  df$deaths <- rpois(nrow(df), lambda = exp(eta) * 10)
+
+  tmp_csv <- tempfile(fileext = ".csv")
+  write.csv(df, tmp_csv, row.names = FALSE)
+  on.exit(unlink(tmp_csv), add = TRUE)
+
+  # base output dir
+  base_out <- tempfile("wf_out_desc_")
+  dir.create(base_out)
+
+  # run pipeline
+  res <- suppressWarnings(
+    wildfire_do_analysis(
+      health_path = tmp_csv,
+      join_wildfire_data = FALSE,
+      ncdf_path = NULL,
+      shp_path = NULL,
+      date_col = "date",
+      region_col = "region",
+      shape_region_col = "region",
+      mean_temperature_col = "temp_mean",
+      health_outcome_col = "deaths",
+      population_col = "population",
+      pm_2_5_col = "pm25",
+
+      # trigger descriptive stats
+      run_descriptive = TRUE,
+      output_folder_path = base_out,
+
+      # keep fast
+      save_fig = FALSE,
+      save_csv = FALSE,
+      create_run_subdir = TRUE
+    )
+  )
+
+  # validate directory creation
+  created_dirs <- list.dirs(base_out, recursive = FALSE)
+  expect_true(length(created_dirs) > 0,
+              info = "No run directory created")
+
+  latest_dir <- created_dirs[which.max(file.info(created_dirs)$mtime)]
+
+  # check descriptive_stats exists
+  desc_dir <- file.path(latest_dir, "descriptive_stats")
+  expect_true(dir.exists(desc_dir),
+              info = "descriptive_stats folder not created")
+
+  # check files present
+  files <- list.files(desc_dir, recursive = TRUE)
+  expect_true(length(files) > 0,
+              info = "No descriptive stats files created")
+
+  # pipeline still returns outputs
+  expect_type(res, "list")
+  expect_true("RR_results" %in% names(res))
+  expect_s3_class(res$RR_results, "data.frame")
+  expect_gt(nrow(res$RR_results), 0)
+})
+
+
 test_that("wildfire_do_analysis errors clearly when AF/AN outputs are requested without population data", {
   minimal_data <- data.frame(
     month = 1,
