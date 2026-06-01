@@ -2402,7 +2402,7 @@ mh_save_results <- function(
 #' saved. Defaults to NULL.
 #' @param seed Optional integer random seed used when sampling residuals for
 #' model validation plots. Defaults to NULL.
-#' #' @param run_descriptive Logical. Whether to run descriptive statistics. Default FALSE.
+#' @param run_descriptive Logical. Whether to run descriptive statistics. Default FALSE.
 #' @param plot_corr_matrix Logical. Plot correlation matrix. Default TRUE.
 #' @param correlation_method Character. Correlation method for corr matrix
 #' (e.g.,"pearson", "spearman"). Default "pearson".

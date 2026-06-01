@@ -41,7 +41,16 @@ malaria_do_analysis(
   save_csv = FALSE,
   save_model = FALSE,
   save_fig = FALSE,
-  output_dir = NULL
+  output_dir = NULL,
+  run_descriptive = FALSE,
+  plot_corr_matrix = TRUE,
+  correlation_method = "pearson",
+  plot_dist = TRUE,
+  plot_na_counts = TRUE,
+  plot_scatter = TRUE,
+  plot_box = TRUE,
+  plot_regional = TRUE,
+  detect_outliers = TRUE
 )
 }
 \arguments{
@@ -137,6 +146,27 @@ Defaults to \code{TRUE}.}
 
 \item{output_dir}{Character. Directory where output files (plots, datasets, maps)
 are saved. Defaults to \code{NULL}.}
+
+\item{run_descriptive}{Logical. Whether to run descriptive statistics. Default FALSE.}
+
+\item{plot_corr_matrix}{Logical. Plot correlation matrix. Default TRUE.}
+
+\item{correlation_method}{Character. Correlation method for corr matrix
+(e.g.,"pearson", "spearman"). Default "pearson".}
+
+\item{plot_dist}{Logical. Plot distributions (hist/density) for key variables.
+Default TRUE.}
+
+\item{plot_na_counts}{Logical. Plot missingness/NA counts. Default TRUE.}
+
+\item{plot_scatter}{Logical. Plot scatter plots for key pairs. Default TRUE.}
+
+\item{plot_box}{Logical. Plot boxplots by region/season where applicable.
+Default TRUE.}
+
+\item{plot_regional}{Logical. Plot regional summaries. Default TRUE.}
+
+\item{detect_outliers}{Logical. Flag potential outliers in descriptive workflow.}
 }
 \value{
 A named list containing:
