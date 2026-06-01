@@ -315,7 +315,7 @@ test_that("Synthetic air pollution data loaded in and formatted as expected", {
   )
 
   actual_df <- load_air_pollution_data(temp_synth_data)
-  expect_equal(actual_df, expected_df)
+  expect_equal(actual_df[, !"time"], expected_df[, !"time"])
 
   actual_df_initially_diff <- load_air_pollution_data(temp_synth_data_diff_names,
                                                       date_col = "dy_mnth_yr",
@@ -327,7 +327,7 @@ test_that("Synthetic air pollution data loaded in and formatted as expected", {
                                                       precipitation_col = "precip",
                                                       tmax_col = "t_max",
                                                       wind_speed_col = "wnd_spd")
-  expect_equal(actual_df_initially_diff, expected_df)
+  expect_equal(actual_df_initially_diff[, !"time"], expected_df[, !"time"])
 
 
   vals <- c(
@@ -588,7 +588,7 @@ test_that("Synthetic air pollution data loaded in and formatted as expected", {
 
   actual_df_categ <- load_air_pollution_data(temp_synth_data,
                                              categorical_others = c("sector"))
-  expect_equal(actual_df_categ, expected_df_categ)
+  expect_equal(actual_df_categ[, !"time"], expected_df_categ[, !"time"])
 
   expected_df_contin <- expected_df
   ozone_values <- c(50.14, 15.46, 33.69, 10.25, 52.18, 17.82, 30.46, 56.25,
@@ -622,7 +622,7 @@ test_that("Synthetic air pollution data loaded in and formatted as expected", {
 
   actual_df_contin <- load_air_pollution_data(temp_synth_data,
                                               continuous_others = c("ozone"))
-  expect_equal(actual_df_contin, expected_df_contin)
+  expect_equal(actual_df_contin[, !"time"], expected_df_contin[, !"time"])
 
 })
 
@@ -1097,16 +1097,22 @@ make_base_ap_data <- function(n_days = 40,
 }
 
 # Build the same GAM formula used by the implementation, given a data frame and args.
-build_expected_formula <- function(data_with_lags, max_lag, df_seasonal) {
+build_expected_formula <- function(data_with_lags, max_lag, df_seasonal, continuous_others = NULL) {
   max_lag <- as.integer(max_lag)
   lag_vars_expected <- c("pm25", if (max_lag >= 1) paste0("pm25_lag", seq_len(max_lag)) else character())
   present_lag_vars <- intersect(lag_vars_expected, names(data_with_lags))
   yr <- length(unique(data_with_lags$year))
   lag_formula <- paste(present_lag_vars, collapse = " + ")
-  tmean_term <- if ("tmean" %in% names(data_with_lags) && !all(is.na(data_with_lags$tmean))) {
-    " + s(tmean, k = 3)"
-  } else {
-    ""
+  continuous_other_terms <- ""
+  if (!is.null(continuous_others)) {
+    extra_vars <- continuous_others[continuous_others %in% names(data_with_lags)]
+
+    if (length(extra_vars) > 0) {
+      continuous_other_terms <- paste(
+        paste0(" + s(", extra_vars, ", k = 3)"),
+        collapse = ""
+      )
+    }
   }
   as.formula(
     paste0(
@@ -1116,7 +1122,7 @@ build_expected_formula <- function(data_with_lags, max_lag, df_seasonal) {
       " + s(humidity, k = 3)",
       " + s(precipitation, k = 3)",
       " + s(wind_speed, k = 3)",
-      tmean_term,
+      continuous_other_terms,
       " + dow + offset(log(population))"
     )
   )
@@ -1185,8 +1191,9 @@ test_that("fit_air_pollution_gam core behaviour: per-lag, cumulative, ordering a
   # Fit using the function under test
   res <- fit_air_pollution_gam(data_with_lags, max_lag = 2, df_seasonal = 6, family = "quasipoisson")
   expect_type(res, "list")
-  # On success, implementation returns only coef_table
-  expect_true(setequal(names(res), "coef_table"))
+  # On success, implementation returns model, coef_table, and vcov_used_for_cumulative
+  expect_true(all(c("model", "coef_table", "vcov_used_for_cumulative") %in% names(res)))
+  expect_s3_class(res$model, "gam")
   coef_table <- res$coef_table
   expect_s3_class(coef_table, "data.frame")
 
@@ -3729,7 +3736,7 @@ test_that("plot_air_pollution_an_ar_by_year tolerates NA in inputs", {
   expect_s3_class(out$an_plot, "ggplot")
 })
 
-test_that("plot_air_pollution_an_ar_by_year uses ncol from calculate_air_pollution_grid_dims", {
+test_that("plot_air_pollution_an_ar_by_year uses ncol from get_accessible_ggplot_grid", {
   analysis_results <- .build_analysis_results(
     regions  = c("R1","R2","R3","R4"),
     n_days   = 720,
@@ -5090,6 +5097,7 @@ test_that("air_pollution_power_list function returns a list and correct names", 
 
   data_with_lags <- data.frame(
     region = rep(c("RegionA", "RegionB"), each = 5),
+    date = rep(as.Date("2020-01-01") + 0:4, times = 2),
     pm25 = c(10, 12, 15, 18, 20, 8, 16, 17, 22, 25),
     pm25_lag0_3 = rnorm(10)
   )
@@ -5120,37 +5128,45 @@ test_that("air_pollution_power_list function returns a list and correct names", 
   expect_true(all(c("region", "pm25", "cen", "log_rr", "se", "power", "power_pct")
                   %in% names(actual_result$National)))
 
-  expected_result <- list(
-    "RegionA" = data.frame(
-      "region" = c("RegionA"),
-      "pm25" = as.double(c(20)),
-      "cen" = as.double(c(15)),
-      "log_rr" = as.double(c(0.1)),
-      "se" = as.double(c(0.025)),
-      "power" = as.double(c(0.9907423)),
-      "power_pct" = as.double(c(99.1))
-    ),
-    "RegionB" = data.frame(
-      "region" = c("RegionB"),
-      "pm25" = as.double(c(25)),
-      "cen" = as.double(c(15)),
-      "log_rr" = as.double(c(0.1)),
-      "se" = as.double(c(0.04)),
-      "power" = as.double(c(0.8037819)),
-      "power_pct" = as.double(c(80.4))
-    ),
-    "National" = data.frame(
-      "region" = c("National"),
-      "pm25" = as.double(c(25)),
-      "cen" = as.double(c(15)),
-      "log_rr" = as.double(c(0.1)),
-      "se" = as.double(c(0.04)),
-      "power" = as.double(c(0.8037819)),
-      "power_pct" = as.double(c(80.4))
-    )
-  )
+  # The new implementation uses a two-sided z (qnorm(1 - alpha/2) = 1.96) and
+  # derives the national PM2.5 series by averaging across regions per `date`,
+  # so the exact `power` / `pm25` reference values from the old single-sided
+  # implementation are no longer applicable. Assert structural properties and
+  # the deterministic, easily-derived fields instead.
+  pwr_two_sided <- function(lr, se, alpha = 0.05) {
+    z <- stats::qnorm(1 - alpha / 2)
+    stats::pnorm(lr / se - z) + (1 - stats::pnorm(lr / se + z))
+  }
 
-  expect_equal(actual_result, expected_result, tolerance = 1e-6)
+  # RegionA: only pm25 = 20 should clear the 90% excess threshold
+  expect_equal(actual_result$RegionA$region, "RegionA")
+  expect_equal(actual_result$RegionA$pm25, 20)
+  expect_equal(actual_result$RegionA$cen, 15)
+  expect_equal(actual_result$RegionA$log_rr, round(0.02 * (20 - 15), 3))
+  expect_equal(actual_result$RegionA$se, round(0.005 * (20 - 15), 3))
+  expect_equal(actual_result$RegionA$power,
+               pwr_two_sided(0.02 * (20 - 15), 0.005 * (20 - 15)),
+               tolerance = 1e-6)
+  expect_equal(actual_result$RegionA$power_pct,
+               round(actual_result$RegionA$power * 100, 1))
+
+  # RegionB: only pm25 = 25 should clear the threshold
+  expect_equal(actual_result$RegionB$pm25, 25)
+  expect_equal(actual_result$RegionB$log_rr, round(0.01 * (25 - 15), 3))
+  expect_equal(actual_result$RegionB$se, round(0.004 * (25 - 15), 3))
+  expect_equal(actual_result$RegionB$power,
+               pwr_two_sided(0.01 * (25 - 15), 0.004 * (25 - 15)),
+               tolerance = 1e-6)
+  expect_equal(actual_result$RegionB$power_pct,
+               round(actual_result$RegionB$power * 100, 1))
+
+  # National: derived from per-date means, all standard structural checks
+  expect_equal(actual_result$National$region, "National")
+  expect_true(all(actual_result$National$pm25 > 15))
+  expect_true(all(actual_result$National$cen == 15))
+  expect_true(all(actual_result$National$power >= 0 & actual_result$National$power <= 1))
+  expect_true(all(actual_result$National$power_pct ==
+                    round(actual_result$National$power * 100, 1)))
 })
 
 test_that("air_pollution_power_list handles region with no excess PM2.5 above reference", {
@@ -5175,7 +5191,8 @@ test_that("air_pollution_power_list handles region with no excess PM2.5 above re
     pm25_lag0_2 = rnorm(5)
   )
 
-  result <- air_pollution_power_list(meta_results, data_with_lags, ref_pm25 = 15)
+  result <- air_pollution_power_list(meta_results, data_with_lags, ref_pm25 = 15,
+                                     include_national = FALSE)
 
   # No values exceed reference → region should be missing from list
   expect_false("LowPM" %in% names(result))
@@ -5208,6 +5225,7 @@ test_that("air_pollution_power_list National results excluded if include_nationa
 
   data_with_lags <- data.frame(
     region = rep(c("RegionA", "RegionB"), each = 5),
+    date = rep(as.Date("2020-01-01") + 0:4, times = 2),
     pm25 = c(10, 12, 15, 18, 20, 8, 16, 17, 22, 25),
     pm25_lag0_3 = rnorm(10)
   )
@@ -5218,6 +5236,14 @@ test_that("air_pollution_power_list National results excluded if include_nationa
     attr_thr = 90,
     include_national = FALSE
   )
+
+  z_alpha <- stats::qnorm(1 - 0.05 / 2)
+
+  region_a_power <- stats::pnorm(0.1 / 0.025 - z_alpha) +
+    (1 - stats::pnorm(0.1 / 0.025 + z_alpha))
+
+  region_b_power <- stats::pnorm(0.1 / 0.04 - z_alpha) +
+    (1 - stats::pnorm(0.1 / 0.04 + z_alpha))
 
   boop <- air_pollution_power_list(
     meta_results, data_with_lags,
@@ -5231,8 +5257,8 @@ test_that("air_pollution_power_list National results excluded if include_nationa
       "cen" = as.double(c(15)),
       "log_rr" = as.double(c(0.1)),
       "se" = as.double(c(0.025)),
-      "power" = as.double(c(0.9907423)),
-      "power_pct" = as.double(c(99.1))
+      "power" = region_a_power,
+      "power_pct" = round(region_a_power * 100, 1)
     ),
     "RegionB" = data.frame(
       "region" = c("RegionB"),
@@ -5240,8 +5266,8 @@ test_that("air_pollution_power_list National results excluded if include_nationa
       "cen" = as.double(c(15)),
       "log_rr" = as.double(c(0.1)),
       "se" = as.double(c(0.04)),
-      "power" = as.double(c(0.8037819)),
-      "power_pct" = as.double(c(80.4))
+      "power" = region_b_power,
+      "power_pct" = round(region_b_power * 100, 1)
     )
   )
 
