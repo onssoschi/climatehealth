@@ -2757,6 +2757,7 @@ wildfire_do_analysis <- function(
           independent_cols = descriptive_independent_cols,
           timeseries_col = "date",
           plot_corr_matrix = plot_corr_matrix,
+          correlation_method = correlation_method,
           plot_dist = plot_dist,
           plot_ma = TRUE,
           ma_days = 100,
