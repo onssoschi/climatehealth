@@ -5820,6 +5820,81 @@ test_that("air_pollution_do_analysis accepts legacy other-column argument names"
   expect_equal(captured$continuous_others, "tmean")
 })
 
+test_that("air_pollution_do_analysis default output settings do not require output_dir", {
+  pkg_ns <- getNamespaceName(environment(air_pollution_do_analysis))
+
+  mock_load_air_pollution_data <- function(...) {
+    stop("load sentinel")
+  }
+
+  expect_error(
+    with_mocked_bindings(
+      air_pollution_do_analysis(
+        data_path = tempfile(fileext = ".csv"),
+        run_descriptive = FALSE,
+        run_power = FALSE
+      ),
+      load_air_pollution_data = mock_load_air_pollution_data,
+      .package = pkg_ns
+    ),
+    "load sentinel"
+  )
+})
+
+test_that("air_pollution_do_analysis does not prepare output_dir when save_outputs is FALSE", {
+  pkg_ns <- getNamespaceName(environment(air_pollution_do_analysis))
+  missing_dir <- tempfile("missing_air_pollution_output_")
+
+  mock_load_air_pollution_data <- function(...) {
+    stop("load sentinel")
+  }
+
+  expect_false(dir.exists(missing_dir))
+  expect_error(
+    with_mocked_bindings(
+      air_pollution_do_analysis(
+        data_path = tempfile(fileext = ".csv"),
+        output_dir = missing_dir,
+        save_outputs = FALSE,
+        run_descriptive = FALSE,
+        run_power = FALSE
+      ),
+      load_air_pollution_data = mock_load_air_pollution_data,
+      .package = pkg_ns
+    ),
+    "load sentinel"
+  )
+  expect_false(dir.exists(missing_dir))
+})
+
+test_that("air_pollution_do_analysis API mode skips output_dir preparation", {
+  pkg_ns <- getNamespaceName(environment(air_pollution_do_analysis))
+  missing_dir <- tempfile("missing_air_pollution_api_output_")
+
+  mock_load_air_pollution_data <- function(...) {
+    stop("load sentinel")
+  }
+
+  withr::local_options(list(climatehealth.api_mode = TRUE))
+
+  expect_false(dir.exists(missing_dir))
+  expect_error(
+    with_mocked_bindings(
+      air_pollution_do_analysis(
+        data_path = tempfile(fileext = ".csv"),
+        output_dir = missing_dir,
+        save_outputs = TRUE,
+        run_descriptive = FALSE,
+        run_power = FALSE
+      ),
+      load_air_pollution_data = mock_load_air_pollution_data,
+      .package = pkg_ns
+    ),
+    "load sentinel"
+  )
+  expect_false(dir.exists(missing_dir))
+})
+
 test_that("air_pollution_do_analysis rejects legacy and new aliases together", {
   expect_error(
     air_pollution_do_analysis(

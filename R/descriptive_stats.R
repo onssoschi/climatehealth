@@ -1128,7 +1128,7 @@ run_descriptive_stats <- function(
       plot_total = plot_total,
       write_outlier_table = detect_outliers,
       calculate_rate = calculate_rate,
-      is_full_dataset = identical(nm, "Full Dataset")
+      is_full_dataset = identical(nm, "All")
     )
   }
 
