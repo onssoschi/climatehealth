@@ -876,6 +876,17 @@ test_that("run_descriptive_stats preflight validation errors on missing required
     ),
     "population_col"
   )
+
+  expect_error(
+    run_descriptive_stats(
+      data = df,
+      output_path = tmp,
+      dependent_col = "value",
+      independent_cols = c("value"),
+      plot_regional = TRUE
+    ),
+    "aggregation_column"
+  )
 })
 
 test_that("run_descriptive_stats_api contract works with list payload input", {
