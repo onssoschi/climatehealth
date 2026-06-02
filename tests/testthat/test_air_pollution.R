@@ -5820,6 +5820,27 @@ test_that("air_pollution_do_analysis accepts legacy other-column argument names"
   expect_equal(captured$continuous_others, "tmean")
 })
 
+test_that("air_pollution_do_analysis default output settings do not require output_dir", {
+  pkg_ns <- getNamespaceName(environment(air_pollution_do_analysis))
+
+  mock_load_air_pollution_data <- function(...) {
+    stop("load sentinel")
+  }
+
+  expect_error(
+    with_mocked_bindings(
+      air_pollution_do_analysis(
+        data_path = tempfile(fileext = ".csv"),
+        run_descriptive = FALSE,
+        run_power = FALSE
+      ),
+      load_air_pollution_data = mock_load_air_pollution_data,
+      .package = pkg_ns
+    ),
+    "load sentinel"
+  )
+})
+
 test_that("air_pollution_do_analysis rejects legacy and new aliases together", {
   expect_error(
     air_pollution_do_analysis(

@@ -24,7 +24,7 @@ air_pollution_do_analysis(
   family = "quasipoisson",
   reference_standards = list(list(value = 15, name = "WHO")),
   output_dir = NULL,
-  save_outputs = TRUE,
+  save_outputs = FALSE,
   run_descriptive = TRUE,
   run_power = TRUE,
   moving_average_window = 3L,

@@ -2830,7 +2830,7 @@ air_pollution_do_analysis <- function(
 
   # Output settings
   output_dir = NULL,
-  save_outputs = TRUE,
+  save_outputs = FALSE,
 
   # Optional analyses
   run_descriptive = TRUE,
