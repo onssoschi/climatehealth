@@ -374,7 +374,7 @@ test_that(
 )
 
 test_that(
-  "plot_health_climate_timeseries handles param_term=all as expected",
+  "plot_health_climate_timeseries shows param_term=all on one shared panel",
   {
     p <- plot_health_climate_timeseries(
       data = PHT_test_data,
@@ -383,7 +383,20 @@ test_that(
       case_type = "malaria"
     )
     expect_s3_class(p, "ggplot")
-    expect_equal(unique(p$data$variable), c("malaria", "tmin", "tmean", "tmax", "rainfall", "r_humidity","runoff"))
+    expect_equal(
+      unique(p$data$variable),
+      c(
+        "malaria",
+        "tmin",
+        "tmean",
+        "tmax",
+        "rainfall",
+        "r_humidity",
+        "runoff"
+      )
+    )
+    expect_true(inherits(p$facet, "FacetNull"))
+    expect_equal(p$labels$y, "Value (see panel units)")
   }
 )
 
