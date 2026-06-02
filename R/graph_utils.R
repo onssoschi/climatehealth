@@ -1125,4 +1125,3 @@ plot_total_variables_by_year <- function(
 
   invisible(final_plot)
 }
-

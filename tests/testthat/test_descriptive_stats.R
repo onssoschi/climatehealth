@@ -1174,4 +1174,3 @@ test_that("deprecated wrapper aliases remain functional", {
   expect_type(old_api_out, "character")
   expect_true(dir.exists(old_api_out[1]))
 })
-

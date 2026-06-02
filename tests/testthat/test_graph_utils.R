@@ -80,7 +80,6 @@ test_that(
     )
   }
 )
-
 # Tests for plot_moving_average
 sample_ma_df <- data.frame(
   date = seq.Date(from = as.Date("2023-01-01"), by = "day", length.out = 100),
@@ -603,4 +602,3 @@ test_that(
     )
   }
 )
-

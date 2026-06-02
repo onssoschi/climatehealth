@@ -2725,4 +2725,3 @@ test_that("saving PDF produces a file", {
   expect_true(file.exists(out_path))
   file.remove(out_path)
 })
-
