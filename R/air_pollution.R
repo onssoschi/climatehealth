@@ -2857,22 +2857,6 @@ air_pollution_do_analysis <- function(
   calculate_rate = FALSE
 ) {
 
-  # Setup additional output DIR
-  if (!is.null(output_dir)) {
-    # Check output dir exists
-    check_file_exists(output_dir, TRUE)
-    new_fpath <- file.path(
-      output_dir,
-      paste0("air_pollution_analysis_", format(Sys.time(), "%d_%m_%Y_%H_%M"))
-    )
-    if (!is.null(new_fpath)) {
-      (
-        dir.create(new_fpath)
-      )
-    }
-    output_dir <- new_fpath
-  }
-
   if (!is.null(Categorical_Others)) {
     if (!is.null(categorical_others)) {
       stop("Use only one of `categorical_others` or `Categorical_Others`.")
@@ -2905,6 +2889,19 @@ air_pollution_do_analysis <- function(
     plot_total <- FALSE
   }
 
+  if (save_outputs) {
+    if (is.null(output_dir)) {
+      stop("output_dir must be specified when save_outputs == TRUE.")
+    }
+
+    check_file_exists(output_dir, TRUE)
+    output_dir <- file.path(
+      output_dir,
+      paste0("air_pollution_analysis_", format(Sys.time(), "%d_%m_%Y_%H_%M"))
+    )
+    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+  }
+
   # AUTO-SET ENGLISH LOCALE FOR ENTIRE ANALYSIS
   original_locale <- Sys.getlocale("LC_TIME")
   english_locales <- c("English", "en_US.UTF-8", "en_GB.UTF-8", "C")
@@ -2932,11 +2929,6 @@ air_pollution_do_analysis <- function(
       Sys.setlocale("LC_TIME", original_locale)
     }
   })
-
-  # Create output directory
-  if (save_outputs && !dir.exists(output_dir)) {
-    dir.create(output_dir, recursive = TRUE)
-  }
 
   results <- list()
 
