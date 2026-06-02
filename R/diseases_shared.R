@@ -2218,72 +2218,86 @@ plot_relative_risk <- function(data,
 
       if (length(all_plots) > 0) {
         n_cols <- 2
-        n_rows <- ceiling(length(all_plots) / n_cols)
-
-        caption_text <- paste(
-          strwrap(paste0("Alt text: ", alt_text), width = 130),
-          collapse = "\n"
-        )
-
-        combined_plot <- patchwork::wrap_plots(
+        max_plots_per_page <- 6
+        plot_pages <- split(
           all_plots,
-          ncol = n_cols
-        ) +
-          patchwork::plot_annotation(
-            title = paste(
-              "Exposure-Response Curves by",
-              tools::toTitleCase(level)
-            ),
-            subtitle = if (is.null(filter_year)) {
-              paste(
-                "Exposure:",
-                exposure_label,
-                "| All years combined"
-              )
-            } else {
-              paste(
-                "Exposure:",
-                exposure_label,
-                "| Years:",
-                paste(filter_year, collapse = ", ")
-              )
-            },
-            caption = caption_text,
-            theme = ggplot2::theme(
-              plot.title = ggplot2::element_text(
-                hjust = 0.5,
-                face = "bold",
-                size = 17,
-                colour = cols$text,
-                lineheight = 1.08,
-                margin = ggplot2::margin(t = 0, r = 0, b = 2, l = 0)
-              ),
-              plot.subtitle = ggplot2::element_text(
-                hjust = 0.5,
-                size = 13,
-                colour = cols$axis,
-                lineheight = 1.15,
-                margin = ggplot2::margin(t = 0, r = 0, b = 4, l = 0)
-              ),
-              plot.caption = ggplot2::element_text(
-                hjust = 0,
-                size = 11,
-                colour = cols$text,
-                face = "italic",
-                lineheight = 1.12,
-                margin = ggplot2::margin(t = 0, r = 0, b = 0, l = 0)
-              )
-            )
+          ceiling(seq_along(all_plots) / max_plots_per_page)
+        )
+        base_filename <- paste0("RR_", param_term, "_", level, "_all_plots")
+
+        for (page_i in seq_along(plot_pages)) {
+          page_plots <- plot_pages[[page_i]]
+          n_rows <- ceiling(length(page_plots) / n_cols)
+
+          caption_text <- paste(
+            strwrap(paste0("Alt text: ", alt_text), width = 130),
+            collapse = "\n"
           )
 
-        save_accessible_ggplot(
-          plot_object = combined_plot,
-          output_dir = output_dir,
-          filename = paste0("RR_", param_term, "_", level, "_all_plots"),
-          width = max(12, n_cols * 5.8),
-          height = max(9.5, n_rows * 3.3 + 3.0),
-          alt_text = alt_text
-        )
+          combined_plot <- patchwork::wrap_plots(
+            page_plots,
+            ncol = n_cols
+          ) +
+            patchwork::plot_annotation(
+              title = paste(
+                "Exposure-Response Curves by",
+                tools::toTitleCase(level)
+              ),
+              subtitle = if (is.null(filter_year)) {
+                paste(
+                  "Exposure:",
+                  exposure_label,
+                  "| All years combined"
+                )
+              } else {
+                paste(
+                  "Exposure:",
+                  exposure_label,
+                  "| Years:",
+                  paste(filter_year, collapse = ", ")
+                )
+              },
+              caption = caption_text,
+              theme = ggplot2::theme(
+                plot.title = ggplot2::element_text(
+                  hjust = 0.5,
+                  face = "bold",
+                  size = 17,
+                  colour = cols$text,
+                  lineheight = 1.08,
+                  margin = ggplot2::margin(t = 0, r = 0, b = 2, l = 0)
+                ),
+                plot.subtitle = ggplot2::element_text(
+                  hjust = 0.5,
+                  size = 13,
+                  colour = cols$axis,
+                  lineheight = 1.15,
+                  margin = ggplot2::margin(t = 0, r = 0, b = 4, l = 0)
+                ),
+                plot.caption = ggplot2::element_text(
+                  hjust = 0,
+                  size = 11,
+                  colour = cols$text,
+                  face = "italic",
+                  lineheight = 1.12,
+                  margin = ggplot2::margin(t = 0, r = 0, b = 0, l = 0)
+                )
+              )
+            )
+
+          save_accessible_ggplot(
+            plot_object = combined_plot,
+            output_dir = output_dir,
+            filename = if (length(plot_pages) == 1) {
+              base_filename
+            } else {
+              paste0(base_filename, "_page_", page_i)
+            },
+            width = max(12, n_cols * 5.8),
+            height = max(9.5, n_rows * 3.3 + 3.0),
+            alt_text = alt_text
+          )
+        }
       }
     }
 
@@ -2963,7 +2977,7 @@ plot_attribution_metric <- function(attr_data,
 #' @param filter_year Optional integer or vector of integers to restrict the analysis
 #' to specific years prior to monthly aggregation. Defaults to `NULL`, in which case
 #' all available years are included.
-#' @param save_fig Logical. If `TRUE`, saves the generated plots as a PDF file.
+#' @param save_fig Logical. If `TRUE`, saves the generated plots as PDF files.
 #' Defaults to `FALSE`.
 #' @param output_dir Optional character string specifying the directory where output
 #' PDF files will be saved when `save_fig = TRUE`. The directory is created automatically
@@ -2983,8 +2997,9 @@ plot_attribution_metric <- function(attr_data,
 #'
 #' Metric-specific aggregation rules (sum or mean) and numeric formatting are applied
 #' automatically. Axis limits and breaks are dynamically adjusted to improve readability.
-#' When `save_fig = TRUE`, a single PDF file is created per metric and spatial level,
-#' with multiple pages used for region- or district-level outputs when necessary.
+#' When `save_fig = TRUE`, one PDF file is created per metric and spatial level.
+#' Region- or district-level outputs are split into page-suffixed files when
+#' many administrative units are present.
 #'
 #' @return
 #' A named list of `ggplot` objects. Each element corresponds to the country or an
@@ -3225,27 +3240,40 @@ plot_avg_monthly <- function(attr_data,
 
       } else {
         n_cols <- 3
-        n_rows <- ceiling(length(plots) / n_cols)
-
-        page_plot <- patchwork::wrap_plots(
+        max_plots_per_page <- 9
+        plot_pages <- split(
           plots,
-          ncol = n_cols
-        ) +
-          accessible_plot_annotation(
-            title = paste0(title_current),
-            subtitle = paste("Monthly values with", climate_label, "overlay"),
-            alt_text = alt_text_current,
-            width = 150
-          )
-
-        save_accessible_ggplot(
-          plot_object = page_plot,
-          output_dir = output_dir,
-          filename = file_stem,
-          width = max(13, n_cols * 4.2),
-          height = max(10.5, n_rows * 3.4 + 3.2),
-          alt_text = alt_text_current
+          ceiling(seq_along(plots) / max_plots_per_page)
         )
+
+        for (page_i in seq_along(plot_pages)) {
+          page_plots <- plot_pages[[page_i]]
+          n_rows <- ceiling(length(page_plots) / n_cols)
+
+          page_plot <- patchwork::wrap_plots(
+            page_plots,
+            ncol = n_cols
+          ) +
+            accessible_plot_annotation(
+              title = paste0(title_current),
+              subtitle = paste("Monthly values with", climate_label, "overlay"),
+              alt_text = alt_text_current,
+              width = 150
+            )
+
+          save_accessible_ggplot(
+            plot_object = page_plot,
+            output_dir = output_dir,
+            filename = if (length(plot_pages) == 1) {
+              file_stem
+            } else {
+              paste0(file_stem, "_page_", page_i)
+            },
+            width = max(13, n_cols * 4.2),
+            height = max(10.5, n_rows * 3.4 + 3.2),
+            alt_text = alt_text_current
+          )
+        }
       }
     }
   }

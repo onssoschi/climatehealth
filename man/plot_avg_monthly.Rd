@@ -42,7 +42,7 @@ climate extraction and axis labeling.}
 to specific years prior to monthly aggregation. Defaults to \code{NULL}, in which case
 all available years are included.}
 
-\item{save_fig}{Logical. If \code{TRUE}, saves the generated plots as a PDF file.
+\item{save_fig}{Logical. If \code{TRUE}, saves the generated plots as PDF files.
 Defaults to \code{FALSE}.}
 
 \item{output_dir}{Optional character string specifying the directory where output
@@ -76,7 +76,8 @@ on a secondary y-axis to facilitate comparison with seasonal health impacts.
 
 Metric-specific aggregation rules (sum or mean) and numeric formatting are applied
 automatically. Axis limits and breaks are dynamically adjusted to improve readability.
-When \code{save_fig = TRUE}, a single PDF file is created per metric and spatial level,
-with multiple pages used for region- or district-level outputs when necessary.
+When \code{save_fig = TRUE}, one PDF file is created per metric and spatial level.
+Region- or district-level outputs are split into page-suffixed files when
+many administrative units are present.
 }
 \keyword{internal}
