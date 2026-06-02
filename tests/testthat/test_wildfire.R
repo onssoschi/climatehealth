@@ -1294,8 +1294,8 @@ test_that(
             output_folder_path = temp_dir
         )
         rr_fpath <- file.path(temp_dir, "RR_lag_estimates.csv")
-        an_ar_fpath <- file.path(temp_dir, "wildfire_health_monthly_estimates.csv")
-        an_ar_ann_fpath <- file.path(temp_dir, "wildfire_health_yearly_estimates.csv")
+        an_ar_fpath <- file.path(temp_dir, "wildfire_mortality_monthly_estimates.csv")
+        an_ar_ann_fpath <- file.path(temp_dir, "wildfire_mortality_yearly_estimates.csv")
         files <- c(rr_fpath, an_ar_fpath, an_ar_ann_fpath)
         for (f in files) {
             expect_true(file.exists(f))
@@ -1971,7 +1971,7 @@ test_that(
 # - Adds a second scenario that enables region-level outputs (AF/AN), still without saving files
 
 
-test_that("wildfire_do_analysis: end-to-end run (dataset-level RR only, no file outputs)", {
+test_that("wildfire_do_analysis: end-to-end run (dataset-level RR and AF/AN outputs, no file outputs)", {
   # These are integration smoke tests.
   if (!identical(Sys.getenv("NOT_CRAN"), "true")) skip("Skipping on CRAN")
   if (Sys.getenv("RUN_INTEGRATION") != "true")    skip("Skipping CI integration")
@@ -1989,6 +1989,7 @@ test_that("wildfire_do_analysis: end-to-end run (dataset-level RR only, no file 
 
   # Wildfire PM2.5 (ug/m3) positive values
   pm_base_by_region <- ifelse(df$region == "North", 6, 10)
+  df$pop <- ifelse(df$region == "North", 500000, 700000)
   df$pm25 <- pmax(0.1, pm_base_by_region + stats::rnorm(nrow(df), sd = 3))
 
   # Construct a Poisson outcome with modest dependence on PM and temp

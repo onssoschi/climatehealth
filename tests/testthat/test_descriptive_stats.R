@@ -25,6 +25,7 @@ CORR_MATRIX_DATA <- data.frame(
   C = c(2, 5, 4, 7, 6, 9, 8, 11, 10, 13)
 )
 
+
 # Valid Responses
 test_that("Test default behaviour.", {
   result <- create_correlation_matrix(CORR_MATRIX_DATA)
@@ -393,7 +394,7 @@ test_that("Generates all enabled plots and outputs", {
   expected_files <- c(
     "dataset_summary.csv",
     "boxplots.pdf",
-    "correlation_matrix.png",
+    "correlation_matrix.pdf",
     "histograms.pdf",
     "na_counts.pdf",
     "dependent_vs_independents.pdf",
@@ -501,7 +502,7 @@ test_that("common_descriptive_stats creates the expected files", {
   expect_equal(out[2], "descriptive_stats")
 
   # Validate correct output files are present
-  all_folder <- file.path(out[1], "All")
+  all_folder <- file.path(out[1], "Full Dataset")
   expect_true(dir.exists(all_folder))
   expect_true(file.exists(file.path(all_folder, "dataset_summary.csv")))
 

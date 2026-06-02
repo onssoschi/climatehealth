@@ -6,7 +6,7 @@
 \usage{
 plot_air_pollution_forest_by_lag(
   analysis_results,
-  max_lag = 14L,
+  max_lag = 14,
   output_dir = NULL,
   save_plot = FALSE
 )

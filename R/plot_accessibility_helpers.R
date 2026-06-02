@@ -528,3 +528,434 @@ close_diag_pdf <- function(title, subtitle, alt_text) {
   )
   grDevices::dev.off()
 }
+
+#' Get generic accessible plot colours
+#'
+#' Returns a reusable accessible colour set for ggplot outputs. This builds on
+#' the package-level accessible palette used for base R plots.
+#'
+#' @return A named list of hex colour values.
+#' @keywords internal
+get_accessible_plot_colours <- function() {
+  cols <- get_accessible_palette()
+
+  list(
+    primary = cols$deep_water,
+    primary_dark = cols$prussian_blue,
+    secondary = cols$dusky_rose,
+    secondary_dark = "#A04B58",
+    highlight = cols$olive_green,
+    uncertainty = cols$smoke_grey,
+    reference = cols$text,
+    axis = cols$axis,
+    text = cols$text,
+    background = "white",
+    panel = "white",
+    grid = "#E8EBEF",
+    warning = "#B00020",
+    national = cols$olive_green,
+    regional = cols$deep_water
+  )
+}
+
+
+
+#' Get accessible ggplot grid dimensions
+#'
+#' Calculates grid dimensions for ggplot facets or patchwork plots. Defaults to
+#' a maximum of two columns to avoid squished panels.
+#'
+#' @param n_plots Integer. Number of panels or plots.
+#'
+#' @return A list with `n_col` and `n_row`.
+#' @keywords internal
+get_accessible_ggplot_grid <- function(n_plots) {
+  grid <- get_plot_grid(n_plots, max_cols = 2)
+
+  list(
+    n_col = grid$n_col,
+    n_row = grid$n_row
+  )
+}
+
+
+#' Get accessible ggplot output size
+#'
+#' Calculates output dimensions based on the number of panels.
+#'
+#' @param n_plots Integer. Number of panels or plots.
+#'
+#' @return A list with `n_col`, `n_row`, `width`, and `height`.
+#' @keywords internal
+get_accessible_ggplot_size <- function(n_plots) {
+  grid <- get_accessible_ggplot_grid(n_plots)
+
+  list(
+    n_col = grid$n_col,
+    n_row = grid$n_row,
+    width = max(9, grid$n_col * 6.8),
+    height = max(6, grid$n_row * 5.2)
+  )
+}
+
+
+#' Create a safe plot filename stem
+#'
+#' @param x Character. Filename stem, with or without extension.
+#'
+#' @return Character safe for filenames.
+#' @keywords internal
+make_safe_plot_filename <- function(x) {
+  x <- gsub("\\.[A-Za-z0-9]+$", "", x)
+  x <- gsub("[^A-Za-z0-9_\\-]+", "_", x)
+  x <- gsub("_+", "_", x)
+  x <- gsub("^_|_$", "", x)
+  x
+}
+
+
+#' Accessible ggplot theme
+#'
+#' Applies a consistent, readable theme for ggplot outputs across indicators.
+#'
+#' @return A ggplot2 theme.
+#' @keywords internal
+theme_accessible_ggplot <- function() {
+  cols <- get_accessible_plot_colours()
+
+  ggplot2::theme_minimal(base_size = 13, base_family = "sans") +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(
+        hjust = 0.5,
+        face = "bold",
+        size = 17,
+        colour = cols$text,
+        lineheight = 1.08
+      ),
+      plot.subtitle = ggplot2::element_text(
+        hjust = 0.5,
+        size = 13,
+        colour = cols$axis,
+        lineheight = 1.15,
+        margin = ggplot2::margin(t = 0, r = 0, b = 25, l = 0)
+      ),
+      plot.caption = ggplot2::element_text(
+        hjust = 0,
+        size = 11,
+        colour = cols$text,
+        face = "italic",
+        lineheight = 1.12,
+        margin = ggplot2::margin(t = 10, r = 0, b = 0, l = 0)
+      ),
+      axis.title = ggplot2::element_text(
+        face = "bold",
+        colour = cols$text,
+        size = 11
+      ),
+      axis.text = ggplot2::element_text(
+        colour = cols$axis,
+        size = 10
+      ),
+      axis.text.x = ggplot2::element_text(
+        angle = 45,
+        hjust = 1,
+        vjust = 1
+      ),
+      axis.line = ggplot2::element_blank(),
+      strip.text = ggplot2::element_text(
+        face = "bold",
+        size = 13,
+        colour = cols$text,
+        margin = ggplot2::margin(t = 10, r = 0, b = 10, l = 0)
+      ),
+      strip.background = ggplot2::element_rect(
+        fill = cols$uncertainty,
+        colour = NA
+      ),
+      strip.clip = "off",
+      panel.spacing.y = grid::unit(1.6, "lines"),
+      panel.spacing.x = grid::unit(0.8, "lines"),
+      panel.grid.minor = ggplot2::element_blank(),
+      panel.grid.major = ggplot2::element_line(
+        colour = cols$grid,
+        linewidth = 0.25
+      ),
+      plot.background = ggplot2::element_rect(
+        fill = cols$background,
+        colour = NA
+      ),
+      panel.background = ggplot2::element_rect(
+        fill = cols$panel,
+        colour = NA
+      ),
+      legend.position = "bottom",
+      legend.title = ggplot2::element_text(face = "bold"),
+      plot.margin = ggplot2::margin(36, 16, 16, 10)
+    )
+}
+
+
+#' Accessible ggplot panel theme
+#'
+#' Applies consistent styling for individual ggplot panels used in patchwork
+#' layouts. Intended for plots where region names are shown as panel titles
+#' rather than facet strips.
+#'
+#' @return A ggplot2 theme.
+#' @keywords internal
+theme_accessible_ggplot_panel <- function() {
+  cols <- get_accessible_plot_colours()
+
+  ggplot2::theme(
+    plot.title = ggplot2::element_text(
+      hjust = 0.5,
+      face = "bold",
+      size = 12,
+      colour = cols$text
+    ),
+    axis.title = ggplot2::element_text(
+      face = "plain",
+      colour = cols$text,
+      size = 11
+    ),
+    axis.text = ggplot2::element_text(
+      colour = cols$axis,
+      size = 10
+    ),
+    panel.border = ggplot2::element_rect(
+      colour = cols$axis,
+      fill = NA,
+      linewidth = 0.45
+    ),
+    plot.subtitle = ggplot2::element_blank(),
+    plot.caption = ggplot2::element_blank(),
+    plot.margin = ggplot2::margin(10, 15, 22, 10)
+  )
+}
+
+
+#' Accessible patchwork plot annotation
+#'
+#' Adds a consistent accessible title, subtitle, and wrapped alt text caption
+#' to patchwork plot outputs.
+#'
+#' @param title Character. Figure title.
+#' @param subtitle Character. Figure subtitle.
+#' @param alt_text Character. Alt text to include in the caption.
+#' @param width Integer. Wrap width for alt text caption. Defaults to 180
+#'
+#' @return A patchwork plot annotation.
+#' @keywords internal
+accessible_plot_annotation <- function(title, subtitle, alt_text, width = 180) {
+  cols <- get_accessible_plot_colours()
+
+  patchwork::plot_annotation(
+    title = title,
+    subtitle = subtitle,
+    caption = paste(
+      strwrap(paste0("Alt text: ", alt_text), width = width),
+      collapse = "\n"
+    ),
+    theme = ggplot2::theme(
+      plot.title = ggplot2::element_text(
+        hjust = 0.5,
+        face = "bold",
+        size = 17,
+        colour = cols$text,
+        lineheight = 1.08,
+        margin = ggplot2::margin(t = 0, r = 0, b = 4, l = 0)
+      ),
+      plot.subtitle = ggplot2::element_text(
+        hjust = 0.5,
+        size = 13,
+        colour = cols$axis,
+        lineheight = 1.15,
+        margin = ggplot2::margin(t = 0, r = 0, b = 10, l = 0)
+      ),
+      plot.caption = ggplot2::element_text(
+        hjust = 0,
+        size = 11,
+        colour = cols$text,
+        face = "italic",
+        lineheight = 1.12,
+        margin = ggplot2::margin(t = 10, r = 0, b = 0, l = 0)
+      )
+    )
+  )
+}
+
+
+#' Add alt text as ggplot caption
+#'
+#' @param plot_object ggplot object.
+#' @param alt_text Character. Alt text.
+#' @param width Integer. Wrap width for alt text caption. Defaults to 180
+#'
+#' @return ggplot object.
+#' @keywords internal
+add_ggplot_alt_caption <- function(plot_object, alt_text, width = 180) {
+  plot_object +
+    ggplot2::labs(
+      caption = paste(
+        strwrap(paste0("Alt text: ", alt_text), width = width),
+        collapse = "\n"
+      )
+    )
+}
+
+
+#' Add logo to a ggplot or patchwork object
+#'
+#' Adds the package logo to saved ggplot outputs. For patchwork objects, the logo
+#' is added in a compact header row to avoid panel overlap. For single ggplot
+#' objects, the logo is added as an inset so the plot title is not pushed down.
+#'
+#' @param plot_object ggplot or patchwork object.
+#'
+#' @return ggplot or patchwork object.
+#' @keywords internal
+add_ggplot_logo <- function(plot_object) {
+  pkg <- utils::packageName(environment(add_ggplot_logo))
+
+  if (is.null(pkg) || !nzchar(pkg)) {
+    pkg <- "climatehealth"
+  }
+
+  logo_path <- system.file(
+    "extdata",
+    "soschi_logo.png",
+    package = pkg
+  )
+
+  # Fallback for devtools::load_all() / local development
+  if (!nzchar(logo_path) || !file.exists(logo_path)) {
+    local_logo_path <- file.path("inst", "extdata", "soschi_logo.png")
+
+    if (file.exists(local_logo_path)) {
+      logo_path <- local_logo_path
+    }
+  }
+
+  if (!nzchar(logo_path) || !file.exists(logo_path)) {
+    return(plot_object)
+  }
+
+  if (!requireNamespace("png", quietly = TRUE)) {
+    warning("Package 'png' is required to add logo to ggplot outputs.")
+    return(plot_object)
+  }
+
+  if (!requireNamespace("patchwork", quietly = TRUE)) {
+    warning("Package 'patchwork' is required to add logo to ggplot outputs.")
+    return(plot_object)
+  }
+
+  img <- try(png::readPNG(logo_path), silent = TRUE)
+
+  if (inherits(img, "try-error")) {
+    warning("Could not read logo file: ", logo_path)
+    return(plot_object)
+  }
+
+  is_patchwork_plot <- inherits(plot_object, "patchwork")
+
+  # Patchwork plots need a header row. Inset logos can align to an internal
+  # panel and appear in the middle of the figure.
+  if (is_patchwork_plot) {
+    logo_grob <- grid::rasterGrob(
+      img,
+      x = grid::unit(0, "npc"),
+      y = grid::unit(1, "npc"),
+      just = c("left", "top"),
+      width = grid::unit(0.16, "npc"),
+      interpolate = TRUE
+    )
+
+    logo_plot <- ggplot2::ggplot() +
+      ggplot2::annotation_custom(
+        grob = logo_grob,
+        xmin = -Inf,
+        xmax = Inf,
+        ymin = -Inf,
+        ymax = Inf
+      ) +
+      ggplot2::theme_void() +
+      ggplot2::theme(
+        plot.margin = ggplot2::margin(0, 0, 0, 0)
+      )
+
+    full_plot <- patchwork::wrap_elements(full = plot_object)
+
+    return(
+      logo_plot / full_plot +
+        patchwork::plot_layout(heights = c(0.025, 1))
+    )
+  }
+
+  # Single ggplot outputs use an inset logo. This avoids adding a header row,
+  # which otherwise creates too much space between the logo and plot title.
+  logo_grob <- grid::rasterGrob(
+    img,
+    interpolate = TRUE
+  )
+
+  plot_object +
+    patchwork::inset_element(
+      logo_grob,
+      left = 0.012,
+      bottom = 0.94,
+      right = 0.18,
+      top = 0.995,
+      align_to = "full",
+      clip = TRUE
+    )
+}
+
+
+#' Save accessible ggplot output
+#'
+#' Saves a ggplot or patchwork object as a PDF and adds the package logo when
+#' available. Alt text should be included in the plot caption before saving.
+#'
+#' @param plot_object ggplot or patchwork object.
+#' @param output_dir Character. Output directory.
+#' @param filename Character. File stem without extension.
+#' @param width Numeric. Width in inches.
+#' @param height Numeric. Height in inches.
+#' @param alt_text Character or NULL. Retained for compatibility. Not written to a separate file.
+#'
+#' @return Invisibly returns the saved plot path.
+#' @keywords internal
+save_accessible_ggplot <- function(
+    plot_object,
+    output_dir,
+    filename,
+    width,
+    height,
+    alt_text = NULL
+) {
+  if (is.null(output_dir)) {
+    stop("output_dir must be specified.")
+  }
+
+  if (!dir.exists(output_dir)) {
+    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+  }
+
+  filename <- make_safe_plot_filename(filename)
+  output_path <- file.path(output_dir, paste0(filename, ".pdf"))
+
+  plot_object <- add_ggplot_logo(plot_object)
+
+  ggplot2::ggsave(
+    filename = output_path,
+    plot = plot_object,
+    width = width,
+    height = height,
+    device = "pdf",
+    bg = "white",
+    limitsize = FALSE
+  )
+
+  invisible(output_path)
+}

@@ -423,3 +423,430 @@ test_that(
     expect_true(file.exists(file))
   }
 )
+
+# Tests for get_accessible_plot_colours
+test_that(
+  "get_accessible_plot_colours maps values from accessible palette",
+  {
+    palette <- get_accessible_palette()
+    cols <- get_accessible_plot_colours()
+
+    expect_equal(cols$primary, palette$deep_water)
+    expect_equal(cols$primary_dark, palette$prussian_blue)
+    expect_equal(cols$secondary, palette$dusky_rose)
+    expect_equal(cols$highlight, palette$olive_green)
+    expect_equal(cols$uncertainty, palette$smoke_grey)
+    expect_equal(cols$reference, palette$text)
+    expect_equal(cols$axis, palette$axis)
+    expect_equal(cols$text, palette$text)
+    expect_equal(cols$national, palette$olive_green)
+    expect_equal(cols$regional, palette$deep_water)
+
+    expect_equal(cols$background, "white")
+    expect_equal(cols$panel, "white")
+    expect_equal(cols$grid, "#E8EBEF")
+expect_equal(cols$warning, "#B00020")
+expect_equal(cols$secondary_dark, "#A04B58")
+}
+)
+
+
+test_that(
+  "get_accessible_plot_colours returns valid hex or named colours",
+  {
+    cols <- get_accessible_plot_colours()
+
+    is_valid_colour <- function(x) {
+      is_hex <- grepl("^#[0-9A-Fa-f]{6}$", x)
+      is_named <- x %in% grDevices::colors()
+      is_hex || is_named
+    }
+
+    expect_true(all(vapply(cols, is_valid_colour, logical(1))))
+  }
+)
+
+
+# Tests for get_accessible_ggplot_grid
+patrick::with_parameters_test_that(
+  "get_accessible_ggplot_grid calculates rows and columns with max two columns",
+  {
+    grid <- get_accessible_ggplot_grid(n_plots)
+
+    expect_equal(grid, expected_grid)
+  },
+  n_plots = c(1, 2, 3, 4, 5, 6),
+  expected_grid = list(
+    list(n_col = 1, n_row = 1),
+    list(n_col = 2, n_row = 1),
+    list(n_col = 2, n_row = 2),
+    list(n_col = 2, n_row = 2),
+    list(n_col = 2, n_row = 3),
+    list(n_col = 2, n_row = 3)
+  ),
+  .test_name = c(
+    "one plot",
+    "two plots",
+    "three plots",
+    "four plots",
+    "five plots",
+    "six plots"
+  )
+)
+
+
+# Tests for get_accessible_ggplot_size
+patrick::with_parameters_test_that(
+  "get_accessible_ggplot_size returns expected size from accessible grid",
+  {
+    size <- get_accessible_ggplot_size(n_plots)
+
+    expect_equal(size, expected_size)
+  },
+  n_plots = c(1, 2, 3, 6),
+  expected_size = list(
+    list(n_col = 1, n_row = 1, width = 9, height = 6),
+    list(n_col = 2, n_row = 1, width = 13.6, height = 6),
+    list(n_col = 2, n_row = 2, width = 13.6, height = 10.4),
+    list(n_col = 2, n_row = 3, width = 13.6, height = 15.6)
+  ),
+  .test_name = c(
+    "single plot minimum size",
+    "two plot width",
+    "three plot two-row size",
+    "six plot three-row size"
+  )
+)
+
+
+# Tests for make_safe_plot_filename
+patrick::with_parameters_test_that(
+  "make_safe_plot_filename removes extensions and unsafe characters",
+  {
+    expect_equal(
+      make_safe_plot_filename(input),
+      expected
+    )
+  },
+  input = c(
+    "plot name.pdf",
+    "air pollution: WHO ref 15.png",
+    "__messy___name!!!.pdf",
+    "already-safe_name-1",
+    "name.with.many.parts.jpeg"
+  ),
+  expected = c(
+    "plot_name",
+    "air_pollution_WHO_ref_15",
+    "messy_name",
+    "already-safe_name-1",
+    "name_with_many_parts"
+  ),
+  .test_name = c(
+    "space and pdf extension",
+    "punctuation and png extension",
+    "messy underscores",
+    "already safe",
+    "multiple dots"
+  )
+)
+
+
+# Tests for theme_accessible_ggplot
+test_that(
+  "theme_accessible_ggplot returns expected ggplot theme settings",
+  {
+    th <- theme_accessible_ggplot()
+
+    expect_s3_class(th, "theme")
+
+    expect_equal(th$plot.title$hjust, 0.5)
+    expect_equal(th$plot.title$face, "bold")
+    expect_equal(th$plot.title$size, 17)
+
+    expect_equal(th$plot.subtitle$hjust, 0.5)
+    expect_equal(th$plot.subtitle$size, 13)
+
+    expect_equal(th$plot.caption$hjust, 0)
+    expect_equal(th$plot.caption$face, "italic")
+
+    expect_equal(th$axis.text.x$angle, 45)
+    expect_equal(th$axis.text.x$hjust, 1)
+    expect_equal(th$legend.position, "bottom")
+
+    expect_s3_class(th$panel.grid.minor, "element_blank")
+    expect_s3_class(th$plot.background, "element_rect")
+    expect_s3_class(th$panel.background, "element_rect")
+  }
+)
+
+
+# Tests for theme_accessible_ggplot_panel
+test_that(
+  "theme_accessible_ggplot_panel returns expected panel theme settings",
+  {
+    th <- theme_accessible_ggplot_panel()
+
+    expect_s3_class(th, "theme")
+
+    expect_equal(th$plot.title$hjust, 0.5)
+    expect_equal(th$plot.title$face, "bold")
+    expect_equal(th$plot.title$size, 12)
+
+    expect_equal(th$axis.title$face, "plain")
+    expect_equal(th$axis.title$size, 11)
+    expect_equal(th$axis.text$size, 10)
+
+    expect_s3_class(th$panel.border, "element_rect")
+    expect_equal(th$panel.border$linewidth, 0.45)
+
+    expect_s3_class(th$plot.subtitle, "element_blank")
+    expect_s3_class(th$plot.caption, "element_blank")
+  }
+)
+
+
+# Tests for accessible_plot_annotation
+test_that(
+  "accessible_plot_annotation creates patchwork annotation with title subtitle and alt text",
+  {
+    ann <- accessible_plot_annotation(
+      title = "Main title",
+      subtitle = "Useful subtitle",
+      alt_text = "This figure describes a test plot."
+    )
+
+    expect_s3_class(ann, "plot_annotation")
+
+    expect_equal(ann$title, "Main title")
+    expect_equal(ann$subtitle, "Useful subtitle")
+    expect_true(grepl("Alt text:", ann$caption))
+    expect_true(grepl("test plot", ann$caption))
+  }
+)
+
+
+# Tests for add_ggplot_alt_caption
+test_that(
+  "add_ggplot_alt_caption adds alt text to ggplot caption",
+  {
+    p <- ggplot2::ggplot(
+      data.frame(x = 1:3, y = 1:3),
+      ggplot2::aes(x = x, y = y)
+    ) +
+      ggplot2::geom_point()
+
+    p2 <- add_ggplot_alt_caption(
+      plot_object = p,
+      alt_text = "Scatter plot showing y increasing as x increases."
+    )
+
+    expect_s3_class(p2, "ggplot")
+    expect_true(grepl("Alt text:", p2$labels$caption))
+    expect_true(grepl("Scatter plot", p2$labels$caption))
+  }
+)
+
+
+# Tests for add_ggplot_logo
+test_that(
+  "add_ggplot_logo returns a ggplot or patchwork object without error",
+  {
+    p <- ggplot2::ggplot(
+      data.frame(x = 1:3, y = 1:3),
+      ggplot2::aes(x = x, y = y)
+    ) +
+      ggplot2::geom_point()
+
+    result <- add_ggplot_logo(p)
+
+    # If logo is unavailable, the original ggplot is returned.
+    # If logo is available, single ggplot may become a patchwork object due to inset.
+    expect_true(
+      inherits(result, "ggplot") || inherits(result, "patchwork")
+    )
+  }
+)
+
+
+test_that(
+  "add_ggplot_logo handles patchwork objects without error",
+  {
+    p1 <- ggplot2::ggplot(
+      data.frame(x = 1:3, y = 1:3),
+      ggplot2::aes(x = x, y = y)
+    ) +
+      ggplot2::geom_point()
+
+    p2 <- ggplot2::ggplot(
+      data.frame(x = 1:3, y = 3:1),
+      ggplot2::aes(x = x, y = y)
+    ) +
+      ggplot2::geom_line()
+
+    pw <- p1 + p2
+
+    result <- add_ggplot_logo(pw)
+
+    expect_true(
+      inherits(result, "patchwork") || inherits(result, "ggplot")
+    )
+  }
+)
+
+
+# Tests for save_accessible_ggplot
+test_that(
+  "save_accessible_ggplot creates output directory and calls ggsave with pdf path",
+  {
+    p <- ggplot2::ggplot(
+      data.frame(x = 1:3, y = 1:3),
+      ggplot2::aes(x = x, y = y)
+    ) +
+      ggplot2::geom_point()
+
+    tmpdir <- file.path(withr::local_tempdir(), "nested", "plots")
+
+    captured <- new.env(parent = emptyenv())
+    captured$filename <- NULL
+    captured$plot <- NULL
+    captured$width <- NULL
+    captured$height <- NULL
+    captured$device <- NULL
+    captured$bg <- NULL
+    captured$limitsize <- NULL
+
+    mock_ggsave <- function(filename,
+                            plot,
+                            width,
+                            height,
+                            device,
+                            bg,
+                            limitsize,
+                            ...) {
+      captured$filename <- filename
+      captured$plot <- plot
+      captured$width <- width
+      captured$height <- height
+      captured$device <- device
+      captured$bg <- bg
+      captured$limitsize <- limitsize
+
+      invisible(filename)
+    }
+
+    pkg_ns <- getNamespaceName(environment(save_accessible_ggplot))
+
+    output_path <- testthat::with_mocked_bindings(
+      {
+        testthat::with_mocked_bindings(
+          {
+            save_accessible_ggplot(
+              plot_object = p,
+              output_dir = tmpdir,
+              filename = "unsafe plot name.png",
+              width = 10,
+              height = 8,
+              alt_text = "Alt text should not create a separate file."
+            )
+          },
+          ggsave = mock_ggsave,
+          .package = "ggplot2"
+        )
+      },
+      add_ggplot_logo = function(plot_object) plot_object,
+      .package = pkg_ns
+    )
+
+    expected_path <- file.path(tmpdir, "unsafe_plot_name.pdf")
+
+    expect_true(dir.exists(tmpdir))
+    expect_equal(output_path, expected_path)
+
+    expect_equal(captured$filename, expected_path)
+    expect_s3_class(captured$plot, "ggplot")
+    expect_equal(captured$width, 10)
+    expect_equal(captured$height, 8)
+    expect_equal(captured$device, "pdf")
+    expect_equal(captured$bg, "white")
+    expect_false(captured$limitsize)
+
+    expect_false(
+      file.exists(file.path(tmpdir, "unsafe_plot_name_alt_text.txt"))
+    )
+  }
+)
+
+
+test_that(
+  "save_accessible_ggplot sanitizes filename and always saves as pdf",
+  {
+    p <- ggplot2::ggplot(
+      data.frame(x = 1:3, y = 1:3),
+      ggplot2::aes(x = x, y = y)
+    ) +
+      ggplot2::geom_point()
+
+    tmpdir <- withr::local_tempdir()
+
+    captured <- new.env(parent = emptyenv())
+    captured$filename <- NULL
+
+    mock_ggsave <- function(filename, plot, ...) {
+      captured$filename <- filename
+      invisible(filename)
+    }
+
+    pkg_ns <- getNamespaceName(environment(save_accessible_ggplot))
+
+    output_path <- testthat::with_mocked_bindings(
+      {
+        testthat::with_mocked_bindings(
+          {
+            save_accessible_ggplot(
+              plot_object = p,
+              output_dir = tmpdir,
+              filename = "A messy/file:name?.png",
+              width = 7,
+              height = 5
+            )
+          },
+          ggsave = mock_ggsave,
+          .package = "ggplot2"
+        )
+      },
+      add_ggplot_logo = function(plot_object) plot_object,
+      .package = pkg_ns
+    )
+
+    expected_path <- file.path(tmpdir, "A_messy_file_name.pdf")
+
+    expect_equal(output_path, expected_path)
+    expect_equal(captured$filename, expected_path)
+    expect_true(grepl("\\.pdf$", captured$filename))
+    expect_false(grepl("\\.png$", captured$filename))
+  }
+)
+
+
+test_that(
+  "save_accessible_ggplot errors when output_dir is NULL",
+  {
+    p <- ggplot2::ggplot(
+      data.frame(x = 1:3, y = 1:3),
+      ggplot2::aes(x = x, y = y)
+    ) +
+      ggplot2::geom_point()
+
+    expect_error(
+      save_accessible_ggplot(
+        plot_object = p,
+        output_dir = NULL,
+        filename = "plot",
+        width = 10,
+        height = 8
+      ),
+      "output_dir must be specified"
+    )
+  }
+)

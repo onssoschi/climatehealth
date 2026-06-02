@@ -6,7 +6,7 @@
 \usage{
 plot_air_pollution_an_ar_by_region(
   analysis_results,
-  max_lag = 14L,
+  max_lag = 14,
   include_national = TRUE,
   output_dir = NULL,
   save_plot = FALSE

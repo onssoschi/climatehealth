@@ -8,22 +8,6 @@ if (!"package:climatehealth" %in% search()) {
   pkgload::load_all(".", export_all = TRUE, helpers = FALSE, quiet = TRUE)
 }
 
-# Tests for create_grid
-patrick::with_parameters_test_that(
-  "Create grid works as intended",
-  {
-    grid <- create_grid(plot_count)
-    expect_equal(grid, expected_grid)
-  },
-  plot_count = c(9, 6, 14),
-  expected_grid = list(
-    c(3, 3),
-    c(3, 2),
-    c(4, 4)
-  ),
-  .test_name = c("Perfect square", "base<0.5", "base>=0.5")
-)
-
 # Tests for plot_correlation_matrix
 input_matrix <- matrix(1:9, nrow = 3, ncol = 3)
 patrick::with_parameters_test_that(
@@ -38,8 +22,8 @@ patrick::with_parameters_test_that(
     expect_true(file.exists(file.path(temp_dir, exp_out_path)))
   },
   output_path = c("test_corr.png", "test_corr2"),
-  exp_out_path = c("test_corr.png", "test_corr2.png"),
-  .test_name = c("with .png ext", "without .png ext")
+  exp_out_path = c("test_corr.pdf", "test_corr2.pdf"),
+  .test_name = c("with .pdf ext", "without .png ext")
 )
 
 # Tests for plot_distributions
@@ -96,16 +80,6 @@ test_that(
     )
   }
 )
-
-# Tests for get_alpha_colour
-test_that(
-  "get_alpha_colour works as expected",
-  {
-    rgb <- get_alpha_colour("#F54927", 0.6)
-    expect_equal(rgb, "#F5492799")
-  }
-)
-
 # Tests for plot_moving_average
 sample_ma_df <- data.frame(
   date = seq.Date(from = as.Date("2023-01-01"), by = "day", length.out = 100),

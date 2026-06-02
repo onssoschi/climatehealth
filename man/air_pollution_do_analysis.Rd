@@ -23,7 +23,7 @@ air_pollution_do_analysis(
   df_seasonal = 6,
   family = "quasipoisson",
   reference_standards = list(list(value = 15, name = "WHO")),
-  output_dir = "air_pollution_results",
+  output_dir = NULL,
   save_outputs = TRUE,
   run_descriptive = TRUE,
   run_power = TRUE,

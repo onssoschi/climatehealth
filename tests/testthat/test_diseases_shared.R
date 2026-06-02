@@ -374,7 +374,7 @@ test_that(
 )
 
 test_that(
-  "plot_health_climate_timeseries handles param_term=all as expected",
+  "plot_health_climate_timeseries shows param_term=all on one shared panel",
   {
     p <- plot_health_climate_timeseries(
       data = PHT_test_data,
@@ -383,7 +383,20 @@ test_that(
       case_type = "malaria"
     )
     expect_s3_class(p, "ggplot")
-    expect_equal(unique(p$data$variable), c("malaria", "tmin", "tmean", "tmax", "rainfall", "r_humidity","runoff"))
+    expect_equal(
+      unique(p$data$variable),
+      c(
+        "malaria",
+        "tmin",
+        "tmean",
+        "tmax",
+        "rainfall",
+        "r_humidity",
+        "runoff"
+      )
+    )
+    expect_true(inherits(p$facet, "FacetNull"))
+    expect_equal(p$labels$y, "Value (see panel units)")
   }
 )
 
@@ -575,6 +588,7 @@ test_that("create_inla_indices handles NA values in case column", {
 set.seed(101)
 
 n <- 160   # slightly larger reduces spline/aliasing instability
+
 tmax_base <- rnorm(n, 32, 2)
 tmin_base <- 0.985 * tmax_base + rnorm(n, 0, 0.18)
 ndvi_base <- runif(n, 0.4, 0.8)
@@ -1603,6 +1617,64 @@ test_that(
     )
   }
 )
+
+test_that("plot_relative_risk paginates saved subnational plots", {
+  many_region_predictions <- function(...) {
+    regions <- paste0("Region_", seq_len(7))
+    stats::setNames(
+      lapply(regions, function(region_name) {
+        list(
+          predvar = seq(20, 35, length.out = 5),
+          allRRfit = rep(1, 5),
+          allRRlow = rep(0.8, 5),
+          allRRhigh = rep(1.2, 5)
+        )
+      }),
+      regions
+    )
+  }
+
+  captured <- new.env(parent = emptyenv())
+  captured$filenames <- character(0)
+
+  mock_save <- function(plot_object,
+                        output_dir,
+                        filename,
+                        width,
+                        height,
+                        alt_text = NULL) {
+    captured$filenames <- c(captured$filenames, filename)
+    invisible(file.path(output_dir, paste0(filename, ".pdf")))
+  }
+
+  with_mocked_bindings(
+    {
+      climatehealth:::plot_relative_risk(
+        prr_data,
+        prr_model,
+        "tmax",
+        max_lag = 2,
+        nk = 2,
+        case_type = "malaria",
+        level = "region",
+        save_fig = TRUE,
+        output_dir = tempdir()
+      )
+    },
+    get_predictions = many_region_predictions,
+    validate_case_type = mock_validate_case_type,
+    save_accessible_ggplot = mock_save,
+    .package = "climatehealth"
+  )
+
+  expect_equal(
+    captured$filenames,
+    c(
+      "RR_tmax_region_all_plots_page_1",
+      "RR_tmax_region_all_plots_page_2"
+    )
+  )
+})
 
 test_that(
   "plot_relative_risk returns grouped plots for district level with filter_year",
@@ -2710,4 +2782,66 @@ test_that("saving PDF produces a file", {
   out_path <- file.path(tmp, "monthly_AR_Number_country.pdf")
   expect_true(file.exists(out_path))
   file.remove(out_path)
+})
+
+test_that("plot_avg_monthly paginates saved subnational plots", {
+  districts <- paste0("D", seq_len(10))
+
+  many_attr <- data.frame(
+    month = rep(1:12, times = length(districts)),
+    year = 2020,
+    region = "North",
+    district = rep(districts, each = 12),
+    AR_Number = seq_len(12 * length(districts)),
+    AR_per_100k = seq_len(12 * length(districts)) / 10,
+    AR_Fraction = seq_len(12 * length(districts)) / 1000
+  )
+
+  many_climate <- data.frame(
+    month = rep(1:12, times = length(districts)),
+    year = 2020,
+    region = "North",
+    district = rep(districts, each = 12),
+    tmax = 20 + rep(1:12, times = length(districts))
+  )
+
+  captured <- new.env(parent = emptyenv())
+  captured$filenames <- character(0)
+
+  mock_save <- function(plot_object,
+                        output_dir,
+                        filename,
+                        width,
+                        height,
+                        alt_text = NULL) {
+    captured$filenames <- c(captured$filenames, filename)
+    invisible(file.path(output_dir, paste0(filename, ".pdf")))
+  }
+
+  pkg_ns <- getNamespaceName(environment(plot_avg_monthly))
+
+  with_mocked_bindings(
+    {
+      plot_avg_monthly(
+        attr_data = many_attr,
+        c_data = many_climate,
+        metrics = "AR_Number",
+        param_term = "tmax",
+        case_type = case_type,
+        level = "district",
+        save_fig = TRUE,
+        output_dir = tempdir()
+      )
+    },
+    save_accessible_ggplot = mock_save,
+    .package = pkg_ns
+  )
+
+  expect_equal(
+    captured$filenames,
+    c(
+      "monthly_AR_Number_district_page_1",
+      "monthly_AR_Number_district_page_2"
+    )
+  )
 })

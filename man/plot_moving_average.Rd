@@ -38,4 +38,11 @@ plot_moving_average(
 \description{
 Plot the moving average of a column.
 }
+\keyword{Plot}
+\keyword{a}
+\keyword{average}
+\keyword{column.}
 \keyword{internal}
+\keyword{moving}
+\keyword{of}
+\keyword{the}
