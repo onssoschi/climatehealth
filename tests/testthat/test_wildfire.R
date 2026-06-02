@@ -2452,6 +2452,65 @@ test_that("wildfire_do_analysis: save_csv triggers save_wildfire_results", {
   expect_true(saved_called)
 })
 
+test_that("wildfire_do_analysis passes standardized columns to descriptive stats", {
+  minimal_data <- data.frame(
+    date = as.Date("2020-01-01"),
+    month = 1,
+    year = 2020,
+    dow = "Wed",
+    region = "A",
+    tmean = 10,
+    mean_PM = 5,
+    health_outcome = 2,
+    rh = 70,
+    wind_speed = 3,
+    pop = 1000,
+    stringsAsFactors = FALSE
+  )
+
+  captured <- list()
+
+  local_mocked_bindings(
+    load_wildfire_data = function(...) minimal_data,
+    create_lagged_variables = function(data, ...) data,
+    time_stratify = function(data, ...) data,
+    run_descriptive_stats = function(data, output_path, aggregation_column,
+                                     population_col, dependent_col,
+                                     independent_cols, timeseries_col, ...) {
+      captured$independent_cols <<- independent_cols
+      captured$timeseries_col <<- timeseries_col
+      invisible(list())
+    },
+    calculate_qaic = function(...) stop("stop after descriptive stats", call. = FALSE)
+  )
+
+  expect_error(
+    wildfire_do_analysis(
+      health_path = "ignored.csv",
+      join_wildfire_data = FALSE,
+      ncdf_path = NULL,
+      shp_path = NULL,
+      date_col = "day",
+      region_col = "area",
+      shape_region_col = NULL,
+      mean_temperature_col = "temp_mean",
+      health_outcome_col = "deaths",
+      population_col = "population",
+      rh_col = "humidity",
+      wind_speed_col = "wind",
+      pm_2_5_col = "pm25",
+      run_descriptive = TRUE,
+      output_folder_path = tempdir(),
+      save_fig = FALSE,
+      save_csv = FALSE
+    ),
+    "stop after descriptive stats"
+  )
+
+  expect_equal(captured$independent_cols, c("tmean", "mean_PM", "rh", "wind_speed"))
+  expect_equal(captured$timeseries_col, "date")
+})
+
 test_that("wildfire_do_analysis runs descriptive stats and creates outputs", {
 
   if (!identical(Sys.getenv("NOT_CRAN"), "true")) skip("Skipping on CRAN")
@@ -2594,4 +2653,3 @@ test_that("wildfire_do_analysis errors when create_run_subdir is requested witho
     "`output_folder_path` is required when `create_run_subdir = TRUE`"
   )
 })
-

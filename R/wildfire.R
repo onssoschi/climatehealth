@@ -2737,6 +2737,14 @@ wildfire_do_analysis <- function(
     descriptive_output_path <- file.path(output_folder_path, "descriptive_stats")
     dir.create(descriptive_output_path, recursive = TRUE, showWarnings = FALSE)
 
+    descriptive_independent_cols <- c("tmean", "mean_PM")
+    if (!is.null(rh_col)) {
+      descriptive_independent_cols <- c(descriptive_independent_cols, "rh")
+    }
+    if (!is.null(wind_speed_col)) {
+      descriptive_independent_cols <- c(descriptive_independent_cols, "wind_speed")
+    }
+
     # run descriptive stats
     tryCatch(
       {
@@ -2746,8 +2754,8 @@ wildfire_do_analysis <- function(
           aggregation_column = "region",
           population_col = "pop",
           dependent_col = "health_outcome",
-          independent_cols = c("tmean", "mean_PM", rh_col, wind_speed_col),
-          timeseries_col = date_col,
+          independent_cols = descriptive_independent_cols,
+          timeseries_col = "date",
           plot_corr_matrix = plot_corr_matrix,
           plot_dist = plot_dist,
           plot_ma = TRUE,
