@@ -30,7 +30,19 @@ wildfire_do_analysis(
   output_folder_path = NULL,
   create_run_subdir = FALSE,
   print_vif = FALSE,
-  print_model_summaries = FALSE
+  print_model_summaries = FALSE,
+  run_descriptive = FALSE,
+  plot_corr_matrix = TRUE,
+  correlation_method = "pearson",
+  plot_dist = TRUE,
+  plot_na_counts = TRUE,
+  plot_scatter = TRUE,
+  plot_box = TRUE,
+  plot_seasonal = TRUE,
+  plot_regional = TRUE,
+  plot_total = TRUE,
+  detect_outliers = TRUE,
+  calculate_rate = FALSE
 )
 }
 \arguments{
@@ -116,6 +128,35 @@ for each predictor. Defaults to FALSE.}
 
 \item{print_model_summaries}{Bool. Whether to print the model summaries to
 console. Defaults to FALSE.}
+
+\item{run_descriptive}{Logical. Whether to run descriptive statistics. Default FALSE.}
+
+\item{plot_corr_matrix}{Logical. Plot correlation matrix. Default TRUE.}
+
+\item{correlation_method}{Character. Correlation method for corr matrix
+(e.g.,"pearson", "spearman"). Default "pearson".}
+
+\item{plot_dist}{Logical. Plot distributions (hist/density) for key variables.
+Default TRUE.}
+
+\item{plot_na_counts}{Logical. Plot missingness/NA counts. Default TRUE.}
+
+\item{plot_scatter}{Logical. Plot scatter plots for key pairs. Default TRUE.}
+
+\item{plot_box}{Logical. Plot boxplots by region/season where applicable.
+Default TRUE.}
+
+\item{plot_seasonal}{Logical. Plot seasonal summaries. Default TRUE.}
+
+\item{plot_regional}{Logical. Plot regional summaries. Default TRUE.}
+
+\item{plot_total}{Logical. Plot overall totals where relevant. Default TRUE.}
+
+\item{detect_outliers}{Logical. Flag potential outliers in descriptive workflow.
+Default TRUE.}
+
+\item{calculate_rate}{Logical. Whether to calculate rate variables during
+descriptive stats (e.g., deaths per population). Default FALSE}
 }
 \value{
 \itemize{

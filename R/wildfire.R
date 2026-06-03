@@ -2498,6 +2498,23 @@ plot_an_by_region <- function(data, output_dir = ".") {
 #' for each predictor. Defaults to FALSE.
 #' @param print_model_summaries Bool. Whether to print the model summaries to
 #' console. Defaults to FALSE.
+#' @param run_descriptive Logical. Whether to run descriptive statistics. Default FALSE.
+#' @param plot_corr_matrix Logical. Plot correlation matrix. Default TRUE.
+#' @param correlation_method Character. Correlation method for corr matrix
+#' (e.g.,"pearson", "spearman"). Default "pearson".
+#' @param plot_dist Logical. Plot distributions (hist/density) for key variables.
+#' Default TRUE.
+#' @param plot_na_counts Logical. Plot missingness/NA counts. Default TRUE.
+#' @param plot_scatter Logical. Plot scatter plots for key pairs. Default TRUE.
+#' @param plot_box Logical. Plot boxplots by region/season where applicable.
+#' Default TRUE.
+#' @param plot_seasonal Logical. Plot seasonal summaries. Default TRUE.
+#' @param plot_regional Logical. Plot regional summaries. Default TRUE.
+#' @param plot_total Logical. Plot overall totals where relevant. Default TRUE.
+#' @param detect_outliers Logical. Flag potential outliers in descriptive workflow.
+#' Default TRUE.
+#' @param calculate_rate Logical. Whether to calculate rate variables during
+#' descriptive stats (e.g., deaths per population). Default FALSE
 #'
 #' @details This analysis pipeline requires a daily time series with mean wildfire PM2.5,
 #' mean temperature and health outcome (all-cause mortality, respiratory, cardiovascular,
@@ -2623,7 +2640,20 @@ wildfire_do_analysis <- function(
     output_folder_path = NULL,
     create_run_subdir = FALSE,
     print_vif = FALSE,
-    print_model_summaries = FALSE) {
+    print_model_summaries = FALSE,
+    # Descriptive statistics settings
+    run_descriptive = FALSE,
+    plot_corr_matrix = TRUE,
+    correlation_method = "pearson",
+    plot_dist = TRUE,
+    plot_na_counts = TRUE,
+    plot_scatter = TRUE,
+    plot_box = TRUE,
+    plot_seasonal = TRUE,
+    plot_regional = TRUE,
+    plot_total = TRUE,
+    detect_outliers = TRUE,
+    calculate_rate = FALSE) {
 
   # When invoked via the plumber API headless R has no graphics device and
   # plots can't be returned over JSON - the client renders its own. Force
@@ -2694,6 +2724,67 @@ wildfire_do_analysis <- function(
   )
   # Stratify data by time period
   data <- time_stratify(data = data)
+
+
+  # Descriptive stats
+  if (run_descriptive) {
+    # Guard checks incase of missing output folder
+    if (is.null(output_folder_path)) {
+      stop("run_descriptive = TRUE requires output_folder_path to be set.")
+    }
+
+    # Setup descriptive stats subfolder (run-scoped)
+    descriptive_output_path <- file.path(output_folder_path, "descriptive_stats")
+    dir.create(descriptive_output_path, recursive = TRUE, showWarnings = FALSE)
+
+    descriptive_independent_cols <- c("tmean", "mean_PM")
+    if (!is.null(rh_col)) {
+      descriptive_independent_cols <- c(descriptive_independent_cols, "rh")
+    }
+    if (!is.null(wind_speed_col)) {
+      descriptive_independent_cols <- c(descriptive_independent_cols, "wind_speed")
+    }
+
+    # run descriptive stats
+    tryCatch(
+      {
+        run_descriptive_stats(
+          data = data,
+          output_path = output_folder_path,
+          aggregation_column = "region",
+          population_col = "pop",
+          dependent_col = "health_outcome",
+          independent_cols = descriptive_independent_cols,
+          timeseries_col = "date",
+          plot_corr_matrix = plot_corr_matrix,
+          correlation_method = correlation_method,
+          plot_dist = plot_dist,
+          plot_ma = TRUE,
+          ma_days = 100,
+          ma_sides = 1,
+          plot_na_counts = plot_na_counts,
+          plot_scatter = plot_scatter,
+          plot_box = plot_box,
+          plot_seasonal = plot_seasonal,
+          plot_regional = plot_regional,
+          plot_total = plot_total,
+          detect_outliers = detect_outliers,
+          calculate_rate = calculate_rate,
+          create_base_dir = FALSE
+        )
+      },
+      error = function(e) {
+        stop(
+          paste0(
+            "\nDescriptive statistics failed and the pipeline has been halted.\n",
+            "Reason: ", e$message
+          ),
+          call. = FALSE
+        )
+      }
+    )
+  }
+
   # Calculate QAIC
   calculate_qaic(
     data = data,

@@ -68,6 +68,18 @@
 #' @param save_fig Logical. If `TRUE`, saves generated plots. Defaults to `TRUE`.
 #' @param output_dir Character. Directory where output files (plots, datasets, maps)
 #' are saved. Defaults to `NULL`.
+#' @param run_descriptive Logical. Whether to run descriptive statistics. Default FALSE.
+#' @param plot_corr_matrix Logical. Plot correlation matrix. Default TRUE.
+#' @param correlation_method Character. Correlation method for corr matrix
+#' (e.g.,"pearson", "spearman"). Default "pearson".
+#' @param plot_dist Logical. Plot distributions (hist/density) for key variables.
+#' Default TRUE.
+#' @param plot_na_counts Logical. Plot missingness/NA counts. Default TRUE.
+#' @param plot_scatter Logical. Plot scatter plots for key pairs. Default TRUE.
+#' @param plot_box Logical. Plot boxplots by region/season where applicable.
+#' Default TRUE.
+#' @param plot_regional Logical. Plot regional summaries. Default TRUE.
+#' @param detect_outliers Logical. Flag potential outliers in descriptive workflow.
 #'
 #' @return A named list containing:
 #' \itemize{
@@ -118,7 +130,17 @@ malaria_do_analysis <- function(health_data_path,
                                 save_csv = FALSE,
                                 save_model=FALSE,
                                 save_fig = FALSE,
-                                output_dir = NULL){
+                                output_dir = NULL,
+                                # Descriptive statistics settings
+                                run_descriptive = FALSE,
+                                plot_corr_matrix = TRUE,
+                                correlation_method = "pearson",
+                                plot_dist = TRUE,
+                                plot_na_counts = TRUE,
+                                plot_scatter = TRUE,
+                                plot_box = TRUE,
+                                plot_regional = TRUE,
+                                detect_outliers = TRUE){
 
   api_mode <- isTRUE(getOption("climatehealth.api_mode", FALSE))
   if (api_mode) {
@@ -190,6 +212,58 @@ malaria_do_analysis <- function(health_data_path,
                                                spi_col,
                                                max_lag,
                                                output_dir)
+
+  # run descriptive stats if selected
+  if (run_descriptive) {
+    # Guard checks incase of missing output folder
+    if (is.null(output_dir)) {
+      stop("run_descriptive = TRUE requires output_folder_path to be set.")
+    }
+
+    # Setup descriptive stats subfolder (run-scoped)
+    descriptive_output_path <- file.path(output_dir, "descriptive_stats")
+    dir.create(descriptive_output_path, recursive = TRUE, showWarnings = FALSE)
+
+
+    # run descriptive stats
+    tryCatch(
+      {
+        run_descriptive_stats(
+          data = combined_data$data,
+          output_path = output_dir,
+          aggregation_column = "region",
+          population_col = "tot_pop",
+          dependent_col = "malaria",
+          independent_cols = c("tmean", "rainfall", "runoff", "r_humidity"),
+          plot_corr_matrix = plot_corr_matrix,
+          correlation_method = correlation_method,
+          plot_dist = plot_dist,
+          plot_ma = FALSE,
+          ma_days = 100,
+          ma_sides = 1,
+          plot_na_counts = plot_na_counts,
+          plot_scatter = plot_scatter,
+          plot_box = plot_box,
+          plot_seasonal = FALSE,
+          plot_regional = plot_regional,
+          plot_total = FALSE,
+          detect_outliers = detect_outliers,
+          calculate_rate = FALSE,
+          create_base_dir = FALSE
+        )
+      },
+      error = function(e) {
+        stop(
+          paste0(
+            "\nDescriptive statistics failed and the pipeline has been halted.\n",
+            "Reason: ", e$message
+          ),
+          call. = FALSE
+        )
+      }
+    )
+  }
+
   # Plot time series
   plot_malaria <- NULL
   plot_tmax <- NULL
