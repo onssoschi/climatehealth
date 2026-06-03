@@ -2430,8 +2430,7 @@ plot_an_by_region <- function(data, output_dir = ".") {
   return(p)
 }
 
-#' This is full analysis pipeline to analyse the impact of wildfire-related PM2.5 on a health
-#' outcome.
+#' Full analysis for the 'mortality attributable to wildfire-related PM2.5' indicator
 #'
 #' @description Runs full analysis pipeline for analysis of the impact of
 #' wildfire-related PM2.5 on a health outcome using time stratified case-crossover approach

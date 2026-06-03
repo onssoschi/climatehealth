@@ -4,15 +4,15 @@
 #'
 #' ## Overview
 #' This package provides a suite of analysis functions for measuring the relationship
-#' between various climate factors (indicators) and health outcomes.
+#' between various climate factors and health outcomes for each indicator.
 #'
 #' ## Included Indicators
-#' - Mortality attributable to high and low outdoor temperatures
+#' - Mortality attributable to high and low temperatures
 #' - Mortality attributable to wildfire-related PM2.5
 #' - Suicides attributable to extreme heat
-#' - Mortality attributable to short-term exposure to outdoor PM2.5 exposure
-#' - Diarrhea cases attributable to extreme temperatures and rainfall
-#' - Malaria cases attributable to extreme temperatures and  rainfall
+#' - Mortality attributable to short-term exposure to ambient air pollution (PM 2.5)
+#' - Diarrheal disease incidence attributable to extreme temperature and extreme rainfall
+#' - Malaria incidence attributable to extreme temperature and extreme rainfall
 #'
 #' ## License
 #' MIT
@@ -21,8 +21,8 @@
 #' - Temperature-related health effects
 #' - Health effects of wildfires
 #' - Mental Health
-#' - Health effects of air pollution
-#' - Water-borne diseases
+#' - Health effects of ambient air pollution
+#' - Waterborne diseases
 #' - Vector-borne diseases
 #'
 #' @name climatehealth-package

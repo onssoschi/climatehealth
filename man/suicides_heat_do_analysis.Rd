@@ -2,7 +2,7 @@
 % Please edit documentation in R/mental_health.R
 \name{suicides_heat_do_analysis}
 \alias{suicides_heat_do_analysis}
-\title{Full analysis pipeline for the suicides and extreme heat indicator}
+\title{Full analysis for the 'suicides attributable to extreme heat' indicator}
 \usage{
 suicides_heat_do_analysis(
   data_path,

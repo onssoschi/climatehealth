@@ -2,9 +2,8 @@
 % Please edit documentation in R/malaria.R
 \name{malaria_do_analysis}
 \alias{malaria_do_analysis}
-\title{Code for calculating Malaria disease cases attributable to extreme rainfall
-and extreme temperature
-Run Full Malaria-Climate Analysis Pipeline}
+\title{Full analysis for the 'malaria incidence attributable to extreme temperature
+and extreme rainfall' indicator}
 \usage{
 malaria_do_analysis(
   health_data_path,
@@ -184,7 +183,7 @@ number, fraction, and rate.
 }
 }
 \description{
-The \code{Malaria_do_analysis()} function executes the complete workflow for analyzing
+The \code{malaria_do_analysis()} function executes the complete workflow for analyzing
 the association between malaria cases and climate variables. It integrates
 health, climate, and spatial data; fits spatio-temporal models using INLA;
 and generates a suite of diagnostic and inferential outputs, including plots

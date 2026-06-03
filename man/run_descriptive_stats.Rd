@@ -2,7 +2,8 @@
 % Please edit documentation in R/descriptive_stats.R
 \name{run_descriptive_stats}
 \alias{run_descriptive_stats}
-\title{Run generic descriptive statistics and EDA outputs for indicator datasets.}
+\title{Run generic descriptive statistics and Exploratory Data Analysis outputs
+for indicator datasets.}
 \usage{
 run_descriptive_stats(
   data,
@@ -85,7 +86,8 @@ is passed, data are split by that column.}
 A list with \code{base_output_path}, \code{run_id}, \code{run_output_path}, and \code{region_output_paths}.
 }
 \description{
-Run generic descriptive statistics and EDA outputs for indicator datasets.
+Run generic descriptive statistics and Exploratory Data Analysis outputs
+for indicator datasets.
 }
 \examples{
 \donttest{

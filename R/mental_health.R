@@ -2350,7 +2350,7 @@ mh_save_results <- function(
 }
 
 
-#' Full analysis pipeline for the suicides and extreme heat indicator
+#' Full analysis for the 'suicides attributable to extreme heat' indicator
 #'
 #' @description Runs the full pipeline to analyse the impact of extreme heat
 #' on suicides using a time-stratified case-crossover approach with distributed

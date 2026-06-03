@@ -2,8 +2,7 @@
 % Please edit documentation in R/wildfire.R
 \name{wildfire_do_analysis}
 \alias{wildfire_do_analysis}
-\title{This is full analysis pipeline to analyse the impact of wildfire-related PM2.5 on a health
-outcome.}
+\title{Full analysis for the 'mortality attributable to wildfire-related PM2.5' indicator}
 \usage{
 wildfire_do_analysis(
   health_path,

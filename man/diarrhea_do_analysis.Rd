@@ -2,9 +2,8 @@
 % Please edit documentation in R/diarrhea.R
 \name{diarrhea_do_analysis}
 \alias{diarrhea_do_analysis}
-\title{Code for calculating Diarrhea disease cases attributable to extreme
-precipitation and extreme temperature
-Run Full diarrhea-Climate Analysis Pipeline}
+\title{Full analysis for the 'diarrheal disease incidence attributable to
+extreme temperature and extreme rainfall' indicator}
 \usage{
 diarrhea_do_analysis(
   health_data_path,

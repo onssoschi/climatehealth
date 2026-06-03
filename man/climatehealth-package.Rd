@@ -9,17 +9,17 @@
 \subsection{Overview}{
 
 This package provides a suite of analysis functions for measuring the relationship
-between various climate factors (indicators) and health outcomes.
+between various climate factors and health outcomes for each indicator.
 }
 
 \subsection{Included Indicators}{
 \itemize{
-\item Mortality attributable to high and low outdoor temperatures
+\item Mortality attributable to high and low temperatures
 \item Mortality attributable to wildfire-related PM2.5
 \item Suicides attributable to extreme heat
-\item Mortality attributable to short-term exposure to outdoor PM2.5 exposure
-\item Diarrhea cases attributable to extreme temperatures and rainfall
-\item Malaria cases attributable to extreme temperatures and  rainfall
+\item Mortality attributable to short-term exposure to ambient air pollution (PM 2.5)
+\item Diarrheal disease incidence attributable to extreme temperature and extreme rainfall
+\item Malaria incidence attributable to extreme temperature and extreme rainfall
 }
 }
 
@@ -33,8 +33,8 @@ MIT
 \item Temperature-related health effects
 \item Health effects of wildfires
 \item Mental Health
-\item Health effects of air pollution
-\item Water-borne diseases
+\item Health effects of ambient air pollution
+\item Waterborne diseases
 \item Vector-borne diseases
 }
 }
