@@ -1422,6 +1422,43 @@ test_that("air_pollution_meta_analysis end-to-end returns region and meta-level 
   expect_true(all(is.finite(mr$coef)))
 })
 
+test_that("air_pollution_meta_analysis forwards continuous_others to regional GAM fits", {
+  lagged <- make_lagged_multi_region(regions = c("A", "B"), n_days = 20, max_lag = 1)
+  lagged$tmean <- seq_len(nrow(lagged))
+  captured <- new.env(parent = emptyenv())
+  captured$continuous_others <- character()
+
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family,
+                       continuous_others = NULL) {
+    captured$continuous_others <- c(
+      captured$continuous_others,
+      paste(continuous_others, collapse = "|")
+    )
+    list(coef_table = data.frame(
+      lag = "0",
+      pm25_variable = "pm25",
+      coef = NA_real_,
+      se = NA_real_,
+      ci.lb = NA_real_,
+      ci.ub = NA_real_
+    ))
+  }
+
+  pkg_ns <- getNamespaceName(environment(air_pollution_meta_analysis))
+
+  with_mocked_bindings(
+    air_pollution_meta_analysis(
+      lagged,
+      max_lag = 1,
+      continuous_others = c("tmean", "ozone")
+    ),
+    fit_air_pollution_gam = mock_fit,
+    .package = pkg_ns
+  )
+
+  expect_equal(captured$continuous_others, rep("tmean|ozone", 2L))
+})
+
 test_that("air_pollution_meta_analysis aggregates per lag using metafor::rma and preserves factor order", {
   # Ensure the metafor namespace is available so the rma binding exists to mock
   requireNamespace("metafor", quietly = TRUE)
@@ -1431,7 +1468,8 @@ test_that("air_pollution_meta_analysis aggregates per lag using metafor::rma and
 
   # Deterministic per-region coef tables for meta calculation
   # Do NOT rely on a region column inside the nested .x data (it may not be present)
-  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family,
+                       continuous_others = NULL) {
     # Derive a simple deterministic signal that varies by group
     # Your generator uses different death rates per region, so mean(deaths) differs
     signal <- round(mean(data_with_lags$deaths, na.rm = TRUE))
@@ -1501,7 +1539,8 @@ test_that("air_pollution_meta_analysis handles metafor::rma errors by emitting N
   lagged <- make_lagged_multi_region(regions = c("A", "B"), n_days = 20, max_lag = 1)
 
   # Mock fit returns sensible coef_table per region, but does not depend on .x$region
-  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family,
+                       continuous_others = NULL) {
     # Small deterministic variation by group using the data itself
     signal <- round(mean(data_with_lags$deaths, na.rm = TRUE))
     base <- if (is.na(signal)) 0.15 else if (signal %% 2 == 0) 0.2 else 0.1
@@ -1550,7 +1589,8 @@ test_that("air_pollution_meta_analysis returns NA for a lag when all region coef
 
   lagged <- make_lagged_multi_region(regions = c("A", "B"), n_days = 20, max_lag = 1)
 
-  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family,
+                       continuous_others = NULL) {
     # Make lag "1" entirely NA across regions; others valid
     list(coef_table = data.frame(
       lag = c("0", "1", "0-1"),
@@ -1600,7 +1640,8 @@ test_that("air_pollution_meta_analysis preserves lag and pm25_variable level ord
   lagged <- make_lagged_multi_region(regions = c("A", "B"), n_days = 20, max_lag = 1)
 
   # Fit returns rows in a specific order; we verify factors keep that order
-  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family,
+                       continuous_others = NULL) {
     list(coef_table = data.frame(
       lag = c("1", "0", "0-1"),  # out-of-natural order on purpose
       pm25_variable = c("pm25_lag1", "pm25", "pm25_lag0_1"),
@@ -1667,7 +1708,8 @@ test_that("air_pollution_meta_analysis returns valid meta rows for a single regi
   lagged <- make_lagged_multi_region(regions = c("Solo"), n_days = 30, max_lag = 1)
 
   # Mock fit to produce simple coefficients
-  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family,
+                       continuous_others = NULL) {
     list(coef_table = data.frame(
       lag = c("0", "1", "0-1"),
       pm25_variable = c("pm25", "pm25_lag1", "pm25_lag0_1"),
@@ -1711,7 +1753,8 @@ test_that("air_pollution_meta_analysis aggregates even if some regions miss the 
   lagged <- make_lagged_multi_region(regions = c("A", "B", "C"), n_days = 25, max_lag = 1)
 
   # Alternate missing cumulative row by group characteristic
-  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family,
+                       continuous_others = NULL) {
     signal <- round(mean(data_with_lags$deaths, na.rm = TRUE))
     base <- if (is.na(signal)) 0.15 else if (signal %% 2 == 0) 0.2 else 0.1
     # For one "type" of group, drop the cumulative row
@@ -1766,7 +1809,8 @@ test_that("air_pollution_meta_analysis returns NA row when SEs are zero for a la
 
   lagged <- make_lagged_multi_region(regions = c("A","B"), n_days = 20, max_lag = 1)
 
-  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family,
+                       continuous_others = NULL) {
     list(coef_table = data.frame(
       lag = c("0", "1", "0-1"),
       pm25_variable = c("pm25", "pm25_lag1", "pm25_lag0_1"),
@@ -5845,6 +5889,52 @@ test_that("air_pollution_do_analysis accepts legacy other-column argument names"
   )
 
   expect_equal(captured$categorical_others, c("sex", "age_group"))
+  expect_equal(captured$continuous_others, "tmean")
+})
+
+test_that("air_pollution_do_analysis forwards continuous_others to meta-analysis", {
+  pkg_ns <- getNamespaceName(environment(air_pollution_do_analysis))
+  captured <- new.env(parent = emptyenv())
+
+  mock_load_air_pollution_data <- function(...) {
+    data.frame(
+      date = as.Date("2020-01-01") + 0:2,
+      region = "A",
+      pm25 = c(10, 11, 12),
+      deaths = c(1, 2, 1),
+      population = 1000,
+      humidity = 50,
+      precipitation = 0,
+      tmax = 25,
+      wind_speed = 2,
+      tmean = c(24, 25, 26)
+    )
+  }
+
+  mock_create_air_pollution_lags <- function(data, ...) data
+
+  mock_air_pollution_meta_analysis <- function(..., continuous_others = NULL) {
+    captured$continuous_others <- continuous_others
+    stop("meta sentinel")
+  }
+
+  expect_error(
+    with_mocked_bindings(
+      air_pollution_do_analysis(
+        data_path = tempfile(fileext = ".csv"),
+        continuous_others = "tmean",
+        save_outputs = FALSE,
+        run_descriptive = FALSE,
+        run_power = FALSE
+      ),
+      load_air_pollution_data = mock_load_air_pollution_data,
+      create_air_pollution_lags = mock_create_air_pollution_lags,
+      air_pollution_meta_analysis = mock_air_pollution_meta_analysis,
+      .package = pkg_ns
+    ),
+    "meta sentinel"
+  )
+
   expect_equal(captured$continuous_others, "tmean")
 })
 

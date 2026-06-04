@@ -586,6 +586,8 @@ fit_air_pollution_gam <- function(data_with_lags,
 #' @param max_lag Integer. Maximum lag days. Defaults to 14
 #' @param df_seasonal Integer. Degrees of freedom for seasonal spline. Default 6.
 #' @param family Character string indicating the distribution family used in the GAM.
+#' @param continuous_others Optional. Character vector of additional continuous
+#' variables to include as smooth terms in the regional GAMs. Defaults to NULL.
 #'
 #' @return Dataframe with lag-specific results including for regional and national
 #'
@@ -593,7 +595,8 @@ fit_air_pollution_gam <- function(data_with_lags,
 air_pollution_meta_analysis <- function(data_with_lags,
                                         max_lag = 14L,
                                         df_seasonal = 6L,
-                                        family = "quasipoisson"
+                                        family = "quasipoisson",
+                                        continuous_others = NULL
 ) {
 
   # Fit distributed-lag model per region
@@ -601,7 +604,16 @@ air_pollution_meta_analysis <- function(data_with_lags,
     dplyr::group_by(region) %>%
     tidyr::nest() %>%
     dplyr::mutate(
-      model_results = purrr::map2(data, region, ~ fit_air_pollution_gam(.x, max_lag, df_seasonal, family))
+      model_results = purrr::map(
+        data,
+        ~ fit_air_pollution_gam(
+          .x,
+          max_lag = max_lag,
+          df_seasonal = df_seasonal,
+          family = family,
+          continuous_others = continuous_others
+        )
+      )
     ) %>%
     dplyr::select(region, model_results) %>%
     dplyr::ungroup()
@@ -3028,7 +3040,8 @@ air_pollution_do_analysis <- function(
     data_with_lags = data_with_lags,
     max_lag = max_lag,
     df_seasonal = df_seasonal,
-    family = family
+    family = family,
+    continuous_others = continuous_others
   )
 
   results$meta_results <- meta_results
