@@ -78,6 +78,7 @@ load_air_pollution_data <- function(data_path,
   }
 
   names(data0) <- standardize_air_pollution_col(names(data0))
+  data0 <- data0[, !is.na(names(data0)) & nzchar(names(data0)), drop = FALSE]
 
   # Define REQUIRED columns
   required_cols <- c(date_col, region_col, pm25_col, deaths_col, population_col,
