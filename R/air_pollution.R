@@ -444,8 +444,11 @@ fit_air_pollution_gam <- function(data_with_lags,
   # Build smooth terms for additional continuous variables to use them if available
   continuous_other_terms <-""
   if (!is.null(continuous_others)) {
-    # Keep only variables existing in dataset
+    # Keep only usable variables existing in dataset
     extra_vars<- continuous_others[continuous_others%in%names(data_with_lags)]
+    extra_vars <- extra_vars[
+      !vapply(extra_vars, function(var) all(is.na(data_with_lags[[var]])), logical(1))
+    ]
 
     # Create smooth terms dynamically
     if (length(extra_vars)>0) {

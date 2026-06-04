@@ -1106,6 +1106,9 @@ build_expected_formula <- function(data_with_lags, max_lag, df_seasonal, continu
   continuous_other_terms <- ""
   if (!is.null(continuous_others)) {
     extra_vars <- continuous_others[continuous_others %in% names(data_with_lags)]
+    extra_vars <- extra_vars[
+      !vapply(extra_vars, function(var) all(is.na(data_with_lags[[var]])), logical(1))
+    ]
 
     if (length(extra_vars) > 0) {
       continuous_other_terms <- paste(
@@ -1129,8 +1132,17 @@ build_expected_formula <- function(data_with_lags, max_lag, df_seasonal, continu
 }
 
 # Helper: fit an mgcv model with the expected formula to compute expected coefs and vcov
-fit_reference_model <- function(data_with_lags, max_lag, df_seasonal = 6, family = "quasipoisson") {
-  form <- build_expected_formula(data_with_lags, max_lag = max_lag, df_seasonal = df_seasonal)
+fit_reference_model <- function(data_with_lags,
+                                max_lag,
+                                df_seasonal = 6,
+                                family = "quasipoisson",
+                                continuous_others = NULL) {
+  form <- build_expected_formula(
+    data_with_lags,
+    max_lag = max_lag,
+    df_seasonal = df_seasonal,
+    continuous_others = continuous_others
+  )
   mgcv::gam(form, data = data_with_lags, family = family)
 }
 
@@ -1295,21 +1307,31 @@ test_that("fit_air_pollution_gam seasonal df scales with number of years in data
   expect_coef_table_matches_model(coef_table, ref_model, present_lag_vars, max_lag = 1)
 })
 
-test_that("fit_air_pollution_gam includes tmean only when not all NA", {
+test_that("fit_air_pollution_gam uses only requested usable continuous covariates", {
   set.seed(5)
-  # Case A: tmean present and not all NA
+  # Case A: tmean requested, present, and not all NA -> included
   base_a <- make_base_ap_data(n_days = 45, with_tmean = TRUE, tmean_all_na = FALSE)
   lag_a  <- create_air_pollution_lags(base_a, max_lag = 1)
-  res_a  <- fit_air_pollution_gam(lag_a, max_lag = 1)
-  ref_a  <- fit_reference_model(lag_a, max_lag = 1)  # this builder includes tmean when not all NA
+  res_a  <- fit_air_pollution_gam(lag_a, max_lag = 1, continuous_others = "tmean")
+  ref_a  <- fit_reference_model(lag_a, max_lag = 1, continuous_others = "tmean")
   expect_coef_table_matches_model(res_a$coef_table, ref_a, c("pm25","pm25_lag1"), max_lag = 1)
+  expect_true(grepl("s\\(tmean", paste(deparse(stats::formula(res_a$model)), collapse = " ")))
 
-  # Case B: tmean column exists but all NA -> excluded
+  # Case B: tmean requested and present but all NA -> excluded
   base_b <- make_base_ap_data(n_days = 45, with_tmean = TRUE, tmean_all_na = TRUE)
   lag_b  <- create_air_pollution_lags(base_b, max_lag = 1)
-  res_b  <- fit_air_pollution_gam(lag_b, max_lag = 1)
-  ref_b  <- fit_reference_model(lag_b, max_lag = 1)  # builder omits tmean when all NA
+  res_b  <- fit_air_pollution_gam(lag_b, max_lag = 1, continuous_others = "tmean")
+  ref_b  <- fit_reference_model(lag_b, max_lag = 1, continuous_others = "tmean")
   expect_coef_table_matches_model(res_b$coef_table, ref_b, c("pm25","pm25_lag1"), max_lag = 1)
+  expect_false(grepl("s\\(tmean", paste(deparse(stats::formula(res_b$model)), collapse = " ")))
+
+  # Case C: requested covariate absent -> silently ignored
+  base_c <- make_base_ap_data(n_days = 45, with_tmean = FALSE)
+  lag_c  <- create_air_pollution_lags(base_c, max_lag = 1)
+  res_c  <- fit_air_pollution_gam(lag_c, max_lag = 1, continuous_others = "tmean")
+  ref_c  <- fit_reference_model(lag_c, max_lag = 1, continuous_others = "tmean")
+  expect_coef_table_matches_model(res_c$coef_table, ref_c, c("pm25","pm25_lag1"), max_lag = 1)
+  expect_false(grepl("s\\(tmean", paste(deparse(stats::formula(res_c$model)), collapse = " ")))
 })
 
 test_that("fit_air_pollution_gam falls back to naive cumulative SE when vcov() fails", {
