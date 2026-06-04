@@ -626,6 +626,58 @@ test_that("Synthetic air pollution data loaded in and formatted as expected", {
 
 })
 
+test_that("load_air_pollution_data handles custom main column names with spaces", {
+  raw_data <- data.frame(
+    "date column" = as.Date(c("2020-01-03", "2020-01-01", "2020-01-02")),
+    "region column" = "A",
+    "pm 25" = c(14, 10, 12),
+    "death count" = c(3, 1, 2),
+    "population count" = 1000,
+    "relative humidity" = c(52, 50, 51),
+    "rain amount" = c(0.3, 0.1, 0.2),
+    "maximum temp" = c(27, 25, 26),
+    "wind speed" = c(4, 2, 3),
+    check.names = FALSE
+  )
+
+  actual_df <- load_air_pollution_data(
+    raw_data,
+    date_col = "date column",
+    region_col = "region column",
+    pm25_col = "pm 25",
+    deaths_col = "death count",
+    population_col = "population count",
+    humidity_col = "relative humidity",
+    precipitation_col = "rain amount",
+    tmax_col = "maximum temp",
+    wind_speed_col = "wind speed"
+  )
+
+  expect_equal(actual_df$date, as.Date("2020-01-01") + 0:2)
+  expect_equal(actual_df$pm25, c(10, 12, 14))
+  expect_equal(actual_df$deaths, c(1, 2, 3))
+  expect_equal(actual_df$time, c(1, 2, 3))
+
+  tmp_csv <- tempfile(fileext = ".csv")
+  write.csv(raw_data, tmp_csv, row.names = FALSE)
+  on.exit(unlink(tmp_csv), add = TRUE)
+
+  actual_csv <- load_air_pollution_data(
+    tmp_csv,
+    date_col = "date column",
+    region_col = "region column",
+    pm25_col = "pm 25",
+    deaths_col = "death count",
+    population_col = "population count",
+    humidity_col = "relative humidity",
+    precipitation_col = "rain amount",
+    tmax_col = "maximum temp",
+    wind_speed_col = "wind speed"
+  )
+
+  expect_equal(actual_csv, actual_df)
+})
+
 
 # Tests for create_air_pollution_lags
 # Synthetic datasets

@@ -50,12 +50,25 @@ load_air_pollution_data <- function(data_path,
     stop("Data file not found at: ", data_path)
   }
 
+  standardize_air_pollution_col <- function(x) {
+    if (is.null(x)) NULL else gsub(" ", "_", x)
+  }
+
   # Standardize columns by removing spaces
-  categorical_others <- if(is.null(categorical_others)) NULL else gsub(" ", "_", categorical_others)
-  continuous_others <- if(is.null(continuous_others)) NULL else gsub(" ", "_", continuous_others)
+  date_col <- standardize_air_pollution_col(date_col)
+  region_col <- standardize_air_pollution_col(region_col)
+  pm25_col <- standardize_air_pollution_col(pm25_col)
+  deaths_col <- standardize_air_pollution_col(deaths_col)
+  population_col <- standardize_air_pollution_col(population_col)
+  humidity_col <- standardize_air_pollution_col(humidity_col)
+  precipitation_col <- standardize_air_pollution_col(precipitation_col)
+  tmax_col <- standardize_air_pollution_col(tmax_col)
+  wind_speed_col <- standardize_air_pollution_col(wind_speed_col)
+  categorical_others <- standardize_air_pollution_col(categorical_others)
+  continuous_others <- standardize_air_pollution_col(continuous_others)
   others <- c(categorical_others, continuous_others) # all additional variables
   data0 <- if (is.character(data_path)) {
-    read.csv(data_path)
+    read.csv(data_path, check.names = FALSE)
   } else if (is.data.frame(data_path)) {
     data_path
   } else if (is.list(data_path)) {
@@ -64,7 +77,7 @@ load_air_pollution_data <- function(data_path,
     stop("`data_path` must be a CSV path, data.frame, or list of records.")
   }
 
-  names(data0) <- gsub(" ", "_", names(data0))
+  names(data0) <- standardize_air_pollution_col(names(data0))
 
   # Define REQUIRED columns
   required_cols <- c(date_col, region_col, pm25_col, deaths_col, population_col,
