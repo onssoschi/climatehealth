@@ -2,6 +2,8 @@
 [![Build R Package on Release](https://github.com/onssoschi/climatehealth/actions/workflows/r_release.yml/badge.svg)](https://github.com/onssoschi/climatehealth/actions/workflows/r_release.yml)
 [![R CMD Check and Coverage](https://github.com/onssoschi/climatehealth/actions/workflows/r_check_and_coverage.yml/badge.svg)](https://github.com/onssoschi/climatehealth/actions/workflows/r_check_and_coverage.yml)
 
+<img src="man/figures/logo.png" align="right" width="180" alt="SOSCHI logo" />
+
 # Climatehealth Package
 
 ## Table of Contents
