@@ -2499,7 +2499,6 @@ air_pollution_power_list <- function(
       national_pm25_above <- unique(national_pm25[national_pm25 >= thresh_national])
       national_pm25_above <- sort(national_pm25_above)
       national_pm25_above <- national_pm25_above[national_pm25_above > ref_pm25]
-      if (length(national_pm25_above)==0) next
 
       if (length(national_pm25_above) > 0) {
         power_df_national <- data.frame(

@@ -5187,15 +5187,17 @@ test_that("air_pollution_power_list handles region with no excess PM2.5 above re
 
   data_with_lags <- data.frame(
     region = rep("LowPM", 5),
+    date = as.Date("2020-01-01") + 0:4,
     pm25 = c(5, 6, 7, 8, 9),
     pm25_lag0_2 = rnorm(5)
   )
 
   result <- air_pollution_power_list(meta_results, data_with_lags, ref_pm25 = 15,
-                                     include_national = FALSE)
+                                     include_national = TRUE)
 
   # No values exceed reference → region should be missing from list
   expect_false("LowPM" %in% names(result))
+  expect_false("National" %in% names(result))
 })
 
 test_that("air_pollution_power_list National results excluded if include_national = FALSE", {
