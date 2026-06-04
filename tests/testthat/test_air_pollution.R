@@ -6087,6 +6087,83 @@ test_that("air_pollution_do_analysis API mode skips output_dir preparation", {
   expect_false(dir.exists(missing_dir))
 })
 
+test_that("air_pollution_do_analysis strips fitted GAMs from API-mode meta results", {
+  pkg_ns <- getNamespaceName(environment(air_pollution_do_analysis))
+  captured <- new.env(parent = emptyenv())
+  withr::local_options(list(climatehealth.api_mode = TRUE))
+
+  mock_load_air_pollution_data <- function(...) {
+    data.frame(
+      date = as.Date("2020-01-01") + 0:2,
+      region = "A",
+      pm25 = c(10, 11, 12),
+      deaths = c(1, 2, 1),
+      population = 1000,
+      humidity = 50,
+      precipitation = 0,
+      tmax = 25,
+      wind_speed = 2
+    )
+  }
+
+  mock_create_air_pollution_lags <- function(data, ...) data
+
+  mock_air_pollution_meta_analysis <- function(...) {
+    list(
+      region_results = data.frame(
+        region = "A",
+        model_results = I(list(list(
+          model = list(heavy = TRUE),
+          coef_table = data.frame(
+            lag = "0",
+            pm25_variable = "pm25",
+            coef = 0.01,
+            se = 0.001,
+            ci.lb = 0.008,
+            ci.ub = 0.012
+          ),
+          vcov_used_for_cumulative = TRUE
+        )))
+      ),
+      meta_results = data.frame(
+        lag = "0",
+        pm25_variable = "pm25",
+        coef = 0.01,
+        se = 0.001,
+        ci.lb = 0.008,
+        ci.ub = 0.012,
+        pval = 0.01,
+        I2 = 0
+      )
+    )
+  }
+
+  mock_analyze_air_pollution_daily <- function(data_with_lags, meta_results, ...) {
+    captured$model_results <- meta_results$region_results$model_results
+    stop("analysis sentinel")
+  }
+
+  expect_error(
+    with_mocked_bindings(
+      air_pollution_do_analysis(
+        data_path = tempfile(fileext = ".csv"),
+        save_outputs = FALSE,
+        run_descriptive = FALSE,
+        run_power = FALSE
+      ),
+      load_air_pollution_data = mock_load_air_pollution_data,
+      create_air_pollution_lags = mock_create_air_pollution_lags,
+      air_pollution_meta_analysis = mock_air_pollution_meta_analysis,
+      analyze_air_pollution_daily = mock_analyze_air_pollution_daily,
+      .package = pkg_ns
+    ),
+    "analysis sentinel"
+  )
+
+  expect_false("model" %in% names(captured$model_results[[1]]))
+  expect_true("coef_table" %in% names(captured$model_results[[1]]))
+})
+
 test_that("air_pollution_do_analysis rejects legacy and new aliases together", {
   expect_error(
     air_pollution_do_analysis(

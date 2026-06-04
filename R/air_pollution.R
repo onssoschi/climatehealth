@@ -3060,6 +3060,18 @@ air_pollution_do_analysis <- function(
     continuous_others = continuous_others
   )
 
+  if (api_mode && !is.null(meta_results$region_results$model_results)) {
+    meta_results$region_results$model_results <- lapply(
+      meta_results$region_results$model_results,
+      function(model_result) {
+        if (is.list(model_result) && "model" %in% names(model_result)) {
+          model_result$model <- NULL
+        }
+        model_result
+      }
+    )
+  }
+
   results$meta_results <- meta_results
 
   # CALCULATE ATTRIBUTABLE BURDEN FOR EACH REFERENCE
