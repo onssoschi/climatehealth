@@ -33,14 +33,14 @@ The package is also [now available on CRAN](https://cran.r-project.org/web/packa
 
 This package contains scientific functions dedicated to the following topics in the SOSCHI framework. Please note the final methods documents are still in development, so the versions linked below are earlier alpha versions.
 
-| **Topic**                                                       | **Topic Owner** | **Methods**                                                      |
-|--------------------------------------------------------------------|-----------------|---------------------------------------------------------------------|
-| Temperature-related health effects                                   | ONS             | [Methodology Document](https://doi.org/10.5281/zenodo.14865904)     |
-| Health effects of wildfires        | ONS             | [Methodology Document](https://doi.org/10.5281/zenodo.14052183)     |
-| Mental health                                                      | ONS             | [Methodology Document](https://doi.org/10.5281/zenodo.14050224)     |
-| Water-borne diseases                                                       | AIMS            | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     |
-| Health effects of air pollution                                                      | AIMS            | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     |
-| Vector-borne diseases                                                            | RIPS/AIMS       | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     |
+| **Topic**                                                       | **Topic Owner** | **Methods**                                                      | **Notes** |
+|--------------------------------------------------------------------|-----------------|---------------------------------------------------------------------|-----------|
+| Temperature-related health effects                                   | ONS             | [Methodology Document](https://doi.org/10.5281/zenodo.14865904)     | The temperature-related health effects code and associated analysis functions are undergoing revision and review corrections. Updates to the R package are coming soon. Please check back later. |
+| Health effects of wildfires        | ONS             | [Methodology Document](https://doi.org/10.5281/zenodo.14052183)     | |
+| Mental health                                                      | ONS             | [Methodology Document](https://doi.org/10.5281/zenodo.14050224)     | |
+| Water-borne diseases                                                       | AIMS            | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     | |
+| Health effects of air pollution                                                      | AIMS            | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     | |
+| Vector-borne diseases                                                            | RIPS/AIMS       | [Methodology Document](https://doi.org/10.5281/zenodo.14871506)     | |
 
 > [!NOTE]
 > Please note that there may be some inconsistencies between the indicators and methods included in the Github code/R package, and those described in the corresponding SOSCHI topic documents, and/or related analysis publications. This is because the final methods documents are still in development, so those linked below in the section 'SOSCHI Topics and Indicators' are an earlier alpha version. 
