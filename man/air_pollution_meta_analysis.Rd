@@ -8,7 +8,8 @@ air_pollution_meta_analysis(
   data_with_lags,
   max_lag = 14L,
   df_seasonal = 6L,
-  family = "quasipoisson"
+  family = "quasipoisson",
+  continuous_others = NULL
 )
 }
 \arguments{
@@ -19,6 +20,9 @@ air_pollution_meta_analysis(
 \item{df_seasonal}{Integer. Degrees of freedom for seasonal spline. Default 6.}
 
 \item{family}{Character string indicating the distribution family used in the GAM.}
+
+\item{continuous_others}{Optional. Character vector of additional continuous
+variables to include as smooth terms in the regional GAMs. Defaults to NULL.}
 }
 \value{
 Dataframe with lag-specific results including for regional and national

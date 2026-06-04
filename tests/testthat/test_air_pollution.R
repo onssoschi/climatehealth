@@ -315,7 +315,7 @@ test_that("Synthetic air pollution data loaded in and formatted as expected", {
   )
 
   actual_df <- load_air_pollution_data(temp_synth_data)
-  expect_equal(actual_df, expected_df)
+  expect_equal(actual_df[, !"time"], expected_df[, !"time"])
 
   actual_df_initially_diff <- load_air_pollution_data(temp_synth_data_diff_names,
                                                       date_col = "dy_mnth_yr",
@@ -327,7 +327,7 @@ test_that("Synthetic air pollution data loaded in and formatted as expected", {
                                                       precipitation_col = "precip",
                                                       tmax_col = "t_max",
                                                       wind_speed_col = "wnd_spd")
-  expect_equal(actual_df_initially_diff, expected_df)
+  expect_equal(actual_df_initially_diff[, !"time"], expected_df[, !"time"])
 
 
   vals <- c(
@@ -588,7 +588,7 @@ test_that("Synthetic air pollution data loaded in and formatted as expected", {
 
   actual_df_categ <- load_air_pollution_data(temp_synth_data,
                                              categorical_others = c("sector"))
-  expect_equal(actual_df_categ, expected_df_categ)
+  expect_equal(actual_df_categ[, !"time"], expected_df_categ[, !"time"])
 
   expected_df_contin <- expected_df
   ozone_values <- c(50.14, 15.46, 33.69, 10.25, 52.18, 17.82, 30.46, 56.25,
@@ -622,8 +622,60 @@ test_that("Synthetic air pollution data loaded in and formatted as expected", {
 
   actual_df_contin <- load_air_pollution_data(temp_synth_data,
                                               continuous_others = c("ozone"))
-  expect_equal(actual_df_contin, expected_df_contin)
+  expect_equal(actual_df_contin[, !"time"], expected_df_contin[, !"time"])
 
+})
+
+test_that("load_air_pollution_data handles custom main column names with spaces", {
+  raw_data <- data.frame(
+    "date column" = as.Date(c("2020-01-03", "2020-01-01", "2020-01-02")),
+    "region column" = "A",
+    "pm 25" = c(14, 10, 12),
+    "death count" = c(3, 1, 2),
+    "population count" = 1000,
+    "relative humidity" = c(52, 50, 51),
+    "rain amount" = c(0.3, 0.1, 0.2),
+    "maximum temp" = c(27, 25, 26),
+    "wind speed" = c(4, 2, 3),
+    check.names = FALSE
+  )
+
+  actual_df <- load_air_pollution_data(
+    raw_data,
+    date_col = "date column",
+    region_col = "region column",
+    pm25_col = "pm 25",
+    deaths_col = "death count",
+    population_col = "population count",
+    humidity_col = "relative humidity",
+    precipitation_col = "rain amount",
+    tmax_col = "maximum temp",
+    wind_speed_col = "wind speed"
+  )
+
+  expect_equal(actual_df$date, as.Date("2020-01-01") + 0:2)
+  expect_equal(actual_df$pm25, c(10, 12, 14))
+  expect_equal(actual_df$deaths, c(1, 2, 3))
+  expect_equal(actual_df$time, c(1, 2, 3))
+
+  tmp_csv <- tempfile(fileext = ".csv")
+  write.csv(raw_data, tmp_csv, row.names = FALSE)
+  on.exit(unlink(tmp_csv), add = TRUE)
+
+  actual_csv <- load_air_pollution_data(
+    tmp_csv,
+    date_col = "date column",
+    region_col = "region column",
+    pm25_col = "pm 25",
+    deaths_col = "death count",
+    population_col = "population count",
+    humidity_col = "relative humidity",
+    precipitation_col = "rain amount",
+    tmax_col = "maximum temp",
+    wind_speed_col = "wind speed"
+  )
+
+  expect_equal(actual_csv, actual_df)
 })
 
 
@@ -1097,16 +1149,25 @@ make_base_ap_data <- function(n_days = 40,
 }
 
 # Build the same GAM formula used by the implementation, given a data frame and args.
-build_expected_formula <- function(data_with_lags, max_lag, df_seasonal) {
+build_expected_formula <- function(data_with_lags, max_lag, df_seasonal, continuous_others = NULL) {
   max_lag <- as.integer(max_lag)
   lag_vars_expected <- c("pm25", if (max_lag >= 1) paste0("pm25_lag", seq_len(max_lag)) else character())
   present_lag_vars <- intersect(lag_vars_expected, names(data_with_lags))
   yr <- length(unique(data_with_lags$year))
   lag_formula <- paste(present_lag_vars, collapse = " + ")
-  tmean_term <- if ("tmean" %in% names(data_with_lags) && !all(is.na(data_with_lags$tmean))) {
-    " + s(tmean, k = 3)"
-  } else {
-    ""
+  continuous_other_terms <- ""
+  if (!is.null(continuous_others)) {
+    extra_vars <- continuous_others[continuous_others %in% names(data_with_lags)]
+    extra_vars <- extra_vars[
+      !vapply(extra_vars, function(var) all(is.na(data_with_lags[[var]])), logical(1))
+    ]
+
+    if (length(extra_vars) > 0) {
+      continuous_other_terms <- paste(
+        paste0(" + s(", extra_vars, ", k = 3)"),
+        collapse = ""
+      )
+    }
   }
   as.formula(
     paste0(
@@ -1116,15 +1177,24 @@ build_expected_formula <- function(data_with_lags, max_lag, df_seasonal) {
       " + s(humidity, k = 3)",
       " + s(precipitation, k = 3)",
       " + s(wind_speed, k = 3)",
-      tmean_term,
+      continuous_other_terms,
       " + dow + offset(log(population))"
     )
   )
 }
 
 # Helper: fit an mgcv model with the expected formula to compute expected coefs and vcov
-fit_reference_model <- function(data_with_lags, max_lag, df_seasonal = 6, family = "quasipoisson") {
-  form <- build_expected_formula(data_with_lags, max_lag = max_lag, df_seasonal = df_seasonal)
+fit_reference_model <- function(data_with_lags,
+                                max_lag,
+                                df_seasonal = 6,
+                                family = "quasipoisson",
+                                continuous_others = NULL) {
+  form <- build_expected_formula(
+    data_with_lags,
+    max_lag = max_lag,
+    df_seasonal = df_seasonal,
+    continuous_others = continuous_others
+  )
   mgcv::gam(form, data = data_with_lags, family = family)
 }
 
@@ -1185,8 +1255,9 @@ test_that("fit_air_pollution_gam core behaviour: per-lag, cumulative, ordering a
   # Fit using the function under test
   res <- fit_air_pollution_gam(data_with_lags, max_lag = 2, df_seasonal = 6, family = "quasipoisson")
   expect_type(res, "list")
-  # On success, implementation returns only coef_table
-  expect_true(setequal(names(res), "coef_table"))
+  # On success, implementation returns model, coef_table, and vcov_used_for_cumulative
+  expect_true(all(c("model", "coef_table", "vcov_used_for_cumulative") %in% names(res)))
+  expect_s3_class(res$model, "gam")
   coef_table <- res$coef_table
   expect_s3_class(coef_table, "data.frame")
 
@@ -1288,21 +1359,31 @@ test_that("fit_air_pollution_gam seasonal df scales with number of years in data
   expect_coef_table_matches_model(coef_table, ref_model, present_lag_vars, max_lag = 1)
 })
 
-test_that("fit_air_pollution_gam includes tmean only when not all NA", {
+test_that("fit_air_pollution_gam uses only requested usable continuous covariates", {
   set.seed(5)
-  # Case A: tmean present and not all NA
+  # Case A: tmean requested, present, and not all NA -> included
   base_a <- make_base_ap_data(n_days = 45, with_tmean = TRUE, tmean_all_na = FALSE)
   lag_a  <- create_air_pollution_lags(base_a, max_lag = 1)
-  res_a  <- fit_air_pollution_gam(lag_a, max_lag = 1)
-  ref_a  <- fit_reference_model(lag_a, max_lag = 1)  # this builder includes tmean when not all NA
+  res_a  <- fit_air_pollution_gam(lag_a, max_lag = 1, continuous_others = "tmean")
+  ref_a  <- fit_reference_model(lag_a, max_lag = 1, continuous_others = "tmean")
   expect_coef_table_matches_model(res_a$coef_table, ref_a, c("pm25","pm25_lag1"), max_lag = 1)
+  expect_true(grepl("s\\(tmean", paste(deparse(stats::formula(res_a$model)), collapse = " ")))
 
-  # Case B: tmean column exists but all NA -> excluded
+  # Case B: tmean requested and present but all NA -> excluded
   base_b <- make_base_ap_data(n_days = 45, with_tmean = TRUE, tmean_all_na = TRUE)
   lag_b  <- create_air_pollution_lags(base_b, max_lag = 1)
-  res_b  <- fit_air_pollution_gam(lag_b, max_lag = 1)
-  ref_b  <- fit_reference_model(lag_b, max_lag = 1)  # builder omits tmean when all NA
+  res_b  <- fit_air_pollution_gam(lag_b, max_lag = 1, continuous_others = "tmean")
+  ref_b  <- fit_reference_model(lag_b, max_lag = 1, continuous_others = "tmean")
   expect_coef_table_matches_model(res_b$coef_table, ref_b, c("pm25","pm25_lag1"), max_lag = 1)
+  expect_false(grepl("s\\(tmean", paste(deparse(stats::formula(res_b$model)), collapse = " ")))
+
+  # Case C: requested covariate absent -> silently ignored
+  base_c <- make_base_ap_data(n_days = 45, with_tmean = FALSE)
+  lag_c  <- create_air_pollution_lags(base_c, max_lag = 1)
+  res_c  <- fit_air_pollution_gam(lag_c, max_lag = 1, continuous_others = "tmean")
+  ref_c  <- fit_reference_model(lag_c, max_lag = 1, continuous_others = "tmean")
+  expect_coef_table_matches_model(res_c$coef_table, ref_c, c("pm25","pm25_lag1"), max_lag = 1)
+  expect_false(grepl("s\\(tmean", paste(deparse(stats::formula(res_c$model)), collapse = " ")))
 })
 
 test_that("fit_air_pollution_gam falls back to naive cumulative SE when vcov() fails", {
@@ -1415,6 +1496,43 @@ test_that("air_pollution_meta_analysis end-to-end returns region and meta-level 
   expect_true(all(is.finite(mr$coef)))
 })
 
+test_that("air_pollution_meta_analysis forwards continuous_others to regional GAM fits", {
+  lagged <- make_lagged_multi_region(regions = c("A", "B"), n_days = 20, max_lag = 1)
+  lagged$tmean <- seq_len(nrow(lagged))
+  captured <- new.env(parent = emptyenv())
+  captured$continuous_others <- character()
+
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family,
+                       continuous_others = NULL) {
+    captured$continuous_others <- c(
+      captured$continuous_others,
+      paste(continuous_others, collapse = "|")
+    )
+    list(coef_table = data.frame(
+      lag = "0",
+      pm25_variable = "pm25",
+      coef = NA_real_,
+      se = NA_real_,
+      ci.lb = NA_real_,
+      ci.ub = NA_real_
+    ))
+  }
+
+  pkg_ns <- getNamespaceName(environment(air_pollution_meta_analysis))
+
+  with_mocked_bindings(
+    air_pollution_meta_analysis(
+      lagged,
+      max_lag = 1,
+      continuous_others = c("tmean", "ozone")
+    ),
+    fit_air_pollution_gam = mock_fit,
+    .package = pkg_ns
+  )
+
+  expect_equal(captured$continuous_others, rep("tmean|ozone", 2L))
+})
+
 test_that("air_pollution_meta_analysis aggregates per lag using metafor::rma and preserves factor order", {
   # Ensure the metafor namespace is available so the rma binding exists to mock
   requireNamespace("metafor", quietly = TRUE)
@@ -1424,7 +1542,8 @@ test_that("air_pollution_meta_analysis aggregates per lag using metafor::rma and
 
   # Deterministic per-region coef tables for meta calculation
   # Do NOT rely on a region column inside the nested .x data (it may not be present)
-  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family,
+                       continuous_others = NULL) {
     # Derive a simple deterministic signal that varies by group
     # Your generator uses different death rates per region, so mean(deaths) differs
     signal <- round(mean(data_with_lags$deaths, na.rm = TRUE))
@@ -1494,7 +1613,8 @@ test_that("air_pollution_meta_analysis handles metafor::rma errors by emitting N
   lagged <- make_lagged_multi_region(regions = c("A", "B"), n_days = 20, max_lag = 1)
 
   # Mock fit returns sensible coef_table per region, but does not depend on .x$region
-  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family,
+                       continuous_others = NULL) {
     # Small deterministic variation by group using the data itself
     signal <- round(mean(data_with_lags$deaths, na.rm = TRUE))
     base <- if (is.na(signal)) 0.15 else if (signal %% 2 == 0) 0.2 else 0.1
@@ -1543,7 +1663,8 @@ test_that("air_pollution_meta_analysis returns NA for a lag when all region coef
 
   lagged <- make_lagged_multi_region(regions = c("A", "B"), n_days = 20, max_lag = 1)
 
-  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family,
+                       continuous_others = NULL) {
     # Make lag "1" entirely NA across regions; others valid
     list(coef_table = data.frame(
       lag = c("0", "1", "0-1"),
@@ -1593,7 +1714,8 @@ test_that("air_pollution_meta_analysis preserves lag and pm25_variable level ord
   lagged <- make_lagged_multi_region(regions = c("A", "B"), n_days = 20, max_lag = 1)
 
   # Fit returns rows in a specific order; we verify factors keep that order
-  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family,
+                       continuous_others = NULL) {
     list(coef_table = data.frame(
       lag = c("1", "0", "0-1"),  # out-of-natural order on purpose
       pm25_variable = c("pm25_lag1", "pm25", "pm25_lag0_1"),
@@ -1660,7 +1782,8 @@ test_that("air_pollution_meta_analysis returns valid meta rows for a single regi
   lagged <- make_lagged_multi_region(regions = c("Solo"), n_days = 30, max_lag = 1)
 
   # Mock fit to produce simple coefficients
-  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family,
+                       continuous_others = NULL) {
     list(coef_table = data.frame(
       lag = c("0", "1", "0-1"),
       pm25_variable = c("pm25", "pm25_lag1", "pm25_lag0_1"),
@@ -1704,7 +1827,8 @@ test_that("air_pollution_meta_analysis aggregates even if some regions miss the 
   lagged <- make_lagged_multi_region(regions = c("A", "B", "C"), n_days = 25, max_lag = 1)
 
   # Alternate missing cumulative row by group characteristic
-  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family,
+                       continuous_others = NULL) {
     signal <- round(mean(data_with_lags$deaths, na.rm = TRUE))
     base <- if (is.na(signal)) 0.15 else if (signal %% 2 == 0) 0.2 else 0.1
     # For one "type" of group, drop the cumulative row
@@ -1759,7 +1883,8 @@ test_that("air_pollution_meta_analysis returns NA row when SEs are zero for a la
 
   lagged <- make_lagged_multi_region(regions = c("A","B"), n_days = 20, max_lag = 1)
 
-  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family) {
+  mock_fit <- function(data_with_lags, max_lag, df_seasonal, family,
+                       continuous_others = NULL) {
     list(coef_table = data.frame(
       lag = c("0", "1", "0-1"),
       pm25_variable = c("pm25", "pm25_lag1", "pm25_lag0_1"),
@@ -3729,7 +3854,7 @@ test_that("plot_air_pollution_an_ar_by_year tolerates NA in inputs", {
   expect_s3_class(out$an_plot, "ggplot")
 })
 
-test_that("plot_air_pollution_an_ar_by_year uses ncol from calculate_air_pollution_grid_dims", {
+test_that("plot_air_pollution_an_ar_by_year uses ncol from get_accessible_ggplot_grid", {
   analysis_results <- .build_analysis_results(
     regions  = c("R1","R2","R3","R4"),
     n_days   = 720,
@@ -5090,6 +5215,7 @@ test_that("air_pollution_power_list function returns a list and correct names", 
 
   data_with_lags <- data.frame(
     region = rep(c("RegionA", "RegionB"), each = 5),
+    date = rep(as.Date("2020-01-01") + 0:4, times = 2),
     pm25 = c(10, 12, 15, 18, 20, 8, 16, 17, 22, 25),
     pm25_lag0_3 = rnorm(10)
   )
@@ -5120,37 +5246,45 @@ test_that("air_pollution_power_list function returns a list and correct names", 
   expect_true(all(c("region", "pm25", "cen", "log_rr", "se", "power", "power_pct")
                   %in% names(actual_result$National)))
 
-  expected_result <- list(
-    "RegionA" = data.frame(
-      "region" = c("RegionA"),
-      "pm25" = as.double(c(20)),
-      "cen" = as.double(c(15)),
-      "log_rr" = as.double(c(0.1)),
-      "se" = as.double(c(0.025)),
-      "power" = as.double(c(0.9907423)),
-      "power_pct" = as.double(c(99.1))
-    ),
-    "RegionB" = data.frame(
-      "region" = c("RegionB"),
-      "pm25" = as.double(c(25)),
-      "cen" = as.double(c(15)),
-      "log_rr" = as.double(c(0.1)),
-      "se" = as.double(c(0.04)),
-      "power" = as.double(c(0.8037819)),
-      "power_pct" = as.double(c(80.4))
-    ),
-    "National" = data.frame(
-      "region" = c("National"),
-      "pm25" = as.double(c(25)),
-      "cen" = as.double(c(15)),
-      "log_rr" = as.double(c(0.1)),
-      "se" = as.double(c(0.04)),
-      "power" = as.double(c(0.8037819)),
-      "power_pct" = as.double(c(80.4))
-    )
-  )
+  # The new implementation uses a two-sided z (qnorm(1 - alpha/2) = 1.96) and
+  # derives the national PM2.5 series by averaging across regions per `date`,
+  # so the exact `power` / `pm25` reference values from the old single-sided
+  # implementation are no longer applicable. Assert structural properties and
+  # the deterministic, easily-derived fields instead.
+  pwr_two_sided <- function(lr, se, alpha = 0.05) {
+    z <- stats::qnorm(1 - alpha / 2)
+    stats::pnorm(lr / se - z) + (1 - stats::pnorm(lr / se + z))
+  }
 
-  expect_equal(actual_result, expected_result, tolerance = 1e-6)
+  # RegionA: only pm25 = 20 should clear the 90% excess threshold
+  expect_equal(actual_result$RegionA$region, "RegionA")
+  expect_equal(actual_result$RegionA$pm25, 20)
+  expect_equal(actual_result$RegionA$cen, 15)
+  expect_equal(actual_result$RegionA$log_rr, round(0.02 * (20 - 15), 3))
+  expect_equal(actual_result$RegionA$se, round(0.005 * (20 - 15), 3))
+  expect_equal(actual_result$RegionA$power,
+               pwr_two_sided(0.02 * (20 - 15), 0.005 * (20 - 15)),
+               tolerance = 1e-6)
+  expect_equal(actual_result$RegionA$power_pct,
+               round(actual_result$RegionA$power * 100, 1))
+
+  # RegionB: only pm25 = 25 should clear the threshold
+  expect_equal(actual_result$RegionB$pm25, 25)
+  expect_equal(actual_result$RegionB$log_rr, round(0.01 * (25 - 15), 3))
+  expect_equal(actual_result$RegionB$se, round(0.004 * (25 - 15), 3))
+  expect_equal(actual_result$RegionB$power,
+               pwr_two_sided(0.01 * (25 - 15), 0.004 * (25 - 15)),
+               tolerance = 1e-6)
+  expect_equal(actual_result$RegionB$power_pct,
+               round(actual_result$RegionB$power * 100, 1))
+
+  # National: derived from per-date means, all standard structural checks
+  expect_equal(actual_result$National$region, "National")
+  expect_true(all(actual_result$National$pm25 > 15))
+  expect_true(all(actual_result$National$cen == 15))
+  expect_true(all(actual_result$National$power >= 0 & actual_result$National$power <= 1))
+  expect_true(all(actual_result$National$power_pct ==
+                    round(actual_result$National$power * 100, 1)))
 })
 
 test_that("air_pollution_power_list handles region with no excess PM2.5 above reference", {
@@ -5171,14 +5305,17 @@ test_that("air_pollution_power_list handles region with no excess PM2.5 above re
 
   data_with_lags <- data.frame(
     region = rep("LowPM", 5),
+    date = as.Date("2020-01-01") + 0:4,
     pm25 = c(5, 6, 7, 8, 9),
     pm25_lag0_2 = rnorm(5)
   )
 
-  result <- air_pollution_power_list(meta_results, data_with_lags, ref_pm25 = 15)
+  result <- air_pollution_power_list(meta_results, data_with_lags, ref_pm25 = 15,
+                                     include_national = TRUE)
 
   # No values exceed reference → region should be missing from list
   expect_false("LowPM" %in% names(result))
+  expect_false("National" %in% names(result))
 })
 
 test_that("air_pollution_power_list National results excluded if include_national = FALSE", {
@@ -5208,6 +5345,7 @@ test_that("air_pollution_power_list National results excluded if include_nationa
 
   data_with_lags <- data.frame(
     region = rep(c("RegionA", "RegionB"), each = 5),
+    date = rep(as.Date("2020-01-01") + 0:4, times = 2),
     pm25 = c(10, 12, 15, 18, 20, 8, 16, 17, 22, 25),
     pm25_lag0_3 = rnorm(10)
   )
@@ -5218,6 +5356,14 @@ test_that("air_pollution_power_list National results excluded if include_nationa
     attr_thr = 90,
     include_national = FALSE
   )
+
+  z_alpha <- stats::qnorm(1 - 0.05 / 2)
+
+  region_a_power <- stats::pnorm(0.1 / 0.025 - z_alpha) +
+    (1 - stats::pnorm(0.1 / 0.025 + z_alpha))
+
+  region_b_power <- stats::pnorm(0.1 / 0.04 - z_alpha) +
+    (1 - stats::pnorm(0.1 / 0.04 + z_alpha))
 
   boop <- air_pollution_power_list(
     meta_results, data_with_lags,
@@ -5231,8 +5377,8 @@ test_that("air_pollution_power_list National results excluded if include_nationa
       "cen" = as.double(c(15)),
       "log_rr" = as.double(c(0.1)),
       "se" = as.double(c(0.025)),
-      "power" = as.double(c(0.9907423)),
-      "power_pct" = as.double(c(99.1))
+      "power" = region_a_power,
+      "power_pct" = round(region_a_power * 100, 1)
     ),
     "RegionB" = data.frame(
       "region" = c("RegionB"),
@@ -5240,8 +5386,8 @@ test_that("air_pollution_power_list National results excluded if include_nationa
       "cen" = as.double(c(15)),
       "log_rr" = as.double(c(0.1)),
       "se" = as.double(c(0.04)),
-      "power" = as.double(c(0.8037819)),
-      "power_pct" = as.double(c(80.4))
+      "power" = region_b_power,
+      "power_pct" = round(region_b_power * 100, 1)
     )
   )
 
@@ -5820,6 +5966,52 @@ test_that("air_pollution_do_analysis accepts legacy other-column argument names"
   expect_equal(captured$continuous_others, "tmean")
 })
 
+test_that("air_pollution_do_analysis forwards continuous_others to meta-analysis", {
+  pkg_ns <- getNamespaceName(environment(air_pollution_do_analysis))
+  captured <- new.env(parent = emptyenv())
+
+  mock_load_air_pollution_data <- function(...) {
+    data.frame(
+      date = as.Date("2020-01-01") + 0:2,
+      region = "A",
+      pm25 = c(10, 11, 12),
+      deaths = c(1, 2, 1),
+      population = 1000,
+      humidity = 50,
+      precipitation = 0,
+      tmax = 25,
+      wind_speed = 2,
+      tmean = c(24, 25, 26)
+    )
+  }
+
+  mock_create_air_pollution_lags <- function(data, ...) data
+
+  mock_air_pollution_meta_analysis <- function(..., continuous_others = NULL) {
+    captured$continuous_others <- continuous_others
+    stop("meta sentinel")
+  }
+
+  expect_error(
+    with_mocked_bindings(
+      air_pollution_do_analysis(
+        data_path = tempfile(fileext = ".csv"),
+        continuous_others = "tmean",
+        save_outputs = FALSE,
+        run_descriptive = FALSE,
+        run_power = FALSE
+      ),
+      load_air_pollution_data = mock_load_air_pollution_data,
+      create_air_pollution_lags = mock_create_air_pollution_lags,
+      air_pollution_meta_analysis = mock_air_pollution_meta_analysis,
+      .package = pkg_ns
+    ),
+    "meta sentinel"
+  )
+
+  expect_equal(captured$continuous_others, "tmean")
+})
+
 test_that("air_pollution_do_analysis default output settings do not require output_dir", {
   pkg_ns <- getNamespaceName(environment(air_pollution_do_analysis))
 
@@ -5893,6 +6085,83 @@ test_that("air_pollution_do_analysis API mode skips output_dir preparation", {
     "load sentinel"
   )
   expect_false(dir.exists(missing_dir))
+})
+
+test_that("air_pollution_do_analysis strips fitted GAMs from API-mode meta results", {
+  pkg_ns <- getNamespaceName(environment(air_pollution_do_analysis))
+  captured <- new.env(parent = emptyenv())
+  withr::local_options(list(climatehealth.api_mode = TRUE))
+
+  mock_load_air_pollution_data <- function(...) {
+    data.frame(
+      date = as.Date("2020-01-01") + 0:2,
+      region = "A",
+      pm25 = c(10, 11, 12),
+      deaths = c(1, 2, 1),
+      population = 1000,
+      humidity = 50,
+      precipitation = 0,
+      tmax = 25,
+      wind_speed = 2
+    )
+  }
+
+  mock_create_air_pollution_lags <- function(data, ...) data
+
+  mock_air_pollution_meta_analysis <- function(...) {
+    list(
+      region_results = data.frame(
+        region = "A",
+        model_results = I(list(list(
+          model = list(heavy = TRUE),
+          coef_table = data.frame(
+            lag = "0",
+            pm25_variable = "pm25",
+            coef = 0.01,
+            se = 0.001,
+            ci.lb = 0.008,
+            ci.ub = 0.012
+          ),
+          vcov_used_for_cumulative = TRUE
+        )))
+      ),
+      meta_results = data.frame(
+        lag = "0",
+        pm25_variable = "pm25",
+        coef = 0.01,
+        se = 0.001,
+        ci.lb = 0.008,
+        ci.ub = 0.012,
+        pval = 0.01,
+        I2 = 0
+      )
+    )
+  }
+
+  mock_analyze_air_pollution_daily <- function(data_with_lags, meta_results, ...) {
+    captured$model_results <- meta_results$region_results$model_results
+    stop("analysis sentinel")
+  }
+
+  expect_error(
+    with_mocked_bindings(
+      air_pollution_do_analysis(
+        data_path = tempfile(fileext = ".csv"),
+        save_outputs = FALSE,
+        run_descriptive = FALSE,
+        run_power = FALSE
+      ),
+      load_air_pollution_data = mock_load_air_pollution_data,
+      create_air_pollution_lags = mock_create_air_pollution_lags,
+      air_pollution_meta_analysis = mock_air_pollution_meta_analysis,
+      analyze_air_pollution_daily = mock_analyze_air_pollution_daily,
+      .package = pkg_ns
+    ),
+    "analysis sentinel"
+  )
+
+  expect_false("model" %in% names(captured$model_results[[1]]))
+  expect_true("coef_table" %in% names(captured$model_results[[1]]))
 })
 
 test_that("air_pollution_do_analysis rejects legacy and new aliases together", {

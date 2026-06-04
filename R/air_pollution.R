@@ -50,12 +50,25 @@ load_air_pollution_data <- function(data_path,
     stop("Data file not found at: ", data_path)
   }
 
+  standardize_air_pollution_col <- function(x) {
+    if (is.null(x)) NULL else gsub(" ", "_", x)
+  }
+
   # Standardize columns by removing spaces
-  categorical_others <- if(is.null(categorical_others)) NULL else gsub(" ", "_", categorical_others)
-  continuous_others <- if(is.null(continuous_others)) NULL else gsub(" ", "_", continuous_others)
+  date_col <- standardize_air_pollution_col(date_col)
+  region_col <- standardize_air_pollution_col(region_col)
+  pm25_col <- standardize_air_pollution_col(pm25_col)
+  deaths_col <- standardize_air_pollution_col(deaths_col)
+  population_col <- standardize_air_pollution_col(population_col)
+  humidity_col <- standardize_air_pollution_col(humidity_col)
+  precipitation_col <- standardize_air_pollution_col(precipitation_col)
+  tmax_col <- standardize_air_pollution_col(tmax_col)
+  wind_speed_col <- standardize_air_pollution_col(wind_speed_col)
+  categorical_others <- standardize_air_pollution_col(categorical_others)
+  continuous_others <- standardize_air_pollution_col(continuous_others)
   others <- c(categorical_others, continuous_others) # all additional variables
   data0 <- if (is.character(data_path)) {
-    read.csv(data_path)
+    read.csv(data_path, check.names = FALSE)
   } else if (is.data.frame(data_path)) {
     data_path
   } else if (is.list(data_path)) {
@@ -63,6 +76,9 @@ load_air_pollution_data <- function(data_path,
   } else {
     stop("`data_path` must be a CSV path, data.frame, or list of records.")
   }
+
+  names(data0) <- standardize_air_pollution_col(names(data0))
+  data0 <- data0[, !is.na(names(data0)) & nzchar(names(data0)), drop = FALSE]
 
   # Define REQUIRED columns
   required_cols <- c(date_col, region_col, pm25_col, deaths_col, population_col,
@@ -121,18 +137,16 @@ load_air_pollution_data <- function(data_path,
   # Process data with consistent English day names
   data <- .with_english_locale({
     data %>%
-      arrange(region, date) %>%
       group_by(region) %>%
+      dplyr::mutate(date = universal_date(date)) %>%
+      dplyr::arrange(region, date, .by_group = TRUE) %>%
       dplyr::mutate(
-        date = universal_date(date),
         year = lubridate::year(date),
         month = lubridate::month(date),
         day = lubridate::day(date),
-        # Use English day names regardless of system locale
         dow = .english_dow_names(lubridate::wday(date), short = TRUE),
         time = dplyr::row_number()
-      ) %>%
-      dplyr::arrange(date)
+      )
   })
 
   # Convert to data.table for efficient aggregation
@@ -411,6 +425,8 @@ air_pollution_descriptive_stats <- function(data,
 #' @param max_lag integer. Maximum lag to include. Defaults to 14.
 #' @param df_seasonal integer. Degrees of freedom for seasonal spline. Default 6.
 #' @param family character or family object passed to mgcv::gam. Default "quasipoisson".
+#' @param continuous_others Optional. Character vector of additional continuous
+#' variables (e.g., "tmean"). Defaults to NULL.
 #'
 #' @return A list with components:
 #'   - model: the fitted mgcv::gam object (or NULL if fit failed)
@@ -422,7 +438,8 @@ air_pollution_descriptive_stats <- function(data,
 fit_air_pollution_gam <- function(data_with_lags,
                                   max_lag = 14L,
                                   df_seasonal = 6L,
-                                  family = "quasipoisson"
+                                  family = "quasipoisson",
+                                  continuous_others= NULL
 ) {
 
   # Build expected lag variable names and detect which are present
@@ -438,12 +455,20 @@ fit_air_pollution_gam <- function(data_with_lags,
   yr <- length(unique(data_with_lags$year))
   lag_formula <- paste(present_lag_vars, collapse = " + ")
 
-  # Check if tmean is available in the data
-  tmean_term <- if ("tmean" %in% names(data_with_lags) &&
-                    !all(is.na(data_with_lags$tmean))) {
-    " + s(tmean, k = 3)"
-  } else {
-    ""
+  # Build smooth terms for additional continuous variables to use them if available
+  continuous_other_terms <-""
+  if (!is.null(continuous_others)) {
+    # Keep only usable variables existing in dataset
+    extra_vars<- continuous_others[continuous_others%in%names(data_with_lags)]
+    extra_vars <- extra_vars[
+      !vapply(extra_vars, function(var) all(is.na(data_with_lags[[var]])), logical(1))
+    ]
+
+    # Create smooth terms dynamically
+    if (length(extra_vars)>0) {
+      continuous_other_terms<-paste(
+        paste0(" + s(", extra_vars,", k = 3)"),collapse ="")
+    }
   }
 
   GAM_formula <- as.formula(
@@ -454,7 +479,7 @@ fit_air_pollution_gam <- function(data_with_lags,
       " + s(humidity, k = 3)",
       " + s(precipitation, k = 3)",
       " + s(wind_speed, k = 3)",
-      tmean_term,
+      continuous_other_terms,
       " + dow + offset(log(population))"
     )
   )
@@ -566,7 +591,7 @@ fit_air_pollution_gam <- function(data_with_lags,
   coef_table$lag_order[is.na(coef_table$lag_order)] <- Inf
   coef_table <- coef_table[order(coef_table$lag_order), c("lag", "pm25_variable", "coef", "se", "ci.lb", "ci.ub")]
 
-  return(list(coef_table = coef_table))
+  return(list(model = model, coef_table = coef_table,vcov_used_for_cumulative = used_vcov))
 }
 
 #' Perform meta analysis with multiple lag structures
@@ -578,6 +603,8 @@ fit_air_pollution_gam <- function(data_with_lags,
 #' @param max_lag Integer. Maximum lag days. Defaults to 14
 #' @param df_seasonal Integer. Degrees of freedom for seasonal spline. Default 6.
 #' @param family Character string indicating the distribution family used in the GAM.
+#' @param continuous_others Optional. Character vector of additional continuous
+#' variables to include as smooth terms in the regional GAMs. Defaults to NULL.
 #'
 #' @return Dataframe with lag-specific results including for regional and national
 #'
@@ -585,7 +612,8 @@ fit_air_pollution_gam <- function(data_with_lags,
 air_pollution_meta_analysis <- function(data_with_lags,
                                         max_lag = 14L,
                                         df_seasonal = 6L,
-                                        family = "quasipoisson"
+                                        family = "quasipoisson",
+                                        continuous_others = NULL
 ) {
 
   # Fit distributed-lag model per region
@@ -593,12 +621,25 @@ air_pollution_meta_analysis <- function(data_with_lags,
     dplyr::group_by(region) %>%
     tidyr::nest() %>%
     dplyr::mutate(
-      model_results = purrr::map2(data, region, ~ fit_air_pollution_gam(.x, max_lag, df_seasonal, family))
+      model_results = purrr::map(
+        data,
+        ~ fit_air_pollution_gam(
+          .x,
+          max_lag = max_lag,
+          df_seasonal = df_seasonal,
+          family = family,
+          continuous_others = continuous_others
+        )
+      )
     ) %>%
     dplyr::select(region, model_results) %>%
     dplyr::ungroup()
 
   if (nrow(region_results) < 1) stop("At least 1 region needed for meta-analysis")
+  if (nrow(region_results) == 1) {
+    message("NOTE: Only one region present. Meta-analysis pooling is not meaningful with ",
+            "a single region. National estimates will use the single region's results.")
+  }
 
   # Extract per-region coef_table
   all_coefs <- region_results %>%
@@ -1860,11 +1901,14 @@ plot_air_pollution_monthly_histograms <- function(analysis_results,
   ) +
     accessible_plot_annotation(
       title = paste(
-        "Monthly Attributable Number (AN) by Region -",
+        "Cumulative Monthly Attributable Number (AN) by Region",
         ref_name,
         "Standard"
       ),
-      subtitle = paste("Reference PM2.5:", ref_pm25, "\u00B5g/m\u00B3"),
+      subtitle = paste(
+        "Reference PM2.5:", ref_pm25, "\u00B5g/m\u00B3",
+        "| Aggregated by calendar month over full period"
+      ),
       alt_text = an_alt_text
     )
 
@@ -1921,11 +1965,14 @@ plot_air_pollution_monthly_histograms <- function(analysis_results,
   ) +
     accessible_plot_annotation(
       title = paste(
-        "Monthly Attributable Rate (AR) by Region -",
+        "Cumulative Monthly Attributable Rate (AR) by Region -",
         ref_name,
         "Standard"
       ),
-      subtitle = paste("Reference PM2.5:", ref_pm25, "\u00B5g/m\u00B3"),
+      subtitle = paste(
+        "Reference PM2.5:", ref_pm25, "\u00B5g/m\u00B3",
+        "| Aggregated by calendar month over full period"
+      ),
       alt_text = ar_alt_text
     )
 
@@ -2229,14 +2276,16 @@ plot_air_pollution_exposure_response <- function(analysis_results,
 
   specific_results <- specific_results %>%
     dplyr::select(
-      .data$date,
-      .data$region,
-      .data$pm25_values,
-      .data$rr,
-      .data$rr.lb,
-      .data$rr.ub,
-      .data$ref_name,
-      .data$ref_pm25
+      dplyr::all_of(c(
+        "date",
+        "region",
+        "pm25_values",
+        "rr",
+        "rr.lb",
+        "rr.ub",
+        "ref_name",
+        "ref_pm25"
+      ))
     ) %>%
     dplyr::distinct()
 
@@ -2397,7 +2446,7 @@ air_pollution_power_list <- function(
     include_national = TRUE) {
 
   power_list <- list()
-  alpha <- 1 - attr_thr / 100
+  alpha <- 0.05
 
   # Extract region results from meta_results
   region_results <- meta_results$region_results
@@ -2433,6 +2482,8 @@ air_pollution_power_list <- function(
         # Create power dataframe for PM2.5 values above threshold
         pm25_above <- unique(region_data$pm25[region_data$pm25 >= thresh_pm25])
         pm25_above <- sort(pm25_above)
+        pm25_above <- pm25_above[pm25_above> ref_pm25]
+        if (length(pm25_above)==0) next
 
         if (length(pm25_above) > 0) {
           power_df <- data.frame(
@@ -2469,20 +2520,24 @@ air_pollution_power_list <- function(
     if (nrow(cum_row_meta) > 0) {
 
       # Aggregate national PM2.5
-      national_pm25 <- unlist(lapply(unique(data_with_lags$region),
-                                     function(r) data_with_lags$pm25[data_with_lags$region == r]))
+      national_pm25<- data_with_lags%>%
+        dplyr::group_by(date)%>%
+        dplyr::summarise(pm25 = mean(pm25,na.rm =TRUE),.groups ="drop")%>%
+        dplyr::pull(pm25)
+
       thresh_national <- round(quantile(national_pm25, attr_thr / 100, na.rm = TRUE), 1)
       # Create power dataframe for PM2.5 values above threshold
       national_pm25_above <- unique(national_pm25[national_pm25 >= thresh_national])
       national_pm25_above <- sort(national_pm25_above)
+      national_pm25_above <- national_pm25_above[national_pm25_above > ref_pm25]
 
       if (length(national_pm25_above) > 0) {
         power_df_national <- data.frame(
           region = "National",
           pm25 = national_pm25_above,
           cen = ref_pm25,
-          log_rr = cum_row$coef * (national_pm25_above - ref_pm25),
-          se = cum_row$se * abs(national_pm25_above - ref_pm25),
+          log_rr = cum_row_meta$coef * (national_pm25_above - ref_pm25),
+          se = cum_row_meta$se * abs(national_pm25_above - ref_pm25),
           z_alpha = stats::qnorm(1 - alpha / 2)
         )
 
@@ -3004,13 +3059,31 @@ air_pollution_do_analysis <- function(
     data_with_lags = data_with_lags,
     max_lag = max_lag,
     df_seasonal = df_seasonal,
-    family = family
+    family = family,
+    continuous_others = continuous_others
   )
+
+  if (api_mode && !is.null(meta_results$region_results$model_results)) {
+    meta_results$region_results$model_results <- lapply(
+      meta_results$region_results$model_results,
+      function(model_result) {
+        if (is.list(model_result) && "model" %in% names(model_result)) {
+          model_result$model <- NULL
+        }
+        model_result
+      }
+    )
+  }
 
   results$meta_results <- meta_results
 
   # CALCULATE ATTRIBUTABLE BURDEN FOR EACH REFERENCE
   results$analysis_results <- list()
+  # results$plots holds both ggplot objects and the aggregate_* data
+  # frames. Initialise it even in API mode so the aggregations below
+  # land at the same path non-API callers expect.
+    results$plots <- list()
+    results$power_results <- list()
 
   for (ref_standard in reference_standards) {
     ref_pm25 <- ref_standard$value
@@ -3025,13 +3098,6 @@ air_pollution_do_analysis <- function(
     )
 
     results$analysis_results[[ref_name]] <- analysis_daily
-
-    # results$plots holds both ggplot objects and the aggregate_* data
-    # frames. Initialise it even in API mode so the aggregations below
-    # land at the same path non-API callers expect.
-    if (is.null(results$plots)) {
-      results$plots <- list()
-    }
     analysis_res <- results$analysis_results[[ref_name]]
 
     # PLOTS - skipped entirely in API mode. The client renders its own
@@ -3112,9 +3178,6 @@ air_pollution_do_analysis <- function(
 
     # POWER ANALYSIS
     if (run_power) {
-      if (is.null(results$power_results)) {
-        results$power_results <- list()
-      }
       power_list <- air_pollution_power_list(
         meta_results = meta_results,
         data_with_lags = data_with_lags,
