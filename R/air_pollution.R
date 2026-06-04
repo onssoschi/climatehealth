@@ -2276,14 +2276,16 @@ plot_air_pollution_exposure_response <- function(analysis_results,
 
   specific_results <- specific_results %>%
     dplyr::select(
-      .data$date,
-      .data$region,
-      .data$pm25_values,
-      .data$rr,
-      .data$rr.lb,
-      .data$rr.ub,
-      .data$ref_name,
-      .data$ref_pm25
+      dplyr::all_of(c(
+        "date",
+        "region",
+        "pm25_values",
+        "rr",
+        "rr.lb",
+        "rr.ub",
+        "ref_name",
+        "ref_pm25"
+      ))
     ) %>%
     dplyr::distinct()
 
