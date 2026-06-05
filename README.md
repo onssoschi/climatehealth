@@ -4,6 +4,8 @@
 
 <img src="man/figures/logo.png" align="right" width="180" alt="SOSCHI logo" />
 
+<br><br><br>
+
 # Climatehealth Package
 
 ## Table of Contents
