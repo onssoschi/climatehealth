@@ -49,12 +49,12 @@ Description: Tools for producing climate-health indicators and supporting
               in the Standards for Official Statistics on Climate-Health
               Interactions (SOSCHI) project
               <https://climate-health.officialstatistics.org>. For methodologies,
-              see Watkins et al. (2025) <doi:10.5281/zenodo.14865904>,
-              Brown et al. (2024) <doi:10.5281/zenodo.14052183>,
-              Pearce et al. (2024) <doi:10.5281/zenodo.14050224>,
-              Byukusenge et al. (2025) <doi:10.5281/zenodo.15585042>,
-              Dzakpa et al. (2025) <doi:10.5281/zenodo.14881886>, and
-              Dzakpa et al. (2025) <doi:10.5281/zenodo.14871506>.
+              see Watkins et al. (2026) <doi:10.5281/zenodo.14865904>,
+              Jose et al. (2026) <doi:10.5281/zenodo.14052183>,
+              Pearce et al. (2026) <doi:10.5281/zenodo.14050224>,
+              Byukusenge et al. (2026) <doi:10.5281/zenodo.15585042>,
+              Dzakpa et al. (2026) <doi:10.5281/zenodo.14881886>, and
+              Dzakpa et al. (2026) <doi:10.5281/zenodo.14871506>.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
