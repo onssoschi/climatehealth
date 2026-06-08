@@ -1,6 +1,51 @@
 # climatehealth development notes
 
-## Unreleased
+## 1.0.2
+
+- Improved accessibility of saved plot outputs across the package:
+  - added shared helpers for accessible base R, ggplot2, and patchwork outputs
+  - applies consistent SOSCHI styling, accessible colours, figure titles, logos,
+    and wrapped alternative-text captions
+  - improves sizing, layout, and pagination for multi-panel indicator reports
+- Integrated descriptive statistics more closely with the main analysis
+  workflows:
+  - added optional descriptive-statistics controls to the indicator
+    `do_analysis()` functions where relevant
+  - supports summary statistics, correlation outputs, moving-average plots,
+    missing-data summaries, and outlier checks alongside indicator outputs
+  - preserves run-scoped descriptive output folders and forwards the selected
+    correlation method through the indicator workflows
+- Updated indicator workflows and outputs:
+  - air pollution now supports additional continuous covariates in regional GAMs,
+    normalises custom column names, ignores unusable covariates, handles
+    no-excess national power outputs, and returns API-safe results
+  - wildfire handling was improved for region/date ordering, region-level
+    outputs, PM2.5 scaling, VIF/QAIC checks, descriptive-statistics column
+    mapping, and missing population checks
+  - mental health and temperature-related workflows gained more reproducible
+    attribution options, clearer model-validation outputs, and refreshed
+    documentation
+  - malaria and diarrhea workflows gained optional descriptive statistics,
+    API-mode safeguards, and accessible output updates
+- Improved API/runtime support:
+  - added an air pollution endpoint to the bundled plumber API
+  - added support for base64-encoded map zip uploads for malaria and diarrhea
+    API requests
+  - prevents API-mode calls from writing plot/CSV outputs or returning
+    non-JSON-safe fitted model objects
+- Refreshed package documentation and presentation:
+  - added UNSC endorsement and CRAN availability information to the README
+  - added SOSCHI branding/logo assets for README and report outputs
+  - added a README notes column to flag the ongoing temperature-related health
+    effects review work
+  - updated indicator titles and documentation for consistency
+- Improved package maintenance and CI reliability:
+  - expanded unit and integration coverage for accessibility, descriptive
+    statistics, API mode, and indicator workflows
+  - keeps heavy integration tests opt-in for coverage reporting and extends the
+    Codecov step timeout
+  - removed unused plotting helpers/dependencies and added `png` for logo
+    rendering
 
 ## 1.0.1
 
