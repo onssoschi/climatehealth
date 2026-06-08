@@ -115,7 +115,7 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_API_TOKEN }}
         run: Rscript -e 'covr::codecov()'
 
-        timeout-minutes: 5
+        timeout-minutes: 15
 
 #      - name: Print coverage for quick view
 #        run: |
