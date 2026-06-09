@@ -42,9 +42,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.R_LIBS_USER }}
-          key: ${{ runner.os }}-r-${{ hashFiles('DESCRIPTION') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-r-4.4.1-${{ hashFiles('DESCRIPTION') }}
           restore-keys: |
-            ${{ runner.os }}-r-
+            ${{ runner.os }}-${{ runner.arch }}-r-4.4.1-
 
       - name: Set R options
         run: echo 'options(pkgType = "both")' >> ~/.Rprofile
@@ -81,7 +81,7 @@ jobs:
                 install.packages(c(
                   "devtools", "roxygen2", "remotes", "patrick", "pak", "covr",
                   "DT", "htmltools", "mockery", "openxlsx", "fmesher",
-                  "knitr", "rmarkdown"
+                  "knitr", "rmarkdown", "mvmeta", "stringdist"
                 ))
                 install.packages("sf", type = "binary")
                 install.packages("terra", type = "source")
