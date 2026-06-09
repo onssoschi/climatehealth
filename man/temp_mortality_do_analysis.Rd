@@ -76,7 +76,8 @@ adjustment. Defaults to NULL.}
 control variables. Defaults to 3.}
 
 \item{var_fun}{Character. Exposure function for argvar
-(see dlnm::crossbasis). Defaults to 'bs'.}
+(see dlnm::crossbasis). Defaults to 'bs'. The climatehealth package only
+supports B-spline functions.}
 
 \item{var_degree}{Integer. Degree of the piecewise polynomial for argvar
 (see dlnm:crossbasis). Defaults to 2 (quadratic).}

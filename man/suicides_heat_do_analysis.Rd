@@ -67,7 +67,8 @@ contains the population estimate coloumn.}
 \item{meta_analysis}{Boolean. Whether to perform a meta-analysis.}
 
 \item{var_fun}{Character. Exposure function for argvar
-(see dlnm::crossbasis). Defaults to 'bs'.}
+(see dlnm::crossbasis). Defaults to 'bs'. The climatehealth package only
+supports B-spline functions.}
 
 \item{var_degree}{Integer. Degree of the piecewise polynomial for argvar
 (see dlnm:crossbasis). Defaults to 2 (quadratic).}
