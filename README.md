@@ -31,7 +31,7 @@ This package provides functions for calculating climate–health indicators and 
 
 The methods for measuring headline outcome indicators for the SOSCHI topics were endorsed by the 57th United Nations Statistical Commission for inclusion in the Global Set of Climate Change Statistics and Indicators (see decision 57/109 (b) in the [Final Report](https://unstats.un.org/UNSDWebsite/statcom/session_57/documents/2026-35-FinalReport-EE.pdf)).
 
-The package is also [now available on CRAN](https://cran.r-project.org/web/packages/climatehealth/index.html).
+The package is also [now available on CRAN](https://CRAN.R-project.org/package=climatehealth).
 
 ### SOSCHI Topics and Indicators
 
