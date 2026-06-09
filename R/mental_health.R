@@ -2376,7 +2376,8 @@ mh_save_results <- function(
 #' @param country Character. Name of country for national level estimates.
 #' @param meta_analysis Boolean. Whether to perform a meta-analysis.
 #' @param var_fun Character. Exposure function for argvar
-#' (see dlnm::crossbasis). Defaults to 'bs'.
+#' (see dlnm::crossbasis). Defaults to 'bs'. The climatehealth package only
+#' supports B-spline functions.
 #' @param var_degree Integer. Degree of the piecewise polynomial for argvar
 #' (see dlnm:crossbasis). Defaults to 2 (quadratic).
 #' @param var_per Vector. Internal knot positions for argvar

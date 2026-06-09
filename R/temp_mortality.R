@@ -3487,7 +3487,8 @@ hc_save_results <- function(rr_results,
 #' @param df_control Integer. Degrees of freedom for natural splines applied to
 #' control variables. Defaults to 3.
 #' @param var_fun Character. Exposure function for argvar
-#' (see dlnm::crossbasis). Defaults to 'bs'.
+#' (see dlnm::crossbasis). Defaults to 'bs'. The climatehealth package only
+#' supports B-spline functions.
 #' @param var_degree Integer. Degree of the piecewise polynomial for argvar
 #' (see dlnm:crossbasis). Defaults to 2 (quadratic).
 #' @param var_per Vector. Internal knot positions for argvar
