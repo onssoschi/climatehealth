@@ -914,6 +914,7 @@ test_that("test hc_add_national_data", {
       temp = rnorm(n_days, mean = 15 + i * 2, sd = 5),
       deaths = rpois(n_days, lambda = 5 + i),  # <-- outcome column is 'deaths'
       population = sample(100000:200000, n_days, replace = TRUE),
+      region = paste0("region", i),
       geog = paste0("region", i)                   # <-- name consistent with function output
     )
   })
@@ -999,9 +1000,15 @@ test_that("test hc_add_national_data", {
   nat_df <- df_out[["National"]]
 
   expect_s3_class(nat_df, "data.frame")
-  expect_true(all(c("date", "temp", "deaths", "population", "year", "month", "geog") %in% names(nat_df)))
-  expect_equal(nrow(nat_df), length(unique(df_list[[1]]$date)))
-  expect_true(all(nat_df$geog == "National"))
+  expect_true(all(c("date", "temp", "deaths", "population", "year", "region") %in% names(nat_df)))
+  expect_equal(nrow(nat_df), n_regions * n_days)
+  # Ensure all regions are preserved
+  expect_equal(sort(unique(nat_df$region)), sort(names(df_list)))
+
+  # geog should NOT be overwritten to "National"
+  if ("geog" %in% names(nat_df)) {
+    expect_false(all(nat_df$geog == "National"))
+  }
 
   # National crossbasis checks
   cb_out <- result[[2]]
