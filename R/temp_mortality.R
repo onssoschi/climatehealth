@@ -1421,7 +1421,7 @@ hc_plot_rr <- function(df_list,
 
     sub_title <- paste(
       "Panels show high and low temperature thresholds, minimum mortality temperature (MMT),",
-      "uncertanity, and the frequency distribution of observed temperature."
+      "uncertainty, and the frequency distribution of observed temperature."
 
     )
 
@@ -2263,7 +2263,7 @@ hc_plot_af_cold_yearly <- function(attr_yr_list,
       ylab = "Low temperature AF (%)",
       main = geog,
       cex.main = 1.2,
-      col = "#296991",
+      col = "#296991"
     )
 
     # Ensure data is sorted by Year
@@ -3245,7 +3245,7 @@ hc_plot_ar_cold_monthly <- function(attr_mth_list,
 
   alt_text <- paste(
     "Alt text: Multi-panel chart showing attributable rate of low temperature mortality by month and region.",
-    "Each panel contains blue-coloured bars for high temperature attributable rate and a darker blue line for mean monthly temperature.",
+    "Each panel contains blue-coloured bars for low temperature attributable rate and a darker blue line for mean monthly temperature.",
     "A right-hand axis shows mean temperature in degrees Celsius."
   )
 
