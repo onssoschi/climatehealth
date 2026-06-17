@@ -17,7 +17,7 @@ hc_predict_subnat(
 )
 }
 \arguments{
-\item{df_list}{A list of dataframes containing daily timeseries data for a
+\item{df_list}{A list of data frames containing daily timeseries data for a
 health outcome and climate variables which may be disaggregated by a
 particular geography.}
 

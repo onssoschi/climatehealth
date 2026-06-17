@@ -17,23 +17,23 @@ hc_read_data(
 \item{input_csv_path}{Path to a CSV containing a daily time series of health
 outcome and climate data per geography.}
 
-\item{dependent_col}{Character. Name of the column in the dataframe
+\item{dependent_col}{Character. Name of the column in the data frame
 containing the dependent health outcome variable e.g. deaths.}
 
-\item{date_col}{Character. Name of the column in the dataframe containing
+\item{date_col}{Character. Name of the column in the data frame containing
 the date.}
 
-\item{region_col}{Character. Name of the column in the dataframe that
+\item{region_col}{Character. Name of the column in the data frame that
 contains the geography name(s).}
 
-\item{temperature_col}{Character. Name of the column in the dataframe that
+\item{temperature_col}{Character. Name of the column in the data frame that
 contains the temperature column.}
 
-\item{population_col}{Character. Name of the column in the dataframe that
+\item{population_col}{Character. Name of the column in the data frame that
 contains the population estimate per geography.}
 }
 \value{
-'df_list'. A list of dataframes for each geography with formatted
+'df_list'. A list of data frames for each geography with formatted
 and renamed columns.
 }
 \description{

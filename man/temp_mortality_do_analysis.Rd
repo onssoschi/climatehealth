@@ -48,19 +48,19 @@ temp_mortality_do_analysis(
 for a particular health outcome and climate variables, which may be
 disaggregated by geography.}
 
-\item{date_col}{Character. Name of the column in the dataframe containing
+\item{date_col}{Character. Name of the column in the data frame containing
 the date.}
 
-\item{region_col}{Character. Name of the column in the dataframe that
+\item{region_col}{Character. Name of the column in the data frame that
 contains the geography name(s).}
 
-\item{temperature_col}{Character. Name of the column in the dataframe that
+\item{temperature_col}{Character. Name of the column in the data frame that
 contains the temperature column.}
 
-\item{dependent_col}{Character. Name of the column in the dataframe
+\item{dependent_col}{Character. Name of the column in the data frame
 containing the dependent health outcome variable e.g. deaths.}
 
-\item{population_col}{Character. Name of the column in the dataframe that
+\item{population_col}{Character. Name of the column in the data frame that
 contains the population estimate per geography.}
 
 \item{country}{Character. Name of country for national-level estimates.
@@ -145,23 +145,23 @@ descriptive stats (e.g., deaths per population). Default FALSE}
 }
 \value{
 \itemize{
-\item \code{qaic_results} Dataframe. QAIC and dispersion metrics for each model
+\item \code{qaic_results} Data frame. QAIC and dispersion metrics for each model
 combination and geography.
-\item \code{qaic_summary} Dataframe. Mean QAIC and dispersion metrics for each
+\item \code{qaic_summary} Data frame. Mean QAIC and dispersion metrics for each
 model combination.
-\item \code{vif_results} Dataframe. Variance inflation factors for each
+\item \code{vif_results} Data frame. Variance inflation factors for each
 independent variables by geography.
-\item \code{vif_summary} Dataframe. Mean variance inflation factors for each
+\item \code{vif_summary} Data frame. Mean variance inflation factors for each
 independent variable.
-\item \code{adf_results} Dataframe. ADF test results for each geography.
+\item \code{adf_results} Data frame. ADF test results for each geography.
 \item \code{power_list} List. Power information by area.
-\item \code{rr_results} Dataframe containing cumulative relative risk and
+\item \code{rr_results} Data frame containing cumulative relative risk and
 confidence intervals from analysis.
-\item \code{res_attr_tot} Dataframe. Total attributable fractions, numbers and
+\item \code{res_attr_tot} Data frame. Total attributable fractions, numbers and
 rates for each area over the whole time series.
-\item \code{attr_yr_list} List. Dataframes containing yearly estimates of
+\item \code{attr_yr_list} List. Data frames containing yearly estimates of
 attributable fractions, numbers and rates by area.
-\item \code{attr_mth_list} List. Dataframes containing total attributable
+\item \code{attr_mth_list} List. Data frames containing total attributable
 fractions, numbers and rates by calendar month and area.
 }
 }
@@ -227,12 +227,13 @@ temp_mortality_do_analysis(
   meta_analysis = FALSE,
   independent_cols = NULL,
   control_cols = NULL,
+  df_control = 3,
   var_fun = "bs",
   var_degree = 2,
   var_per = c(10, 75, 90),
-  lagn = 7,
-  lagnk = 2,
-  dfseas = 4,
+  lagn = 21,
+  lagnk = 3,
+  dfseas = 8,
   attr_thr_high = 97.5,
   attr_thr_low = 2.5,
   save_fig = FALSE,

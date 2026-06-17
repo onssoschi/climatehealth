@@ -15,7 +15,7 @@ hc_rr_results(
 \arguments{
 \item{pred_list}{A list containing predictions from the model by geography.}
 
-\item{df_list}{A list of dataframes containing daily timeseries data for a
+\item{df_list}{A list of data frames containing daily timeseries data for a
 health outcome and climate variables which may be disaggregated by a
 particular geography.}
 
@@ -29,7 +29,7 @@ temperature threshold for calculating attributable risk. Defaults to 97.5.}
 temperature threshold for calculating attributable risk. Defaults to 2.5.}
 }
 \value{
-'rr_results'. Dataframe containing cumulative relative risk and
+'rr_results'. Data frame containing cumulative relative risk and
 confidence intervals from analysis.
 }
 \description{
