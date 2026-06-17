@@ -7,18 +7,18 @@
 #' @param input_csv_path Path to a CSV containing a daily time series of health
 #' outcome and climate data per geography.
 #'
-#' @param dependent_col Character. Name of the column in the dataframe
+#' @param dependent_col Character. Name of the column in the data frame
 #' containing the dependent health outcome variable e.g. deaths.
-#' @param date_col Character. Name of the column in the dataframe containing
+#' @param date_col Character. Name of the column in the data frame containing
 #' the date.
-#' @param region_col Character. Name of the column in the dataframe that
+#' @param region_col Character. Name of the column in the data frame that
 #' contains the geography name(s).
-#' @param temperature_col Character. Name of the column in the dataframe that
+#' @param temperature_col Character. Name of the column in the data frame that
 #' contains the temperature column.
-#' @param population_col Character. Name of the column in the dataframe that
+#' @param population_col Character. Name of the column in the data frame that
 #' contains the population estimate per geography.
 #'
-#' @returns 'df_list'. A list of dataframes for each geography with formatted
+#' @returns 'df_list'. A list of data frames for each geography with formatted
 #' and renamed columns.
 #'
 #' @keywords internal
@@ -100,7 +100,7 @@ hc_read_data <- function(input_csv_path,
 #' @description Creates a cross-basis matrix of the lag-response and
 #' exposure-response functions, for each geography.
 #'
-#' @param df_list A list of dataframes containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily timeseries data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param var_fun Character. Exposure function for argvar
@@ -162,7 +162,7 @@ hc_create_crossbasis <- function(df_list,
 #' additional independent variables and returns model diagnostic checks
 #' for each.
 #'
-#' @param df_list A list of dataframes containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily timeseries data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param cb_list List of cross-basis matrices from hc_create_crossbasis
@@ -173,7 +173,7 @@ hc_create_crossbasis <- function(df_list,
 #'
 #' @returns
 #'  \itemize{
-#'   \item `qaic_results` A dataframe of QAIC and dispersion metrics for each
+#'   \item `qaic_results` A data frame of QAIC and dispersion metrics for each
 #'   model combination.
 #'   \item `residuals_list` List. Residuals for each model combination.
 #'   }
@@ -281,7 +281,7 @@ hc_model_combo_res <- function(df_list,
 #' variable and produce a partial autocorrelation function plot of residuals
 #' for each model combination.
 #'
-#' @param df_list A list of dataframes containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily timeseries data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #'
@@ -320,7 +320,7 @@ hc_adf <- function(df_list) {
 #' inflation factor for each independent variable, ADF test for stationarity,
 #' and plots for residuals to assess the models.
 #'
-#' @param df_list A list of dataframes containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily timeseries data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param cb_list List of cross-basis matrices from hc_create_crossbasis
@@ -337,15 +337,15 @@ hc_adf <- function(df_list) {
 #'
 #' @returns
 #'   \itemize{
-#'   \item `qaic_results` A dataframe of QAIC and dispersion metrics for each
+#'   \item `qaic_results` A data frame of QAIC and dispersion metrics for each
 #'   model combination and geography.
-#'   \item `qaic_summary` A dataframe with the mean QAIC and dispersion metrics
+#'   \item `qaic_summary` A data frame with the mean QAIC and dispersion metrics
 #'   for each model combination.
-#'   \item `vif_results` A dataframe of variance inflation factors for each
+#'   \item `vif_results` A data frame of variance inflation factors for each
 #'   independent variables by geography.
-#'   \item `vif_summary` A dataframe with the mean variance inflation factors
+#'   \item `vif_summary` A data frame with the mean variance inflation factors
 #'   for each independent variable.
-#'   \item `adf_results` A dataframe of ADF test results for each geography.
+#'   \item `adf_results` A data frame of ADF test results for each geography.
 #'   }
 #'
 #' @keywords internal
@@ -668,7 +668,7 @@ hc_model_validation <- function(df_list,
 #' @description Fits a quasi-Poisson time series regression with a
 #' distributed lag non-linear model.
 #'
-#' @param df_list A list of dataframes containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily timeseries data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param control_cols List. Confounders to include in the final model
@@ -793,7 +793,7 @@ fwald <- function(mm,
 #' @description Use model to run predictions. Predictions can be produced for a
 #'  single input geography, or multiple disaggregated geographies.
 #'
-#' @param df_list A list of dataframes containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily timeseries data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param var_fun Character. Exposure function for argvar
@@ -869,7 +869,7 @@ hc_predict_subnat <- function(df_list,
 #'
 #' @description Aggregate to national data and run crossbasis
 #'
-#' @param df_list A list of dataframes containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily timeseries data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param pop_list List of population totals by year and geography.
@@ -917,27 +917,6 @@ hc_add_national_data <- function(df_list,
   # Aggregate national level data
   national_data <- as.data.frame(do.call(rbind, df_list))
 
-  nat_pop <- pop_list[[country]] %>%
-    rename(nat_pop = "population")
-
-  national_data <- national_data %>%
-    dplyr::left_join(nat_pop, by = "year") %>%
-    dplyr::mutate(
-      weight = .data$population / nat_pop,
-      weighted_temp = .data$temp * .data$weight
-    ) %>%
-    dplyr::group_by(date) %>%
-    dplyr::summarise(
-      temp = round(sum(.data$weighted_temp, na.rm = TRUE), 2),
-      deaths = sum(.data$deaths, na.rm = TRUE),
-      population = unique(nat_pop)
-    ) %>%
-    mutate(
-      year = as.factor(lubridate::year(date)),
-      month = as.factor(lubridate::month(date)),
-      geog = country
-    )
-
   df_list[[country]] <- as.data.frame(national_data)
 
   # Create cross basis for national data
@@ -955,14 +934,15 @@ hc_add_national_data <- function(df_list,
     lagnk
   ))
 
+  # Create the national-level cross-basis, grouping by region
   cb_list[[country]] <- dlnm::crossbasis(national_data$temp,
     lag = lagn,
     argvar = argvar,
-    arglag = arglag
+    arglag = arglag,
+    group = national_data$region
   )
 
-  # Add national min temperatures
-
+  # Add national minimum mortality temperature and meta-predictors
   predvar <- quantile(national_data$temp, 1:99 / 100, na.rm = TRUE)
 
   argvar <- list(
@@ -1199,7 +1179,7 @@ hc_plot_power <- function(power_list_high,
 #' from analysis.
 #'
 #' @param pred_list A list containing predictions from the model by geography.
-#' @param df_list A list of dataframes containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily timeseries data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param minpercgeog_ Vector. Percentile of minimum mortality temperature for
@@ -1209,7 +1189,7 @@ hc_plot_power <- function(power_list_high,
 #' @param attr_thr_low Integer. Percentile at which to define the lower
 #' temperature threshold for calculating attributable risk. Defaults to 2.5.
 #'
-#' @returns 'rr_results'. Dataframe containing cumulative relative risk and
+#' @returns 'rr_results'. Data frame containing cumulative relative risk and
 #' confidence intervals from analysis.
 #'
 #' @keywords internal
@@ -1260,7 +1240,7 @@ hc_rr_results <- function(pred_list,
 #' @description Plots cumulative lag exposure-response function with histogram
 #' of temperature distribution for each geography.
 #'
-#' @param df_list A list of dataframes containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily timeseries data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param pred_list A list containing predictions from the model by geography.
@@ -1485,7 +1465,7 @@ hc_plot_rr <- function(df_list,
 #' @description Estimate attributable numbers and confidence intervals for
 #' each geography using Monte Carlo simulations.
 #'
-#' @param df_list A list of dataframes containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily timeseries data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param cb_list A list of cross-basis matrices by geography.
@@ -1609,11 +1589,11 @@ hc_attr <- function(df_list,
 #'
 #' @returns
 #' \itemize{
-#'   \item `res_attr_tot` Dataframe. Total attributable fractions, numbers and
+#'   \item `res_attr_tot` Data frame. Total attributable fractions, numbers and
 #'   rates for each geography over the whole time series.
-#'   \item `attr_yr_list` List. Dataframes containing yearly estimates of
+#'   \item `attr_yr_list` List. Data frames containing yearly estimates of
 #'   attributable fractions, numbers and rates by geography.
-#'   \item `attr_mth_list` List. Dataframes containing total attributable
+#'   \item `attr_mth_list` List. Data frames containing total attributable
 #'   fractions, numbers and rates by calendar month and geography.
 #'   }
 #'
@@ -1621,6 +1601,13 @@ hc_attr <- function(df_list,
 hc_attr_tables <- function(attr_list,
                            country = "National",
                            meta_analysis = FALSE) {
+
+  if (meta_analysis == TRUE) {
+    # Rename the regional values of national data frame
+    attr_list[[country]] <- attr_list[[country]] %>%
+      mutate(region = country)
+  }
+
   attr_res <- do.call(rbind, attr_list) %>%
     dplyr::mutate(year = as.numeric(as.character(.data$year)))
 
@@ -1705,7 +1692,7 @@ hc_attr_tables <- function(attr_list,
 #' @description Plot total attributable fractions and rates over the whole
 #' time series by geography.
 #'
-#' @param df_list A list of dataframes containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily timeseries data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param res_attr_tot Matrix containing total attributable fractions, numbers
@@ -1877,7 +1864,7 @@ hc_plot_attr_heat_totals <- function(df_list,
 #' @description Plot total attributable fractions and rates over the whole
 #' time series by geography.
 #'
-#' @param df_list A list of dataframes containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily timeseries data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param res_attr_tot Matrix containing total attributable fractions, numbers
@@ -2625,7 +2612,7 @@ hc_plot_ar_cold_yearly <- function(attr_yr_list,
 #'
 #' @param attr_mth_list A list of data frames containing total attributable
 #' fractions, numbers and rates by calendar month and geography.
-#' @param df_list A list of dataframes containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily timeseries data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param country Character. Name of country for national level estimates.
@@ -2812,7 +2799,7 @@ hc_plot_af_heat_monthly <- function(attr_mth_list,
 #'
 #' @param attr_mth_list A list of data frames containing total attributable
 #' fractions, numbers and rates by calendar month and geography.
-#' @param df_list A list of dataframes containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily timeseries data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param country Character. Name of country for national level estimates.
@@ -3005,7 +2992,7 @@ hc_plot_af_cold_monthly <- function(attr_mth_list,
 #'
 #' @param attr_mth_list A list of data frames containing total attributable
 #' fractions, numbers and rates by calendar month and geography.
-#' @param df_list A list of dataframes containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily timeseries data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param country Character. Name of country for national level estimates.
@@ -3184,7 +3171,7 @@ hc_plot_ar_heat_monthly <- function(attr_mth_list,
 #'
 #' @param attr_mth_list A list of data frames containing total attributable
 #' fractions, numbers and rates by calendar month and geography.
-#' @param df_list A list of dataframes containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily timeseries data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param country Character. Name of country for national level estimates.
@@ -3360,7 +3347,7 @@ hc_plot_ar_cold_monthly <- function(attr_mth_list,
 #' @description Saves a CSV file of cumulative relative risk and
 #' confidence intervals.
 #'
-#' @param rr_results Dataframe containing cumulative relative risk and
+#' @param rr_results Data frame containing cumulative relative risk and
 #' confidence intervals from analysis.
 #' @param res_attr_tot Matrix containing total attributable fractions,
 #' numbers and rates for each geography over the whole time series.
@@ -3466,15 +3453,15 @@ hc_save_results <- function(rr_results,
 #' @param data_path Path to a csv file containing a daily time series of data
 #' for a particular health outcome and climate variables, which may be
 #' disaggregated by geography.
-#' @param date_col Character. Name of the column in the dataframe containing
+#' @param date_col Character. Name of the column in the data frame containing
 #' the date.
-#' @param temperature_col Character. Name of the column in the dataframe that
+#' @param temperature_col Character. Name of the column in the data frame that
 #' contains the temperature column.
-#' @param dependent_col Character. Name of the column in the dataframe
+#' @param dependent_col Character. Name of the column in the data frame
 #' containing the dependent health outcome variable e.g. deaths.
-#' @param population_col Character. Name of the column in the dataframe that
+#' @param population_col Character. Name of the column in the data frame that
 #' contains the population estimate per geography.
-#' @param region_col Character. Name of the column in the dataframe that
+#' @param region_col Character. Name of the column in the data frame that
 #' contains the geography name(s).
 #' @param country Character. Name of country for national-level estimates.
 #' Defaults to 'National'.
@@ -3551,12 +3538,13 @@ hc_save_results <- function(rr_results,
 #'   meta_analysis = FALSE,
 #'   independent_cols = NULL,
 #'   control_cols = NULL,
+#'   df_control = 3,
 #'   var_fun = "bs",
 #'   var_degree = 2,
 #'   var_per = c(10, 75, 90),
-#'   lagn = 7,
-#'   lagnk = 2,
-#'   dfseas = 4,
+#'   lagn = 21,
+#'   lagnk = 3,
+#'   dfseas = 8,
 #'   attr_thr_high = 97.5,
 #'   attr_thr_low = 2.5,
 #'   save_fig = FALSE,
@@ -3587,23 +3575,23 @@ hc_save_results <- function(rr_results,
 #'
 #' @returns
 #' \itemize{
-#'   \item `qaic_results` Dataframe. QAIC and dispersion metrics for each model
+#'   \item `qaic_results` Data frame. QAIC and dispersion metrics for each model
 #'   combination and geography.
-#'   \item `qaic_summary` Dataframe. Mean QAIC and dispersion metrics for each
+#'   \item `qaic_summary` Data frame. Mean QAIC and dispersion metrics for each
 #'   model combination.
-#'   \item `vif_results` Dataframe. Variance inflation factors for each
+#'   \item `vif_results` Data frame. Variance inflation factors for each
 #'   independent variables by geography.
-#'   \item `vif_summary` Dataframe. Mean variance inflation factors for each
+#'   \item `vif_summary` Data frame. Mean variance inflation factors for each
 #'   independent variable.
-#'   \item `adf_results` Dataframe. ADF test results for each geography.
+#'   \item `adf_results` Data frame. ADF test results for each geography.
 #'   \item `power_list` List. Power information by area.
-#'   \item `rr_results` Dataframe containing cumulative relative risk and
+#'   \item `rr_results` Data frame containing cumulative relative risk and
 #'   confidence intervals from analysis.
-#'   \item `res_attr_tot` Dataframe. Total attributable fractions, numbers and
+#'   \item `res_attr_tot` Data frame. Total attributable fractions, numbers and
 #'   rates for each area over the whole time series.
-#'   \item `attr_yr_list` List. Dataframes containing yearly estimates of
+#'   \item `attr_yr_list` List. Data frames containing yearly estimates of
 #'   attributable fractions, numbers and rates by area.
-#'   \item `attr_mth_list` List. Dataframes containing total attributable
+#'   \item `attr_mth_list` List. Data frames containing total attributable
 #'   fractions, numbers and rates by calendar month and area.
 #'   }
 #'
@@ -3852,7 +3840,6 @@ temp_mortality_do_analysis <- function(data_path,
   if (meta_analysis == TRUE) {
     nat_data <- hc_add_national_data(
       df_list = df_list,
-      pop_list = pop_list,
       var_fun = var_fun,
       var_per = var_per,
       var_degree = var_degree,
