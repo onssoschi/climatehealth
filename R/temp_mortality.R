@@ -123,8 +123,7 @@ hc_create_crossbasis <- function(df_list,
                                  var_degree = 2,
                                  var_per = c(10, 75, 90),
                                  lagn = 21,
-                                 lagnk = 3,
-                                 dfseas = 8) {
+                                 lagnk = 3) {
   cb_list <- list()
 
   for (geog in names(df_list)) {
@@ -140,7 +139,6 @@ hc_create_crossbasis <- function(df_list,
 
     lagn <- as.numeric(lagn)
     lagnk <- as.numeric(lagnk)
-    dfseas <- as.numeric(dfseas)
     arglag <- list(knots = dlnm::logknots(
       lagn,
       lagnk
@@ -867,12 +865,11 @@ hc_predict_subnat <- function(df_list,
 
 #' Process data for national analysis
 #'
-#' @description Aggregate to national data and run cross-basis
+#' @description Combine sub-national data sets to create national data and run cross-basis
 #'
 #' @param df_list A list of data frames containing daily time series data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
-#' @param pop_list List of population totals by year and geography.
 #' @param var_fun Character. Exposure function for argvar
 #' (see dlnm::crossbasis). Defaults to 'bs'.
 #' @param var_per Vector. Internal knot positions for argvar
@@ -904,7 +901,6 @@ hc_predict_subnat <- function(df_list,
 #'
 #' @keywords internal
 hc_add_national_data <- function(df_list,
-                                 pop_list,
                                  var_fun = "bs",
                                  var_per = c(10, 75, 90),
                                  var_degree = 2,
@@ -916,6 +912,27 @@ hc_add_national_data <- function(df_list,
                                  minpercgeog_) {
   # Aggregate national level data
   national_data <- as.data.frame(do.call(rbind, df_list))
+
+  if (country %in% names(df_list)) {
+    stop(
+      "`country` matches an existing region in `df_list` and would overwrite it. ",
+      "Please use a different country label for the pooled output, or remove the ",
+      "country-level region from the input data."
+    )
+  }
+
+  partial_matches <- names(df_list)[
+    grepl(country, names(df_list), ignore.case = TRUE, fixed = TRUE)
+  ]
+
+  if (length(partial_matches) > 0) {
+    warning(
+      "`country` appears within one or more existing region names: ",
+      paste(partial_matches, collapse = ", "),
+      ". This will not overwrite them, but please check that `country` is intended ",
+      "to be used as the output label."
+    )
+  }
 
   df_list[[country]] <- as.data.frame(national_data)
 
@@ -1680,7 +1697,7 @@ hc_attr_tables <- function(attr_list,
   attr_yr_list <- attr_yr_list[geog_order]
 
   attr_mth_list <- res_list[["monthly"]] %>%
-    dplyr::mutate(month = month.name[.data$month]) %>%
+    dplyr::mutate(month = month.name[as.integer(as.character(.data$month))]) %>%
     aggregate_by_column("region")
   attr_mth_list <- attr_mth_list[geog_order]
 
@@ -3746,21 +3763,13 @@ temp_mortality_do_analysis <- function(data_path,
       )
   }
 
-  pop_list <- dlnm_pop_totals(
-    df_list = df_list,
-    country = country,
-    meta_analysis = meta_analysis
-  )
-
   cb_list <- hc_create_crossbasis(
     df_list = df_list,
     var_fun = var_fun,
     var_degree = var_degree,
     var_per = var_per,
     lagn = lagn,
-    lagnk = lagnk,
-    dfseas = dfseas
-  )
+    lagnk = lagnk)
 
   model_validation <- hc_model_validation(
     df_list = df_list,

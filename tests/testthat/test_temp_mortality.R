@@ -137,9 +137,7 @@ test_that("hc_create_crossbasis creates correct cross-basis matrices", {
     var_degree = 3,
     var_per = c(5, 50, 95),
     lagn = 14,
-    lagnk = 4,
-    dfseas = 6
-  )
+    lagnk = 4)
 
   expect_equal(length(custom_result), 2)
 
@@ -920,21 +918,6 @@ test_that("test hc_add_national_data", {
   })
   names(df_list) <- paste0("region", 1:n_regions)
 
-  # Generate pop_list
-  pop_list <- lapply(names(df_list), function(region) {
-    data.frame(
-      year = unique(years),
-      population = sample(100000:200000, length(unique(years)), replace = TRUE)
-    )
-  })
-  names(pop_list) <- names(df_list)
-
-  # Add national population
-  pop_list[["National"]] <- data.frame(
-    year = unique(years),
-    population = sample(500000:600000, length(unique(years)), replace = TRUE)
-  )
-
   # Create a temporary national dataset to determine basis dimension
   temp_nat <- do.call(rbind, df_list)
   temp_cb <- dlnm::onebasis(
@@ -977,7 +960,6 @@ test_that("test hc_add_national_data", {
   # Call function under test
   result <- hc_add_national_data(
     df_list = df_list,
-    pop_list = pop_list,
     var_fun = "bs",
     var_per = c(10, 75, 90),  # matches function default; OK to change if desired
     var_degree = 2,
