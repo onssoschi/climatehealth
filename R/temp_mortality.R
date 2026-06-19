@@ -1488,7 +1488,8 @@ hc_attr <- function(df_list,
                     minpercgeog_,
                     attr_thr_high = 97.5,
                     attr_thr_low = 2.5,
-                    seed = NULL) {
+                    seed = NULL,
+                    meta_analysis = FALSE) {
   attr_list <- list()
 
   if(!is.null(seed)) {
@@ -3894,7 +3895,8 @@ temp_mortality_do_analysis <- function(data_path,
     minpercgeog_ = minpercgeog_,
     attr_thr_high = attr_thr_high,
     attr_thr_low = attr_thr_low,
-    seed = seed
+    seed = seed,
+    meta_analysis = meta_analysis
   )
 
   attr_tables <- hc_attr_tables(
