@@ -100,7 +100,7 @@ hc_read_data <- function(input_csv_path,
 #' @description Creates a cross-basis matrix of the lag-response and
 #' exposure-response functions, for each geography.
 #'
-#' @param df_list A list of data frames containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily time series data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param var_fun Character. Exposure function for argvar
@@ -162,7 +162,7 @@ hc_create_crossbasis <- function(df_list,
 #' additional independent variables and returns model diagnostic checks
 #' for each.
 #'
-#' @param df_list A list of data frames containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily time series data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param cb_list List of cross-basis matrices from hc_create_crossbasis
@@ -281,7 +281,7 @@ hc_model_combo_res <- function(df_list,
 #' variable and produce a partial autocorrelation function plot of residuals
 #' for each model combination.
 #'
-#' @param df_list A list of data frames containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily time series data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #'
@@ -320,7 +320,7 @@ hc_adf <- function(df_list) {
 #' inflation factor for each independent variable, ADF test for stationarity,
 #' and plots for residuals to assess the models.
 #'
-#' @param df_list A list of data frames containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily time series data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param cb_list List of cross-basis matrices from hc_create_crossbasis
@@ -668,7 +668,7 @@ hc_model_validation <- function(df_list,
 #' @description Fits a quasi-Poisson time series regression with a
 #' distributed lag non-linear model.
 #'
-#' @param df_list A list of data frames containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily time series data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param control_cols List. Confounders to include in the final model
@@ -793,7 +793,7 @@ fwald <- function(mm,
 #' @description Use model to run predictions. Predictions can be produced for a
 #'  single input geography, or multiple disaggregated geographies.
 #'
-#' @param df_list A list of data frames containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily time series data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param var_fun Character. Exposure function for argvar
@@ -867,9 +867,9 @@ hc_predict_subnat <- function(df_list,
 
 #' Process data for national analysis
 #'
-#' @description Aggregate to national data and run crossbasis
+#' @description Aggregate to national data and run cross-basis
 #'
-#' @param df_list A list of data frames containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily time series data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param pop_list List of population totals by year and geography.
@@ -1179,7 +1179,7 @@ hc_plot_power <- function(power_list_high,
 #' from analysis.
 #'
 #' @param pred_list A list containing predictions from the model by geography.
-#' @param df_list A list of data frames containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily time series data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param minpercgeog_ Vector. Percentile of minimum mortality temperature for
@@ -1240,7 +1240,7 @@ hc_rr_results <- function(pred_list,
 #' @description Plots cumulative lag exposure-response function with histogram
 #' of temperature distribution for each geography.
 #'
-#' @param df_list A list of data frames containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily time series data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param pred_list A list containing predictions from the model by geography.
@@ -1465,7 +1465,7 @@ hc_plot_rr <- function(df_list,
 #' @description Estimate attributable numbers and confidence intervals for
 #' each geography using Monte Carlo simulations.
 #'
-#' @param df_list A list of data frames containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily time series data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param cb_list A list of cross-basis matrices by geography.
@@ -1693,7 +1693,7 @@ hc_attr_tables <- function(attr_list,
 #' @description Plot total attributable fractions and rates over the whole
 #' time series by geography.
 #'
-#' @param df_list A list of data frames containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily time series data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param res_attr_tot Matrix containing total attributable fractions, numbers
@@ -1865,7 +1865,7 @@ hc_plot_attr_heat_totals <- function(df_list,
 #' @description Plot total attributable fractions and rates over the whole
 #' time series by geography.
 #'
-#' @param df_list A list of data frames containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily time series data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param res_attr_tot Matrix containing total attributable fractions, numbers
@@ -2613,7 +2613,7 @@ hc_plot_ar_cold_yearly <- function(attr_yr_list,
 #'
 #' @param attr_mth_list A list of data frames containing total attributable
 #' fractions, numbers and rates by calendar month and geography.
-#' @param df_list A list of data frames containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily time series data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param country Character. Name of country for national level estimates.
@@ -2800,7 +2800,7 @@ hc_plot_af_heat_monthly <- function(attr_mth_list,
 #'
 #' @param attr_mth_list A list of data frames containing total attributable
 #' fractions, numbers and rates by calendar month and geography.
-#' @param df_list A list of data frames containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily time series data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param country Character. Name of country for national level estimates.
@@ -2993,7 +2993,7 @@ hc_plot_af_cold_monthly <- function(attr_mth_list,
 #'
 #' @param attr_mth_list A list of data frames containing total attributable
 #' fractions, numbers and rates by calendar month and geography.
-#' @param df_list A list of data frames containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily time series data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param country Character. Name of country for national level estimates.
@@ -3172,7 +3172,7 @@ hc_plot_ar_heat_monthly <- function(attr_mth_list,
 #'
 #' @param attr_mth_list A list of data frames containing total attributable
 #' fractions, numbers and rates by calendar month and geography.
-#' @param df_list A list of data frames containing daily timeseries data for a
+#' @param df_list A list of data frames containing daily time series data for a
 #' health outcome and climate variables which may be disaggregated by a
 #' particular geography.
 #' @param country Character. Name of country for national level estimates.
