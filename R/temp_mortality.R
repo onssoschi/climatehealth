@@ -113,7 +113,6 @@ hc_read_data <- function(input_csv_path,
 #' (see dlnm::crossbasis).
 #' @param lagnk Integer. Number of knots in lag function. Defaults to 3.
 #' (see dlnm::logknots).
-#' @param dfseas Integer. Degrees of freedom for seasonality. Defaults to 8.
 #'
 #' @returns 'cb_list'. A list of cross-basis matrices by geography.
 #'

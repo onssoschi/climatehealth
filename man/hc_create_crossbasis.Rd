@@ -32,8 +32,6 @@ particular geography.}
 
 \item{lagnk}{Integer. Number of knots in lag function. Defaults to 3.
 (see dlnm::logknots).}
-
-\item{dfseas}{Integer. Degrees of freedom for seasonality. Defaults to 8.}
 }
 \value{
 'cb_list'. A list of cross-basis matrices by geography.
