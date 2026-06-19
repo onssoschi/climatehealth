@@ -1495,6 +1495,12 @@ hc_attr <- function(df_list,
     set.seed(seed)
   }
 
+  if (meta_analysis == TRUE) {
+    # Rename the regional values of national data frame
+    df_list[[country]] <- df_list[[country]] %>%
+      mutate(region = country)
+  }
+
   for (geog in names(df_list)) {
     geog_data <- df_list[[geog]]
     cb <- cb_list[[geog]]
@@ -1601,12 +1607,6 @@ hc_attr <- function(df_list,
 hc_attr_tables <- function(attr_list,
                            country = "National",
                            meta_analysis = FALSE) {
-
-  if (meta_analysis == TRUE) {
-    # Rename the regional values of national data frame
-    attr_list[[country]] <- attr_list[[country]] %>%
-      mutate(region = country)
-  }
 
   attr_res <- do.call(rbind, attr_list) %>%
     dplyr::mutate(year = as.numeric(as.character(.data$year)))
