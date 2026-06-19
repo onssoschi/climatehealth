@@ -11,11 +11,12 @@ hc_attr(
   minpercgeog_,
   attr_thr_high = 97.5,
   attr_thr_low = 2.5,
-  seed = NULL
+  seed = NULL,
+  meta_analysis = FALSE
 )
 }
 \arguments{
-\item{df_list}{A list of data frames containing daily timeseries data for a
+\item{df_list}{A list of data frames containing daily time series data for a
 health outcome and climate variables which may be disaggregated by a
 particular geography.}
 

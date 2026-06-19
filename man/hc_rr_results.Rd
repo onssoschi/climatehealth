@@ -15,7 +15,7 @@ hc_rr_results(
 \arguments{
 \item{pred_list}{A list containing predictions from the model by geography.}
 
-\item{df_list}{A list of data frames containing daily timeseries data for a
+\item{df_list}{A list of data frames containing daily time series data for a
 health outcome and climate variables which may be disaggregated by a
 particular geography.}
 

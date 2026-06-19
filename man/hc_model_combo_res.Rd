@@ -7,7 +7,7 @@
 hc_model_combo_res(df_list, cb_list, independent_cols = NULL, dfseas = 8)
 }
 \arguments{
-\item{df_list}{A list of data frames containing daily timeseries data for a
+\item{df_list}{A list of data frames containing daily time series data for a
 health outcome and climate variables which may be disaggregated by a
 particular geography.}
 
