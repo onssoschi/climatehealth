@@ -17,11 +17,11 @@ to FALSE.}
 }
 \value{
 \itemize{
-\item \code{res_attr_tot} Dataframe. Total attributable fractions, numbers and
+\item \code{res_attr_tot} Data frame. Total attributable fractions, numbers and
 rates for each geography over the whole time series.
-\item \code{attr_yr_list} List. Dataframes containing yearly estimates of
+\item \code{attr_yr_list} List. Data frames containing yearly estimates of
 attributable fractions, numbers and rates by geography.
-\item \code{attr_mth_list} List. Dataframes containing total attributable
+\item \code{attr_mth_list} List. Data frames containing total attributable
 fractions, numbers and rates by calendar month and geography.
 }
 }

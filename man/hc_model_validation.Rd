@@ -16,7 +16,7 @@ hc_model_validation(
 )
 }
 \arguments{
-\item{df_list}{A list of dataframes containing daily timeseries data for a
+\item{df_list}{A list of data frames containing daily time series data for a
 health outcome and climate variables which may be disaggregated by a
 particular geography.}
 
@@ -39,15 +39,15 @@ Defaults to NULL.}
 }
 \value{
 \itemize{
-\item \code{qaic_results} A dataframe of QAIC and dispersion metrics for each
+\item \code{qaic_results} A data frame of QAIC and dispersion metrics for each
 model combination and geography.
-\item \code{qaic_summary} A dataframe with the mean QAIC and dispersion metrics
+\item \code{qaic_summary} A data frame with the mean QAIC and dispersion metrics
 for each model combination.
-\item \code{vif_results} A dataframe of variance inflation factors for each
+\item \code{vif_results} A data frame of variance inflation factors for each
 independent variables by geography.
-\item \code{vif_summary} A dataframe with the mean variance inflation factors
+\item \code{vif_summary} A data frame with the mean variance inflation factors
 for each independent variable.
-\item \code{adf_results} A dataframe of ADF test results for each geography.
+\item \code{adf_results} A data frame of ADF test results for each geography.
 }
 }
 \description{

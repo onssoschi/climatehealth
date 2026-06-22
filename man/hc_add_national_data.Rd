@@ -6,7 +6,6 @@
 \usage{
 hc_add_national_data(
   df_list,
-  pop_list,
   var_fun = "bs",
   var_per = c(10, 75, 90),
   var_degree = 2,
@@ -19,11 +18,9 @@ hc_add_national_data(
 )
 }
 \arguments{
-\item{df_list}{A list of dataframes containing daily timeseries data for a
+\item{df_list}{A list of data frames containing daily time series data for a
 health outcome and climate variables which may be disaggregated by a
 particular geography.}
-
-\item{pop_list}{List of population totals by year and geography.}
 
 \item{var_fun}{Character. Exposure function for argvar
 (see dlnm::crossbasis). Defaults to 'bs'.}
@@ -63,6 +60,6 @@ matrices.
 }
 }
 \description{
-Aggregate to national data and run crossbasis
+Combine sub-national data sets to create national data and run cross-basis
 }
 \keyword{internal}

@@ -10,12 +10,11 @@ hc_create_crossbasis(
   var_degree = 2,
   var_per = c(10, 75, 90),
   lagn = 21,
-  lagnk = 3,
-  dfseas = 8
+  lagnk = 3
 )
 }
 \arguments{
-\item{df_list}{A list of dataframes containing daily timeseries data for a
+\item{df_list}{A list of data frames containing daily time series data for a
 health outcome and climate variables which may be disaggregated by a
 particular geography.}
 
@@ -33,8 +32,6 @@ particular geography.}
 
 \item{lagnk}{Integer. Number of knots in lag function. Defaults to 3.
 (see dlnm::logknots).}
-
-\item{dfseas}{Integer. Degrees of freedom for seasonality. Defaults to 8.}
 }
 \value{
 'cb_list'. A list of cross-basis matrices by geography.

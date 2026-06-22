@@ -137,9 +137,7 @@ test_that("hc_create_crossbasis creates correct cross-basis matrices", {
     var_degree = 3,
     var_per = c(5, 50, 95),
     lagn = 14,
-    lagnk = 4,
-    dfseas = 6
-  )
+    lagnk = 4)
 
   expect_equal(length(custom_result), 2)
 
@@ -914,25 +912,11 @@ test_that("test hc_add_national_data", {
       temp = rnorm(n_days, mean = 15 + i * 2, sd = 5),
       deaths = rpois(n_days, lambda = 5 + i),  # <-- outcome column is 'deaths'
       population = sample(100000:200000, n_days, replace = TRUE),
+      region = paste0("region", i),
       geog = paste0("region", i)                   # <-- name consistent with function output
     )
   })
   names(df_list) <- paste0("region", 1:n_regions)
-
-  # Generate pop_list
-  pop_list <- lapply(names(df_list), function(region) {
-    data.frame(
-      year = unique(years),
-      population = sample(100000:200000, length(unique(years)), replace = TRUE)
-    )
-  })
-  names(pop_list) <- names(df_list)
-
-  # Add national population
-  pop_list[["National"]] <- data.frame(
-    year = unique(years),
-    population = sample(500000:600000, length(unique(years)), replace = TRUE)
-  )
 
   # Create a temporary national dataset to determine basis dimension
   temp_nat <- do.call(rbind, df_list)
@@ -976,7 +960,6 @@ test_that("test hc_add_national_data", {
   # Call function under test
   result <- hc_add_national_data(
     df_list = df_list,
-    pop_list = pop_list,
     var_fun = "bs",
     var_per = c(10, 75, 90),  # matches function default; OK to change if desired
     var_degree = 2,
@@ -999,9 +982,15 @@ test_that("test hc_add_national_data", {
   nat_df <- df_out[["National"]]
 
   expect_s3_class(nat_df, "data.frame")
-  expect_true(all(c("date", "temp", "deaths", "population", "year", "month", "geog") %in% names(nat_df)))
-  expect_equal(nrow(nat_df), length(unique(df_list[[1]]$date)))
-  expect_true(all(nat_df$geog == "National"))
+  expect_true(all(c("date", "temp", "deaths", "population", "year", "region") %in% names(nat_df)))
+  expect_equal(nrow(nat_df), n_regions * n_days)
+  # Ensure all regions are preserved
+  expect_equal(sort(unique(nat_df$region)), sort(names(df_list)))
+
+  # geog should NOT be overwritten to "National"
+  if ("geog" %in% names(nat_df)) {
+    expect_false(all(nat_df$geog == "National"))
+  }
 
   # National crossbasis checks
   cb_out <- result[[2]]
@@ -1422,6 +1411,74 @@ test_that("hc_attr produces expected output structure and values", {
   }
 })
 
+test_that("hc_attr relabels country region when meta_analysis is TRUE", {
+  set.seed(123)
+  n_rows <- 60
+
+  base_df <- data.frame(
+    date = seq.Date(as.Date("2000-01-01"), by = "day", length.out = n_rows),
+    region = "Geog 1",
+    temp = rnorm(n_rows, 5, 2.5),
+    deaths = rpois(n_rows, lambda = 2),
+    population = rep(2600000, n_rows),
+    year = rep(2000, n_rows),
+    month = rep(1, n_rows)
+  )
+
+  national_df <- base_df
+  national_df$region <- "Geog 1"
+
+  df_list <- list(
+    Geog1 = base_df,
+    National = national_df
+  )
+
+  cb <- matrix(rnorm(n_rows * 5), nrow = n_rows, ncol = 5)
+  class(cb) <- c("crossbasis", "matrix")
+  attr(cb, "df") <- c(5, 2)
+  attr(cb, "range") <- c(-6, 24)
+  attr(cb, "lag") <- c(0, 2)
+  attr(cb, "argvar") <- list(fun = "bs", knots = c(0, 5, 10), degree = 2)
+  attr(cb, "arglag") <- list(fun = "strata", breaks = 1)
+
+  cb_list <- list(
+    Geog1 = cb,
+    National = cb
+  )
+
+  pred <- list(
+    coefficients = c(-0.19, -0.30, -0.20, -0.14, -0.36),
+    vcov = diag(c(0.18, 0.11, 0.15, 0.12, 0.16), 5, 5)
+  )
+
+  pred_list <- list(
+    Geog1 = pred,
+    National = pred
+  )
+
+  minpercgeog_ <- c(
+    Geog1 = 37,
+    National = 37
+  )
+
+  result <- hc_attr(
+    df_list = df_list,
+    cb_list = cb_list,
+    pred_list = pred_list,
+    minpercgeog_ = minpercgeog_,
+    attr_thr_high = 90,
+    attr_thr_low = 10,
+    seed = 123,
+    country = "National",
+    meta_analysis = TRUE
+  )
+
+  expect_type(result, "list")
+  expect_named(result, c("Geog1", "National"))
+
+  expect_true(all(result$Geog1$region == "Geog 1"))
+  expect_true(all(result$National$region == "National"))
+})
 
 test_that("hc_attr adds region column when missing", {
   set.seed(42)

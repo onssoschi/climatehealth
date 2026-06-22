@@ -7,7 +7,7 @@
 hc_model_combo_res(df_list, cb_list, independent_cols = NULL, dfseas = 8)
 }
 \arguments{
-\item{df_list}{A list of dataframes containing daily timeseries data for a
+\item{df_list}{A list of data frames containing daily time series data for a
 health outcome and climate variables which may be disaggregated by a
 particular geography.}
 
@@ -21,7 +21,7 @@ test in model validation as confounders. Defaults to NULL.}
 }
 \value{
 \itemize{
-\item \code{qaic_results} A dataframe of QAIC and dispersion metrics for each
+\item \code{qaic_results} A data frame of QAIC and dispersion metrics for each
 model combination.
 \item \code{residuals_list} List. Residuals for each model combination.
 }

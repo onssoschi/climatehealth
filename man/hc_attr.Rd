@@ -11,11 +11,13 @@ hc_attr(
   minpercgeog_,
   attr_thr_high = 97.5,
   attr_thr_low = 2.5,
-  seed = NULL
+  seed = NULL,
+  country = "National",
+  meta_analysis = FALSE
 )
 }
 \arguments{
-\item{df_list}{A list of dataframes containing daily timeseries data for a
+\item{df_list}{A list of data frames containing daily time series data for a
 health outcome and climate variables which may be disaggregated by a
 particular geography.}
 
@@ -34,6 +36,12 @@ temperature threshold for calculating attributable risk. Defaults to 2.5.}
 
 \item{seed}{Optional integer random seed used when sampling residuals for
 model validation plots. Defaults to NULL.}
+
+\item{country}{Character. Name of country for national level estimates.
+Defaults to 'National'.}
+
+\item{meta_analysis}{Boolean. Whether to perform a meta-analysis. Defaults
+to FALSE.}
 }
 \value{
 'attr_list'. A list containing attributable numbers per geography.

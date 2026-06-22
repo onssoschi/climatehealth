@@ -17,7 +17,7 @@ hc_plot_af_cold_monthly(
 \item{attr_mth_list}{A list of data frames containing total attributable
 fractions, numbers and rates by calendar month and geography.}
 
-\item{df_list}{A list of dataframes containing daily timeseries data for a
+\item{df_list}{A list of data frames containing daily time series data for a
 health outcome and climate variables which may be disaggregated by a
 particular geography.}
 

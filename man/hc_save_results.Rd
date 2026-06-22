@@ -15,7 +15,7 @@ hc_save_results(
 )
 }
 \arguments{
-\item{rr_results}{Dataframe containing cumulative relative risk and
+\item{rr_results}{Data frame containing cumulative relative risk and
 confidence intervals from analysis.}
 
 \item{res_attr_tot}{Matrix containing total attributable fractions,
