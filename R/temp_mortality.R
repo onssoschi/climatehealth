@@ -1494,6 +1494,10 @@ hc_plot_rr <- function(df_list,
 #' temperature threshold for calculating attributable risk. Defaults to 2.5.
 #' @param seed Optional integer random seed used when sampling residuals for
 #' model validation plots. Defaults to NULL.
+#' @param country Character. Name of country for national level estimates.
+#' Defaults to 'National'.
+#' @param meta_analysis Boolean. Whether to perform a meta-analysis. Defaults
+#' to FALSE.
 #'
 #' @returns 'attr_list'. A list containing attributable numbers per geography.
 #'
@@ -1505,6 +1509,7 @@ hc_attr <- function(df_list,
                     attr_thr_high = 97.5,
                     attr_thr_low = 2.5,
                     seed = NULL,
+                    country = "National",
                     meta_analysis = FALSE) {
   attr_list <- list()
 
@@ -3904,6 +3909,7 @@ temp_mortality_do_analysis <- function(data_path,
     attr_thr_high = attr_thr_high,
     attr_thr_low = attr_thr_low,
     seed = seed,
+    country = country,
     meta_analysis = meta_analysis
   )
 
