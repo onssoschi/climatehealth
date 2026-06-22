@@ -1411,6 +1411,74 @@ test_that("hc_attr produces expected output structure and values", {
   }
 })
 
+test_that("hc_attr relabels country region when meta_analysis is TRUE", {
+  set.seed(123)
+  n_rows <- 60
+
+  base_df <- data.frame(
+    date = seq.Date(as.Date("2000-01-01"), by = "day", length.out = n_rows),
+    region = "Geog 1",
+    temp = rnorm(n_rows, 5, 2.5),
+    deaths = rpois(n_rows, lambda = 2),
+    population = rep(2600000, n_rows),
+    year = rep(2000, n_rows),
+    month = rep(1, n_rows)
+  )
+
+  national_df <- base_df
+  national_df$region <- "Geog 1"
+
+  df_list <- list(
+    Geog1 = base_df,
+    National = national_df
+  )
+
+  cb <- matrix(rnorm(n_rows * 5), nrow = n_rows, ncol = 5)
+  class(cb) <- c("crossbasis", "matrix")
+  attr(cb, "df") <- c(5, 2)
+  attr(cb, "range") <- c(-6, 24)
+  attr(cb, "lag") <- c(0, 2)
+  attr(cb, "argvar") <- list(fun = "bs", knots = c(0, 5, 10), degree = 2)
+  attr(cb, "arglag") <- list(fun = "strata", breaks = 1)
+
+  cb_list <- list(
+    Geog1 = cb,
+    National = cb
+  )
+
+  pred <- list(
+    coefficients = c(-0.19, -0.30, -0.20, -0.14, -0.36),
+    vcov = diag(c(0.18, 0.11, 0.15, 0.12, 0.16), 5, 5)
+  )
+
+  pred_list <- list(
+    Geog1 = pred,
+    National = pred
+  )
+
+  minpercgeog_ <- c(
+    Geog1 = 37,
+    National = 37
+  )
+
+  result <- hc_attr(
+    df_list = df_list,
+    cb_list = cb_list,
+    pred_list = pred_list,
+    minpercgeog_ = minpercgeog_,
+    attr_thr_high = 90,
+    attr_thr_low = 10,
+    seed = 123,
+    country = "National",
+    meta_analysis = TRUE
+  )
+
+  expect_type(result, "list")
+  expect_named(result, c("Geog1", "National"))
+
+  expect_true(all(result$Geog1$region == "Geog 1"))
+  expect_true(all(result$National$region == "National"))
+})
 
 test_that("hc_attr adds region column when missing", {
   set.seed(42)
