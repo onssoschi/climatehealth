@@ -130,8 +130,8 @@ read_and_format_data <- function(
 #'
 #' We use a daily time series of gridded wildfire-related
 #' PM2.5 concentration from the Finnish Meteorological Institute's SILAM-CTM
-#' model. This is available open-source:
-#' https://doi.org/10.57707/fmi-b2share.d1cac971b3224d438d5304e945e9f16c.
+#' model (currently compatible with version 5, linked below). This is available open-source:
+#' https://doi.org/10.57707/fmi-b2share.g9gyw-1hp10.
 #'
 #' @param ncdf_path Path to a NetCDF file
 #' @param shp_path Path to a shapefile .shp of the geographical
@@ -250,12 +250,6 @@ join_health_and_climate_data <- function(
   # Ensure valid exposure column
   df_joined <- df_joined %>%
     dplyr::filter(!is.na(.data[[exposure_col]]))
-  # Convert exposure units from kg to microgram
-  df_joined <- df_joined %>%
-    dplyr::mutate(
-      mean_PM = (.data[[exposure_col]] * 1e9), # convert kg to microgram
-      region = as.factor(.data[[region_col]])
-    )
 
   return(df_joined)
 }
