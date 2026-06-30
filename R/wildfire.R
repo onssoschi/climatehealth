@@ -249,7 +249,11 @@ join_health_and_climate_data <- function(
   )
   # Ensure valid exposure column
   df_joined <- df_joined %>%
-    dplyr::filter(!is.na(.data[[exposure_col]]))
+    dplyr::filter(!is.na(.data[[exposure_col]])) %>%
+    dplyr::mutate(
+      mean_PM = .data[[exposure_col]],
+      region = as.factor(.data[[region_col]])
+    )
 
   return(df_joined)
 }
