@@ -3401,14 +3401,14 @@ hc_save_results <- function(rr_results,
     ), row.names = FALSE)
 
     res_attr_yr <- do.call(rbind, attr_yr_list) %>%
-      select(.data$region, everything())
+      select("region", everything())
 
     write.csv(res_attr_yr, file = file.path(
       output_folder_path, "mortality_attr_yr_results.csv"
     ), row.names = FALSE)
 
     res_attr_mth <- do.call(rbind, attr_mth_list) %>%
-      select(.data$region, everything())
+      select("region", everything())
 
     write.csv(res_attr_mth, file = file.path(
       output_folder_path, "mortality_attr_mth_results.csv"
