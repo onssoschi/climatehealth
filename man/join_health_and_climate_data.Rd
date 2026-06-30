@@ -27,8 +27,7 @@ Defaults to 'region'}
 Defaults to 'date'}
 
 \item{exposure_col}{Character. Name of the column in the climate data
-containing the exposure column (e.g., PM2.5) in kilograms. Defaults to
-'mean_PM'.}
+containing PM2.5 values in micrograms. Defaults to 'mean_PM'.}
 }
 \value{
 Dataframe containing a daily time series of the joined

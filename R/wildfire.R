@@ -228,8 +228,7 @@ extract_means_for_geography <- function(
 #' @param date_col Character. Name of the date column in both datasets.
 #' Defaults to 'date'
 #' @param exposure_col Character. Name of the column in the climate data
-#' containing the exposure column (e.g., PM2.5) in kilograms. Defaults to
-#' 'mean_PM'.
+#' containing PM2.5 values in micrograms. Defaults to 'mean_PM'.
 #'
 #' @returns Dataframe containing a daily time series of the joined
 #' climate and health data.
@@ -2583,7 +2582,7 @@ plot_an_by_region <- function(data, output_dir = ".") {
 #'  concentration of fire related PM2.5 for 2003-2023, modelled by SILAM CTM
 #'  when using the MODIS satellite data for the fire radiative power.
 #'  Finnish Meteorological Institute; 2024. Available from:
-#'  \doi{10.57707/fmi-b2share.d1cac971b3224d438d5304e945e9f16c}
+#'  \doi{10.57707/fmi-b2share.g9gyw-1hp10}
 #'  \item GADM. Database for Global Administrative Areas.Available from:
 #'  \url{https://gadm.org/download_country.html}
 #' 	\item Tobias A, Kim Y, Madaniyazi L. Time-stratified case-crossover studies
