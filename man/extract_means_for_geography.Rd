@@ -36,7 +36,7 @@ https://climatedataguide.ucar.edu/climate-tools/NetCDF#:~:text=An\%20nc4\%20file
 
 We use a daily time series of gridded wildfire-related
 PM2.5 concentration from the Finnish Meteorological Institute's SILAM-CTM
-model. This is available open-source:
-https://doi.org/10.57707/fmi-b2share.d1cac971b3224d438d5304e945e9f16c.
+model (currently compatible with version 5, linked below). This is available open-source:
+https://doi.org/10.57707/fmi-b2share.g9gyw-1hp10.
 }
 \keyword{internal}

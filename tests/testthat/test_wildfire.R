@@ -26,7 +26,7 @@ WF_TEST_HEALTH <- data.frame(
 WF_TEST_CLIMATE <- data.frame(
     date = lubridate::dmy(c("01-01-2020", "02-01-2020", "03/01/2020")),
     region = c("North", "South", "East"),
-    mean_PM = c(0.0005, 0.0001, 0.00015)
+    mean_PM = c(0.5, 0.1, 0.15)
 )
 
 
@@ -434,7 +434,40 @@ test_that(
     # order now follows sorted health data: East, North, South
     expect_equal(as.character(joined$region), c("East", "North", "South"))
     expect_equal(as.character(joined$date), c("2020-01-03", "2020-01-01", "2020-01-02"))
-    expect_equal(joined$mean_PM, c(150000, 500000, 100000))
+    expect_equal(joined$mean_PM, c(0.15, 0.5, 0.1))
+  }
+)
+
+test_that(
+  "join_health_and_climate_data normalises custom exposure columns without scaling.",
+  {
+    health <- read_and_format_data(
+      health_path = WF_TEST_HEALTH,
+      date_col = "date",
+      mean_temperature_col = "tmean",
+      health_outcome_col = "deaths",
+      region_col = "region",
+      rh_col = "relative_humidity",
+      wind_speed_col = "wind_speed",
+      population_col = "population"
+    )
+
+    climate <- data.frame(
+      date = lubridate::dmy(c("01-01-2020", "02-01-2020", "03/01/2020")),
+      region = c("North", "South", "East"),
+      pm25_fire = c(0.5, 0.1, 0.15)
+    )
+
+    joined <- join_health_and_climate_data(
+      climate_data = climate,
+      health_data = health,
+      region_col = "region",
+      date_col = "date",
+      exposure_col = "pm25_fire"
+    )
+
+    expect_true("mean_PM" %in% names(joined))
+    expect_equal(joined$mean_PM, c(0.15, 0.5, 0.1))
   }
 )
 

@@ -253,7 +253,7 @@ Available from: \url{https://zenodo.org/records/14052184}
 concentration of fire related PM2.5 for 2003-2023, modelled by SILAM CTM
 when using the MODIS satellite data for the fire radiative power.
 Finnish Meteorological Institute; 2024. Available from:
-\doi{10.57707/fmi-b2share.d1cac971b3224d438d5304e945e9f16c}
+\doi{10.57707/fmi-b2share.g9gyw-1hp10}
 \item GADM. Database for Global Administrative Areas.Available from:
 \url{https://gadm.org/download_country.html}
 \item Tobias A, Kim Y, Madaniyazi L. Time-stratified case-crossover studies
