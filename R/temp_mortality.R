@@ -920,8 +920,9 @@ hc_add_national_data <- function(df_list,
     )
   }
 
-  partial_matches <- names(df_list)[
-    grepl(country, names(df_list), ignore.case = TRUE, fixed = TRUE)
+  region_names <- names(df_list)
+  partial_matches <- region_names[
+    grepl(tolower(country), tolower(region_names), fixed = TRUE)
   ]
 
   if (length(partial_matches) > 0) {
