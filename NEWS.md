@@ -1,5 +1,22 @@
 # climatehealth development notes
 
+## 1.0.3
+
+- Updated wildfire v5 PM2.5 handling:
+  - treats joined wildfire PM2.5 values as already in micrograms, without the
+    legacy kg-to-microgram scaling step
+  - continues to normalise custom exposure columns to `mean_PM` for downstream
+    wildfire calculations
+  - refreshes wildfire tests and documentation for the v5 data-source workflow
+- Improved temperature-related mortality national-output handling:
+  - supports configurable country labels for pooled national outputs
+  - includes national attribution fixes used by the meta-analysis workflow
+  - updates temperature-mortality documentation for supported spline settings
+- Improved CRAN release hygiene:
+  - removes test warnings from case-insensitive fixed-string matching and
+    tidyselect column selection
+  - hardens the CI R package cache setup used by package checks
+
 ## 1.0.2
 
 - Improved accessibility of saved plot outputs across the package:
