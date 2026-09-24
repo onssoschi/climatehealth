@@ -411,6 +411,96 @@ test_that("mh_model_validation performs complete model validation", {
   expect_null(results_no_ind[[4]]) # VIF summary should be NULL
 })
 
+test_that("mh_model_validation does not touch a graphics device when plots are disabled", {
+  qaic <- data.frame(
+    region = "Region1",
+    formula = "suicides ~ cb",
+    disp = 1,
+    qaic = 2
+  )
+
+  local_mocked_bindings(
+    mh_model_combo_res = function(...) {
+      list(qaic, list(Region1 = list()))
+    },
+    open_diag_pdf = function(...) {
+      stop("diagnostic graphics must not be opened")
+    }
+  )
+
+  result <- mh_model_validation(
+    df_list = list(Region1 = data.frame()),
+    cb_list = list(Region1 = matrix(numeric())),
+    save_fig = FALSE,
+    save_csv = FALSE
+  )
+
+  expect_equal(result[[1]], qaic)
+  expect_length(result, 4)
+})
+
+
+test_that("suicides API mode overrides output flags and skips all plot helpers", {
+  captured <- new.env(parent = emptyenv())
+  captured$save_fig <- NULL
+  captured$save_csv <- NULL
+
+  plot_called <- function(...) {
+    stop("plot helper must not run in API mode")
+  }
+
+  local_mocked_bindings(
+    mh_read_and_format_data = function(...) {
+      list(Region1 = data.frame())
+    },
+    dlnm_pop_totals = function(...) list(Region1 = 1000),
+    mh_create_crossbasis = function(...) list(Region1 = matrix(1)),
+    mh_model_validation = function(..., save_fig, save_csv) {
+      captured$save_fig <- save_fig
+      captured$save_csv <- save_csv
+      list(data.frame(), NULL, NULL, NULL)
+    },
+    mh_casecrossover_dlnm = function(...) list(Region1 = list()),
+    dlnm_reduce_cumulative = function(...) list(list(), list()),
+    dlnm_min_mortality_temp = function(...) c(Region1 = 50),
+    mh_predict_reg = function(...) list(Region1 = list()),
+    dlnm_power_list = function(...) list(Region1 = 1),
+    mh_rr_results = function(...) {
+      data.frame(Area = "Region1", Temperature = 20, RR = 1)
+    },
+    mh_attr = function(...) list(Region1 = list()),
+    mh_attr_tables = function(...) {
+      list(data.frame(region = "Region1"), list(), list())
+    },
+    mh_plot_power = plot_called,
+    mh_plot_rr = plot_called,
+    mh_plot_attr_totals = plot_called,
+    mh_plot_af_yearly = plot_called,
+    mh_plot_ar_yearly = plot_called,
+    mh_plot_af_monthly = plot_called,
+    mh_plot_ar_monthly = plot_called,
+    mh_save_results = function(...) {
+      stop("CSV output must not run in API mode")
+    }
+  )
+  withr::local_options(list(climatehealth.api_mode = TRUE))
+
+  result <- suicides_heat_do_analysis(
+    data_path = data.frame(),
+    date_col = "date",
+    temperature_col = "temp",
+    health_outcome_col = "suicides",
+    population_col = "population",
+    save_fig = TRUE,
+    save_csv = TRUE,
+    output_folder_path = tempdir()
+  )
+
+  expect_false(captured$save_fig)
+  expect_false(captured$save_csv)
+  expect_s3_class(result$rr_results, "data.frame")
+})
+
 
 test_that("mh_casecrossover_dlnm fits case-crossover DLNM models correctly", {
   # Setup test data

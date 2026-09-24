@@ -1,10 +1,100 @@
 # Entrypoint for climatehealth plumber API
 options(climatehealth.api_mode = TRUE)
 
-resolve_api_root <- function() {
+entrypoint_file <- tryCatch(
+  {
+    path <- sys.frame(1)$ofile
+    if (is.null(path) || length(path) != 1 || !nzchar(path)) {
+      ""
+    } else {
+      normalizePath(path, winslash = "/", mustWork = FALSE)
+    }
+  },
+  error = function(e) ""
+)
+
+is_true_env <- function(name) {
+  identical(toupper(trimws(Sys.getenv(name, unset = "FALSE"))), "TRUE")
+}
+
+find_source_root <- function(start = getwd()) {
+  explicit_root <- Sys.getenv("CLIMATEHEALTH_SOURCE_ROOT", unset = "")
+  if (nzchar(explicit_root)) {
+    start <- explicit_root
+  }
+
+  candidate <- normalizePath(start, winslash = "/", mustWork = FALSE)
+  repeat {
+    description <- file.path(candidate, "DESCRIPTION")
+    plumber_file <- file.path(candidate, "inst", "plumber", "plumber.R")
+    if (file.exists(description) && file.exists(plumber_file)) {
+      package_name <- tryCatch(
+        read.dcf(description, fields = "Package")[[1]],
+        error = function(e) ""
+      )
+      if (identical(package_name, "climatehealth")) {
+        return(candidate)
+      }
+    }
+
+    parent <- dirname(candidate)
+    if (identical(parent, candidate)) {
+      return(NULL)
+    }
+    candidate <- parent
+  }
+}
+
+# Running this script from a clone is a development workflow. Load that clone
+# so climatehealth:: endpoint bindings use the checked-out functions rather
+# than an older package from the user's library. Production can opt out
+# explicitly and continues to use the installed package by default.
+source_root <- NULL
+if (!is_true_env("CLIMATEHEALTH_API_USE_INSTALLED")) {
+  source_start <- if (nzchar(entrypoint_file)) {
+    dirname(entrypoint_file)
+  } else {
+    getwd()
+  }
+  source_root <- find_source_root(source_start)
+}
+
+if (!is.null(source_root)) {
+  if (!requireNamespace("pkgload", quietly = TRUE)) {
+    stop(
+      paste0(
+        "A climatehealth source tree was detected at ", source_root,
+        ", but the 'pkgload' package is unavailable. Install pkgload to run ",
+        "the API from source, or set CLIMATEHEALTH_API_USE_INSTALLED=TRUE."
+      )
+    )
+  }
+  pkgload::load_all(source_root, helpers = FALSE, quiet = TRUE)
+  options(climatehealth.api_mode = TRUE)
+}
+
+runtime_info <- list(
+  mode = if (is.null(source_root)) "installed" else "source",
+  path = if (is.null(source_root)) {
+    normalizePath(
+      find.package("climatehealth"),
+      winslash = "/",
+      mustWork = FALSE
+    )
+  } else {
+    source_root
+  },
+  version = as.character(utils::packageVersion("climatehealth"))
+)
+
+resolve_api_root <- function(source_root = NULL) {
   env_root <- Sys.getenv("CLIMATEHEALTH_PLUMBER_DIR", unset = "")
   if (nzchar(env_root)) {
     return(normalizePath(env_root, winslash = "/", mustWork = FALSE))
+  }
+
+  if (!is.null(source_root)) {
+    return(file.path(source_root, "inst", "plumber"))
   }
 
   pkg_root <- system.file("plumber", package = "climatehealth")
@@ -15,21 +105,36 @@ resolve_api_root <- function() {
   stop("Unable to locate plumber assets. Install or load the climatehealth package first.")
 }
 
-resolve_config_path <- function(api_root) {
+resolve_config_path <- function(api_root, source_root = NULL) {
   env_cfg <- Sys.getenv("CLIMATEHEALTH_API_CONFIG", unset = "")
   if (nzchar(env_cfg)) {
     return(normalizePath(env_cfg, winslash = "/", mustWork = FALSE))
   }
 
-  cfg <- system.file("extdata", "config_templates", "api_config.yml", package = "climatehealth")
+  cfg <- if (!is.null(source_root)) {
+    file.path(
+      source_root,
+      "inst",
+      "extdata",
+      "config_templates",
+      "api_config.yml"
+    )
+  } else {
+    system.file(
+      "extdata",
+      "config_templates",
+      "api_config.yml",
+      package = "climatehealth"
+    )
+  }
   if (!nzchar(cfg)) {
     cfg <- file.path(api_root, "api_config.yml")
   }
   normalizePath(cfg, winslash = "/", mustWork = FALSE)
 }
 
-api_root <- resolve_api_root()
-config_path <- resolve_config_path(api_root)
+api_root <- resolve_api_root(source_root)
+config_path <- resolve_config_path(api_root, source_root)
 
 if (!file.exists(config_path)) {
   stop(sprintf("API config file not found: %s", config_path))
@@ -40,8 +145,23 @@ library(plumber)
 library(config)
 
 log_file <- file.path(tempdir(), "climatehealth_api.log")
-log_appender(appender_file(log_file))
+console_appender <- logger::appender_console
+file_appender <- logger::appender_file(log_file)
+log_appender(function(lines) {
+  console_appender(lines)
+  file_appender(lines)
+})
 log_threshold(INFO)
+
+runtime_message <- sprintf(
+  "climatehealth API runtime: mode=%s, version=%s, path=%s, api_root=%s, log=%s",
+  runtime_info$mode,
+  runtime_info$version,
+  runtime_info$path,
+  api_root,
+  log_file
+)
+logger::log_info(runtime_message)
 
 source(file.path(api_root, "throttling", "throttle_memory.R"))
 source(file.path(api_root, "throttling", "throttle_config.R"))
@@ -76,6 +196,7 @@ api_env$reject_request <- reject_request
 api_env$run_guarded <- run_guarded
 api_env$get_system_memory <- get_system_memory
 api_env$config <- cfg
+api_env$runtime_info <- runtime_info
 
 router <- plumber::pr(file.path(api_root, "plumber.R"), envir = api_env)
 
