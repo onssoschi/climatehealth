@@ -2580,12 +2580,10 @@ suicides_heat_do_analysis <- function(
   # graphics device available, plots can't be returned over JSON, and the
   # client renders its own visualisations. Force all side-effectful output
   # parameters off so internal helpers never try to draw or write files.
-  api_mode <- isTRUE(getOption("climatehealth.api_mode", FALSE))
-  if (api_mode) {
-    save_fig <- FALSE
-    save_csv <- FALSE
-    output_folder_path <- NULL
-  }
+  api_mode <- apply_api_mode(
+    flags = c("save_fig", "save_csv"),
+    paths = "output_folder_path"
+  )
 
   # Setup additional output DIR
   if (!is.null(output_folder_path)) {

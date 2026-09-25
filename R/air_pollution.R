@@ -2931,19 +2931,20 @@ air_pollution_do_analysis <- function(
   # the returned data. Force output / plot toggles off so we don't build
   # ggplot objects that nothing consumes and that plumber can't reliably
   # serialise.
-  api_mode <- isTRUE(getOption("climatehealth.api_mode", FALSE))
-  if (api_mode) {
-    save_outputs <- FALSE
-    output_dir <- NULL
-    plot_corr_matrix <- FALSE
-    plot_dist <- FALSE
-    plot_na_counts <- FALSE
-    plot_scatter <- FALSE
-    plot_box <- FALSE
-    plot_seasonal <- FALSE
-    plot_regional <- FALSE
-    plot_total <- FALSE
-  }
+  api_mode <- apply_api_mode(
+    flags = c(
+      "save_outputs",
+      "plot_corr_matrix",
+      "plot_dist",
+      "plot_na_counts",
+      "plot_scatter",
+      "plot_box",
+      "plot_seasonal",
+      "plot_regional",
+      "plot_total"
+    ),
+    paths = "output_dir"
+  )
 
   if (save_outputs) {
     if (is.null(output_dir)) {

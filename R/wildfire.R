@@ -2655,15 +2655,16 @@ wildfire_do_analysis <- function(
   # plots can't be returned over JSON - the client renders its own. Force
   # all side-effectful output parameters off so internal helpers never try
   # to draw or write files.
-  api_mode <- isTRUE(getOption("climatehealth.api_mode", FALSE))
-  if (api_mode) {
-    save_fig <- FALSE
-    save_csv <- FALSE
-    output_folder_path <- NULL
-    create_run_subdir <- FALSE
-    print_vif <- FALSE
-    print_model_summaries <- FALSE
-  }
+  api_mode <- apply_api_mode(
+    flags = c(
+      "save_fig",
+      "save_csv",
+      "create_run_subdir",
+      "print_vif",
+      "print_model_summaries"
+    ),
+    paths = "output_folder_path"
+  )
 
   if (create_run_subdir) {
     if (is.null(output_folder_path)) {
