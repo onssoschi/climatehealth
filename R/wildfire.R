@@ -1799,6 +1799,26 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL, in
     aggregated_data <- rbind(all_regions_agg, aggregated_data)
   }
 
+  # The sorted summary is this function's data output and callers need it
+  # whether or not a figure is produced, so derive it before any plotting.
+  sorted_data <- aggregated_data[
+    order(
+      aggregated_data$region,
+      match(aggregated_data$month_name, month.abb)
+    ),
+  ]
+
+  sorted_data <- sorted_data %>%
+    select(all_of(c("region", "month_name", "mean_deaths_per_100k", "mean_pm")))
+
+  # Everything below builds ggplot objects and writes files. When outputs are
+  # not being saved -- API mode always, and any caller wanting the summary
+  # alone -- nothing consumes them, so stop here instead of constructing
+  # plots that are discarded.
+  if (!isTRUE(save_outputs)) {
+    return(sorted_data)
+  }
+
   # Calculate scaling factor
   scale_factor <- max(aggregated_data$mean_deaths_per_100k) / max(aggregated_data$mean_pm)
 
@@ -1877,17 +1897,6 @@ plot_ar_pm_monthly <- function(data, save_outputs = FALSE, output_dir = NULL, in
       alt_text = alt_text,
       width = if (n_panels == 1) 115 else 160
     )
-
-  # sort data
-  sorted_data <- aggregated_data[
-    order(
-      aggregated_data$region,
-      match(aggregated_data$month_name, month.abb)
-    ),
-  ]
-
-  sorted_data <- sorted_data %>%
-    select(all_of(c("region", "month_name", "mean_deaths_per_100k", "mean_pm")))
 
   # save csv and plot
   if (save_outputs) {
@@ -2815,26 +2824,35 @@ wildfire_do_analysis <- function(
     output_folder_path = output_folder_path,
     print_model_summaries = print_model_summaries
   )
-  plot_RR(
-    rr_data = rr_results,
-    wildfire_lag = wildfire_lag,
-    by_region = calculate_by_region,
-    save_fig = save_fig,
-    output_folder_path = output_folder_path
-  )
-  # Plot RR by PM2.5 levels
-  rr_pm <- generate_rr_pm_by_region(
-    data = data,
-    relative_risk_overall = rr_results,
-    scale_factor_wildfire_pm = scale_factor_wildfire_pm,
-    wildfire_lag = 0,
-    pm_vals = NULL
-  )
-  plot_rr_by_pm(
-    data = rr_pm,
-    save_fig = save_fig,
-    output_dir = output_folder_path
-  )
+  # Figure-only work: plot_RR() and plot_rr_by_pm() return plot objects that
+  # nothing here consumes, and generate_rr_pm_by_region() exists solely to
+  # build rr_pm for plot_rr_by_pm(). Skipping the whole block when figures
+  # are not being saved keeps API mode off every drawing path, rather than
+  # relying on ggplot2 staying lazy inside these helpers.
+  if (isTRUE(save_fig)) {
+    plot_RR(
+      rr_data = rr_results,
+      wildfire_lag = wildfire_lag,
+      by_region = calculate_by_region,
+      save_fig = save_fig,
+      output_folder_path = output_folder_path
+    )
+
+    # Plot RR by PM2.5 levels
+    rr_pm <- generate_rr_pm_by_region(
+      data = data,
+      relative_risk_overall = rr_results,
+      scale_factor_wildfire_pm = scale_factor_wildfire_pm,
+      wildfire_lag = 0,
+      pm_vals = NULL
+    )
+
+    plot_rr_by_pm(
+      data = rr_pm,
+      save_fig = save_fig,
+      output_dir = output_folder_path
+    )
+  }
   # Obtain and plot attributable numbers/fractions
   af_an_results <- NULL
   annual_af_an_results <- NULL
