@@ -485,7 +485,10 @@ test_that("suicides API mode overrides output flags and skips all plot helpers",
   )
   withr::local_options(list(climatehealth.api_mode = TRUE))
 
-  result <- suicides_heat_do_analysis(
+  # expect_no_plotting() adds tripwires on the shared drawing layer that the
+  # mh_plot_* mocks above do not cover (open_accessible_pdf, ggsave, logo),
+  # plus a check that no graphics device is left open.
+  result <- expect_no_plotting(suicides_heat_do_analysis(
     data_path = data.frame(),
     date_col = "date",
     temperature_col = "temp",
@@ -494,7 +497,7 @@ test_that("suicides API mode overrides output flags and skips all plot helpers",
     save_fig = TRUE,
     save_csv = TRUE,
     output_folder_path = tempdir()
-  )
+  ))
 
   expect_false(captured$save_fig)
   expect_false(captured$save_csv)

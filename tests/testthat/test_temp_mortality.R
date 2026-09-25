@@ -2892,3 +2892,94 @@ test_that("integration: temp_mortality descriptive stats runs and outputs files"
   expect_gt(nrow(result$rr_results), 0)
 
 })
+
+
+# --- API mode ---------------------------------------------------------------
+
+test_that("temp_mortality_do_analysis in API mode draws nothing and writes nothing", {
+  # Exercises the real control flow: only the API-mode option and the
+  # requested outputs differ from the end-to-end test above. Every output the
+  # entrypoint can produce is asked for, so the assertions below fail if
+  # apply_api_mode() stops overriding them.
+  if (!identical(Sys.getenv("NOT_CRAN"), "true")) skip("Skipping on CRAN")
+  if (Sys.getenv("RUN_INTEGRATION") != "true")    skip("Skipping CI integration")
+
+  n_days <- 1000
+  regions <- c("Region 1", "Region 2")
+
+  make_api_region <- function(region_name) {
+    set.seed(126)
+    dates <- seq(as.Date("2000-01-01"), by = "day", length.out = n_days)
+    day_ix <- seq_len(n_days)
+    tmean <- 10 + 8 * sin(2 * pi * day_ix / 365) + rnorm(n_days, sd = 4)
+    tmean <- pmax(pmin(tmean, 25), -5)
+    hum <- pmax(pmin(80 + rnorm(n_days, sd = 6), 95), 70)
+    rainfall <- pmax(rnorm(n_days, mean = 3.5, sd = 2.0), 0)
+    sun <- pmax(rnorm(n_days, mean = 2.5, sd = 1.2), 0)
+    lambda <- exp(-0.1 + 0.03 * tmean)
+    deaths <- rpois(n_days, lambda = lambda)
+    deaths[1:5] <- pmax(deaths[1:5], c(0, 1, 0, 1, 2))
+
+    data.frame(
+      date = dates,
+      region = region_name,
+      tmean = round(tmean, 2),
+      hum = round(hum, 2),
+      sun = round(sun, 2),
+      rainfall = round(rainfall, 2),
+      population = rep(
+        if (region_name == "Region 1") 2600000L else 6800000L,
+        n_days
+      ),
+      deaths = deaths,
+      check.names = FALSE
+    )
+  }
+
+  df <- do.call(rbind, lapply(regions, make_api_region))
+  df <- df[order(df$region, df$date), ]
+
+  tmp_file <- tempfile(fileext = ".csv")
+  write.csv(df, tmp_file, row.names = FALSE)
+  on.exit(unlink(tmp_file), add = TRUE)
+
+  out_dir <- withr::local_tempdir()
+  withr::local_options(list(climatehealth.api_mode = TRUE))
+
+  result <- expect_no_plotting(suppressWarnings(temp_mortality_do_analysis(
+    data_path = tmp_file,
+    date_col = "date",
+    region_col = "region",
+    temperature_col = "tmean",
+    dependent_col = "deaths",
+    population_col = "population",
+    independent_cols = c("hum", "sun", "rainfall"),
+    df_control = 3,
+    control_cols = NULL,
+    var_fun = "bs",
+    var_degree = 2,
+    var_per = c(50),
+    lagn = 2,
+    lagnk = 1,
+    dfseas = 6,
+    save_fig = TRUE,
+    save_csv = TRUE,
+    country = "National",
+    meta_analysis = FALSE,
+    attr_thr_high = 97.5,
+    attr_thr_low = 2.5,
+    output_folder_path = out_dir
+  )))
+
+  # The numerical payload the API client depends on is unaffected.
+  expect_type(result, "list")
+  expect_true(all(
+    c("rr_results", "res_attr_tot", "attr_yr_list", "attr_mth_list") %in%
+      names(result)
+  ))
+  expect_s3_class(result$rr_results, "data.frame")
+  expect_gt(nrow(result$rr_results), 0)
+
+  # ... and nothing reached disk despite save_fig/save_csv being requested.
+  expect_length(list.files(out_dir, recursive = TRUE), 0)
+})
