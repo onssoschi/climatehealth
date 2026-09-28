@@ -111,6 +111,7 @@ Suggests:
     DT,
     htmltools,
     INLA,
+    jsonlite,
     mockery,
     mvmeta,
     openxlsx,
