@@ -206,7 +206,15 @@ descriptive_stats_func <- climatehealth::run_descriptive_stats_api
 .with_map_zip <- function(do_analysis_fn) {
   fn_args <- names(formals(do_analysis_fn))
   function(req) {
-    body <- jsonlite::fromJSON(req$postBody, simplifyVector = FALSE)
+    # Parse the body with jsonlite's default simplification, which is what
+    # plumber's own JSON body parser applies to every other endpoint.  These
+    # two endpoints only parse the body themselves because the shapefile has
+    # to be decoded out of it, so they must not also change the argument
+    # shapes: with `simplifyVector = FALSE` a JSON string array arrived as
+    # `list("rainfall")` instead of `c("rainfall")`, and an array of records
+    # as a list of row-lists instead of a data.frame.  Simplified shapes are
+    # the ones `*_do_analysis()` documents and the unit tests exercise.
+    body <- jsonlite::fromJSON(req$postBody)
     if (!is.null(body$map_zip_b64)) {
       body$map_path <- .decode_map_zip_to_path(body$map_zip_b64)
       body$map_zip_b64 <- NULL
