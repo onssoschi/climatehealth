@@ -11,6 +11,10 @@ if (!exists("suppress_plot")) {
   source("tests/testthat/helper-utils.R", local = FALSE)
 }
 
+if (!exists("load_plumber_env")) {
+  source("tests/testthat/helper-plumber.R", local = FALSE)
+}
+
 # Create temp_dir to be used by all Diarrhea tests (kept even though not saving files)
 temp_dir <- tempdir()
 temp_dir <- file.path(temp_dir, "diarrhea_tests")
@@ -389,4 +393,102 @@ test_that("diarrhea_do_analysis in API mode draws nothing and writes nothing", {
   expect_gt(length(res$rr_df), 0)
 
   expect_length(list.files(out_dir, recursive = TRUE), 0)
+})
+
+# --- API request shapes -----------------------------------------------------
+
+# Regression test for the 500 that /diarrhea returned:
+#   Error in /diarrhea: Can't subset columns with `vars`.
+#   x `vars` must be logical, numeric, or character, not a list.
+#
+# data_explorer_js sends the column multi-selects as JSON arrays and the two
+# tabular inputs as arrays of records. `.with_map_zip()` in
+# inst/plumber/plumber.R parses that body itself, so this runs the real wrapper
+# over a real body: the shapes it produces are exercised by the whole analysis
+# rather than only asserted on in isolation
+# (see test_plumber_disease_endpoints.R for the isolated assertions).
+test_that("the /diarrhea wrapper runs the analysis on a Flask-shaped body", {
+  skip_if_not_installed("sf")
+  skip_if_not_installed("INLA")
+  skip_if_not_installed("jsonlite")
+  skip_if_integration_disabled()
+
+  env <- load_plumber_env()
+
+  health  <- make_health_fixture_d()
+  climate <- make_climate_fixture_d()
+
+  map_stub <- tempfile("api_body_map_diarrhea_")
+  map_path <- paste0(map_stub, ".shp")
+  on.exit(unlink(Sys.glob(paste0(map_stub, ".*"))), add = TRUE)
+  map_obj <- make_synthetic_map_d() |> sf::st_transform(3857)
+  sf::st_write(map_obj, map_path, quiet = TRUE, append = FALSE)
+
+  # The multi-selects are wrapped in list() so that they serialise as
+  # single-element JSON arrays under auto_unbox = TRUE -- the shape
+  # _split_csv_or_none() produces in _disease_payload_from_form(). map_path is
+  # sent directly rather than as a base64 zip: the zip branch is covered in
+  # test_plumber_disease_endpoints.R and needs an external zip command.
+  #
+  # nk and the save_* flags are not sent by the Flask form; they are pinned
+  # here to keep the fitted model small and the test free of file output.
+  body <- as.character(jsonlite::toJSON(
+    list(
+      health_data_path  = health,
+      climate_data_path = climate,
+      map_path          = map_path,
+      region_col        = "region",
+      district_col      = "district",
+      date_col          = NULL,
+      year_col          = "year",
+      month_col         = "month",
+      case_col          = "diarrhea",
+      tot_pop_col       = "tot_pop",
+      tmin_col          = "tmin",
+      tmean_col         = "tmean",
+      tmax_col          = "tmax",
+      rainfall_col      = "rainfall",
+      r_humidity_col    = "r_humidity",
+      runoff_col        = "runoff",
+      geometry_col      = "geometry",
+      spi_col           = NULL,
+      ndvi_col          = NULL,
+      max_lag           = 2,
+      basis_matrices_choices = list("rainfall"),
+      inla_param        = list("rainfall"),
+      param_term        = "rainfall",
+      level             = "district",
+      param_threshold   = 1,
+      nk                = 1,
+      config            = FALSE,
+      save_csv          = FALSE,
+      save_model        = FALSE,
+      save_fig          = FALSE
+    ),
+    dataframe = "rows",
+    auto_unbox = TRUE,
+    null = "null",
+    na = "null",
+    digits = NA
+  ))
+
+  # Fail loudly if the body is not the shape this test exists to cover, rather
+  # than passing on accidentally-unboxed scalars.
+  expect_match(body, '"inla_param":["rainfall"]', fixed = TRUE)
+  expect_match(body, '"basis_matrices_choices":["rainfall"]', fixed = TRUE)
+  expect_match(body, '"spi_col":null', fixed = TRUE)
+  expect_match(body, '"health_data_path":[{', fixed = TRUE)
+
+  handler <- env$.with_map_zip(climatehealth::diarrhea_do_analysis)
+  res <- suppress_plot(suppressWarnings(handler(list(postBody = body))))
+
+  # Sourcing plumber.R set climatehealth.api_mode = TRUE, exactly as the
+  # running API does, so this is the API-mode payload.
+  expect_type(res, "list")
+  expect_true(all(
+    c("rr_df", "an_ar_results", "attr_frac_num", "dic_table") %in% names(res)
+  ))
+  expect_true(is.list(res$rr_df))
+  expect_gt(length(res$rr_df), 0)
+  expect_true(is.data.frame(res$attr_frac_num))
 })

@@ -631,6 +631,97 @@ test_that("check_diseases_vif detects high collinearity", {
   expect_true(any(res$vif >= 10, na.rm = TRUE))
 })
 
+# A JSON request body can deliver `param_term` / `inla_param` as a list of
+# length-1 strings rather than a character vector (see .with_map_zip() in
+# inst/plumber/plumber.R). `combine_health_climate_data()` returns a tibble, so
+# these tests use one: on a tibble the column subscript goes through tidyselect,
+# which is where an un-flattened list produced
+# "Can't subset columns with `vars`".
+test_that(
+  "check_diseases_vif accepts list-shaped param_term and inla_param",
+  {
+    res <- suppressWarnings(
+      check_diseases_vif(
+        data = tibble::as_tibble(CHECK_VIF_DF),
+        param_term = list("tmax"),
+        inla_param = list("tmax", "tmin"),
+        case_type = "malaria"
+      )
+    )
+    expect_equal(res$variables, c("malaria", "tmax", "tmin"))
+
+    # Identical to the equivalent character-vector call.
+    char_res <- suppressWarnings(
+      check_diseases_vif(
+        data = tibble::as_tibble(CHECK_VIF_DF),
+        param_term = "tmax",
+        inla_param = c("tmax", "tmin"),
+        case_type = "malaria"
+      )
+    )
+    expect_equal(res, char_res)
+  }
+)
+
+test_that(
+  "check_diseases_vif still reports missing variables given a list",
+  {
+    bad_data <- tibble::as_tibble(
+      CHECK_VIF_DF[, !(names(CHECK_VIF_DF) %in% "tmin")]
+    )
+    expect_error(
+      check_diseases_vif(
+        data = bad_data,
+        param_term = list("tmax"),
+        inla_param = list("tmax", "tmin"),
+        case_type = "malaria"
+      ),
+      "Missing variables: tmin"
+    )
+  }
+)
+
+test_that(
+  "coerce_column_names flattens the shapes a JSON body can produce",
+  {
+    expect_identical(coerce_column_names("tmax", "inla_param"), "tmax")
+    expect_identical(
+      coerce_column_names(c("tmax", "tmin"), "inla_param"),
+      c("tmax", "tmin")
+    )
+    expect_identical(
+      coerce_column_names(list("tmax", "tmin"), "inla_param"),
+      c("tmax", "tmin")
+    )
+    # Nested and NULL-bearing lists flatten rather than being deparsed.
+    expect_identical(
+      coerce_column_names(list("tmax", list("tmin", "ndvi")), "inla_param"),
+      c("tmax", "tmin", "ndvi")
+    )
+    expect_identical(
+      coerce_column_names(list("tmax", NULL, "tmin"), "inla_param"),
+      c("tmax", "tmin")
+    )
+
+    # Absent / empty arguments become a zero-length character vector so that
+    # c()-ing them into `vars` keeps `vars` a character vector.
+    expect_identical(coerce_column_names(NULL, "inla_param"), character(0))
+    expect_identical(coerce_column_names(list(), "inla_param"), character(0))
+    expect_identical(
+      coerce_column_names(character(0), "inla_param"),
+      character(0)
+    )
+
+    # Non-string elements are converted, not silently accepted as names.
+    expect_identical(coerce_column_names(list(1L, 2L), "inla_param"), c("1", "2"))
+
+    expect_error(
+      coerce_column_names(list(mean), "inla_param"),
+      "'inla_param' must be a character vector of column names"
+    )
+  }
+)
+
 test_that(
   "check_diseases_vif errors on missing variables",
   {
