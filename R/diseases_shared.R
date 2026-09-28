@@ -20,6 +20,39 @@ validate_case_type <- function(case_type) {
   return(case_type)
 }
 
+# Flatten a column-name argument to a character vector.
+#
+# The disease entrypoints document `param_term` / `basis_matrices_choices` /
+# `inla_param` as character vectors, but a JSON request body can deliver them
+# as a list of length-1 strings. `c()` on a list returns a list, and a list
+# subscript is not a valid tidyselect or `[.data.frame` column selector, so
+# flatten here instead of letting the list travel further.
+#
+# `unlist()` rather than `as.character()`: as.character() on a list deparses
+# any element that is not already a length-1 string, which would turn a bad
+# argument into a plausible-looking but wrong column name.
+coerce_column_names <- function(x, arg_name) {
+  if (is.null(x)) {
+    return(character(0))
+  }
+  flat <- unlist(x, use.names = FALSE)
+  # unlist() returns NULL for list(NULL) but an empty list for list(), so test
+  # the length rather than for NULL.
+  if (length(flat) == 0) {
+    return(character(0))
+  }
+  if (!is.atomic(flat)) {
+    stop(
+      paste0(
+        "'", arg_name, "' must be a character vector of column names. Got a ",
+        class(x)[1], " that does not flatten to one."
+      )
+    )
+  }
+  as.character(flat)
+}
+
+
 coerce_api_records_df <- function(x, arg_name) {
   if (is.data.frame(x)) {
     return(x)
@@ -727,6 +760,13 @@ check_diseases_vif <- function(data,
                                param_term,
                                inla_param,
                                case_type) {
+
+  # Keep `vars` a character vector. `c()` with a list argument returns a list,
+  # and `setdiff()` then matches by coercion -- so a list of names that all
+  # exist in `data` clears the missing-variable guard below and fails later, at
+  # the column subscript on `data`, instead of being reported here.
+  param_term <- coerce_column_names(param_term, "param_term")
+  inla_param <- coerce_column_names(inla_param, "inla_param")
 
   vars <- unique(c(as.character(validate_case_type(case_type)),
                    param_term,
