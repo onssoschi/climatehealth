@@ -354,3 +354,75 @@ test_that("malaria_do_analysis errors when save_fig=TRUE and output_dir=NULL", {
     regexp = "output_dir"
   )
 })
+
+
+# --- API mode ---------------------------------------------------------------
+
+test_that("malaria_do_analysis in API mode draws nothing and writes nothing", {
+  skip_if_not_installed("sf")
+  skip_if_not_installed("INLA")
+  skip_if_integration_disabled()
+
+  health  <- make_health_fixture_m()
+  climate <- make_climate_fixture_m()
+
+  map_stub <- tempfile("api_mode_map_malaria_")
+  map_path <- paste0(map_stub, ".shp")
+  on.exit(unlink(Sys.glob(paste0(map_stub, ".*"))), add = TRUE)
+  map_obj <- make_synthetic_map_m() |> sf::st_transform(3857)
+  sf::st_write(map_obj, map_path, quiet = TRUE, append = FALSE)
+
+  out_dir <- withr::local_tempdir()
+  withr::local_options(list(climatehealth.api_mode = TRUE))
+
+  # Every output is requested; API mode must override all of them.
+  res <- expect_no_plotting(suppressWarnings(
+    malaria_do_analysis(
+      health_data_path  = health,
+      climate_data_path = climate,
+      map_path          = map_path,
+      region_col        = "region",
+      district_col      = "district",
+      date_col          = NULL,
+      year_col          = "year",
+      month_col         = "month",
+      case_col          = "malaria",
+      tot_pop_col       = "tot_pop",
+      tmin_col          = "tmin",
+      tmean_col         = "tmean",
+      tmax_col          = "tmax",
+      rainfall_col      = "rainfall",
+      r_humidity_col    = "r_humidity",
+      runoff_col        = "runoff",
+      geometry_col      = "geometry",
+      spi_col           = NULL,
+      ndvi_col          = NULL,
+      max_lag           = 2,
+      nk                = 1,
+      basis_matrices_choices = "tmax",
+      inla_param        = c("tmax"),
+      param_term        = "tmax",
+      level             = "district",
+      param_threshold   = 1,
+      filter_year       = NULL,
+      family            = "nbinomial",
+      group_by_year     = FALSE,
+      cumulative        = FALSE,
+      config            = FALSE,
+      save_csv          = TRUE,
+      save_model        = TRUE,
+      save_fig          = TRUE,
+      output_dir        = out_dir
+    )
+  ))
+
+  # API mode returns the numerical payload only -- no plot objects.
+  expect_type(res, "list")
+  expect_true(all(
+    c("rr_df", "an_ar_results", "attr_frac_num", "dic_table") %in% names(res)
+  ))
+  expect_true(is.list(res$rr_df))
+  expect_gt(length(res$rr_df), 0)
+
+  expect_length(list.files(out_dir, recursive = TRUE), 0)
+})

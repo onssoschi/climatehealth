@@ -12,6 +12,15 @@ function(res) {
   plumber::forward()
 }
 
+# Reassert API mode for every request. This prevents a package reload or other
+# code in a long-running R session from accidentally restoring interactive
+# plotting behaviour after the router has started.
+#* @filter api_mode
+function() {
+  options(climatehealth.api_mode = TRUE)
+  plumber::forward()
+}
+
 #* @filter throttle
 function(req, res) {
   clean_path <- sub("/$", "", req$PATH_INFO)
@@ -38,9 +47,16 @@ function() {
 #* @get /version
 #* @serializer json
 function() {
+  active_runtime <- if (exists("runtime_info", inherits = TRUE)) {
+    get("runtime_info", inherits = TRUE)
+  } else {
+    list(mode = "installed")
+  }
+
   list(
     package = "climatehealth",
     package_version = as.character(utils::packageVersion("climatehealth")),
+    runtime_mode = active_runtime$mode,
     r_version = R.version.string,
     platform = R.version$platform,
     timestamp = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
@@ -72,7 +88,16 @@ function(res) {
 
   health_response$checks$package <- tryCatch({
     if (requireNamespace("climatehealth", quietly = TRUE)) {
-      list(status = "pass", version = as.character(packageVersion("climatehealth")))
+      active_runtime <- if (exists("runtime_info", inherits = TRUE)) {
+        get("runtime_info", inherits = TRUE)
+      } else {
+        list(mode = "installed")
+      }
+      list(
+        status = "pass",
+        version = as.character(packageVersion("climatehealth")),
+        runtime_mode = active_runtime$mode
+      )
     } else {
       list(status = "fail", message = "climatehealth package not available")
     }

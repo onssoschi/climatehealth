@@ -2686,3 +2686,81 @@ test_that("wildfire_do_analysis errors when create_run_subdir is requested witho
     "`output_folder_path` is required when `create_run_subdir = TRUE`"
   )
 })
+
+
+# --- API mode ---------------------------------------------------------------
+
+test_that("wildfire_do_analysis in API mode draws nothing and writes nothing", {
+  # Wildfire is the module where plot_RR(), generate_rr_pm_by_region() and
+  # plot_rr_by_pm() used to run unconditionally, so this also covers the
+  # call-site guard added around them.
+  if (!identical(Sys.getenv("NOT_CRAN"), "true")) skip("Skipping on CRAN")
+  if (Sys.getenv("RUN_INTEGRATION") != "true")    skip("Skipping CI integration")
+
+  set.seed(123)
+  n_days  <- 180
+  dates   <- seq.Date(as.Date("2019-01-01"), by = "day", length.out = n_days)
+  regions <- c("North", "South")
+  df      <- base::expand.grid(date = dates, region = regions, KEEP.OUT.ATTRS = FALSE)
+
+  df$temp_mean <- 12 + 8 * sin(2 * pi * as.numeric(df$date) / 365) +
+    stats::rnorm(nrow(df), sd = 2)
+  pm_base_by_region <- ifelse(df$region == "North", 6, 10)
+  df$pop <- ifelse(df$region == "North", 500000, 700000)
+  df$pm25 <- pmax(0.1, pm_base_by_region + stats::rnorm(nrow(df), sd = 3))
+
+  eta <- -1 + 0.015 * df$pm25 + 0.01 * (df$temp_mean - mean(df$temp_mean))
+  mu  <- pmax(0.1, exp(eta)) * 10
+  df$deaths <- stats::rpois(nrow(df), lambda = mu)
+
+  csv_path <- tempfile(fileext = ".csv")
+  utils::write.csv(df, csv_path, row.names = FALSE)
+  on.exit(unlink(csv_path), add = TRUE)
+
+  out_dir <- withr::local_tempdir()
+  withr::local_options(list(climatehealth.api_mode = TRUE))
+
+  res <- expect_no_plotting(suppressWarnings(wildfire_do_analysis(
+    health_path                        = csv_path,
+    join_wildfire_data                 = FALSE,
+    ncdf_path                          = NULL,
+    shp_path                           = NULL,
+    date_col                           = "date",
+    region_col                         = "region",
+    shape_region_col                   = "region",
+    mean_temperature_col               = "temp_mean",
+    health_outcome_col                 = "deaths",
+    pm_2_5_col                         = "pm25",
+    rh_col                             = NULL,
+    wind_speed_col                     = NULL,
+    wildfire_lag                       = 2,
+    temperature_lag                    = 1,
+    spline_temperature_degrees_freedom = 3,
+    predictors_vif                     = NULL,
+    calculate_by_region                = FALSE,
+    scale_factor_wildfire_pm           = 10,
+    save_fig                           = TRUE,
+    save_csv                           = TRUE,
+    output_folder_path                 = out_dir,
+    print_vif                          = TRUE,
+    print_model_summaries              = TRUE
+  )))
+
+  expect_type(res, "list")
+  expect_named(
+    res,
+    c("RR_results", "AF_AN_results", "AR_PM_monthly"),
+    ignore.order = TRUE
+  )
+
+  # AR_PM_monthly comes out of plot_ar_pm_monthly(), which now returns its
+  # summary before building any figures -- so the data must still be here.
+  expect_true(is.data.frame(res$AR_PM_monthly) && nrow(res$AR_PM_monthly) > 0)
+  expect_equal(
+    names(res$AR_PM_monthly),
+    c("region", "month_name", "mean_deaths_per_100k", "mean_pm")
+  )
+  expect_true(is.data.frame(res$RR_results) && nrow(res$RR_results) > 0)
+
+  expect_length(list.files(out_dir, recursive = TRUE), 0)
+})

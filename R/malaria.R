@@ -139,13 +139,10 @@ malaria_do_analysis <- function(health_data_path,
                                 plot_regional = TRUE,
                                 detect_outliers = TRUE){
 
-  api_mode <- isTRUE(getOption("climatehealth.api_mode", FALSE))
-  if (api_mode) {
-    save_fig <- FALSE
-    save_csv <- FALSE
-    save_model <- FALSE
-    output_dir <- NULL
-  }
+  api_mode <- apply_api_mode(
+    flags = c("save_fig", "save_csv", "save_model"),
+    paths = "output_dir"
+  )
 
   # Simple output validation
   if (is.null(output_dir) & (save_fig | save_csv)) {

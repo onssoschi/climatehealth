@@ -6189,3 +6189,72 @@ test_that("air_pollution_do_analysis rejects legacy and new aliases together", {
     "Use only one of `continuous_others` or `Continuous_Others`."
   )
 })
+
+
+# --- API mode ---------------------------------------------------------------
+
+test_that("air_pollution_do_analysis in API mode draws nothing and writes nothing", {
+  if (!identical(Sys.getenv("NOT_CRAN"), "true")) skip("Skipping on CRAN")
+  if (Sys.getenv("RUN_INTEGRATION") != "true")    skip("Skipping CI integration")
+
+  set.seed(123)
+  df <- dplyr::bind_rows(
+    make_synth_df(n_days = 365, regions = "Region 1"),
+    make_synth_df(n_days = 365, regions = "Region 2")
+  ) %>%
+    dplyr::arrange(region, date)
+
+  tmp_file <- tempfile(fileext = ".csv")
+  write.csv(df, tmp_file, row.names = FALSE)
+  on.exit(unlink(tmp_file), add = TRUE)
+
+  out_dir <- withr::local_tempdir()
+  withr::local_options(list(climatehealth.api_mode = TRUE))
+
+  # Every plot toggle is switched on; API mode must override all of them.
+  res <- expect_no_plotting(suppressWarnings(air_pollution_do_analysis(
+    data_path = tmp_file,
+    date_col = "date",
+    region_col = "region",
+    pm25_col = "pm25",
+    deaths_col = "deaths",
+    population_col = "population",
+    humidity_col = "humidity",
+    precipitation_col = "precipitation",
+    tmax_col = "tmax",
+    wind_speed_col = "wind_speed",
+    max_lag = 1,
+    df_seasonal = 6,
+    family = "quasipoisson",
+    reference_standards = list(list(value = 20, name = "WHO")),
+    include_national = TRUE,
+    save_outputs = TRUE,
+    run_descriptive = FALSE,
+    run_power = FALSE,
+    moving_average_window = 3L,
+    years_filter = NULL,
+    regions_filter = NULL,
+    attr_thr = 95,
+    plot_corr_matrix = TRUE,
+    plot_dist = TRUE,
+    plot_na_counts = TRUE,
+    plot_scatter = TRUE,
+    plot_box = TRUE,
+    plot_seasonal = TRUE,
+    plot_regional = TRUE,
+    plot_total = TRUE,
+    detect_outliers = FALSE,
+    calculate_rate = FALSE,
+    output_dir = out_dir
+  )))
+
+  expect_s3_class(res, "air_pollution_analysis")
+  expect_true(all(
+    c("data_raw", "data_with_lags", "meta_results", "analysis_results") %in%
+      names(res)
+  ))
+  expect_s3_class(res$data_raw, "data.frame")
+  expect_gt(nrow(res$data_raw), 0)
+
+  expect_length(list.files(out_dir, recursive = TRUE), 0)
+})
